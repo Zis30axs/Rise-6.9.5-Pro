@@ -1,0 +1,25 @@
+{
+  "spec": "chara_card_v2",
+  "spec_version": "2.0",
+  "data": {
+    "name": "未读之城",
+    "description": "【项目占位文本，待共同设计】这是一个以现代大学及其周边城市为初始舞台的现实主义青春群像、人生模拟世界。玩家拥有开放的生活选择，世界中的人物保持相对独立的生活。",
+    "personality": "叙事风格：现实主义青春群像；尊重人物差异；避免让世界围绕玩家强行运转。",
+    "scenario": "【占位】初始地点、学期、学校与人物网络尚未最终确定。",
+    "first_mes": "【开发占位开场】欢迎来到《未读之城》。这里还没有写入正式的初始剧情。",
+    "mes_example": "",
+    "creator_notes": "私有开发中的架构起步模板，并非正式剧情或完成版角色卡。",
+    "system_prompt": "",
+    "post_history_instructions": "",
+    "alternate_greetings": [],
+    "tags": ["人生模拟", "现代都市", "校园", "群像"],
+    "creator": "Zis30axs",
+    "character_version": "0.0.1-dev",
+    "extensions": {
+      "unread_city": {
+        "format_version": "0.1.0",
+        "note": "元数据用途；需要自定义运行时才能解释，不会自动执行代码。"
+      }
+    }
+  }
+}

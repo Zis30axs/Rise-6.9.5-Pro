@@ -1,0 +1,13 @@
+# Local builds
+/dist/
+/__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Credentials / personal config
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

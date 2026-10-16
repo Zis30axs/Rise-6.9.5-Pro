@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unread City Event Draft",
+  "description": "内部状态事件协议草案；尚未实现执行引擎。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "tick", "payload"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "type": {"type": "string", "minLength": 1},
+    "tick": {"type": "integer", "minimum": 0},
+    "actor_id": {"type": ["string", "null"]},
+    "payload": {"type": "object"}
+  }
+}
