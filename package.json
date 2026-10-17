@@ -1,0 +1,38 @@
+{
+  "name": "unread-city",
+  "version": "0.2.0",
+  "private": true,
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
+  "type": "module",
+  "scripts": {
+    "phone:build": "node scripts/build_embedded_phone.mjs",
+    "predev": "npm run phone:build",
+    "precheck": "npm run phone:build",
+    "dev": "vite --host 127.0.0.1",
+    "check": "vue-tsc --noEmit",
+    "build": "npm run check && vite build",
+    "test": "vitest run",
+    "test:e2e": "npm run build && playwright test",
+    "card": "npm run build && python scripts/build_card.py --frontend dist/immersive-shell.js"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "three": "^0.186.1",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/d3-geo": "^3.1.1",
+    "@types/node": "^24.9.1",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "jsdom": "^27.0.1",
+    "polygon-clipping": "^0.15.7",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.1.1"
+  }
+}

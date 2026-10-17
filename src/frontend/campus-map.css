@@ -1,0 +1,18 @@
+.world-map .campus-map-scene { position:absolute; inset:0; overflow:visible; }
+.world-map .campus-map-scene .cms-geometry { display:block; width:100%; height:100%; overflow:visible; pointer-events:none; }
+.world-map .cms-wall { stroke:#7e8b73; stroke-width:.6px; stroke-linejoin:round; }
+.world-map .cms-place-pin { position:absolute; box-sizing:border-box; display:flex; align-items:center; justify-content:center; gap:5px; height:44px; min-height:44px; padding:4px 6px; transform:translate(-50%,0); border:1px solid #a8b794; border-radius:8px; background:rgba(251,248,227,.97); box-shadow:0 3px 8px #4d694a26; color:#334e3b; white-space:nowrap; text-align:left; z-index:3; font-size:11px; line-height:1.4; touch-action:none; }
+.world-map .cms-place-pin > span:last-child { display:flex; flex-direction:column; }
+.world-map .cms-place-pin.current { background:#355d47; border-color:#d7d5a8; color:#fff0c9; opacity:1; }
+.world-map .cms-place-pin small { color:#dfdfbb; font-size:9px; line-height:1.35; }
+.world-map .cms-pin-index { display:grid; place-items:center; min-width:22px; height:22px; border:1px solid #9daf8c66; border-radius:50%; font:11px Georgia,serif; }
+.world-map .cms-place-pin.current .cms-pin-index { background:#e8d49c; border-color:#e8d49c; color:#3b5a3f; }
+.world-map .cms-road-event { position:absolute; box-sizing:border-box; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; flex-direction:column; width:44px; height:44px; min-width:44px; min-height:44px; padding:2px; gap:1px; z-index:4; touch-action:none; }
+.world-map .cms-road-event > span { display:grid; place-items:center; height:25px; width:25px; border-radius:50%; border:2px solid #f8edce; background:#be7848; color:#fff6de; font-size:13px; box-shadow:0 2px 5px #47553d33; }
+.world-map .cms-road-event.special > span { background:#7e8552; }
+.world-map .cms-person-pin { pointer-events:none; transform:translate(-50%,-100%); margin-top:-4px; }
+@media (max-width:760px) {
+  .world-map .cms-place-pin { padding:4px; gap:3px; font-size:10px; }
+  .world-map .cms-pin-index { min-width:18px; height:18px; font-size:9px; }
+  .world-map .cms-place-pin small { font-size:8px; }
+}

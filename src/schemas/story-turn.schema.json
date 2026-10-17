@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unread City Story Turn",
+  "description": "已实现的剧情生成白名单协议，由 src/runtime/story-protocol.ts 校验。npcId 还必须出现在本次世界存档 contacts 中；模型不提供消息 ID、时间、已读状态或任意状态补丁。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["story", "phone_messages"],
+  "properties": {
+    "story": { "type": "string", "minLength": 1, "maxLength": 6000 },
+    "phone_messages": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["npcId", "text"],
+        "properties": {
+          "npcId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+          "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    }
+  }
+}
