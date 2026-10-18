@@ -1,0 +1,112 @@
+{
+  "status": "implemented-built-and-verified-local-tavern-mobile-hardware-pending",
+  "asset": {
+    "path": "assets/models/ambient-aircraft.glb",
+    "sourceBytes": 76936560,
+    "outputBytes": 491048,
+    "triangles": 9430,
+    "sourceTriangles": 827960,
+    "reductionPercent": 99.36,
+    "outputSha256": "44fa8f71214748e2c8dad215f15f8a0e6a6baff0b882c64126427a4cc388547b",
+    "selfContained": true,
+    "runtimeDecoderRequired": false,
+    "originalSourceUnchanged": true,
+    "attribution": "assets/aircraft-sources.md"
+  },
+  "state": {
+    "version": "1.2.0",
+    "migratesFrom": [
+      "1.0.0",
+      "1.1.0"
+    ],
+    "field": "airTraffic",
+    "savedBeforeDisplay": true,
+    "passDurationMs": 40000,
+    "firstAmbientDelayMs": [
+      45000,
+      90000
+    ],
+    "nextAmbientDelayMs": [
+      180000,
+      360000
+    ],
+    "cooldownMs": 180000,
+    "tickMs": 5000,
+    "generationPausesAmbientTick": true,
+    "hiddenPausesAmbientTick": true,
+    "replayExpiredFlights": false,
+    "storyClockOrEnergyChanged": false
+  },
+  "storyProtocol": {
+    "compatibleWithOriginalTwoFields": true,
+    "optionalField": "world_events",
+    "allowedEvent": {
+      "type": "airliner_pass"
+    },
+    "eventsPerTurn": 1,
+    "cooldownViolationRejectsWholeTurn": true,
+    "arbitraryStatePatches": false,
+    "extractsEventsFromPlainText": false
+  },
+  "automated": {
+    "typeCheck": "passed",
+    "productionBundle": "passed",
+    "unitTests": 120,
+    "unitTestFiles": 13,
+    "browser": "Edge",
+    "browserWorkers": 1,
+    "browserUniqueScenarios": 14,
+    "browserScenarioGroups": {
+      "aircraft": 3,
+      "existingSceneAndSessionRegressions": 8,
+      "actualEmbeddedPhoneRegressions": 3
+    },
+    "pythonTests": 8,
+    "baseCardValidation": "passed",
+    "pngScriptMatchesBundle": true,
+    "glbEmbeddedInBundle": true,
+    "pngImageChunksMatchCover": true,
+    "note": "First browser run had two fixture re-entry failures from clicking the removed demo host listener. Corrected to the current Helper Shell open entry, then both viewport scenarios passed. Repeated scenarios are counted once."
+  },
+  "localTavern": {
+    "character": "未读之城 · 前端联调",
+    "installedScriptMatchesBundle": true,
+    "installedCardBytes": 40698238,
+    "testChat": "未读之城 · 前端联调 - 2026-10-17@22h56m39s255ms.jsonl",
+    "webgl": "loaded",
+    "ambientFlightObserved": {
+      "id": "airliner-ambient-1",
+      "modelStatus": "ready",
+      "observedProgress": 0.1636,
+      "sequence": 1,
+      "source": "ambient"
+    },
+    "reloadRestoresCount": 1,
+    "expiredFlightNotReplayed": true,
+    "restoreNativeUi": "passed",
+    "testChatClock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 20
+    },
+    "testChatLocation": "gate",
+    "otherExistingChatsUnchanged": 18,
+    "original2129ChatUnchanged": true,
+    "formalCharacterUnchanged": true,
+    "screenshot": "outputs/aircraft-live-status.png",
+    "note": "Used the previously empty 22:56 test chat. The existing 21:29 bus-stop progression and every other chat remain unchanged."
+  },
+  "artifact": {
+    "path": "outputs/未读之城-随机客机联动版.png",
+    "bytes": 20322089,
+    "sha256": "c443942c33e8f55134a267c2b54667f5253d5aab59da4e3fdfe6a15830bd38f1",
+    "format": "chara_card_v2 / 2.0",
+    "singlePng": true
+  },
+  "notVerifiedThisRun": [
+    "real-model world_events generation",
+    "user mobile TauriTavern hardware"
+  ],
+  "noRealModelOrPaidServiceCalled": true,
+  "noCommitPushOrReleaseUpdate": true
+}

@@ -4,6 +4,7 @@ export const STORY_OUTPUT_LIMITS = {
   storyText: 6000,
   inputText: 2000,
   phoneEvents: 8,
+  worldEvents: 1,
   messageText: 2000,
   // JSON can use six characters to encode one Unicode code unit. Bound the
   // complete transport without truncating valid JSON before it is parsed.
@@ -11,13 +12,13 @@ export const STORY_OUTPUT_LIMITS = {
 } as const;
 
 function invalid(detail: string): never {
-  throw new Error(`剧情回复格式不正确：${detail}。正文和手机消息均未写入，请重试。`);
+  throw new Error(`剧情回复格式不正确：${detail}。正文、手机消息和世界事件均未写入，请重试。`);
 }
 
-function record(value: unknown, keys: readonly string[], path: string): Record<string, unknown> {
+function record(value: unknown, keys: readonly string[], path: string, optional: readonly string[] = []): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return invalid(path);
   const ownKeys = Object.keys(value);
-  if (ownKeys.length !== keys.length || ownKeys.some(key => !keys.includes(key))) return invalid(`${path} 字段`);
+  if (keys.some(key => !Object.prototype.hasOwnProperty.call(value, key)) || ownKeys.some(key => !keys.includes(key) && !optional.includes(key))) return invalid(`${path} 字段`);
   return value as Record<string, unknown>;
 }
 
@@ -28,7 +29,7 @@ function text(value: unknown, max: number, path: string): string {
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复');
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -37,7 +38,16 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
     if (typeof item.npcId !== 'string' || !knownNpcs.has(item.npcId)) return invalid(`手机消息 ${index + 1} 的联系人`);
     return { npcId: item.npcId, text: text(item.text, STORY_OUTPUT_LIMITS.messageText, `手机消息 ${index + 1} 的正文`) };
   });
-  return { text: story, phoneMessages };
+  const parsed: GeneratedStory = { text: story, phoneMessages };
+  if (Object.prototype.hasOwnProperty.call(result, 'worldEvents')) {
+    if (!Array.isArray(result.worldEvents) || result.worldEvents.length > STORY_OUTPUT_LIMITS.worldEvents) return invalid('世界事件数量');
+    parsed.worldEvents = result.worldEvents.map((value, index) => {
+      const item = record(value, ['type'], `世界事件 ${index + 1}`);
+      if (item.type !== 'airliner_pass') return invalid(`世界事件 ${index + 1} 的类型`);
+      return { type: 'airliner_pass' };
+    });
+  }
+  return parsed;
 }
 
 /** A whole JSON envelope (optionally fenced) is required. Prose is never scraped for events. */
@@ -52,6 +62,6 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   let valueObject: unknown;
   try { valueObject = JSON.parse(source); }
   catch { return invalid('请返回完整 JSON'); }
-  const envelope = record(valueObject, ['story', 'phone_messages'], 'JSON');
-  return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages }, state);
+  const envelope = record(valueObject, ['story', 'phone_messages'], 'JSON', ['world_events']);
+  return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages, ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}) }, state);
 }

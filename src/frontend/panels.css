@@ -109,6 +109,10 @@
 .world-panels .wp-resource-value > small { font-size: 13px; margin: 0 5px; color: var(--wp-muted); }
 .world-panels .wp-energy { margin-top: 14px; }
 .world-panels .wp-resource > .wp-text-button { margin-top: 6px; }
+.world-panels .wp-air-traffic { margin-top: 18px; padding: 17px 20px; border: 1px solid var(--wp-line); border-radius: 9px; background: rgba(200, 219, 186, .035); }
+.world-panels .wp-air-traffic h2 { font-size: 14px; }
+.world-panels .wp-air-traffic > p { margin: 10px 0 5px; font-size: 12px; }
+.world-panels .wp-air-traffic > small { display: block; }
 .world-panels .wp-journal { margin-top: 22px; }
 .world-panels .wp-journal-list { margin: 22px 0 0 4px; }
 .world-panels .wp-journal-entry { position: relative; padding: 0 0 23px 20px; border-left: 1px solid rgba(207, 219, 187, .25); }
@@ -144,3 +148,14 @@
 @media (prefers-reduced-motion: reduce) {
   .world-panels, .world-panels * { scroll-behavior: auto !important; }
 }
+
+/* Keep the transit entry in the existing heading so all five map pins retain their viewport. */
+.uc-shell .floating-window[data-window=map] .window-heading { padding-top:4px;padding-bottom:4px; }
+.uc-shell .window-heading > .window-transit { min-height:44px;padding:6px 10px;margin-left:auto;border:1px solid #d4bf8970;border-radius:8px;background:#ddc79115;color:#eddfbd;font-size:11px;white-space:nowrap; }
+.uc-shell .window-heading > .window-transit + button { margin-left:0; }
+.transit-panel { color:#e7e7d5; }.transit-panel header>small { color:#d6bf8f;letter-spacing:.12em;font-size:10px; }.transit-panel h2 { font:26px serif;margin:8px 0; }.transit-panel p { font-size:12px;line-height:1.7;color:#bec9b4; }
+.transit-vehicle-picker { display:flex;gap:9px;min-width:0;border:0;padding:0;margin:20px 0 16px; }.transit-vehicle-picker legend { font-size:11px;color:#d7c39c;margin-bottom:9px; }
+.uc-shell .transit-vehicle-picker button { flex:1;min-height:48px;border:1px solid #d9c59960;border-radius:10px;background:#dfc9990a;color:#e7e7d5;font-size:14px; }.uc-shell .transit-vehicle-picker button[aria-pressed=true] { background:#d9c598;color:#223c2d;border-color:#f2d69b; }
+.transit-routes { display:grid;gap:10px; }.uc-shell .transit-routes>button { display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:74px;padding:14px;border:1px solid #d9c59947;border-radius:12px;background:#ffffff06;text-align:left;color:#efe4c9; }.transit-routes strong { display:block;font-size:16px;font-weight:500; }.transit-routes small { display:block;font-size:11px;color:#bfcbb5;margin-top:7px; }.transit-routes>button>span:last-child { font-size:11px;white-space:nowrap;color:#dec28c; }
+.uc-shell .transit-panel button:disabled { opacity:.4;cursor:not-allowed; }.transit-panel footer { display:flex;flex-wrap:wrap;gap:8px 18px;border-top:1px solid #d9c59933;padding-top:14px;margin-top:18px;font-size:10px;color:#bec9b4; }
+.uc-shell .transit-approach { width:100%;min-height:60px;border:1px solid #d9c59960;border-radius:12px;padding:12px;background:#dfc99912;color:#e7ddc5; }.transit-approach small { display:block;font-size:11px;margin-top:6px;color:#bcc8b2; }

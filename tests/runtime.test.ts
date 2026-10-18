@@ -3,6 +3,7 @@ import { acknowledgePhoneRead, commitStoryTurn, createInitialState, getRouteOutl
 import { createTavernBridge } from '../src/runtime/bridge';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import type { WorldAction } from '../src/frontend/types';
+import { getScenePeople } from '../src/runtime/scene-context';
 
 describe('deterministic prototype state', () => {
   it('validates nested data and refuses damaged or unsupported saves', () => {
@@ -152,6 +153,8 @@ describe('validated story and phone transaction', () => {
     const state = createInitialState();
     const invalid = [
       {}, { story: '正文', phone_messages: [], player: { balance: 100000 } },
+      { story: '正文', phone_messages: [], player: { energy: 100 } },
+      { story: '正文', phone_messages: [], clock: { day: 2, hour: 8, minute: 0 } },
       { story: '正文', phone_messages: [{ npcId: 'missing', text: '消息' }] },
       { story: '正文', phone_messages: [{ npcId: 'lin', text: '消息', read: true }] },
       { story: '正文', phone_messages: [{ npcId: 'lin', text: '消息', id: 'forged' }] },
@@ -186,7 +189,7 @@ describe('validated story and phone transaction', () => {
     const latest = acknowledgePhoneRead(before, ['phone-lin']);
     const reply = parseGeneratedStory(envelope(), before);
     const after = commitStoryTurn(latest, ' 等消息 ', reply, ids);
-    expect(after.schema_version).toBe('1.0.0');
+    expect(after.schema_version).toBe('1.6.0');
     expect(after.phone[0].read).toBe(true);
     expect(after.phone.at(-1)).toEqual({ id: 'turn-1-assistant:phone:0', npcId: 'lin', text: '我还在图书馆。', read: false, at: '第 1 天 17:20' });
     expect(after.story.slice(-2)).toEqual([{ id: ids.userId, role: 'user', text: '等消息' }, { id: ids.assistantId, role: 'assistant', text: reply.text }]);
@@ -264,6 +267,39 @@ function mockHost() {
 }
 
 describe('chat-owned Tavern-Helper bridge', () => {
+  it('includes current and historical air traffic, permits occasional passes, and refuses cooldown violations', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1_790_000_000_000);
+    const mock = mockHost();
+    const bridge = createTavernBridge(mock.window)!;
+    try {
+      const state = createInitialState();
+      mock.api.generate.mockResolvedValue(JSON.stringify({ story: '一架远处的客机在高空经过。', phone_messages: [], world_events: [{ type: 'airliner_pass' }] }));
+      const reply = await bridge.generate('看看天空', state);
+      expect(reply.worldEvents).toEqual([{ type: 'airliner_pass' }]);
+      let config = mock.api.generate.mock.calls.at(-1)![0];
+      let summary = JSON.parse((config.user_input as string).split('\n')[1]!) as Record<string, unknown>;
+      expect(summary.airTraffic).toMatchObject({ count: 0, active: null, lastFlight: null, canTriggerPass: true });
+      expect((config.injects as { content: string }[])[0].content).toContain('本轮空中事件未在冷却');
+      const active = commitStoryTurn(state, '看看天空', reply, { userId: 'sky-user', assistantId: 'sky-assistant' });
+      await expect(bridge.generate('继续看', active)).rejects.toThrow(/冷却.*均未写入/);
+      config = mock.api.generate.mock.calls.at(-1)![0];
+      summary = JSON.parse((config.user_input as string).split('\n')[1]!) as Record<string, unknown>;
+      expect(summary.airTraffic).toMatchObject({ count: 1, active: { id: 'sky-assistant:airliner', kind: 'airliner', altitude: '高空' }, canTriggerPass: false, cooldownSeconds: 180 });
+      expect((config.injects as { content: string }[])[0].content).toContain('禁止提出 airliner_pass');
+      mock.api.generate.mockResolvedValue(JSON.stringify({ story: '客机继续从远处的高空经过。', phone_messages: [], world_events: [] }));
+      await expect(bridge.generate('继续看', active)).resolves.toMatchObject({ worldEvents: [] });
+      clock.mockReturnValue(1_790_000_040_000);
+      await bridge.generate('现在呢', active);
+      config = mock.api.generate.mock.calls.at(-1)![0];
+      summary = JSON.parse((config.user_input as string).split('\n')[1]!) as Record<string, unknown>;
+      expect(summary.airTraffic).toMatchObject({ count: 1, active: null, lastFlight: { id: 'sky-assistant:airliner' }, canTriggerPass: false });
+      expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    } finally {
+      bridge.dispose();
+      clock.mockRestore();
+    }
+  });
+
   it('requires all capabilities and a current solo chat', () => {
     expect(createTavernBridge({} as Window)).toBeNull();
     const mock = mockHost();
@@ -390,9 +426,43 @@ describe('chat-owned Tavern-Helper bridge', () => {
     await expect(bridge.generate('行动', bridge.load())).rejects.toThrow(/均未写入/);
     mock.api.generate.mockResolvedValue(JSON.stringify({ story: '手机亮了。', phone_messages: [{ npcId: 'missing', text: '消息' }] }));
     await expect(bridge.generate('行动', bridge.load())).rejects.toThrow(/联系人/);
+    mock.api.generate.mockResolvedValue('<legacy-scene>{"paragraphs":["旧世界书规定的格式"]}</legacy-scene>');
+    await expect(bridge.generate('行动', bridge.load())).rejects.toThrow(/完整 JSON/);
     expect(mock.api.replaceVariables).not.toHaveBeenCalled();
     mock.context.mainApi = 'textgenerationwebui';
     await expect(bridge.generate('行动', bridge.load())).rejects.toThrow(/Chat Completion/);
+    bridge.dispose();
+  });
+
+  it('passes a request-local system protocol without promoting player or saved text or overriding the connection', async () => {
+    const mock = mockHost();
+    const bridge = createTavernBridge(mock.window)!;
+    const state = bridge.load();
+    state.story.push({ id: 'older-format', role: 'assistant', text: '<legacy-scene>HISTORY_ONLY_MARKER</legacy-scene>' });
+    const input = 'PLAYER_ONLY_MARKER：我看向门口。';
+    await bridge.generate(input, state);
+
+    const config = mock.api.generate.mock.calls[0][0];
+    expect(config.injects).toEqual([{
+      role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: expect.any(String),
+    }]);
+    const system = (config.injects as { content: string }[])[0].content;
+    expect(system).toContain('必填 story 和 phone_messages，可选 world_events');
+    expect(system).toContain('旧输出格式的要求不适用于本轮');
+    expect(system).toContain('只由前端按钮的程序规则结算');
+    expect(system).toContain('自由输入本身不推进游戏时间或改变精力');
+    expect(system).toContain('不在正文中跳过时段、声称活动已经完成');
+    expect(system).toContain('床铺选择休息时长、室内物件进行学习或整理、地图选择前往');
+    expect(system).toContain('不重复结算、不重抽时长');
+    expect(system).not.toContain('PLAYER_ONLY_MARKER');
+    expect(system).not.toContain('HISTORY_ONLY_MARKER');
+    expect(config.user_input).toContain(input);
+    expect(config.user_input).toContain('<legacy-scene>HISTORY_ONLY_MARKER</legacy-scene>');
+    expect(config).toMatchObject({ should_stream: false, should_silence: true, max_chat_history: 0 });
+    expect(config).not.toHaveProperty('custom_api');
+    expect(config).not.toHaveProperty('preset_name');
+    expect(config).not.toHaveProperty('json_schema');
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled();
     bridge.dispose();
   });
 
@@ -402,11 +472,38 @@ describe('chat-owned Tavern-Helper bridge', () => {
     const state = acknowledgePhoneRead(bridge.load(), ['phone-lin']);
     mock.api.generate.mockResolvedValue(JSON.stringify({ story: '林同学发来消息。', phone_messages: [{ npcId: 'lin', text: '图书馆见。' }] }));
     expect(await bridge.generate('看看手机', state)).toEqual({ text: '林同学发来消息。', phoneMessages: [{ npcId: 'lin', text: '图书馆见。' }] });
-    const prompt = mock.api.generate.mock.calls[0][0].user_input as string;
-    expect(prompt).toContain('没有新消息时返回空数组');
+    const config = mock.api.generate.mock.calls[0][0];
+    const prompt = config.user_input as string;
+    expect((config.injects as { content: string }[])[0].content).toContain('没有新消息时返回空数组');
     expect(prompt).toContain('"recentPhone":');
     expect(prompt).toContain('"npcId":"lin"');
     expect(prompt).toContain('"read":true');
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    bridge.dispose();
+  });
+
+  it('sends the latest outdoor scene and chosen pedestrian to the model while keeping phone IDs strict', async () => {
+    const mock = mockHost();
+    const bridge = createTavernBridge(mock.window)!;
+    let state = reduceState(bridge.load(), { type: 'walk', x: -22, z: 56.5, yaw: 0.6, seed: 'prompt-person' });
+    const person = getScenePeople(state.scene!).find(person => Math.hypot(person.x + 22, person.z - 56.5) < 6)!;
+    state = reduceState(state, { type: 'encounter', personId: person.id });
+    state.story.push({ id: 'old-room', role: 'assistant', text: '旧故事：你坐在图书馆阅览室。' });
+    await bridge.generate('我向眼前的人问好。', state);
+    const config = mock.api.generate.mock.calls[0][0];
+    const prompt = config.user_input as string;
+    const summary = JSON.parse(prompt.split('\n')[1]!) as Record<string, unknown>;
+    expect(summary.location).toBe('bookshop');
+    expect(summary.scene).toMatchObject({ label: '街角书店', outdoors: true, position: { x: -22, z: 56.5 }, encounter: { id: person.id, name: person.name, identity: person.identity, tags: person.tags } });
+    expect(prompt).toContain('尚未进入店内');
+    expect(prompt).toContain('nearbyLandmarks');
+    expect(prompt).toContain('nearbyPeople');
+    const system = (config.injects as { content: string }[])[0].content;
+    expect(system).toContain('覆盖旧正文中的地点');
+    expect(system).toContain('不自动交换联系方式');
+    expect(system).toContain('当面对话');
+    mock.api.generate.mockResolvedValue(JSON.stringify({ story: `${person.name}向你点头。`, phone_messages: [{ npcId: person.id, text: '你好。' }] }));
+    await expect(bridge.generate('继续交谈', state)).rejects.toThrow(/联系人/);
     expect(mock.api.replaceVariables).not.toHaveBeenCalled();
     bridge.dispose();
   });

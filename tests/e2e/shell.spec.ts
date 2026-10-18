@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createInitialState } from '../../src/runtime/model';
+import * as THREE from 'three';
+import { createCampusWorld } from '../../src/frontend/scene-world';
+import { isScenePositionWalkable, SCENE_WALK_RADIUS } from '../../src/frontend/scene-movement';
+import type { WorldState } from '../../src/frontend/types';
+import { getScenePeople } from '../../src/runtime/scene-context';
 
 const bundle = readFileSync(new URL('../../dist/immersive-shell.js', import.meta.url), 'utf8');
 
@@ -94,7 +99,7 @@ async function openEmbeddedPhone(page: Page) {
 }
 
 /** Seed a bounded real Bridge save without adding production-only debug APIs. */
-async function withLongStory(page: Page) {
+async function withLongStory(page: Page, options: { state?: WorldState; deferGeneration?: boolean; generationStory?: string; generationEvents?: { type: 'airliner_pass' }[] } = {}) {
   await page.goto('/'); await exit(page);
   await page.evaluate(() => {
     (window as Window & { __unreadCityShell?: { dispose(): void } }).__unreadCityShell?.dispose();
@@ -106,31 +111,109 @@ async function withLongStory(page: Page) {
   const handle = await page.locator('#reading-helper-frame').elementHandle();
   const frame = await handle!.contentFrame();
   await frame!.waitForLoadState();
-  const state = createInitialState();
-  state.story = Array.from({ length: 12 }, (_, index) => ({
+  const state = options.state ?? createInitialState();
+  if (!options.state) state.story = Array.from({ length: 12 }, (_, index) => ({
     id: `chapter-${index}`, role: 'assistant' as const,
     text: `第 ${index + 1} 段。` + '窗外的天色慢慢暗下去，书页翻动的声音从走廊另一端传来。'.repeat(18),
   }));
-  await frame!.evaluate(initial => {
+  await frame!.evaluate(({ initial, deferGeneration, generationStory, generationEvents }) => {
     const host = window as unknown as Record<string, unknown>;
+    const body = window.parent.document.body;
     const listeners = new Map<string, () => void>();
     let variables: Record<string, unknown> = { keep_me: 42, unread_city: initial };
+    body.dataset.fixtureState = JSON.stringify(initial);
     host.tavern_events = { CHAT_CHANGED: 'chat_id_changed' };
     host.getVariables = () => variables;
-    host.replaceVariables = (next: Record<string, unknown>) => { variables = next; };
+    host.replaceVariables = (next: Record<string, unknown>) => {
+      variables = next;
+      body.dataset.fixtureState = JSON.stringify(next.unread_city);
+    };
     host.eventOn = (event: string, callback: () => void) => { listeners.set(event, callback); };
     host.eventRemoveListener = (event: string) => { listeners.delete(event); };
     host.getButtonEvent = (name: string) => `button:${name}`;
-    host.generate = async () => {
-      const body = window.parent.document.body;
+    let release: (() => void) | undefined;
+    host.releaseFixtureGeneration = () => release?.();
+    host.generate = async (config: { user_input?: string }) => {
       body.dataset.fixtureGenerations = String(Number(body.dataset.fixtureGenerations || '0') + 1);
-      return JSON.stringify({ story: '新增的故事段落，应该等待正在阅读旧内容的你。', phone_messages: [] });
+      body.dataset.fixturePrompt = config.user_input ?? '';
+      if (deferGeneration) await new Promise<void>(resolve => { release = resolve; });
+      return JSON.stringify({ story: generationStory ?? '新增的故事段落，应该等待正在阅读旧内容的你。', phone_messages: [], ...(generationEvents ? { world_events: generationEvents } : {}) });
     };
     host.stopGenerationById = () => true;
-  }, state);
+  }, { initial: state, deferGeneration: options.deferGeneration ?? false, generationStory: options.generationStory, generationEvents: options.generationEvents });
   await frame!.addScriptTag({ content: bundle });
   await expect(root(page)).toBeVisible();
 }
+
+async function savedFixtureState(page: Page): Promise<WorldState> {
+  return JSON.parse((await page.locator('body').getAttribute('data-fixture-state'))!) as WorldState;
+}
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test(`空中客机：${viewport.width}px 对话事件入档、真实 GLB 经过与重进不重播`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    // Install before fixture timers/RAF are created. Advancing the wall clock
+    // must also deliver the expiry callback, including when drawing is idle.
+    await page.clock.install({ time: Date.now() });
+    const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+    const initial = createInitialState();
+    initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
+    await withLongStory(page, { state: initial, generationStory: '一架客机从树梢上方的远空平稳飞过。', generationEvents: [{ type: 'airliner_pass' }] });
+    const scene = page.locator('[data-aircraft-status]');
+    await page.getByLabel('接下来，你想做什么？').fill('抬头看一眼天空，再继续刚才的话题。');
+    await page.getByRole('button', { name: /继续故事/ }).click();
+    await expect(page.getByRole('log')).toContainText('一架客机从树梢上方的远空平稳飞过。');
+    await expect(scene).toHaveAttribute('data-aircraft-status', 'ready', { timeout: 10000 });
+    const saved = await savedFixtureState(page);
+    expect(saved.airTraffic.sequence).toBe(1);
+    expect(saved.airTraffic.lastFlight?.source).toBe('story');
+    expect(saved.clock).toEqual(initial.clock);
+    expect(saved.phone).toEqual(initial.phone);
+    expect(saved.player).toEqual(initial.player);
+    const id = saved.airTraffic.lastFlight!.id;
+    await expect(scene).toHaveAttribute('data-aircraft-id', id);
+    const before = Number(await scene.getAttribute('data-aircraft-progress'));
+    await page.getByRole('button', { name: '状态', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '空中动态', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('剧情触发');
+    await page.locator('[data-unread-city-rescue]').click();
+    await page.evaluate(() => (window as Window & { __unreadCityShell?: { open(): void } }).__unreadCityShell?.open());
+    await expect(root(page)).toBeVisible();
+    await expect(scene).toHaveAttribute('data-aircraft-status', 'ready', { timeout: 10000 });
+    await expect(scene).toHaveAttribute('data-aircraft-id', id);
+    expect(Number(await scene.getAttribute('data-aircraft-progress'))).toBeGreaterThanOrEqual(before);
+    expect((await savedFixtureState(page)).airTraffic.sequence).toBe(1);
+    const expiredAt = saved.airTraffic.lastFlight!.startedAt + 40001;
+    const currentTime = await page.evaluate(() => Date.now());
+    await page.clock.fastForward(Math.max(0, expiredAt - currentTime));
+    const owner = await (await page.locator('#reading-helper-frame').elementHandle())!.contentFrame();
+    expect(await page.evaluate(() => Date.now())).toBeGreaterThanOrEqual(expiredAt);
+    expect(await owner!.evaluate(() => Date.now())).toBeGreaterThanOrEqual(expiredAt);
+    await expect(scene).toHaveAttribute('data-aircraft-id', '');
+    expect((await savedFixtureState(page)).airTraffic.sequence).toBe(1);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('空中客机：随机经过写入同一状态，WebGL 丢失仍可查看事件与恢复酒馆', async ({ page }) => {
+  const initial = createInitialState(); initial.airTraffic.nextAmbientAt = Date.now() - 1000;
+  await withLongStory(page, { state: initial });
+  const scene = page.locator('[data-aircraft-status]');
+  await expect.poll(async () => (await savedFixtureState(page)).airTraffic.sequence, { timeout: 10000 }).toBe(1);
+  await expect(scene).toHaveAttribute('data-aircraft-status', 'ready', { timeout: 10000 });
+  const saved = await savedFixtureState(page);
+  expect(saved.airTraffic.lastFlight?.source).toBe('ambient');
+  expect(saved.story).toEqual(initial.story);
+  await scene.locator('canvas').dispatchEvent('webglcontextlost');
+  await expect(scene).toHaveAttribute('data-aircraft-status', 'fallback');
+  await page.getByRole('button', { name: '状态', exact: true }).click();
+  await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('随机环境');
+  await page.locator('[data-unread-city-rescue]').click();
+  await expect(root(page)).toHaveCount(0);
+  await page.locator('#native-input').fill('飞机经过后继续使用原生聊天');
+  await expect(page.locator('#native-input')).toHaveValue('飞机经过后继续使用原生聊天');
+  expect(await page.locator('body').getAttribute('data-fixture-generations')).toBeNull();
+});
 
 test('六个面板打通阅读、移动、日程、日记，退出后原生输入可用', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -230,25 +313,35 @@ test('390px 手机布局可导航、可发送，页面不横向溢出', async ({
 
 test('发布 IIFE 在同源隐藏脚本 iframe 中运行；移除 iframe 自动恢复', async ({ page }) => {
   await page.goto('/'); await exit(page);
-  await page.evaluate(() => {
+  const initialState = createInitialState();
+  await page.evaluate(initialState => {
     (window as Window & { __unreadCityShell?: { dispose(): void } }).__unreadCityShell?.dispose();
     const host = window as unknown as Record<string, unknown>;
     host.SillyTavern = { getContext: () => ({ characterId: 0, groupId: null, chatId: 'native-test-a', mainApi: 'openai', characters: [{ avatar: 'unread-city.png' }] }) };
+    host.__helperInitialState = initialState;
+    host.__helperGenerationError = new Error('Not Found');
+    let attempts = 0;
+    // Real Helper functions belong to the parent page, so their errors cross
+    // realms when awaited by the character script's hidden iframe.
+    host.__helperGenerate = async () => {
+      if (++attempts === 1) throw host.__helperGenerationError;
+      return JSON.stringify({ story: '真实桥接路径的模拟回应', phone_messages: [{ npcId: 'lin', text: '重试后的手机消息。' }] });
+    };
     const iframe = document.createElement('iframe'); iframe.id = 'mock-helper-frame'; iframe.hidden = true;
     iframe.srcdoc = `<!doctype html><html><body><script>
       window.tavern_events={CHAT_CHANGED:'chat_id_changed'};
-      const listeners=new Map(); let variables={keep_me:42};
+      const listeners=new Map(); let variables={keep_me:42,unread_city:JSON.parse(JSON.stringify(window.parent.__helperInitialState))};
       window.getVariables=()=>variables;
       window.replaceVariables=(v)=>{variables=v};
       window.eventOn=(type,callback)=>{listeners.set(type,callback)};
       window.eventRemoveListener=(type)=>{listeners.delete(type)};
       window.getButtonEvent=(name)=>'button:'+name;
-      window.generate=async()=> '真实桥接路径的模拟回应';
+      window.generate=window.parent.__helperGenerate;
       window.stopGenerationById=()=>true;
       <\/script></body></html>`;
     const helperPanel = document.createElement('div'); helperPanel.id = 'mock-helper-panel';
     helperPanel.append(iframe); document.body.append(helperPanel);
-  });
+  }, initialState);
   const iframe = await page.locator('#mock-helper-frame').elementHandle();
   const frame = await iframe!.contentFrame();
   await frame!.waitForLoadState();
@@ -257,9 +350,31 @@ test('发布 IIFE 在同源隐藏脚本 iframe 中运行；移除 iframe 自动�
   await frame!.addScriptTag({ content: bundle });
   await expect(root(page)).toBeVisible();
   await expect(page.locator('.topbar-world')).toContainText('校园南门');
-  await page.getByLabel('接下来，你想做什么？').fill('bridge验证');
+  expect(await frame!.evaluate(() => (parent as unknown as Record<string, unknown>).__helperGenerationError instanceof Error)).toBe(false);
+  const savedVariables = () => frame!.evaluate(() => JSON.stringify((window as unknown as { getVariables(): unknown }).getVariables()));
+  const before = await savedVariables();
+  const input = page.getByLabel('接下来，你想做什么？');
+  await input.fill('bridge验证');
+  await page.getByRole('button', { name: /继续故事/ }).click();
+  await expect(root(page).locator('.notice')).toHaveText('Not Found');
+  await expect(input).toHaveValue('bridge验证');
+  await expect(page.getByRole('log')).not.toContainText('bridge验证');
+  expect(await savedVariables()).toBe(before);
+
   await page.getByRole('button', { name: /继续故事/ }).click();
   await expect(page.getByRole('log')).toContainText('真实桥接路径的模拟回应');
+  await expect(root(page).locator('.notice')).toHaveCount(0);
+  await expect(input).toHaveValue('');
+  const saved = JSON.parse(await savedVariables());
+  expect(saved.keep_me).toBe(42);
+  expect(saved.unread_city.story).toHaveLength(initialState.story.length + 2);
+  expect(saved.unread_city.story.slice(-2)).toEqual([
+    expect.objectContaining({ role: 'user', text: 'bridge验证' }),
+    expect.objectContaining({ role: 'assistant', text: '真实桥接路径的模拟回应' }),
+  ]);
+  expect(saved.unread_city.phone).toHaveLength(initialState.phone.length + 1);
+  expect(saved.unread_city.phone.at(-1)).toEqual(expect.objectContaining({ npcId: 'lin', text: '重试后的手机消息。', read: false }));
+  expect(saved.unread_city.clock).toEqual(initialState.clock);
   await page.evaluate(() => document.getElementById('mock-helper-frame')!.remove());
   await expect(root(page)).toHaveCount(0);
   await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
@@ -519,35 +634,327 @@ test('收起正文等待回复时保留新内容提示，继续阅读后主动�
   await expect(page.getByLabel('接下来，你想做什么？')).toHaveValue('');
 });
 
-test('三维街景环视、前进与返回只改变镜头，运行中图形失效保留正文与退出', async ({ page }) => {
+test('三维自由行走支持 WASD 和环视，停止与恢复阅读保留位置和草稿，图形失效仍可退出', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await withLongStory(page);
   const scene = page.locator('[data-unread-city-scene]');
-  await expect(scene).toHaveAttribute('data-renderer', /^(webgl|fallback)$/);
-  const originalNode = await scene.getAttribute('data-scene-node');
-  const clock = await page.locator('.topbar-world').textContent();
-  if (await scene.getAttribute('data-renderer') === 'webgl') {
-    const canvas = page.getByLabel('可交互三维场景', { exact: true });
-    const initialView = await scene.getAttribute('data-view');
-    await canvas.focus(); await page.keyboard.press('ArrowRight');
-    await expect(scene).not.toHaveAttribute('data-view', initialView!);
-    await page.getByRole('button', { name: '重置场景视角', exact: true }).click();
-    await expect(scene).toHaveAttribute('data-view', initialView!);
-  }
-  await page.getByRole('button', { name: '向前走', exact: true }).click();
-  await expect(scene).not.toHaveAttribute('data-scene-node', originalNode!);
-  const back = page.getByRole('button', { name: '返回上个位置', exact: true });
-  await expect(back).toBeEnabled(); await back.click();
-  await expect(scene).toHaveAttribute('data-scene-node', originalNode!);
-  await expect(page.locator('.topbar-world')).toHaveText(clock!);
+  await expect(scene).toHaveAttribute('data-renderer', 'webgl');
+  await page.getByLabel('接下来，你想做什么？').fill('走走再继续写');
+  const initialView = await scene.getAttribute('data-view');
+  await page.getByRole('button', { name: '自由行走', exact: true }).click();
+  const canvas = page.getByLabel('可交互三维场景', { exact: true });
+  await expect(canvas).toBeFocused();
+  await expect(page.getByRole('log', { name: '故事记录' })).toBeHidden();
+  const start = await scene.getAttribute('data-position');
+  await page.keyboard.down('w');
+  await expect.poll(async () => Number((await scene.getAttribute('data-position'))!.split(',')[2])).toBeLessThan(17.5);
+  await page.keyboard.down('d'); await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => Number((await scene.getAttribute('data-position'))!.split(',')[0])).toBeGreaterThan(.3);
+  await page.keyboard.up('w'); await page.keyboard.up('d');
+  const stopped = await scene.getAttribute('data-position');
+  expect(stopped).not.toBe(start);
+  await page.waitForTimeout(180);
+  await expect(scene).toHaveAttribute('data-position', stopped!);
+  await expect(scene).not.toHaveAttribute('data-view', initialView!);
+  await page.getByRole('button', { name: '继续阅读', exact: true }).click();
+  await expect(page.getByLabel('接下来，你想做什么？')).toHaveValue('走走再继续写');
+  await page.getByLabel('接下来，你想做什么？').fill('wasd 不应带着主角走');
+  await expect(scene).toHaveAttribute('data-position', stopped!);
+  await page.getByRole('button', { name: '自由行走', exact: true }).click();
+  await expect(scene).toHaveAttribute('data-position', stopped!);
+  // Opening a phone while a movement key is held must cancel that input.
+  await page.keyboard.down('w');
+  await expect(scene).not.toHaveAttribute('data-position', stopped!);
+  await page.getByRole('button', { name: '手机', exact: true }).click();
+  const paused = await scene.getAttribute('data-position');
+  await page.waitForTimeout(180);
+  await expect(scene).toHaveAttribute('data-position', paused!);
+  await page.keyboard.up('w');
+  await page.getByRole('button', { name: '关闭手机窗口', exact: true }).click();
+  await expect(scene).toHaveAttribute('data-position', paused!);
+  await canvas.focus(); await page.keyboard.down('w');
+  await expect(scene).not.toHaveAttribute('data-position', paused!);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  const blurred = await scene.getAttribute('data-position');
+  await page.waitForTimeout(180);
+  await expect(scene).toHaveAttribute('data-position', blurred!);
+  await page.keyboard.up('w');
+  await canvas.focus(); await page.keyboard.down('w');
+  await expect(scene).not.toHaveAttribute('data-position', blurred!);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const hidden = await scene.getAttribute('data-position');
+  await page.keyboard.up('w');
+  await page.evaluate(() => {
+    delete (document as unknown as { hidden?: boolean }).hidden;
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(180);
+  await expect(scene).toHaveAttribute('data-position', hidden!);
+  await expect(page.locator('.topbar-world')).toContainText('17:20');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
   await page.getByLabel('可交互三维场景', { exact: true }).dispatchEvent('webglcontextlost');
   await expect(scene).toHaveAttribute('data-renderer', 'fallback');
+  await expect(page.getByRole('group', { name: '移动摇杆' })).toHaveCount(0);
+  await page.getByRole('button', { name: '继续阅读', exact: true }).click();
   await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
   await page.locator('[data-unread-city-rescue]').click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('三维场景失效后仍可使用原生界面');
   expect(errors).toEqual([]);
+});
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test(`${viewport.width}px 自由行走双手同时移动环视，松手和取消停步，手机与恢复入口不被遮挡`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await withEmbeddedPhone(page);
+    await page.getByRole('button', { name: '自由行走', exact: true }).click();
+    const scene = page.locator('[data-unread-city-scene]');
+    await expect(scene).toHaveAttribute('data-renderer', 'webgl');
+    const joystick = page.getByRole('group', { name: '移动摇杆' });
+    await expect(joystick).toBeInViewport({ ratio: 1 });
+    const rect = (await joystick.boundingBox())!;
+    const lookPad = page.getByRole('group', { name: '视角环视区域' });
+    await expect(lookPad).toBeInViewport({ ratio: 1 });
+    const lookRect = (await lookPad.boundingBox())!;
+    const guideButton = page.getByRole('button', { name: '展开步行导览', exact: true });
+    await expect(guideButton).toBeInViewport({ ratio: 1 });
+    expect((await guideButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const beforeGuide = await scene.getAttribute('data-position');
+    await guideButton.click();
+    const guide = page.locator('#uc-walk-guide');
+    await expect(guide).toBeInViewport({ ratio: 1 });
+    await page.getByLabel('步行导览目的地', { exact: true }).selectOption({ label: '运动场' });
+    await expect(guide.locator('p')).toContainText('运动场');
+    await expect(guide.locator('p')).toContainText('直线');
+    await expect(scene).toHaveAttribute('data-position', beforeGuide!);
+    const guideBox = (await guide.boundingBox())!;
+    for (const control of [rect, lookRect]) {
+      expect(guideBox.x + guideBox.width <= control.x || guideBox.x >= control.x + control.width || guideBox.y + guideBox.height <= control.y || guideBox.y >= control.y + control.height).toBe(true);
+    }
+    const guidePlayer = await page.locator('.guide-player').getAttribute('transform');
+    await page.getByRole('button', { name: '收起步行导览', exact: true }).click();
+    for (const spot of await page.locator('.campus-hotspot:visible').all()) {
+      const box = (await spot.boundingBox())!;
+      for (const control of [rect, lookRect]) {
+        expect(box.x + box.width <= control.x || box.x >= control.x + control.width || box.y + box.height <= control.y || box.y >= control.y + control.height).toBe(true);
+      }
+    }
+    expect(rect.width).toBeGreaterThanOrEqual(100);
+    const start = await scene.getAttribute('data-position');
+    const view = await scene.getAttribute('data-view');
+    const session = await page.context().newCDPSession(page);
+    const move = { id: 11, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 - 30 };
+    const look = { id: 12, x: lookRect.x + lookRect.width / 2, y: lookRect.y + lookRect.height / 2 };
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [move] });
+    await expect(scene).not.toHaveAttribute('data-position', start!);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [move, look] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [move, { ...look, x: look.x - 70, y: look.y - 15 }] });
+    await expect(scene).not.toHaveAttribute('data-view', view!);
+    const walking = await scene.getAttribute('data-position');
+    await expect(scene).not.toHaveAttribute('data-position', walking!);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    const stopped = await scene.getAttribute('data-position');
+    await page.waitForTimeout(180);
+    await expect(scene).toHaveAttribute('data-position', stopped!);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [move] });
+    await expect(scene).not.toHaveAttribute('data-position', stopped!);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+    const canceled = await scene.getAttribute('data-position');
+    await page.waitForTimeout(180);
+    await expect(scene).toHaveAttribute('data-position', canceled!);
+    await page.getByRole('button', { name: '展开步行导览', exact: true }).click();
+    await expect(page.locator('.guide-player')).not.toHaveAttribute('transform', guidePlayer!);
+    await expect(page.getByLabel('步行导览目的地', { exact: true })).toHaveValue(/.+/);
+    await openEmbeddedPhone(page);
+    await expect(joystick).toHaveCount(0);
+    await page.frameLocator('#mock-phone-frame').getByLabel('手机草稿').fill('wasd');
+    await expect(scene).toHaveAttribute('data-position', canceled!);
+    await page.getByRole('button', { name: '关闭手机窗口', exact: true }).click();
+    await expect(joystick).toBeVisible();
+    await expect(scene).toHaveAttribute('data-position', canceled!);
+    await page.getByRole('button', { name: '继续阅读', exact: true }).click();
+    await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
+    await page.locator('[data-unread-city-rescue]').click();
+    await expect(root(page)).toHaveCount(0);
+    await page.locator('#native-input').fill('行走退出后仍能输入');
+    await session.detach();
+  });
+}
+
+test('校园穿过南门连续走到街区，导览与剧情位置同步而不消耗出行时间', async ({ page }) => {
+  test.setTimeout(45_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await withLongStory(page);
+  const scene = page.locator('[data-unread-city-scene]');
+  await expect(scene).toHaveAttribute('data-renderer', 'webgl');
+  const initial = await savedFixtureState(page);
+  await page.getByRole('button', { name: '自由行走', exact: true }).click();
+  const positions: number[] = [];
+  await page.keyboard.down('s');
+  await expect.poll(async () => {
+    const z = Number((await scene.getAttribute('data-position'))!.split(',')[2]);
+    positions.push(z); return z;
+  }, { timeout: 25_000, intervals: [200] }).toBeGreaterThan(57);
+  await page.keyboard.up('s');
+  const stopped = await scene.getAttribute('data-position');
+  expect(positions.length).toBeGreaterThan(20);
+  for (let index = 1; index < positions.length; index++) {
+    expect(positions[index] - positions[index - 1]).toBeGreaterThanOrEqual(0);
+    expect(positions[index] - positions[index - 1]).toBeLessThan(2);
+  }
+  await page.getByRole('button', { name: '展开步行导览', exact: true }).click();
+  await expect(page.locator('.walk-mode-caption')).toContainText(/街|路口/);
+  await expect(page.locator('.campus-hotspot:visible')).toHaveCount(0);
+  await expect(page.locator('.guide-player')).toHaveAttribute('transform', /translate\(0 5[7-9]/);
+  await page.waitForTimeout(180);
+  await expect(scene).toHaveAttribute('data-position', stopped!);
+  await expect(page.locator('.topbar-world')).toContainText('17:20');
+  await expect(page.locator('.topbar-world')).toContainText('十字路口');
+  const saved = await savedFixtureState(page);
+  expect(saved.locationId).toBe('junction');
+  expect(saved.clock).toEqual(initial.clock);
+  expect(saved.player.energy).toBe(initial.player.energy);
+  await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
+});
+
+test('连续走入图书馆前庭会同步剧情地点，继续步行与脚本重挂载保持坐标', async ({ page }) => {
+  test.setTimeout(40_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await withLongStory(page);
+  const scene = page.locator('[data-unread-city-scene]');
+  await expect(scene).toHaveAttribute('data-renderer', 'webgl');
+  const initial = await savedFixtureState(page);
+  await page.getByRole('button', { name: '自由行走', exact: true }).click();
+  const samples: number[] = [];
+  await page.keyboard.down('w');
+  // Prove movement before any entrance or wall can stop the player.
+  await expect.poll(async () => Number((await scene.getAttribute('data-position'))!.split(',')[2])).toBeLessThan(17.5);
+  await expect.poll(async () => {
+    const z = Number((await scene.getAttribute('data-position'))!.split(',')[2]);
+    samples.push(z); return z;
+  }, { timeout: 18_000, intervals: [150] }).toBeLessThan(-6.3);
+  await expect(page.locator('.topbar-world')).toContainText('图书馆');
+  const campus = createCampusWorld(new THREE.Scene());
+  const movementWorld = campus.movementWorld;
+  const door = movementWorld.colliders.find(collider => collider.id === 'library-door');
+  campus.dispose();
+  if (!door || door.kind !== 'box') throw new Error('图书馆入口缺少门碰撞体');
+  const wallZ = door.maxZ + SCENE_WALK_RADIUS;
+  // Polling may first observe the player already at the doorway; compare with
+  // the real collision boundary instead of asking for another unreachable step.
+  await expect.poll(async () => Number((await scene.getAttribute('data-position'))!.split(',')[2])).toBeCloseTo(wallZ, 2);
+  await page.waitForTimeout(180);
+  expect(Number((await scene.getAttribute('data-position'))!.split(',')[2])).toBeCloseTo(wallZ, 2);
+  await page.keyboard.up('w');
+  const stopped = (await scene.getAttribute('data-position'))!.split(',').map(Number);
+  expect(isScenePositionWalkable(stopped[0], stopped[2], movementWorld)).toBe(true);
+  expect(samples.length).toBeGreaterThan(20);
+  for (let index = 1; index < samples.length; index++) {
+    expect(samples[index] - samples[index - 1]).toBeLessThanOrEqual(0);
+    expect(samples[index - 1] - samples[index]).toBeLessThan(1.7);
+  }
+  await expect.poll(async () => Math.abs((await savedFixtureState(page)).scene!.z - stopped[2])).toBeLessThan(.15);
+  const saved = await savedFixtureState(page);
+  expect(saved.locationId).toBe('library');
+  expect(saved.scene?.areaId).toBe('library');
+  expect(saved.clock).toEqual(initial.clock);
+  expect(saved.player).toEqual(initial.player);
+  expect(saved.phone).toEqual(initial.phone);
+  expect(saved.story).toEqual(initial.story);
+  await page.locator('[data-unread-city-rescue]').click();
+  await expect(root(page)).toHaveCount(0);
+  const helper = await (await page.locator('#reading-helper-frame').elementHandle())!.contentFrame();
+  await helper!.addScriptTag({ content: bundle });
+  await expect(root(page)).toBeVisible();
+  const restored = (await scene.getAttribute('data-position'))!.split(',').map(Number);
+  expect(Math.abs(restored[0] - stopped[0])).toBeLessThan(.15);
+  expect(Math.abs(restored[2] - stopped[2])).toBeLessThan(.15);
+  await page.getByRole('button', { name: '自由行走', exact: true }).click();
+  await expect(page.locator('.topbar-world')).toContainText('图书馆');
+  expect((await savedFixtureState(page)).scene?.seed).toBe(saved.scene?.seed);
+  await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
+});
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test(`${viewport.width}px 街边搭话先准备行动，确认后将原位置与同一行人送给模型，生成中停步`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const initial = createInitialState();
+    initial.locationId = 'bookshop';
+    initial.scene = { x: -22, z: 56.5, yaw: 0, areaId: 'bookshop', seed: 'e2e-scene-link', encounterId: null };
+    const person = getScenePeople(initial.scene)
+      .filter(person => Math.hypot(person.x - initial.scene!.x, person.z - initial.scene!.z) <= 6)
+      .sort((a, b) => Math.hypot(a.x + 22, a.z - 56.5) - Math.hypot(b.x + 22, b.z - 56.5))[0]!;
+    const reply = `${person.name}停下脚步，朝书店橱窗示意：“想找哪一类书？”`;
+    await withLongStory(page, { state: initial, deferGeneration: true, generationStory: reply });
+    const scene = page.locator('[data-unread-city-scene]');
+    await expect(scene).toHaveAttribute('data-renderer', 'webgl');
+    await page.getByRole('button', { name: '自由行走', exact: true }).click();
+    const talk = page.locator(`[data-scene-person-id="${person.id}"]`);
+    await expect(talk).toHaveAccessibleName(`与${person.name}搭话`);
+    await expect(talk).toContainText(person.identity);
+    await expect(talk).toBeInViewport({ ratio: 1 });
+    const box = (await talk.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    for (const name of ['移动摇杆', '视角环视区域']) {
+      const control = (await page.getByRole('group', { name, exact: true }).boundingBox())!;
+      expect(box.x + box.width <= control.x || box.x >= control.x + control.width || box.y + box.height <= control.y || box.y >= control.y + control.height).toBe(true);
+    }
+    const reading = (await page.getByRole('button', { name: '继续阅读', exact: true }).boundingBox())!;
+    expect(box.x + box.width <= reading.x || box.x >= reading.x + reading.width || box.y + box.height <= reading.y || box.y >= reading.y + reading.height).toBe(true);
+    await page.getByRole('button', { name: '展开步行导览', exact: true }).click();
+    await expect(page.locator('.scene-nearby-people')).toHaveCount(0);
+    await page.getByRole('button', { name: '收起步行导览', exact: true }).click();
+    await expect(talk).toBeVisible();
+    const start = await scene.getAttribute('data-position');
+    await talk.click();
+    await expect(page.getByLabel('接下来，你想做什么？')).toHaveValue(new RegExp(person.name));
+    await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
+    await expect(scene).toHaveAttribute('data-position', start!);
+    await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
+    await expect.poll(async () => (await savedFixtureState(page)).scene?.encounterId).toBe(person.id);
+    await page.getByRole('button', { name: /继续故事/ }).click();
+    await expect(page.getByRole('button', { name: /叙事中/ })).toBeDisabled();
+    const prompt = (await page.locator('body').getAttribute('data-fixture-prompt'))!;
+    expect(prompt).toContain('街角书店');
+    expect(prompt).toContain('橱窗');
+    expect(prompt).toContain(person.name);
+    expect(prompt).toContain(person.identity);
+    expect(prompt).toContain(person.id);
+    await page.getByLabel('可交互三维场景', { exact: true }).focus();
+    await page.keyboard.down('d');
+    await page.waitForTimeout(200);
+    await expect(scene).toHaveAttribute('data-position', start!);
+    await page.keyboard.up('d');
+    const helper = await (await page.locator('#reading-helper-frame').elementHandle())!.contentFrame();
+    await helper!.evaluate(() => (window as unknown as { releaseFixtureGeneration(): void }).releaseFixtureGeneration());
+    await expect(page.getByRole('log', { name: '故事记录' })).toContainText(reply);
+    await expect(scene).toHaveAttribute('data-position', start!);
+    await expect(page.locator('body')).toHaveAttribute('data-fixture-generations', '1');
+    expect((await savedFixtureState(page)).phone).toEqual(initial.phone);
+    expect((await savedFixtureState(page)).scene?.x).toBe(initial.scene.x);
+    expect((await savedFixtureState(page)).scene?.z).toBe(initial.scene.z);
+    await page.getByRole('button', { name: '自由行走', exact: true }).click();
+    await page.keyboard.down('d');
+    await expect(scene).not.toHaveAttribute('data-position', start!);
+    await page.keyboard.up('d');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+test('旧语音标记只在小说显示层去重，存档原文保留', async ({ page }) => {
+  const initial = createInitialState();
+  const text = '“你好，你也是刚下课吗？”<tts>沈景行|friendly|你好，你也是刚下课吗？</tts>';
+  initial.story = [{ id: 'voice-metadata', role: 'assistant', text }];
+  await withLongStory(page, { state: initial });
+  const story = page.getByRole('log', { name: '故事记录' });
+  await expect(story).toContainText('你好，你也是刚下课吗？');
+  await expect(story).not.toContainText('<tts>');
+  await expect(story).not.toContainText('friendly');
+  expect((await story.innerText()).match(/你好，你也是刚下课吗？/g)).toHaveLength(1);
+  expect((await savedFixtureState(page)).story[0].text).toBe(text);
 });
 
 test('禁用 WebGL 时390px静态背景仍能探索、使用浮窗与阅读，热点只准备行动', async ({ page }) => {

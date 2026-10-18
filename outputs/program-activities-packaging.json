@@ -1,0 +1,17 @@
+{
+  "bundleSha256": "8a1f12ce0658da156c2f363fe8411111c152a09a903d40576ad0fa8daaef33fe",
+  "cards": [
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+      "bytes": 20489261,
+      "sha256": "aa145bad8d4c2baab2f941a26f056b43d4cad6f1df0fbc80120788b582be1e17",
+      "scriptExact": true
+    },
+    {
+      "path": "D:\\.study\\cc\\outputs\\未读之城-日常活动程序结算版.png",
+      "bytes": 20383109,
+      "sha256": "d469cb961f036fdc44efad5e3b5fb2e665b994ec8c048fd186ca16030360f652",
+      "scriptExact": true
+    }
+  ]
+}

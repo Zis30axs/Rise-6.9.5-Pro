@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
+  assetsInclude: ['**/*.glb'],
   plugins: [vue(), {
     name: 'unread-city-portable-bundle',
     generateBundle(_options, bundle) {

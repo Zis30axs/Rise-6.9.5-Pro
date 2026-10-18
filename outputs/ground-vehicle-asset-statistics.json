@@ -1,0 +1,329 @@
+{
+  "sourceBytes": 32769052,
+  "outputBytes": 1367820,
+  "models": [
+    {
+      "id": "btr82a",
+      "file": "assets/models/ground-btr82a.glb",
+      "sourceFile": "btr-82a.glb",
+      "sourceBytes": 3037740,
+      "sourceSha256": "95da1339c5148e15e181a5d61885d421f601975a5471842adca900901f4dffa7",
+      "outputBytes": 308176,
+      "outputSha256": "256ec00ee1f81726f62e7280e4429a7fea6b598176b31fcd900b9369946eb7e7",
+      "reductionPercent": 89.855,
+      "sourceTriangles": 17867,
+      "removedDisplayTriangles": 0,
+      "triangles": 8047,
+      "vertices": 7300,
+      "primitives": 4,
+      "images": 4,
+      "externalUris": 0,
+      "decoderExtensions": 0,
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "boundsMeters": {
+        "min": [
+          -1.4559898376464844,
+          0,
+          -3.844484567642212
+        ],
+        "max": [
+          1.4559898376464844,
+          2.8736915588378906,
+          3.844484567642212
+        ],
+        "size": [
+          2.9119796752929688,
+          2.8736915588378906,
+          7.688969135284424
+        ]
+      },
+      "conversion": {
+        "sourceYawRadians": 3.141592653589793,
+        "scale": 1,
+        "sourceBoundsMeters": {
+          "min": [
+            -1.443224749376383,
+            0.015384418410578755,
+            -3.636044455935834
+          ],
+          "max": [
+            1.4687548259070131,
+            3.211174093352422,
+            4.060922141678917
+          ]
+        }
+      },
+      "attribution": {
+        "author": "42manako (https://sketchfab.com/42manako)",
+        "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+        "source": "https://sketchfab.com/3d-models/btr-82a-5c10df6da4154042a481fe89fd688fdb",
+        "title": "BTR-82A"
+      },
+      "groups": [
+        {
+          "sourceMaterial": 0,
+          "sourceTriangles": 12872,
+          "triangles": 5786,
+          "vertices": 5051,
+          "relativeError": 0.0014150571078062057
+        },
+        {
+          "sourceMaterial": 1,
+          "sourceTriangles": 2521,
+          "triangles": 1124,
+          "vertices": 1071,
+          "relativeError": 0.004529410041868687
+        },
+        {
+          "sourceMaterial": 2,
+          "sourceTriangles": 250,
+          "triangles": 138,
+          "vertices": 178,
+          "relativeError": 0.024237344041466713
+        },
+        {
+          "sourceMaterial": 3,
+          "sourceTriangles": 2224,
+          "triangles": 999,
+          "vertices": 1000,
+          "relativeError": 0.00482005113735795
+        }
+      ]
+    },
+    {
+      "id": "zbd04a",
+      "file": "assets/models/ground-zbd04a.glb",
+      "sourceFile": "chinese_zbd-04a.glb",
+      "sourceBytes": 21315312,
+      "sourceSha256": "1e22f9f290879de7c3d1ab8d923f106984fd57fa1c62ea54bfea1a047d43ecde",
+      "outputBytes": 549456,
+      "outputSha256": "83751e8feaf3e66de4b9f0ed1ce4fdb8ab3e46a82e6cf62544111caf034e67dc",
+      "reductionPercent": 97.422,
+      "sourceTriangles": 186945,
+      "removedDisplayTriangles": 0,
+      "triangles": 8196,
+      "vertices": 11547,
+      "primitives": 13,
+      "images": 12,
+      "externalUris": 0,
+      "decoderExtensions": 0,
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "boundsMeters": {
+        "min": [
+          -1.6236095428466797,
+          0,
+          -3.591905117034912
+        ],
+        "max": [
+          1.6236095428466797,
+          3.8967092037200928,
+          3.591905117034912
+        ],
+        "size": [
+          3.2472190856933594,
+          3.8967092037200928,
+          7.183810234069824
+        ]
+      },
+      "conversion": {
+        "sourceYawRadians": 0,
+        "scale": 0.9650097108152516,
+        "sourceBoundsMeters": {
+          "min": [
+            -1.6333397861198453,
+            -0.02014940340430986,
+            -3.612058295951802
+          ],
+          "max": [
+            1.6332818069063393,
+            3.8775536274172153,
+            3.5879417040481987
+          ]
+        }
+      },
+      "attribution": {
+        "author": "42manako (https://sketchfab.com/42manako)",
+        "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+        "source": "https://sketchfab.com/3d-models/chinese-zbd-04a-673ca87305e34fc6afd3f790010ccded",
+        "title": "Chinese ZBD-04A"
+      },
+      "groups": [
+        {
+          "sourceMaterial": 0,
+          "sourceTriangles": 5040,
+          "triangles": 630,
+          "vertices": 871,
+          "relativeError": 0.024486118927598
+        },
+        {
+          "sourceMaterial": 1,
+          "sourceTriangles": 196,
+          "triangles": 22,
+          "vertices": 30,
+          "relativeError": 0.024413859471678734
+        },
+        {
+          "sourceMaterial": 2,
+          "sourceTriangles": 43230,
+          "triangles": 1555,
+          "vertices": 2332,
+          "relativeError": 0.022772427648305893
+        },
+        {
+          "sourceMaterial": 3,
+          "sourceTriangles": 5,
+          "triangles": 5,
+          "vertices": 9,
+          "relativeError": 0
+        },
+        {
+          "sourceMaterial": 4,
+          "sourceTriangles": 32,
+          "triangles": 32,
+          "vertices": 25,
+          "relativeError": 0
+        },
+        {
+          "sourceMaterial": 5,
+          "sourceTriangles": 12,
+          "triangles": 12,
+          "vertices": 24,
+          "relativeError": 0
+        },
+        {
+          "sourceMaterial": 6,
+          "sourceTriangles": 408,
+          "triangles": 408,
+          "vertices": 456,
+          "relativeError": 0
+        },
+        {
+          "sourceMaterial": 7,
+          "sourceTriangles": 5425,
+          "triangles": 191,
+          "vertices": 274,
+          "relativeError": 0.02429616078734398
+        },
+        {
+          "sourceMaterial": 8,
+          "sourceTriangles": 5040,
+          "triangles": 627,
+          "vertices": 881,
+          "relativeError": 0.024578794836997986
+        },
+        {
+          "sourceMaterial": 9,
+          "sourceTriangles": 288,
+          "triangles": 12,
+          "vertices": 15,
+          "relativeError": 0.008794110268354416
+        },
+        {
+          "sourceMaterial": 10,
+          "sourceTriangles": 72,
+          "triangles": 56,
+          "vertices": 52,
+          "relativeError": 0.016675114631652832
+        },
+        {
+          "sourceMaterial": 11,
+          "sourceTriangles": 125227,
+          "triangles": 4420,
+          "vertices": 6406,
+          "relativeError": 0.01232737023383379
+        },
+        {
+          "sourceMaterial": 12,
+          "sourceTriangles": 1970,
+          "triangles": 226,
+          "vertices": 172,
+          "relativeError": 0.024927010759711266
+        }
+      ]
+    },
+    {
+      "id": "t84",
+      "file": "assets/models/ground-t84.glb",
+      "sourceFile": "t-84_oplotlow_poly.glb",
+      "sourceBytes": 8416000,
+      "sourceSha256": "e3eac5a881b0c9fa83bc799a5e7a4c2b9ab479cffb98c7a8ed4272e8a9f43177",
+      "outputBytes": 510188,
+      "outputSha256": "b3b315cf924b8e79a526e0a00d545f03c9ee453ee2f28aec5952235bf7b9b5a5",
+      "reductionPercent": 93.938,
+      "sourceTriangles": 12381,
+      "removedDisplayTriangles": 22,
+      "triangles": 8009,
+      "vertices": 10915,
+      "primitives": 3,
+      "images": 3,
+      "externalUris": 0,
+      "decoderExtensions": 0,
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "boundsMeters": {
+        "min": [
+          -1.7999999523162842,
+          0,
+          -4.202707290649414
+        ],
+        "max": [
+          1.7999999523162842,
+          3.055889368057251,
+          4.202707290649414
+        ],
+        "size": [
+          3.5999999046325684,
+          3.055889368057251,
+          8.405414581298828
+        ]
+      },
+      "conversion": {
+        "sourceYawRadians": 0,
+        "scale": 0.0009405543450853938,
+        "sourceBoundsMeters": {
+          "min": [
+            -1.796458799113102,
+            2.1470522140611872e-16,
+            -3.1147961197795855
+          ],
+          "max": [
+            1.8035412008868983,
+            3.0558893113681,
+            5.29061819110534
+          ]
+        }
+      },
+      "attribution": {
+        "author": "lm9241221 (https://sketchfab.com/lm9241221)",
+        "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+        "source": "https://sketchfab.com/3d-models/t-84-oplotlow-poly-98c26e7d386c466e982ec81e89d42b06",
+        "title": "T-84 OPLOT(LOW POLY)"
+      },
+      "groups": [
+        {
+          "sourceMaterial": 0,
+          "sourceTriangles": 11871,
+          "triangles": 7682,
+          "vertices": 10350,
+          "relativeError": 0.0016558252973482013
+        },
+        {
+          "sourceMaterial": 1,
+          "sourceTriangles": 460,
+          "triangles": 299,
+          "vertices": 481,
+          "relativeError": 0.006862669717520475
+        },
+        {
+          "sourceMaterial": 3,
+          "sourceTriangles": 28,
+          "triangles": 28,
+          "vertices": 84,
+          "relativeError": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "recordedAt": "2026-10-18T12:35:30.817654+08:00",
+  "scope": "Independent read-only source/runtime/UI/resource/package audit; no-native-browser-validation. No model calls. HTTP 200 only is not native UI validation.",
+  "baselineChatCount": 29,
+  "preservedChatCount": 28,
+  "changedOrMissingChats": [
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h50m03s581ms.jsonl",
+      "expectedSha256": "4425f30ba57bff007b13db95b4f3a88dd4f62b63aba15728694f43d1cf46356a",
+      "actualSha256": "9675a9b0190d5493809f89eb3ac34b8be22203cab91fc2bc1b80da9ba8d55c52",
+      "unchanged": false
+    }
+  ],
+  "newChats": [],
+  "protectedFiles": [
+    {
+      "path": "D:\\.study\\cc\\src\\card.json",
+      "expectedSha256": "fa7a0e12998408d6b8d94f47f216788020359e4601ea09cffb13117f57d44851",
+      "actualSha256": "fa7a0e12998408d6b8d94f47f216788020359e4601ea09cffb13117f57d44851",
+      "unchanged": true
+    },
+    {
+      "path": "D:\\.study\\cc\\assets\\cover.png",
+      "expectedSha256": "7318c96e111bcbff0e98791386d0e24cb770db2d5dea5029958260ad7a3720f3",
+      "actualSha256": "7318c96e111bcbff0e98791386d0e24cb770db2d5dea5029958260ad7a3720f3",
+      "unchanged": true
+    },
+    {
+      "path": "D:\\.study\\cc\\outputs\\未读之城-学习分档随机版.png",
+      "expectedSha256": "594242fa39d0045f76078af75ae685a8c608f2f8e2d86992efe9f979bd491335",
+      "actualSha256": "594242fa39d0045f76078af75ae685a8c608f2f8e2d86992efe9f979bd491335",
+      "unchanged": true
+    },
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城.png",
+      "expectedSha256": "d640522181b70a74239edc52ec4e9487504ed4c2b4cdf74b1c737ab80f74d745",
+      "actualSha256": "d640522181b70a74239edc52ec4e9487504ed4c2b4cdf74b1c737ab80f74d745",
+      "unchanged": true
+    }
+  ],
+  "sourceAssets": [
+    {
+      "id": "btr82a",
+      "source": {
+        "path": "C:\\Users\\Administrator\\Downloads\\btr-82a.glb",
+        "expectedSha256": "95da1339c5148e15e181a5d61885d421f601975a5471842adca900901f4dffa7",
+        "actualSha256": "95da1339c5148e15e181a5d61885d421f601975a5471842adca900901f4dffa7",
+        "unchanged": true
+      },
+      "output": {
+        "path": "D:\\.study\\cc\\assets\\models\\ground-btr82a.glb",
+        "expectedSha256": "256ec00ee1f81726f62e7280e4429a7fea6b598176b31fcd900b9369946eb7e7",
+        "actualSha256": "256ec00ee1f81726f62e7280e4429a7fea6b598176b31fcd900b9369946eb7e7",
+        "unchanged": true
+      },
+      "outputBytes": 308176,
+      "includedWholeInBundle": true
+    },
+    {
+      "id": "zbd04a",
+      "source": {
+        "path": "C:\\Users\\Administrator\\Downloads\\chinese_zbd-04a.glb",
+        "expectedSha256": "1e22f9f290879de7c3d1ab8d923f106984fd57fa1c62ea54bfea1a047d43ecde",
+        "actualSha256": "1e22f9f290879de7c3d1ab8d923f106984fd57fa1c62ea54bfea1a047d43ecde",
+        "unchanged": true
+      },
+      "output": {
+        "path": "D:\\.study\\cc\\assets\\models\\ground-zbd04a.glb",
+        "expectedSha256": "83751e8feaf3e66de4b9f0ed1ce4fdb8ab3e46a82e6cf62544111caf034e67dc",
+        "actualSha256": "83751e8feaf3e66de4b9f0ed1ce4fdb8ab3e46a82e6cf62544111caf034e67dc",
+        "unchanged": true
+      },
+      "outputBytes": 549456,
+      "includedWholeInBundle": true
+    },
+    {
+      "id": "t84",
+      "source": {
+        "path": "C:\\Users\\Administrator\\Downloads\\t-84_oplotlow_poly.glb",
+        "expectedSha256": "e3eac5a881b0c9fa83bc799a5e7a4c2b9ab479cffb98c7a8ed4272e8a9f43177",
+        "actualSha256": "e3eac5a881b0c9fa83bc799a5e7a4c2b9ab479cffb98c7a8ed4272e8a9f43177",
+        "unchanged": true
+      },
+      "output": {
+        "path": "D:\\.study\\cc\\assets\\models\\ground-t84.glb",
+        "expectedSha256": "b3b315cf924b8e79a526e0a00d545f03c9ee453ee2f28aec5952235bf7b9b5a5",
+        "actualSha256": "b3b315cf924b8e79a526e0a00d545f03c9ee453ee2f28aec5952235bf7b9b5a5",
+        "unchanged": true
+      },
+      "outputBytes": 510188,
+      "includedWholeInBundle": true
+    }
+  ],
+  "bundleSha256": "59e6daccaba262851038f82e99a9c7b18810e593a0d2286f0f922522a5a81a19",
+  "bundleMatchesPackaging": true,
+  "cards": [
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+      "bytes": 22958361,
+      "expectedBytes": 22958361,
+      "sha256": "d85ea5664f42065a7bcb4322660b2b5af7603b6ded8e8ff8cb52a472158fecfa",
+      "expectedSha256": "d85ea5664f42065a7bcb4322660b2b5af7603b6ded8e8ff8cb52a472158fecfa",
+      "fileMatchesPackaging": true,
+      "scriptCount": 1,
+      "scriptExact": true,
+      "scriptSha256": "59e6daccaba262851038f82e99a9c7b18810e593a0d2286f0f922522a5a81a19",
+      "name": "未读之城 · 前端联调",
+      "expectedName": "未读之城 · 前端联调",
+      "nameExact": true,
+      "coverImageIdatExact": false,
+      "rgbaPixelSha256": "402ae3d318bcd65f8d4f242b15a12b5298454fa713fc3e63cdddeb03cdd18db8",
+      "sourceCoverRgbaPixelSha256": "402ae3d318bcd65f8d4f242b15a12b5298454fa713fc3e63cdddeb03cdd18db8",
+      "coverPixelsExact": true,
+      "imageAuditNote": "Normalized RGBA pixels match source cover; RGB versus RGBA encoding can change IDAT bytes.",
+      "spec": "chara_card_v2",
+      "specVersion": "2.0",
+      "metadataFieldsPreserved": [
+        "description",
+        "personality",
+        "scenario",
+        "first_mes",
+        "mes_example",
+        "system_prompt",
+        "post_history_instructions",
+        "alternate_greetings",
+        "tags",
+        "creator",
+        "character_version"
+      ],
+      "sourceMetadataMatch": true
+    },
+    {
+      "path": "D:\\.study\\cc\\outputs\\未读之城-车辆公交出行版.png",
+      "bytes": 22851937,
+      "expectedBytes": 22851937,
+      "sha256": "8fb2608eb1a6ddc2d6c6e0fd82f32184d76215527d33ad312cad33f511a17751",
+      "expectedSha256": "8fb2608eb1a6ddc2d6c6e0fd82f32184d76215527d33ad312cad33f511a17751",
+      "fileMatchesPackaging": true,
+      "scriptCount": 1,
+      "scriptExact": true,
+      "scriptSha256": "59e6daccaba262851038f82e99a9c7b18810e593a0d2286f0f922522a5a81a19",
+      "name": "未读之城",
+      "expectedName": "未读之城",
+      "nameExact": true,
+      "coverImageIdatExact": true,
+      "rgbaPixelSha256": "402ae3d318bcd65f8d4f242b15a12b5298454fa713fc3e63cdddeb03cdd18db8",
+      "sourceCoverRgbaPixelSha256": "402ae3d318bcd65f8d4f242b15a12b5298454fa713fc3e63cdddeb03cdd18db8",
+      "coverPixelsExact": true,
+      "imageAuditNote": "Normalized RGBA pixels match source cover; RGB versus RGBA encoding can change IDAT bytes.",
+      "spec": "chara_card_v2",
+      "specVersion": "2.0",
+      "metadataFieldsPreserved": [
+        "description",
+        "personality",
+        "scenario",
+        "first_mes",
+        "mes_example",
+        "system_prompt",
+        "post_history_instructions",
+        "alternate_greetings",
+        "tags",
+        "creator",
+        "character_version"
+      ],
+      "sourceMetadataMatch": true
+    }
+  ],
+  "codeReview": {
+    "rideValidation": "Stops/proximity/interior, vehicle allowlist, route, balance, sequence/collision and max-day checks precede committed state replacement; rejected reducers leave original state unchanged.",
+    "saveAndReload": "Bridge saves reconstructed snapshot before UI replacement; transit parser validates already-paid receipt without charging or advancing time; old schema migration adds empty transit record.",
+    "remoteTravelBypass": "Found and reported city-roads escape from remote destination. Fixed via requiresTransitReturn(locationId, scene) checking original campus bounds; map and station UI now consistent.",
+    "narrative": "Saved transit facts included as alreadyCommitted. BTR/ZBD passenger use and T84 scenery only; prompts prohibit deriving driving/shooting/combat or charging another trip. Output schema accepts no transit state patch.",
+    "modelResources": "Loader rejects buffer/image URIs and declared decoder extensions, URL modifier permits only internal blob URLs. Disposal includes geometry/material/texture/ImageBitmap and late loads.",
+    "openBlockingFindings": [],
+    "mapLayoutFix": "Transit entry moved into existing map heading with 44px target and 4px vertical padding; removed extra map content strip. Button is excluded from window drag handling. No runtime/save changes."
+  },
+  "nativeBrowserValidation": {
+    "performed": false,
+    "reason": "Parent reported browser safety gate blocked http://127.0.0.1:8000; no bypass attempted.",
+    "serverHttpStatusFromPackaging": 200,
+    "controlledBrowserResults": "Parent owns controlled E2E run; this audit does not claim native browser interaction or physical phone validation."
+  },
+  "passed": true,
+  "implementationAndArtifactPassed": true,
+  "chatBaselineAllUnchanged": false,
+  "overallStatus": "implementation-and-artifacts-passed; one existing-chat baseline mismatch recorded separately",
+  "updatedAt": "2026-10-18T12:37:00.039725+08:00",
+  "chatBaselineMismatch": {
+    "count": 1,
+    "cause": "Unconfirmed external/current-chat change during the audit; possibly user interaction. Not attributed to migration or implementation. Current file deliberately left unchanged.",
+    "files": [
+      {
+        "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h50m03s581ms.jsonl",
+        "expectedSha256": "4425f30ba57bff007b13db95b4f3a88dd4f62b63aba15728694f43d1cf46356a",
+        "actualSha256": "9675a9b0190d5493809f89eb3ac34b8be22203cab91fc2bc1b80da9ba8d55c52",
+        "unchanged": false,
+        "fileName": "未读之城 · 前端联调 - 2026-10-18@02h50m03s581ms.jsonl",
+        "lastWriteTime": "2026-10-18T12:36:03.230833+08:00",
+        "currentSchemaVersion": "1.5.0",
+        "currentClock": {
+          "day": 1,
+          "hour": 19,
+          "minute": 50
+        },
+        "currentLocationId": "junction",
+        "currentPlayer": {
+          "energy": 50,
+          "balance": 328
+        },
+        "currentTransit": null,
+        "journalLatest": [
+          {
+            "id": "entry-1-19-35-2",
+            "text": "离开普通教室，回到原来的室外入口位置。",
+            "at": "第 1 天 19:35"
+          },
+          {
+            "id": "entry-1-19-50-1",
+            "text": "前往校园南门，步行耗时 15 分钟。",
+            "at": "第 1 天 19:50"
+          }
+        ],
+        "fileChangedOrRestoredByThisAgent": false,
+        "priorMatchingSnapshotEvidence": "outputs/study-ranges-after-refresh.json",
+        "changedStateFields": [
+          "clock",
+          "locationId",
+          "scene",
+          "interior",
+          "airTraffic",
+          "player",
+          "journal"
+        ],
+        "priorClock": {
+          "day": 1,
+          "hour": 19,
+          "minute": 35
+        },
+        "priorLocationId": "classroom",
+        "priorPlayer": {
+          "energy": 55,
+          "balance": 328
+        },
+        "priorStudyReceipt": {
+          "interactionId": "classroom-notes",
+          "optionId": "study-medium",
+          "minutes": 120,
+          "energyConsumed": 20
+        }
+      }
+    ]
+  },
+  "previousCandidateBundleSha256": "89f3c8999ee24ed1d364cd0ed02418c7e0874b113a4ddc52b575c98ef93e5435",
+  "artifactRecheckedAt": "2026-10-18T12:42:46.431515+08:00",
+  "artifactRecheckScope": "Rechecked final cards, embedded script, image pixels, identity/prose fields and embedded vehicle assets only. Existing live chats were not reread; prior timestamped mismatch observation is preserved."
+}

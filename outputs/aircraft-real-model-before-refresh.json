@@ -1,0 +1,116 @@
+{
+  "file": "未读之城 · 前端联调 - 2026-10-18@01h15m02s159ms.jsonl",
+  "state": {
+    "schema_version": "1.2.0",
+    "clock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 20
+    },
+    "locationId": "promenade",
+    "scene": {
+      "x": 0,
+      "z": 18,
+      "yaw": 0.792,
+      "areaId": "promenade",
+      "seed": "54d6c395-b99a-456a-a49c-480deeb4d7fa",
+      "encounterId": null
+    },
+    "airTraffic": {
+      "sequence": 1,
+      "nextAmbientAt": 1792257654861,
+      "cooldownUntil": 1792257509272,
+      "lastFlight": {
+        "id": "88069d4a-3744-486d-8187-c4be8cfc4d2e:airliner",
+        "source": "story",
+        "startedAt": 1792257329272,
+        "durationMs": 40000,
+        "routeIndex": 3
+      }
+    },
+    "player": {
+      "energy": 80,
+      "balance": 328
+    },
+    "phone": [
+      {
+        "id": "phone-lin",
+        "npcId": "lin",
+        "text": "【示例剧情消息】我在图书馆整理笔记。你经过的话，可以来坐一会儿。",
+        "read": false,
+        "at": "第 1 天 17:12"
+      },
+      {
+        "id": "phone-zhou",
+        "npcId": "zhou",
+        "text": "【示例剧情消息】社团活动的时间暂定今晚六点，在街角咖啡店。",
+        "read": false,
+        "at": "第 1 天 17:16"
+      }
+    ],
+    "contacts": [
+      {
+        "id": "lin",
+        "name": "林同学",
+        "tag": "演示 NPC · 同学",
+        "summary": "用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。",
+        "affinity": 12,
+        "status": "正在图书馆整理笔记"
+      },
+      {
+        "id": "zhou",
+        "name": "周同学",
+        "tag": "演示 NPC · 社团成员",
+        "summary": "用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。",
+        "affinity": 5,
+        "status": "准备晚间的社团活动"
+      }
+    ],
+    "schedule": [
+      {
+        "id": "library-notes",
+        "title": "【演示】去图书馆整理笔记",
+        "locationId": "library",
+        "time": "17:30",
+        "done": false
+      },
+      {
+        "id": "club-meet",
+        "title": "【演示】社团见面",
+        "locationId": "cafe",
+        "time": "18:00",
+        "done": false
+      }
+    ],
+    "journal": [
+      {
+        "id": "entry-1",
+        "text": "开始原型体验。人物、地点及安排均为演示内容，可在源码中替换。",
+        "at": "第 1 天 17:20"
+      },
+      {
+        "id": "88069d4a-3744-486d-8187-c4be8cfc4d2e:airliner",
+        "text": "一架远处的客机在高空平稳经过。",
+        "at": "第 1 天 17:20"
+      }
+    ],
+    "story": [
+      {
+        "id": "opening",
+        "role": "assistant",
+        "text": "【原型示例】傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。"
+      },
+      {
+        "id": "1e913740-915a-4038-9051-d002a604233f",
+        "role": "user",
+        "text": "我停下脚步，抬头说：“有飞机经过。”请描写一架此刻新出现的远处客机从高空平稳掠过的简短场景，不改变我的地点，不发送手机消息。"
+      },
+      {
+        "id": "88069d4a-3744-486d-8187-c4be8cfc4d2e",
+        "role": "assistant",
+        "text": "校园南门上方，一架客机刚从远处的天际显出轮廓。机身在夕光里泛着一点银白，沿着平直的方向缓缓掠过高空，双翼远看细得像一道短线。地面的车流声仍从十字路口传来，傍晚的风穿过门柱与围栏，天空中的小小轮廓渐渐移向更远处。"
+      }
+    ]
+  },
+  "chatSha256": "5a7da3a3d4e92b8e1daf2007336a97e366c36c4f08eed66947d6324c098b9355"
+}

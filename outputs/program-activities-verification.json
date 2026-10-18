@@ -1,0 +1,90 @@
+{
+  "recordedAt": "2026-10-18T02:41:58.002155+08:00",
+  "status": "passed",
+  "stateVersion": "1.4.0",
+  "scope": {
+    "programOnlyTimedIndoor": [
+      "dorm-desk",
+      "classroom-notes",
+      "study-focus",
+      "study-shelf"
+    ],
+    "bench": "wait15, +2 energy capped at100",
+    "existingProgramActions": [
+      "interior_rest",
+      "travel",
+      "wait",
+      "complete_schedule (done flag only, no invented duration)"
+    ],
+    "narrationStillAvailable": [
+      "zero-time observation",
+      "conversation",
+      "manual continue story"
+    ],
+    "freeTextTimeRequest": "intent only; system prompt guides to program controls; strict protocol rejects clock/player patches"
+  },
+  "automated": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "unitTests": 147,
+    "edgeUniqueScenarios": 23,
+    "pythonPngTests": 8,
+    "realModelCalls": 0
+  },
+  "localTavern": {
+    "chat": "未读之城 · 前端联调 - 2026-10-18@02h37m25s051ms.jsonl",
+    "room": "classroom",
+    "beforeClock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 35
+    },
+    "afterClock": {
+      "day": 1,
+      "hour": 18,
+      "minute": 5
+    },
+    "beforeEnergy": 75,
+    "afterEnergy": 70,
+    "draftPreserved": true,
+    "readingStayedHidden": true,
+    "storyAndPhoneUnchanged": true,
+    "journalAddedExactlyOnce": true,
+    "reloadAll12FieldsEqual": true,
+    "reloadChatHashEqual": true,
+    "sha256": "505a7955b6c171e53b4671657be17a1c4a7d1a848d8b76eae27751ba55ae3ff0"
+  },
+  "preservedOldChats": 27,
+  "protectedSourceCoverFormalAndPreviousPngUnchanged": true,
+  "packaging": {
+    "bundleSha256": "8a1f12ce0658da156c2f363fe8411111c152a09a903d40576ad0fa8daaef33fe",
+    "cards": [
+      {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 20489261,
+        "sha256": "aa145bad8d4c2baab2f941a26f056b43d4cad6f1df0fbc80120788b582be1e17",
+        "scriptExact": true
+      },
+      {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-日常活动程序结算版.png",
+        "bytes": 20383109,
+        "sha256": "d469cb961f036fdc44efad5e3b5fb2e665b994ec8c048fd186ca16030360f652",
+        "scriptExact": true
+      }
+    ]
+  },
+  "evidence": [
+    "outputs/program-activity-live.png",
+    "outputs/program-activity-after-refresh-live.png",
+    "outputs/program-activity-390-e2e.png",
+    "outputs/program-activity-before.json",
+    "outputs/program-activity-before-refresh.json",
+    "outputs/program-activity-after-refresh.json",
+    "outputs/program-activities-independent-audit.json"
+  ],
+  "limitations": [
+    "desktop local Tavern and Edge viewport tests; physical TauriTavern mobile pending",
+    "No real-model calls this phase; wording constraint injection checked with controlled generation"
+  ],
+  "gitCommitOrPush": false
+}

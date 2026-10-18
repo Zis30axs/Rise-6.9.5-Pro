@@ -1,0 +1,177 @@
+{
+  "sourceSha256": "1737bd65c51cee3eeba0c5b47643f67d6fd907dec7a12b33b151cf6eb8781bcb",
+  "sourceBytes": 76936560,
+  "outputBytes": 491048,
+  "outputSha256": "44fa8f71214748e2c8dad215f15f8a0e6a6baff0b882c64126427a4cc388547b",
+  "sourceTriangles": 827960,
+  "triangles": 9430,
+  "vertices": 11420,
+  "primitives": 20,
+  "sourceMeshes": 75,
+  "meshes": 1,
+  "sourcePrimitives": 75,
+  "embeddedJpegImages": 13,
+  "extensionCount": 0,
+  "externalUris": 0,
+  "boundsMeters": {
+    "min": [
+      -7.405218124389648,
+      -1.8416310548782349,
+      -8.249130249023438
+    ],
+    "max": [
+      7.405218124389648,
+      3.836519956588745,
+      13.031410217285156
+    ],
+    "size": [
+      14.810436248779297,
+      5.67815101146698,
+      21.280540466308594
+    ]
+  },
+  "forwardAxis": "+Z",
+  "upAxis": "+Y",
+  "groups": [
+    {
+      "material": 0,
+      "sourceTriangles": 8068,
+      "triangles": 194,
+      "vertices": 244,
+      "relativeError": 0.023732466623187065
+    },
+    {
+      "material": 1,
+      "sourceTriangles": 27,
+      "triangles": 8,
+      "vertices": 7,
+      "relativeError": 0.008517289534211159
+    },
+    {
+      "material": 2,
+      "sourceTriangles": 9514,
+      "triangles": 774,
+      "vertices": 1149,
+      "relativeError": 0.024648623540997505
+    },
+    {
+      "material": 3,
+      "sourceTriangles": 253,
+      "triangles": 127,
+      "vertices": 88,
+      "relativeError": 0.02453511580824852
+    },
+    {
+      "material": 4,
+      "sourceTriangles": 562,
+      "triangles": 17,
+      "vertices": 19,
+      "relativeError": 0.024956170469522476
+    },
+    {
+      "material": 5,
+      "sourceTriangles": 81362,
+      "triangles": 1608,
+      "vertices": 2123,
+      "relativeError": 0.024920538067817688
+    },
+    {
+      "material": 6,
+      "sourceTriangles": 253,
+      "triangles": 129,
+      "vertices": 89,
+      "relativeError": 0.024534843862056732
+    },
+    {
+      "material": 7,
+      "sourceTriangles": 64,
+      "triangles": 20,
+      "vertices": 24,
+      "relativeError": 0.02244388498365879
+    },
+    {
+      "material": 8,
+      "sourceTriangles": 5792,
+      "triangles": 204,
+      "vertices": 209,
+      "relativeError": 0.02250407636165619
+    },
+    {
+      "material": 9,
+      "sourceTriangles": 1720,
+      "triangles": 88,
+      "vertices": 124,
+      "relativeError": 0.024432487785816193
+    },
+    {
+      "material": 10,
+      "sourceTriangles": 381372,
+      "triangles": 3587,
+      "vertices": 4165,
+      "relativeError": 0.024588312953710556
+    },
+    {
+      "material": 11,
+      "sourceTriangles": 202044,
+      "triangles": 805,
+      "vertices": 1134,
+      "relativeError": 0.013486414216458797
+    },
+    {
+      "material": 12,
+      "sourceTriangles": 2457,
+      "triangles": 67,
+      "vertices": 118,
+      "relativeError": 0.02344425581395626
+    },
+    {
+      "material": 13,
+      "sourceTriangles": 680,
+      "triangles": 26,
+      "vertices": 18,
+      "relativeError": 0.01849260739982128
+    },
+    {
+      "material": 14,
+      "sourceTriangles": 2523,
+      "triangles": 15,
+      "vertices": 21,
+      "relativeError": 0.012286320328712463
+    },
+    {
+      "material": 15,
+      "sourceTriangles": 768,
+      "triangles": 12,
+      "vertices": 36,
+      "relativeError": 0.0011434777406975627
+    },
+    {
+      "material": 16,
+      "sourceTriangles": 5676,
+      "triangles": 394,
+      "vertices": 421,
+      "relativeError": 0.024861793965101242
+    },
+    {
+      "material": 17,
+      "sourceTriangles": 6487,
+      "triangles": 205,
+      "vertices": 171,
+      "relativeError": 0.024535151198506355
+    },
+    {
+      "material": 18,
+      "sourceTriangles": 12,
+      "triangles": 12,
+      "vertices": 20,
+      "relativeError": 0
+    },
+    {
+      "material": 19,
+      "sourceTriangles": 118326,
+      "triangles": 1138,
+      "vertices": 1240,
+      "relativeError": 0.024662723764777184
+    }
+  ]
+}

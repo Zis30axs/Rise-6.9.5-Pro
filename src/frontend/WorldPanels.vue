@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import WorldMap from './WorldMap.vue';
 import { locations } from '../runtime/model';
+import { getActiveAirliner } from '../runtime/air-traffic';
+import { getCampusInterior, getInteriorActivity } from '../runtime/campus-interiors';
+import { transitStops, transitVehicles } from '../runtime/transit';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'people' | 'status';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions }>();
-const emit = defineEmits<{ compose: [name: string]; contact: [npcId: string] }>();
+const emit = defineEmits<{ compose: [name: string]; contact: [npcId: string]; transit: [] }>();
 const labels: Record<Panel, string> = {
   phone: '演示手机消息', map: '探索地图', schedule: '今日日程', people: '人物档案', status: '个人状态与日记',
 };
@@ -21,6 +24,23 @@ const energy = computed(() => Math.min(100, Math.max(0, props.model.state.player
 const unreadFor = (npcId: string) => props.model.state.phone.filter(item => item.npcId === npcId && !item.read).length;
 const realUnreadFor = (npcId: string) => props.model.phoneContactUnread.find(contact => contact.npcId === npcId)?.unread ?? 0;
 const locationName = (id: string) => locations.find(item => item.id === id)?.name ?? '未知地点';
+const airNow = ref(Date.now());
+const activeAirliner = computed(() => getActiveAirliner(props.model.state.airTraffic, airNow.value));
+const lastAirliner = computed(() => props.model.state.airTraffic.lastFlight);
+const interior = computed(() => getCampusInterior(props.model.state.interior?.roomId));
+const lastActivity = computed(() => interior.value ? getInteriorActivity(interior.value, props.model.state.interior?.activityId, props.model.state.interior?.lastRest, props.model.state.interior?.lastStudy) : undefined);
+const airlinerSource = computed(() => lastAirliner.value?.source === 'story' ? '剧情触发' : '随机环境');
+let airBoundaryTimer: ReturnType<typeof setTimeout> | undefined;
+function refreshAirStatus() {
+  if (airBoundaryTimer) { clearTimeout(airBoundaryTimer); airBoundaryTimer = undefined; }
+  airNow.value = Date.now();
+  const flight = lastAirliner.value;
+  if (props.panel !== 'status' || !flight) return;
+  const boundary = airNow.value < flight.startedAt ? flight.startedAt : flight.startedAt + flight.durationMs;
+  if (boundary > airNow.value) airBoundaryTimer = setTimeout(refreshAirStatus, Math.min(2_147_000_000, boundary - airNow.value + 1));
+}
+watch([() => props.panel, lastAirliner], refreshAirStatus, { immediate: true });
+onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); });
 </script>
 
 <template>
@@ -53,7 +73,7 @@ const locationName = (id: string) => locations.find(item => item.id === id)?.nam
       </div>
     </template>
 
-    <WorldMap v-else-if="panel === 'map'" :model="model" :actions="actions" />
+    <template v-else-if="panel === 'map'"><WorldMap :model="model" :actions="actions" /></template>
 
     <template v-else-if="panel === 'schedule'">
       <div class="wp-day-summary"><div><h2>第 {{ model.state.clock.day }} 天</h2><p>{{ time }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
@@ -86,6 +106,9 @@ const locationName = (id: string) => locations.find(item => item.id === id)?.nam
         <article class="wp-resource"><h2>精力</h2><p class="wp-resource-value">{{ model.state.player.energy }}<small>/ 100</small></p><div class="wp-energy"><span :style="{ width: energy + '%' }"></span></div><button class="wp-text-button" :disabled="model.busy" @click="actions.dispatch({ type: 'wait', minutes: 15 })">休息 15 分钟 <span aria-hidden="true">↗</span></button></article>
         <article class="wp-resource"><h2>账户余额</h2><p class="wp-resource-value"><small>¥</small>{{ model.state.player.balance.toFixed(2) }}</p><p class="wp-footnote">演示资源，不涉及真实交易</p></article>
       </div>
+      <article v-if="interior" class="wp-air-traffic" aria-label="室内活动"><div class="wp-heading"><h2>室内活动</h2><span class="wp-badge">{{ interior.label }}</span></div><p>{{ lastActivity ? lastActivity.result : '已进入室内，可以走近物件进行观察、学习或休息。' }}</p><small>位置与活动按当前聊天保存，退出房间后回到原入口。</small></article>
+      <article class="wp-air-traffic" aria-label="公交出行"><div class="wp-heading"><h2>公交出行</h2><span class="wp-badge">已乘坐 {{ model.state.transit.sequence }} 次</span></div><p v-if="model.state.transit.lastRide">{{ transitVehicles.find(vehicle => vehicle.id === model.state.transit.lastRide?.vehicleId)?.label }} · {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.fromStopId)?.label }} → {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.toStopId)?.label }}，{{ model.state.transit.lastRide.minutes }} 分钟，车费 ¥{{ model.state.transit.lastRide.fare }}。</p><p v-else>在南门公交站搭乘 BTR-82A 或 ZBD-04A，前往更远的城区。</p><button class="wp-text-button" @click="emit('transit')">查看公交线路 ↗</button></article>
+      <article class="wp-air-traffic" aria-label="空中动态"><div class="wp-heading"><h2>空中动态</h2><span class="wp-badge">累计经过 {{ model.state.airTraffic.sequence }} 次</span></div><p>{{ interior ? '当前在室内，无法直接观察天空；已记录的空中事件保留。' : activeAirliner ? '一架客机正从远处高空平稳经过。' : lastAirliner ? '最近的客机已飞离视野。' : '天空暂时平静，偶尔会有客机经过。' }}</p><small v-if="lastAirliner">最近一次：{{ airlinerSource }} · {{ activeAirliner ? '正在经过' : '已记录' }}</small><small v-else>环境中可能随机出现，也可能由对话剧情触发。</small></article>
       <article class="wp-journal"><div class="wp-heading"><h2>日常手记</h2><span class="wp-badge">{{ model.state.journal.length }} 条记录</span></div><div class="wp-journal-list"><article v-for="entry in [...model.state.journal].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ entry.at }}</time><p>{{ entry.text }}</p></article><p v-if="!model.state.journal.length" class="wp-empty">新的足迹，会留在这里。</p></div></article>
       <p class="wp-footnote">{{ model.connection }} · 世界状态按聊天保存。地点、人物与资源为演示内容。</p>
     </template>

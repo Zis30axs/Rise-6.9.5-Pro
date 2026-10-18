@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { locations } from '../runtime/model';
+import { mapLocations as locations } from '../runtime/model';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
 type MapPerson = { contactId: string; name: string; place: { x: number; y: number } };
@@ -16,6 +16,7 @@ const designs: Record<string, { width: number; depth: number; height: number; fl
   library: { width: 23, depth: 17, height: 24, floors: 4, roof: '#7b947e', wall: '#e5daba', side: '#adac8b' },
   cafe: { width: 18, depth: 13, height: 13, floors: 2, roof: '#b77753', wall: '#efcf9f', side: '#c39973' },
   dorm: { width: 18, depth: 16, height: 32, floors: 6, roof: '#6e8791', wall: '#d5d8c7', side: '#98aaa4' },
+  teaching: { width: 24, depth: 14, height: 25, floors: 4, roof: '#81938b', wall: '#ded8bc', side: '#a6ac97' },
 };
 
 // One projection is shared by the ground, all building surfaces, and DOM targets.
@@ -133,28 +134,29 @@ const markers = computed(() => {
   const short = props.height < 220;
   const upperY = short ? 4 : clampY(props.height * .29 - 22);
   const lowerY = short ? props.height - 70 : Math.max(upperY + 48, clampY(props.height * .72 - 22));
+  const columns = [['library', 'teaching', 'gate'], ['dorm', 'cafe']];
   const labels = buildings.value.map(building => {
-    const left = building.id === 'library' || building.id === 'gate';
-    const upper = building.id === 'library' || building.id === 'dorm';
-    const target = { x: left ? halfWidth + 4 : props.width - halfWidth - 4, y: upper ? upperY : lowerY };
+    const left = columns[0].includes(building.id);
+    const column = columns[left ? 0 : 1];
+    const row = column.indexOf(building.id);
+    const target = { x: left ? halfWidth + 4 : props.width - halfWidth - 4, y: upperY + (lowerY - upperY) * row / Math.max(1, column.length - 1) };
     const p = projection.value.p;
     const label = {
       x: clampX(building.label.x * (1 - p) + target.x * p),
       y: clampY(building.label.y * (1 - p) + target.y * p),
     };
     // Stable screen-space columns prevent labels swapping under the fingers.
-    // Even a rotated flat plan keeps the four 44px targets disjoint.
+    // Even a rotated flat plan keeps the 44px targets in separate columns.
     const columnGap = short ? 26 : 4;
     label.x = left ? Math.min(label.x, props.width / 2 - halfWidth - columnGap) : Math.max(label.x, props.width / 2 + halfWidth + columnGap);
     return { ...building, label, left };
   });
-  for (const [upperId, lowerId] of [['library', 'gate'], ['dorm', 'cafe']]) {
-    const upper = labels.find(item => item.id === upperId), lower = labels.find(item => item.id === lowerId);
-    if (!upper || !lower) continue;
-    if (lower.label.y - upper.label.y < 48) {
-      const midpoint = (upper.label.y + lower.label.y) / 2;
-      upper.label.y = Math.max(4, Math.min(props.height - 118, midpoint - 24));
-      lower.label.y = upper.label.y + 48;
+  for (const ids of columns) {
+    const column = ids.map(id => labels.find(item => item.id === id)).filter((item): item is typeof labels[number] => !!item);
+    for (let index = 0; index < column.length; index++) {
+      const label = column[index].label;
+      label.y = Math.max(4 + index * 48, Math.min(props.height - 48 - (column.length - 1 - index) * 48, label.y));
+      if (index > 0) label.y = Math.max(label.y, column[index - 1].label.y + 48);
     }
   }
   return labels.map(building => {

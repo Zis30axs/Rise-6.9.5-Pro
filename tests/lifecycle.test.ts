@@ -17,7 +17,7 @@ vi.mock('../src/frontend/App.vue', async () => {
 import { mountShell, type ShellHandle } from '../src/frontend/lifecycle';
 
 let handle: ShellHandle | undefined;
-afterEach(() => { handle?.dispose(); handle = undefined; component.fail = false; document.body.innerHTML = ''; document.body.style.cssText = ''; delete (window as Window & { STiPhoniePanelHost?: unknown }).STiPhoniePanelHost; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { handle?.dispose(); handle = undefined; component.fail = false; document.body.innerHTML = ''; document.body.style.cssText = ''; delete (window as Window & { STiPhoniePanelHost?: unknown }).STiPhoniePanelHost; vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 function fixture() {
   let current = 'a';
@@ -51,6 +51,78 @@ function phoneFixture() {
 }
 
 describe('Immersive Shell 生命周期', () => {
+  it('空中随机事件先保存再呈现，等待期间不反复写存档或推进剧情时间', () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-17T12:00:00Z'));
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture(); f.bridge.generate = vi.fn(f.bridge.generate);
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const clock = { ...handle.model.state.clock };
+    const initialPlayer = { ...handle.model.state.player };
+    vi.advanceTimersByTime(5000);
+    expect(handle.model.state.airTraffic.sequence).toBe(0);
+    expect(handle.model.state.airTraffic.nextAmbientAt).toBeGreaterThan(Date.now());
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    vi.mocked(f.bridge.save).mockImplementation(next => {
+      expect(next.airTraffic.sequence).toBe(1);
+      expect(handle!.model.state.airTraffic.sequence).toBe(0);
+    });
+    vi.setSystemTime(handle.model.state.airTraffic.nextAmbientAt);
+    vi.advanceTimersByTime(5000);
+    expect(handle.model.state.airTraffic.sequence).toBe(1);
+    expect(handle.model.state.airTraffic.lastFlight?.source).toBe('ambient');
+    vi.advanceTimersByTime(60000);
+    expect(f.bridge.save).toHaveBeenCalledTimes(2);
+    expect(handle.model.state.clock).toEqual(clock);
+    expect(handle.model.state.player).toEqual(initialPlayer);
+    expect(f.bridge.generate).not.toHaveBeenCalled();
+  });
+
+  it('后台和生成过程中暂停空中调度，退出后清理计时器', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-17T12:00:00Z'));
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
+    vi.advanceTimersByTime(10000);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    hidden.mockReturnValue(false);
+    const pending = handle.actions.send('看向天空');
+    vi.advanceTimersByTime(10000);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    f.finish('树梢之上是安静的天空。'); await pending;
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    handle.dispose();
+    vi.advanceTimersByTime(400000);
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('空中事件保存失败不呈现飞机，旧聊天的定时回调不能写新聊天', () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-17T12:00:00Z'));
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture();
+    f.bridge.save = vi.fn(() => { throw new Error('模拟存档写入失败'); });
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const before = JSON.stringify(handle.model.state);
+    vi.advanceTimersByTime(5000);
+    expect(JSON.stringify(handle.model.state)).toBe(before);
+    expect(handle.model.notice).toBe('模拟存档写入失败');
+    f.change(); vi.advanceTimersByTime(400000);
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['string', 'foreign-error', 'serialized-error'] as const)('生成失败保留 %s 原因，不保存半轮剧情且能解除忙碌', async kind => {
+    const frame = document.createElement('iframe'); document.body.append(frame);
+    const foreignError = new (frame.contentWindow as unknown as { Error: ErrorConstructor }).Error('模型服务暂不可用，请检查连接。');
+    const failure = kind === 'string' ? '模型服务暂不可用，请检查连接。' : kind === 'foreign-error' ? foreignError : { message: '模型服务暂不可用，请检查连接。' };
+    if (kind === 'foreign-error') expect(failure instanceof Error).toBe(false);
+    const { bridge } = fixture(); bridge.generate = async () => { throw failure; };
+    handle = mountShell(window, window, bridge, vi.fn());
+    const initial = JSON.stringify(handle.model.state);
+    await handle.actions.send('看看周围');
+    expect(handle.model.notice).toBe('模型服务暂不可用，请检查连接。');
+    expect(handle.model.busy).toBe(false);
+    expect(JSON.stringify(handle.model.state)).toBe(initial);
+    expect(bridge.save).not.toHaveBeenCalled();
+  });
+
   it('退出恢复滚动、焦点，且原生聊天节点保持原样', async () => {
     const native = document.createElement('input'); document.body.append(native); native.focus();
     document.body.style.setProperty('overflow', 'scroll');

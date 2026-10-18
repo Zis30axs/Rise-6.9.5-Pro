@@ -1,0 +1,121 @@
+{
+  "recordedAt": "2026-10-18T02:57:11.274193+08:00",
+  "status": "passed",
+  "stateVersion": "1.5.0",
+  "scope": {
+    "activities": [
+      "classroom-notes",
+      "study-focus"
+    ],
+    "defaultRangesMinutes": {
+      "short": [
+        15,
+        30
+      ],
+      "medium": [
+        60,
+        120
+      ],
+      "long": [
+        120,
+        240
+      ]
+    },
+    "inclusive": true,
+    "duration": "uniform random integer once on explicit selection",
+    "energy": "ceil(actualMinutes / 6)",
+    "minimumEnergyToSelect": [
+      5,
+      20,
+      40
+    ],
+    "record": "interior.lastStudy {interactionId,optionId,minutes,energyConsumed}",
+    "refresh": "read saved result without reroll or settlement",
+    "legacy": "strict 1.0..1.4 migration preserves fixed half-hour study and existing random rest records",
+    "modelCalls": 0
+  },
+  "automated": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "unitTests": 160,
+    "edgeUniqueScenarios": 31,
+    "pythonPngTests": 8,
+    "viewportWidths": [
+      320,
+      390
+    ],
+    "browser": "Edge desktop controlled helper host",
+    "finalLayoutRetests": 4,
+    "uniqueScenariosUnchanged": 31
+  },
+  "localTavern": {
+    "chat": "未读之城 · 前端联调 - 2026-10-18@02h50m03s581ms.jsonl",
+    "room": "classroom",
+    "selected": {
+      "interactionId": "classroom-notes",
+      "optionId": "study-medium",
+      "minutes": 120,
+      "energyConsumed": 20
+    },
+    "beforeClock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 35
+    },
+    "afterClock": {
+      "day": 1,
+      "hour": 19,
+      "minute": 35
+    },
+    "beforeEnergy": 75,
+    "afterEnergy": 55,
+    "cancelStateAndChatHashUnchanged": true,
+    "draftPreservedBeforeReload": true,
+    "readingStayedHiddenAfterChoice": true,
+    "storyAndPhoneUnchanged": true,
+    "journalAddedExactlyOnce": true,
+    "reloadAll12FieldsEqual": true,
+    "reloadChatHashEqual": true,
+    "sha256": "4425f30ba57bff007b13db95b4f3a88dd4f62b63aba15728694f43d1cf46356a",
+    "finalBundleRefreshChecked": true
+  },
+  "preservedOldChats": 28,
+  "protectedSourceCoverFormalAndPreviousPngUnchanged": true,
+  "packaging": {
+    "bundleSha256": "b1e69613d458ca0f61d2f2685e2db6416bf0463121c3b1e014483cf895729cbd",
+    "cards": [
+      {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 20496669,
+        "sha256": "6360c19ef0986fd9a0261217ff07b28797759eb1b94e7952fd6873e491601ed7",
+        "scriptExact": true
+      },
+      {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-学习分档随机版.png",
+        "bytes": 20390245,
+        "sha256": "594242fa39d0045f76078af75ae685a8c608f2f8e2d86992efe9f979bd491335",
+        "scriptExact": true
+      }
+    ]
+  },
+  "evidence": [
+    "outputs/study-ranges-picker-live.png",
+    "outputs/study-ranges-completed-live.png",
+    "outputs/study-ranges-after-refresh-live.png",
+    "outputs/study-picker-390-e2e.png",
+    "outputs/study-picker-320-e2e.png",
+    "outputs/study-activity-390-e2e.png",
+    "outputs/study-ranges-before-choice.json",
+    "outputs/study-ranges-cancel.json",
+    "outputs/study-ranges-before-refresh.json",
+    "outputs/study-ranges-after-refresh.json",
+    "outputs/study-ranges-independent-audit.json"
+  ],
+  "limitations": [
+    "desktop local Tavern and Edge viewport tests; physical TauriTavern mobile pending",
+    "No real-model call this phase; controlled manual generation verifies actual context"
+  ],
+  "gitCommitOrPush": false,
+  "layoutRefinement": "At 320px reserve right side of cancel row for independent Tavern recovery button; four existing layout cases rechecked without increasing unique case count.",
+  "finalizedAt": "2026-10-18T02:59:54.202795+08:00"
+}

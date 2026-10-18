@@ -1,0 +1,30 @@
+[
+  {
+    "path": "D:/.study/cc/outputs/aircraft-real-model-flight-0.png",
+    "id": "2002cf67-a727-43fe-ae47-cc28fc7070dd:airliner",
+    "status": "ready",
+    "progress": "0.396475",
+    "view": "-0.204,-0.444"
+  },
+  {
+    "path": "D:/.study/cc/outputs/aircraft-real-model-flight-1.png",
+    "id": "2002cf67-a727-43fe-ae47-cc28fc7070dd:airliner",
+    "status": "ready",
+    "progress": "0.60055",
+    "view": "0.371,-0.426"
+  },
+  {
+    "path": "D:/.study/cc/outputs/aircraft-real-model-flight-2.png",
+    "id": "2002cf67-a727-43fe-ae47-cc28fc7070dd:airliner",
+    "status": "ready",
+    "progress": "0.797475",
+    "view": "0.775,-0.334"
+  },
+  {
+    "path": "D:/.study/cc/outputs/aircraft-real-model-flight-3.png",
+    "id": "2002cf67-a727-43fe-ae47-cc28fc7070dd:airliner",
+    "status": "ready",
+    "progress": "0.983",
+    "view": "0.969,-0.269"
+  }
+]

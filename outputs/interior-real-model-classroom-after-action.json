@@ -1,0 +1,147 @@
+{
+  "chat": "未读之城 · 前端联调 - 2026-10-18@02h11m16s078ms.jsonl",
+  "chatSha256": "6a6b8866ebc708f5c2c9b873954128588531a99b63645620b6fc9914b527883f",
+  "state": {
+    "schema_version": "1.3.0",
+    "clock": {
+      "day": 1,
+      "hour": 18,
+      "minute": 50
+    },
+    "locationId": "classroom",
+    "scene": {
+      "x": 0,
+      "z": -36,
+      "yaw": 0,
+      "areaId": "teaching",
+      "seed": "f8ec34c7-efd9-41c1-a2d9-56d157acacc1",
+      "encounterId": null
+    },
+    "interior": {
+      "roomId": "classroom",
+      "x": 0,
+      "z": 0.718,
+      "yaw": 0,
+      "activityId": "classroom-notes"
+    },
+    "airTraffic": {
+      "sequence": 0,
+      "nextAmbientAt": 1792260784285,
+      "cooldownUntil": 0,
+      "lastFlight": null
+    },
+    "player": {
+      "energy": 77,
+      "balance": 328
+    },
+    "phone": [
+      {
+        "id": "phone-lin",
+        "npcId": "lin",
+        "text": "【示例剧情消息】我在图书馆整理笔记。你经过的话，可以来坐一会儿。",
+        "read": false,
+        "at": "第 1 天 17:12"
+      },
+      {
+        "id": "phone-zhou",
+        "npcId": "zhou",
+        "text": "【示例剧情消息】社团活动的时间暂定今晚六点，在街角咖啡店。",
+        "read": false,
+        "at": "第 1 天 17:16"
+      }
+    ],
+    "contacts": [
+      {
+        "id": "lin",
+        "name": "林同学",
+        "tag": "演示 NPC · 同学",
+        "summary": "用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。",
+        "affinity": 12,
+        "status": "正在图书馆整理笔记"
+      },
+      {
+        "id": "zhou",
+        "name": "周同学",
+        "tag": "演示 NPC · 社团成员",
+        "summary": "用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。",
+        "affinity": 5,
+        "status": "准备晚间的社团活动"
+      }
+    ],
+    "schedule": [
+      {
+        "id": "library-notes",
+        "title": "【演示】去图书馆整理笔记",
+        "locationId": "library",
+        "time": "17:30",
+        "done": false
+      },
+      {
+        "id": "club-meet",
+        "title": "【演示】社团见面",
+        "locationId": "cafe",
+        "time": "18:00",
+        "done": false
+      }
+    ],
+    "journal": [
+      {
+        "id": "entry-1",
+        "text": "开始原型体验。人物、地点及安排均为演示内容，可在源码中替换。",
+        "at": "第 1 天 17:20"
+      },
+      {
+        "id": "entry-1-17-35-1",
+        "text": "前往学生公寓，步行耗时 15 分钟。",
+        "at": "第 1 天 17:35"
+      },
+      {
+        "id": "entry-1-17-35-2",
+        "text": "进入学生宿舍。",
+        "at": "第 1 天 17:35"
+      },
+      {
+        "id": "entry-1-18-5-1",
+        "text": "在宿舍床边休息了半小时。耗时 30 分钟，恢复至多 12 点精力。",
+        "at": "第 1 天 18:05"
+      },
+      {
+        "id": "entry-1-18-5-2",
+        "text": "离开学生宿舍，回到原来的室外入口位置。",
+        "at": "第 1 天 18:05"
+      },
+      {
+        "id": "entry-1-18-20-1",
+        "text": "前往教学楼，步行耗时 15 分钟。",
+        "at": "第 1 天 18:20"
+      },
+      {
+        "id": "entry-1-18-20-2",
+        "text": "进入普通教室。",
+        "at": "第 1 天 18:20"
+      },
+      {
+        "id": "entry-1-18-50-1",
+        "text": "在普通教室课桌旁温习了半小时笔记。耗时 30 分钟，消耗 5 点精力。",
+        "at": "第 1 天 18:50"
+      }
+    ],
+    "story": [
+      {
+        "id": "opening",
+        "role": "assistant",
+        "text": "【原型示例】傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。"
+      },
+      {
+        "id": "afdedd46-ef79-42d2-affd-e8503f0a8b23",
+        "role": "user",
+        "text": "我已经在宿舍床边休息了半小时，程序已推进 30 分钟并恢复至多 12 点精力。请从休息结束的现场继续，不要重复结算。 请用80至140字继续眼前的宿舍场景，明确这是休息结束后，保持在床边，不推进新的活动或行程，不产生新手机消息。"
+      },
+      {
+        "id": "51d6ace9-8e54-47d9-a43e-eb00630129f7",
+        "role": "assistant",
+        "text": "半小时的休息已经结束，你仍在宿舍床边。床沿留着刚才坐出的浅浅凹痕，衣柜和书桌沿中央通道安静地排开。室内没有交谈声，南侧房门仍在原处，门外偶尔传来模糊的脚步声，又渐渐远去。眼前的一切维持着休息结束时的样子。"
+      }
+    ]
+  }
+}

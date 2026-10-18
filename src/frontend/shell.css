@@ -3,6 +3,7 @@
 @import './world-map.css';
 @import './campus-map.css';
 @import './atlas-scene.css';
+@import './interior.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
 .uc-shell *, .uc-shell *::before, .uc-shell *::after { box-sizing:border-box; }
@@ -18,6 +19,11 @@
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .world-vignette { position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(10,28,22,.58),transparent 24%,transparent 55%,rgba(10,28,22,.24)); z-index:2; transition:background .2s; }
 .world-vignette.reading-shade { background:rgba(7,21,17,.64); }
+.uc-shell .campus-entrance { position:absolute; z-index:24; top:162px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:14px; min-height:52px; max-width:calc(100% - 32px); padding:10px 17px; border:1px solid #e5cc96a3; border-radius:12px; color:#f5e5bd; background:#193b30ee; box-shadow:0 5px 22px #132a2660; font-size:13px; }
+.campus-entrance small { display:block; color:#c7d0b8; font-size:10px; text-align:left; }
+.uc-shell .room-activity-receipt { flex-shrink:0; margin-top:10px; padding:7px 10px; border-left:2px solid #dcc28c; background:#d4c28c0c; color:#eee5cf; font-size:12px; line-height:1.5; }
+.room-activity-receipt span { color:#c7d0b8; }
+@media(max-width:760px) { .uc-shell .campus-entrance { top:145px; } .uc-shell .room-activity-receipt { font-size:11px; } }
 .world-chrome { position:absolute; top:0; left:0; right:0; display:flex; align-items:flex-start; gap:20px; padding:26px 32px; z-index:30; pointer-events:none; text-shadow:0 2px 12px #102a25; }
 .world-chrome button { pointer-events:auto; }
 .world-heading { display:flex; align-items:center; flex-wrap:wrap; gap:14px 25px; min-width:0; }
@@ -29,6 +35,9 @@
 .host-actions { display:flex; gap:14px; align-items:center; margin-left:auto; white-space:nowrap; }
 .uc-shell .host-actions button { min-height:40px; padding:5px 0; color:#e1e7d8; font-size:11px; }
 .host-actions button + button { border-left:1px solid #c9dac459; padding-left:14px; }
+.uc-shell .walk-launcher { position:absolute; left:28px; top:104px; z-index:35; display:flex; align-items:center; gap:7px; min-height:44px; padding:8px 16px; border:1px solid #eddfbc99; border-radius:24px; background:#213f31e8; color:#fff0cc; box-shadow:0 5px 22px #0f2a2540; font-size:12px; }
+.walk-launcher span { font-size:23px; line-height:1; }
+@media(max-width:760px) { .uc-shell .walk-launcher { left:16px; top:86px; padding:7px 13px; } }
 .notice { position:absolute; top:94px; left:50%; transform:translateX(-50%); z-index:90; max-width:min(700px,calc(100% - 36px)); padding:10px 16px!important; background:#4a4128; color:#ffe1a3; box-shadow:0 5px 24px #102c2740; border-radius:8px; font-size:12px; }
 .tool-dock { position:absolute; z-index:80; right:24px; top:50%; transform:translateY(-50%); display:flex; align-items:center; flex-direction:column; gap:8px; }
 .uc-shell .tool-dock button { display:flex; align-items:center; justify-content:center; gap:9px; width:76px; min-height:45px; padding:10px; border:1px solid rgba(223,228,204,.25); border-radius:12px; color:#f0e9d6; background:#193329e8; box-shadow:0 4px 18px #08271a29; font-size:12px; white-space:nowrap; }
@@ -153,3 +162,23 @@
   .floating-window.phone-window { top:70px; height:calc(100dvh - 92px); max-height:calc(100dvh - 92px); }
 }
 @media (prefers-reduced-motion:reduce) { .uc-shell * { scroll-behavior:auto!important; transition:none!important; } }
+.bed-rest-overlay { position:absolute; inset:0; z-index:60; display:grid; place-items:center; padding:82px 16px 96px; background:#10271faa; backdrop-filter:blur(5px); }
+.bed-rest-dialog { width:min(440px,100%); max-height:100%; overflow:auto; overscroll-behavior:contain; border:1px solid #ddc79770; border-radius:18px; padding:24px; background:#1b352c; box-shadow:0 20px 70px #071b1866; }
+.bed-rest-dialog header > small { color:#d9c495; font-size:11px; letter-spacing:.1em; }
+.uc-shell .bed-rest-dialog h2 { margin:4px 0 9px; font-family:serif; font-size:24px; font-weight:400; }
+.bed-rest-dialog header p { color:#c7ceba; font-size:12px; line-height:1.65; }
+.bed-rest-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:20px 0 14px; }
+.uc-shell .bed-rest-options button { display:flex; flex-direction:column; justify-content:center; gap:7px; min-width:44px; min-height:116px; padding:12px 6px; border:1px solid #d9c59969; border-radius:11px; background:#dfc9990e; text-align:center; }
+.bed-rest-options button:hover { background:#dfc99924; border-color:#ebd198; }
+.bed-rest-options button:disabled { opacity:.48; cursor:not-allowed; }
+.bed-rest-options strong { font-size:17px; font-weight:500; color:#f2dfb7; }
+.bed-rest-options span { font-size:14px; }
+.bed-rest-options small { font-size:10px; color:#c7ceba; line-height:1.5; }
+.uc-shell .bed-rest-note { font-size:11px; color:#b5c0ab; line-height:1.6; }
+.uc-shell .bed-rest-cancel { display:block; width:100%; min-height:44px; margin-top:17px; border:1px solid #d7c69555; border-radius:9px; color:#e8dfc7; background:#d3cbaf0a; }
+.uc-shell[data-rest-picker=true] .tool-dock, .uc-shell[data-rest-picker=true] .world-chrome { z-index:70; }
+.uc-shell .bed-rest-receipt { position:absolute; left:50%; top:266px; z-index:24; transform:translateX(-50%); width:max-content; max-width:calc(100% - 32px); padding:11px 16px; border:1px solid #cdb98a66; border-radius:12px; color:#f0e5c9; background:#1d3d31ed; font-size:12px; text-align:center; pointer-events:none; }
+.bed-rest-receipt small { display:block; margin-top:3px; color:#bdcbb7; font-size:10px; }
+@media(max-width:390px) { .bed-rest-dialog { padding:19px 15px; } .bed-rest-options { gap:7px; margin-top:16px; } .bed-rest-options strong { font-size:16px; } }
+@media(max-width:390px) and (max-height:620px) { .uc-shell .bed-rest-cancel { width:calc(100% - 88px); } }
+@media(max-height:620px) { .bed-rest-overlay { padding-top:74px; padding-bottom:84px; } .bed-rest-dialog { padding:16px; } .bed-rest-options { margin:14px 0 11px; } .uc-shell .bed-rest-options button { min-height:100px; } .uc-shell .bed-rest-dialog h2 { font-size:21px; } .uc-shell .bed-rest-receipt { top:206px; } }

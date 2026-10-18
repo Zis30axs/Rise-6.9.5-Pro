@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
-import { getRouteOutlook, locations } from '../runtime/model';
+import { getRouteOutlook, locations as allLocations, mapLocations as locations } from '../runtime/model';
+import { requiresTransitReturn } from '../runtime/transit';
 import type { ShellActions, ShellModel } from './types';
 import CampusMapScene from './CampusMapScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
@@ -52,7 +53,8 @@ const selectedCity = ref('campus');
 const itineraryDraft = ref('');
 const localLayer = computed(() => layer.value === 'campus' || layer.value === 'sandtable');
 const geographicLayer = computed(() => layerIndex.value >= 3);
-const currentLocation = computed(() => locations.find(place => place.id === props.model.state.locationId));
+const currentLocation = computed(() => allLocations.find(place => place.id === props.model.state.locationId));
+const needsTransitReturn = computed(() => requiresTransitReturn(props.model.state.locationId, props.model.state.scene));
 const transform = computed(() => ({ transform: depth.value > 2 ? 'none' : `translate(${pan.value.x}px, ${pan.value.y}px) scale(${focusZoom.value})` }));
 const localDisplayScale = computed(() => (depth.value < 0 ? 2 ** -depth.value : 1 - .46 * smooth(depth.value - 1)) * focusZoom.value);
 const campusMetersPerPixel = ref(4);
@@ -243,7 +245,7 @@ function activateTarget(target: string) {
   else if (target.startsWith('landmark:')) { if (ATLAS_LANDMARKS.some(item => item.id === target.slice(9))) { selectedKind.value = 'landmark'; selectedId.value = target.slice(9); } }
   else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) activeEventId.value = activeEventId.value === id ? '' : id; }
   else if (target.startsWith('city:')) { const id = target.slice(5); if (cityPlaces.some(item => item.id === id)) selectedCity.value = id; }
-  else if (!props.model.busy && localLayer.value && locations.some(item => item.id === target && item.id !== props.model.state.locationId)) props.actions.dispatch({ type: 'travel', locationId: target });
+  else if (!props.model.busy && !needsTransitReturn.value && localLayer.value && locations.some(item => item.id === target && item.id !== props.model.state.locationId)) props.actions.dispatch({ type: 'travel', locationId: target });
 }
 function pointerUp(event: PointerEvent) {
   if (!pointers.has(event.pointerId)) return;
@@ -302,7 +304,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage" :style="transform">
             <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="campus" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
-              <CampusMapScene :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :progress="Math.min(1, Math.max(0, depth))" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy" :road-events="roadEvents" :people="visiblePeople" @travel="actions.dispatch({ type: 'travel', locationId: $event })" @event="activeEventId = activeEventId === $event ? '' : $event" />
+              <CampusMapScene :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :progress="Math.min(1, Math.max(0, depth))" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || !!model.state.interior || needsTransitReturn" :road-events="roadEvents" :people="visiblePeople" @travel="actions.dispatch({ type: 'travel', locationId: $event })" @event="activeEventId = activeEventId === $event ? '' : $event" />
             </div>
             <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
               <svg viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"><rect width="1000" height="700" fill="#d2dcca"/><path d="M470-30Q365 165 518 337T550 760" fill="none" stroke="#a3c2ba" stroke-width="100"/><g fill="#b7c8aa"><rect x="140" y="100" width="250" height="200" rx="35"/><rect x="620" y="80" width="240" height="190" rx="60"/><rect x="610" y="360" width="250" height="210" rx="35"/><rect x="130" y="440" width="235" height="190" rx="25"/></g><g fill="none" stroke="#f2eedb" stroke-width="24"><path d="M0 350h1000M210 0v700M790 0v700M0 620h1000M0 80h1000"/><path d="M0 350 1000 80M210 700 790 0" stroke-width="17"/></g><path d="M10 349h980M210 10v680M790 10v680" stroke="#acb8a3" fill="none" stroke-dasharray="6 9"/></svg>
@@ -329,8 +331,10 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
       <aside class="wm-details">
         <template v-if="localLayer">
           <div class="wm-location-now"><small>当前地点</small><h3>{{ currentLocation?.name }}</h3></div>
-          <button v-for="(place, index) in locations" :key="place.id" type="button" class="wm-destination" :disabled="model.busy || place.id === model.state.locationId" @click="actions.dispatch({ type: 'travel', locationId: place.id })"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">预计 {{ travelMinutes(place.id) }} 分钟 · {{ routeOutlooks.get(place.id)?.event?.title ?? '路线通畅' }}</small></span><span>{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
+          <div v-if="model.state.interior" class="wm-detail-note"><p>你在室内，离开房间后可以继续出行。</p><button type="button" class="wm-outline-button" :disabled="model.busy" @click="actions.dispatch({ type: 'leave_interior' })">离开房间，回到入口</button></div>
+          <button v-for="(place, index) in locations" :key="place.id" type="button" class="wm-destination" :disabled="model.busy || !!model.state.interior || needsTransitReturn || place.id === model.state.locationId" @click="actions.dispatch({ type: 'travel', locationId: place.id })"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">预计 {{ travelMinutes(place.id) }} 分钟 · {{ routeOutlooks.get(place.id)?.event?.title ?? '路线通畅' }}</small></span><span>{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
           <p class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p>
+          <p class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p>
           <p v-if="!roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
           <div v-if="showDemoPeople" class="wm-people-summary"><h3>演示定位</h3><p v-for="person in visiblePeople" :key="person.contactId">{{ person.name }} · {{ person.place.name }}<small>{{ person.record }}</small></p><p v-if="!visiblePeople.length">暂无满足条件的演示定位。</p></div>
         </template>

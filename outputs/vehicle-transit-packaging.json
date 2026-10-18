@@ -1,0 +1,18 @@
+{
+  "bundleSha256": "59e6daccaba262851038f82e99a9c7b18810e593a0d2286f0f922522a5a81a19",
+  "cards": [
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+      "bytes": 22958361,
+      "sha256": "d85ea5664f42065a7bcb4322660b2b5af7603b6ded8e8ff8cb52a472158fecfa",
+      "scriptExact": true
+    },
+    {
+      "path": "D:\\.study\\cc\\outputs\\未读之城-车辆公交出行版.png",
+      "bytes": 22851937,
+      "sha256": "8fb2608eb1a6ddc2d6c6e0fd82f32184d76215527d33ad312cad33f511a17751",
+      "scriptExact": true
+    }
+  ],
+  "serverHttpStatus": 200
+}

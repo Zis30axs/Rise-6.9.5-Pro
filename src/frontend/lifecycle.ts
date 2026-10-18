@@ -63,6 +63,7 @@ export function mountShell(
   let epoch = 0;
   let stopSession: (() => void) | undefined;
   let timer: number | undefined;
+  let airTrafficTimer: number | undefined;
   let observer: MutationObserver | undefined;
   let appliedOverflowPriority: string | undefined;
   let phoneLease: PhoneLease | undefined;
@@ -89,6 +90,7 @@ export function mountShell(
       () => app?.unmount(),
       () => observer?.disconnect(),
       () => timer !== undefined && hostWindow.clearInterval(timer),
+      () => airTrafficTimer !== undefined && hostWindow.clearInterval(airTrafficTimer),
       () => doc.removeEventListener('keydown', keydown, true),
       () => doc.removeEventListener('focusin', focusin, true),
       () => ownerWindow.removeEventListener('pagehide', pagehide),
@@ -113,6 +115,17 @@ export function mountShell(
 
   const stillCurrent = (request: number) => !dead && epoch === request && bridge.session() === session;
   const snapshot = () => parseState(toRaw(model.state));
+  function tickAirTraffic() {
+    if (dead || model.busy || doc.hidden || !host.isConnected || bridge.session() !== session) return;
+    try {
+      const previous = snapshot();
+      const next = reduceState(previous, { type: 'air_traffic_tick', now: Date.now() });
+      if (JSON.stringify(next.airTraffic) === JSON.stringify(previous.airTraffic)) return;
+      // An aircraft becomes visible only after its world event has been saved.
+      bridge.save(next);
+      model.state = next;
+    } catch (error) { model.notice = message(error); }
+  }
   function closePhone() {
     const lease = phoneLease;
     phoneLease = undefined; phoneAnchor = undefined; mountedPhoneApi = undefined;
@@ -159,7 +172,7 @@ export function mountShell(
         bridge.save(next);
         model.state = next;
         model.notice = '';
-        if (storyPhone) void storyPhone.sync().catch(() => {});
+        if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
     },
     async send(text) {
@@ -296,6 +309,7 @@ export function mountShell(
     observer = new (hostWindow as Window & typeof globalThis).MutationObserver(integrity);
     observer.observe(doc.body, { childList: true, subtree: false });
     timer = hostWindow.setInterval(integrity, 500);
+    airTrafficTimer = hostWindow.setInterval(tickAirTraffic, 5000);
     app.mount(mount);
     if (dead) throw new Error('界面启动失败，已恢复原生界面。');
     if (bridge.kind === 'tavern' && phoneRuntime) {
@@ -328,5 +342,12 @@ export function mountShell(
 }
 
 function message(error: unknown): string {
-  return error instanceof Error ? error.message : '操作未完成，请退出并重新进入。';
+  // Helper functions run in the host page, so their errors cross an iframe realm.
+  // Read only a bounded message; never serialize a provider response or stack.
+  try {
+    const value = typeof error === 'string' ? error
+      : error && typeof error === 'object' && 'message' in error ? error.message : '';
+    if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 600);
+  } catch { /* A rejected value may expose a throwing message getter. */ }
+  return '操作未完成，请退出并重新进入。';
 }

@@ -1,0 +1,113 @@
+{
+  "chat": "未读之城 · 前端联调 - 2026-10-18@02h30m00s163ms.jsonl",
+  "sha256": "f9fc8a352c7242cfaef7bc56e8126367e638818a023d31ddd7507379e537514b",
+  "state": {
+    "schema_version": "1.4.0",
+    "clock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 35
+    },
+    "locationId": "dorm-room",
+    "scene": {
+      "x": -49,
+      "z": -5,
+      "yaw": 0,
+      "areaId": "residences",
+      "seed": "dde67b24-0550-4aed-9717-a9cd3270db9c",
+      "encounterId": null
+    },
+    "interior": {
+      "roomId": "dorm-room",
+      "x": 0,
+      "z": 0.153,
+      "yaw": 0,
+      "activityId": null,
+      "lastRest": null
+    },
+    "airTraffic": {
+      "sequence": 0,
+      "nextAmbientAt": 1792261999465,
+      "cooldownUntil": 0,
+      "lastFlight": null
+    },
+    "player": {
+      "energy": 75,
+      "balance": 328
+    },
+    "phone": [
+      {
+        "id": "phone-lin",
+        "npcId": "lin",
+        "text": "【示例剧情消息】我在图书馆整理笔记。你经过的话，可以来坐一会儿。",
+        "read": false,
+        "at": "第 1 天 17:12"
+      },
+      {
+        "id": "phone-zhou",
+        "npcId": "zhou",
+        "text": "【示例剧情消息】社团活动的时间暂定今晚六点，在街角咖啡店。",
+        "read": false,
+        "at": "第 1 天 17:16"
+      }
+    ],
+    "contacts": [
+      {
+        "id": "lin",
+        "name": "林同学",
+        "tag": "演示 NPC · 同学",
+        "summary": "用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。",
+        "affinity": 12,
+        "status": "正在图书馆整理笔记"
+      },
+      {
+        "id": "zhou",
+        "name": "周同学",
+        "tag": "演示 NPC · 社团成员",
+        "summary": "用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。",
+        "affinity": 5,
+        "status": "准备晚间的社团活动"
+      }
+    ],
+    "schedule": [
+      {
+        "id": "library-notes",
+        "title": "【演示】去图书馆整理笔记",
+        "locationId": "library",
+        "time": "17:30",
+        "done": false
+      },
+      {
+        "id": "club-meet",
+        "title": "【演示】社团见面",
+        "locationId": "cafe",
+        "time": "18:00",
+        "done": false
+      }
+    ],
+    "journal": [
+      {
+        "id": "entry-1",
+        "text": "开始原型体验。人物、地点及安排均为演示内容，可在源码中替换。",
+        "at": "第 1 天 17:20"
+      },
+      {
+        "id": "entry-1-17-35-1",
+        "text": "前往学生公寓，步行耗时 15 分钟。",
+        "at": "第 1 天 17:35"
+      },
+      {
+        "id": "entry-1-17-35-2",
+        "text": "进入学生宿舍。",
+        "at": "第 1 天 17:35"
+      }
+    ],
+    "story": [
+      {
+        "id": "opening",
+        "role": "assistant",
+        "text": "【原型示例】傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。"
+      }
+    ]
+  }
+}
