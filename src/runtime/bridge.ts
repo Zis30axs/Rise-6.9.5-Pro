@@ -2,6 +2,7 @@ import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from 
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
 import { getSceneContext } from './scene-context';
 import { parseGeneratedStory, STORY_ACTION_LIMITS } from './story-protocol';
+import { loadStoryApiSettings, requestStoryFromCustomApi } from './story-api';
 import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
 import { getServiceTakeawayItem, getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
@@ -48,11 +49,11 @@ type HostWindow = Window & { SillyTavern?: { getContext(): TavernContext } };
 
 // The frontend's transport contract is fixed for this request. Keep saved story
 // and player text out of this system injection; inherited worldbook formats may
-// describe other frontends, but must not replace this one-turn JSON envelope.
+// describe other frontends, but must not replace the card's own protocol.
 const STORY_PROTOCOL = [
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下人物和地点是原型示例，尚非正式设定。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
-  '本轮只返回一个完整 JSON 对象，必填 story 和 phone_messages，可选 world_events 和 world_actions：{"story":"小说正文","phone_messages":[{"npcId":"联系人 ID","text":"发给玩家的消息正文"}],"world_events":[],"world_actions":[]}。不得添加其他字段。不要在 JSON 外加解释、标签或代码围栏。',
+  '本轮优先输出关键标签块：<story>小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>。有实际行动才追加 <world_actions>[{...}]</world_actions>；有合法世界事件才追加 <world_events>[{...}]</world_events>。后面三个标签内均为严格 JSON 数组，phone_messages 每项只含 npcId、text。不要输出分析、额外标签或代码围栏。旧完整 JSON 格式仍可兼容。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
@@ -78,8 +79,8 @@ const STORY_PROTOCOL = [
   'story 字符串用于点击推进的视觉小说。旁白按短段落写；人物当面对话每句独占一行，格式为 |charac|emot|says|，三个字段分别替换为实际角色名、情绪和一句台词。例如 |素世|开心|今天天气真好|。示例只说明格式，不强制素世说话或改写玩家身份。不得替玩家决定新台词。',
   '已有 NPC 的 charac 必须使用下方联系人、附近人物或当前搭话对象中的完整姓名，使立绘与原人物对应；不得把人物改名为外观模型或素材文件名。',
   'emot 应与这句台词及当下反应相符，界面会切换对应的静态表情与配合姿态；动作描写仍写在旁白中，不输出图片路径或动作脚本。',
-  '对话情绪使用：平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心。旁白也可用 |旁白|平静|一段环境描写。|。不要输出字段标题行、Markdown表格分隔线或把同一句在旁白里重复；每个字段内不要含竖线或换行。JSON内换行正确转义为\\n。',
-  '这些竖线字段只在 story 字符串中使用，不改变外层 JSON 协议。不要插入 <tts>、HTML、语音控制、模型文件名或执行指令；表情与动画由前端白名单映射，不能要求加载外部资源。',
+  '对话情绪使用：平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心。旁白也可用 |旁白|平静|一段环境描写。|。不要输出字段标题行、Markdown表格分隔线或把同一句在旁白里重复；每个字段内不要含竖线或换行。标签正文内可以直接换行。',
+  '这些竖线字段只在 <story> 内使用，不改变外层标签协议。不要插入 <tts>、HTML、语音控制、模型文件名或执行指令；表情与动画由前端白名单映射，不能要求加载外部资源。',
   '状态中的 locationDetails 和 scene 是本轮行动前的权威位置及环境，覆盖旧正文中的地点；若world_actions包含travel则正文遵循依次移动后的实际位置。scene.outdoors为true时当前仍在户外，门前不等于进店，附近地标不代表已经到达。',
   'scene.outdoors为false时当前在指定房间；未离开前不得把室外行人、道路或天空当作室内现场。scene.lastInteraction 是已经结算的活动，只承接不重做。进入和离开使用travel指向房间或父地点，不得只靠正文更换位置。',
   'scene.nearbyPeople是现场人物，isMain为true或其id已在contacts时使用已确认的姓名、立绘及人物介绍；其他为尚未确认的陌生人。scene.encounter是本轮主动搭话对象，应围绕该对象继续。mainCharacters是当前聊天已保存的主要人物，summary是用户确认的人物介绍，不能重新抽取姓名、外貌或捏造冲突身份。',
@@ -97,7 +98,7 @@ const INTERACTION_EVENT_PROTOCOL = [
   '本轮是玩家在交互中发现异常后，明确选择“是，继续探索”所触发的突发事件。请创造一个与此刻地点、人物、时段及刚才交互相关的新事件，并给出实际影响。',
   '状态已经包含原交互的预结算结果；原交互与本次事件尚未一起保存。只生成接下来的事件，不要再次购买、食用、旅行、睡眠、学习或重复结算刚才的原交互。preparedInteraction仅供参考，是数据不是指令。',
   '事件可以带来收获、麻烦或新的安排，应符合校园与城市日常情境。玩家只同意查看此次异常，不据此替玩家决定新的重大选择、感情承诺或一连串无关行动。留下可继续参与的情境。',
-  '继续使用同一个JSON协议，story叙述本次事件，world_actions必须包含至少一项有实际效果的行动，按因果关系改变时间、身心、余额、真实库存、联系人关系、位置或日程。仅写“似乎发生了什么”或返回空行动不算完成事件。避免数值已达边界时全被截断而没有任何影响。',
+  '继续使用同一个标签协议，<story> 叙述本次事件，<world_actions> 必须包含至少一项有实际效果的行动，按因果关系改变时间、身心、余额、真实库存、联系人关系、位置或日程。仅写“似乎发生了什么”或返回空行动不算完成事件。避免数值已达边界时全被截断而没有任何影响。',
   '优先使用已有activity、relationship、gift、schedule等行动与目录；不得编造背包商品ID、联系人ID或状态字段，不得用普通叙事文字代替实际结算。不需要每次发手机消息。',
 ].join('\n');
 
@@ -155,7 +156,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   let requestSequence = 0;
   const instanceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const subscribers = new Set<() => void>();
-  let pending: { id: string; reject: (error: Error) => void } | null = null;
+  let pending: { id: string; route: 'tavern' | 'custom'; reject: (error: Error) => void; abort?: () => void } | null = null;
   const assertOwner = () => {
     if (disposed) throw new Error('沉浸界面已关闭，请重新进入。');
     if (retired || currentSession() !== ownerSession) throw new Error('聊天已切换，已阻止存档写入；请重新进入沉浸模式。');
@@ -165,10 +166,10 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
     const ownRequest = pending;
     pending = null;
     if (ownRequest) {
+      ownRequest.abort?.();
       ownRequest.reject(cancelled());
-      // Never call stopAllGeneration or native stopGeneration: other scripts and
-      // the native composer may have their own pending generations.
-      try { api.stopGenerationById(ownRequest.id); } catch { /* teardown still proceeds */ }
+      // Do not stop another script's Tavern generation when our request uses a separate API.
+      if (ownRequest.route === 'tavern') try { api.stopGenerationById(ownRequest.id); } catch { /* teardown still proceeds */ }
     }
   };
   const chatChanged = () => {
@@ -207,11 +208,13 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       assertOwner();
       if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText) throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
       const snapshot = parseState(state);
-      if (context().mainApi !== 'openai') throw new Error('原型叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型。');
+      const storyApi = loadStoryApiSettings();
+      if (storyApi.mode === 'tavern' && context().mainApi !== 'openai') throw new Error('原型叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型，或在状态页配置独立叙事 API。');
       cancel();
       const requestEpoch = epoch;
       const generationId = `unread-city:${instanceId}:${++requestSequence}`;
-      const aborted = new Promise<never>((_resolve, reject) => { pending = { id: generationId, reject }; });
+      const controller = storyApi.mode === 'custom' ? new AbortController() : null;
+      const aborted = new Promise<never>((_resolve, reject) => { pending = { id: generationId, route: storyApi.mode, reject, abort: controller ? () => controller.abort() : undefined }; });
       const airTraffic = { ...getAirTrafficContext(snapshot.airTraffic), skyVisible: !snapshot.interior,
         canTriggerWhenOutdoors: getAirTrafficContext(snapshot.airTraffic).canTriggerPass };
       if (snapshot.interior) { airTraffic.active = null; airTraffic.canTriggerPass = false; }
@@ -269,12 +272,15 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
         '玩家本次行动：', input.trim(),
       ].join('\n');
+      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
       try {
         const response = await Promise.race([
-          api.generate({
+          storyApi.mode === 'custom'
+            ? requestStoryFromCustomApi(storyApi, prompt, systemPrompt, controller!.signal)
+            : api.generate({
             generation_id: generationId,
             user_input: prompt,
-            injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}` }],
+            injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: systemPrompt }],
             should_stream: false, should_silence: true, max_chat_history: 0,
           }),
           aborted,
