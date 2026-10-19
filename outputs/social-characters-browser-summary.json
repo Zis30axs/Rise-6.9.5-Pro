@@ -1,0 +1,104 @@
+{
+  "checkedOn": "2026-10-19",
+  "bundleSha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd",
+  "bundleBytes": 58263350,
+  "uniquePassed": 8,
+  "uniqueFailed": 0,
+  "scenarios": [
+    {
+      "name": "390px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+      "status": "passed",
+      "durationMs": 14250,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "320px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+      "status": "passed",
+      "durationMs": 12310,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "陌生人经真实手机确认姓名、立绘和简介，稳定人物ID与主要人物事件随聊天刷新保留",
+      "status": "passed",
+      "durationMs": 22977,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "手机联系人可手动扩展新主要人物，编辑资料沿用同一个ID",
+      "status": "passed",
+      "durationMs": 16296,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "简介只在主动许可后生成，注入此人精简出场上下文并允许编辑后保存",
+      "status": "passed",
+      "durationMs": 13370,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "简介生成和人物保存失败都保留编辑草稿，保存失败不发布人物或剧情",
+      "status": "passed",
+      "durationMs": 14074,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "关闭手机后迟到简介不修改草稿或世界，再次打开仍可手动编辑",
+      "status": "passed",
+      "durationMs": 13476,
+      "report": "outputs/social-characters-browser-results-main.json"
+    },
+    {
+      "name": "切换聊天会丢弃迟到简介，当前聊天的人物、正文和时钟都不受污染",
+      "status": "passed",
+      "durationMs": 14652,
+      "report": "outputs/social-characters-browser-results-chat-switch.json"
+    }
+  ],
+  "report": "outputs/social-characters-browser-results.json",
+  "realModelRequests": 0,
+  "externalNetworkRequests": 0,
+  "scope": {
+    "browser": "Microsoft Edge",
+    "workers": 1,
+    "productionShellIIFE": true,
+    "actualEmbeddedPhone": true,
+    "phoneStandIn": false,
+    "controlledTavernHelperHost": true,
+    "controlledGenerationReplies": true,
+    "staticFixtureHostNoViteHMR": true,
+    "nativeSillyTavern": false,
+    "tauriTavernMobileDevice": false,
+    "note": "Actual embedded production phone with controlled Tavern host and local literal generation replies; every non-5178 origin is blocked. No real model, native Tavern page, or physical mobile validation."
+  },
+  "diagnosticRuns": {
+    "initialReport": "outputs/social-characters-browser-results-first.json",
+    "initialCountedInFinal": false,
+    "initialReason": "Fixture assumed contact-save returns directly to Contacts and Vite HMR could reset the test host during parallel source changes.",
+    "frozenMainReport": "outputs/social-characters-browser-results-main.json",
+    "frozenMainPassed": 7,
+    "frozenMainFailed": 1,
+    "finalTargetedReport": "outputs/social-characters-browser-results-chat-switch.json",
+    "finalTargetedPassed": 1,
+    "finalTargetedFailed": 0,
+    "targetedReason": "Retained actual phone stays in the chat app after switching chats; test now opens Contacts directly.",
+    "productionChangesBetweenMainAndTargeted": false
+  },
+  "screenshots": [
+    {
+      "path": "outputs/social-dialogue-390.png",
+      "sha256": "0f39ee7e8eb7396c29db6b06d451df91072dcac018355596059b6c4bc853f045"
+    },
+    {
+      "path": "outputs/social-dialogue-320.png",
+      "sha256": "c4f01b4f854bffdebe34f7a925f6c210c75e92429944d119b33441e67b194924"
+    },
+    {
+      "path": "outputs/social-contact-form-390.png",
+      "sha256": "87da990ed4b330f453d576496ae37d84db724705614430deec4ca00bcf63395f"
+    },
+    {
+      "path": "outputs/social-contact-form-320.png",
+      "sha256": "d9472c832e07e47ef8d2c7ac31c5c657be7ade85dc2216d1e08420c09cfb232c"
+    }
+  ]
+}

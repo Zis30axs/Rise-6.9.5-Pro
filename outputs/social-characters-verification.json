@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-19",
+  "status": "implemented-and-local-checks-passed",
+  "stateSchema": "1.11.0",
+  "migration": "Strict 1.0.0–1.10.0 migration preserves old contact IDs, profiles, affinity, story and phone data.",
+  "newPersistedFields": [
+    "contacts[].portraitId",
+    "contacts[].sourcePersonId",
+    "contacts[].isMain",
+    "story[].participantIds (optional)"
+  ],
+  "features": [
+    "陌生人搭话立即显示稳定立绘，真实附近人物可在地点悬浮窗搭话或手机建档",
+    "对白在原阅读框内默认折叠、可展开，事件旁白与原始记录保留",
+    "真实内嵌手机确认或编辑姓名、三种本地立绘及短介绍",
+    "保存为主要人物并同步当前聊天正文、日记与后续模型上下文，稳定ID和消息不变",
+    "明确点击允许按钮才生成简介，先回编辑框，保存后才正式生效",
+    "简介请求筛选该角色已出现的对白，限制条数与字数，不发送完整历史或行动目录"
+  ],
+  "introductionContext": {
+    "maximumRelatedTurns": 6,
+    "maximumRelatedCharacters": 2400,
+    "maximumCharactersPerTurn": 600,
+    "matching": "stable participant IDs; legacy known names and IDs; adjacent dialogue pairs; chronological output",
+    "mutatesWorldOnGeneration": false,
+    "requiresExplicitConsent": true
+  },
+  "typecheck": "passed",
+  "productionBuild": "passed; final browser tests load the exact built IIFE",
+  "unitTests": {
+    "files": 40,
+    "passed": 444,
+    "failed": 0,
+    "execution": "435 tests in the complete 39-file run, then the changed 19-test targeted group passed, including nine additional unique tests. Repeated tests are not counted twice."
+  },
+  "phoneUnitTests": {
+    "passed": 42,
+    "failed": 0,
+    "files": 2,
+    "command": "node --test core/story-link.test.js core/panel-host.test.js"
+  },
+  "pythonTests": {
+    "passed": 8,
+    "failed": 0
+  },
+  "baseCardValidation": "passed",
+  "browserTests": {
+    "checkedOn": "2026-10-19",
+    "bundleSha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd",
+    "bundleBytes": 58263350,
+    "uniquePassed": 8,
+    "uniqueFailed": 0,
+    "scenarios": [
+      {
+        "name": "390px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+        "status": "passed",
+        "durationMs": 14250,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "320px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+        "status": "passed",
+        "durationMs": 12310,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "陌生人经真实手机确认姓名、立绘和简介，稳定人物ID与主要人物事件随聊天刷新保留",
+        "status": "passed",
+        "durationMs": 22977,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "手机联系人可手动扩展新主要人物，编辑资料沿用同一个ID",
+        "status": "passed",
+        "durationMs": 16296,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "简介只在主动许可后生成，注入此人精简出场上下文并允许编辑后保存",
+        "status": "passed",
+        "durationMs": 13370,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "简介生成和人物保存失败都保留编辑草稿，保存失败不发布人物或剧情",
+        "status": "passed",
+        "durationMs": 14074,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "关闭手机后迟到简介不修改草稿或世界，再次打开仍可手动编辑",
+        "status": "passed",
+        "durationMs": 13476,
+        "report": "outputs/social-characters-browser-results-main.json"
+      },
+      {
+        "name": "切换聊天会丢弃迟到简介，当前聊天的人物、正文和时钟都不受污染",
+        "status": "passed",
+        "durationMs": 14652,
+        "report": "outputs/social-characters-browser-results-chat-switch.json"
+      }
+    ],
+    "report": "outputs/social-characters-browser-results.json",
+    "realModelRequests": 0,
+    "externalNetworkRequests": 0,
+    "scope": {
+      "browser": "Microsoft Edge",
+      "workers": 1,
+      "productionShellIIFE": true,
+      "actualEmbeddedPhone": true,
+      "phoneStandIn": false,
+      "controlledTavernHelperHost": true,
+      "controlledGenerationReplies": true,
+      "staticFixtureHostNoViteHMR": true,
+      "nativeSillyTavern": false,
+      "tauriTavernMobileDevice": false,
+      "note": "Actual embedded production phone with controlled Tavern host and local literal generation replies; every non-5178 origin is blocked. No real model, native Tavern page, or physical mobile validation."
+    },
+    "diagnosticRuns": {
+      "initialReport": "outputs/social-characters-browser-results-first.json",
+      "initialCountedInFinal": false,
+      "initialReason": "Fixture assumed contact-save returns directly to Contacts and Vite HMR could reset the test host during parallel source changes.",
+      "frozenMainReport": "outputs/social-characters-browser-results-main.json",
+      "frozenMainPassed": 7,
+      "frozenMainFailed": 1,
+      "finalTargetedReport": "outputs/social-characters-browser-results-chat-switch.json",
+      "finalTargetedPassed": 1,
+      "finalTargetedFailed": 0,
+      "targetedReason": "Retained actual phone stays in the chat app after switching chats; test now opens Contacts directly.",
+      "productionChangesBetweenMainAndTargeted": false
+    },
+    "screenshots": [
+      {
+        "path": "outputs/social-dialogue-390.png",
+        "sha256": "0f39ee7e8eb7396c29db6b06d451df91072dcac018355596059b6c4bc853f045"
+      },
+      {
+        "path": "outputs/social-dialogue-320.png",
+        "sha256": "c4f01b4f854bffdebe34f7a925f6c210c75e92429944d119b33441e67b194924"
+      },
+      {
+        "path": "outputs/social-contact-form-390.png",
+        "sha256": "87da990ed4b330f453d576496ae37d84db724705614430deec4ca00bcf63395f"
+      },
+      {
+        "path": "outputs/social-contact-form-320.png",
+        "sha256": "d9472c832e07e47ef8d2c7ac31c5c657be7ade85dc2216d1e08420c09cfb232c"
+      }
+    ]
+  },
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 58263350,
+    "sha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-相遇与主要人物版.png",
+    "bytes": 78474965,
+    "sha256": "d191f48d8c89e4342f637b053caafcd3db7d0caaa3985eda1fe44cee935a6abb"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 78581389,
+    "sha256": "0298c61bdd06e0a214e88dc25ef2cfb2cd843e99a816a93ed20870b625606702"
+  },
+  "installedBackup": "D:\\.study\\cc\\dist\\social-characters-card-before.png",
+  "packagingReport": "outputs/social-characters-packaging.json",
+  "protectedFilesUnchanged": 14,
+  "originalArchivesUnchanged": 6,
+  "chatFilesUnchanged": 29,
+  "codeAudit": {
+    "status": "passed",
+    "report": "outputs/social-characters-code-audit.json"
+  },
+  "independentAudit": {
+    "status": "passed",
+    "report": "outputs/social-characters-independent-audit.json"
+  },
+  "localPhoneDeployment": {
+    "status": "passed",
+    "updatedFiles": 7,
+    "report": "outputs/social-characters-phone-deployment.json",
+    "backup": "D:\\.study\\cc\\dist\\social-characters-phone-before",
+    "requiresPageRefresh": true,
+    "sourceInstalledHttpByteExact": true,
+    "settingsAndChatsUnchanged": true
+  },
+  "browserPhone": "Actual ST-iPhonie runtime/UI from the final embedded production bundle; Tavern host and model replies are controlled fixtures.",
+  "physicalTauriTavernValidated": false,
+  "realStoryLlmRequests": 0,
+  "realIntroductionLlmRequests": 0,
+  "nativeSillyTavernPageValidated": false,
+  "gitCommitPushOrRelease": false
+}

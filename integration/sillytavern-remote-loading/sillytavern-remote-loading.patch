@@ -1,0 +1,1074 @@
+diff --git a/public/script.js b/public/script.js
+--- a/public/script.js
++++ b/public/script.js
+@@ -13,6 +13,8 @@
+ 
+ import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+ import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
++import { CHARACTER_TRANSPORT_FORMAT, readCharacterResponse } from './scripts/character-transport.js';
++import { fetchCharacterWithCache, createCharacterPublicationGuard } from './scripts/character-cache.js';
+ import {
+     generateKoboldWithStreaming,
+     kai_settings,
+@@ -1218,21 +1220,22 @@
+     return entities;
+ }
+ 
++const characterRawCache = libs.localforage.createInstance({
++    name: 'SillyTavern_CharacterTransport', storeName: 'raw_json_v1', driver: libs.localforage.INDEXEDDB,
++});
++const beginCharacterPublication = createCharacterPublicationGuard();
++
+ export async function getOneCharacter(avatarUrl) {
+-    const response = await fetch('/api/characters/get', {
+-        method: 'POST',
+-        headers: getRequestHeaders(),
+-        body: JSON.stringify({
+-            avatar_url: avatarUrl,
+-        }),
+-    });
++    const canPublish = beginCharacterPublication(avatarUrl, characters.find(x => x.avatar === avatarUrl));
++    const { response, character: getData } = await fetchCharacterWithCache(avatarUrl, {
++        storage: characterRawCache, hash: libs.sha256, headers: getRequestHeaders(),
++    });
++    const indexOf = characters.findIndex(x => x.avatar === avatarUrl);
++    if (!canPublish(characters[indexOf])) return;
+ 
+     if (response.ok) {
+-        const getData = await response.json();
+         getData.name = DOMPurify.sanitize(getData.name);
+         getData.chat = String(getData.chat);
+-
+-        const indexOf = characters.findIndex(x => x.avatar === avatarUrl);
+ 
+         if (indexOf !== -1) {
+             characters[indexOf] = getData;
+@@ -1293,12 +1296,12 @@
+     const response = await fetch('/api/characters/all', {
+         method: 'POST',
+         headers: getRequestHeaders(),
+-        body: JSON.stringify({}),
++        body: JSON.stringify({ character_transport: CHARACTER_TRANSPORT_FORMAT }),
+     });
+     if (response.ok) {
+         const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
+         characters.splice(0, characters.length);
+-        const getData = await response.json();
++        const getData = await readCharacterResponse(response);
+         for (let i = 0; i < getData.length; i++) {
+             characters[i] = getData[i];
+             characters[i].name = DOMPurify.sanitize(characters[i].name);
+diff --git a/src/endpoints/characters.js b/src/endpoints/characters.js
+--- a/src/endpoints/characters.js
++++ b/src/endpoints/characters.js
+@@ -25,6 +25,7 @@
+ import { ByafParser } from '../byaf.js';
+ import { CharXParser, persistCharXAssets } from '../charx.js';
+ import cacheBuster from '../middleware/cacheBuster.js';
++import { sendCharacterResponse, sendCachedCharacterResponse } from '../character-transport.js';
+ 
+ // With 100 MB limit it would take roughly 3000 characters to reach this limit
+ const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
+@@ -1467,7 +1468,7 @@
+         const pngFiles = files.filter(file => file.endsWith('.png'));
+         const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
+         const data = (await Promise.all(processingPromises)).filter(c => c.name);
+-        return response.send(data);
++        return sendCharacterResponse(request, response, data);
+     } catch (err) {
+         console.error(err);
+         const isRangeError = err instanceof RangeError;
+@@ -1487,7 +1488,7 @@
+ 
+         const data = await processCharacter(item, request.user.directories, { shallow: false });
+ 
+-        return response.send(data);
++        return sendCachedCharacterResponse(request, response, data);
+     } catch (err) {
+         console.error(err);
+         response.sendStatus(500);
+diff --git a/public/scripts/character-transport.js b/public/scripts/character-transport.js
+new file mode 100644
+--- /dev/null
++++ b/public/scripts/character-transport.js
+@@ -0,0 +1,49 @@
++// Versioned opt-in transport; the in-memory character shape remains unchanged.
++export const CHARACTER_TRANSPORT_FORMAT = 'json-data-v1';
++export const CHARACTER_TRANSPORT_HEADER = 'X-SillyTavern-Character-Transport';
++export const CHARACTER_CACHE_FORMAT = 'json-data-cache-v1';
++
++/**
++ * Restore the original character response without modifying object prototypes.
++ * @param {object} packed Character transfer record
++ * @returns {object} The ordinary, complete character object
++ */
++export function unpackCharacter(packed) {
++    if (Object.hasOwn(packed, 'full')) {
++        return packed.full;
++    }
++
++    const character = JSON.parse(packed.json_data);
++    if (!character || typeof character !== 'object' || Array.isArray(character)
++        || !packed.overrides || typeof packed.overrides !== 'object' || Array.isArray(packed.overrides)
++        || !Array.isArray(packed.removed) || !packed.removed.every(key => typeof key === 'string')) {
++        throw new TypeError('Invalid compact character response');
++    }
++
++    for (const key of packed.removed) {
++        delete character[key];
++    }
++    for (const [key, value] of Object.entries(packed.overrides)) {
++        // Card authors may use __proto__, constructor or other unknown own keys.
++        // Defining a data property preserves those keys without invoking setters.
++        Object.defineProperty(character, key, { value, writable: true, enumerable: true, configurable: true });
++    }
++    Object.defineProperty(character, 'json_data', {
++        value: packed.json_data, writable: true, enumerable: true, configurable: true,
++    });
++    return character;
++}
++
++/**
++ * Read either an opted-in compact response or an unchanged older server response.
++ * The response header prevents collisions with arbitrary character-card fields.
++ * @param {Response} response Character API response
++ * @returns {Promise<object|object[]>} Complete characters (or lazy-load summaries)
++ */
++export async function readCharacterResponse(response) {
++    const data = await response.json();
++    if (response.headers.get(CHARACTER_TRANSPORT_HEADER) !== CHARACTER_TRANSPORT_FORMAT) {
++        return data;
++    }
++    return Array.isArray(data) ? data.map(unpackCharacter) : unpackCharacter(data);
++}
+diff --git a/public/scripts/character-cache.js b/public/scripts/character-cache.js
+new file mode 100644
+--- /dev/null
++++ b/public/scripts/character-cache.js
+@@ -0,0 +1,123 @@
++import { CHARACTER_CACHE_FORMAT, CHARACTER_TRANSPORT_FORMAT, CHARACTER_TRANSPORT_HEADER, readCharacterResponse, unpackCharacter } from './character-transport.js';
++
++/** Bound optional cache work so blocked storage cannot prevent opening a card. */
++async function optionalCacheWork(work, timeoutMs) {
++    let timer;
++    try {
++        return await Promise.race([
++            work,
++            new Promise((resolve, reject) => { timer = setTimeout(() => reject(new Error('Character cache timeout')), timeoutMs); }),
++        ]);
++    } finally {
++        clearTimeout(timer);
++    }
++}
++
++/**
++ * Guard publication against a newer request or an account/list refresh while a
++ * request was in flight. Each returned check is consumed once at publication.
++ * @returns {function(string, object|undefined): function(object|undefined): boolean} Begin a guarded request
++ */
++export function createCharacterPublicationGuard() {
++    const pending = new Map();
++    return (avatar, original) => {
++        const token = Symbol();
++        pending.set(avatar, token);
++        return current => {
++            if (pending.get(avatar) !== token) return false;
++            pending.delete(avatar);
++            return current === original;
++        };
++    };
++}
++
++/**
++ * Load a character using a revalidated per-account raw-JSON cache when available.
++ * Storage and hashing use ST's existing localforage / js-sha256 libraries. The
++ * caller supplies them so this logic can also be tested without a browser DOM.
++ * @param {string} avatar Avatar filename
++ * @param {object} options Existing browser services
++ * @param {object} options.storage Dedicated IndexedDB-only localforage instance
++ * @param {function(string): string} options.hash SHA-256 that also works on HTTP
++ * @param {object} options.headers Existing ST request headers, including CSRF
++ * @param {typeof fetch} [options.fetchImpl] Fetch implementation
++ * @param {number} [options.timeoutMs] Maximum optional storage / identity wait
++ * @returns {Promise<{response: Response, character: object|undefined}>} Result
++ */
++export async function fetchCharacterWithCache(avatar, { storage, hash, headers, fetchImpl = globalThis.fetch, timeoutMs = 2000 }) {
++    const fetchCard = validator => fetchImpl('/api/characters/get', {
++        method: 'POST', headers, cache: 'no-store',
++        body: JSON.stringify({ avatar_url: avatar, character_transport: CHARACTER_CACHE_FORMAT, character_cache: validator }),
++    });
++    const fetchFull = async () => {
++        const response = await fetchImpl('/api/characters/get', {
++            method: 'POST', headers, cache: 'no-store',
++            body: JSON.stringify({ avatar_url: avatar, character_transport: CHARACTER_TRANSPORT_FORMAT }),
++        });
++        return { response, character: response.ok ? await readCharacterResponse(response) : undefined };
++    };
++
++    // Do not trust a stale UI profile or guess default-user: another tab may have
++    // changed the login. The server independently checks the account once more.
++    let user;
++    try {
++        user = await optionalCacheWork((async () => {
++            const identity = await fetchImpl('/api/users/me', { headers, cache: 'no-store' });
++            if (!identity.ok) throw new Error('Character cache identity unavailable');
++            const profile = await identity.json();
++            if (typeof profile?.handle !== 'string' || !profile.handle) throw new Error('Character cache identity missing');
++            return profile.handle;
++        })(), timeoutMs);
++    } catch {
++        return fetchFull();
++    }
++
++    const key = JSON.stringify([user, avatar]);
++    let cached;
++    try {
++        const record = await optionalCacheWork(storage.getItem(key), timeoutMs);
++        if (record?.user === user && record?.avatar === avatar && typeof record?.json_data === 'string'
++            && /^[a-f0-9]{64}$/.test(record?.sha256) && hash(record.json_data) === record.sha256) {
++            cached = record;
++        }
++    } catch {
++        // Disabled, blocked, full or corrupt storage cannot stop a full download.
++    }
++
++    const response = await fetchCard(cached ? { user, avatar, sha256: cached.sha256 } : undefined);
++    if (!response.ok) return { response, character: undefined };
++    if (response.headers.get(CHARACTER_TRANSPORT_HEADER) !== CHARACTER_CACHE_FORMAT) {
++        // Old servers ignore the new request marker and return the ordinary card.
++        return { response, character: await readCharacterResponse(response) };
++    }
++
++    let envelope;
++    let raw;
++    let character;
++    try {
++        envelope = await response.json();
++        if (envelope?.user !== user || envelope?.avatar !== avatar || !/^[a-f0-9]{64}$/.test(envelope?.sha256)) {
++            throw new Error('Character cache identity mismatch');
++        }
++        if (typeof envelope.character?.json_data === 'string') {
++            raw = envelope.character.json_data;
++            if (hash(raw) !== envelope.sha256) throw new Error('Character cache content mismatch');
++        } else {
++            if (!cached || cached.sha256 !== envelope.sha256) throw new Error('Character cache content missing');
++            raw = cached.json_data;
++        }
++        character = unpackCharacter({ ...envelope.character, json_data: raw });
++        if (character.avatar !== avatar) throw new Error('Character cache avatar mismatch');
++    } catch {
++        // Retry once without a conditional cache request. Never loop on bad data.
++        return fetchFull();
++    }
++
++    if (!cached || cached.sha256 !== envelope.sha256) {
++        // Persistence is optional and must never delay publication to the UI.
++        Promise.resolve().then(() => storage.setItem(key, { user, avatar, sha256: envelope.sha256, json_data: raw })).catch(() => {
++            // Quota/private mode failures affect caching only, not the loaded card.
++        });
++    }
++    return { response, character };
++}
+diff --git a/src/character-transport.js b/src/character-transport.js
+new file mode 100644
+--- /dev/null
++++ b/src/character-transport.js
+@@ -0,0 +1,84 @@
++import { isDeepStrictEqual } from 'node:util';
++import { createHash } from 'node:crypto';
++import { CHARACTER_CACHE_FORMAT, CHARACTER_TRANSPORT_FORMAT, CHARACTER_TRANSPORT_HEADER } from '../public/scripts/character-transport.js';
++
++/**
++ * Transfer the exact original JSON once, plus changes made by the server.
++ * A fresh parse deliberately detects nested mutations made during V1/V2 loading.
++ * No schema-specific field allowlist can discard an unknown extension.
++ * @param {object} character Processed character, including its raw json_data
++ * @returns {object} Compact transfer record, or an unchanged fallback record
++ */
++export function packCharacter(character) {
++    if (!character || typeof character.json_data !== 'string') {
++        return { full: character };
++    }
++
++    try {
++        const original = JSON.parse(character.json_data);
++        if (!original || typeof original !== 'object' || Array.isArray(original)) {
++            return { full: character };
++        }
++
++        const overrides = Object.create(null);
++        const removed = [];
++        for (const key of Object.keys(original)) {
++            if (!Object.hasOwn(character, key) || character[key] === undefined) {
++                removed.push(key);
++            }
++        }
++        for (const [key, value] of Object.entries(character)) {
++            if (key === 'json_data' || value === undefined) continue;
++            if (!Object.hasOwn(original, key) || !isDeepStrictEqual(value, original[key])) {
++                overrides[key] = value;
++            }
++        }
++        return { json_data: character.json_data, overrides, removed };
++    } catch {
++        // Unexpected or excessively nested legacy data still uses the old shape.
++        return { full: character };
++    }
++}
++
++/**
++ * Send compact records only to clients explicitly requesting this protocol.
++ * @param {import('express').Request} request Request with optional transport marker
++ * @param {import('express').Response} response Response
++ * @param {object|object[]} characters Ordinary character API payload
++ * @returns {import('express').Response} Sent response
++ */
++export function sendCharacterResponse(request, response, characters) {
++    if (request.body?.character_transport !== CHARACTER_TRANSPORT_FORMAT) {
++        return response.send(characters);
++    }
++    const packed = Array.isArray(characters) ? characters.map(packCharacter) : packCharacter(characters);
++    response.setHeader(CHARACTER_TRANSPORT_HEADER, CHARACTER_TRANSPORT_FORMAT);
++    return response.send(packed);
++}
++
++/**
++ * Revalidate one cached raw card against the authenticated user and current bytes.
++ * Only /get calls this function. Runtime fields are recalculated on every request.
++ * @param {import('express').Request} request Request with optional cache validator
++ * @param {import('express').Response} response Response
++ * @param {object} character Current processed character
++ * @returns {import('express').Response} Sent response
++ */
++export function sendCachedCharacterResponse(request, response, character) {
++    if (request.body?.character_transport !== CHARACTER_CACHE_FORMAT) {
++        return sendCharacterResponse(request, response, character);
++    }
++    const user = request.user?.profile?.handle;
++    const packed = packCharacter(character);
++    if (typeof user !== 'string' || !user || typeof packed.json_data !== 'string'
++        || character.avatar !== request.body.avatar_url) {
++        return response.send(character);
++    }
++    const sha256 = createHash('sha256').update(packed.json_data, 'utf8').digest('hex');
++    const validator = request.body.character_cache;
++    if (validator?.user === user && validator?.avatar === character.avatar && validator?.sha256 === sha256) {
++        delete packed.json_data;
++    }
++    response.setHeader(CHARACTER_TRANSPORT_HEADER, CHARACTER_CACHE_FORMAT);
++    return response.send({ user, avatar: character.avatar, sha256, character: packed });
++}
+diff --git a/tests/character-transport.node-test.mjs b/tests/character-transport.node-test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-transport.node-test.mjs
+@@ -0,0 +1,237 @@
++import assert from 'node:assert/strict';
++import { test, after } from 'node:test';
++import fs from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++import { gzipSync } from 'node:zlib';
++import { packCharacter, sendCharacterResponse } from '../src/character-transport.js';
++import { CHARACTER_CACHE_FORMAT, CHARACTER_TRANSPORT_FORMAT, CHARACTER_TRANSPORT_HEADER, unpackCharacter, readCharacterResponse } from '../public/scripts/character-transport.js';
++
++const wire = value => JSON.parse(JSON.stringify(value));
++const roundTrip = character => unpackCharacter(wire(packCharacter(character)));
++const own = (object, key, value) => Object.defineProperty(object, key, {
++    value, enumerable: true, writable: true, configurable: true,
++});
++
++test('keeps exact Unicode/whitespace/raw JSON and every unknown extension', () => {
++    const raw = '{\n "spec":"chara_card_v2", "data":{"name":"未读 🦋","extensions":{"foreign":{"nul":null,"escaped":"\\u4e2d\\n","array":[false,0,""]}}},"unknown":{"value":42}\n}';
++    const character = { ...JSON.parse(raw), json_data: raw, name: '未读 🦋', avatar: 'test.png', chat: '2026-10-19', date_added: 42 };
++    const packed = packCharacter(character);
++    assert.equal(Object.hasOwn(packed.overrides, 'data'), false);
++    assert.deepStrictEqual(roundTrip(character), wire(character));
++    assert.equal(roundTrip(character).json_data, raw);
++});
++
++test('detects nested mutations, new fields, deleted fields and omitted undefined', () => {
++    const raw = '{"data":{"extensions":{"nested":{"value":1}}},"remove":1,"omit":2,"untouched":null}';
++    const character = JSON.parse(raw);
++    character.data.extensions.nested.value = 2;
++    delete character.remove;
++    character.omit = undefined;
++    character.added = { null: null };
++    character.json_data = raw;
++    assert.deepStrictEqual(roundTrip(character), wire(character));
++    assert.equal(packCharacter(character).overrides.data.extensions.nested.value, 2);
++});
++
++test('preserves special own keys without changing any prototype', () => {
++    const raw = '{"__proto__":{"polluted":"raw"},"constructor":{"prototype":{"danger":true}},"prototype":1,"data":{"extensions":{"__proto__":{"x":1}}}}';
++    const character = JSON.parse(raw);
++    own(character, '__proto__', { polluted: 'changed' });
++    own(character, 'constructor', null);
++    character.json_data = raw;
++    const result = roundTrip(character);
++    assert.deepStrictEqual(result, wire(character));
++    assert.equal(Object.getPrototypeOf(result), Object.prototype);
++    assert.equal(Object.prototype.polluted, undefined);
++    assert.equal(Object.prototype.danger, undefined);
++    assert.equal(Object.hasOwn(result, '__proto__'), true);
++});
++
++test('preserves raw json_data accidentally embedded in a card without recursion', () => {
++    const raw = '{"name":"test","json_data":"old embedded text","data":null}';
++    const character = { ...JSON.parse(raw), json_data: raw };
++    assert.deepStrictEqual(roundTrip(character), wire(character));
++    assert.equal(roundTrip(character).json_data, raw);
++});
++
++test('falls back without loss for shallow records, malformed raw JSON and JSON null', () => {
++    for (const character of [null, { shallow: true, data: { name: 'test' } }, { json_data: 'null', data: null }, { json_data: '[]', data: [] }, { json_data: 'invalid' }]) {
++        assert.deepStrictEqual(roundTrip(character), wire(character));
++    }
++});
++
++test('only the exact protocol request opts in; third parties retain their objects', () => {
++    const character = { name: 'test', data: {}, json_data: '{"name":"test","data":{}}' };
++    for (const marker of [undefined, true, 'true', 'json-data-v0', 'json-data-v2']) {
++        const headers = new Map();
++        const response = { setHeader: (key, value) => headers.set(key, value), send: data => data };
++        const result = sendCharacterResponse({ body: { character_transport: marker } }, response, character);
++        assert.equal(result, character);
++        assert.equal(headers.size, 0);
++    }
++});
++
++test('list and single responses restore before extensions can consume them', async () => {
++    const character = { name: 'test', data: {}, json_data: '{"name":"test","data":{}}' };
++    for (const payload of [character, [character, { shallow: true, name: 'small' }]]) {
++        const headers = {};
++        const response = { setHeader: (key, value) => own(headers, key, value), send: data => data };
++        const packed = sendCharacterResponse({ body: { character_transport: CHARACTER_TRANSPORT_FORMAT } }, response, payload);
++        assert.equal(headers[CHARACTER_TRANSPORT_HEADER], CHARACTER_TRANSPORT_FORMAT);
++        const restored = await readCharacterResponse(new Response(JSON.stringify(packed), { headers }));
++        assert.deepStrictEqual(restored, payload);
++    }
++});
++
++test('older servers and marker-like card fields cannot trigger decoding', async () => {
++    const character = { format: CHARACTER_TRANSPORT_FORMAT, json_data: 'legacy', overrides: 'foreign', full: 'foreign' };
++    for (const headers of [{}, { [CHARACTER_TRANSPORT_HEADER]: 'json-data-v2' }]) {
++        assert.deepStrictEqual(await readCharacterResponse(new Response(JSON.stringify(character), { headers })), character);
++    }
++});
++
++test('large embedded content crosses the wire once and remains fully editable', () => {
++    const asset = Array.from({ length: 20000 }, (_, i) => `asset-${i.toString(36)}-未读`).join('');
++    const raw = JSON.stringify({ spec: 'chara_card_v2', data: { extensions: { helper: asset } } });
++    const character = { ...JSON.parse(raw), json_data: raw, avatar: 'test.png' };
++    const full = JSON.stringify(character);
++    const packed = JSON.stringify(packCharacter(character));
++    assert.ok(Buffer.byteLength(packed) < Buffer.byteLength(full) * 0.55);
++    assert.ok(gzipSync(packed).length < gzipSync(full).length * 0.6);
++    const restored = unpackCharacter(JSON.parse(packed));
++    assert.deepStrictEqual(restored, wire(character));
++    restored.data.extensions.helper = 'edited';
++    assert.equal(JSON.parse(restored.json_data).data.extensions.helper, asset);
++});
++
++// Integration checks use the installed /all and /get handlers and real PNG parser.
++// Their config and files live in a dedicated temporary directory, never user data.
++const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'st-character-transport-test-'));
++const directories = Object.fromEntries(['characters', 'chats', 'worlds'].map(name => [name, path.join(fixtureRoot, name)]));
++for (const directory of Object.values(directories)) fs.mkdirSync(directory);
++const fixtureConfig = path.join(fixtureRoot, 'config.yaml');
++fs.writeFileSync(fixtureConfig, 'performance:\n  useDiskCache: false\n  lazyLoadCharacters: false\n');
++const { setConfigFilePath } = await import('../src/util.js');
++setConfigFilePath(fixtureConfig);
++globalThis.DATA_ROOT = fixtureRoot;
++globalThis.COMMAND_LINE_ARGS = {};
++const { router, diskCache } = await import('../src/endpoints/characters.js');
++const { default: encode } = await import('../src/png/encode.js');
++const { default: pngText } = await import('png-chunk-text');
++const { read: readCard } = await import('../src/character-card-parser.js');
++
++after(() => {
++    diskCache.dispose();
++    const resolved = path.resolve(fixtureRoot);
++    assert.equal(path.dirname(resolved), path.resolve(os.tmpdir()));
++    assert.ok(path.basename(resolved).startsWith('st-character-transport-test-'));
++    fs.rmSync(resolved, { recursive: true, force: true });
++});
++
++function writeFixture(filename, value) {
++    const raw = JSON.stringify(value);
++    const png = encode([
++        { name: 'IHDR', data: new Uint8Array([0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0]) },
++        pngText.encode('chara', Buffer.from(raw).toString('base64')),
++        { name: 'IEND', data: new Uint8Array() },
++    ]);
++    fs.writeFileSync(path.join(directories.characters, filename), png);
++    return raw;
++}
++
++async function callRoute(route, body, routeDirectories = directories) {
++    const headers = {};
++    let status = 200;
++    let payload;
++    const request = { body, user: { directories: routeDirectories, profile: { handle: 'fixture-user' } } };
++    const response = {
++        setHeader: (key, value) => own(headers, key, value),
++        status(code) { status = code; return this; },
++        sendStatus(code) { status = code; return this; },
++        send(data) { payload = data; return this; },
++    };
++    const handler = router.stack.find(layer => layer.route?.path === route).route.stack.at(-1).handle;
++    await handler(request, response);
++    assert.equal(status, 200);
++    return { payload, headers };
++}
++
++const v2 = {
++    spec: 'chara_card_v2', spec_version: '2.0', chat: 'fixed-chat',
++    data: { name: '中文 🦋', description: '', personality: '', scenario: '', first_mes: '', mes_example: '', tags: [], extensions: { foreign: { value: null } } },
++    foreign: { untouched: ['hello', null] },
++};
++
++test('actual character handlers preserve V1 migration and V2 missing extension defaults', async () => {
++    const cases = [
++        ['v1.png', { name: 'Legacy', chat: 'fixed-chat', description: 'old description', tags: ['one'], foreign: { keep: 1 } }],
++        ['v2.png', v2],
++        ['v2-null.png', { ...v2, data: { ...v2.data, description: null, extensions: null } }],
++        ['v2-no-data.png', { spec: 'chara_card_v2', name: 'No Data', chat: 'fixed-chat', foreign: null }],
++        ['v2-special.png', JSON.parse(JSON.stringify(v2).replace('"foreign":{"untouched"', '"__proto__":{"untouched"'))],
++    ];
++    for (const [filename, value] of cases) {
++        const raw = writeFixture(filename, value);
++        const full = await callRoute('/get', { avatar_url: filename });
++        const compact = await callRoute('/get', { avatar_url: filename, character_transport: CHARACTER_TRANSPORT_FORMAT });
++        const restored = await readCharacterResponse(new Response(JSON.stringify(compact.payload), { headers: compact.headers }));
++        assert.deepStrictEqual(restored, wire(full.payload));
++        assert.equal(restored.json_data, raw);
++        assert.equal(Object.getPrototypeOf(restored), Object.prototype);
++        assert.equal(Object.prototype.untouched, undefined);
++        const initial = await callRoute('/get', { avatar_url: filename, character_transport: CHARACTER_CACHE_FORMAT });
++        const cached = await callRoute('/get', { avatar_url: filename, character_transport: CHARACTER_CACHE_FORMAT, character_cache: {
++            user: 'fixture-user', avatar: filename, sha256: initial.payload.sha256,
++        } });
++        assert.equal(cached.headers[CHARACTER_TRANSPORT_HEADER], CHARACTER_CACHE_FORMAT);
++        assert.equal(Object.hasOwn(cached.payload.character, 'json_data'), false);
++        assert.deepStrictEqual(unpackCharacter(wire({ ...cached.payload.character, json_data: initial.payload.character.json_data })), wire(full.payload));
++    }
++    const full = await callRoute('/all', {});
++    const compact = await callRoute('/all', { character_transport: CHARACTER_TRANSPORT_FORMAT });
++    assert.deepStrictEqual(await readCharacterResponse(new Response(JSON.stringify(compact.payload), { headers: compact.headers })), wire(full.payload));
++    const unchanged = await callRoute('/all', { character_transport: CHARACTER_CACHE_FORMAT });
++    assert.deepStrictEqual(wire(unchanged.payload), wire(full.payload));
++    assert.equal(unchanged.headers[CHARACTER_TRANSPORT_HEADER], undefined);
++});
++
++test('actual installed cards round-trip losslessly (opt-in read-only check)', { skip: !process.env.ST_TRANSPORT_VERIFY_CHARACTERS }, async () => {
++    const characterDirectory = path.resolve(process.env.ST_TRANSPORT_VERIFY_CHARACTERS);
++    const installedDirectories = { ...directories, characters: characterDirectory };
++    let count = 0;
++    let fullBytes = 0;
++    let compactBytes = 0;
++    let fullGzipBytes = 0;
++    let compactGzipBytes = 0;
++    let cacheHitBytes = 0;
++    let cacheHitGzipBytes = 0;
++    let packingMs = 0;
++    for (const filename of fs.readdirSync(characterDirectory).filter(name => name.endsWith('.png'))) {
++        const full = await callRoute('/get', { avatar_url: filename }, installedDirectories);
++        const start = performance.now();
++        const packed = packCharacter(full.payload);
++        packingMs += performance.now() - start;
++        const serializedFull = JSON.stringify(full.payload);
++        const serializedCompact = JSON.stringify(packed);
++        const restored = unpackCharacter(JSON.parse(serializedCompact));
++        assert.deepStrictEqual(restored, JSON.parse(serializedFull));
++        assert.equal(restored.json_data, readCard(fs.readFileSync(path.join(characterDirectory, filename))));
++        const initial = await callRoute('/get', { avatar_url: filename, character_transport: CHARACTER_CACHE_FORMAT }, installedDirectories);
++        const cached = await callRoute('/get', { avatar_url: filename, character_transport: CHARACTER_CACHE_FORMAT, character_cache: {
++            user: 'fixture-user', avatar: filename, sha256: initial.payload.sha256,
++        } }, installedDirectories);
++        assert.equal(Object.hasOwn(cached.payload.character, 'json_data'), false);
++        assert.deepStrictEqual(unpackCharacter(wire({ ...cached.payload.character, json_data: initial.payload.character.json_data })), JSON.parse(serializedFull));
++        const serializedHit = JSON.stringify(cached.payload);
++        cacheHitBytes += Buffer.byteLength(serializedHit);
++        cacheHitGzipBytes += gzipSync(serializedHit).length;
++        fullBytes += Buffer.byteLength(serializedFull);
++        compactBytes += Buffer.byteLength(serializedCompact);
++        fullGzipBytes += gzipSync(serializedFull).length;
++        compactGzipBytes += gzipSync(serializedCompact).length;
++        count++;
++    }
++    console.log(JSON.stringify({ installedCardsVerified: count, fullBytes, compactBytes, fullGzipBytes, compactGzipBytes, cacheHitBytes, cacheHitGzipBytes, packingMs: Math.round(packingMs) }));
++    assert.ok(count > 0);
++});
+diff --git a/tests/character-cache.node-test.mjs b/tests/character-cache.node-test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-cache.node-test.mjs
+@@ -0,0 +1,314 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++import { createHash } from 'node:crypto';
++import fs from 'node:fs';
++import vm from 'node:vm';
++import sha256Module from 'js-sha256';
++import localforage from 'localforage';
++import { sendCachedCharacterResponse, sendCharacterResponse } from '../src/character-transport.js';
++import { CHARACTER_CACHE_FORMAT, CHARACTER_TRANSPORT_FORMAT, CHARACTER_TRANSPORT_HEADER } from '../public/scripts/character-transport.js';
++import { fetchCharacterWithCache, createCharacterPublicationGuard } from '../public/scripts/character-cache.js';
++
++const hash = sha256Module.sha256;
++const wire = value => JSON.parse(JSON.stringify(value));
++const key = (user, avatar) => JSON.stringify([user, avatar]);
++const makeCard = (content = '未读 🦋', chat = 'chat-1') => {
++    const json_data = JSON.stringify({ spec: 'chara_card_v2', data: { name: 'test', extensions: { helper: content } }, foreign: null });
++    return { ...JSON.parse(json_data), json_data, avatar: 'test.png', name: 'test', chat, chat_size: 12, date_last_chat: 1 };
++};
++
++function storageFixture() {
++    const entries = new Map();
++    return {
++        entries,
++        reads: [],
++        writes: [],
++        async getItem(id) { this.reads.push(id); return entries.has(id) ? structuredClone(entries.get(id)) : null; },
++        async setItem(id, value) { this.writes.push(id); entries.set(id, structuredClone(value)); return value; },
++    };
++}
++
++function serverFixture() {
++    const state = { user: 'alice', card: makeCard(), calls: [], responses: [], older: false, identityFail: false, mutate: null };
++    state.fetchImpl = async (url, options) => {
++        assert.equal(options.cache, 'no-store');
++        assert.equal(options.headers['X-CSRF-Token'], 'test-token');
++        if (url === '/api/users/me') {
++            return new Response(JSON.stringify({ handle: state.user }), { status: state.identityFail ? 403 : 200 });
++        }
++        assert.equal(url, '/api/characters/get');
++        const body = JSON.parse(options.body);
++        state.calls.push(body);
++        const headers = {};
++        let payload;
++        const request = { body, user: { profile: { handle: state.user } } };
++        const response = { setHeader: (name, value) => { headers[name] = value; }, send: value => { payload = value; } };
++        if (state.older) sendCharacterResponse(request, response, state.card);
++        else sendCachedCharacterResponse(request, response, state.card);
++        if (state.mutate) payload = state.mutate(payload, body);
++        state.responses.push(wire(payload));
++        return new Response(JSON.stringify(payload), { headers });
++    };
++    return state;
++}
++
++const options = (server, storage, extra = {}) => ({ storage, hash, headers: { 'X-CSRF-Token': 'test-token' }, fetchImpl: server.fetchImpl, timeoutMs: 50, ...extra });
++
++test('bundled HTTP-safe SHA-256 matches server UTF-8 hashes', () => {
++    for (const raw of ['中文 🦋\n', '\u0000', makeCard().json_data, '']) {
++        const expected = createHash('sha256').update(raw, 'utf8').digest('hex');
++        assert.equal(hash(raw), expected);
++        assert.equal(hash.create().update(raw).hex(), expected);
++    }
++});
++
++test('first visit downloads raw once; a fresh fetcher reuses persistent raw and receives latest runtime fields', async () => {
++    const server = serverFixture();
++    const storage = storageFixture();
++    const first = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(first.character, server.card);
++    assert.equal(typeof server.responses[0].character.json_data, 'string');
++    server.card = { ...server.card, chat: 'changed-chat', chat_size: 999, date_last_chat: 77 };
++    const second = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(second.character, server.card);
++    assert.equal(Object.hasOwn(server.responses[1].character, 'json_data'), false);
++    assert.equal(server.calls[1].character_cache.sha256, hash(server.card.json_data));
++    assert.equal(storage.writes.length, 1);
++});
++
++test('edited server card invalidates old hash and replaces only its own cache entry', async () => {
++    const server = serverFixture();
++    const storage = storageFixture();
++    storage.entries.set('unrelated', { keep: true });
++    await fetchCharacterWithCache('test.png', options(server, storage));
++    server.card = makeCard('new script and asset bytes');
++    const changed = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(changed.character, server.card);
++    assert.equal(server.responses[1].character.json_data, server.card.json_data);
++    assert.equal(storage.entries.get(key('alice', 'test.png')).json_data, server.card.json_data);
++    assert.deepStrictEqual(storage.entries.get('unrelated'), { keep: true });
++});
++
++test('logging into another account never reads or validates another account same-name card cache', async () => {
++    const server = serverFixture();
++    const storage = storageFixture();
++    await fetchCharacterWithCache('test.png', options(server, storage));
++    server.user = 'bob';
++    server.card = makeCard('bob-private');
++    const result = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(result.character, server.card);
++    assert.equal(server.calls[1].character_cache, undefined);
++    assert.equal(storage.reads.at(-1), key('bob', 'test.png'));
++    assert.equal(storage.entries.size, 2);
++    server.user = 'alice';
++    server.card = makeCard();
++    await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.equal(server.calls[2].character_cache.user, 'alice');
++    assert.equal(Object.hasOwn(server.responses[2].character, 'json_data'), false);
++});
++
++test('server refuses other-user or other-avatar validators even when raw hashes match', () => {
++    const card = makeCard();
++    for (const validator of [
++        { user: 'bob', avatar: card.avatar, sha256: hash(card.json_data) },
++        { user: 'alice', avatar: 'other.png', sha256: hash(card.json_data) },
++        { user: 'alice', avatar: card.avatar, sha256: 'invalid' },
++    ]) {
++        let payload;
++        sendCachedCharacterResponse({ body: { avatar_url: card.avatar, character_transport: CHARACTER_CACHE_FORMAT, character_cache: validator }, user: { profile: { handle: 'alice' } } }, { setHeader() {}, send: value => { payload = value; } }, card);
++        assert.equal(payload.character.json_data, card.json_data);
++    }
++});
++
++test('account switch between identity and card requests falls back to complete current-account response', async () => {
++    const server = serverFixture();
++    const storage = storageFixture();
++    await fetchCharacterWithCache('test.png', options(server, storage));
++    const fetchImpl = async (url, init) => {
++        const response = await server.fetchImpl(url, init);
++        if (url === '/api/users/me') {
++            server.user = 'bob';
++            server.card = makeCard('bob-card');
++        }
++        return response;
++    };
++    const result = await fetchCharacterWithCache('test.png', options(server, storage, { fetchImpl }));
++    assert.deepStrictEqual(result.character, server.card);
++    assert.equal(server.calls.at(-1).character_transport, CHARACTER_TRANSPORT_FORMAT);
++    assert.equal(storage.entries.has(key('bob', 'test.png')), false);
++    assert.equal(storage.entries.get(key('alice', 'test.png')).json_data, makeCard().json_data);
++});
++
++test('corrupt, mismatched and evicted cached entries always download complete raw', async () => {
++    for (const makeBad of [
++        record => ({ ...record, json_data: 'corrupt' }),
++        record => ({ ...record, sha256: 'invalid' }),
++        record => ({ ...record, user: 'other-user' }),
++        record => ({ ...record, avatar: 'other.png' }),
++        () => null,
++    ]) {
++        const server = serverFixture();
++        const storage = storageFixture();
++        await fetchCharacterWithCache('test.png', options(server, storage));
++        storage.entries.set(key('alice', 'test.png'), makeBad(storage.entries.get(key('alice', 'test.png'))));
++        const result = await fetchCharacterWithCache('test.png', options(server, storage));
++        assert.deepStrictEqual(result.character, server.card);
++        assert.equal(server.calls[1].character_cache, undefined);
++        assert.equal(server.responses[1].character.json_data, server.card.json_data);
++    }
++});
++
++test('IndexedDB read/write/private-mode failures do not prevent full character loading', async () => {
++    for (const failure of ['read', 'write', 'both', 'blocked']) {
++        const server = serverFixture();
++        const storage = storageFixture();
++        if (failure === 'read' || failure === 'both') storage.getItem = async () => { throw new Error('IndexedDB unavailable'); };
++        if (failure === 'write' || failure === 'both') storage.setItem = async () => { throw new Error('QuotaExceededError'); };
++        if (failure === 'blocked') storage.getItem = () => new Promise(() => {});
++        const result = await fetchCharacterWithCache('test.png', options(server, storage, { timeoutMs: 5 }));
++        assert.deepStrictEqual(result.character, server.card);
++        assert.equal(server.calls[0].character_cache, undefined);
++    }
++});
++
++test('actual localforage with no IndexedDB driver falls back without using another storage backend', async () => {
++    const server = serverFixture();
++    const storage = localforage.createInstance({ name: 'SillyTavern_CharacterTransport_Test', storeName: 'raw_json_v1', driver: localforage.INDEXEDDB });
++    await assert.rejects(storage.ready(), /No available storage method/);
++    const result = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(result.character, server.card);
++    assert.equal(server.calls[0].character_cache, undefined);
++    assert.equal(storage.driver(), null);
++});
++
++test('identity failures bypass cache entirely and cannot assume default-user', async () => {
++    const server = serverFixture();
++    server.identityFail = true;
++    const storage = storageFixture();
++    const result = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(result.character, server.card);
++    assert.equal(storage.reads.length, 0);
++    assert.equal(storage.writes.length, 0);
++    assert.equal(server.calls[0].character_transport, CHARACTER_TRANSPORT_FORMAT);
++});
++
++test('older server response remains usable without caching or looping', async () => {
++    const server = serverFixture();
++    server.older = true;
++    const storage = storageFixture();
++    const result = await fetchCharacterWithCache('test.png', options(server, storage));
++    assert.deepStrictEqual(result.character, server.card);
++    assert.equal(server.calls.length, 1);
++    assert.equal(storage.writes.length, 0);
++});
++
++test('missing cached content or mismatched response hash retries once via unconditional protocol', async () => {
++    for (const mutation of [
++        payload => { delete payload.character.json_data; return payload; },
++        payload => ({ ...payload, sha256: '0'.repeat(64) }),
++        payload => ({ ...payload, avatar: 'another.png' }),
++    ]) {
++        const server = serverFixture();
++        server.mutate = (payload, body) => body.character_transport === CHARACTER_CACHE_FORMAT ? mutation(payload) : payload;
++        const result = await fetchCharacterWithCache('test.png', options(server, storageFixture()));
++        assert.deepStrictEqual(result.character, server.card);
++        assert.equal(server.calls.length, 2);
++        assert.equal(server.calls[1].character_transport, CHARACTER_TRANSPORT_FORMAT);
++    }
++});
++
++test('legacy requests retain their protocol and account/avatar key delimiters do not collide', () => {
++    const card = makeCard();
++    for (const marker of [undefined, CHARACTER_TRANSPORT_FORMAT, 'unknown']) {
++        const headers = {};
++        let payload;
++        sendCachedCharacterResponse({ body: { avatar_url: card.avatar, character_transport: marker }, user: { profile: { handle: 'alice' } } }, { setHeader: (name, value) => { headers[name] = value; }, send: value => { payload = value; } }, card);
++        assert.equal(headers[CHARACTER_TRANSPORT_HEADER], marker === CHARACTER_TRANSPORT_FORMAT ? CHARACTER_TRANSPORT_FORMAT : undefined);
++        assert.ok(payload);
++    }
++    assert.notEqual(key('a:b', 'c'), key('a', 'b:c'));
++});
++
++const scriptSource = fs.readFileSync(new URL('../public/script.js', import.meta.url), 'utf8');
++const functionStart = scriptSource.indexOf('export async function getOneCharacter(');
++const functionEnd = scriptSource.indexOf('\nexport function getCharacterSource(', functionStart);
++assert.ok(functionStart > 0 && functionEnd > functionStart);
++// Execute the actual installed publication function with controlled dependencies.
++const publicationSource = scriptSource.slice(functionStart, functionEnd).replace(/^export /, '');
++const deferred = () => {
++    let resolve;
++    const promise = new Promise(done => { resolve = done; });
++    return { promise, resolve };
++};
++
++function actualPublisher(characters, fetcher, storage = storageFixture()) {
++    return vm.runInNewContext(`${publicationSource}\ngetOneCharacter;`, {
++        characters,
++        beginCharacterPublication: createCharacterPublicationGuard(),
++        fetchCharacterWithCache: fetcher,
++        characterRawCache: storage,
++        libs: { sha256: hash },
++        getRequestHeaders: () => ({ 'X-CSRF-Token': 'test-token' }),
++        DOMPurify: { sanitize: value => value },
++        toastr: { error() {} },
++        t: parts => parts.join(''),
++    });
++}
++
++test('actual getOneCharacter cannot publish an older account response over a new same-name card', async () => {
++    const characters = [{ avatar: 'test.png', name: 'alice-summary' }];
++    const older = deferred();
++    const newer = deferred();
++    let calls = 0;
++    const publish = actualPublisher(characters, () => calls++ === 0 ? older.promise : newer.promise);
++    const first = publish('test.png');
++    characters[0] = { avatar: 'test.png', name: 'bob-summary' };
++    const second = publish('test.png');
++    newer.resolve({ response: { ok: true }, character: { ...makeCard(), name: 'bob' } });
++    await second;
++    older.resolve({ response: { ok: true }, character: { ...makeCard(), name: 'alice' } });
++    await first;
++    assert.equal(characters[0].name, 'bob');
++});
++
++test('actual getOneCharacter discards an old response after list refresh even without a newer get request', async () => {
++    const characters = [{ avatar: 'test.png', name: 'alice-summary' }];
++    const delayed = deferred();
++    const publish = actualPublisher(characters, () => delayed.promise);
++    const first = publish('test.png');
++    const current = { avatar: 'test.png', name: 'bob-summary' };
++    characters[0] = current;
++    delayed.resolve({ response: { ok: true }, character: { ...makeCard(), name: 'alice' } });
++    await first;
++    assert.equal(characters[0], current);
++});
++
++test('actual getOneCharacter publishes only the newest in-flight request for the same list object', async () => {
++    const original = { avatar: 'test.png', name: 'summary' };
++    const characters = [original];
++    const older = deferred();
++    const newer = deferred();
++    let calls = 0;
++    const publish = actualPublisher(characters, () => calls++ === 0 ? older.promise : newer.promise);
++    const first = publish('test.png');
++    const second = publish('test.png');
++    older.resolve({ response: { ok: true }, character: { ...makeCard(), name: 'stale' } });
++    await first;
++    assert.equal(characters[0], original);
++    newer.resolve({ response: { ok: true }, character: { ...makeCard(), name: 'latest' } });
++    await second;
++    assert.equal(characters[0].name, 'latest');
++});
++
++test('blocked IndexedDB persistence does not delay a successful character response', async () => {
++    const server = serverFixture();
++    const storage = storageFixture();
++    const pendingWrite = deferred();
++    storage.setItem = () => pendingWrite.promise;
++    const result = await Promise.race([
++        fetchCharacterWithCache('test.png', options(server, storage)),
++        new Promise((resolve, reject) => setTimeout(() => reject(new Error('UI waited for storage write')), 100)),
++    ]);
++    assert.deepStrictEqual(result.character, server.card);
++    pendingWrite.resolve();
++});
+diff --git a/tests/character-cache.browser-test.mjs b/tests/character-cache.browser-test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/character-cache.browser-test.mjs
+@@ -0,0 +1,148 @@
++// Standalone headless integration test. All HTTP requests are intercepted;
++// no live SillyTavern service, user profile, chats or external website is used.
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import { createRequire } from 'node:module';
++import { fileURLToPath } from 'node:url';
++import { sendCachedCharacterResponse } from '../src/character-transport.js';
++import { CHARACTER_CACHE_FORMAT } from '../public/scripts/character-transport.js';
++
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const playwrightRequire = createRequire(process.env.ST_CACHE_PLAYWRIGHT_PACKAGE || path.join(root, 'tests', 'package.json'));
++const { chromium } = playwrightRequire('playwright');
++const origin = 'http://character-cache.test';
++const outputs = process.env.ST_CACHE_BROWSER_OUTPUT;
++const makeCard = text => {
++    const json_data = JSON.stringify({ spec: 'chara_card_v2', data: { name: 'Synthetic Test', extensions: { helper: `${text}:${'素材-🦋'.repeat(16384)}` } }, unknown: { keep: null } });
++    return { ...JSON.parse(json_data), json_data, name: 'Synthetic Test', avatar: 'test.png', chat: 'synthetic-chat', chat_size: 10, date_last_chat: 1 };
++};
++const state = { user: 'fixture-user', card: makeCard('initial'), responses: [] };
++const assets = new Map([
++    ['/scripts/character-cache.js', fs.readFileSync(path.join(root, 'public/scripts/character-cache.js'), 'utf8')],
++    ['/scripts/character-transport.js', fs.readFileSync(path.join(root, 'public/scripts/character-transport.js'), 'utf8')],
++    ['/localforage.js', fs.readFileSync(path.join(root, 'node_modules/localforage/dist/localforage.js'), 'utf8')],
++    ['/sha256.js', fs.readFileSync(path.join(root, 'node_modules/js-sha256/src/sha256.js'), 'utf8')],
++]);
++const html = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Character cache integration test</title>
++<style>body{font:18px system-ui;margin:40px;max-width:65ch;overflow-wrap:anywhere}pre{white-space:pre-wrap}</style>
++<h1>Character cache integration test</h1><p>Isolated synthetic data on an insecure HTTP origin.</p><pre id="result">Ready</pre>
++<script src="/localforage.js"></script><script src="/sha256.js"></script>
++<script type="module">
++import { fetchCharacterWithCache } from '/scripts/character-cache.js';
++const storage = localforage.createInstance({name:'SillyTavern_CharacterTransport_Test',storeName:'raw_json_v1',driver:localforage.INDEXEDDB});
++window.loadCharacter = async () => {
++    const result = await fetchCharacterWithCache('test.png', {storage,hash:sha256,headers:{'X-CSRF-Token':'fixture-csrf'},timeoutMs:500});
++    const summary = {ok:result.response.ok,name:result.character?.name,chat:result.character?.chat,rawHash:sha256(result.character.json_data),driver:storage.driver(),secureContext:isSecureContext,subtleAvailable:!!crypto.subtle};
++    document.querySelector('#result').textContent=JSON.stringify(summary,null,2);
++    return summary;
++};
++window.storedHash = async () => (await storage.getItem(JSON.stringify(['fixture-user','test.png'])))?.sha256;
++window.corruptCache = async () => {
++    const key=JSON.stringify(['fixture-user','test.png']);
++    const record=await storage.getItem(key);
++    await storage.setItem(key,{...record,json_data:'corrupt'});
++};
++window.integrationReady = true;
++</script></html>`;
++
++async function routeContext(context) {
++    await context.route('**/*', async route => {
++        const request = route.request();
++        const url = new URL(request.url());
++        assert.equal(url.origin, origin);
++        if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: html });
++        if (assets.has(url.pathname)) return route.fulfill({ contentType: 'text/javascript', body: assets.get(url.pathname) });
++        if (url.pathname === '/favicon.ico') return route.fulfill({ status: 204 });
++        assert.equal(request.headers()['x-csrf-token'], 'fixture-csrf');
++        if (url.pathname === '/api/users/me') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ handle: state.user }) });
++        assert.equal(url.pathname, '/api/characters/get');
++        const body = request.postDataJSON();
++        const headers = {};
++        let payload;
++        sendCachedCharacterResponse({ body, user: { profile: { handle: state.user } } }, {
++            setHeader: (name, value) => { headers[name] = value; },
++            send: value => { payload = value; },
++        }, state.card);
++        const serialized = JSON.stringify(payload);
++        state.responses.push({ user: state.user, protocol: body.character_transport, conditional: !!body.character_cache, rawSent: typeof payload.character?.json_data === 'string', bytes: Buffer.byteLength(serialized) });
++        return route.fulfill({ contentType: 'application/json', headers, body: serialized });
++    });
++}
++
++const browser = await chromium.launch({ headless: true, executablePath: process.env.ST_CACHE_CHROMIUM || undefined });
++const result = { browser: browser.version(), origin, headless: true, syntheticOnly: true, checks: [] };
++try {
++    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
++    await routeContext(context);
++    const page = await context.newPage();
++    await page.goto(origin);
++    await page.waitForFunction(() => window.integrationReady === true);
++    const initial = await page.evaluate(() => window.loadCharacter());
++    assert.equal(initial.secureContext, false);
++    assert.equal(initial.subtleAvailable, false);
++    assert.equal(initial.driver, 'asyncStorage');
++    assert.equal(state.responses.at(-1).rawSent, true);
++    await page.waitForFunction(async hash => await window.storedHash() === hash, initial.rawHash);
++    result.checks.push({ name: 'cold-download-and-real-indexeddb-write', passed: true, response: state.responses.at(-1) });
++
++    state.card.chat = 'latest-runtime-chat';
++    await page.reload();
++    await page.waitForFunction(() => window.integrationReady === true);
++    const repeated = await page.evaluate(() => window.loadCharacter());
++    assert.equal(repeated.rawHash, initial.rawHash);
++    assert.equal(repeated.chat, 'latest-runtime-chat');
++    assert.equal(state.responses.at(-1).conditional, true);
++    assert.equal(state.responses.at(-1).rawSent, false);
++    result.checks.push({ name: 'page-refresh-real-indexeddb-hit-with-latest-overlay', passed: true, response: state.responses.at(-1) });
++
++    state.card = makeCard('changed-server-card');
++    const changed = await page.evaluate(() => window.loadCharacter());
++    assert.notEqual(changed.rawHash, initial.rawHash);
++    assert.equal(state.responses.at(-1).rawSent, true);
++    await page.waitForFunction(async hash => await window.storedHash() === hash, changed.rawHash);
++    result.checks.push({ name: 'server-card-edit-forces-full-download', passed: true, response: state.responses.at(-1) });
++
++    await page.evaluate(() => window.corruptCache());
++    const repaired = await page.evaluate(() => window.loadCharacter());
++    assert.equal(repaired.rawHash, changed.rawHash);
++    assert.equal(state.responses.at(-1).conditional, false);
++    assert.equal(state.responses.at(-1).rawSent, true);
++    await page.waitForFunction(async hash => await window.storedHash() === hash, changed.rawHash);
++    result.checks.push({ name: 'corrupt-real-indexeddb-entry-downloads-again', passed: true, response: state.responses.at(-1) });
++
++    await page.setViewportSize({ width: 390, height: 844 });
++    await page.reload();
++    await page.waitForFunction(() => window.integrationReady === true);
++    assert.equal((await page.evaluate(() => window.loadCharacter())).rawHash, changed.rawHash);
++    assert.equal(state.responses.at(-1).rawSent, false);
++    result.checks.push({ name: 'mobile-viewport-refresh-real-indexeddb-hit', passed: true, viewport: '390x844', response: state.responses.at(-1) });
++    if (outputs) {
++        fs.mkdirSync(outputs, { recursive: true });
++        await page.screenshot({ path: path.join(outputs, 'http-indexeddb-mobile.png'), fullPage: true });
++    }
++    await context.close();
++
++    const blocked = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
++    await blocked.addInitScript(() => {
++        Object.defineProperty(window, 'indexedDB', { configurable: true, get() { throw new DOMException('Storage disabled for test', 'SecurityError'); } });
++    });
++    await routeContext(blocked);
++    const blockedPage = await blocked.newPage();
++    await blockedPage.goto(origin);
++    await blockedPage.waitForFunction(() => window.integrationReady === true);
++    const withoutStorage = await blockedPage.evaluate(() => window.loadCharacter());
++    assert.equal(withoutStorage.ok, true);
++    assert.equal(withoutStorage.driver, null);
++    assert.equal(state.responses.at(-1).conditional, false);
++    assert.equal(state.responses.at(-1).rawSent, true);
++    assert.equal(state.responses.at(-1).protocol, CHARACTER_CACHE_FORMAT);
++    result.checks.push({ name: 'actual-browser-indexeddb-securityerror-full-download', passed: true, response: state.responses.at(-1) });
++    if (outputs) await blockedPage.screenshot({ path: path.join(outputs, 'http-indexeddb-blocked-desktop.png'), fullPage: true });
++    await blocked.close();
++    result.passed = result.checks.every(check => check.passed);
++    if (outputs) fs.writeFileSync(path.join(outputs, 'browser-verification.json'), JSON.stringify(result, null, 2));
++    console.log(JSON.stringify(result));
++} finally {
++    await browser.close();
++}

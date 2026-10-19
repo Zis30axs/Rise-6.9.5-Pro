@@ -1,0 +1,291 @@
+{
+  "asset": "assets/npc-portraits/expression-atlases-v2/xiaoyang.png",
+  "characterId": "xiaoyang",
+  "tool": "built-in image_gen",
+  "mode": "new 2D redraw with identity and style references, followed by one targeted refinement",
+  "style": "Simple flat-color 2D animation matching Soyo",
+  "references": [
+    {
+      "path": "outputs/novel-live2d-happy.png",
+      "role": "Soyo character only: linework, facial proportions and flat color style; UI/background excluded",
+      "sha256": "a1607299cf4a18a8e5dae4dd8383d9eb7b995caad4420c73702b3e3d349ffe79"
+    },
+    {
+      "path": "assets/npc-portraits/xiaoyang.webp",
+      "role": "Character design only: white/blue hair, side high ponytail, blue/pink iris, black school blazer and gray plaid bow/skirt; no 3D style retention",
+      "sha256": "1e32eaef1a04e875e3286467f7c297488b0afbb1f09a51d1b2ba654de4729750"
+    }
+  ],
+  "transparentBackground": true,
+  "prompts": [
+    {
+      "stage": "initial redraw",
+      "prompt": "Create a NEW hand-drawn 2D Japanese TV-animation character expression sprite atlas, in the simple flat-color animation style of the brown-haired Soyo character in reference image 1. Ignore every background, UI element, text and panel in image 1; use ONLY that girl's fine clean contour lines, natural anime facial proportions and restrained cel coloring as the STYLE reference. Reference image 2 is ONLY a character DESIGN reference for Xiaoyang's white/blue hair, single side high ponytail, eye colors and black school uniform. DO NOT retain image 2's 3D-rendered anatomy, doll face, stiff silhouette, mesh topology or lighting. Redraw her from scratch as a natural two-dimensional animated character who belongs beside Soyo.\n\nSTYLE IS THE MAIN REQUIREMENT: simple clean 2D anime key animation, thin clear dark contour lines, flat pale-peach skin, softly shaped but completely 2D facial anatomy, natural drawn anime eyes, large simplified hair color shapes. Each material has a flat base color and AT MOST one or two crisp hard-edged cel-shadow shapes. Use only minimal small folds on the clothes. NO smoothly shaded volumes, NO airbrush, NO 3D lighting, NO plastic shine, NO glossy hair rendering, NO strand-by-strand texture, NO realistic cloth detail, NO painterly gradients, NO decorative glow. Do not draw a chibi, baby-faced toy or big-headed doll. Keep the youthful character's ordinary school-age appearance and natural animation proportions, matching the degree of simplicity of Soyo in image 1.\n\nDESIGN TO PRESERVE FROM IMAGE 2: white/silver hair with a few clear blue inner layers; ONE high ponytail on viewer's RIGHT with a pale-blue tie; long side locks; eyes with blue upper color and pink lower accent, drawn with simple flat iris colors; black/navy school blazer, white collared shirt, gray plaid bow and gray plaid pleated skirt. Simplify the plaid into sparse flat stripes. Same design and age in all nine images; do not mirror the ponytail. No costume change.\n\nONE TRANSPARENT PNG ATLAS, 3 columns by 3 rows, overall portrait canvas approximately 4:5, ideally 1536x1920. Exactly nine isolated figures, row-major order:\n1 neutral: calm open eyes, small relaxed closed mouth, relaxed arms.\n2 happy: clear joyful smile, bright eyes, one hand lightly near chest.\n3 sad: genuinely sad brows and downturned mouth, gaze slightly lowered, relaxed hands.\n4 angry: clear furrowed eyebrows and a firm unhappy mouth, one small fist near waist.\n5 surprised: noticeably wide eyes, raised brows and a small open mouth, one hand raised slightly near collarbone.\n6 shy: a few simple pink blush marks, bashful sideways glance, small embarrassed smile, one loosely curled hand near chest.\n7 thinking: thoughtful eyes and brows, one hand naturally at chin, other arm relaxed.\n8 serious: focused direct gaze, lower straight brows and firm neutral mouth, upright attentive stance.\n9 relieved: relaxed eyebrows, gently closed eyes and a soft small smile, one hand over upper chest.\n\nCOMPOSITION: front-facing head-top-through-upper-thigh view, entire ponytail visible. Same head size, same eye-line height, same figure scale and framing in every cell. Small subtle acting gestures with correct hands/fingers and comfortable shoulders; no interpenetrating or crossed-through arms. Each figure occupies only about 65% of its cell WIDTH and 80% of its cell HEIGHT. Leave BIG completely empty transparent gutters between every figure and every row, comfortable transparent padding above each ponytail and below each thigh crop. Keep each figure completely inside its own equal-grid cell, not clipped by the canvas edges. Do not enlarge the bottom row.\n\nOUTPUT: true transparent alpha around the characters; solid opaque character interiors, only ordinary antialiased contour edges. No background, no ground shadow, no UI, no scenery, no grid lines, no frames, no labels, no text, no watermark. The finished atlas should read immediately as SIMPLE FLAT 2D ANIMATION, not a polished 3D render or a detailed shaded visual-novel painting.",
+      "output": "C:/Users/Administrator/.codex/generated_images/01a14d87-b28c-78e2-82c9-b68046090cb5/exec-b6c7b56a-7f20-486b-a4ac-660ee21b8d09.png"
+    },
+    {
+      "stage": "single targeted refinement: consistent waist-up crop, flatter shading and iris color",
+      "prompt": "Refine the NEW 2D animation atlas in image 1. Image 2 shows the exact intended STYLE: use only Soyo, the brown-haired character, and ignore the background/UI/text. Keep Xiaoyang's identity and all nine expressions from image 1. Do not return to a 3D-rendered look.\n\nMake all nine figures smaller and use ONE CONSISTENT WAIST-UP framing: complete ponytail and head through hips and ONLY the top portion of the plaid skirt, no thighs. Every figure is cropped at precisely the same body level. Redraw/place the nine busts with very generous empty gutters so they do not almost touch the next row. Each occupies at most 65% of its cell width and 75% of its cell height, centered inside the cell. Keep at least 12% empty transparent space above each ponytail and 12% below each waist crop. The bottom row must have the same complete crop and empty bottom padding as the first two rows. Same face/head scale and eye line in each cell. Three equal columns and three equal rows, total portrait canvas 4:5, ideally 1536 x 1920. NO figure touches any canvas edge.\n\nSTYLE: even simpler flat-color hand-drawn 2D animation, matching Soyo in image 2. Thin clean outlines. Flat skin. Hair built from a small number of large white/silver and pale-blue color shapes, with at most ONE hard-edged shadow color, not a mass of fine strand shading. Black/navy blazer in flat color with only a few simple hard-edged folds. Simplified gray plaid bow and skirt, no fabric texture. No gradients, no airbrush, no glossy shine, no plastic material, no 3D volume or lighting. Keep natural anime proportions, not chibi or a doll. Eyes should retain Xiaoyang's design: blue upper iris and a small clearly pink lower accent, using simple 2D color shapes.\n\nKeep exact row-major expressions/gestures: neutral calm relaxed arms; happy joyful smile and hand lightly near chest; sad downcast brows and relaxed hands; angry furrowed brows and small fist near waist; surprised wide eyes/small open mouth and hand near collar; shy blush/sideways glance/hand near chest; thinking thoughtful expression and one hand at chin; serious focused eyes and firm mouth/relaxed arms; relieved gentle closed eyes/smile/hand on chest. Correct fingers and natural comfortable arm anatomy, no intersecting arms. The single high ponytail remains on viewer's RIGHT in every frame.\n\nDeliver one transparent RGBA PNG, clean alpha outside all nine figure silhouettes. All figure interiors opaque. No background, no UI, no letters, no labels, no grid or panel borders, no scenery, no ground shadows. Emphasize empty transparent gutters and consistent complete waist-up crops while keeping the drawn facial expression differences.",
+      "output": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14d87-b28c-78e2-82c9-b68046090cb5\\exec-9997251f-692e-42c6-83b4-3650dfb380a0.png"
+    }
+  ],
+  "selectedGeneratedImage": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14d87-b28c-78e2-82c9-b68046090cb5\\exec-9997251f-692e-42c6-83b4-3650dfb380a0.png",
+  "requestedSize": [
+    1536,
+    1920
+  ],
+  "actualSize": [
+    1122,
+    1402
+  ],
+  "bytes": 1716019,
+  "sha256": "6988d146422b0d68ad13420d29ee55d3ac1a05b783557cc514bd246b26687c22",
+  "order": [
+    "neutral",
+    "happy",
+    "sad",
+    "angry",
+    "surprised",
+    "shy",
+    "thinking",
+    "serious",
+    "relieved"
+  ],
+  "frames": {
+    "neutral": {
+      "x": 50,
+      "y": 20,
+      "width": 340,
+      "height": 450
+    },
+    "happy": {
+      "x": 400,
+      "y": 20,
+      "width": 340,
+      "height": 450
+    },
+    "sad": {
+      "x": 750,
+      "y": 20,
+      "width": 340,
+      "height": 450
+    },
+    "angry": {
+      "x": 50,
+      "y": 490,
+      "width": 340,
+      "height": 450
+    },
+    "surprised": {
+      "x": 400,
+      "y": 490,
+      "width": 340,
+      "height": 450
+    },
+    "shy": {
+      "x": 750,
+      "y": 490,
+      "width": 340,
+      "height": 450
+    },
+    "thinking": {
+      "x": 50,
+      "y": 950,
+      "width": 340,
+      "height": 450
+    },
+    "serious": {
+      "x": 400,
+      "y": 950,
+      "width": 340,
+      "height": 450
+    },
+    "relieved": {
+      "x": 750,
+      "y": 950,
+      "width": 340,
+      "height": 450
+    }
+  },
+  "validation": {
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "frameInspection": {
+      "20": {
+        "neutral": {
+          "contentBoundsInFrame": [
+            26,
+            9,
+            321,
+            443
+          ],
+          "edgeOccupied": 0
+        },
+        "happy": {
+          "contentBoundsInFrame": [
+            22,
+            12,
+            306,
+            443
+          ],
+          "edgeOccupied": 0
+        },
+        "sad": {
+          "contentBoundsInFrame": [
+            25,
+            12,
+            300,
+            443
+          ],
+          "edgeOccupied": 0
+        },
+        "angry": {
+          "contentBoundsInFrame": [
+            23,
+            9,
+            320,
+            441
+          ],
+          "edgeOccupied": 0
+        },
+        "surprised": {
+          "contentBoundsInFrame": [
+            14,
+            8,
+            317,
+            440
+          ],
+          "edgeOccupied": 0
+        },
+        "shy": {
+          "contentBoundsInFrame": [
+            31,
+            8,
+            309,
+            440
+          ],
+          "edgeOccupied": 0
+        },
+        "thinking": {
+          "contentBoundsInFrame": [
+            24,
+            19,
+            318,
+            436
+          ],
+          "edgeOccupied": 0
+        },
+        "serious": {
+          "contentBoundsInFrame": [
+            16,
+            13,
+            314,
+            436
+          ],
+          "edgeOccupied": 0
+        },
+        "relieved": {
+          "contentBoundsInFrame": [
+            23,
+            18,
+            313,
+            436
+          ],
+          "edgeOccupied": 0
+        }
+      },
+      "120": {
+        "neutral": {
+          "contentBoundsInFrame": [
+            27,
+            10,
+            320,
+            442
+          ],
+          "edgeOccupied": 0
+        },
+        "happy": {
+          "contentBoundsInFrame": [
+            23,
+            13,
+            305,
+            442
+          ],
+          "edgeOccupied": 0
+        },
+        "sad": {
+          "contentBoundsInFrame": [
+            26,
+            13,
+            299,
+            442
+          ],
+          "edgeOccupied": 0
+        },
+        "angry": {
+          "contentBoundsInFrame": [
+            24,
+            9,
+            319,
+            439
+          ],
+          "edgeOccupied": 0
+        },
+        "surprised": {
+          "contentBoundsInFrame": [
+            15,
+            8,
+            316,
+            439
+          ],
+          "edgeOccupied": 0
+        },
+        "shy": {
+          "contentBoundsInFrame": [
+            31,
+            9,
+            308,
+            439
+          ],
+          "edgeOccupied": 0
+        },
+        "thinking": {
+          "contentBoundsInFrame": [
+            24,
+            20,
+            318,
+            435
+          ],
+          "edgeOccupied": 0
+        },
+        "serious": {
+          "contentBoundsInFrame": [
+            17,
+            14,
+            313,
+            435
+          ],
+          "edgeOccupied": 0
+        },
+        "relieved": {
+          "contentBoundsInFrame": [
+            24,
+            19,
+            313,
+            435
+          ],
+          "edgeOccupied": 0
+        }
+      }
+    },
+    "visuallyInspected": true,
+    "nineDistinctExpressions": true,
+    "styleNotes": "Selected refinement has drawn facial contours, flatter skin, simplified outlined hair masses, largely flat blazer with a few hard-edged folds, and nine readable expression/hand-pose variations. It avoids the initial static 3D model's faceted/doll-like facial volume. Pink lower iris accents retained.",
+    "cropNotes": "Custom 340x450 rectangles preserve complete ponytails and consistent waist/top-skirt crops. No threshold-alpha >=20 or >=120 character pixels occupy any frame edge. Do not assume an exact equal grid.",
+    "alphaNotes": "Source PNG copied unchanged. Very low-alpha fringe/noise visible in tool black-background previews is not programmatically removed.",
+    "scope": "File/alpha geometry inspection and visual review only; no browser/GPU/build or production-code changes."
+  }
+}

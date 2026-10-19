@@ -1,0 +1,13 @@
+{
+  "source": "D:\\.study\\cc\\outputs\\未读之城-远程加载优化版.png",
+  "sourceBytes": 66491521,
+  "sourceSha256": "aea73f758a968e0332851cc352ab17df17af58152072b18c8c998c126581721f",
+  "alternative": "D:\\.study\\cc\\outputs\\未读之城-远程加载优化版.json",
+  "bytes": 49826678,
+  "sha256": "fcf17529cd87a497b21e4d7b92786abdd27790d0b5418c518dbec39115403038",
+  "allCardFieldsIdentical": true,
+  "embeddedScriptUnchanged": true,
+  "avatarImageIncluded": false,
+  "tauriNativeImportTested": false,
+  "note": "Standard V2 JSON alternative. Omits PNG cover only; retains all card fields, embedded helper script and phone. Does not establish a fix for Tauri import failures."
+}

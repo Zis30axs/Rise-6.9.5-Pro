@@ -1,0 +1,45 @@
+{
+  "actualUpstreamCoreParser": true,
+  "coverRgbaByteIdentical": true,
+  "decodedJsonByteIdentical": true,
+  "derivative": {
+    "bytes": 35199463,
+    "decodedJsonBytes": 49826678,
+    "elapsedMillis": 1059,
+    "file": "D:\\.study\\cc\\outputs\\未读之城-Tauri导入压缩版.png",
+    "imageDecodePassed": true,
+    "imageDimensions": [
+      1024,
+      1536
+    ],
+    "metadataMillis": 1030,
+    "metadataTextBytes": 66435572,
+    "selectedKeyword": "chara",
+    "streamingAndMemoryEqual": true,
+    "thumbnailCoverAndResizeJpegBytes": [
+      4457,
+      4457
+    ]
+  },
+  "note": "Unmodified v2.3.0 upstream png_metadata.rs; DomainError stub only. Base64 decode uses cached 0.13.1 API; image 0.25.10 and png 0.18.1 match upstream lock. No Tauri application or mobile device execution.",
+  "source": {
+    "bytes": 66491521,
+    "decodedJsonBytes": 49826678,
+    "elapsedMillis": 496,
+    "file": "D:\\.study\\cc\\outputs\\未读之城-远程加载优化版.png",
+    "imageDecodePassed": true,
+    "imageDimensions": [
+      1024,
+      1536
+    ],
+    "metadataMillis": 462,
+    "metadataTextBytes": 66435572,
+    "selectedKeyword": "chara",
+    "streamingAndMemoryEqual": true,
+    "thumbnailCoverAndResizeJpegBytes": [
+      4457,
+      4457
+    ]
+  },
+  "tauriApplicationImportTested": false
+}

@@ -1,0 +1,255 @@
+{
+  "asset": "assets/npc-portraits/expression-atlases-v3/deepseek.png",
+  "characterId": "deepseek",
+  "tool": "built-in image_gen.imagegen",
+  "styleDirection": "Approved simple flat 2D animation style; nine genuinely complete head-to-toe characters.",
+  "sourceReferences": [
+    {
+      "path": "assets/npc-portraits/expression-atlases-v2/deepseek.png",
+      "role": "Approved flat 2D drawing style, expressions, identity and upper-body design.",
+      "sha256": "601497264d724c91d85d22f8865cec74b7ae3b1d9c282422ed296020347a5105"
+    },
+    {
+      "path": "outputs/character-models-deepseek-front.png",
+      "role": "Lower-body design only: whole skirt, white knee-high socks, navy shoes and trailing blue accent; no 3D lighting or materials.",
+      "sha256": "34f6c243180c83076a60f5c214dfdca3f1cddd5cbb9a5ed065fd04aaca077542"
+    }
+  ],
+  "prompts": [
+    "Create ONE 3-by-3 FULL-BODY transparent sprite atlas of the same blue-haired fish-ear girl, nine static expressions, redrawn in simple flat 2D animation style.\n\nReference 1 is the approved 2D flat-color expression atlas. Use it for identity, the clean economical anime linework, matte flat blue hair color blocks, face design, nine expressions and the upper-body costume. Reference 2 is an old complete 3D model image, DESIGN REFERENCE ONLY for the missing lower body: the modest navy knee-length maid skirt with white frilled hem, white front apron, small gold trim and side bow motifs, white knee-high socks, and dark navy rounded Mary Jane style shoes with small pale/gold details. Ignore its background, floor, rigid arms, mesh shapes, glossy lighting and three-dimensional materials. The new image must look like reference 1's simply drawn 2D anime cels, not a 3D render.\n\nABSOLUTE REQUIREMENT: all NINE characters are drawn COMPLETELY from the very top of the ahoge down to the BOTTOMS OF BOTH SHOES. Every frame visibly includes the whole head, both fin ears, all hair, both arms and hands, the whole skirt, BOTH complete legs, BOTH white socks, and BOTH complete navy shoes. Never crop at waist, knees, ankles or feet. Do not omit any leg or shoe. This must be real full-body artwork in the source PNG, not a partial portrait with blank space pretending to be a body.\nUse a TALL 2:3 overall portrait canvas, ideally 1536x2304 (three columns each 512 wide, three rows each 768 tall), or a higher resolution of that same 2:3 ratio. Put exactly ONE complete figure inside each of nine cells. Figures have SAME height, natural anime proportions (around 6.5 to 7 heads tall, NOT chibi), same head size and framing, consistent eye line and the SAME two-shoe sole baseline within every cell. Relaxed ordinary standing pose, feet resting naturally a little apart, stable weight and knees, no stiff T/A pose.\nKeep each figure DELIBERATELY SMALL with VERY GENEROUS TRUE TRANSPARENT MARGINS: total head-to-toe figure height at most 78% of cell height, figure width at most 65% of cell width. Leave at least 10% cell height transparent above the ahoge AND below the shoe soles. Keep comfortable transparent space outside the widest hair, ears, skirt and hands. Wide entirely empty gutters separate every row and column. Do NOT zoom in or auto-crop. Do NOT let a skirt or shoe touch the next cell. Full-body completeness and clear spacing are more important than filling the canvas.\n\nDESIGN: same youthful anime identity, large blue eyes, deep-blue long hair with cyan-blue lower locks, fish-fin ears, single ahoge, white maid headband, modest long-sleeved navy-and-white maid dress, neck bow, white apron and understated gold trim. Preserve the knee-length skirt/socks/shoes from reference 2 as simple flat drawings. Any blue trailing accent from the design stays behind the legs, never replacing a leg. Keep all nine outfits identical. No new accessories, props, exaggerated body changes or costume changes.\n\nSTRICT 2D ART DIRECTION: thin clean outlines, flat pale peach skin, broad solid hair color shapes with at most one darker hard-edged shadow color, nearly solid white apron and navy dress with a few necessary fold lines. No glossy hair band, gradients, airbrush, plastic sheen, ambient occlusion, soft 3D shadows, painterly texture, fabric texture, lighting effects, rim light or extra decorative detail. Natural 2D face and body anatomy. Correct fingers and wrists, arms do not intersect body or garments.\n\nEXACT row-major order and small acting gestures:\nRow 1: NEUTRAL calm open eyes, relaxed closed mouth, arms naturally down; HAPPY joyful open smile and smiling eyes, one hand gently near chest and the other down; SAD raised inner brows, downcast eyes and downturned mouth, hands relaxed low.\nRow 2: ANGRY furrowed brows and firm displeased mouth, one hand at waist; SURPRISED raised brows, wide eyes and small rounded open mouth, one open hand near collar; SHY small flat cheek blush, slightly averted eyes and hesitant smile, one hand near chest.\nRow 3: THINKING thoughtful brows and sideways gaze, one finger lightly near chin, other arm down; SERIOUS steady focused eyes and firm closed mouth, both arms down; RELIEVED gently closed smiling eyes and soft smile, one hand over chest.\n\nEvery expression meaningfully changes the eyebrows, eyes and mouth. Keep the face identity consistent. Use subtle hand gestures only; the legs and feet remain relaxed and fully visible in all cells.\nOutput ONE RGBA PNG with genuine transparent alpha everywhere outside the figures. No background, checkerboard, cell boxes, grid lines, letters, labels, captions, interface, ground shadows, scenery or watermark. Nine complete isolated full-body standing 2D characters, all shoes visible."
+  ],
+  "selectedGeneratedImage": "C:/Users/Administrator/.codex/generated_images/01a14d87-88c8-7880-9389-bd0989b5355d/exec-edb4d9a5-27ff-4582-8bd2-9e2d98f7a0ea.png",
+  "transparentBackground": true,
+  "pixelEditsAfterGeneration": false,
+  "framingNote": "One complete full-body figure per same-size frame. Includes full ahoge, fin ears, hair, hands, skirt, both legs, socks and both shoe soles. No waist crop and no CSS-generated body extension.",
+  "alphaNote": "RGB channels in fully transparent pixels contain a dark gradient, but alpha=0 there; no background removal or alpha editing was applied.",
+  "actualSize": [
+    1024,
+    1536
+  ],
+  "mode": "RGBA",
+  "bytes": 2024454,
+  "sha256": "be89326bf2a6d7d8d513ec70edd5aa221b94bfebee8a59ce34a0d8c66c64e5ee",
+  "frames": {
+    "neutral": {
+      "x": 94,
+      "y": 8,
+      "width": 256,
+      "height": 512
+    },
+    "happy": {
+      "x": 386,
+      "y": 8,
+      "width": 256,
+      "height": 512
+    },
+    "sad": {
+      "x": 682,
+      "y": 8,
+      "width": 256,
+      "height": 512
+    },
+    "angry": {
+      "x": 94,
+      "y": 516,
+      "width": 256,
+      "height": 512
+    },
+    "surprised": {
+      "x": 386,
+      "y": 516,
+      "width": 256,
+      "height": 512
+    },
+    "shy": {
+      "x": 682,
+      "y": 516,
+      "width": 256,
+      "height": 512
+    },
+    "thinking": {
+      "x": 94,
+      "y": 1024,
+      "width": 256,
+      "height": 512
+    },
+    "serious": {
+      "x": 386,
+      "y": 1024,
+      "width": 256,
+      "height": 512
+    },
+    "relieved": {
+      "x": 682,
+      "y": 1024,
+      "width": 256,
+      "height": 512
+    }
+  },
+  "validation": {
+    "allNineFacesUniquePixels": true,
+    "pngExactToImageToolOutput": true,
+    "alphaExtrema": [
+      0,
+      254
+    ],
+    "frames": [
+      {
+        "emotion": "neutral",
+        "visibleBoundsAlpha20": [
+          25,
+          8,
+          232,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "7647bbb5fbba163b1bf9ae77f1ef2d7dd3e3c04bedbc2948d1385c25998d3d76"
+      },
+      {
+        "emotion": "happy",
+        "visibleBoundsAlpha20": [
+          25,
+          7,
+          231,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "2c1b11596e707743be498b73a8f3041d7bcb01afe440febf1e3a6b3a4db576db"
+      },
+      {
+        "emotion": "sad",
+        "visibleBoundsAlpha20": [
+          23,
+          8,
+          231,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "676fda1d475ec4b5ad544c01d5980276310e3bc85e5173005c4b39911813cfe7"
+      },
+      {
+        "emotion": "angry",
+        "visibleBoundsAlpha20": [
+          19,
+          8,
+          233,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "b05cc889d1c562cf1ab4d369b1b19645a286bb9ca11c300ab183f117a9565371"
+      },
+      {
+        "emotion": "surprised",
+        "visibleBoundsAlpha20": [
+          19,
+          8,
+          231,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "2cf154529d96d05cc8b1dc1314890b67af73cd097082f88700fcf25268a9106b"
+      },
+      {
+        "emotion": "shy",
+        "visibleBoundsAlpha20": [
+          23,
+          8,
+          239,
+          506
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "f6f99cf2107811836ffe693bfd2067df494ed63df21704aa657f9d7b82499434"
+      },
+      {
+        "emotion": "thinking",
+        "visibleBoundsAlpha20": [
+          8,
+          7,
+          228,
+          501
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "0ad857b56a36c9b9031574a02c5d121a0b824010f864121b13fbf411573652cc"
+      },
+      {
+        "emotion": "serious",
+        "visibleBoundsAlpha20": [
+          27,
+          7,
+          235,
+          502
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "e63659707f7b27c4c5813a6f7f321abf6746965f11b910921a9762410686c511"
+      },
+      {
+        "emotion": "relieved",
+        "visibleBoundsAlpha20": [
+          31,
+          6,
+          246,
+          502
+        ],
+        "edgePixelsAlpha20": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subjectCount100PixelsOrMore": 1,
+        "facePixelSha256": "e3ea1b03061de2a365c012f7cce4027d47870abb9edcd343772de13d80d2fb81"
+      }
+    ],
+    "actualBrowserCompositeViewed": true,
+    "compositePreview": "outputs/npc-portrait-work/deepseek-v3-fullbody-composite.png",
+    "visualReview": "All 9 figures include the entire ahoge, head, fin ears, hair, both hands, full skirt, both legs, white socks, and two complete navy shoes. Clear nine facial states and small hand gestures; no body replacement with CSS. Flat animation style retained. Fully transparent background verified in actual SVG/browser composition; hidden RGB gradient is invisible. All four alpha>=20 frame edges are clear, with minimum 6px top/bottom clearance."
+  }
+}

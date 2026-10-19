@@ -1,6 +1,7 @@
+import { createSelectedInitialState } from './academics-fixture';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { createInitialState, getRouteOutlook, reduceState } from '../../src/runtime/model';
+import { getRouteOutlook, reduceState } from '../../src/runtime/model';
 import { getTransitRoutes, transitStops, transitVehicles } from '../../src/runtime/transit';
 import type { WorldState } from '../../src/frontend/types';
 
@@ -56,7 +57,7 @@ async function savedState(page: Page): Promise<WorldState> {
 }
 function initialAtStop(stopId = 'campus'): WorldState {
   const stop = transitStops.find(stop => stop.id === stopId)!;
-  const state = reduceState(createInitialState(), { type: 'walk', x: stop.x, z: stop.z, yaw: stop.yaw, seed: 'transit-browser-seed' });
+  const state = reduceState(createSelectedInitialState(), { type: 'walk', x: stop.x, z: stop.z, yaw: stop.yaw, seed: 'transit-browser-seed' });
   state.clock = { day: 1, hour: 13, minute: 20 };
   state.airTraffic.nextAmbientAt = Date.now() + 3600000;
   return state;
@@ -137,7 +138,7 @@ for (const vehicle of transitVehicles) {
       await expect(page.getByRole('article', { name: '公交出行' })).toContainText(vehicle.label);
       expect(await savedState(page)).toEqual(arrived);
       await page.getByRole('button', { name: '地图', exact: true }).click();
-      await expect(page.locator('.wm-destination')).toHaveCount(5);
+      await expect(page.locator('.wm-destination')).toHaveCount(12);
       expect(await savedState(page)).toEqual(arrived);
       await page.reload(); await withTransitHost(page);
       expect(await savedState(page)).toEqual(arrived);
@@ -148,11 +149,11 @@ for (const vehicle of transitVehicles) {
 }
 
 test('公交乘车：远离站牌时先步行到站，再单独结算车程，远地可搭另一车型返程', async ({ page }) => {
-  const initial = createInitialState(); initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
+  const initial = createSelectedInitialState(); initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
   await withTransitHost(page, initial);
   await expect(page.locator('[data-transit-entry]')).toHaveCount(0);
   await page.getByRole('button', { name: '地图', exact: true }).click();
-  await expect(page.locator('.wm-destination')).toHaveCount(5);
+  await expect(page.locator('.wm-destination')).toHaveCount(12);
   await page.locator('[data-transit-open]').click();
   await expect(panel(page).locator('[data-transit-target]')).toHaveCount(0);
   await expect(panel(page).locator('[data-transit-approach]')).toBeEnabled();
@@ -211,7 +212,7 @@ test('公交乘车：远郊连接道路只提示走回远站，不提供校园�
   await withTransitHost(page, initial);
   await expect(page.locator('[data-transit-entry]')).toHaveCount(0);
   await page.getByRole('button', { name: '地图', exact: true }).click();
-  await expect(page.locator('.wm-destination')).toHaveCount(5);
+  await expect(page.locator('.wm-destination')).toHaveCount(12);
   for (const button of await page.locator('.wm-destination').all()) await expect(button).toBeDisabled();
   await page.locator('[data-transit-open]').click();
   await expect(panel(page).locator('[data-transit-approach]')).toHaveCount(0);

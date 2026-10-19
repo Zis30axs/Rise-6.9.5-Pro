@@ -1,0 +1,116 @@
+{
+  "audit_date": "2026-10-19",
+  "repository": "https://github.com/Darkatse/TauriTavern",
+  "latest_stable": {
+    "tag": "v2.3.0",
+    "commit": "a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375"
+  },
+  "main_commit": "f6126b4fc9243eb3990f2c0bad86e2afcb502f22",
+  "main_and_stable_identical_inspected_files": [
+    {
+      "path": "src-tauri/crates/tt-adapter-storage-core/src/png_metadata.rs",
+      "sha256": "05c174398166ab14dd9040a4317fa9d172c806e7a90995a7bb7455cb8e3a1f41",
+      "identical": true
+    },
+    {
+      "path": "src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs",
+      "sha256": "2d2b2a142400e4f6781864ac17d044683428e5c69f00425f7a868cde71990af2",
+      "identical": true
+    },
+    {
+      "path": "src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/importer.rs",
+      "sha256": "548c0d9ca2434403acf898bff92b1fd1e84a94b68d880305e2fba7d7da61d48f",
+      "identical": true
+    },
+    {
+      "path": "src-tauri/crates/tt-adapter-media/src/persistence/thumbnail_cache.rs",
+      "sha256": "d7b0d68e2a4fe465eb77aa034db0024839c9ee0a6d1a44740a99457a42a46d2c",
+      "identical": true
+    },
+    {
+      "path": "src-tauri/crates/tauritavern/src/presentation/commands/upload_staging_commands.rs",
+      "sha256": "d7eb61e38003b035dc9442fff395ffe46df51ba4b93fd59f61935cba1145565b",
+      "identical": true
+    }
+  ],
+  "compressed_character_metadata": {
+    "supported": [
+      "tEXt",
+      "zTXt method 0",
+      "iTXt compression flag 0",
+      "iTXt compression flag 1 method 0"
+    ],
+    "preferred_keywords": [
+      "ccv3",
+      "chara"
+    ],
+    "source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-core/src/png_metadata.rs#L100-L183",
+    "file_reader_source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs#L23-L53",
+    "upstream_regression_test": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs#L269-L282",
+    "limits": "The inspected custom metadata reader validates chunk boundaries and PNG lengths but has no explicit decompressed-text cap. This is not a claim that the app or phone has unlimited memory."
+  },
+  "import_and_save": {
+    "source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-userdata/src/repositories/file_character_repository/importer.rs#L604-L696",
+    "facts": [
+      "PNG import reads full input bytes, decompresses/decodes JSON, parses and normalizes it, and writes a new PNG.",
+      "The normal PNG card import path does not call avatar pixel decoding/cropping.",
+      "Saved output emits uncompressed tEXt chara and, for valid JSON, an additional uncompressed tEXt ccv3 payload.",
+      "Compressed import therefore reduces delivered input bytes but does not guarantee compressed on-device storage or small peak memory."
+    ],
+    "save_source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs#L56-L75"
+  },
+  "image_decode_check": {
+    "source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-media/src/persistence/thumbnail_cache.rs#L366-L435",
+    "facts": [
+      "Thumbnail generation reads full source PNG and calls image::load_from_memory without stripping metadata.",
+      "The avatar processing helper also directly calls image::load_from_memory.",
+      "Stable Cargo.lock selects image 0.25.10 with png 0.18.1.",
+      "image 0.25.10 sets ignore_text_chunk(false), but png 0.18.1 ZTXtChunk::decode stores compressed bytes without decompressing.",
+      "The png text_metadata 2 MiB limit applies to explicit decompress_text; image calls that for matching IPTC/XMP metadata, not chara/ccv3.",
+      "Source inspection therefore does not indicate a chara-specific 2 MiB decompression failure in pixel decoding. Actual fixture tests are owned by the independent review agent."
+    ],
+    "avatar_source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs#L77-L97",
+    "lock_source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/Cargo.lock#L3935-L3951",
+    "local_dependency_sources": [
+      "C:/Users/Administrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/image-0.25.10/src/codecs/png.rs",
+      "C:/Users/Administrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/png-0.18.1/src/text_metadata.rs"
+    ]
+  },
+  "upload_staging": {
+    "source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tauritavern/src/presentation/commands/upload_staging_commands.rs#L176-L222",
+    "facts": [
+      "Mobile default chunk size is 1 MiB; desktop is 4 MiB. These are per-chunk sizes, not total file size caps.",
+      "Acknowledgment follows file.flush(), and final staging size is checked."
+    ]
+  },
+  "release_history": [
+    {
+      "version": "v1.6.3",
+      "url": "https://github.com/Darkatse/TauriTavern/releases/tag/v1.6.3",
+      "fact": "Release notes describe backend PNG read/write changes to prevent length errors on very large PNG files."
+    },
+    {
+      "version": "v2.1.1",
+      "url": "https://github.com/Darkatse/TauriTavern/releases/tag/v2.1.1",
+      "fact": "Release notes describe reduced import memory and decoupling Agent embedded asset scanning from character import."
+    },
+    {
+      "version": "v2.3.0",
+      "url": "https://github.com/Darkatse/TauriTavern/releases/tag/v2.3.0",
+      "fact": "Release notes describe fixing occasional character card import failures."
+    }
+  ],
+  "related_issue": {
+    "url": "https://github.com/Darkatse/TauriTavern/issues/164",
+    "scope": "Linux desktop v2.2.0, roughly 1 MiB valid PNG cards, intermittent upload staging truncation. Not evidence of this user's phone root cause.",
+    "fix_commit": "https://github.com/Darkatse/TauriTavern/commit/3508d8ac47604aea794bd8b43d8752fd5d66330e",
+    "fix": "Flush staged chunks before acknowledgment. This implementation is present in inspected stable v2.3.0."
+  },
+  "validation_boundary": [
+    "This report is upstream source inspection, not mobile TauriTavern acceptance.",
+    "No user app/source/service/card data was changed by this research.",
+    "A separate Tauri-specific zTXt PNG can preserve raw JSON while reducing input bytes; keep the standard PNG for consumers whose metadata readers only support tEXt.",
+    "Full mobile import can still encounter memory, storage, bridge, or UI limits; device logs would be needed to establish a remaining root cause."
+  ],
+  "downloaded_source_root": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\tauritavern-import-audit-fbw7s675"
+}

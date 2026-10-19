@@ -7,10 +7,18 @@
 .world-map .cms-place-pin small { color:#dfdfbb; font-size:9px; line-height:1.35; }
 .world-map .cms-pin-index { display:grid; place-items:center; min-width:22px; height:22px; border:1px solid #9daf8c66; border-radius:50%; font:11px Georgia,serif; }
 .world-map .cms-place-pin.current .cms-pin-index { background:#e8d49c; border-color:#e8d49c; color:#3b5a3f; }
+.world-map .cms-place-dot { position:absolute; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; transform:translate(-50%,-50%); display:grid; place-items:center; border:0; background:transparent; z-index:3; touch-action:none; }
+.world-map .cms-place-dot > span { display:grid; place-items:center; width:27px; height:27px; border-radius:50%; border:1px solid #9aab8a; background:rgba(251,248,227,.97); box-shadow:0 2px 6px #4d694a33; color:#334e3b; font:11px Georgia,serif; }
+.world-map .cms-place-dot.current > span { background:#355d47; border-color:#d7d5a8; color:#fff0c9; }
+.world-map .cms-place-dot:disabled { opacity:.55; }
 .world-map .cms-road-event { position:absolute; box-sizing:border-box; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; flex-direction:column; width:44px; height:44px; min-width:44px; min-height:44px; padding:2px; gap:1px; z-index:4; touch-action:none; }
 .world-map .cms-road-event > span { display:grid; place-items:center; height:25px; width:25px; border-radius:50%; border:2px solid #f8edce; background:#be7848; color:#fff6de; font-size:13px; box-shadow:0 2px 5px #47553d33; }
 .world-map .cms-road-event.special > span { background:#7e8552; }
 .world-map .cms-person-pin { pointer-events:none; transform:translate(-50%,-100%); margin-top:-4px; }
+.world-map .cms-ground-label { fill:#485e4b; font:3px system-ui,sans-serif; paint-order:stroke; stroke:#e0e6ce; stroke-width:.5px; }
+.world-map .cms-stop-label { fill:#576b53; font:8px system-ui,sans-serif; paint-order:stroke; stroke:#f5edd6; stroke-width:2px; }
+.world-map .cms-district-pin { position:absolute; box-sizing:border-box; transform:translate(-50%,-50%); width:104px; height:44px; min-height:44px; padding:7px; border:1px solid #b3b9a0; border-radius:9px; background:#f4f0dbed; color:#375443; font-size:11px; white-space:nowrap; box-shadow:0 3px 12px #36553b26; }
+.world-map .cms-district-pin.selected { background:#365d48; color:#fff0c7; border-color:#d9c99b; }
 @media (max-width:760px) {
   .world-map .cms-place-pin { padding:4px; gap:3px; font-size:10px; }
   .world-map .cms-pin-index { min-width:18px; height:18px; font-size:9px; }

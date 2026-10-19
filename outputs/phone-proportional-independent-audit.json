@@ -1,0 +1,265 @@
+{
+  "auditedAt": "2026-10-18T06:50:25.073087+00:00",
+  "passed": true,
+  "mode": "Independent read-only artifact and source audit. Only this report was written; no browser, build, model request, deployment or production changes.",
+  "bundle": {
+    "bytes": 27767926,
+    "sha256": "965f102e852cb99bdfa78d747b7cf982ff68036ea6c52450841ef838ce4d7591",
+    "matchesPackagingRecord": true
+  },
+  "delivery": {
+    "bytes": 37807617,
+    "sha256": "79afcf0296320e6c655b860a59aaf0738ce0152493f52a149279511efdd2d40c",
+    "matchesPackagingRecord": true,
+    "exactlyEqualsDistPng": true,
+    "embeddedScriptExactlyEqualsBundle": true,
+    "allCoverNonCardChunksPreserved": true,
+    "scriptDataEmpty": true,
+    "scriptDataExportDisabled": true
+  },
+  "installedTestCard": {
+    "bytes": 37914041,
+    "sha256": "d9ecfacb23a7ee2634b6ef04cdcabc3b770bead9097fb1caa154fbba7d200ceb",
+    "matchesPackagingRecord": true,
+    "backupSha256": "8d15439f417d46416de89c53b2eaec237bbe4b0db24e7fb7a4b71e9886f3719c",
+    "backupMatchesPreviousInstalledHash": true,
+    "embeddedScriptExactlyEqualsBundle": true,
+    "allNonCardChunksPreserved": true,
+    "changedJsonPaths": [
+      "$.data.creator_notes",
+      "$.data.extensions.tavern_helper.scripts[0].content"
+    ],
+    "changesLimitedToOwnScriptContentAndNotes": true,
+    "unownedCreatorNotesPreserved": true,
+    "scriptDataPreserved": true
+  },
+  "phoneHost": {
+    "sourcePath": "D:\\.study\\ST-iPhonie\\panel-host.js",
+    "installedPath": "D:\\SillyTavern\\data\\default-user\\extensions\\ST-iPhonie\\panel-host.js",
+    "sourceBytes": 9434,
+    "sourceSha256": "09b59fdaf1e958f5f235689c5d1d26f247cca19395c2c24c99da57ad22e235fc",
+    "installedSha256": "09b59fdaf1e958f5f235689c5d1d26f247cca19395c2c24c99da57ad22e235fc",
+    "sourceAndInstalledExactlyEqual": true,
+    "generatedPhoneSourceHashMatchesCurrent": true,
+    "beforeSourceSha256": "3af0c2bfe06c1f3b16dc0084ade1d997eac87134c4add77101419883bef270eb",
+    "beforeInstalledSha256": "3af0c2bfe06c1f3b16dc0084ade1d997eac87134c4add77101419883bef270eb",
+    "backupCopiesEqual": true,
+    "backupsMatchPreviouslyAuditedHost": true,
+    "geometrySourceChecks": {
+      "viewport390x844": true,
+      "uniformContainScale": true,
+      "fixedLogicalWidthAndHeight": true,
+      "uniformIframeTransform": true,
+      "centeredBothAxes": true,
+      "exactStyleRestoration": true
+    },
+    "hostUnitRegression": "18/18 passed earlier in this turn, including 5 slot shapes, same-frame resize and exact restore"
+  },
+  "preservation": {
+    "protected": {
+      "checked": 4,
+      "unchanged": 4,
+      "files": [
+        {
+          "path": "D:\\.study\\cc\\src\\card.json",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\.study\\cc\\assets\\cover.png",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\.study\\cc\\outputs\\未读之城-素世与角色模型版.png",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城.png",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        }
+      ]
+    },
+    "chats": {
+      "checked": 29,
+      "unchanged": 29,
+      "files": [
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@01h57m51s939ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@02h36m08s005ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@06h33m17s025ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@06h37m31s340ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@11h36m31s238ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@11h41m39s237ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@14h38m15s483ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@14h44m08s607ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@15h16m43s855ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@20h58m42s380ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@21h05m11s058ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@21h29m24s091ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@21h36m14s633ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@21h53m21s104ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@21h58m44s806ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@22h19m13s028ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@22h24m18s455ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@22h45m08s421ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-17@22h56m39s255ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@00h05m16s665ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@01h07m28s697ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@01h10m02s431ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@01h12m36s326ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@01h15m02s159ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@01h42m08s715ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h11m16s078ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h30m00s163ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h37m25s051ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "D:\\SillyTavern\\data\\default-user\\chats\\未读之城 · 前端联调\\未读之城 · 前端联调 - 2026-10-18@02h50m03s581ms.jsonl",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        }
+      ]
+    },
+    "originalArchives": {
+      "checked": 4,
+      "unchanged": 4,
+      "files": [
+        {
+          "path": "C:\\Users\\Administrator\\Downloads\\deepseek蓝色大肥鱼（少女版本）_by_QCQKK_8ed7c5b3227a09952f2a58212253fe9e.zip",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "C:\\Users\\Administrator\\Downloads\\小洋学生服2026 (1)_by_蜂神扇_6a4a43ed0269fc66409bdc583e436240.zip",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "C:\\Users\\Administrator\\Downloads\\Claude｜成年·幼年3D角色模型【Blender+GLB】_by_Manny0517_550ec3162a07141f687b92ee744c3c22.zip",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        },
+        {
+          "path": "C:\\Users\\Administrator\\Downloads\\soyo_by_jvjiang_5286b1d1c646ade8f33983104074cd9c.zip",
+          "bytesMatch": true,
+          "sha256MatchesBaseline": true
+        }
+      ]
+    },
+    "chatFileSetUnchanged": true
+  },
+  "scope": "Chat files were streamed solely to recompute hashes; no chat text was decoded, printed, stored or changed. The original model deep audit was not repeated. Physical TauriTavern and browser rendering are outside this audit."
+}

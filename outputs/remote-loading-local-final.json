@@ -1,0 +1,47 @@
+{
+  "measuredAt": "2026-10-19T07:05:17.643Z",
+  "origin": "http://127.0.0.1:8000",
+  "mode": "compare",
+  "requests": [
+    {
+      "path": "/",
+      "status": 200,
+      "wireBytes": 85680,
+      "decodedBytes": 734570,
+      "ttfbMs": 12,
+      "totalMs": 26,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/all",
+      "status": 200,
+      "wireBytes": 4528,
+      "decodedBytes": 9146,
+      "ttfbMs": 12045,
+      "totalMs": 12046,
+      "encoding": "gzip",
+      "run": 1,
+      "characterCount": 6,
+      "shallowCount": 6
+    },
+    {
+      "path": "/api/characters/get",
+      "status": 200,
+      "wireBytes": 52868791,
+      "decodedBytes": 100487379,
+      "ttfbMs": 1001,
+      "totalMs": 4263,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/get",
+      "status": 200,
+      "wireBytes": 26464103,
+      "decodedBytes": 50656779,
+      "ttfbMs": 821,
+      "totalMs": 2659,
+      "encoding": "gzip",
+      "characterTransport": "json-data-v1"
+    }
+  ]
+}

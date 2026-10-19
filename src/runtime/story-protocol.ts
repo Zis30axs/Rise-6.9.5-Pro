@@ -1,4 +1,6 @@
 import type { GeneratedStory, WorldState } from '../frontend/types';
+import { validateStoryActions } from './story-actions';
+export { STORY_ACTION_LIMITS } from './story-actions';
 
 export const STORY_OUTPUT_LIMITS = {
   storyText: 6000,
@@ -29,7 +31,7 @@ function text(value: unknown, max: number, path: string): string {
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -39,6 +41,7 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
     return { npcId: item.npcId, text: text(item.text, STORY_OUTPUT_LIMITS.messageText, `手机消息 ${index + 1} 的正文`) };
   });
   const parsed: GeneratedStory = { text: story, phoneMessages };
+  if (Object.prototype.hasOwnProperty.call(result, 'worldActions')) parsed.worldActions = validateStoryActions(result.worldActions, state);
   if (Object.prototype.hasOwnProperty.call(result, 'worldEvents')) {
     if (!Array.isArray(result.worldEvents) || result.worldEvents.length > STORY_OUTPUT_LIMITS.worldEvents) return invalid('世界事件数量');
     parsed.worldEvents = result.worldEvents.map((value, index) => {
@@ -62,6 +65,9 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   let valueObject: unknown;
   try { valueObject = JSON.parse(source); }
   catch { return invalid('请返回完整 JSON'); }
-  const envelope = record(valueObject, ['story', 'phone_messages'], 'JSON', ['world_events']);
-  return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages, ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}) }, state);
+  const envelope = record(valueObject, ['story', 'phone_messages'], 'JSON', ['world_events', 'world_actions']);
+  return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
+  }, state);
 }

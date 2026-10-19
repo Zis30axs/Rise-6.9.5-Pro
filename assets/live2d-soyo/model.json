@@ -1,0 +1,381 @@
+{
+  "version": "Sample 1.0.0",
+  "name": "Soyo",
+  "model": "model.moc",
+  "textures": [
+    "texture-0.png",
+    "texture-1.png"
+  ],
+  "motions": {
+    "安心": [
+      {
+        "file": "motion-00.mtn"
+      }
+    ],
+    "生气01": [
+      {
+        "file": "motion-01.mtn"
+      }
+    ],
+    "生气02": [
+      {
+        "file": "motion-02.mtn"
+      }
+    ],
+    "生气03": [
+      {
+        "file": "motion-03.mtn"
+      }
+    ],
+    "生气04": [
+      {
+        "file": "motion-04.mtn"
+      }
+    ],
+    "生气05": [
+      {
+        "file": "motion-05.mtn"
+      }
+    ],
+    "生气06": [
+      {
+        "file": "motion-06.mtn"
+      }
+    ],
+    "再见": [
+      {
+        "file": "motion-07.mtn"
+      }
+    ],
+    "再见2": [
+      {
+        "file": "motion-08.mtn"
+      }
+    ],
+    "哭": [
+      {
+        "file": "motion-09.mtn"
+      }
+    ],
+    "哭2": [
+      {
+        "file": "motion-10.mtn"
+      }
+    ],
+    "默认": [
+      {
+        "file": "motion-11.mtn"
+      }
+    ],
+    "决断（kandou）": [
+      {
+        "file": "motion-12.mtn"
+      }
+    ],
+    "约定": [
+      {
+        "file": "motion-13.mtn"
+      }
+    ],
+    "nf": [
+      {
+        "file": "motion-14.mtn"
+      }
+    ],
+    "nf2": [
+      {
+        "file": "motion-15.mtn"
+      }
+    ],
+    "nf3": [
+      {
+        "file": "motion-16.mtn"
+      }
+    ],
+    "nf4": [
+      {
+        "file": "motion-17.mtn"
+      }
+    ],
+    "nf5": [
+      {
+        "file": "motion-18.mtn"
+      }
+    ],
+    "nfl": [
+      {
+        "file": "motion-19.mtn"
+      }
+    ],
+    "nfr": [
+      {
+        "file": "motion-20.mtn"
+      }
+    ],
+    "难过": [
+      {
+        "file": "motion-21.mtn"
+      }
+    ],
+    "难过2": [
+      {
+        "file": "motion-22.mtn"
+      }
+    ],
+    "难过3": [
+      {
+        "file": "motion-23.mtn"
+      }
+    ],
+    "serious": [
+      {
+        "file": "motion-24.mtn"
+      }
+    ],
+    "serious2": [
+      {
+        "file": "motion-25.mtn"
+      }
+    ],
+    "serious3": [
+      {
+        "file": "motion-26.mtn"
+      }
+    ],
+    "serious4": [
+      {
+        "file": "motion-27.mtn"
+      }
+    ],
+    "shame": [
+      {
+        "file": "motion-28.mtn"
+      }
+    ],
+    "shame2": [
+      {
+        "file": "motion-29.mtn"
+      }
+    ],
+    "笑": [
+      {
+        "file": "motion-30.mtn"
+      }
+    ],
+    "笑2": [
+      {
+        "file": "motion-31.mtn"
+      }
+    ],
+    "笑3": [
+      {
+        "file": "motion-32.mtn"
+      }
+    ],
+    "笑4": [
+      {
+        "file": "motion-33.mtn"
+      }
+    ],
+    "笑5": [
+      {
+        "file": "motion-34.mtn"
+      }
+    ],
+    "笑6": [
+      {
+        "file": "motion-35.mtn"
+      }
+    ],
+    "惊讶": [
+      {
+        "file": "motion-36.mtn"
+      }
+    ],
+    "思考": [
+      {
+        "file": "motion-37.mtn"
+      }
+    ],
+    "思考2": [
+      {
+        "file": "motion-38.mtn"
+      }
+    ],
+    "wink": [
+      {
+        "file": "motion-39.mtn"
+      }
+    ],
+    "nnf": [
+      {
+        "file": "motion-40.mtn"
+      }
+    ],
+    "nnf2": [
+      {
+        "file": "motion-41.mtn"
+      }
+    ],
+    "nnf3": [
+      {
+        "file": "motion-42.mtn"
+      }
+    ],
+    "nnf4": [
+      {
+        "file": "motion-43.mtn"
+      }
+    ],
+    "nnf5": [
+      {
+        "file": "motion-44.mtn"
+      }
+    ],
+    "nnfr": [
+      {
+        "file": "motion-45.mtn"
+      }
+    ],
+    "nnfl": [
+      {
+        "file": "motion-46.mtn"
+      }
+    ]
+  },
+  "expressions": [
+    {
+      "name": "安心",
+      "file": "expression-00.exp.json"
+    },
+    {
+      "name": "生气01",
+      "file": "expression-01.exp.json"
+    },
+    {
+      "name": "生气02",
+      "file": "expression-02.exp.json"
+    },
+    {
+      "name": "生气03",
+      "file": "expression-03.exp.json"
+    },
+    {
+      "name": "生气04",
+      "file": "expression-04.exp.json"
+    },
+    {
+      "name": "再见01",
+      "file": "expression-05.exp.json"
+    },
+    {
+      "name": "再见02",
+      "file": "expression-06.exp.json"
+    },
+    {
+      "name": "哭02",
+      "file": "expression-07.exp.json"
+    },
+    {
+      "name": "哭02#2",
+      "file": "expression-08.exp.json"
+    },
+    {
+      "name": "default.exp",
+      "file": "expression-09.exp.json"
+    },
+    {
+      "name": "默认",
+      "file": "expression-10.exp.json"
+    },
+    {
+      "name": "决断（kandou）01",
+      "file": "expression-11.exp.json"
+    },
+    {
+      "name": "约定（kime）01",
+      "file": "expression-12.exp.json"
+    },
+    {
+      "name": "提心吊胆（odoodo）",
+      "file": "expression-13.exp.json"
+    },
+    {
+      "name": "难过01",
+      "file": "expression-14.exp.json"
+    },
+    {
+      "name": "难过02",
+      "file": "expression-15.exp.json"
+    },
+    {
+      "name": "难过02#2",
+      "file": "expression-16.exp.json"
+    },
+    {
+      "name": "严肃01",
+      "file": "expression-17.exp.json"
+    },
+    {
+      "name": "严肃02",
+      "file": "expression-18.exp.json"
+    },
+    {
+      "name": "严肃03",
+      "file": "expression-19.exp.json"
+    },
+    {
+      "name": "严肃04",
+      "file": "expression-20.exp.json"
+    },
+    {
+      "name": "羞耻01",
+      "file": "expression-21.exp.json"
+    },
+    {
+      "name": "羞耻02",
+      "file": "expression-22.exp.json"
+    },
+    {
+      "name": "笑容01",
+      "file": "expression-23.exp.json"
+    },
+    {
+      "name": "笑容02",
+      "file": "expression-24.exp.json"
+    },
+    {
+      "name": "笑容03",
+      "file": "expression-25.exp.json"
+    },
+    {
+      "name": "笑容04",
+      "file": "expression-26.exp.json"
+    },
+    {
+      "name": "笑容05",
+      "file": "expression-27.exp.json"
+    },
+    {
+      "name": "笑容06",
+      "file": "expression-28.exp.json"
+    },
+    {
+      "name": "惊讶01",
+      "file": "expression-30.exp.json"
+    },
+    {
+      "name": "思考01",
+      "file": "expression-31.exp.json"
+    },
+    {
+      "name": "思考02",
+      "file": "expression-32.exp.json"
+    },
+    {
+      "name": "wink01.exp",
+      "file": "expression-33.exp.json"
+    }
+  ],
+  "physics": "physics.physics.json"
+}

@@ -1,0 +1,61 @@
+{
+  "status": "passed",
+  "date": "2026-10-18",
+  "uniqueScenarios": 4,
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 41703267,
+    "sha256": "730ba0e0aac68284976f61a43b9ffa0902f3c2a3545cfb544a23c63c134ac129"
+  },
+  "scenarios": {
+    "desktop便利店购买入包与使用独立结算，状态和草稿保持": "passed",
+    "390便利店购买入包与使用独立结算，状态和草稿保持": "passed",
+    "320便利店购买入包与使用独立结算，状态和草稿保持": "passed",
+    "旧1.6存档迁移补充状态，零余额禁买且刷新不重复结算": "passed"
+  },
+  "viewports": [
+    "1280x900",
+    "390x844",
+    "320x568"
+  ],
+  "attempts": [
+    {
+      "file": "outputs/store-first-pass-playwright-results.json",
+      "passed": 2,
+      "failed": 2,
+      "note": "320/390 passed. Desktop destination probe used 便利店 instead of 便利店门前; legacy refresh probe disallowed an existing idempotent save."
+    },
+    {
+      "file": "outputs/store-retry-playwright-results.json",
+      "passed": 2,
+      "failed": 0,
+      "note": "Only test probes corrected. Full state equality, zero generation and exactly one save for each purchase/use retained. Production bundle unchanged."
+    }
+  ],
+  "coverage": [
+    "map-to-store",
+    "12 products / three quality tiers",
+    "50 yuan box adds 20 units",
+    "single use energy +35/stress -30/health -6",
+    "food and timed nutrition",
+    "save failure preserves money and inventory",
+    "leave store and use backpack",
+    "draft preserved during operations",
+    "full state restored without duplicate consumption",
+    "legacy 1.6 migration",
+    "insufficient balance disables buying",
+    "mobile internal scrolling and tap targets"
+  ],
+  "visualReview": [
+    "outputs/store-desktop-shelf.png",
+    "outputs/store-390-shelf.png",
+    "outputs/store-390-inventory.png",
+    "outputs/store-390-status.png",
+    "outputs/store-320-inventory.png",
+    "outputs/store-320-status.png"
+  ],
+  "nativeSillyTavernValidated": false,
+  "physicalTauriTavernValidated": false,
+  "phoneHost": "stub in these scenarios; existing real phone not revalidated",
+  "realStoryLlmRequests": 0
+}

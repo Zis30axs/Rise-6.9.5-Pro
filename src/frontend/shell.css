@@ -4,6 +4,16 @@
 @import './campus-map.css';
 @import './atlas-scene.css';
 @import './interior.css';
+@import './novel-mode.css';
+@import './novel-backdrop.css';
+@import './soyo-live2d.css';
+@import './novel-npc-portrait.css';
+@import './convenience-store.css';
+@import './academic.css';
+@import './location-services.css';
+@import './place-actions.css';
+@import './interaction-overlay.css';
+@import './social-interaction.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
 .uc-shell *, .uc-shell *::before, .uc-shell *::after { box-sizing:border-box; }
@@ -85,14 +95,18 @@
 .window-heading:active { cursor:grabbing; }
 .window-heading h1 { font-size:16px; font-weight:400; letter-spacing:.13em; }
 .window-demo { color:#9cad93; font-size:10px; }
-.window-phone-label { color:#dbc99d; font-size:10px; }
 .uc-shell .window-heading > button { margin-left:auto; min-width:36px; min-height:36px; background:#d5ddbd12; border-radius:50%; font-size:25px; line-height:1; color:#dbe2c8; }
 .window-heading button:hover { background:#d5ddbd29; }
 .window-content { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:22px; }
-.floating-window.phone-window { width:354px; height:min(700px,calc(100dvh - 135px)); max-height:calc(100dvh - 135px); left:auto; right:111px; top:89px; transform:none; background:#182d25; }
-.phone-window .window-heading { min-height:48px; padding-top:6px; padding-bottom:6px; }
-.phone-window .window-heading h1 { font-size:14px; }
-.phone-slot { flex:1; min-height:0; position:relative; width:100%; overflow:hidden; border-radius:0 0 14px 14px; background:#142522; }
+.floating-window.phone-window { width:354px; height:min(700px,calc(100dvh - 135px)); max-height:calc(100dvh - 135px); left:auto; right:111px; top:89px; transform:none; background:transparent; border:0; border-radius:0; box-shadow:none; backdrop-filter:none; overflow:visible; pointer-events:none; }
+.phone-controls { display:flex; flex-shrink:0; align-self:center; gap:8px; margin-bottom:8px; }
+.uc-shell .phone-controls button { display:grid; place-items:center; width:44px; height:44px; min-width:44px; min-height:44px; border:0; border-radius:50%; background:#172125b8; color:#fff; box-shadow:0 2px 10px #0003; pointer-events:auto; }
+.uc-shell .phone-controls button:hover { background:#172125e6; }
+.phone-controls svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.phone-slot { flex:1; min-height:0; position:relative; width:100%; overflow:hidden; border-radius:0; background:transparent; pointer-events:none; }
+.phone-window .phone-waiting, .phone-window .phone-sync-error, .phone-window > .window-content { pointer-events:auto; }
+.uc-shell[data-active-window=phone] .reading-layer,
+.uc-shell[data-active-window=phone] .resume-reading { visibility:hidden; pointer-events:none; }
 .phone-waiting { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; height:100%; padding:24px; overflow:auto; color:#d7dbc9; font-size:13px; text-align:center; }
 .phone-waiting strong { font-size:16px; font-weight:500; }
 .phone-waiting p { max-width:240px; color:#aebbab; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
@@ -121,8 +135,8 @@
   .host-actions { gap:9px; }
   .uc-shell .host-actions button { min-height:30px; font-size:10px; }
   .host-actions button + button { padding-left:9px; }
-  .tool-dock { right:50%; top:auto; bottom:max(12px,env(safe-area-inset-bottom,0px)); transform:translateX(50%); flex-direction:row; gap:4px; padding:6px; background:#10291ff2; border:1px solid #c1d1ae58; border-radius:19px; box-shadow:0 7px 24px #0b211b57; }
-  .uc-shell .tool-dock button { width:49px; min-height:45px; padding:5px 7px; gap:2px; flex-direction:column; border:0; border-radius:13px; background:transparent; box-shadow:none; font-size:10px; }
+  .tool-dock { right:50%; top:auto; bottom:max(12px,env(safe-area-inset-bottom,0px)); transform:translateX(50%); flex-direction:row; gap:2px; padding:5px; background:#10291ff2; border:1px solid #c1d1ae58; border-radius:19px; box-shadow:0 7px 24px #0b211b57; }
+  .uc-shell .tool-dock button { width:44px; min-width:44px; min-height:45px; padding:5px 5px; gap:2px; flex-direction:column; border:0; border-radius:13px; background:transparent; box-shadow:none; font-size:10px; }
   .tool-dock button[aria-pressed=true] { background:#e6ddbf; color:#233f2b; }
   .tool-icon svg { width:17px; height:17px; }
   .uc-shell .tool-dock .phone-launcher { width:64px; min-height:54px; padding:5px; flex-direction:row; gap:4px; border:1px solid #fff0bc; font-size:12px; box-shadow:0 1px 8px #f7db9c21; }
@@ -162,6 +176,17 @@
   .floating-window.phone-window { top:70px; height:calc(100dvh - 92px); max-height:calc(100dvh - 92px); }
 }
 @media (prefers-reduced-motion:reduce) { .uc-shell * { scroll-behavior:auto!important; transition:none!important; } }
+@media (max-width:760px) {
+  .uc-shell[data-active-window=phone]:not([data-phone-expanded=true]) .phone-window {
+    --phone-top:clamp(174px,31dvh,260px);
+    top:var(--phone-top);
+    height:calc(100dvh - var(--phone-top) - 118px - max(0px,env(safe-area-inset-bottom,0px) - 12px));
+    max-height:calc(100dvh - var(--phone-top) - 118px - max(0px,env(safe-area-inset-bottom,0px) - 12px));
+  }
+}
+@media (min-width:761px) {
+  .uc-shell[data-phone-expanded=true] .phone-window { width:min(430px,calc(100% - 140px)); top:76px; height:calc(100dvh - 110px); max-height:calc(100dvh - 110px); }
+}
 .bed-rest-overlay { position:absolute; inset:0; z-index:60; display:grid; place-items:center; padding:82px 16px 96px; background:#10271faa; backdrop-filter:blur(5px); }
 .bed-rest-dialog { width:min(440px,100%); max-height:100%; overflow:auto; overscroll-behavior:contain; border:1px solid #ddc79770; border-radius:18px; padding:24px; background:#1b352c; box-shadow:0 20px 70px #071b1866; }
 .bed-rest-dialog header > small { color:#d9c495; font-size:11px; letter-spacing:.1em; }

@@ -1,0 +1,78 @@
+{
+  "status": "passed",
+  "recordedAt": "2026-10-18T22:02:43.6811358+08:00",
+  "uniqueScenarios": 3,
+  "passed": 3,
+  "errors": [],
+  "finalBundle": {
+    "path": "dist/immersive-shell.js",
+    "sha256": "af94dbe8312cfa3e56f6b8119fcca8d3a8e0457ba423a9214df7ee017a0c0525",
+    "bytes": 58147818
+  },
+  "browser": "Microsoft Edge, one worker",
+  "playwrightResults": "outputs/academic-choice-playwright-results.json",
+  "scenarios": [
+    {
+      "name": "Desktop new academic choice, actual study gain, refresh and 120-point stage transition",
+      "status": "passed"
+    },
+    {
+      "name": "320 new academic choice, keyboard focus, scrolling and reachable study controls",
+      "status": "passed"
+    },
+    {
+      "name": "390 legacy1.8 supplement, failed-save retry, history/inventory/decimal energy preservation",
+      "status": "passed"
+    }
+  ],
+  "checks": [
+    "Eight majors and three matching subjects; no preselected subject; changing major clears subject and disables confirm",
+    "Modal initial focus and Shift+Tab/Tab wrap; underlying world inert; confirm/exit/retry rectangles clear of rescue button",
+    "Choosing academics consumes no time or player resources; one successful save; failed save retains choices and authoritative state",
+    "Status and schedule show exact selected subject goals, points, current stage and last gain",
+    "Actual sampled study minutes equal awarded subject points; lastStudy/lastGain agree; no extra model generation",
+    "Saved 119-point fixture crosses120 and changes to the next subject-specific goal; progress and refreshed state agree",
+    "Legacy1.8 preserves lastStudy, inventory,67.25energy and tested player/clock/interior/story/phone/contacts/schedule/transit/scene fields; choosing adds a local journal entry and does not retroactively credit old learning",
+    "Full refresh does not reopen choice, add points or repeat settlement; saved receipt still names subject and gained points",
+    "Final desktop,320,390 screenshots actually viewed; mobile footer overlap fixed and long study modal controls scroll into view"
+  ],
+  "sourceFix": {
+    "change": "Mobile setup overlay bottom reserve raised from60px to128px so footer clears the independent rescue control",
+    "evidence": "outputs/academic-choice-320-selected.png",
+    "file": "src/frontend/academic.css"
+  },
+  "diagnosticHistory": [
+    {
+      "result": "3 functional passes, but visual review found mobile footer/rescue overlap; fixed before final acceptance",
+      "report": "outputs/academic-choice-first-layout-results.json"
+    },
+    {
+      "result": "Same final bundle: desktop refresh timed out in frame.addScriptTag(content) of58MB;320 and390 passed. Replaced test-only text injection with a local routed script URL; no timeout increase or production change",
+      "report": "outputs/academic-choice-string-injection-results.json"
+    }
+  ],
+  "fixtureTransport": {
+    "source": "Exact final IIFE bytes supplied by page.route;200,content-length,sourceSHA header and complete response checked on every load",
+    "url": "http://127.0.0.1:5178/__academic_fixture_final_bundle__.js",
+    "externalFallback": false
+  },
+  "screenshots": [
+    "outputs/academic-choice-desktop-selected.png",
+    "outputs/academic-choice-desktop-stage-transition.png",
+    "outputs/academic-choice-320-initial.png",
+    "outputs/academic-choice-320-selected.png",
+    "outputs/academic-choice-320-study-picker.png",
+    "outputs/academic-choice-320-progress.png",
+    "outputs/academic-choice-390-save-failure.png",
+    "outputs/academic-choice-390-migrated-progress.png"
+  ],
+  "boundaries": {
+    "realLLMCalls": 0,
+    "native8000": "Not accessed",
+    "host": "Controlled5178host, final production bundle",
+    "mobile": "Desktop browser viewports, not physical TauriTavern verification",
+    "phone": "Stub, not revalidated this round",
+    "server": "Playwright-owned5178server ended with test process"
+  },
+  "testSourceTypecheck": "Final vue-tsc --noEmit passed after the fixture transport change"
+}

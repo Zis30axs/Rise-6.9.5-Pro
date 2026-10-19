@@ -1,0 +1,63 @@
+{
+  "measuredAt": "2026-10-19T07:32:03.693Z",
+  "origin": "http://127.0.0.1:8000",
+  "mode": "cache",
+  "requests": [
+    {
+      "path": "/",
+      "status": 200,
+      "wireBytes": 85680,
+      "decodedBytes": 734570,
+      "ttfbMs": 23,
+      "totalMs": 35,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/all",
+      "status": 200,
+      "wireBytes": 4529,
+      "decodedBytes": 9146,
+      "ttfbMs": 432,
+      "totalMs": 433,
+      "encoding": "gzip",
+      "run": 1,
+      "characterCount": 6,
+      "shallowCount": 6
+    },
+    {
+      "path": "/api/users/me",
+      "status": 200,
+      "wireBytes": 51140,
+      "decodedBytes": 69287,
+      "ttfbMs": 10,
+      "totalMs": 12,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/get",
+      "status": 200,
+      "wireBytes": 330,
+      "decodedBytes": 330,
+      "ttfbMs": 660,
+      "totalMs": 660,
+      "encoding": "identity",
+      "characterTransport": "json-data-cache-v1",
+      "pass": 1,
+      "rawContentOmitted": true,
+      "hashMatches": true
+    },
+    {
+      "path": "/api/characters/get",
+      "status": 200,
+      "wireBytes": 330,
+      "decodedBytes": 330,
+      "ttfbMs": 602,
+      "totalMs": 602,
+      "encoding": "identity",
+      "characterTransport": "json-data-cache-v1",
+      "pass": 2,
+      "rawContentOmitted": true,
+      "hashMatches": true
+    }
+  ]
+}

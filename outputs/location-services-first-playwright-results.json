@@ -1,0 +1,311 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\.study\\cc\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/e2e/location-services.spec.ts",
+      "--workers=1",
+      "--reporter=json"
+    ],
+    "configFile": "D:\\.study\\cc\\playwright.config.ts",
+    "rootDir": "D:/.study/cc/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/.study/cc/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/.study/cc/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\.study\\cc\\test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "D:\\.study\\cc\\tests\\e2e",
+        "snapshotDir": "D:\\.study\\cc\\tests\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 30000,
+        "use": {
+          "baseURL": "http://127.0.0.1:5178",
+          "browserName": "chromium",
+          "channel": "msedge"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev -- --port 5178 --strictPort",
+      "url": "http://127.0.0.1:5178",
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [
+    {
+      "title": "location-services.spec.ts",
+      "file": "location-services.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "desktop 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 34027,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:37:03.258Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a57e3cac0d0f5bb5ced6-d44723e88e3909ebfb48",
+          "file": "location-services.spec.ts",
+          "line": 141,
+          "column": 3
+        },
+        {
+          "title": "390 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 20249,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:37:37.975Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a57e3cac0d0f5bb5ced6-d46bb735711a186eb10b",
+          "file": "location-services.spec.ts",
+          "line": 141,
+          "column": 3
+        },
+        {
+          "title": "320 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13959,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:37:58.338Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a57e3cac0d0f5bb5ced6-34d62efd3b6ec0093a6b",
+          "file": "location-services.spec.ts",
+          "line": 141,
+          "column": 3
+        },
+        {
+          "title": "午夜校园咖啡店明确打烊，地图展示时间并可前往营业至次日两点的街边咖啡馆",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7842,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -1,8 +1,8 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"balance\": 184,\u001b[22m\n\u001b[32m-   \"energy\": 47.510000000000005,\u001b[39m\n\u001b[31m+   \"energy\": 47.51,\u001b[39m\n\u001b[2m    \"foodEnergy\": 450,\u001b[22m\n\u001b[2m    \"health\": 90,\u001b[22m\n\u001b[2m    \"morale\": 73,\u001b[22m\n\u001b[2m    \"satiety\": 23,\u001b[22m\n\u001b[2m    \"stress\": 57,\u001b[22m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -1,8 +1,8 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"balance\": 184,\u001b[22m\n\u001b[32m-   \"energy\": 47.510000000000005,\u001b[39m\n\u001b[31m+   \"energy\": 47.51,\u001b[39m\n\u001b[2m    \"foodEnergy\": 450,\u001b[22m\n\u001b[2m    \"health\": 90,\u001b[22m\n\u001b[2m    \"morale\": 73,\u001b[22m\n\u001b[2m    \"satiety\": 23,\u001b[22m\n\u001b[2m    \"stress\": 57,\u001b[22m\n    at drinkCoffee (D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts:126:24)\n    at D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts:188:3",
+                    "location": {
+                      "file": "D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts",
+                      "column": 24,
+                      "line": 126
+                    },
+                    "snippet": "  124 |   const hunger = Math.floor((minutes(before) + 10) / 15) - Math.floor(minutes(before) / 15);\n  125 |   expect(minutes(after) - minutes(before)).toBe(10);\n> 126 |   expect(after.player).toEqual({ ...before.player, balance: before.player.balance - 16,\n      |                        ^\n  127 |     energy: Math.min(100, before.player.energy + 18), morale: Math.min(100, before.player.morale + 3),\n  128 |     stress: Math.max(0, before.player.stress - 3), satiety: Math.max(0, before.player.satiety - hunger),\n  129 |     foodEnergy: Math.min(3000, Math.max(0, before.player.foodEnergy - 20) + 10) });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts",
+                        "column": 24,
+                        "line": 126
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[33m@@ -1,8 +1,8 @@\u001b[39m\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"balance\": 184,\u001b[22m\n\u001b[32m-   \"energy\": 47.510000000000005,\u001b[39m\n\u001b[31m+   \"energy\": 47.51,\u001b[39m\n\u001b[2m    \"foodEnergy\": 450,\u001b[22m\n\u001b[2m    \"health\": 90,\u001b[22m\n\u001b[2m    \"morale\": 73,\u001b[22m\n\u001b[2m    \"satiety\": 23,\u001b[22m\n\u001b[2m    \"stress\": 57,\u001b[22m\n\n  124 |   const hunger = Math.floor((minutes(before) + 10) / 15) - Math.floor(minutes(before) / 15);\n  125 |   expect(minutes(after) - minutes(before)).toBe(10);\n> 126 |   expect(after.player).toEqual({ ...before.player, balance: before.player.balance - 16,\n      |                        ^\n  127 |     energy: Math.min(100, before.player.energy + 18), morale: Math.min(100, before.player.morale + 3),\n  128 |     stress: Math.max(0, before.player.stress - 3), satiety: Math.max(0, before.player.satiety - hunger),\n  129 |     foodEnergy: Math.min(3000, Math.max(0, before.player.foodEnergy - 20) + 10) });\n    at drinkCoffee (D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts:126:24)\n    at D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts:188:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:38:12.314Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\.study\\cc\\test-results\\location-services-午夜校园咖啡店明确打烊，地图展示时间并可前往营业至次日两点的街边咖啡馆\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\.study\\cc\\tests\\e2e\\location-services.spec.ts",
+                    "column": 24,
+                    "line": 126
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "a57e3cac0d0f5bb5ced6-407821e9040eab8e3e3d",
+          "file": "location-services.spec.ts",
+          "line": 174,
+          "column": 1
+        },
+        {
+          "title": "零精力运动受限但公园休憩可结算，便利店和书店保留各自功能入口",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9579,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T15:38:21.914Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a57e3cac0d0f5bb5ced6-ed3d68d4e39471fd4946",
+          "file": "location-services.spec.ts",
+          "line": 193,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T15:36:55.833Z",
+    "duration": 98025.09400000001,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

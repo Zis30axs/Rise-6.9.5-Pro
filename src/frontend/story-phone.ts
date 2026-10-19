@@ -1,6 +1,12 @@
-import type { WorldState } from './types';
+import type { CharacterPortraitId, ContactProfileDraft, WorldState } from './types';
+import { validateContactProfileDraft } from '../runtime/characters';
+import { getScenePeople, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { characterForPerson } from './character-appearance';
+import { novelNpcAtlases } from './novel-npc-atlases';
 
-export interface StoryPhoneContact { id: string; name: string; description: string }
+export interface StoryPhoneContact { id: string; name: string; description: string; portraitId?: CharacterPortraitId; summary?: string; sourcePersonId?: string | null; isMain?: boolean }
+export interface StoryPhonePortrait { id: CharacterPortraitId; label: string; thumbnail?: string }
+export interface StoryPhoneEditorRequest { sourcePersonId?: string; npcId?: string }
 export interface StoryPhoneSnapshot {
   sessionId: string;
   unreadTotal: number;
@@ -8,24 +14,61 @@ export interface StoryPhoneSnapshot {
   receipts: string[];
 }
 export interface StoryPhoneLease {
-  sync(data: { contacts: StoryPhoneContact[]; messages: WorldState['phone'] }): Promise<StoryPhoneSnapshot>;
+  sync(data: { contacts: StoryPhoneContact[]; messages: WorldState['phone']; candidates?: StoryPhoneContact[]; portraits?: StoryPhonePortrait[] }): Promise<StoryPhoneSnapshot>;
   snapshot(): Promise<StoryPhoneSnapshot>;
   subscribe(listener: (snapshot: StoryPhoneSnapshot) => void): () => void;
   openContact(npcId: string): Promise<void>;
+  openContactEditor?(request: StoryPhoneEditorRequest): Promise<void>;
   release(): void;
 }
 export interface StoryPhoneHost {
-  bind(data: { sessionId: string; chatId: string; label: string; contacts: StoryPhoneContact[] }): Promise<StoryPhoneLease>;
+  bind(data: { sessionId: string; chatId: string; label: string; contacts: StoryPhoneContact[]; candidates?: StoryPhoneContact[]; portraits?: StoryPhonePortrait[];
+    onContactSave?(draft: ContactProfileDraft): Promise<StoryPhoneContact>;
+    onGenerateIntroduction?(draft: ContactProfileDraft): Promise<string> }): Promise<StoryPhoneLease>;
 }
 export interface StoryPhoneLink {
   sync(): Promise<void>;
   openContact(npcId: string, visible?: () => boolean): Promise<void>;
+  openContactEditor(request?: StoryPhoneEditorRequest, visible?: () => boolean): Promise<void>;
   dispose(): void;
 }
 
 const contactsOf = (state: WorldState): StoryPhoneContact[] => state.contacts.map(contact => ({
   id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
+  portraitId: contact.portraitId, summary: contact.summary.slice(0, 500), sourcePersonId: contact.sourcePersonId, isMain: contact.isMain,
 }));
+
+function candidatesOf(state: WorldState): StoryPhoneContact[] {
+  if (!state.scene || state.interior) return [];
+  const scene = state.scene;
+  const met = new Set(state.story.flatMap(entry => entry.participantIds ?? []));
+  return getScenePeople(scene, state.contacts).filter(person => !state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id)
+    && (person.id === scene.encounterId || met.has(person.id) || Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE))
+    .map(person => ({ id: person.id, sourcePersonId: person.id, name: person.name, description: person.description,
+      summary: '', portraitId: characterForPerson(person.id), isMain: false }));
+}
+
+/** Tiny previews are derived in memory from trusted embedded frames, never added to prompts. */
+async function portraitChoices(host: Window): Promise<StoryPhonePortrait[]> {
+  const ids: CharacterPortraitId[] = ['deepseek', 'xiaoyang', 'claude'];
+  return Promise.all(ids.map(async (id, index) => {
+    const choice: StoryPhonePortrait = { id, label: `形象${['一', '二', '三'][index]}` };
+    const img = host.document.createElement('img');
+    if (typeof img.decode !== 'function') return choice;
+    try {
+      img.src = novelNpcAtlases[id].source;
+      await img.decode();
+      const canvas = host.document.createElement('canvas'); canvas.width = 96; canvas.height = 176;
+      const context = canvas.getContext('2d'); if (!context) return choice;
+      const frame = novelNpcAtlases[id].frames.neutral;
+      const ratio = Math.min(96 / frame.width, 176 / frame.height);
+      const width = frame.width * ratio, height = frame.height * ratio;
+      context.drawImage(img, frame.x, frame.y, frame.width, frame.height, (96 - width) / 2, 176 - height, width, height);
+      choice.thumbnail = canvas.toDataURL('image/png');
+    } catch { /* Text choices remain available if this browser cannot decode previews. */ }
+    return choice;
+  }));
+}
 
 /** A serial outbox, scoped to one saved Tavern chat. The phone owns contacts,
  * history and read receipts; this adapter never touches its storage directly. */
@@ -37,6 +80,8 @@ export function createStoryPhoneLink(options: {
   state(): WorldState;
   accept(snapshot: StoryPhoneSnapshot): void;
   status(status: 'loading' | 'ready' | 'error', error?: string): void;
+  saveContact?(draft: ContactProfileDraft): Promise<StoryPhoneContact>;
+  generateIntroduction?(draft: ContactProfileDraft): Promise<string>;
 }): StoryPhoneLink {
   let dead = false;
   let lease: StoryPhoneLease | undefined;
@@ -44,6 +89,7 @@ export function createStoryPhoneLink(options: {
   let sessionId = '';
   let queued = false;
   let running: Promise<void> | undefined;
+  let portraits: StoryPhonePortrait[] = [];
   const current = () => !dead && options.isCurrent();
   const assertCurrent = () => { if (!current()) throw new Error('聊天已切换，手机同步已停止。'); };
   const accept = (snapshot: StoryPhoneSnapshot) => {
@@ -64,7 +110,17 @@ export function createStoryPhoneLink(options: {
     if (!options.hostWindow.crypto?.subtle) throw new Error('当前环境缺少安全摘要能力，无法绑定剧情手机空间。');
     sessionId = [...new Uint8Array(await options.hostWindow.crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
     assertCurrent();
-    const acquired = await api.bind({ sessionId, chatId: tuple[1] as string, label: '未读之城', contacts: contactsOf(options.state()) });
+    portraits = await portraitChoices(options.hostWindow); assertCurrent();
+    const acquired = await api.bind({ sessionId, chatId: tuple[1] as string, label: '未读之城', contacts: contactsOf(options.state()), candidates: candidatesOf(options.state()), portraits,
+      ...(options.saveContact ? { onContactSave: async (raw: ContactProfileDraft) => {
+        assertCurrent(); const draft = validateContactProfileDraft(raw);
+        const result = await options.saveContact!(draft); assertCurrent(); return result;
+      } } : {}),
+      ...(options.generateIntroduction ? { onGenerateIntroduction: async (raw: ContactProfileDraft) => {
+        assertCurrent(); const draft = validateContactProfileDraft(raw);
+        const result = await options.generateIntroduction!(draft); assertCurrent(); return result;
+      } } : {}),
+    });
     if (!current()) { acquired.release(); assertCurrent(); }
     lease = acquired;
     unsubscribe = acquired.subscribe(snapshot => {
@@ -84,7 +140,7 @@ export function createStoryPhoneLink(options: {
             queued = false;
             const active = await connect(); assertCurrent();
             const state = options.state();
-            const result = await active.sync({ contacts: contactsOf(state), messages: state.phone });
+            const result = await active.sync({ contacts: contactsOf(state), messages: state.phone, candidates: candidatesOf(state), portraits });
             assertCurrent(); accept(result);
           }
           if (current()) options.status('ready');
@@ -103,6 +159,12 @@ export function createStoryPhoneLink(options: {
       if (!visible()) return;
       if (!options.state().contacts.some(contact => contact.id === npcId)) throw new Error('找不到这个联系人。');
       await lease!.openContact(npcId); assertCurrent();
+    },
+    async openContactEditor(request = {}, visible = () => true) {
+      await sync(); assertCurrent();
+      if (!visible()) return;
+      if (!lease?.openContactEditor) throw new Error('当前手机版本尚不支持人物建档，请使用新版内置手机后重试。');
+      await lease.openContactEditor(request); assertCurrent();
     },
     dispose() {
       dead = true; queued = false;

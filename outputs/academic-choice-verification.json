@@ -1,0 +1,64 @@
+{
+  "status": "passed-local-controlled-validation",
+  "date": "2026-10-18",
+  "stateSchema": "1.9.0",
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 58147818,
+    "sha256": "af94dbe8312cfa3e56f6b8119fcca8d3a8e0457ba423a9214df7ee017a0c0525"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-专业学科学习版.png",
+    "bytes": 78319825,
+    "sha256": "9ac10685d6cc83c3339e8537657675387f4aa38abc0779fb74425182b80d0ae3"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 78426249,
+    "sha256": "2b4b65bd2be15837f2de62ff7c230d6be8e296a5970f7ba86aa34769d5f75899"
+  },
+  "installedBackup": "D:\\.study\\cc\\dist\\academic-choice-card-before.png",
+  "academics": {
+    "majors": 8,
+    "subjects": 24,
+    "initialSelection": "Explicit major and one belonging subject, no default choice; one selection per saved chat",
+    "studyPointsPerMinute": 1,
+    "stageTargets": [
+      120,
+      360,
+      720
+    ],
+    "settlement": "Only committed classroom/library study awards points for actual sampled minutes; no historical awards or model-assigned progress",
+    "migration": "Strictly preserve 1.0–1.8 existing fields, including decimal energy, needs, inventory and lastStudy; academics defaults null",
+    "ui": "Initial selection, subject-specific goals and receipt, status/schedule progress, reload without repeated settlement",
+    "modelContext": "Confirmed major, subject, goal, points, stage and historical lastGain provided as data"
+  },
+  "checks": {
+    "typecheckAndProductionBuild": true,
+    "unit": {
+      "passed": 335,
+      "files": 32,
+      "failed": 0
+    },
+    "pythonPngPassed": 8,
+    "browserUniquePassed": 3,
+    "browserEvidence": "outputs/academic-choice-browser-results.json",
+    "independentSourceReview": "No blocking issues in same-selection idempotency, atomic study/save failure, migration, protocol, persisted receipt and preserved low-energy travel",
+    "packagingEvidence": "outputs/academic-choice-packaging.json",
+    "readOnlyAuditEvidence": "outputs/academic-choice-independent-audit.json",
+    "olderE2EFixtures": "Updated for explicit initial academic selection; not claiming the entire historical browser suite was rerun"
+  },
+  "preservation": {
+    "protectedFiles": 9,
+    "originalArchives": 6,
+    "unchangedChats": 29,
+    "metadataCoverOtherScriptsPreserved": true,
+    "assetsPreserved": "4 GLBs, 13 backgrounds, 84 byte-exact Soyo assets and structured model definition, 3 full-body NPC atlases, 12 product images"
+  },
+  "nativeSillyTavernValidated": false,
+  "physicalTauriTavernValidated": false,
+  "phoneHost": "stub in controlled browser scenarios; real phone not revalidated",
+  "realStoryLlmRequests": 0,
+  "phoneSourceChanged": false,
+  "commitPushOrReleasePerformed": false
+}

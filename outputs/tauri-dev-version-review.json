@@ -1,0 +1,47 @@
+{
+  "audit_date": "2026-10-19",
+  "requested_commit": {
+    "short": "223be954afa7",
+    "sha": "223be954afa7b60c8637a44a43319524a185ea11",
+    "committer_date_utc": "2026-07-31T20:25:06Z",
+    "subject": "fix(fastools): align release builds and artifacts with CI",
+    "source": "https://github.com/Darkatse/TauriTavern/commit/223be954afa7b60c8637a44a43319524a185ea11"
+  },
+  "comparison": {
+    "stable_tag": "v2.3.0",
+    "stable_sha": "a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375",
+    "github_status_for_stable_base_to_requested_head": "behind",
+    "behind_by": 462,
+    "ahead_by": 0,
+    "source": "https://api.github.com/repos/Darkatse/TauriTavern/compare/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375...223be954afa7"
+  },
+  "verified_path_facts": [
+    {
+      "fact": "The requested older commit already parses tEXt, zTXt and iTXt character metadata. In stable, this implementation was refactored into a shared PNG metadata module.",
+      "source": "https://github.com/Darkatse/TauriTavern/blob/223be954afa7b60c8637a44a43319524a185ea11/src-tauri/crates/tt-adapter-storage-userdata/src/png_card_metadata.rs",
+      "later_commit": "https://github.com/Darkatse/TauriTavern/commit/771e45553314cc95769dd80a961ca3fbf6a0eac3"
+    },
+    {
+      "fact": "The requested older upload staging code acknowledges write_all without the later explicit flush. Stable includes the staged-chunk flush fix; this is a distinct known issue, not an established cause of the user black screen.",
+      "later_commit": "https://github.com/Darkatse/TauriTavern/commit/3508d8ac47604aea794bd8b43d8752fd5d66330e"
+    },
+    {
+      "fact": "The iOS native character-card picker reads stream chunks into a File in both examined versions; these picker/upload frontend files were byte-identical.",
+      "source": "https://github.com/Darkatse/TauriTavern/blob/223be954afa7b60c8637a44a43319524a185ea11/src/tauri/main/api/character-cards.js#L64-L116"
+    },
+    {
+      "fact": "The older get_character clones json_data and includes it alongside structured extension fields. Stable moves json_data through CharacterDto instead of that explicit clone; both still transport full card content. This does not establish an OOM root cause.",
+      "source": "https://github.com/Darkatse/TauriTavern/blob/223be954afa7b60c8637a44a43319524a185ea11/src-tauri/crates/tt-application/src/services/character_service.rs#L86-L92",
+      "later_source": "https://github.com/Darkatse/TauriTavern/blob/a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375/src-tauri/crates/tt-application/src/services/character_service.rs#L80-L85"
+    }
+  ],
+  "latest_user_report": {
+    "device": "iPhone 16",
+    "os": "iOS 27.2",
+    "app_build": "dev 223be954afa7",
+    "previous_failure": "Older approximately 70 MB PNG black-screened during import; JSON black-screened when entering chat.",
+    "compressed_tauri_png": "User explicitly reported that the 35.2 MB dedicated version does not black-screen and works normally.",
+    "verification_class": "User-reported real-device result; not agent-observed device testing."
+  },
+  "conclusion": "Current delivery succeeds according to the user. Stop further investigation and code changes. Do not claim memory exhaustion was proven and do not require an upgrade as part of this resolved delivery."
+}

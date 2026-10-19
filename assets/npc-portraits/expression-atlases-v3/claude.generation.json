@@ -1,0 +1,230 @@
+{
+  "asset": "assets/npc-portraits/expression-atlases-v3/claude.png",
+  "characterId": "claude",
+  "tool": "built-in image_gen.imagegen",
+  "styleDirection": "User-approved simple flat 2D animation; complete head-to-toe static sprites.",
+  "sourceReferences": [
+    {
+      "path": "assets/npc-portraits/expression-atlases-v2/claude.png",
+      "sha256": "8cdcea1daf6b43e91fa5a66f748abd6da83bdfd994cbb5616388095a262cafce",
+      "role": "Approved flat 2D style, identity, upper-body costume, expression and gestures."
+    },
+    {
+      "path": "outputs/character-models-claude-front.png",
+      "sha256": "a585bb90bfaef43c6dacfef8c3ec23448b3f7f1151edc94005b8f5ab5702b891",
+      "role": "Lower costume and cream lace-up boots design only; no 3D materials."
+    }
+  ],
+  "prompts": [
+    "Use case: identity-preserve / illustration-story. Edit the supplied Claude expression atlas into a FULL BODY static visual novel sprite sheet.\nReference image 1 is the edit target: preserve its simple flat 2D anime style, facial identity, orange hair, sunflower ornament and black bow, outfit colors, nine expressions and gentle gestures. Reference image 2 is ONLY a lower-costume design reference: white layered long skirt with black/orange gold-trimmed panels, white socks and cream lace-up ankle boots. DO NOT copy its 3D rendering, lighting or plastic texture.\nCreate one tall 2:3 portrait transparent RGBA sheet, ideally 1536x2304, containing exactly 3 columns x 3 rows of the SAME young character, each standing completely head-to-toe. Every figure has complete top hair, complete hands, long skirt hem, visible legs, both complete boots including soles. Full body is mandatory; no waist cuts, no cropped feet, no limbs outside its cell.\nOrdered left to right top to bottom: 1 calm neutral slight smile arms relaxed; 2 happy closed smiling eyes small natural wave; 3 sad brows raised toward center hands gently clasped; 4 angry brows drawn down one hand on hip; 5 surprised eyes wider small open mouth hand near chest; 6 shy modest blush slight head tilt fingers gently together; 7 thinking one hand near chin other relaxed; 8 serious steady eyes arms relaxed; 9 relieved soft closed eyes smile hand resting over chest.\nUse slim natural flat-animation character proportions similar to the 2D target, same height and same boot baseline within each row, not chibi. Upper body facial expressions and hands remain readable; simplify skirt embroidery to flat clean motifs. Thin confident clean linework, matte flat colors, one restrained cel shadow per material, no painterly gradients, no glossy highlights, no 3D. No changes to age, costume type, hair or sunflower.\nCOMPOSITION: exact regular 3x3 grid, equal cell dimensions. In each cell leave at least 5% of cell height blank above head and 5% below boot soles. Put the whole body inside the central 80% of each cell width, never overlap other figures. Wide clean TRANSPARENT gutters, genuine transparent alpha background. No backgrounds, no shadows cast onto a floor, no framing boxes, no labels/text, no checkerboard, no decorative graphics. All nine full bodies must be complete, separated and usable individually without cropping any body part."
+  ],
+  "selectedGeneratedImage": "C:/Users/Administrator/.codex/generated_images/01a14d85-bd8d-7f71-a005-d765b9923031/exec-af973a9e-54fe-44c5-b0ed-32697a748c99.png",
+  "transparentBackground": true,
+  "pixelEditsAfterGeneration": false,
+  "actualSize": [
+    1024,
+    1536
+  ],
+  "mode": "RGBA",
+  "bytes": 2496161,
+  "sha256": "e11d85165e2c8ac3c76938a4044173172e48e5c54ef5c3a701e0df4f4adda882",
+  "frames": {
+    "neutral": {
+      "x": 36,
+      "y": 0,
+      "width": 312,
+      "height": 520
+    },
+    "happy": {
+      "x": 368,
+      "y": 0,
+      "width": 312,
+      "height": 520
+    },
+    "sad": {
+      "x": 698,
+      "y": 0,
+      "width": 312,
+      "height": 520
+    },
+    "angry": {
+      "x": 36,
+      "y": 520,
+      "width": 312,
+      "height": 512
+    },
+    "surprised": {
+      "x": 368,
+      "y": 520,
+      "width": 312,
+      "height": 512
+    },
+    "shy": {
+      "x": 698,
+      "y": 520,
+      "width": 312,
+      "height": 512
+    },
+    "thinking": {
+      "x": 36,
+      "y": 1032,
+      "width": 312,
+      "height": 504
+    },
+    "serious": {
+      "x": 368,
+      "y": 1032,
+      "width": 312,
+      "height": 504
+    },
+    "relieved": {
+      "x": 698,
+      "y": 1032,
+      "width": 312,
+      "height": 504
+    }
+  },
+  "framingNote": "Complete head, hands, long skirt, legs and both boots in all nine source frames. Original row spacing is uneven, so row view rectangles have different heights; PNG bytes are unchanged.",
+  "alphaNote": "Outside pixels contain colored RGB but alpha is zero. No background removal performed.",
+  "validation": {
+    "pngExactToImageToolOutput": true,
+    "frames": [
+      {
+        "emotion": "neutral",
+        "visibleBoundsAlpha32": [
+          20,
+          15,
+          290,
+          515
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "happy",
+        "visibleBoundsAlpha32": [
+          13,
+          15,
+          291,
+          515
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "sad",
+        "visibleBoundsAlpha32": [
+          17,
+          15,
+          285,
+          515
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "angry",
+        "visibleBoundsAlpha32": [
+          10,
+          4,
+          300,
+          507
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "surprised",
+        "visibleBoundsAlpha32": [
+          15,
+          5,
+          293,
+          507
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "shy",
+        "visibleBoundsAlpha32": [
+          20,
+          5,
+          292,
+          507
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "thinking",
+        "visibleBoundsAlpha32": [
+          14,
+          3,
+          297,
+          497
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "serious",
+        "visibleBoundsAlpha32": [
+          17,
+          4,
+          287,
+          497
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "emotion": "relieved",
+        "visibleBoundsAlpha32": [
+          18,
+          4,
+          294,
+          497
+        ],
+        "edgePixelsAlpha32": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "visualReview": "All nine figures fully drawn down to both complete cream boots. Static expression and gesture variation, flat animation style. Actual final browser composition will be checked."
+  }
+}

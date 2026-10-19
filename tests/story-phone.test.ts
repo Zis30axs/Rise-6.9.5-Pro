@@ -31,6 +31,19 @@ function fixture() {
 }
 
 describe('剧情手机投递与回执边界', () => {
+  it('retains a full legacy introduction in the world while adapting the phone editor to 500 characters', async () => {
+    const f = fixture(); const state = createInitialState();
+    state.contacts[0].summary = '旧介绍'.repeat(600);
+    const fullSummary = state.contacts[0].summary;
+    f.replace(state); const link = createStoryPhoneLink(f.options);
+    await link.sync();
+    const binding = vi.mocked(f.api.bind).mock.calls[0][0];
+    expect(binding.contacts[0].summary).toBe(fullSummary.slice(0, 500));
+    expect(binding.contacts[0].description).toContain(fullSummary);
+    expect(f.options.state().contacts[0].summary).toBe(fullSummary);
+    expect(f.lease.sync).toHaveBeenCalledWith(expect.objectContaining({ contacts: expect.arrayContaining([expect.objectContaining({ summary: fullSummary.slice(0, 500) })]) }));
+    link.dispose();
+  });
   it('后台连接使用聊天身份摘要，不按名字绑定，固定事件编号交给手机去重', async () => {
     const f = fixture(); const link = createStoryPhoneLink(f.options);
     await link.sync(); await link.sync();

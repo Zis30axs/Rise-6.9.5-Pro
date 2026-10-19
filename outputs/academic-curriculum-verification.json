@@ -1,0 +1,139 @@
+{
+  "status": "passed-local-controlled-validation",
+  "date": "2026-10-18",
+  "stateSchema": "1.10.0",
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 58170335,
+    "sha256": "bffa6c4c578d030025e890167e278e225db99126e4f2465b649de122c84238f0"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-多科学习与课程表版.png",
+    "bytes": 78350001,
+    "sha256": "e6d8ae5671ef31ae96ba72624d4c1e7c31004be45b2ce406c353429b6fad3055"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 78456425,
+    "sha256": "d03d85321a8a5c48175bd0589320ac09e54f905b45103e5fbfc46e1a714ac5a5"
+  },
+  "installedBackup": "D:\\.study\\cc\\dist\\academic-curriculum-card-before.png",
+  "academics": {
+    "majors": 8,
+    "catalogSubjects": 24,
+    "subjectsPerMajor": 3,
+    "initialSelection": "Explicit major selection once per saved chat; all three belonging subjects start at zero, with no default choice",
+    "progress": "Each subject owns independent exact half-point progress, targets and stage; other-major subjects appear after committed reading",
+    "stageTargets": [
+      120,
+      360,
+      720
+    ],
+    "majorStudyPointsPerMinute": 1,
+    "channels": {
+      "classroom": "Major subjects only",
+      "library": "Major or cross-major subjects at the study desk or explicit reading anchor",
+      "bookshop": "Explicit reading at the existing bookshop location in both 3D and novel modes; no added interior"
+    },
+    "crossMajorOutcomes": [
+      {
+        "id": "inspiration",
+        "probability": 0.25,
+        "pointsMultiplier": 1.5,
+        "extraEnergyCost": 0,
+        "extraMorale": 3,
+        "extraStress": -2
+      },
+      {
+        "id": "confusion",
+        "probability": 0.25,
+        "pointsMultiplier": 0.5,
+        "extraEnergyCost": 3,
+        "extraMorale": -4,
+        "extraStress": 5
+      },
+      {
+        "id": "normal",
+        "probability": 0.5,
+        "pointsMultiplier": 1,
+        "extraEnergyCost": 0,
+        "extraMorale": 0,
+        "extraStress": 0
+      }
+    ],
+    "settlement": "Eligibility, worst-case energy, clock and points limits checked before sampling; time and cross-major outcome drawn only on explicit confirmation, then resources, subject points, receipt and journal saved atomically",
+    "netEffects": "Outcome modifiers are added to normal study costs before clamping; lastGain stores actual net morale/stress and energy consumed",
+    "migration": "Strict 1.9 migration retains every old point on the old selected subject and adds the other two major subjects at zero; historical lastGain survives with unknown channel/outcome/effects null. Earlier supported saves keep all existing data and academics null. No retrospective awards.",
+    "existingData": "Existing decimal energy, needs, inventory, lastStudy, phone, story, contacts, journal, transit, scene and original one-off schedule are preserved",
+    "timetable": "Fixed derived weekly six-slot timetable for the selected major; opening it does not mark attendance, mutate the original schedule or award points",
+    "receipt": "Saved channel and interaction identity distinguish classroom/library results from bookshop reading; refresh consumes saved results without resampling",
+    "nonLearningActions": "Free observation, ten-minute shelf browsing, selecting subjects, opening the timetable, completing old schedule items and dialogue award no study points",
+    "travel": "Zero-energy novel travel remains permitted and charges at most the available energy; study resource requirements remain separate",
+    "modelContext": "All saved subject progress, stage goals, timetable and lastGain are supplied as authoritative data; no model-assigned progress"
+  },
+  "checks": {
+    "typecheckAndProductionBuild": true,
+    "unit": {
+      "passed": 346,
+      "files": 32,
+      "failed": 0,
+      "firstRun": {
+        "passed": 345,
+        "failed": 1,
+        "total": 346,
+        "evidence": "outputs/academic-curriculum-unit-results.json"
+      },
+      "targetedRetry": {
+        "passed": 12,
+        "failed": 0,
+        "evidence": "outputs/academic-curriculum-unit-movement-retry.json",
+        "sameSource": true,
+        "sameSourceConfirmation": "Parent reported the targeted retry used the same production and test source"
+      },
+      "initialFailure": {
+        "test": "scene-only free movement can actually walk from the original south-gate spawn along connected paths to every campus and street landmark",
+        "kind": "15000ms resource/time limit; no assertion failure reported"
+      },
+      "aggregation": "346 unique initial test identities; the single timed-out traversal is covered by the 12/12 same-source targeted rerun. This does not claim an entirely green first run."
+    },
+    "pythonPngPassed": 8,
+    "browserUniquePassed": 3,
+    "browserEvidence": "outputs/academic-curriculum-browser-results.json",
+    "browserScenarios": [
+      {
+        "title": "academic curriculum desktop 专业三科独立成长与六节周课表",
+        "status": "passed",
+        "durationMs": 31580
+      },
+      {
+        "title": "academic curriculum 320 跨专业图书馆灵感与书店困惑按次保存",
+        "status": "passed",
+        "durationMs": 26198
+      },
+      {
+        "title": "academic curriculum 390 旧1.9单科迁移与第二科保存失败重试",
+        "status": "passed",
+        "durationMs": 25086
+      }
+    ],
+    "browserChecks": [],
+    "independentSourceReview": "No blocking runtime issues found in migration, one-time outcome settlement, save failure, per-subject progress, channel matching, clock bound or preserved zero-energy novel travel",
+    "packagingEvidence": "outputs/academic-curriculum-packaging.json",
+    "readOnlyAuditEvidence": "outputs/academic-curriculum-independent-audit.json",
+    "olderE2EFixtures": "Existing fixtures adapted where required; the three current unique scenarios do not imply the full historical browser suite was rerun"
+  },
+  "preservation": {
+    "protectedFiles": 10,
+    "originalArchives": 6,
+    "unchangedChats": 29,
+    "metadataCoverOtherScriptsPreserved": true,
+    "assetsPreserved": "4 GLBs, 13 backgrounds, 84 byte-exact Soyo files plus structured model definition, 3 full-body NPC atlases, 12 product images",
+    "oldPortraitVariantsEmbedded": false
+  },
+  "nativeSillyTavernValidated": false,
+  "physicalTauriTavernValidated": false,
+  "phoneHost": "Stub in controlled browser scenarios; real phone not revalidated. Source and installed panel-host.js independently hash-checked.",
+  "realStoryLlmRequests": 0,
+  "phoneSourceChanged": false,
+  "commitPushOrReleasePerformed": false
+}

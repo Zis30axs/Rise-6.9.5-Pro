@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-19",
+  "target": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+  "backup": "D:\\SillyTavern\\backups\\remote-loading-20261019\\installed-immediately-before.png",
+  "beforeBytes": 78581389,
+  "afterBytes": 66597953,
+  "bundleBytes": 49275762,
+  "bundleSha256": "326ecefe25bcc829c9fdc356b96ab3ac4352cbea57e793404e68b94f6b625fcd",
+  "installedSha256": "8d19b84cd4a1c14d5cec7eaf797ad68ebe1c577d4026670cb22e164a2ca7dab5",
+  "onlyExistingScriptContentChanged": true,
+  "imageChunksUnchanged": true,
+  "chatFilesWrittenByDeployment": 0,
+  "otherCardsWritten": 0
+}

@@ -1,4 +1,5 @@
-import type { InteriorPresence, ScenePresence } from '../frontend/types';
+import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
+import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
 import { sceneAreas, sceneBounds, sceneLandmarks } from '../frontend/scene-layout';
 import { getCampusInterior, getInteriorActivity } from './campus-interiors';
@@ -43,12 +44,17 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
 export interface ScenePerson {
   id: string;
   name: string;
+  /** Original seed-derived label remains an alias after a confirmed rename. */
+  candidateName: string;
   identity: string;
   tags: string[];
   description: string;
   x: number;
   z: number;
   color: number;
+  portraitId: CharacterPortraitId;
+  contactId: string | null;
+  isMain: boolean;
 }
 export interface ScenePersonAnchor { id: string; x: number; z: number; schoolWeighted: boolean }
 
@@ -119,14 +125,15 @@ export function sampleScenePerson(seed: string, anchor: ScenePersonAnchor): Scen
     骑手: '带着配送用的随身装备，正查看附近的方向。', 自由职业者: '背着轻便的随身包，暂时停在路边。',
   };
   return {
-    id: `ped-${hashString(seed).toString(36)}-${anchor.id}`, name, ...identity,
+    id: `ped-${hashString(seed).toString(36)}-${anchor.id}`, name, candidateName: name, ...identity,
     description: descriptions[identity.identity]!, x: anchor.x, z: anchor.z, color: colors[Math.floor(random() * colors.length)]!,
+    portraitId: characterForPerson(`ped-${hashString(seed).toString(36)}-${anchor.id}`), contactId: null, isMain: false,
   };
 }
 
-export function getScenePeople(scene: ScenePresence): ScenePerson[] {
+export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = []): ScenePerson[] {
   const names = new Set<string>();
-  return scenePersonAnchors.map(anchor => {
+  const people = scenePersonAnchors.map(anchor => {
     const person = sampleScenePerson(scene.seed, anchor);
     const start = hashString(`unique-name|${scene.seed}|${anchor.id}`) % (surnames.length * givenNames.length);
     for (let offset = 0; names.has(person.name); offset++) {
@@ -134,12 +141,24 @@ export function getScenePeople(scene: ScenePresence): ScenePerson[] {
       person.name = surnames[Math.floor(index / givenNames.length)]! + givenNames[index % givenNames.length]!;
     }
     names.add(person.name);
+    person.candidateName = person.name;
     return person;
+  });
+  const occupied = new Set(contacts.map(contact => contact.name));
+  return people.map(person => {
+    const contact = contacts.find(contact => contact.sourcePersonId === person.id || contact.id === person.id);
+    const start = hashString(`confirmed-name|${scene.seed}|${person.id}`) % (surnames.length * givenNames.length);
+    for (let offset = 0; !contact && occupied.has(person.name); offset++) {
+      const index = (start + offset) % (surnames.length * givenNames.length);
+      person.name = surnames[Math.floor(index / givenNames.length)]! + givenNames[index % givenNames.length]!;
+    }
+    occupied.add(contact?.name ?? person.name);
+    return contact ? { ...person, name: contact.name, description: contact.summary, portraitId: contact.portraitId, contactId: contact.id, isMain: contact.isMain } : person;
   });
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null) {
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = []) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
@@ -156,13 +175,13 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   if (!scene) return null;
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
-  const people = getScenePeople(scene);
+  const people = getScenePeople(scene, contacts);
   const nearby = people
     .map(person => ({ person, distance: Math.hypot(person.x - scene.x, person.z - scene.z) }))
     .filter(item => item.distance <= 18)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 8);
-  const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description });
+  const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain });
   const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
   return {
     areaId: area.id, label: area.label, outdoors: true, skyVisible: true,

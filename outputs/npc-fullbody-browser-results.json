@@ -1,0 +1,209 @@
+{
+  "task": "三位NPC完整全身静态表情与素世Live2D切换",
+  "assetVersion": "expression-atlases-v3",
+  "uniqueScenarios": 4,
+  "passed": 4,
+  "errors": [],
+  "finalBundle": {
+    "path": "dist/immersive-shell.js",
+    "bytes": 41676540,
+    "sha256": "421459f85a7671bd13f6f68664e2ab931a3dfd8340556d5fab1af5753176d830"
+  },
+  "finalAssets": [
+    {
+      "id": "deepseek",
+      "path": "assets/npc-portraits/expression-atlases-v3/deepseek.png",
+      "bytes": 2024454,
+      "sha256": "be89326bf2a6d7d8d513ec70edd5aa221b94bfebee8a59ce34a0d8c66c64e5ee"
+    },
+    {
+      "id": "xiaoyang",
+      "path": "assets/npc-portraits/expression-atlases-v3/xiaoyang.png",
+      "bytes": 1696263,
+      "sha256": "ae6b9fc7e83cc5ec67d10c81901f8feb5041c23603c9e492bbcd30a4d2323a5b"
+    },
+    {
+      "id": "claude",
+      "path": "assets/npc-portraits/expression-atlases-v3/claude.png",
+      "bytes": 2496161,
+      "sha256": "e11d85165e2c8ac3c76938a4044173172e48e5c54ef5c3a701e0df4f4adda882"
+    }
+  ],
+  "execution": {
+    "browser": "Microsoft Edge via Playwright",
+    "workers": 1,
+    "sessionId": 7552,
+    "exitCode": 0,
+    "startTime": "2026-10-18T09:40:37.537Z",
+    "durationMs": 115118.96599999999,
+    "rawResults": "outputs/npc-fullbody-playwright-results.json",
+    "tests": [
+      {
+        "name": "desktop NPC全身表情完整显示，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 38685,
+        "viewport": {
+          "label": "desktop",
+          "width": 1280,
+          "height": 900
+        },
+        "emotionsPerNpc": 9
+      },
+      {
+        "name": "390 NPC全身表情完整显示，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 24082,
+        "viewport": {
+          "label": "390",
+          "width": 390,
+          "height": 844
+        },
+        "emotionsPerNpc": 4
+      },
+      {
+        "name": "320 NPC全身表情完整显示，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 21190,
+        "viewport": {
+          "label": "320",
+          "width": 320,
+          "height": 568
+        },
+        "emotionsPerNpc": 4
+      },
+      {
+        "name": "720 NPC全身表情完整显示，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 23169,
+        "viewport": {
+          "label": "720",
+          "width": 720,
+          "height": 568
+        },
+        "emotionsPerNpc": 4
+      }
+    ],
+    "automaticServer": {
+      "url": "http://127.0.0.1:5178",
+      "owner": "Playwright webServer",
+      "cleanedUp": true,
+      "postRunListeningPort5178": false
+    },
+    "historicalRun": "The initial three-scenario layout run is archived in outputs/npc-fullbody-work/first-layout-browser-results.json and first-layout-playwright-results.json. It is not added to the final unique-scenario count."
+  },
+  "assertions": {
+    "identity": "Actual contact names lin/林同学 and zhou/周同学 plus the saved seed current encounter select their existing identity-derived appearances. Their actual names are present in controlled generation context.",
+    "imageSelection": "Each NPC uses one fixed embedded PNG href and distinct explicit viewBox rectangles for supported emotions. All three source href values are distinct. Every image decodes successfully.",
+    "pixelVerification": {
+      "desktop": "All nine emotions for each of three NPCs have distinct viewBox rectangles and isolated SVG screenshot SHA-256 values.",
+      "otherViewports": "At 390x844, 320x568 and 720x568, neutral/happy/angry/thinking have distinct viewBoxes and screenshot SHA-256 values for every NPC.",
+      "fallback": "Undefined emotion exactly matches the neutral viewBox and isolated screenshot SHA-256 for all three NPCs at all four viewports.",
+      "isolation": "Only the portrait remains visible while sampling SVG screenshot pixels; changed dialogue cannot create a false image difference.",
+      "reports": [
+        "outputs/npc-fullbody-pixels-desktop.json",
+        "outputs/npc-fullbody-pixels-390.json",
+        "outputs/npc-fullbody-pixels-320.json",
+        "outputs/npc-fullbody-pixels-720.json"
+      ]
+    },
+    "fullBody": {
+      "fit": "The entire transformed SVG viewBox and SVG element fit within the visible wrapper and viewport; no 175% zoom remains.",
+      "dialogue": "Every tested NPC frame is separate from the reading layer, including the new 720px breakpoint regression.",
+      "source": "Alpha>=32 source inspection confirms all crops remain inside their PNG and leave transparent rows above the head and below the shoes. Semantic completeness was checked visually as well.",
+      "geometrySummary": [
+        {
+          "viewport": "desktop",
+          "distinctRenderedExpressions": 27,
+          "minimumSourceAlphaPadding": {
+            "top": 3,
+            "bottom": 4,
+            "left": 8,
+            "right": 10
+          },
+          "minimumFrameToDialogueGapCssPx": 25,
+          "report": "outputs/npc-fullbody-pixels-desktop.json"
+        },
+        {
+          "viewport": "390",
+          "distinctRenderedExpressions": 12,
+          "minimumSourceAlphaPadding": {
+            "top": 3,
+            "bottom": 4,
+            "left": 8,
+            "right": 11
+          },
+          "minimumFrameToDialogueGapCssPx": 10,
+          "report": "outputs/npc-fullbody-pixels-390.json"
+        },
+        {
+          "viewport": "320",
+          "distinctRenderedExpressions": 12,
+          "minimumSourceAlphaPadding": {
+            "top": 3,
+            "bottom": 4,
+            "left": 8,
+            "right": 11
+          },
+          "minimumFrameToDialogueGapCssPx": 10,
+          "report": "outputs/npc-fullbody-pixels-320.json"
+        },
+        {
+          "viewport": "720",
+          "distinctRenderedExpressions": 12,
+          "minimumSourceAlphaPadding": {
+            "top": 3,
+            "bottom": 4,
+            "left": 8,
+            "right": 11
+          },
+          "minimumFrameToDialogueGapCssPx": 10,
+          "report": "outputs/npc-fullbody-pixels-720.json"
+        }
+      ]
+    },
+    "soyo": "NPC presentation hides the existing Soyo Live2D wrapper with opacity 0. Returning to Soyo restores ready status, requested emotion and opacity 1 using the same canvas element. Exactly one DOM canvas remains; NPC portraits add none.",
+    "unknownSpeaker": "An unknown speaker displays neither an old NPC portrait nor Soyo.",
+    "cursorAndState": "Backward and forward navigation restores the correct portrait and exact segment. Original story text and full saved state remain unchanged by reading. Exactly one controlled generation occurs per scenario.",
+    "controls": "ShadowRoot-aware hit tests confirm the mode switch, map, next sentence, composer and rescue controls remain reachable.",
+    "capturedPageErrors": []
+  },
+  "visualReview": {
+    "completed": true,
+    "method": "Actual saved screenshots opened with view_image. Full review covered 27 desktop expressions, all 24 mobile expressions at 320/390 and three Soyo returns during the initial v3 layout. After the 701-760px-only breakpoint correction, all 12 new 720px expressions and its Soyo return were opened, plus final desktop/390/320 representative scenes. The v3 source PNGs and the three original viewport layouts were unchanged by that correction.",
+    "results": [
+      "All reviewed NPC poses include the complete hair/head, hands, legs and both shoes. Neither source crop nor dialogue layer cuts the body.",
+      "The wide desktop stage, 390px upper stage and 320/720px short stage all contain one whole figure without adjacent atlas characters.",
+      "Short views intentionally use a smaller complete figure. The head and shoes remain visible; mode/map controls do not cover the portrait.",
+      "Eyes, brows, mouths and static hand gestures change visibly across the emotion frames. No noticeable low-alpha preview debris or opaque background rectangle appears in normal composition.",
+      "The three flat illustrated characters are consistent with one another and read clearly over the painted location background.",
+      "Soyo returns using the existing Live2D presentation; it retains its original upper-body framing."
+    ],
+    "representativeScreenshots": [
+      "outputs/npc-fullbody-desktop-xiaoyang-thinking.png",
+      "outputs/npc-fullbody-390-claude-thinking.png",
+      "outputs/npc-fullbody-390-xiaoyang-thinking.png",
+      "outputs/npc-fullbody-390-deepseek-thinking.png",
+      "outputs/npc-fullbody-320-claude-thinking.png",
+      "outputs/npc-fullbody-320-xiaoyang-thinking.png",
+      "outputs/npc-fullbody-320-deepseek-thinking.png",
+      "outputs/npc-fullbody-720-claude-thinking.png",
+      "outputs/npc-fullbody-720-xiaoyang-thinking.png",
+      "outputs/npc-fullbody-720-deepseek-thinking.png",
+      "outputs/npc-fullbody-desktop-soyo.png",
+      "outputs/npc-fullbody-390-soyo.png",
+      "outputs/npc-fullbody-320-soyo.png",
+      "outputs/npc-fullbody-720-soyo.png"
+    ]
+  },
+  "boundaries": {
+    "independentSimulatedTavernHelperHost": true,
+    "controlledLLMReplies": true,
+    "realLLMCalled": false,
+    "nativePort8000Accessed": false,
+    "phoneHostMocked": true,
+    "phoneTauriTavernPhysicalDeviceTested": false,
+    "mobileEvidence": "Desktop Edge viewport simulation only.",
+    "networkEvidence": "Embedded PNG data URLs are asserted. This report does not claim a complete network capture.",
+    "pngPackagingAndInstallation": "Owned by the parent agent; not asserted by this browser report."
+  }
+}

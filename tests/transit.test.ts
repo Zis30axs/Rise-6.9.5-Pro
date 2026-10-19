@@ -6,6 +6,8 @@ import { createTransitState, getNearbyTransitStop, getTransitContext, getTransit
 import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { getSceneContext } from '../src/runtime/scene-context';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
+import { withoutPlayerNeeds, withAcademicSelection } from './legacy-state';
+import { initialPlayerNeeds } from '../src/runtime/convenience-store';
 
 afterEach(() => vi.restoreAllMocks());
 const atStop = (id = 'campus') => {
@@ -15,9 +17,9 @@ const atStop = (id = 'campus') => {
 const absoluteMinutes = (state: WorldState) => state.clock.day * 1440 + state.clock.hour * 60 + state.clock.minute;
 
 describe('program-owned public transit', () => {
-  it('keeps five campus map pins while exposing a walk-to-bus-stop action and stable route quotes', () => {
+  it('keeps every local sandtable pin while exposing a walk-to-bus-stop action and stable route quotes', () => {
     const initial = createInitialState();
-    expect(mapLocations.map(location => location.id)).toEqual(['gate', 'library', 'cafe', 'dorm', 'teaching']);
+    expect(mapLocations.map(location => location.id)).toEqual(['gate', 'library', 'cafe', 'dorm', 'teaching', 'sports', 'junction', 'bookshop', 'convenience', 'street-cafe', 'pocket-park', 'bus-stop']);
     const arrived = reduceState(initial, { type: 'travel', locationId: 'bus-stop' });
     expect(arrived.locationId).toBe('bus-stop');
     expect(arrived.scene).toBeNull();
@@ -50,7 +52,7 @@ describe('program-owned public transit', () => {
     const action = { type: 'ride_transit' as const, vehicleId: vehicle.id, stopId: route.stop.id, minutes: 999, fare: 999 };
     const arrived = reduceState(initial, action);
     expect(absoluteMinutes(arrived) - absoluteMinutes(initial)).toBe(route.minutes);
-    expect(arrived.player).toEqual({ ...initial.player, balance: initial.player.balance - route.fare });
+    expect(arrived.player).toEqual({ ...initial.player, balance: initial.player.balance - route.fare, foodEnergy: initial.player.foodEnergy - route.minutes * 2, satiety: initial.player.satiety - (Math.floor(absoluteMinutes(arrived) / 15) - Math.floor(absoluteMinutes(initial) / 15)) });
     expect(arrived.locationId).toBe(route.stop.locationId);
     expect(arrived.scene).toMatchObject({ x: route.stop.x, z: route.stop.z, yaw: route.stop.yaw, areaId: route.stop.locationId, seed: initial.scene!.seed, encounterId: null });
     expect(arrived.transit).toEqual({ sequence: 1, lastRide: { id: 'transit-ride-1', vehicleId: vehicle.id, fromStopId: 'campus', toStopId: route.stop.id, minutes: route.minutes, fare: route.fare, at: arrived.journal.at(-1)!.at } });
@@ -98,7 +100,7 @@ describe('program-owned public transit', () => {
     const room = getCampusInterior('dorm-room')!;
     const inside = reduceState(reduceState(createInitialState(), { type: 'walk', ...room.entrance, seed: 'indoor-transit' }), { type: 'enter_interior', roomId: room.id });
     expect(() => reduceState(inside, ride)).toThrow(/室外/);
-    const poor = { ...current, player: { energy: 80, balance: 5.99 } };
+    const poor = { ...current, player: { ...current.player, energy: 80, balance: 5.99 } };
     const poorSnapshot = JSON.stringify(poor);
     expect(() => reduceState(poor, ride)).toThrow(/余额不足/);
     expect(JSON.stringify(poor)).toBe(poorSnapshot);
@@ -150,19 +152,20 @@ describe('program-owned public transit', () => {
       let current = reduceState(reduceState(createInitialState(), { type: 'walk', ...room.entrance, seed: 'old-learning' }), { type: 'enter_interior', roomId });
       const interaction = room.interactions.find(item => item.id === (roomId === 'dorm-room' ? 'dorm-rest' : roomId === 'classroom' ? 'classroom-notes' : 'study-focus'))!;
       current = reduceState(current, { type: 'interior_walk', x: interaction.x, z: interaction.z, yaw: 0 });
-      current = reduceState(current, roomId === 'dorm-room' ? { type: 'interior_rest', optionId: 'dorm-rest-short' } : { type: 'interior_study', interactionId: interaction.id, optionId: 'study-short' });
-      const { transit: _transit, ...oldFields } = current;
+      if (roomId !== 'dorm-room') current = withAcademicSelection(current);
+      current = reduceState(current, roomId === 'dorm-room' ? { type: 'interior_rest', optionId: 'dorm-rest-short' } : { type: 'interior_study', subjectId: 'cs-programming', interactionId: interaction.id, optionId: 'study-short' });
+      const { transit: _transit, ...oldFields } = withoutPlayerNeeds(current);
       const old15 = { ...oldFields, schema_version: '1.5.0' };
       const saved = JSON.stringify(old15);
       const count = random.mock.calls.length;
-      expect(parseState(JSON.parse(saved))).toEqual(current);
+      expect(parseState(JSON.parse(saved))).toEqual({ ...current, academics: null, player: { ...current.player, ...initialPlayerNeeds } });
       expect(parseState(JSON.parse(saved)).transit).toEqual(createTransitState());
       expect(random.mock.calls.length).toBe(count);
       expect(JSON.stringify(old15)).toBe(saved);
       expect(() => parseState({ ...old15, transit: createTransitState() })).toThrow(/字段/);
     }
     const current = atStop();
-    const { transit: _transit, ...legacy } = current;
+    const { transit: _transit, ...legacy } = withoutPlayerNeeds(current);
     for (const version of ['1.3.0', '1.4.0', '1.5.0']) expect(parseState({ ...legacy, schema_version: version })).toEqual(current);
     const { interior: _interior, ...old12 } = legacy;
     expect(parseState({ ...old12, schema_version: '1.2.0' })).toEqual(current);
@@ -171,10 +174,10 @@ describe('program-owned public transit', () => {
     const { scene: _scene, ...old10 } = old11;
     expect(parseState({ ...old10, locationId: 'gate', schema_version: '1.0.0' })).toEqual(createInitialState());
     const far = atStop('home');
-    const { transit: _farTransit, ...oldFar } = far;
+    const { transit: _farTransit, ...oldFar } = withoutPlayerNeeds(far);
     expect(() => parseState({ ...oldFar, schema_version: '1.5.0' })).toThrow(/旧版/);
     const road = reduceState(current, { type: 'walk', x: 71, z: 38, yaw: 0, seed: 'ignored' });
-    const { transit: _roadTransit, ...oldRoad } = road;
+    const { transit: _roadTransit, ...oldRoad } = withoutPlayerNeeds(road);
     expect(() => parseState({ ...oldRoad, schema_version: '1.5.0' })).toThrow(/旧版/);
   });
 
@@ -188,7 +191,7 @@ describe('program-owned public transit', () => {
     expect(summary.location).toBe('commercial');
     expect(summary.scene).toMatchObject({ areaId: 'commercial', outdoors: true });
     expect(summary.transit.lastRide).toMatchObject({ vehicleId: 'zbd04a', fromStopId: 'campus', toStopId: 'commercial', minutes: 25, fare: 3, alreadyCommitted: true });
-    expect(request!.injects[0].content).toContain('乘车只由公交站按钮执行');
+    expect(request!.injects[0].content).toContain('乘车可由travel执行');
     const committed = commitStoryTurn(state, '看看周围', reply, { userId: 'transit-prose-user', assistantId: 'transit-prose-assistant' });
     for (const key of ['clock', 'player', 'scene', 'transit', 'journal'] as const) expect(committed[key]).toEqual(state[key]);
     expect(commitStoryTurn(committed, '看看周围', reply, { userId: 'transit-prose-user', assistantId: 'transit-prose-assistant' })).toEqual(committed);

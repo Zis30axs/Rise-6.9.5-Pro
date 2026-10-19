@@ -1,0 +1,145 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "bundleBytes": 49275762,
+  "bundleSha256": "326ecefe25bcc829c9fdc356b96ab3ac4352cbea57e793404e68b94f6b625fcd",
+  "imageEvidence": {
+    "meal-basic": {
+      "hash": "76c112839f7760bde410076be39d305a88b6434a45cf03b76dc4be528867f383",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 640762
+    },
+    "meal-standard": {
+      "hash": "5029d1514eef34b46f5e9bbf66fabcef3c5856b193b8b42cb3ea4903757802ff",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 782834
+    },
+    "meal-premium": {
+      "hash": "7d642a23b928d95098bc934f051cccd4263078a759d51f70e9dc2a14e9bd1975",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 920360
+    },
+    "snack-basic": {
+      "hash": "7c2ac43024ca69563fcba694a187d16aa79b577e85e71727d484a0a148b858db",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 656174
+    },
+    "snack-standard": {
+      "hash": "d15bfe53e38c0995072403fe5d64e4096cf3b0297eff21276a83f135b47cf271",
+      "width": 1536,
+      "height": 1024,
+      "webp": true,
+      "bytes": 798694
+    },
+    "snack-premium": {
+      "hash": "fdf42c814f40ac7be2fba71e9d5eeacc015014d33e549c9f70edd120ecec6403",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 698790
+    },
+    "drink-basic": {
+      "hash": "3b47242f4f4a8609a603851f2b82b24f853cbd8a8abef4db93223db6cf849ae5",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 430054
+    },
+    "drink-standard": {
+      "hash": "fac90054d0b536d9d167705fa00192de7f249d2886dfb0b921ef2d1565d23444",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 412510
+    },
+    "drink-premium": {
+      "hash": "2c176e6b036bfd6c290a25cc6138a540b4b60a909f8dd768554e54d453c81d9f",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 438434
+    },
+    "cigarette-basic": {
+      "hash": "3a38e955f08856a2800dc616187ca4b1da2c41de2f9f30b8789740de82c32b60",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 592396
+    },
+    "cigarette-standard": {
+      "hash": "2db6a0ef27642152b38e285e9b70c9a80df27167803b07387fa9d4df2cb23482",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 570084
+    },
+    "cigarette-premium": {
+      "hash": "1cc9f710686b6f79cc692747222d88181af4e6d84db4f4763cc6e0690b0838db",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 689998
+    }
+  },
+  "frames": {
+    "claude": [
+      {
+        "viewBox": [
+          36,
+          0,
+          312,
+          520
+        ],
+        "pixelHash": "9e7530fa891898e5a6fd80dc1e272e830129b3f032ee082c697d1e4547f78542"
+      }
+    ]
+  },
+  "storyScroll": {
+    "start": 0,
+    "end": 1277,
+    "height": 463,
+    "total": 1740
+  },
+  "windowScroll": {
+    "top": 1013,
+    "max": 1013
+  },
+  "screenshots": [
+    "outputs/remote-loading-1280x800-initial.png",
+    "outputs/remote-loading-1280x800-portrait.png",
+    "outputs/remote-loading-1280x800-reading-scroll.png",
+    "outputs/remote-loading-1280x800-shelf-meal.png",
+    "outputs/remote-loading-1280x800-shelf-meal-image.png",
+    "outputs/remote-loading-1280x800-shelf-cigarette.png",
+    "outputs/remote-loading-1280x800-shelf-cigarette-image.png",
+    "outputs/remote-loading-1280x800-inventory-scroll.png",
+    "outputs/remote-loading-1280x800-phone.png",
+    "outputs/remote-loading-1280x800-restored.png"
+  ],
+  "calls": {
+    "saves": 1,
+    "generations": 0,
+    "forbiddenRequests": []
+  },
+  "stateUnchanged": true,
+  "errors": [],
+  "external": [],
+  "scope": {
+    "productionIife": true,
+    "controlledHelperHost": true,
+    "actualEmbeddedPhone": true,
+    "realModelCalls": 0,
+    "nativeSillyTavernPage": false,
+    "physicalTauriTavern": false
+  }
+}

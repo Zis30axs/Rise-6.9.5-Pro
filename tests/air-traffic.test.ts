@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { advanceAirTraffic, AIRLINER_COOLDOWN_MS, AIRLINER_DURATION_MS, canTriggerAirliner, createAirTrafficState, getActiveAirliner, getAirTrafficContext, parseAirTrafficState, triggerAirliner } from '../src/runtime/air-traffic';
 import { commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { parseGeneratedStory, validateGeneratedStory } from '../src/runtime/story-protocol';
+import { withoutPlayerNeeds } from './legacy-state';
 
 const now = 1_790_000_000_000;
 const ids = { userId: 'sky-turn-user', assistantId: 'sky-turn-assistant' };
@@ -75,11 +76,11 @@ describe('bounded persistent air traffic', () => {
   it('strictly migrates 1.0 and 1.1 saves while preserving every field they supported', () => {
     const current = reduceState(createInitialState(), { type: 'walk', x: 0, z: 18, yaw: 0, seed: 'legacy-sky-seed' });
     current.phone[0].read = true;
-    const { airTraffic: _airTraffic, interior: _interior, transit: _transit, ...oldFields } = current;
+    const { airTraffic: _airTraffic, interior: _interior, transit: _transit, ...oldFields } = withoutPlayerNeeds(current);
     const old11 = { ...oldFields, schema_version: '1.1.0' };
     const old11Snapshot = JSON.stringify(old11);
     const migrated11 = parseState(JSON.parse(old11Snapshot));
-    expect(migrated11).toEqual({ ...current, schema_version: '1.6.0', airTraffic: createAirTrafficState() });
+    expect(migrated11).toEqual({ ...current, schema_version: '1.11.0', airTraffic: createAirTrafficState() });
     expect(JSON.stringify(old11)).toBe(old11Snapshot);
     expect(() => parseState({ ...old11, airTraffic: createAirTrafficState() })).toThrow(/字段/);
     const { scene: _scene, ...old10Fields } = oldFields;

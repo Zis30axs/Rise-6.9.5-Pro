@@ -1,0 +1,205 @@
+{
+  "tool": "Built-in image_gen.imagegen",
+  "portraits": [
+    {
+      "id": "deepseek",
+      "file": "deepseek.png",
+      "bytes": 1799861,
+      "sha256": "601497264d724c91d85d22f8865cec74b7ae3b1d9c282422ed296020347a5105",
+      "width": 1122,
+      "height": 1402,
+      "frames": {
+        "neutral": {
+          "x": 50,
+          "y": 10,
+          "width": 350,
+          "height": 440
+        },
+        "happy": {
+          "x": 396,
+          "y": 14,
+          "width": 350,
+          "height": 440
+        },
+        "sad": {
+          "x": 748,
+          "y": 18,
+          "width": 350,
+          "height": 440
+        },
+        "angry": {
+          "x": 50,
+          "y": 490,
+          "width": 350,
+          "height": 440
+        },
+        "surprised": {
+          "x": 396,
+          "y": 486,
+          "width": 350,
+          "height": 440
+        },
+        "shy": {
+          "x": 748,
+          "y": 485,
+          "width": 350,
+          "height": 440
+        },
+        "thinking": {
+          "x": 50,
+          "y": 946,
+          "width": 350,
+          "height": 440
+        },
+        "serious": {
+          "x": 396,
+          "y": 946,
+          "width": 350,
+          "height": 440
+        },
+        "relieved": {
+          "x": 748,
+          "y": 946,
+          "width": 350,
+          "height": 440
+        }
+      },
+      "sourceReference": "assets/npc-portraits/deepseek.webp",
+      "generationMetadata": "deepseek.generation.json"
+    },
+    {
+      "id": "xiaoyang",
+      "file": "xiaoyang.png",
+      "bytes": 1716019,
+      "sha256": "6988d146422b0d68ad13420d29ee55d3ac1a05b783557cc514bd246b26687c22",
+      "width": 1122,
+      "height": 1402,
+      "frames": {
+        "neutral": {
+          "x": 50,
+          "y": 20,
+          "width": 340,
+          "height": 450
+        },
+        "happy": {
+          "x": 400,
+          "y": 20,
+          "width": 340,
+          "height": 450
+        },
+        "sad": {
+          "x": 750,
+          "y": 20,
+          "width": 340,
+          "height": 450
+        },
+        "angry": {
+          "x": 50,
+          "y": 490,
+          "width": 340,
+          "height": 450
+        },
+        "surprised": {
+          "x": 400,
+          "y": 490,
+          "width": 340,
+          "height": 450
+        },
+        "shy": {
+          "x": 750,
+          "y": 490,
+          "width": 340,
+          "height": 450
+        },
+        "thinking": {
+          "x": 50,
+          "y": 950,
+          "width": 340,
+          "height": 450
+        },
+        "serious": {
+          "x": 400,
+          "y": 950,
+          "width": 340,
+          "height": 450
+        },
+        "relieved": {
+          "x": 750,
+          "y": 950,
+          "width": 340,
+          "height": 450
+        }
+      },
+      "sourceReference": "assets/npc-portraits/xiaoyang.webp",
+      "generationMetadata": "xiaoyang.generation.json"
+    },
+    {
+      "id": "claude",
+      "file": "claude.png",
+      "bytes": 1923249,
+      "sha256": "8cdcea1daf6b43e91fa5a66f748abd6da83bdfd994cbb5616388095a262cafce",
+      "width": 1122,
+      "height": 1402,
+      "frames": {
+        "neutral": {
+          "x": 20,
+          "y": 55,
+          "width": 360,
+          "height": 410
+        },
+        "happy": {
+          "x": 390,
+          "y": 55,
+          "width": 360,
+          "height": 410
+        },
+        "sad": {
+          "x": 754,
+          "y": 55,
+          "width": 360,
+          "height": 410
+        },
+        "angry": {
+          "x": 20,
+          "y": 508,
+          "width": 360,
+          "height": 410
+        },
+        "surprised": {
+          "x": 390,
+          "y": 508,
+          "width": 360,
+          "height": 410
+        },
+        "shy": {
+          "x": 754,
+          "y": 508,
+          "width": 360,
+          "height": 410
+        },
+        "thinking": {
+          "x": 20,
+          "y": 964,
+          "width": 360,
+          "height": 410
+        },
+        "serious": {
+          "x": 390,
+          "y": 964,
+          "width": 360,
+          "height": 410
+        },
+        "relieved": {
+          "x": 754,
+          "y": 964,
+          "width": 360,
+          "height": 410
+        }
+      },
+      "sourceReference": "assets/npc-portraits/claude.webp",
+      "generationMetadata": "claude.generation.json"
+    }
+  ],
+  "totalBytes": 5439129,
+  "totalFrames": 27
+}

@@ -1,0 +1,51 @@
+{
+  "status": "passed-local-controlled-validation",
+  "date": "2026-10-18",
+  "stateSchema": "1.7.0",
+  "catalogItems": 12,
+  "tiersPerCategory": 3,
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 41703267,
+    "sha256": "730ba0e0aac68284976f61a43b9ffa0902f3c2a3545cfb544a23c63c134ac129"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-便利店与状态版.png",
+    "bytes": 56392609,
+    "sha256": "321ca6fc6042a69b7922131be220e0626aa85462fa649a6d014e0f9a4e8fdbfd"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 56499033,
+    "sha256": "ff2ddf19ed1916a69205349d40c6b4c4468edd16f5d6baca1feff244b049da35"
+  },
+  "installedBackup": "D:\\.study\\cc\\dist\\convenience-store-card-before.png",
+  "checks": {
+    "typecheckAndProductionBuild": true,
+    "unit": {
+      "uniquePassed": 286,
+      "files": 29,
+      "firstFullRunPassed": 284,
+      "firstFullRunFailed": 2,
+      "correction": "Two old-version fixtures stripped new 1.7 fields; production parser unchanged; those two files rerun with all 15 tests passing."
+    },
+    "pythonPngPassed": 8,
+    "browserUniquePassed": 4,
+    "browserEvidence": "outputs/convenience-store-browser-results.json",
+    "independentSourceReview": "No blocking issues found in migration, fixed prices, costs, nutrition, save-before-display, App entry and model summary.",
+    "packagingEvidence": "outputs/convenience-store-packaging.json",
+    "readOnlyAuditEvidence": "outputs/convenience-store-independent-audit.json"
+  },
+  "preservation": {
+    "protectedFiles": 7,
+    "originalArchives": 6,
+    "unchangedChats": 29,
+    "metadataCoverOtherScriptsPreserved": true,
+    "assetsPreserved": "4 character GLBs, 13 backgrounds, 84 byte-exact Soyo assets plus structured model definition, 3 full-body NPC atlases"
+  },
+  "nativeSillyTavernValidated": false,
+  "physicalTauriTavernValidated": false,
+  "realStoryLlmRequests": 0,
+  "phoneSourceChanged": false,
+  "commitPushOrReleasePerformed": false
+}

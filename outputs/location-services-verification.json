@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-18",
+  "status": "implemented-and-local-checks-passed",
+  "stateSchema": "1.10.0",
+  "newPersistedFields": [],
+  "features": [
+    "常驻地点入口，包含全文阅读和3D",
+    "10项按地点结算的服务",
+    "共享营业时间与跨午夜安排",
+    "书店最长阅读区间营业检查",
+    "已保存结果和地点服务进入叙事上下文"
+  ],
+  "typecheck": "passed; final E2E source also checked with vue-tsc --noEmit",
+  "productionBuild": "passed; final UI copy refinement rebuilt before browser acceptance",
+  "unitTests": {
+    "files": 33,
+    "passed": 364,
+    "failed": 0,
+    "command": "npx vitest run --maxWorkers 2"
+  },
+  "pythonTests": {
+    "passed": 8,
+    "failed": 0
+  },
+  "baseCardValidation": "passed",
+  "browserTests": {
+    "uniquePassed": 5,
+    "uniqueFailed": 0,
+    "viewports": [
+      "1280x900",
+      "390x844",
+      "320x568"
+    ],
+    "aggregation": "Five unique test identities. Use the targeted retry for desktop, 390px, 320px and midnight cases, plus the passing zero-energy/store/bookshop case from the first completed run. An earlier interrupted pre-final-build run is not acceptance evidence. Repeated executions are not added to the unique count.",
+    "report": "outputs/location-services-browser-results.json"
+  },
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 58188878,
+    "sha256": "220a8df42588b5b5745f13eae019ab847898bd117cee3a90b513fc5da7569e93"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-地点服务版.png",
+    "bytes": 78374781,
+    "sha256": "4e1363cee31a12bc8db28577465af154c71c6591d7461c336d01ac8efb300189"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 78481205,
+    "sha256": "dc1884dfa157b2003d2ce2db758bf820815eaacdf62b197a0deb3baafd1bae21"
+  },
+  "installedBackup": "D:\\.study\\cc\\dist\\location-services-card-before.png",
+  "packagingReport": "outputs/location-services-packaging.json",
+  "protectedFilesUnchanged": 11,
+  "originalArchivesUnchanged": 6,
+  "chatFilesUnchanged": 29,
+  "physicalTauriTavernValidated": false,
+  "realStoryLlmRequests": 0,
+  "nativeSillyTavernPageValidated": false,
+  "browserPhone": "stub; no new phone runtime acceptance",
+  "gitCommitPushOrRelease": false,
+  "independentAudit": {
+    "status": "passed",
+    "report": "outputs/location-services-independent-audit.json",
+    "scriptMatchedCards": 3,
+    "protectedFiles": 11,
+    "originalArchives": 6,
+    "chatFiles": 29
+  }
+}

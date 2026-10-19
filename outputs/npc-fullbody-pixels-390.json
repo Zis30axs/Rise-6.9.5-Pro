@@ -1,0 +1,726 @@
+{
+  "viewport": {
+    "label": "390",
+    "width": 390,
+    "height": 844
+  },
+  "sourceCount": 3,
+  "emotionsPerNpc": 4,
+  "unknownEmotionFallbackPassed": true,
+  "frames": {
+    "claude": {
+      "neutral": {
+        "viewBox": "36 0 312 520",
+        "sha256": "5eb7ac6ba61794ac209235c371d8e66a86188fd79057299dcc91167e34012959",
+        "screenshot": "outputs/npc-fullbody-crop-390-claude-neutral.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              36,
+              0,
+              312,
+              520
+            ],
+            "renderRect": {
+              "left": 112.50000000000003,
+              "top": 133,
+              "right": 277.5,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 83100,
+            "margins": {
+              "top": 15,
+              "bottom": 4,
+              "left": 20,
+              "right": 21
+            }
+          }
+        }
+      },
+      "happy": {
+        "viewBox": "368 0 312 520",
+        "sha256": "21d44e325cdbb9ffb3a68578ba9b259630656e724127d8565b1f263f8e3ae80a",
+        "screenshot": "outputs/npc-fullbody-crop-390-claude-happy.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              368,
+              0,
+              312,
+              520
+            ],
+            "renderRect": {
+              "left": 112.5,
+              "top": 133,
+              "right": 277.5,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 84543,
+            "margins": {
+              "top": 15,
+              "bottom": 4,
+              "left": 13,
+              "right": 20
+            }
+          }
+        }
+      },
+      "angry": {
+        "viewBox": "36 520 312 512",
+        "sha256": "7499c3b572b44b8a6d5d73001013e0d80d8b441cdfd1f97fe84205b38cc8dca1",
+        "screenshot": "outputs/npc-fullbody-crop-390-claude-angry.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              36,
+              520,
+              312,
+              512
+            ],
+            "renderRect": {
+              "left": 111.21093749999999,
+              "top": 133,
+              "right": 278.7890625,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 91076,
+            "margins": {
+              "top": 4,
+              "bottom": 4,
+              "left": 10,
+              "right": 11
+            }
+          }
+        }
+      },
+      "thinking": {
+        "viewBox": "36 1032 312 504",
+        "sha256": "2220ff5aa1762ec004b7d3cd426e645ab7b5fd7360a5e1e56c28003a4308a01c",
+        "screenshot": "outputs/npc-fullbody-crop-390-claude-thinking.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              36,
+              1032,
+              312,
+              504
+            ],
+            "renderRect": {
+              "left": 109.88095238095237,
+              "top": 133,
+              "right": 280.1190476190476,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 85795,
+            "margins": {
+              "top": 3,
+              "bottom": 6,
+              "left": 14,
+              "right": 14
+            }
+          }
+        }
+      }
+    },
+    "xiaoyang": {
+      "neutral": {
+        "viewBox": "70 50 290 460",
+        "sha256": "5cbc4a62ea17624a674eba257a33e3a4bcde5c5d05627b3442bb4607e488067a",
+        "screenshot": "outputs/npc-fullbody-crop-390-xiaoyang-neutral.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              70,
+              50,
+              290,
+              460
+            ],
+            "renderRect": {
+              "left": 108.31521739130434,
+              "top": 133,
+              "right": 281.6847826086956,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 39569,
+            "margins": {
+              "top": 15,
+              "bottom": 16,
+              "left": 63,
+              "right": 60
+            }
+          }
+        }
+      },
+      "happy": {
+        "viewBox": "375 50 290 460",
+        "sha256": "5c7749084474caa40bb464849a6813bcc1a60ca2e14d3c51bf67e8cf224644a6",
+        "screenshot": "outputs/npc-fullbody-crop-390-xiaoyang-happy.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              375,
+              50,
+              290,
+              460
+            ],
+            "renderRect": {
+              "left": 108.31521739130434,
+              "top": 133,
+              "right": 281.6847826086956,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 38737,
+            "margins": {
+              "top": 16,
+              "bottom": 15,
+              "left": 60,
+              "right": 61
+            }
+          }
+        }
+      },
+      "angry": {
+        "viewBox": "70 550 290 460",
+        "sha256": "dd5e86f7869c634463c519c783930f9b45a2b15b301d6ffdfa859243a6239dfd",
+        "screenshot": "outputs/npc-fullbody-crop-390-xiaoyang-angry.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              70,
+              550,
+              290,
+              460
+            ],
+            "renderRect": {
+              "left": 108.31521739130434,
+              "top": 133,
+              "right": 281.6847826086956,
+              "bottom": 408.00000000000006
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 39446,
+            "margins": {
+              "top": 17,
+              "bottom": 18,
+              "left": 56,
+              "right": 61
+            }
+          }
+        }
+      },
+      "thinking": {
+        "viewBox": "70 1030 290 460",
+        "sha256": "dbb6f5ac93c1efc2274b8f959f5244ee370ab4afcb61e44e8909937b30fb9dad",
+        "screenshot": "outputs/npc-fullbody-crop-390-xiaoyang-thinking.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              70,
+              1030,
+              290,
+              460
+            ],
+            "renderRect": {
+              "left": 108.31521739130434,
+              "top": 133,
+              "right": 281.6847826086956,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 38341,
+            "margins": {
+              "top": 30,
+              "bottom": 16,
+              "left": 54,
+              "right": 61
+            }
+          }
+        }
+      }
+    },
+    "deepseek": {
+      "neutral": {
+        "viewBox": "94 8 256 512",
+        "sha256": "9722ac6b5a1dd5ac22e5ff9323deb005b57401fb898cd32103163930fccfe14d",
+        "screenshot": "outputs/npc-fullbody-crop-390-deepseek-neutral.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              94,
+              8,
+              256,
+              512
+            ],
+            "renderRect": {
+              "left": 126.24999999999999,
+              "top": 133,
+              "right": 263.75,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 55304,
+            "margins": {
+              "top": 8,
+              "bottom": 6,
+              "left": 25,
+              "right": 24
+            }
+          }
+        }
+      },
+      "happy": {
+        "viewBox": "386 8 256 512",
+        "sha256": "f2ecdfcab52b156b37bcb0f9d88b6df3d4a3df2edecd525491fcc91688612286",
+        "screenshot": "outputs/npc-fullbody-crop-390-deepseek-happy.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              386,
+              8,
+              256,
+              512
+            ],
+            "renderRect": {
+              "left": 126.24999999999997,
+              "top": 133,
+              "right": 263.75,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 56527,
+            "margins": {
+              "top": 7,
+              "bottom": 6,
+              "left": 25,
+              "right": 25
+            }
+          }
+        }
+      },
+      "angry": {
+        "viewBox": "94 516 256 512",
+        "sha256": "9a452e8aaacc82b27bcc63524c429a4994d3131c5e0f3652a04087b1a358e182",
+        "screenshot": "outputs/npc-fullbody-crop-390-deepseek-angry.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              94,
+              516,
+              256,
+              512
+            ],
+            "renderRect": {
+              "left": 126.24999999999999,
+              "top": 133,
+              "right": 263.75,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 58887,
+            "margins": {
+              "top": 8,
+              "bottom": 6,
+              "left": 19,
+              "right": 23
+            }
+          }
+        }
+      },
+      "thinking": {
+        "viewBox": "94 1024 256 512",
+        "sha256": "7b7ffe45259efb905ce8dd35537bd2dd07cf333f4b4b0f8cc12f43eaf4a9bf0f",
+        "screenshot": "outputs/npc-fullbody-crop-390-deepseek-thinking.png",
+        "fullBody": {
+          "geometry": {
+            "frame": [
+              94,
+              1024,
+              256,
+              512
+            ],
+            "renderRect": {
+              "left": 126.24999999999999,
+              "top": 133,
+              "right": 263.75,
+              "bottom": 408
+            },
+            "svg": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "wrapper": {
+              "left": 55,
+              "top": 133,
+              "right": 335,
+              "bottom": 408,
+              "width": 280,
+              "height": 275
+            },
+            "reading": {
+              "left": 12,
+              "top": 418,
+              "right": 378,
+              "bottom": 718,
+              "width": 366,
+              "height": 300
+            },
+            "viewport": {
+              "width": 390,
+              "height": 844
+            }
+          },
+          "sourceEdges": {
+            "alphaThreshold": 32,
+            "opaquePixels": 58468,
+            "margins": {
+              "top": 7,
+              "bottom": 11,
+              "left": 8,
+              "right": 28
+            }
+          }
+        }
+      }
+    }
+  }
+}

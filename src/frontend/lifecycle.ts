@@ -2,9 +2,11 @@ import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
-import type { Bridge, ShellActions, ShellModel } from './types';
+import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
 import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
+import { validateContactProfileDraft } from '../runtime/characters';
+import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 
 export interface ShellHandle {
   dispose(reason?: string): void;
@@ -57,7 +59,7 @@ export function mountShell(
     const api = (hostWindow as PhoneWindow).STiPhoniePanelHost;
     return typeof api?.mount === 'function' ? api : null;
   };
-  const model = reactive<ShellModel>({ mode: bridge.kind, state, busy: false, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [] });
+  const model = reactive<ShellModel>({ mode: bridge.kind, state, busy: false, interaction: null, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [] });
   let app: VueApp | undefined;
   let dead = false;
   let epoch = 0;
@@ -73,14 +75,29 @@ export function mountShell(
   let phoneSequence = 0;
   let dismissOverlay: (() => boolean) | undefined;
   let storyPhone: StoryPhoneLink | undefined;
+  let profileRequest: number | undefined;
   const storyIdPrefix = `story-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   let storySequence = 0;
   const storyId = () => globalThis.crypto?.randomUUID?.() ?? `${storyIdPrefix}-${++storySequence}`;
+  interface PendingInteraction {
+    request: number;
+    action: WorldAction;
+    label: string;
+    original: WorldState;
+    prepared: WorldState;
+    eventState?: WorldState;
+    eventIds?: { userId: string; assistantId: string };
+    timer?: number;
+    working: boolean;
+    resolve(result: boolean): void;
+  }
+  let pendingInteraction: PendingInteraction | undefined;
 
   function dispose(reason = '已恢复原生界面。') {
     if (dead) return;
     dead = true; epoch++;
     const cleanups = [
+      () => cancelInteraction(),
       () => closePhone(),
       () => storyPhone?.dispose(),
       () => { dismissOverlay = undefined; },
@@ -93,6 +110,7 @@ export function mountShell(
       () => airTrafficTimer !== undefined && hostWindow.clearInterval(airTrafficTimer),
       () => doc.removeEventListener('keydown', keydown, true),
       () => doc.removeEventListener('focusin', focusin, true),
+      () => doc.removeEventListener('visibilitychange', visibilitychange),
       () => ownerWindow.removeEventListener('pagehide', pagehide),
       () => hostWindow.removeEventListener('resize', layoutRescue),
       () => rescue.removeEventListener('click', rescueClick),
@@ -115,6 +133,104 @@ export function mountShell(
 
   const stillCurrent = (request: number) => !dead && epoch === request && bridge.session() === session;
   const snapshot = () => parseState(toRaw(model.state));
+  const currentInteraction = (pending: PendingInteraction) => pendingInteraction === pending && stillCurrent(pending.request) && !doc.hidden;
+  function clearInteractionTimer(pending: PendingInteraction) {
+    if (pending.timer !== undefined) hostWindow.clearInterval(pending.timer);
+    pending.timer = undefined;
+  }
+  function cancelInteraction() {
+    const pending = pendingInteraction;
+    if (!pending) return;
+    pendingInteraction = undefined;
+    clearInteractionTimer(pending);
+    epoch++;
+    if (model.interaction?.phase === 'generating') {
+      try { bridge.cancel(); } catch { /* Recovery must not depend on generation cancellation. */ }
+    }
+    model.interaction = null; model.busy = false;
+    pending.resolve(false);
+  }
+  function interactionFailure(pending: PendingInteraction, error: unknown) {
+    if (!currentInteraction(pending)) return;
+    clearInteractionTimer(pending);
+    pending.working = false;
+    const errorText = message(error);
+    model.interaction = { phase: 'error', label: pending.label, progress: 75, error: errorText };
+    model.notice = errorText;
+  }
+  function publishInteraction(pending: PendingInteraction, next: WorldState) {
+    if (!currentInteraction(pending)) return;
+    bridge.save(next);
+    model.state = next;
+    clearInteractionTimer(pending);
+    pendingInteraction = undefined;
+    model.interaction = null; model.busy = false; model.notice = '';
+    pending.resolve(true);
+    if (storyPhone) void storyPhone.sync().catch(() => {});
+  }
+  async function resolveInteraction(accept: boolean) {
+    const pending = pendingInteraction;
+    if (!pending || pending.working || !currentInteraction(pending)) return;
+    pending.working = true; model.notice = '';
+    try {
+      if (!accept) {
+        const next = mergeInteractionReceipts(pending.prepared, pending.original, snapshot());
+        publishInteraction(pending, next);
+        return;
+      }
+      model.interaction = { phase: 'generating', label: pending.label, progress: 80 };
+      pending.timer = hostWindow.setInterval(() => {
+        if (!currentInteraction(pending)) { cancelInteraction(); return; }
+        if (model.interaction?.phase === 'generating') model.interaction.progress = Math.min(95, model.interaction.progress + .7);
+      }, 100);
+      if (!pending.eventState) {
+        const eventInput = `在“${pending.label}”的过程中，我决定继续查看那件不寻常的事。请生成这次突发事件及其实际影响。`;
+        const prepared = mergeInteractionReceipts(pending.prepared, pending.original, snapshot());
+        const reply = await bridge.generate(eventInput, prepared, { kind: 'interaction_event', interaction: { label: pending.label, action: pending.action } });
+        if (!currentInteraction(pending)) return;
+        if (!reply.worldActions?.length) throw new Error('突发事件尚未产生实际影响，请重试或正常完成原互动。');
+        const currentPrepared = mergeInteractionReceipts(pending.prepared, pending.original, snapshot());
+        pending.eventIds ??= { userId: storyId(), assistantId: storyId() };
+        const candidate = commitStoryTurn(currentPrepared, eventInput, reply, pending.eventIds);
+        if (!hasInteractionEffect(currentPrepared, candidate)) throw new Error('突发事件尚未产生实际影响，请重试或正常完成原互动。');
+        // Keep a valid result through save retries so random event actions and
+        // paid generation are not performed again after a failed write.
+        pending.eventState = candidate;
+      }
+      const next = mergeInteractionReceipts(pending.eventState, pending.original, snapshot());
+      publishInteraction(pending, next);
+    } catch (error) { interactionFailure(pending, error); }
+  }
+  async function interact(action: WorldAction): Promise<boolean> {
+    if (dead || model.busy || doc.hidden || bridge.session() !== session) return false;
+    if (!isGameplayInteraction(action)) return false;
+    let original: WorldState; let prepared: WorldState;
+    try {
+      original = snapshot();
+      // All duration and study rolls happen once, before any visible progress.
+      prepared = reduceState(original, action);
+    } catch (error) { model.notice = message(error); return false; }
+    const hasEvent = Math.random() < INTERACTION_EVENT_PROBABILITY;
+    model.busy = true; model.notice = '';
+    const label = interactionLabel(action);
+    model.interaction = { phase: 'progress', label, progress: 0 };
+    return new Promise<boolean>(resolve => {
+      const pending: PendingInteraction = { request: ++epoch, action: { ...action }, label, original, prepared, working: true, resolve };
+      pendingInteraction = pending;
+      const startedAt = Date.now();
+      pending.timer = hostWindow.setInterval(() => {
+        if (!currentInteraction(pending)) { cancelInteraction(); return; }
+        const elapsed = Math.min(1, (Date.now() - startedAt) / INTERACTION_DURATION_MS);
+        if (model.interaction) model.interaction.progress = Math.round(elapsed * (hasEvent ? 75 : 100));
+        if (elapsed < 1) return;
+        clearInteractionTimer(pending);
+        pending.working = false;
+        if (hasEvent) model.interaction = { phase: 'choice', label, progress: 75 };
+        else void resolveInteraction(false);
+      }, 40);
+    });
+  }
+  function visibilitychange() { if (doc.hidden) cancelInteraction(); }
   function tickAirTraffic() {
     if (dead || model.busy || doc.hidden || !host.isConnected || bridge.session() !== session) return;
     try {
@@ -127,6 +243,10 @@ export function mountShell(
     } catch (error) { model.notice = message(error); }
   }
   function closePhone() {
+    if (profileRequest !== undefined) {
+      profileRequest = undefined; epoch++; model.busy = false;
+      try { bridge.cancel(); } catch { /* Closing the form discards a late introduction. */ }
+    }
     const lease = phoneLease;
     phoneLease = undefined; phoneAnchor = undefined; mountedPhoneApi = undefined;
     loadingPhoneAnchor = undefined;
@@ -165,8 +285,11 @@ export function mountShell(
     }
   }
   const actions: ShellActions = {
+    interact,
+    resolveInteraction,
+    cancelInteraction,
     dispatch(action) {
-      if (dead || model.busy) return;
+      if (dead || model.busy || doc.hidden) return;
       try {
         const next = reduceState(snapshot(), action);
         bridge.save(next);
@@ -234,6 +357,15 @@ export function mountShell(
       try { await storyPhone.openContact(npcId, () => !dead && sequence === phoneSequence && model.externalPhoneOpen); }
       catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
     },
+    async openPhoneContactEditor(sourcePersonId) {
+      if (!storyPhone || dead || model.busy) return;
+      const sequence = phoneSequence;
+      try {
+        const existing = sourcePersonId ? model.state.contacts.find(contact => contact.id === sourcePersonId || contact.sourcePersonId === sourcePersonId) : undefined;
+        await storyPhone.openContactEditor(existing ? { npcId: existing.id } : sourcePersonId ? { sourcePersonId } : {},
+          () => !dead && sequence === phoneSequence && model.externalPhoneOpen);
+      } catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
+    },
     retryPhoneSync() {
       if (dead || !storyPhone) return;
       try {
@@ -248,6 +380,7 @@ export function mountShell(
     if (event.key === 'Escape' && !event.isComposing) {
       event.preventDefault(); event.stopPropagation();
       if (phoneLease) actions.closePhone();
+      else if (pendingInteraction) cancelInteraction();
       else if (!dismissOverlay?.()) dispose();
       return;
     }
@@ -292,6 +425,7 @@ export function mountShell(
     appliedOverflowPriority = doc.body.style.getPropertyPriority('overflow');
     doc.addEventListener('keydown', keydown, true);
     doc.addEventListener('focusin', focusin, true);
+    doc.addEventListener('visibilitychange', visibilitychange);
     ownerWindow.addEventListener('pagehide', pagehide);
     hostWindow.addEventListener('resize', layoutRescue);
     layoutRescue();
@@ -317,6 +451,33 @@ export function mountShell(
         hostWindow, session, ensurePhone: () => phoneRuntime.ensure(),
         isCurrent: () => !dead && bridge.session() === session,
         state: snapshot,
+        async saveContact(raw) {
+          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中保存，或等当前行动结束后重试。');
+          const draft = validateContactProfileDraft(raw);
+          const id = draft.id ?? draft.sourcePersonId ?? `person-${storyId()}`;
+          const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
+          bridge.save(next); model.state = next; model.notice = '';
+          const contact = next.contacts.find(contact => contact.id === id)!;
+          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
+            summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
+        },
+        async generateIntroduction(raw) {
+          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中确认生成简介，或等当前行动结束后重试。');
+          const draft = validateContactProfileDraft(raw);
+          const request = ++epoch;
+          const sequence = phoneSequence;
+          profileRequest = request; model.busy = true; model.notice = '';
+          try {
+            const reply = await bridge.generate('请根据此人的既有出场记录生成简短人物介绍。', snapshot(), { kind: 'contact_introduction',
+              contact: { ...draft, sourcePersonId: draft.sourcePersonId ?? null } });
+            if (!stillCurrent(request) || sequence !== phoneSequence || !model.externalPhoneOpen) throw new Error('人物编辑已关闭，简介未写入。');
+            if (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length) throw new Error('人物简介包含无效内容，请重试。');
+            return reply.text;
+          } finally {
+            if (profileRequest === request) profileRequest = undefined;
+            if (stillCurrent(request)) model.busy = false;
+          }
+        },
         accept(receipt) {
           const known = new Set(model.state.contacts.map(contact => contact.id));
           model.phoneUnread = receipt.unreadTotal;

@@ -18,3 +18,7 @@ Thumbs.db
 /playwright-report/
 /.vite/
 /src/frontend/generated/
+
+# Local model conversion tools and extracted working copies (source archives stay in Downloads)
+/.model-tools/
+/outputs/character-model-work/

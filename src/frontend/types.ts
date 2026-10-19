@@ -62,30 +62,101 @@ export interface TransitState {
   lastRide: TransitRide | null;
 }
 
+export interface PlayerState {
+  /** Immediate energy, 0..100 in exact hundredths. */
+  energy: number;
+  balance: number;
+  health: number;
+  stress: number;
+  morale: number;
+  satiety: number;
+  /** Game food reserve, in kcal; separate from immediate energy. */
+  foodEnergy: number;
+}
+
+export interface AcademicGain {
+  subjectId: string;
+  minutes: number;
+  points: number;
+  totalPoints: number;
+  at: string;
+  /** Null means a 1.9 historical record without outcome evidence. */
+  outcome: 'normal' | 'inspiration' | 'confusion' | null;
+  channel: 'classroom' | 'study-room' | 'bookshop' | null;
+  interactionId: string | null;
+  energyConsumed: number | null;
+  moraleChange: number | null;
+  stressChange: number | null;
+}
+export interface AcademicState {
+  majorId: string;
+  /** Per-subject progress uses exact half points. */
+  subjects: { subjectId: string; points: number }[];
+  lastGain: AcademicGain | null;
+}
+
+export type CharacterPortraitId = 'deepseek' | 'xiaoyang' | 'claude';
+
+export interface CharacterContact {
+  id: string;
+  name: string;
+  tag: string;
+  summary: string;
+  affinity: number;
+  status: string;
+  portraitId: CharacterPortraitId;
+  /** Stable pedestrian identity, retained after the player leaves the scene. */
+  sourcePersonId: string | null;
+  isMain: boolean;
+}
+
+export interface ContactProfileInput {
+  id: string;
+  name: string;
+  portraitId: CharacterPortraitId;
+  summary: string;
+  sourcePersonId?: string | null;
+}
+export type ContactProfileDraft = Omit<ContactProfileInput, 'id'> & { id?: string };
+
 export interface WorldState {
-  schema_version: '1.6.0';
+  schema_version: '1.11.0';
   clock: { day: number; hour: number; minute: number };
   locationId: string;
   scene: ScenePresence | null;
   interior: InteriorPresence | null;
   airTraffic: AirTrafficState;
   transit: TransitState;
-  player: { energy: number; balance: number };
+  player: PlayerState;
+  /** Quantities count individual uses, not purchased packages. */
+  inventory: { itemId: string; quantity: number }[];
+  academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
-  contacts: { id: string; name: string; tag: string; summary: string; affinity: number; status: string }[];
+  contacts: CharacterContact[];
   schedule: { id: string; title: string; locationId: string; time: string; done: boolean }[];
   journal: { id: string; text: string; at: string }[];
-  story: { id: string; role: 'user' | 'assistant'; text: string }[];
+  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[] }[];
 }
 
 export type WorldAction =
+  | ({ type: 'save_contact' } & ContactProfileInput)
+  | { type: 'choose_academics'; majorId: string }
+  | { type: 'buy_item'; itemId: string; quantity: number }
+  | { type: 'pack_item'; itemId: string; quantity: number }
+  | { type: 'pack_service'; serviceId: string; quantity: number }
+  | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'use_item'; itemId: string }
+  | { type: 'location_service'; serviceId: string }
+  | { type: 'novel_travel'; locationId: string; vehicleId?: string }
+  | { type: 'novel_approach'; interactionId: string }
   | { type: 'air_traffic_tick'; now: number }
   | { type: 'enter_interior'; roomId: string }
   | { type: 'leave_interior' }
   | { type: 'interior_walk'; x: number; z: number; yaw: number }
   | { type: 'interior_interact'; interactionId: string }
   | { type: 'interior_rest'; optionId: string }
-  | { type: 'interior_study'; interactionId: string; optionId: string }
+  | { type: 'interior_study'; interactionId: string; optionId: string; subjectId: string }
+  | { type: 'read_subject'; subjectId: string; optionId: string }
   | { type: 'ride_transit'; vehicleId: string; stopId: string }
   | { type: 'travel'; locationId: string }
   | { type: 'walk'; x: number; z: number; yaw: number; seed: string }
@@ -104,10 +175,42 @@ export interface Location {
 }
 
 /** Validated narrative output. IDs, timestamps and read state are assigned by the runtime. */
+export type StoryAction =
+  | { type: 'travel'; locationId: string }
+  | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
+  | { type: 'service'; serviceId: string }
+  | { type: 'buy'; itemId: string; quantity: number }
+  | { type: 'pack'; itemId: string; quantity: number }
+  | { type: 'takeaway'; serviceId: string; quantity: number }
+  | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'use'; itemId: string }
+  | { type: 'interact'; interactionId: string }
+  | { type: 'study'; subjectId: string; minutes: number }
+  | { type: 'schedule'; title: string; locationId: string; time: string }
+  | { type: 'complete_schedule'; id: string }
+  | { type: 'relationship'; npcId: string; delta: number; reason: string }
+  | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
+
 export interface GeneratedStory {
   text: string;
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];
+  worldActions?: StoryAction[];
+}
+
+export type StoryGenerationOptions = {
+  kind: 'interaction_event';
+  interaction: { label: string; action: WorldAction };
+} | {
+  kind: 'contact_introduction';
+  contact: { id?: string; name: string; portraitId: CharacterPortraitId; sourcePersonId: string | null; summary: string };
+};
+
+export interface InteractionPresentation {
+  phase: 'progress' | 'choice' | 'generating' | 'error';
+  label: string;
+  progress: number;
+  error?: string;
 }
 
 export interface Bridge {
@@ -117,7 +220,7 @@ export interface Bridge {
   load(): WorldState;
   save(state: WorldState): void;
   onSessionChange(callback: () => void): () => void;
-  generate(text: string, state: WorldState): Promise<GeneratedStory>;
+  generate(text: string, state: WorldState, options?: StoryGenerationOptions): Promise<GeneratedStory>;
   cancel(): void;
   dispose(): void;
 }
@@ -126,6 +229,7 @@ export interface ShellModel {
   mode: Bridge['kind'];
   state: WorldState;
   busy: boolean;
+  interaction?: InteractionPresentation | null;
   notice: string;
   connection: string;
   externalPhoneAvailable: boolean;
@@ -141,12 +245,16 @@ export interface ShellModel {
 
 export interface ShellActions {
   dispatch(action: WorldAction): void;
+  interact?(action: WorldAction): Promise<boolean>;
+  resolveInteraction?(accept: boolean): Promise<void>;
+  cancelInteraction?(): void;
   send(text: string): Promise<void>;
   exit(): void;
   switchChat(): void;
   openPhone(anchor?: HTMLElement): void;
   closePhone(): void;
   openPhoneContact(npcId: string): Promise<void>;
+  openPhoneContactEditor?(sourcePersonId?: string): Promise<void>;
   retryPhoneSync(): void;
   setDismissHandler?(handler: (() => boolean) | undefined): void;
 }

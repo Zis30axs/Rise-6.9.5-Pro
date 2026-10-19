@@ -1,5 +1,5 @@
 # 工程记忆入口
 
-开始工作前，先读取本仓库的 `CODEX.md` 和 `README.md`；涉及手机、酒馆助手或跨仓库联动时，再读取 `integration/extensions.json`。
+开始工作前，先读取本仓库的 `DeepSeek.md`、`CODEX.md` 和 `README.md`；涉及手机、酒馆助手或跨仓库联动时，再读取 `integration/extensions.json`。
 
 `CODEX.md` 的“已确认的手机联动方向”及“最新决定：TauriTavern 内嵌手机”记录用户已确定的工程决策。最新决定优先于历史的“手机单独安装、不打包进 PNG”：手机源码在独立私有仓库维护，白名单构建产物进入同一酒馆助手脚本和角色卡 PNG；酒馆助手仍需安装与授权。后续开发持续区分实现、待验证能力和历史验收，不将桌面或模拟测试写成手机 TauriTavern 真机已通过。

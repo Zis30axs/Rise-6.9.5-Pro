@@ -4,6 +4,7 @@ import { createCampusWorld } from '../src/frontend/scene-world';
 import { isScenePositionWalkable, SCENE_WALK_RADIUS } from '../src/frontend/scene-movement';
 import { recoverScenePresencePosition } from '../src/frontend/scene-presence';
 import { createSceneCrowd } from '../src/frontend/scene-crowd';
+import { createCharacterAssetPool } from '../src/frontend/scene-character-assets';
 import { getScenePeople } from '../src/runtime/scene-context';
 
 describe('saved scene positions and crowd resource lifecycle', () => {
@@ -44,26 +45,31 @@ describe('saved scene positions and crowd resource lifecycle', () => {
     } finally { campus.dispose(); }
   });
 
-  it('uses two instance batches for the population and releases their shared resources without a GPU', () => {
+  it('keeps actual nearby model IDs tied to the saved population and releases shared resources without a GPU', async () => {
     const scene = new THREE.Scene();
     const campus = createCampusWorld(scene);
-    const crowd = createSceneCrowd(scene, campus.movementWorld);
+    const resources = new Set<THREE.BufferGeometry | THREE.Material>();
+    const released = new Set<THREE.BufferGeometry | THREE.Material>();
+    const pool = createCharacterAssetPool({ loadModel: async () => {
+      const geometry = new THREE.BoxGeometry(1, 2, 1), material = new THREE.MeshStandardMaterial();
+      for (const resource of [geometry, material]) { resources.add(resource); resource.addEventListener('dispose', () => { released.add(resource); }); }
+      const model = new THREE.Group(); model.add(new THREE.Mesh(geometry, material)); return { scene: model, animations: [] };
+    } });
+    const crowd = createSceneCrowd(scene, campus.movementWorld, pool);
     try {
       crowd.setPeople([]);
-      const batches = crowd.pickables.filter((object): object is THREE.InstancedMesh => object instanceof THREE.InstancedMesh);
-      expect(batches).toHaveLength(2);
-      expect(batches.every(batch => batch.count === 0)).toBe(true);
+      const group = scene.getObjectByName('scene-people')!;
+      expect(group.children).toHaveLength(0);
       const people = getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed: 'crowd-resource-test', encounterId: null });
       crowd.setPeople(people);
-      expect(batches.map(batch => batch.count).sort((a, b) => a - b)).toEqual([people.length, people.length * 10]);
-      const represented = new Set(batches.flatMap(batch => batch.userData.scenePersonId as string[]));
-      expect(represented).toEqual(new Set(people.map(person => person.id)));
-      const resources = new Set(batches.flatMap(batch => [batch.geometry, ...(Array.isArray(batch.material) ? batch.material : [batch.material])]));
-      const released = new Set<THREE.BufferGeometry | THREE.Material>();
-      resources.forEach(resource => resource.addEventListener('dispose', () => { released.add(resource); }));
-      crowd.dispose();
+      crowd.update(0, new THREE.PerspectiveCamera(), new THREE.Vector3(0, 1.7, 18), false);
+      for (let turn = 0; turn < 20; turn++) await Promise.resolve();
+      expect(group.children.length).toBeGreaterThan(0); expect(group.children.length).toBeLessThanOrEqual(10);
+      const savedIds = new Set(people.map(person => person.id));
+      expect(group.children.every(child => savedIds.has(child.userData.scenePersonId))).toBe(true);
+      crowd.dispose(); pool.dispose();
       expect(released).toEqual(resources);
       expect(scene.getObjectByName('scene-people')).toBeUndefined();
-    } finally { campus.dispose(); }
+    } finally { crowd.dispose(); pool.dispose(); campus.dispose(); }
   });
 });

@@ -1,0 +1,175 @@
+{
+  "format": "Transparent static NPC portraits; one natural pose per model",
+  "tool": "scripts/render_npc_portraits.mjs + scripts/render_npc_portraits.ts",
+  "encoding": {
+    "format": "WebP",
+    "lossless": true,
+    "exact": true,
+    "method": 6
+  },
+  "renderer": {
+    "width": 768,
+    "height": 960,
+    "toneMapping": "ACESFilmic",
+    "exposure": 1.1,
+    "hemisphere": {
+      "sky": "#ffffff",
+      "ground": "#8f9eaa",
+      "intensity": 2.2
+    },
+    "directional": {
+      "color": "#ffffff",
+      "intensity": 2.8,
+      "position": [
+        -3,
+        7,
+        6
+      ]
+    },
+    "background": "transparent",
+    "camera": "orthographic +Z front",
+    "animations": false,
+    "outputColorSpace": "sRGB",
+    "browser": "155.0.4283.45"
+  },
+  "totalBytes": 826062,
+  "portraits": [
+    {
+      "id": "deepseek",
+      "sourceModel": "assets/characters/deepseek.glb",
+      "sourceModelBytes": 1709620,
+      "sourceModelSha256": "b981ca56e84f813e67e69f1baf09b93e80f2b33c6851e6277b5dfa07675befaa",
+      "sourceArchive": "deepseek蓝色大肥鱼（少女版本）_by_QCQKK_8ed7c5b3227a09952f2a58212253fe9e.zip",
+      "sourceArchiveBytes": 10360742,
+      "sourceArchiveSha256": "238035bd3400a6e1a530dd2854215975c10dc767290dba57e3301ee550ff3d0c",
+      "render": {
+        "width": 768,
+        "height": 960,
+        "modelHeight": 1.65,
+        "camera": {
+          "type": "orthographic",
+          "position": [
+            0,
+            1.133859375,
+            4
+          ],
+          "target": [
+            0,
+            1.133859375,
+            0
+          ],
+          "visibleTop": 1.7237343749999998,
+          "visibleBottom": 0.543984375,
+          "viewHeight": 1.1797499999999999
+        },
+        "pose": "Imported relaxed standing pose, front +Z, no animation or invented expression"
+      },
+      "file": "deepseek.webp",
+      "bytes": 234986,
+      "sha256": "06b22ac9ebff69c2c2b835103dfd82185749d3375f8043c180c6cb9b8536f905",
+      "width": 768,
+      "height": 960,
+      "alphaBounds": [
+        121,
+        60,
+        647,
+        960
+      ],
+      "transparentPixelCount": 430840,
+      "opaquePixelCount": 302727
+    },
+    {
+      "id": "xiaoyang",
+      "sourceModel": "assets/characters/xiaoyang.glb",
+      "sourceModelBytes": 1842624,
+      "sourceModelSha256": "57032dc78a07264df0368c4629254240341d5282c3f0de6af95c58ab69e1533a",
+      "sourceArchive": "小洋学生服2026 (1)_by_蜂神扇_6a4a43ed0269fc66409bdc583e436240.zip",
+      "sourceArchiveBytes": 25220782,
+      "sourceArchiveSha256": "d201de947c499e7492120fd17dfff99a3570643379f5496caf7d56227fc937aa",
+      "render": {
+        "width": 768,
+        "height": 960,
+        "modelHeight": 1.6499999999999997,
+        "camera": {
+          "type": "orthographic",
+          "position": [
+            0,
+            1.1338593749999997,
+            4
+          ],
+          "target": [
+            0,
+            1.1338593749999997,
+            0
+          ],
+          "visibleTop": 1.7237343749999996,
+          "visibleBottom": 0.543984375,
+          "viewHeight": 1.1797499999999996
+        },
+        "pose": "Imported relaxed standing pose, front +Z, no animation or invented expression"
+      },
+      "file": "xiaoyang.webp",
+      "bytes": 125378,
+      "sha256": "1e32eaef1a04e875e3286467f7c297488b0afbb1f09a51d1b2ba654de4729750",
+      "width": 768,
+      "height": 960,
+      "alphaBounds": [
+        129,
+        60,
+        640,
+        960
+      ],
+      "transparentPixelCount": 495863,
+      "opaquePixelCount": 238448
+    },
+    {
+      "id": "claude",
+      "sourceModel": "assets/characters/claude.glb",
+      "sourceModelBytes": 3675416,
+      "sourceModelSha256": "88cdf55a99aa9807fd8810d8a4dab398782666573a86b134df7b7291ec148c41",
+      "sourceArchive": "Claude｜成年·幼年3D角色模型【Blender+GLB】_by_Manny0517_550ec3162a07141f687b92ee744c3c22.zip",
+      "sourceArchiveBytes": 48178078,
+      "sourceArchiveSha256": "6bdf24e6986bc36c1b5f9401acdec9d295720344f866aac1f1f7154f87717578",
+      "render": {
+        "width": 768,
+        "height": 960,
+        "modelHeight": 1.2199999999999998,
+        "camera": {
+          "type": "orthographic",
+          "position": [
+            0,
+            0.7677581654245282,
+            4
+          ],
+          "target": [
+            0,
+            0.7677581654245282,
+            0
+          ],
+          "visibleTop": 1.2846059763679243,
+          "visibleBottom": 0.2509103544811322,
+          "viewHeight": 1.033695621886792
+        },
+        "pose": "Imported relaxed standing pose, front +Z, no animation or invented expression"
+      },
+      "file": "claude.webp",
+      "bytes": 465698,
+      "sha256": "2e503b5aa5ac76ad0ebf0549ec8ecb3ab07acd327c8e912952bb9027615593b1",
+      "width": 768,
+      "height": 960,
+      "alphaBounds": [
+        35,
+        60,
+        733,
+        960
+      ],
+      "transparentPixelCount": 351929,
+      "opaquePixelCount": 380998
+    }
+  ],
+  "validation": {
+    "pageErrors": [],
+    "networkRequests": [],
+    "decodedRgbaEqualsRenderedPng": true
+  }
+}

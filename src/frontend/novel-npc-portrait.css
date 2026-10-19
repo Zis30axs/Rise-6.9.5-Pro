@@ -1,0 +1,26 @@
+.novel-npc-portrait {
+  position: absolute;
+  inset: 90px 110px 330px 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+.novel-npc-portrait svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+.novel-npc-portrait.is-muted { opacity: 0; }
+
+@media (max-width: 760px) {
+  .novel-npc-portrait { inset: 133px 55px 436px 55px; }
+}
+@media (max-height: 670px) and (max-width: 760px) {
+  .novel-npc-portrait { inset: 72px 12px 316px 172px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .novel-npc-portrait { transition: none; }
+}

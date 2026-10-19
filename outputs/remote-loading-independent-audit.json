@@ -1,0 +1,274 @@
+{
+  "reviewedOn": "2026-10-19",
+  "reviewer": "independent regression_review subagent",
+  "blockingFindings": [],
+  "productionBundle": {
+    "path": "dist/immersive-shell.js",
+    "bytes": 49275762,
+    "sha256": "326ecefe25bcc829c9fdc356b96ab3ac4352cbea57e793404e68b94f6b625fcd",
+    "eachBrowserResponseMatched": true
+  },
+  "sourceReview": {
+    "imageChanges": "Only 15 fixed inline asset references now use exact-pixel WebP derivatives; allowlists, frame coordinates, source PNGs and original provenance are preserved. Phone portrait previews use the same decoded atlases.",
+    "transportChanges": "Explicit request marker and response header gate compact transport. Legacy clients/server responses retain old behavior; exact raw json_data, unknown keys and nested server mutations reconstruct before extension consumers. Own data properties avoid prototype setters.",
+    "transportIndependentTests": {
+      "passed": 10,
+      "optionalInstalledCardsSkipped": 1
+    },
+    "transportBackup": "D:/SillyTavern/backups/character-transport-20261019"
+  },
+  "independentDecodedPixelComparison": {
+    "images": [
+      {
+        "id": "cigarette-basic",
+        "sourceSha256": "0190115e7bd5af09507e435e08208827bdb6582d5ca91185eba91bb9014f8c54",
+        "derivedSha256": "3a38e955f08856a2800dc616187ca4b1da2c41de2f9f30b8789740de82c32b60",
+        "sourceBytes": 1012241,
+        "derivedBytes": 592396,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "cigarette-premium",
+        "sourceSha256": "d9a1c8f6c990c0a63f760a11655022a3ad1be15193540755ca10d50f0b9f8499",
+        "derivedSha256": "1cc9f710686b6f79cc692747222d88181af4e6d84db4f4763cc6e0690b0838db",
+        "sourceBytes": 1102559,
+        "derivedBytes": 689998,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "cigarette-standard",
+        "sourceSha256": "997d7e0e1fdb162eab9db8e81430db2fa3b75823c02b121920bd428f76df555a",
+        "derivedSha256": "2db6a0ef27642152b38e285e9b70c9a80df27167803b07387fa9d4df2cb23482",
+        "sourceBytes": 1000856,
+        "derivedBytes": 570084,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "drink-basic",
+        "sourceSha256": "b9152286172e40cd0029e63686aa62cb66b12fe1470e6c9128d62992ef5d0979",
+        "derivedSha256": "3b47242f4f4a8609a603851f2b82b24f853cbd8a8abef4db93223db6cf849ae5",
+        "sourceBytes": 652803,
+        "derivedBytes": 430054,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "drink-premium",
+        "sourceSha256": "700c161af88a9a266788157d221e6a94e09ae8b51af0e05e75d539716aec7913",
+        "derivedSha256": "2c176e6b036bfd6c290a25cc6138a540b4b60a909f8dd768554e54d453c81d9f",
+        "sourceBytes": 752956,
+        "derivedBytes": 438434,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "drink-standard",
+        "sourceSha256": "030ea5ec277ae3753530d4f640fc09d62396b6043074b586ece64b569915f059",
+        "derivedSha256": "fac90054d0b536d9d167705fa00192de7f249d2886dfb0b921ef2d1565d23444",
+        "sourceBytes": 697925,
+        "derivedBytes": 412510,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "meal-basic",
+        "sourceSha256": "e6d8a90d22d07ba3cb9b60630855efe9b7f9f8d2788a0b74357285b8e4b5803e",
+        "derivedSha256": "76c112839f7760bde410076be39d305a88b6434a45cf03b76dc4be528867f383",
+        "sourceBytes": 1069081,
+        "derivedBytes": 640762,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "meal-premium",
+        "sourceSha256": "1b9c37c88fdceeef8de7e55bca200dc2b14d38c3570ff923accebd98e3e2adbb",
+        "derivedSha256": "7d642a23b928d95098bc934f051cccd4263078a759d51f70e9dc2a14e9bd1975",
+        "sourceBytes": 1410407,
+        "derivedBytes": 920360,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "meal-standard",
+        "sourceSha256": "37daf5bdbe360c5b03d374b66c69520f1bd6c6dfa8b5ef6770fbc6cd21bbae8c",
+        "derivedSha256": "5029d1514eef34b46f5e9bbf66fabcef3c5856b193b8b42cb3ea4903757802ff",
+        "sourceBytes": 1189680,
+        "derivedBytes": 782834,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "snack-basic",
+        "sourceSha256": "ccc0b93eef7e8738dd38372aa2eabb278af5fe11d159265c6dc0ce760f8877f6",
+        "derivedSha256": "7c2ac43024ca69563fcba694a187d16aa79b577e85e71727d484a0a148b858db",
+        "sourceBytes": 995337,
+        "derivedBytes": 656174,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "snack-premium",
+        "sourceSha256": "70402a2527ba7724ce6ed83999cb31142a490bde2bab10fed3b9c07b6b8e667b",
+        "derivedSha256": "fdf42c814f40ac7be2fba71e9d5eeacc015014d33e549c9f70edd120ecec6403",
+        "sourceBytes": 1155374,
+        "derivedBytes": 698790,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "snack-standard",
+        "sourceSha256": "ab471dda09631f474be59f33901ce89f8e979ee4b7d892490787b6a814ccf9f3",
+        "derivedSha256": "d15bfe53e38c0995072403fe5d64e4096cf3b0297eff21276a83f135b47cf271",
+        "sourceBytes": 1271920,
+        "derivedBytes": 798694,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "claude",
+        "sourceSha256": "e11d85165e2c8ac3c76938a4044173172e48e5c54ef5c3a701e0df4f4adda882",
+        "derivedSha256": "304e20315bd041b3019e52ef162fff43b470a55e3d6c87ecb20393cac349cca0",
+        "sourceBytes": 2496161,
+        "derivedBytes": 1707826,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "deepseek",
+        "sourceSha256": "be89326bf2a6d7d8d513ec70edd5aa221b94bfebee8a59ce34a0d8c66c64e5ee",
+        "derivedSha256": "6a3871223bcc3a0e4337a4270a908bc526f61e7374408dbfc0f9d8d25055f3a3",
+        "sourceBytes": 2024454,
+        "derivedBytes": 1359362,
+        "allRgbaBytesEqual": true
+      },
+      {
+        "id": "xiaoyang",
+        "sourceSha256": "ae6b9fc7e83cc5ec67d10c81901f8feb5041c23603c9e492bbcd30a4d2323a5b",
+        "derivedSha256": "9d535012774881099161c913c3c5f6cb6fb8babc669250f20c75977aef223267",
+        "sourceBytes": 1696263,
+        "derivedBytes": 1086232,
+        "allRgbaBytesEqual": true
+      }
+    ],
+    "imageCount": 15,
+    "sourceBytes": 18528017,
+    "derivedBytes": 11784510,
+    "allRgbaBytesEqual": true
+  },
+  "browser": {
+    "implementation": "Playwright headless Chromium from the existing bundled browser cache; one worker",
+    "results": "outputs/remote-loading-browser-results.json",
+    "uniqueScenariosPassed": 4,
+    "screenshotCount": 40,
+    "viewports": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "evidence": "outputs/remote-loading-1440x900-evidence.json",
+        "screenshots": [
+          "outputs/remote-loading-1440x900-initial.png",
+          "outputs/remote-loading-1440x900-portrait.png",
+          "outputs/remote-loading-1440x900-reading-scroll.png",
+          "outputs/remote-loading-1440x900-shelf-meal.png",
+          "outputs/remote-loading-1440x900-shelf-meal-image.png",
+          "outputs/remote-loading-1440x900-shelf-cigarette.png",
+          "outputs/remote-loading-1440x900-shelf-cigarette-image.png",
+          "outputs/remote-loading-1440x900-inventory-scroll.png",
+          "outputs/remote-loading-1440x900-phone.png",
+          "outputs/remote-loading-1440x900-restored.png"
+        ],
+        "imageCount": 12,
+        "portraitFrameCount": 27,
+        "stateUnchanged": true,
+        "realModelCalls": 0,
+        "errors": [],
+        "externalRequests": []
+      },
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "evidence": "outputs/remote-loading-1280x800-evidence.json",
+        "screenshots": [
+          "outputs/remote-loading-1280x800-initial.png",
+          "outputs/remote-loading-1280x800-portrait.png",
+          "outputs/remote-loading-1280x800-reading-scroll.png",
+          "outputs/remote-loading-1280x800-shelf-meal.png",
+          "outputs/remote-loading-1280x800-shelf-meal-image.png",
+          "outputs/remote-loading-1280x800-shelf-cigarette.png",
+          "outputs/remote-loading-1280x800-shelf-cigarette-image.png",
+          "outputs/remote-loading-1280x800-inventory-scroll.png",
+          "outputs/remote-loading-1280x800-phone.png",
+          "outputs/remote-loading-1280x800-restored.png"
+        ],
+        "imageCount": 12,
+        "portraitFrameCount": 1,
+        "stateUnchanged": true,
+        "realModelCalls": 0,
+        "errors": [],
+        "externalRequests": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "evidence": "outputs/remote-loading-390x844-evidence.json",
+        "screenshots": [
+          "outputs/remote-loading-390x844-initial.png",
+          "outputs/remote-loading-390x844-portrait.png",
+          "outputs/remote-loading-390x844-reading-scroll.png",
+          "outputs/remote-loading-390x844-shelf-meal.png",
+          "outputs/remote-loading-390x844-shelf-meal-image.png",
+          "outputs/remote-loading-390x844-shelf-cigarette.png",
+          "outputs/remote-loading-390x844-shelf-cigarette-image.png",
+          "outputs/remote-loading-390x844-inventory-scroll.png",
+          "outputs/remote-loading-390x844-phone.png",
+          "outputs/remote-loading-390x844-restored.png"
+        ],
+        "imageCount": 12,
+        "portraitFrameCount": 1,
+        "stateUnchanged": true,
+        "realModelCalls": 0,
+        "errors": [],
+        "externalRequests": []
+      },
+      {
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "evidence": "outputs/remote-loading-320x568-evidence.json",
+        "screenshots": [
+          "outputs/remote-loading-320x568-initial.png",
+          "outputs/remote-loading-320x568-portrait.png",
+          "outputs/remote-loading-320x568-reading-scroll.png",
+          "outputs/remote-loading-320x568-shelf-meal.png",
+          "outputs/remote-loading-320x568-shelf-meal-image.png",
+          "outputs/remote-loading-320x568-shelf-cigarette.png",
+          "outputs/remote-loading-320x568-shelf-cigarette-image.png",
+          "outputs/remote-loading-320x568-inventory-scroll.png",
+          "outputs/remote-loading-320x568-phone.png",
+          "outputs/remote-loading-320x568-restored.png"
+        ],
+        "imageCount": 12,
+        "portraitFrameCount": 1,
+        "stateUnchanged": true,
+        "realModelCalls": 0,
+        "errors": [],
+        "externalRequests": []
+      }
+    ],
+    "scope": {
+      "actualProductionIife": true,
+      "controlledTavernHelperHost": true,
+      "actualEmbeddedPhone": true,
+      "nativeSillyTavernPage": false,
+      "physicalTauriTavern": false
+    },
+    "visualInspection": "Reviewed desktop/mobile full-body portraits, product images, phone previews and 320px scroll/recovery screenshots. Image geometry and tested controls remain within the viewport."
+  },
+  "fixtureCorrections": [
+    "Vite transforms /dist/*.js; a temporary public static copy now serves byte-identical production code, verified by SHA-256 in every test.",
+    "SVG elements created by the helper realm require attribute-based source inspection instead of cross-realm instanceof.",
+    "A minimum scroll left a 320px inventory button behind the recovery floating button; centering within the scrollable window exposes it and passes the real hit test. No product layout was changed."
+  ],
+  "limitations": [
+    "Mobile dimensions are desktop browser emulation, not physical TauriTavern verification.",
+    "The local SillyTavern transport patch must be reviewed after upstream updates.",
+    "public/remote-loading-production.js is a temporary verification mirror; remove it after visible browser inspection so future builds do not copy the mirror as a product asset."
+  ]
+}

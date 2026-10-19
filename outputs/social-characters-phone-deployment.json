@@ -1,0 +1,113 @@
+{
+  "recordedAtUtc": "2026-10-18T17:12:20.282579+00:00",
+  "passed": true,
+  "source": "D:\\.study\\ST-iPhonie",
+  "installed": "D:\\SillyTavern\\data\\default-user\\extensions\\ST-iPhonie",
+  "backup": "D:\\.study\\cc\\dist\\social-characters-phone-before",
+  "backupFileCount": 588,
+  "filesUpdated": [
+    {
+      "file": "index.js",
+      "previous": {
+        "bytes": 71314,
+        "sha256": "47a46b6b78eb7c5a1321e8240a8a20e57261ea6dacff975a06152240297cd69b"
+      },
+      "sourceAndInstalled": {
+        "bytes": 71829,
+        "sha256": "dc0dc4e5a085d396f987ec882807722adaea3470262bc0fda3efc73f1f842261"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "story-host.js",
+      "previous": {
+        "bytes": 3936,
+        "sha256": "ad4cd79dc42dafbc5d94dbd8cb5aaacf3f584b33efdaecf837ad36f57c5a6320"
+      },
+      "sourceAndInstalled": {
+        "bytes": 8249,
+        "sha256": "8dfff7eb289e7edec0894f601dc4d57608ed976e3a787db3a004ff9230388769"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "core/backend.js",
+      "previous": {
+        "bytes": 190825,
+        "sha256": "5ca80b34e847d7a879abdce0f988c3d17aec88d34f95c0e7b6625c906abd900b"
+      },
+      "sourceAndInstalled": {
+        "bytes": 190940,
+        "sha256": "dcd1a2370430b39c2f3f050ad472d183e44a0d1443bf3d3c2883433051614c06"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "core/story-link.js",
+      "previous": {
+        "bytes": 5952,
+        "sha256": "39e1cea39a9ea07b57591fe8e791c20280efb5092fefb3bdd443fc1d92f7e6b8"
+      },
+      "sourceAndInstalled": {
+        "bytes": 9197,
+        "sha256": "d71f0f11123e371e044048eaea52667ed5f9754af5b5416c5ef57365e88ec2af"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "ui/phone.js",
+      "previous": {
+        "bytes": 64682,
+        "sha256": "283c2483cb0aa1205cd8d53d5d5744ae871da6acce7379fe6b07d1bec1d7e8ab"
+      },
+      "sourceAndInstalled": {
+        "bytes": 65147,
+        "sha256": "448e6f251826c5e8945e66de00bd6a0b74afc4907086b209e21e8604c1da1376"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "ui/chat.js",
+      "previous": {
+        "bytes": 126814,
+        "sha256": "d2ac99e8690bbd50f8f67695340582cfa9a8c6918d720765ca811285b4572b82"
+      },
+      "sourceAndInstalled": {
+        "bytes": 133699,
+        "sha256": "65b01690eb2ff0db24221af18c32203de66651de1d5be88e6f7104bee05cbe94"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    },
+    {
+      "file": "ui/phone.css",
+      "previous": {
+        "bytes": 248464,
+        "sha256": "9888a0568e456c754a6b34f08e67dde2d0d3840f0b949ecbadf92a32ac19b852"
+      },
+      "sourceAndInstalled": {
+        "bytes": 248668,
+        "sha256": "7ca7938c7b03764bc8ca67f32b0362f037701f179ba01f2dc48ddfbea4870a02"
+      },
+      "httpByteExact": true,
+      "backupByteExact": true
+    }
+  ],
+  "httpByteExactFiles": 7,
+  "otherFilesUnchanged": 581,
+  "settingsUnchanged": true,
+  "chatsUnchanged": 29,
+  "protectedFilesUnchanged": 14,
+  "originalArchivesUnchanged": 6,
+  "requiresPageRefresh": true,
+  "nativeUiValidated": false,
+  "physicalMobileValidated": false,
+  "realModelRequests": 0,
+  "publicPush": false,
+  "scope": "Only existing local phone extension code updated; complete previous extension tree backed up. No settings or chat writes."
+}

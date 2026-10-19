@@ -1,0 +1,247 @@
+{
+  "asset": "assets/npc-portraits/expression-atlases-v2/deepseek.png",
+  "characterId": "deepseek",
+  "tool": "built-in image_gen.imagegen",
+  "styleDirection": "Soyo-compatible simple flat 2D animation drawing. Character identity from original Deepseek reference; no v1 atlas used.",
+  "sourceReferences": [
+    {
+      "file": "outputs/novel-live2d-happy.png",
+      "role": "Style reference: Soyo character only; ignore all UI and background.",
+      "sha256": "a1607299cf4a18a8e5dae4dd8383d9eb7b995caad4420c73702b3e3d349ffe79"
+    },
+    {
+      "file": "assets/npc-portraits/deepseek.webp",
+      "role": "Character design only: hair/fin ears/costume; not 3D lighting, topology or proportions.",
+      "sha256": "06b22ac9ebff69c2c2b835103dfd82185749d3375f8043c180c6cb9b8536f905"
+    }
+  ],
+  "initialPrompt": "Use case: identity-preserving 2D animation redraw for a visual novel.\nMake ONE transparent PNG sprite atlas of nine separate expression portraits, arranged three columns by three rows.\n\nREFERENCE ROLES ARE CRITICAL:\nImage 1, the screenshot with the brown-haired Soyo in the center, is the ONLY drawing-style reference. Look ONLY at Soyo's character: clean delicate outlines, natural flat anime facial features, simple matte cel colors, restrained shadow shapes, light visual weight. Ignore every UI element, all text, landscape, buildings, lighting and background in that screenshot. Do not draw Soyo herself.\nImage 2, the blue-haired fish-ear girl, is a CHARACTER DESIGN SHEET ONLY: retain deep blue hair with cyan-blue lower locks, long hairstyle, fish-fin-shaped ears extending sideways, single ahoge, white maid headband, blue eyes, modest dark blue/white long-sleeved maid dress, neck bow, apron and existing small gold trim. Do NOT copy its 3D rendering, rounded doll face, topology, thick volume shading, glossy hair, stiff arms, rigid hands or plastic material.\n\nART DIRECTION: draw this blue-haired character completely anew as real hand-drawn 2D Japanese animation cels, harmonizing with the simple Soyo character in Image 1. Thin clear economical linework. Natural non-chibi anime anatomy and age-appropriate proportions; no oversized doll head. Flat skin color, a tiny simple nose line and expressive 2D eyes; very little face shading. Hair organized into broad intentional flat blue shapes with only one secondary flat shadow color. Clothes drawn in simplified clean blue, white and restrained gold regions, few necessary folds, at most one or two hard-edged shadow shapes. MATTE FLAT COLOR. No airbrush gradients, no silky highlights, no luminous rim light, no ambient occlusion, no soft 3D shadows, no skin gloss, no texture painting or hair-strand rendering. It should look like a clean television anime character sheet, never a 3D render with outlines and never a painted figurine. Simplify garment detail while retaining the design.\n\nFRAMING: nine independent front-facing portraits from top of the ahoge to hips / upper thighs, SAME body scale and SAME head size and relative head/eye location throughout. Very generous empty transparent gutters. Each figure occupies only the central 65% of its cell width and central 80% of its cell height, with roughly 17.5% transparent clearance left and right and 10% at top and bottom. All hair, ears and visible hands fit entirely within their own rectangle. Leave that space empty; do not enlarge the figure to fill it. Overall portrait canvas roughly 4:5, ideally 1536x1920 or higher. Genuinely transparent alpha background. No colored backplates, checkerboard, shadows, dividers, labels, text, captions, logos or watermarks. No UI or scenery.\n\nEXACT ORDER, left to right, top to bottom:\n1 NEUTRAL: attentive open eyes, relaxed eyebrows, small calm closed mouth, arms comfortably resting down.\n2 HAPPY: clear joyful smile, smiling eyes and raised cheeks, one hand lightly near chest, the other down.\n3 SAD: inner eyebrows raised, downcast eyes, small downturned mouth, arms relaxed down.\n4 ANGRY: brows visibly angled down toward the center, direct gaze, displeased closed mouth; one hand loosely at waist, not exaggerated.\n5 SURPRISED: raised eyebrows, wide eyes, small round open mouth; one open hand lightly near collar.\n6 SHY: subtle flat pink blush shapes, averted eyes, hesitant small smile; one hand modestly near chest.\n7 THINKING: thoughtful asymmetrical brows, slight sideward gaze, one finger lightly by chin; other arm relaxed down.\n8 SERIOUS: focused composed eyes, slightly lowered level brows, firm closed lips, both arms naturally down.\n9 RELIEVED: softly closed smiling eyes, relaxed eyebrows, warm small closed smile, one hand over chest.\n\nShow meaningful differences in the actual brows, eyes and mouth, not merely different hands. Poses are subtle and relaxed, hands and wrists anatomically correct with clear fingers, no tangled arms or fused fingers. Preserve the same blue-haired character identity, modest costume and apparent age in all nine. No props or extra accessories. Result is a fixed 2D expression sheet, not an animation sequence.",
+  "targetedFlatColorPrompt": "Two references: Image 1 is Soyo's character in the center of a game screenshot and is the drawing style reference ONLY; ignore all UI and scenery. Image 2 is the nine-expression blue-haired fish girl atlas to edit. Preserve that blue girl's design, nine distinct expressions and their order, modest clothes and subtle gestures.\nMake ONE targeted drawing-style correction to Image 2: convert the remaining softly modeled hair and clothing into SIMPLE FLAT TELEVISION-ANIME CELS matching Soyo's light economical drawing style. Use very thin clean outline, broad SOLID blue hair shapes and a SINGLE darker blue flat hard-edged shadow color. REMOVE every smooth gradient, glossy top-hair highlight band, reflective sparkle, silky texture, blended cheek shading, ambient shading and 3D-looking roundness. The face should be a uniform flat pale peach color with simple expressive anime eye/eyebrow/mouth lines. Shy may have two small flat blush shapes only. White apron remains nearly solid white with only a few thin fold lines and one pale gray hard-edged shadow shape. Navy dress becomes nearly solid navy with minimal folds. Keep the gold trim as sparse thin drawn lines. No painterly polish or smooth rendering. This is 2D animation layout/linework and flat color, not an image filter applied to a 3D model. Preserve natural non-chibi human anime proportions.\nKeep same character scale, frontal angle and head size/position for every frame. Improve the sprite-sheet spacing by making all nine figures SMALLER within their 3x3 cells, roughly central 65% width and 80% height; leave wide entirely transparent gutters around every cutout. Show head to waist / upper thighs; keep every visible hand whole, bringing relaxed hands toward the waist if needed. No head, ear, hair or hand touching the frame edge, and no neighboring figures overlapping.\nOrder unchanged: neutral/happy/sad; angry/surprised/shy; thinking/serious/relieved. Continue to distinguish each face through brows, eyes and mouth. Preserve natural wrist and finger anatomy.\nOutput a single real-alpha transparent PNG, overall portrait 4:5, nine independent cutouts. No UI, scene, lettering, captions, borders, backdrop, checkerboard, shadow or props. Do not copy Soyo's hair, face identity or uniform, only her simpler flat animation drawing language.",
+  "generatedImages": [
+    "C:/Users/Administrator/.codex/generated_images/01a14d87-88c8-7880-9389-bd0989b5355d/exec-98db1e65-3a3d-446e-83f7-d8ae74c6c9bb.png",
+    "C:/Users/Administrator/.codex/generated_images/01a14d87-88c8-7880-9389-bd0989b5355d/exec-57e5580c-29aa-4115-bc64-2ae13c2755af.png"
+  ],
+  "selectedGeneratedImage": "C:/Users/Administrator/.codex/generated_images/01a14d87-88c8-7880-9389-bd0989b5355d/exec-57e5580c-29aa-4115-bc64-2ae13c2755af.png",
+  "transparentBackground": true,
+  "pixelEditsAfterGeneration": false,
+  "framingNote": "Actual generated placement is not a mathematical equal grid. Same-size rectangles align the top of each ahoge at 10px; framing is head to waist. Downward-resting arms extend naturally below the portrait boundary. No visible head/hair from an adjacent frame is included.",
+  "actualSize": [
+    1122,
+    1402
+  ],
+  "mode": "RGBA",
+  "bytes": 1799861,
+  "sha256": "601497264d724c91d85d22f8865cec74b7ae3b1d9c282422ed296020347a5105",
+  "frames": {
+    "neutral": {
+      "x": 50,
+      "y": 10,
+      "width": 350,
+      "height": 440
+    },
+    "happy": {
+      "x": 396,
+      "y": 14,
+      "width": 350,
+      "height": 440
+    },
+    "sad": {
+      "x": 748,
+      "y": 18,
+      "width": 350,
+      "height": 440
+    },
+    "angry": {
+      "x": 50,
+      "y": 490,
+      "width": 350,
+      "height": 440
+    },
+    "surprised": {
+      "x": 396,
+      "y": 486,
+      "width": 350,
+      "height": 440
+    },
+    "shy": {
+      "x": 748,
+      "y": 485,
+      "width": 350,
+      "height": 440
+    },
+    "thinking": {
+      "x": 50,
+      "y": 946,
+      "width": 350,
+      "height": 440
+    },
+    "serious": {
+      "x": 396,
+      "y": 946,
+      "width": 350,
+      "height": 440
+    },
+    "relieved": {
+      "x": 748,
+      "y": 946,
+      "width": 350,
+      "height": 440
+    }
+  },
+  "validation": {
+    "sameBytesAsImageToolOutput": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "frames": [
+      {
+        "emotion": "neutral",
+        "visibleBoundsAlpha20": [
+          18,
+          10,
+          331,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "99302bb6c9059795750fa2a48c2bf72700997a2d079c8009602734b605ac0e4c"
+      },
+      {
+        "emotion": "happy",
+        "visibleBoundsAlpha20": [
+          19,
+          10,
+          326,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "a813dd4eaa81aef24c064a841ef38304fb93bc55dd5279c814c30fa18489b2ca"
+      },
+      {
+        "emotion": "sad",
+        "visibleBoundsAlpha20": [
+          16,
+          10,
+          322,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "88f805cb88ebdb261c25a96c383d3d9f3c8f235653f44f0420237ed7180a614d"
+      },
+      {
+        "emotion": "angry",
+        "visibleBoundsAlpha20": [
+          3,
+          10,
+          342,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "f1c18d2262f0411c7cce3e54edffd825dbad4ec3a0b4e815d70d57c5b9f0b819"
+      },
+      {
+        "emotion": "surprised",
+        "visibleBoundsAlpha20": [
+          14,
+          10,
+          331,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "aa9f8829f9c8ed71ca3d3fbcb5a480ff5ba30f3f9cc2bfdff4bc260736aba00c"
+      },
+      {
+        "emotion": "shy",
+        "visibleBoundsAlpha20": [
+          19,
+          10,
+          333,
+          440
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "acbd2a672f147ff370e697e6537a6746cfead74e210c58d7ca4e3600f74f9980"
+      },
+      {
+        "emotion": "thinking",
+        "visibleBoundsAlpha20": [
+          10,
+          10,
+          331,
+          438
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "24d3dda09eb5b8a233986f901cbd6971935c6daac9fe8c58cec3fcac85a91731"
+      },
+      {
+        "emotion": "serious",
+        "visibleBoundsAlpha20": [
+          13,
+          10,
+          322,
+          439
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "624bb7f00c2ae3fd269bcb919c16eaeb79552216af8d0f335afb627bbe080c68"
+      },
+      {
+        "emotion": "relieved",
+        "visibleBoundsAlpha20": [
+          19,
+          10,
+          334,
+          439
+        ],
+        "topLeftRightEdgePixels": [
+          0,
+          0,
+          0
+        ],
+        "visibleComponents10PixelsOrMore": 1,
+        "facePixelSha256": "3ea052ef0a855a19d90a556b75d4c541a570e9637a09ebd6a5c0e16e3fb38b27"
+      }
+    ],
+    "actualBrowserCompositeViewed": true,
+    "compositePreview": "outputs/npc-portrait-work/deepseek-v2-cells-composite.png",
+    "visualReview": "All nine expressions differ in brows/eyes/mouth. Broad matte hair colors with a hard shadow edge; no glossy crown band. Hand gestures are clear. Uniform head-top offset 10px, no adjacent-character pixels at top/left/right edges. Waist crop intentionally continues relaxed arms beyond the lower edge."
+  }
+}

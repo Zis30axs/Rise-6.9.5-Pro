@@ -1,0 +1,289 @@
+{
+  "asset": "assets/npc-portraits/expression-atlases/xiaoyang.png",
+  "characterId": "xiaoyang",
+  "tool": "built-in image_gen",
+  "mode": "identity-preserving generation",
+  "referenceImage": "assets/npc-portraits/xiaoyang.webp",
+  "selectedGeneratedImage": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14d87-b28c-78e2-82c9-b68046090cb5\\exec-425ca20f-2ace-4ee3-abbe-292b891267c0.png",
+  "transparentBackground": true,
+  "prompt": "Use the attached Xiaoyang reference to make one 3-column, 3-row transparent anime expression sprite atlas. EXACTLY NINE separate full figures. Same girl and outfit in every frame: white hair, blue underlayers, single high ponytail on viewer RIGHT, blue/pink eyes, black blazer, white shirt, gray plaid bow and skirt.\n\nCRITICAL LAYOUT: imagine the whole canvas divided into exactly nine equal rectangular cells. Each character is centered BOTH vertically and horizontally in her cell. Make every character noticeably SMALL, occupying only the middle 75% of the cell height and the middle 70% of its width. The top 12.5% and bottom 12.5% of EVERY cell are completely EMPTY transparent space. Leave very broad transparent HORIZONTAL GUTTERS between the three rows. Nothing may touch or cross any of the invisible grid boundaries. Do not crop the head or ponytail. Show head through full skirt and a little upper thigh; the upper thigh crop ends well ABOVE the bottom of each cell. ALL nine head tops align to the same relative position, ALL nine thigh crops align to the same relative position. No figure enlargement. This is a sprite sheet, not a poster collage.\n\nRow 1 left to right: NEUTRAL calm mouth and relaxed arms; HAPPY joyful smile and one hand near chest; SAD downcast brows/gaze and relaxed arms.\nRow 2: ANGRY furrowed brows and small fist near waist; SURPRISED wide eyes/small open mouth and one hand near collar; SHY blush and averted gaze and one hand near chest.\nRow 3: THINKING one hand at chin and thoughtful gaze; SERIOUS firm focused calm face and relaxed arms; RELIEVED soft closed eyes/small smile and one hand over chest.\n\nClear distinct facial expressions, correct fingers, natural small movements, same proportions and same frontal camera. Fine anime visual-novel drawing with crisp outlines and cel shading. Transparent PNG, 4:5 overall canvas aspect, ideally 1536 x 1920. No text, borders, separators, labels, checkerboard, painted backdrop, shadows or other objects. Maintain full alpha transparency in the broad gutters. Character body interiors opaque. The nine figure islands MUST be separated from each other by large truly empty gutters for exact equal-grid CSS cropping.",
+  "requestedSize": [
+    1536,
+    1920
+  ],
+  "actualSize": [
+    1122,
+    1402
+  ],
+  "grid": {
+    "columns": 3,
+    "rows": 3,
+    "frameWidth": 374,
+    "frameHeight": 467.3333333333333,
+    "order": [
+      "neutral",
+      "happy",
+      "sad",
+      "angry",
+      "surprised",
+      "shy",
+      "thinking",
+      "serious",
+      "relieved"
+    ]
+  },
+  "validation": {
+    "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14d87-b28c-78e2-82c9-b68046090cb5\\exec-425ca20f-2ace-4ee3-abbe-292b891267c0.png",
+    "size": [
+      1122,
+      1402
+    ],
+    "mode": "RGBA",
+    "bytes": 1221550,
+    "sha256": "2d6f64a635954022054dcddc0ff0b613b29c579922265507c84af555a6849788",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "thresholds": {
+      "20": {
+        "bbox": [
+          95,
+          33,
+          1037,
+          1392
+        ],
+        "rowAtCuts": [
+          0,
+          0
+        ],
+        "columnAtCuts": [
+          0,
+          0
+        ],
+        "cells": [
+          [
+            95,
+            33,
+            329,
+            440
+          ],
+          [
+            98,
+            34,
+            323,
+            440
+          ],
+          [
+            43,
+            34,
+            276,
+            440
+          ],
+          [
+            115,
+            40,
+            306,
+            448
+          ],
+          [
+            98,
+            41,
+            323,
+            448
+          ],
+          [
+            74,
+            41,
+            264,
+            448
+          ],
+          [
+            122,
+            44,
+            313,
+            457
+          ],
+          [
+            58,
+            47,
+            314,
+            457
+          ],
+          [
+            72,
+            47,
+            289,
+            457
+          ]
+        ]
+      },
+      "120": {
+        "bbox": [
+          95,
+          34,
+          1036,
+          1391
+        ],
+        "rowAtCuts": [
+          0,
+          0
+        ],
+        "columnAtCuts": [
+          0,
+          0
+        ],
+        "cells": [
+          [
+            95,
+            34,
+            329,
+            440
+          ],
+          [
+            100,
+            35,
+            322,
+            440
+          ],
+          [
+            44,
+            35,
+            275,
+            440
+          ],
+          [
+            117,
+            41,
+            303,
+            447
+          ],
+          [
+            100,
+            42,
+            322,
+            447
+          ],
+          [
+            75,
+            42,
+            263,
+            447
+          ],
+          [
+            124,
+            45,
+            311,
+            456
+          ],
+          [
+            59,
+            48,
+            314,
+            456
+          ],
+          [
+            73,
+            48,
+            288,
+            456
+          ]
+        ]
+      },
+      "240": {
+        "bbox": [
+          96,
+          35,
+          1036,
+          1391
+        ],
+        "rowAtCuts": [
+          0,
+          0
+        ],
+        "columnAtCuts": [
+          0,
+          0
+        ],
+        "cells": [
+          [
+            96,
+            35,
+            328,
+            439
+          ],
+          [
+            101,
+            36,
+            321,
+            439
+          ],
+          [
+            45,
+            36,
+            274,
+            439
+          ],
+          [
+            119,
+            42,
+            302,
+            446
+          ],
+          [
+            103,
+            43,
+            317,
+            446
+          ],
+          [
+            76,
+            46,
+            262,
+            446
+          ],
+          [
+            127,
+            47,
+            305,
+            455
+          ],
+          [
+            60,
+            48,
+            313,
+            456
+          ],
+          [
+            76,
+            49,
+            288,
+            455
+          ]
+        ]
+      }
+    },
+    "inspectedVisually": true,
+    "expressionOrderVerified": true,
+    "identityNotes": "Retains white hair with blue underlayers, single side high ponytail on viewer right, blue/pink eyes, black blazer, gray plaid bow and skirt. All nine expressions and small natural poses are present.",
+    "geometryNotes": "At alpha >= 20, 120, and 240 all exact equal-grid horizontal/vertical cuts have zero occupied pixels. Each figure has an independent cell bounding box; actual row height is fractional, suitable for CSS percentage sprite positioning.",
+    "alphaNotes": "RGBA with genuine 0..255 alpha. Tool preview shows low-alpha fringe/speckles; these were not removed by code. Solid figures do not cross any cell border.",
+    "scope": "Image generation and file/alpha geometry inspection only; no browser rendering or production build in this subtask."
+  },
+  "attempts": [
+    {
+      "file": "C:/Users/Administrator/.codex/generated_images/01a14d87-b28c-78e2-82c9-b68046090cb5/exec-443ae5e2-18c7-4ab3-9d9f-2aab4c503d16.png",
+      "selected": false,
+      "reason": "Insufficient layout margins"
+    },
+    {
+      "file": "C:/Users/Administrator/.codex/generated_images/01a14d87-b28c-78e2-82c9-b68046090cb5/exec-63509a33-6d90-428f-b8ab-67238df74912.png",
+      "selected": false,
+      "reason": "Opaque thigh pixels cross exact equal row boundaries"
+    },
+    {
+      "file": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14d87-b28c-78e2-82c9-b68046090cb5\\exec-425ca20f-2ace-4ee3-abbe-292b891267c0.png",
+      "selected": true
+    }
+  ]
+}

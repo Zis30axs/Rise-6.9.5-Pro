@@ -1,0 +1,383 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "bundleBytes": 49275762,
+  "bundleSha256": "326ecefe25bcc829c9fdc356b96ab3ac4352cbea57e793404e68b94f6b625fcd",
+  "imageEvidence": {
+    "meal-basic": {
+      "hash": "76c112839f7760bde410076be39d305a88b6434a45cf03b76dc4be528867f383",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 640762
+    },
+    "meal-standard": {
+      "hash": "5029d1514eef34b46f5e9bbf66fabcef3c5856b193b8b42cb3ea4903757802ff",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 782834
+    },
+    "meal-premium": {
+      "hash": "7d642a23b928d95098bc934f051cccd4263078a759d51f70e9dc2a14e9bd1975",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 920360
+    },
+    "snack-basic": {
+      "hash": "7c2ac43024ca69563fcba694a187d16aa79b577e85e71727d484a0a148b858db",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 656174
+    },
+    "snack-standard": {
+      "hash": "d15bfe53e38c0995072403fe5d64e4096cf3b0297eff21276a83f135b47cf271",
+      "width": 1536,
+      "height": 1024,
+      "webp": true,
+      "bytes": 798694
+    },
+    "snack-premium": {
+      "hash": "fdf42c814f40ac7be2fba71e9d5eeacc015014d33e549c9f70edd120ecec6403",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 698790
+    },
+    "drink-basic": {
+      "hash": "3b47242f4f4a8609a603851f2b82b24f853cbd8a8abef4db93223db6cf849ae5",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 430054
+    },
+    "drink-standard": {
+      "hash": "fac90054d0b536d9d167705fa00192de7f249d2886dfb0b921ef2d1565d23444",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 412510
+    },
+    "drink-premium": {
+      "hash": "2c176e6b036bfd6c290a25cc6138a540b4b60a909f8dd768554e54d453c81d9f",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 438434
+    },
+    "cigarette-basic": {
+      "hash": "3a38e955f08856a2800dc616187ca4b1da2c41de2f9f30b8789740de82c32b60",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 592396
+    },
+    "cigarette-standard": {
+      "hash": "2db6a0ef27642152b38e285e9b70c9a80df27167803b07387fa9d4df2cb23482",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 570084
+    },
+    "cigarette-premium": {
+      "hash": "1cc9f710686b6f79cc692747222d88181af4e6d84db4f4763cc6e0690b0838db",
+      "width": 1254,
+      "height": 1254,
+      "webp": true,
+      "bytes": 689998
+    }
+  },
+  "frames": {
+    "claude": [
+      {
+        "viewBox": [
+          36,
+          0,
+          312,
+          520
+        ],
+        "pixelHash": "f6838d78a9a1cfe5691f6af67ce0caad03a32a540672918762bf0d15c6e39893"
+      },
+      {
+        "viewBox": [
+          368,
+          0,
+          312,
+          520
+        ],
+        "pixelHash": "8bb4d111df0745cae0e1ed0d0a00dc4a1c2ffab17d98a086c54bc8f887398912"
+      },
+      {
+        "viewBox": [
+          698,
+          0,
+          312,
+          520
+        ],
+        "pixelHash": "03bbbef87e9febe7a193f3203d6ad38e428c3e286a7b1fcb0ae747f8737660c8"
+      },
+      {
+        "viewBox": [
+          36,
+          520,
+          312,
+          512
+        ],
+        "pixelHash": "65459ad23c4c5a6e07a9f9115dd1adcd98502a69ebc9bdaf156f80d4358bdef7"
+      },
+      {
+        "viewBox": [
+          368,
+          520,
+          312,
+          512
+        ],
+        "pixelHash": "131f88377b7c20ea52909a3d5c26b38790d35190afffeef00770e61283c213a1"
+      },
+      {
+        "viewBox": [
+          698,
+          520,
+          312,
+          512
+        ],
+        "pixelHash": "31d4f5737a1705c930d9819769f93b7f665f941f0a31603d4f4f512e8db9bdaf"
+      },
+      {
+        "viewBox": [
+          36,
+          1032,
+          312,
+          504
+        ],
+        "pixelHash": "b772321579fe47082af2e5cad97c41c7709c99a24eec5687e91c404be9b39e35"
+      },
+      {
+        "viewBox": [
+          368,
+          1032,
+          312,
+          504
+        ],
+        "pixelHash": "8117cc93098f0cbb0950743d7b797706692cd15df539dbe23f699410a6ebdb2f"
+      },
+      {
+        "viewBox": [
+          698,
+          1032,
+          312,
+          504
+        ],
+        "pixelHash": "91b63c78cbbe2d05a977fb13ed79673cf5d325e99bd1ce804349e21e72cb1ad2"
+      }
+    ],
+    "xiaoyang": [
+      {
+        "viewBox": [
+          70,
+          50,
+          290,
+          460
+        ],
+        "pixelHash": "7c8c7168cf44f1d1bd93e157b0f55adf595b95376321e0f12387e92b2b716f95"
+      },
+      {
+        "viewBox": [
+          375,
+          50,
+          290,
+          460
+        ],
+        "pixelHash": "f3cb582c047b0ac22dc63d48f5e1cfa71a1fc8c9200439c2a023ee52cdb3a524"
+      },
+      {
+        "viewBox": [
+          675,
+          50,
+          290,
+          460
+        ],
+        "pixelHash": "09b78a2a3832c689fa1251e9dbe7768f9f24143f62dc76b445ba29d8ba1c5063"
+      },
+      {
+        "viewBox": [
+          70,
+          550,
+          290,
+          460
+        ],
+        "pixelHash": "12ee650522e0824dfb49ce7f20a419c6dfd0626114fb4189bb4f4ca084533743"
+      },
+      {
+        "viewBox": [
+          375,
+          550,
+          290,
+          460
+        ],
+        "pixelHash": "6acde3b6867fe6c61e03837dd42a89c68a40471b8af7fecd0af6802474a87ed6"
+      },
+      {
+        "viewBox": [
+          675,
+          550,
+          290,
+          460
+        ],
+        "pixelHash": "8d0094015a4ea50f995390af1d5bdc84ce466f688274038696bc18a14517ae40"
+      },
+      {
+        "viewBox": [
+          70,
+          1030,
+          290,
+          460
+        ],
+        "pixelHash": "024b2bf342c76cbfe07dcdd5f4005b11b5291379046bb7f0f6bae25afd4e0509"
+      },
+      {
+        "viewBox": [
+          375,
+          1030,
+          290,
+          460
+        ],
+        "pixelHash": "9868808cd908524c3bb54c2550f82fb6406f81aa980f3058eadf2b60e8481b3b"
+      },
+      {
+        "viewBox": [
+          675,
+          1030,
+          290,
+          460
+        ],
+        "pixelHash": "4c74c2bf53f10508b8b0a7b4158fc8a6217c3618917f61c3804bdafe96612360"
+      }
+    ],
+    "deepseek": [
+      {
+        "viewBox": [
+          94,
+          8,
+          256,
+          512
+        ],
+        "pixelHash": "86b9cd2e0114441d3795bcb6808251973fb26a2ea9930683b0eda004bdb43682"
+      },
+      {
+        "viewBox": [
+          386,
+          8,
+          256,
+          512
+        ],
+        "pixelHash": "a4e2119d3aa6e9c0b2857d32135799cc6a7ecc8a74dbec7134d8bd74ea3f8b06"
+      },
+      {
+        "viewBox": [
+          682,
+          8,
+          256,
+          512
+        ],
+        "pixelHash": "da6cba7c1f39ba21c89c66c8203490645bb33868d6caf1851e6ace681df0636f"
+      },
+      {
+        "viewBox": [
+          94,
+          516,
+          256,
+          512
+        ],
+        "pixelHash": "4172fb5b9541654d11ae8ab4e02dfbc5729752dfaeeab11085e4c8ced89fcd53"
+      },
+      {
+        "viewBox": [
+          386,
+          516,
+          256,
+          512
+        ],
+        "pixelHash": "9e8b2db18a0efcd0773e68ae9c07daa8a85f3c8762d0d9a53dd680953e7d7e82"
+      },
+      {
+        "viewBox": [
+          682,
+          516,
+          256,
+          512
+        ],
+        "pixelHash": "0c8c8709684822803ad5c93953d04bfdfa885fee1d23974babc9c3ab07040d68"
+      },
+      {
+        "viewBox": [
+          94,
+          1024,
+          256,
+          512
+        ],
+        "pixelHash": "e1a5b00f35c49c1e5cabc54d32b2c24439162cc3c583e14d0000471e9b343a40"
+      },
+      {
+        "viewBox": [
+          386,
+          1024,
+          256,
+          512
+        ],
+        "pixelHash": "4e3335cca25bbea94ae7806bec03db67db07edeb091a8fcdf3b2e5e779f64fe6"
+      },
+      {
+        "viewBox": [
+          682,
+          1024,
+          256,
+          512
+        ],
+        "pixelHash": "9bd15556736ee63ecb98951ce5873224059702f6f142527e91693906967b39a0"
+      }
+    ]
+  },
+  "storyScroll": {
+    "start": 0,
+    "end": 1177,
+    "height": 563,
+    "total": 1740
+  },
+  "windowScroll": {
+    "top": 913,
+    "max": 913
+  },
+  "screenshots": [
+    "outputs/remote-loading-1440x900-initial.png",
+    "outputs/remote-loading-1440x900-portrait.png",
+    "outputs/remote-loading-1440x900-reading-scroll.png",
+    "outputs/remote-loading-1440x900-shelf-meal.png",
+    "outputs/remote-loading-1440x900-shelf-meal-image.png",
+    "outputs/remote-loading-1440x900-shelf-cigarette.png",
+    "outputs/remote-loading-1440x900-shelf-cigarette-image.png",
+    "outputs/remote-loading-1440x900-inventory-scroll.png",
+    "outputs/remote-loading-1440x900-phone.png",
+    "outputs/remote-loading-1440x900-restored.png"
+  ],
+  "calls": {
+    "saves": 1,
+    "generations": 0,
+    "forbiddenRequests": []
+  },
+  "stateUnchanged": true,
+  "errors": [],
+  "external": [],
+  "scope": {
+    "productionIife": true,
+    "controlledHelperHost": true,
+    "actualEmbeddedPhone": true,
+    "realModelCalls": 0,
+    "nativeSillyTavernPage": false,
+    "physicalTauriTavern": false
+  }
+}

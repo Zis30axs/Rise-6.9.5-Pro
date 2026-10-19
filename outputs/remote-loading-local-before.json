@@ -1,0 +1,40 @@
+{
+  "measuredAt": "2026-10-19T06:41:38.427Z",
+  "origin": "http://127.0.0.1:8000",
+  "mode": "all",
+  "requests": [
+    {
+      "path": "/",
+      "status": 200,
+      "wireBytes": 85680,
+      "decodedBytes": 734570,
+      "ttfbMs": 13,
+      "totalMs": 30,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/all",
+      "status": 200,
+      "wireBytes": 65362169,
+      "decodedBytes": 120704126,
+      "ttfbMs": 2032,
+      "totalMs": 6476,
+      "encoding": "gzip",
+      "run": 1,
+      "characterCount": 6,
+      "shallowCount": 0
+    },
+    {
+      "path": "/api/characters/all",
+      "status": 200,
+      "wireBytes": 65362169,
+      "decodedBytes": 120704126,
+      "ttfbMs": 2996,
+      "totalMs": 7481,
+      "encoding": "gzip",
+      "run": 2,
+      "characterCount": 6,
+      "shallowCount": 0
+    }
+  ]
+}

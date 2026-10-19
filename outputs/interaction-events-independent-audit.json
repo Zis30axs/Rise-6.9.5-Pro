@@ -1,0 +1,64 @@
+{
+  "checkedAtUtc": "2026-10-18T16:41:34.616438+00:00",
+  "passed": true,
+  "method": "Independent Python PNG chunk/CRC and base64 JSON parsing; byte equality and SHA-256. No production files modified; chat files only hashed.",
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 58233173,
+    "sha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7"
+  },
+  "cards": [
+    {
+      "path": "D:\\.study\\cc\\dist\\unread-city-p0p1.png",
+      "bytes": 78434193,
+      "sha256": "4ae6296469947be17d0c82632ffd2d8c41981dca0fce79e27f11d8951f672b10",
+      "ownScriptCount": 1,
+      "ownScriptSha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7",
+      "exactBundleMatch": true,
+      "pngCrcValid": true
+    },
+    {
+      "path": "D:\\.study\\cc\\outputs\\未读之城-交互事件与进度版.png",
+      "bytes": 78434193,
+      "sha256": "4ae6296469947be17d0c82632ffd2d8c41981dca0fce79e27f11d8951f672b10",
+      "ownScriptCount": 1,
+      "ownScriptSha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7",
+      "exactBundleMatch": true,
+      "pngCrcValid": true
+    },
+    {
+      "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+      "bytes": 78540617,
+      "sha256": "e00f983d3941385afdf52bcc246e19ca77422bad29307461b886becf57c9179b",
+      "ownScriptCount": 1,
+      "ownScriptSha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7",
+      "exactBundleMatch": true,
+      "pngCrcValid": true
+    }
+  ],
+  "builtAndDeliveryPngByteIdentical": true,
+  "deliveryImageChunksExactlyMatchSourceCover": true,
+  "installedImageChunksExactlyMatchBackup": true,
+  "installedMetadataExactlyMatchesBackupExceptOwnContentAndOwnCreatorNotesBlock": true,
+  "otherHelperScriptsAndUnknownFieldsPreserved": true,
+  "backupMatchesOriginalBaseline": true,
+  "preservation": {
+    "protected": {
+      "checked": 13,
+      "unchanged": 13
+    },
+    "originalArchives": {
+      "checked": 6,
+      "unchanged": 6
+    },
+    "chats": {
+      "checked": 29,
+      "unchanged": 29,
+      "folderMembershipUnchanged": true,
+      "folderCount": 1
+    }
+  },
+  "assetEmbeddingScope": "Not repeated; full embedded asset validation remains in packaging report.",
+  "nativeSillyTavernUiOrPhysicalTauriTavernValidated": false,
+  "realModelCalls": 0
+}

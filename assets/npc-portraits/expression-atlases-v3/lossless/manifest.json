@@ -1,0 +1,62 @@
+{
+  "generator": "scripts/prepare_lossless_runtime_images.py",
+  "encoder": {
+    "pillow": "11.3.0",
+    "libwebp": "1.5.0"
+  },
+  "encoding": {
+    "format": "WEBP",
+    "lossless": true,
+    "quality": 100,
+    "method": 6,
+    "exact": true
+  },
+  "sourcePngsPreserved": true,
+  "imageCount": 3,
+  "sourceBytes": 6216878,
+  "bytes": 4153420,
+  "images": [
+    {
+      "id": "deepseek",
+      "source": "assets/npc-portraits/expression-atlases-v3/deepseek.png",
+      "file": "deepseek.webp",
+      "sourceBytes": 2024454,
+      "bytes": 1359362,
+      "sourceSha256": "be89326bf2a6d7d8d513ec70edd5aa221b94bfebee8a59ce34a0d8c66c64e5ee",
+      "sha256": "6a3871223bcc3a0e4337a4270a908bc526f61e7374408dbfc0f9d8d25055f3a3",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "rgbaSha256": "9c9c291453b6fb45a0157f74f524cd694c96bb02b791ca88e075c6acc2a2baf0",
+      "allRgbaBytesEqual": true
+    },
+    {
+      "id": "xiaoyang",
+      "source": "assets/npc-portraits/expression-atlases-v3/xiaoyang.png",
+      "file": "xiaoyang.webp",
+      "sourceBytes": 1696263,
+      "bytes": 1086232,
+      "sourceSha256": "ae6b9fc7e83cc5ec67d10c81901f8feb5041c23603c9e492bbcd30a4d2323a5b",
+      "sha256": "9d535012774881099161c913c3c5f6cb6fb8babc669250f20c75977aef223267",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "rgbaSha256": "aebb104b345abd4a14c034fd5a3d0c74801659ddced32816f085bff827e1c3ee",
+      "allRgbaBytesEqual": true
+    },
+    {
+      "id": "claude",
+      "source": "assets/npc-portraits/expression-atlases-v3/claude.png",
+      "file": "claude.webp",
+      "sourceBytes": 2496161,
+      "bytes": 1707826,
+      "sourceSha256": "e11d85165e2c8ac3c76938a4044173172e48e5c54ef5c3a701e0df4f4adda882",
+      "sha256": "304e20315bd041b3019e52ef162fff43b470a55e3d6c87ecb20393cac349cca0",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "rgbaSha256": "e2acd0164e11611409a87a145f7d27ecd9a651824df1b8179e39894144c80650",
+      "allRgbaBytesEqual": true
+    }
+  ]
+}

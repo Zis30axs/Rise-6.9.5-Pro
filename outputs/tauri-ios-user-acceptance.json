@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-19",
+  "status": "user-reported-physical-ios-import-and-normal-use-passed",
+  "source": "Direct user feedback in this conversation",
+  "environment": {
+    "device": "iPhone 16",
+    "os": "iOS 27.2",
+    "application": "TauriTavern",
+    "build": "dev (223be954afa7)"
+  },
+  "previousFailure": {
+    "artifact": "User-described older approximately 70 MB card; exact file/hash not established",
+    "png": "Entire application black during import",
+    "json": "Entire application black when entering chat"
+  },
+  "acceptedArtifact": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-Tauri导入压缩版.png",
+    "bytes": 35199463,
+    "sha256": "412decafbc2d049ccc47be7ec04fbf4c31085545fc3b5b7fa496df6c5897c439"
+  },
+  "userQuote": "专用版本不会黑正常使用",
+  "interpretation": "User reports the compressed dedicated card imports and works without the previous black screen.",
+  "agentOperatedPhysicalDevice": false,
+  "allFeaturesIndividuallyVerified": false,
+  "priorBlackScreenRootCauseEstablished": false,
+  "runtimeChangedThisFollowup": false,
+  "deliveryPolicy": "Use the lossless zTXt variant for this user Tauri target; retain the standard tEXt PNG for ordinary SillyTavern.",
+  "scopeNote": "This user report supplements earlier desktop packaging/parser tests; it does not retroactively make them physical-device tests."
+}

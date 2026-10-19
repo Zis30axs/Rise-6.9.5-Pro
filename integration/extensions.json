@@ -30,8 +30,13 @@
     "targetClient": {
       "name": "TauriTavern",
       "device": "user-mobile",
-      "status": "user-confirmed-target-validation-pending",
-      "versionPolicy": "版本仅作维护快照，无额外最低版本门槛"
+      "status": "user-reported-compressed-card-import-and-normal-use-passed",
+      "versionPolicy": "版本仅作维护快照，无额外最低版本门槛",
+      "platform": "iOS",
+      "osVersion": "27.2",
+      "deviceModel": "iPhone 16",
+      "observedBuild": "dev (223be954afa7)",
+      "observationSource": "user report on 2026-10-19"
     }
   },
   "extensions": [
@@ -2315,6 +2320,1749 @@
       ],
       "gitCommitOrPush": false,
       "githubReleaseChanged": false
+    },
+    "characterModelsCheck": {
+      "date": "2026-10-18",
+      "status": "local-build-controlled-browser-and-installed-file-verified",
+      "request": "四套模型压缩内嵌，素世主角，默认第三人称，打开手机正面低头单手持机",
+      "presentation": {
+        "player": "soyo",
+        "npcAppearances": [
+          "deepseek",
+          "xiaoyang",
+          "claude"
+        ],
+        "npcIdentityNamesAndContactsUnchanged": true,
+        "defaultCamera": "third-person",
+        "phoneGrip": "right-hand-only-left-arm-relaxed",
+        "closePhoneRestoresPreferredCameraAndSavedState": true,
+        "mobileLayouts": [
+          "character-and-phone",
+          "expanded-phone"
+        ],
+        "resizePreservesPhoneIframeLeaseAndDraft": true
+      },
+      "assets": {
+        "manifest": "assets/characters/manifest.json",
+        "attribution": "assets/character-sources.md",
+        "compressedGlbBytes": 8402008,
+        "sourceArchiveBytes": 87548265,
+        "archiveToModelReductionPercent": 90.4,
+        "triangles": 132857,
+        "runtimeExternalModelTextureOrDecoderRequests": 0,
+        "originalAnimationClips": 0,
+        "animationScope": "素世基础程序化步态与单手持机；NPC自然静态站姿，无完整表情/物理/原作动作"
+      },
+      "validation": {
+        "typecheckAndProductionBuild": "passed",
+        "unit": {
+          "files": 19,
+          "uniqueCases": 204,
+          "passed": 204,
+          "scope": "完整套件通过；最终单手修改后两个人物专有文件14项再次通过，不重复计数"
+        },
+        "pythonAndPng": {
+          "uniqueCases": 8,
+          "passed": 8,
+          "sourceCardValidation": "passed",
+          "finalPngInspection": "passed"
+        },
+        "browser": {
+          "engine": "Microsoft Edge",
+          "workers": 1,
+          "uniqueCases": 27,
+          "passed": 27,
+          "characterCases": 8,
+          "existingSceneAndShellCases": 17,
+          "realEmbeddedPhoneCases": 2,
+          "finalSingleHandBundleRerunCases": 6,
+          "scope": "受控Tavern/Helper宿主，实际WebGL与最终生产IIFE；2项加载真实内置手机包，非物理手机或原生酒馆页面验收",
+          "coverage": [
+            "默认素世第三人称和第一人称切换",
+            "四模型离线加载/稳定NPC身份/重新进入",
+            "室内外走动/碰撞/刷新/搭话/静态降级",
+            "320/390双指输入和松手停步",
+            "室内外第一/第三偏好打开手机后恢复完整状态",
+            "手机期间WASD不移动",
+            "320/390手机输入/44px关闭/恢复入口",
+            "真实内嵌手机放大同框/同iframe/退出恢复输入"
+          ],
+          "executionNotes": "早期并发浏览器生命周期结束了共享测试服务器，产生连接拒绝；改用独立常驻服务器、单worker和60秒启动预算后17项全部通过。未削弱行为断言。完整单元重跑避免与GPU场景竞争后204项通过。"
+        },
+        "visualReview": [
+          "四模型正面/面部/透明边缘，Claude UV和下巴阴影已修复",
+          "单手持机正/侧/近景，右手握机、左臂下垂，无明显手腕反折或穿胸穿脸",
+          "最终桌面室内外正面同框、320/390同框及放大、真实手机界面"
+        ],
+        "narrowScreenNote": "320px同框给人物留空间后手机主页内部较紧；放大手机增加阅读空间，返回同框不重建应用。"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-素世与角色模型版.png",
+        "bytes": 37807093,
+        "sha256": "024dba6222829cfd33673747bac95922777f08ba72e998b501867ac82b887d95"
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 27767615,
+        "sha256": "324b2ecfe2db1081d6c64503ac23fb972028e61780bfe96a7d57d172dd8b0ae9"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 37913517,
+        "sha256": "8d15439f417d46416de89c53b2eaec237bbe4b0db24e7fb7a4b71e9886f3719c"
+      },
+      "packagingEvidence": "outputs/character-models-packaging.json",
+      "preserved": {
+        "protected": {
+          "checked": 4,
+          "unchanged": 4
+        },
+        "chats": {
+          "checked": 29,
+          "unchanged": 29
+        },
+        "originalArchives": {
+          "checked": 4,
+          "unchanged": 4
+        }
+      },
+      "screenshots": [
+        "outputs/character-models-lineup.png",
+        "outputs/character-models-outdoor.png",
+        "outputs/character-models-interior.png",
+        "outputs/character-phone-pose-front.png",
+        "outputs/character-phone-pose-side.png",
+        "outputs/character-phone-pose-hand.png",
+        "outputs/character-models-phone-outdoor-third-person.png",
+        "outputs/character-models-phone-interior-third-person.png",
+        "outputs/character-models-real-phone-390.png",
+        "outputs/character-models-real-phone-320.png"
+      ],
+      "boundaries": {
+        "worldSchema": "1.6.0",
+        "phoneSourceChanged": false,
+        "realModelCalls": 0,
+        "nativeSillyTavernPageVerifiedThisBuild": false,
+        "physicalMobileTauriTavernVerified": false,
+        "phoneManualReplyDrivesWorld": false,
+        "gitCommitPushOrRelease": false,
+        "historicalValidationReclassified": false
+      },
+      "independentAudits": [
+        "outputs/character-models-validation-audit.json"
+      ]
+    },
+    "phoneProportionalCheck": {
+      "date": "2026-10-18",
+      "status": "local-build-and-controlled-browser-verified",
+      "request": "直接将整部手机等比例缩放，完整显示，不通过挤压iframe高度裁切内容",
+      "implementation": {
+        "source": "D:\\.study\\ST-iPhonie\\panel-host.js",
+        "installedCopy": "D:\\SillyTavern\\data\\default-user\\extensions\\ST-iPhonie\\panel-host.js",
+        "sourceAndInstalledSha256": "09b59fdaf1e958f5f235689c5d1d26f247cca19395c2c24c99da57ad22e235fc",
+        "logicalViewport": {
+          "width": 390,
+          "height": 844
+        },
+        "scale": "min(slotWidth / 390, slotHeight / 844)",
+        "alignment": "center",
+        "frameRecreatedOnResize": false,
+        "nativeStyleRestoredOnRelease": true,
+        "embeddedRuntimeSha256": "96e71bf5e1ec2589f71acd12c61bd28ef00c4c3985c00fe1549ccae04bf4a745"
+      },
+      "validation": {
+        "typecheckAndBuild": "passed",
+        "phoneHostUnitCases": 18,
+        "worldPhoneUnitCases": 15,
+        "pythonAndPngCases": 8,
+        "browser": {
+          "recordedAt": "2026-10-18T14:51:00+08:00",
+          "bundle": {
+            "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+            "bytes": 27767926,
+            "sha256": "965f102e852cb99bdfa78d747b7cf982ff68036ea6c52450841ef838ce4d7591"
+          },
+          "suite": "tests/e2e/embedded-phone.spec.ts",
+          "browser": "Microsoft Edge / Playwright Chromium, single worker",
+          "uniqueTestCases": 8,
+          "passed": 8,
+          "failed": 0,
+          "retries": 0,
+          "reportedDuration": "4.4 minutes",
+          "caseResults": [
+            {
+              "case": "Real bundled phone settings, note draft persistence and backend reload",
+              "status": "passed"
+            },
+            {
+              "case": "390px uniform complete phone fit, physical click/input mapping, same iframe and draft",
+              "status": "passed"
+            },
+            {
+              "case": "320px uniform complete phone fit, physical click/input mapping, same iframe and draft",
+              "status": "passed"
+            },
+            {
+              "case": "Character switch and helper unload release phone presentation",
+              "status": "passed"
+            },
+            {
+              "case": "Story messages enter real NPC contacts; read receipts and no duplicate delivery",
+              "status": "passed"
+            },
+            {
+              "case": "Same-character chat isolation and late reply rejection",
+              "status": "passed"
+            },
+            {
+              "case": "390px NPC conversation touch targets and unread count clearing",
+              "status": "passed"
+            },
+            {
+              "case": "320px NPC conversation touch targets and unread count clearing",
+              "status": "passed"
+            }
+          ],
+          "proportionalFit": {
+            "logicalIframeViewport": {
+              "width": 390,
+              "height": 844
+            },
+            "scaleRule": "min(slotWidth / 390, slotHeight / 844)",
+            "uniformBothAxes": true,
+            "centeredAndContainedInSlot": true,
+            "homeClockWidgetsAndEightAppsAboveDock": true,
+            "dockAndHomeIndicatorInsideScreen": true,
+            "sameLogicalViewportAfterResize": true,
+            "realGlobalCoordinateClickAndKeyboardInput": true,
+            "sameIframeAndDraftAfterExpandCollapseCloseReopen": true
+          },
+          "visualReview": {
+            "passed": true,
+            "allFourScreenshotsReviewed": true,
+            "completePhoneWithoutCropping": true,
+            "singleHandCharacterPreserved": true
+          },
+          "screenshots": [
+            {
+              "viewportWidth": 390,
+              "mode": "character-and-phone",
+              "path": "D:\\.study\\cc\\outputs\\phone-proportional-390.png",
+              "bytes": 168109,
+              "sha256": "ac65593776ad91be051b2735a653e63110b78c2edca3428f474275dc2a410329",
+              "visuallyReviewed": true
+            },
+            {
+              "viewportWidth": 390,
+              "mode": "expanded",
+              "path": "D:\\.study\\cc\\outputs\\phone-proportional-390-expanded.png",
+              "bytes": 164353,
+              "sha256": "fd867d2788fb9412440b775626b4806f5f5b2aa16073d63278fab3be86ba2795",
+              "visuallyReviewed": true
+            },
+            {
+              "viewportWidth": 320,
+              "mode": "character-and-phone",
+              "path": "D:\\.study\\cc\\outputs\\phone-proportional-320.png",
+              "bytes": 103502,
+              "sha256": "8fd583828f52a4af4ae462dc513ab5f43d2559e97afa9de58877cd182e55cffb",
+              "visuallyReviewed": true
+            },
+            {
+              "viewportWidth": 320,
+              "mode": "expanded",
+              "path": "D:\\.study\\cc\\outputs\\phone-proportional-320-expanded.png",
+              "bytes": 94049,
+              "sha256": "ab864add293072223ec042ecc8da0ab68149c29d0a7beb2f335c578e5911a3ab",
+              "visuallyReviewed": true
+            }
+          ],
+          "regressionBoundaries": {
+            "phoneSettingsAndDraftPersistence": true,
+            "chatIsolationAndUnreadReceipts": true,
+            "releaseAndNativeInputRecovery": true,
+            "pageErrors": 0,
+            "modelRequests": 0,
+            "nativeSillyTavernPageTested": false,
+            "physicalTauriTavernTested": false
+          },
+          "scope": "Production embedded phone and release IIFE in a controlled Tavern/Helper host; no live model service was called."
+        },
+        "visualReview": "实际查看320/390默认同框与放大图；完整状态栏、时钟、组件、8应用、dock和home条，无互盖裁切"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-手机等比缩放版.png",
+        "bytes": 37807617,
+        "sha256": "79afcf0296320e6c655b860a59aaf0738ce0152493f52a149279511efdd2d40c"
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 27767926,
+        "sha256": "965f102e852cb99bdfa78d747b7cf982ff68036ea6c52450841ef838ce4d7591"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 37914041,
+        "sha256": "d9ecfacb23a7ee2634b6ef04cdcabc3b770bead9097fb1caa154fbba7d200ceb"
+      },
+      "preserved": {
+        "protected": {
+          "checked": 4,
+          "unchanged": 4
+        },
+        "chats": {
+          "checked": 29,
+          "unchanged": 29
+        },
+        "originalArchives": {
+          "checked": 4,
+          "unchanged": 4
+        }
+      },
+      "packagingEvidence": "outputs/phone-proportional-packaging.json",
+      "independentAudit": "outputs/phone-proportional-independent-audit.json",
+      "boundaries": {
+        "nativeSillyTavernPageVerified": false,
+        "physicalMobileTauriTavernVerified": false,
+        "realModelCalls": 0,
+        "gitCommitPushOrRelease": false,
+        "phoneAppStorageChanged": false,
+        "worldSchema": "1.6.0",
+        "priorModelAndCameraBehaviorChanged": false
+      }
+    },
+    "phoneBareCheck": {
+      "date": "2026-10-18",
+      "status": "local-build-and-controlled-browser-verified",
+      "request": "移除手机外层巨大绿色窗口，只保留手机本体与关闭、放大操作",
+      "implementation": {
+        "shell": "src/frontend/App.vue + src/frontend/shell.css",
+        "phoneHostSource": "D:\\.study\\ST-iPhonie\\panel-host.js",
+        "installedPhoneHost": "D:\\SillyTavern\\data\\default-user\\extensions\\ST-iPhonie\\panel-host.js",
+        "sourceAndInstalledSha256": "07f1a7f840b4a721dac29ba1c7f6eb08840ca81167ad84474043484d51d8f3ea",
+        "embeddedRuntimeSha256": "e0639a02c7e971c51b6d380d03b36299bd8a250ec6f8081f47b06a8bff84e5de",
+        "phoneWrapper": "transparent-no-header-border-shadow-or-blur",
+        "emptyOuterAreaPointerEvents": "none",
+        "iframeAndControlsPointerEvents": "auto",
+        "controls": "two-44px-floating-expand-and-close-buttons",
+        "logicalViewport": {
+          "width": 390,
+          "height": 844
+        },
+        "scale": "min(slotWidth / 390, slotHeight / 844)",
+        "sameIframeOnExpandCollapse": true,
+        "nativeStylesRestoredOnRelease": true
+      },
+      "validation": {
+        "typecheckAndBuild": "passed",
+        "phoneHostUnitCases": 18,
+        "pythonAndPngCases": 8,
+        "browser": {
+          "recordedAt": "2026-10-18T15:03:54+08:00",
+          "bundle": {
+            "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+            "bytes": 27768786,
+            "sha256": "1cd31d00ecfbc642269936125b825c5c1d2afaea7f7012b2f40438a2d4008141"
+          },
+          "suite": "tests/e2e/embedded-phone.spec.ts",
+          "selection": "Desktop bundled-phone persistence case plus existing 390px and 320px viewport cases only",
+          "browser": "Microsoft Edge / Playwright Chromium, single worker",
+          "uniqueTestCases": 3,
+          "passed": 3,
+          "failed": 0,
+          "retries": 0,
+          "reportedDuration": "2.2 minutes",
+          "caseResults": [
+            {
+              "case": "Desktop bare phone presentation, settings/note/draft persistence and backend reload",
+              "status": "passed",
+              "durationSeconds": 51.8
+            },
+            {
+              "case": "390px bare phone, complete proportional fit, controls, click/input mapping and retained iframe/draft",
+              "status": "passed",
+              "durationSeconds": 34.6
+            },
+            {
+              "case": "320px bare phone, complete proportional fit, controls, click/input mapping and retained iframe/draft",
+              "status": "passed",
+              "durationSeconds": 38.0
+            }
+          ],
+          "presentationChecks": {
+            "windowSlotAndHostPanelTransparent": true,
+            "noWindowTitleOrHeader": true,
+            "noWrapperBackgroundImageBorderOrShadow": true,
+            "exactlyTwoFloatingControls": true,
+            "controlsAtLeast44px": true,
+            "controlsClickableAndDoNotOverlapPhone": true,
+            "emptyAreaOutsidePhoneDoesNotInterceptPointerHitTest": true,
+            "logicalIframeViewport": {
+              "width": 390,
+              "height": 844
+            },
+            "uniformScaleAndCompleteFit": true,
+            "homeClockWidgetsAppsAndDockUncovered": true,
+            "globalCoordinateClickAndKeyboardInput": true,
+            "sameIframeAndDraftAfterExpandCollapseCloseReopen": true
+          },
+          "visualReview": {
+            "passed": true,
+            "allFiveScreenshotsReviewed": true,
+            "largeGreenWindowRemoved": true,
+            "phoneAndTwoSmallFloatingControlsOnly": true,
+            "singleHandCharacterPreserved": true
+          },
+          "screenshots": [
+            {
+              "view": "desktop",
+              "path": "D:\\.study\\cc\\outputs\\phone-bare-desktop.png",
+              "bytes": 354568,
+              "sha256": "e8b634b7821f0fb8e88b71cd1953c9e63abc2d208a713d7d124af3fc9450eb82",
+              "visuallyReviewed": true
+            },
+            {
+              "view": "390",
+              "path": "D:\\.study\\cc\\outputs\\phone-bare-390.png",
+              "bytes": 182345,
+              "sha256": "a831b39fa238a5dccaee31b22bf3b2c8b740ea90211a88d4b4c0dd59e849c6e9",
+              "visuallyReviewed": true
+            },
+            {
+              "view": "390-expanded",
+              "path": "D:\\.study\\cc\\outputs\\phone-bare-390-expanded.png",
+              "bytes": 195554,
+              "sha256": "8f3d78c73593ce4893d2a392e29eac614b1d4654cf18b237840bb9898639687c",
+              "visuallyReviewed": true
+            },
+            {
+              "view": "320",
+              "path": "D:\\.study\\cc\\outputs\\phone-bare-320.png",
+              "bytes": 112578,
+              "sha256": "70aa238ece37a4459038d4237f3b3e5d5bffe1e6e84db2b3381604d955582598",
+              "visuallyReviewed": true
+            },
+            {
+              "view": "320-expanded",
+              "path": "D:\\.study\\cc\\outputs\\phone-bare-320-expanded.png",
+              "bytes": 121916,
+              "sha256": "5fa0ed3d22c3c3240fd63327fb0e85da3c75e4e579180725c29107b89f8ac0eb",
+              "visuallyReviewed": true
+            }
+          ],
+          "regressionBoundaries": {
+            "desktopSettingsAndDraftPersistenceAndReload": true,
+            "nativeInputRecovery": true,
+            "pageErrors": 0,
+            "modelRequests": 0,
+            "allEightPhoneTestsRerunThisRound": false,
+            "nativeSillyTavernPageTested": false,
+            "physicalTauriTavernTested": false
+          },
+          "scope": "Final production IIFE and actual embedded phone in a controlled Tavern/Helper host; this round runs only the three directly affected presentation cases."
+        },
+        "rootVisualReview": "已实际查看桌面、320/390同框和放大共5张截图，绿色大底板消失、整机完整"
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 27768786,
+        "sha256": "1cd31d00ecfbc642269936125b825c5c1d2afaea7f7012b2f40438a2d4008141"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-无框手机版.png",
+        "bytes": 37808837,
+        "sha256": "40c39436c51e8e96f5328e531d10ee01aaae31befde417e5a42ba2e724bcb19e"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 37915261,
+        "sha256": "51a9b95b26114391650f39e6ab2bcf1c0adb73b9c7c60620200bf12742defa38"
+      },
+      "preserved": {
+        "protected": {
+          "checked": 4,
+          "unchanged": 4
+        },
+        "chats": {
+          "checked": 29,
+          "unchanged": 29
+        },
+        "originalArchives": {
+          "checked": 4,
+          "unchanged": 4
+        }
+      },
+      "packagingEvidence": "outputs/phone-bare-packaging.json",
+      "independentAudit": "outputs/phone-bare-independent-audit.json",
+      "boundaries": {
+        "nativeSillyTavernPageVerified": false,
+        "physicalMobileTauriTavernVerified": false,
+        "realModelCalls": 0,
+        "gitCommitPushOrRelease": false,
+        "phoneAppStorageChanged": false,
+        "worldSchema": "1.6.0",
+        "priorModelAndCameraBehaviorChanged": false
+      }
+    },
+    "novelModeCheck": {
+      "date": "2026-10-18",
+      "status": "implemented-local-packaging-and-controlled-browser-verified",
+      "features": {
+        "presentationModes": [
+          "scene",
+          "novel"
+        ],
+        "stateSchema": "1.6.0",
+        "localModePreference": true,
+        "novelDestinations": 18,
+        "backgroundImages": 13,
+        "backgroundBytes": 1169306,
+        "live2dFormat": "Cubism 2 moc",
+        "live2dDataFiles": 84,
+        "live2dBytesIncludingDefinition": 2538125,
+        "dialogueFormat": "|charac|emot|says|",
+        "example": "|素世|开心|今天天气真好|",
+        "emotions": [
+          "平静",
+          "开心",
+          "难过",
+          "生气",
+          "惊讶",
+          "害羞",
+          "思考",
+          "严肃",
+          "安心"
+        ],
+        "clickOnlyReadsGeneratedText": true,
+        "campusFlatMapRemoved": true,
+        "mapUsesCurrentSceneLayout": true,
+        "novelTravelUsesExistingCostsAndAtomicSave": true,
+        "draftAndReadingPositionRetainedOnPresentationSwitch": true,
+        "realEmbeddedPhoneDraftAndDialogueCursorPreserved": true
+      },
+      "validation": {
+        "typecheck": "passed",
+        "productionBuild": "passed",
+        "unitFiles": 26,
+        "unitTestsPassed": 247,
+        "pythonPngTestsPassed": 8,
+        "uniqueBrowserScenariosPassed": 11,
+        "browserEvidence": "outputs/novel-mode-browser-results.json",
+        "visualInspection": "Actual model and distinct happy/angry expressions; 320/390 portrait, map and real phone layouts inspected.",
+        "finalShortPortraitChange": "Typecheck passed before the last numeric framing refinement; final build and affected 320px scenario passed. Earlier successful browser cases are not all claimed to use the same bundle hash."
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 33383309,
+        "sha256": "36b7c845e3c31c03ae74dc01ce49408cca68b5d27a11656c5b8ad3b1aa0c2444"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-纯小说Live2D版.png",
+        "bytes": 45298381,
+        "sha256": "1333e1bf0098cb10dd3b5675d5266cbb0a30ad5d34507347a3cdad5b23905ec9"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 45404805,
+        "sha256": "2088caeb248d54f2d41fbccfc47e2e148d95c2ebc4a9aec31c4cfeca2160befa"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\novel-mode-card-before.png",
+      "packagingEvidence": "outputs/novel-mode-packaging.json",
+      "scriptsExactlyMatch": true,
+      "preservation": {
+        "protectedFiles": 4,
+        "originalArchives": 6,
+        "chatsComparedWithOriginalBaseline": 28,
+        "chatCount": 29,
+        "baselineChangeReason": "unconfirmed",
+        "chatsUnchangedDuringInstallation": 29,
+        "chatFilesWrittenByInstaller": false
+      },
+      "screenshots": [
+        "outputs/novel-live2d-happy.png",
+        "outputs/novel-live2d-angry.png",
+        "outputs/novel-mode-390.png",
+        "outputs/novel-mode-320.png",
+        "outputs/novel-map-390.png",
+        "outputs/novel-map-320.png",
+        "outputs/novel-real-phone-390.png"
+      ],
+      "boundaries": {
+        "controlledTavernHelperFixture": true,
+        "nativeSillyTavernPageValidatedThisTurn": false,
+        "nativePageReason": "Previously blocked by browser URL safety; not bypassed.",
+        "physicalTauriTavernValidated": false,
+        "realLlmRequestsThisTurn": 0,
+        "committedPushedOrReleased": false
+      },
+      "independentAuditEvidence": "outputs/novel-mode-independent-audit.json"
+    },
+    "npcPortraitsCheck": {
+      "date": "2026-10-18",
+      "status": "implemented-packaged-installed-controlled-browser-verified",
+      "features": {
+        "npcMode": "static portrait expression and pose switching, no NPC Live2D",
+        "artDirection": "User-selected simple flat anime cels close to existing Soyo",
+        "generationTool": "built-in image_gen",
+        "portraits": 3,
+        "framesPerNpc": 9,
+        "totalFrames": 27,
+        "imageBytes": 5439129,
+        "resourceReference": "assets/npc-portraits/expression-atlases-v2/README.md",
+        "identity": "Existing saved names/IDs, same stable model assignment as 3D; unknown/ambiguous speakers hide the portrait",
+        "emotion": "Nine Chinese whitelist names; unknown emotion falls back to neutral",
+        "presentation": "Fixed original PNG href + inspected viewBox and unique clipPath; no runtime repainting or additional NPC canvas",
+        "soyoLive2dPreserved": true,
+        "clickOnlyReadsGeneratedText": true,
+        "stateSchema": "1.6.0",
+        "migrationRequired": false
+      },
+      "validation": {
+        "typecheck": "passed",
+        "productionBuild": "passed",
+        "targetedUnitFiles": 4,
+        "targetedUnitTestsPassed": 33,
+        "unitScope": [
+          "novel-npc-portraits",
+          "novel-npc-emotions",
+          "novel-dialogue",
+          "character-assets"
+        ],
+        "earlierBroadRun": "255 tests: 254 passed initially; existing exhaustive scene-walk search exceeded its 15s budget while building in parallel. That single test passed in an isolated rerun without changing its timeout. Final feature-specific run passed 33/33.",
+        "pythonPngTestsPassed": 8,
+        "uniqueBrowserScenariosPassed": 3,
+        "browserEvidence": "outputs/npc-portraits-browser-results.json",
+        "allFinalBrowserScenariosUseSameBundle": true,
+        "visualInspection": "All 27 desktop expression crops, 24 mobile scene compositions, and Soyo returning at all three sizes inspected. No neighboring sprites or visible alpha debris. Short 320px screen intentionally uses a bust crop and may hide low hand gestures."
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 40639612,
+        "sha256": "f465c260a335d13237e96ab149b141706cb6aadeb48ed3f1a85f460a6173e020"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-NPC平涂立绘版.png",
+        "bytes": 54973597,
+        "sha256": "30fafa1e51cce3f42cba3cf3c57526b443b586fe399a12f9225d234e874b5e47"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 55080021,
+        "sha256": "48626d750067e9baa5ce44dc24b0ce19ce858439c168c85166678036a9dd9044"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\npc-portraits-card-before.png",
+      "packagingEvidence": "outputs/npc-portraits-packaging.json",
+      "scriptsExactlyMatch": true,
+      "preservation": {
+        "protectedFiles": 5,
+        "originalArchives": 6,
+        "chatsComparedWithFreshBaseline": 29,
+        "chatCount": 29,
+        "chatsUnchangedDuringInstallation": 29,
+        "chatFilesWrittenByInstaller": false
+      },
+      "screenshots": [
+        "outputs/npc-portraits-desktop-xiaoyang-angry.png",
+        "outputs/npc-portraits-390-xiaoyang-thinking.png",
+        "outputs/npc-portraits-320-deepseek-thinking.png",
+        "outputs/npc-portraits-320-claude-angry.png"
+      ],
+      "boundaries": {
+        "controlledTavernHelperFixture": true,
+        "nativeSillyTavernPageValidatedThisTurn": false,
+        "nativePageReason": "Previously blocked by browser URL safety; not bypassed.",
+        "physicalTauriTavernValidated": false,
+        "realStoryLlmRequestsThisTurn": 0,
+        "committedPushedOrReleased": false
+      },
+      "independentAuditEvidence": "outputs/npc-portraits-independent-audit.json"
+    },
+    "npcFullBodyCheck": {
+      "date": "2026-10-18",
+      "status": "implemented-packaged-installed-controlled-browser-verified",
+      "features": {
+        "npcMode": "27 static full-body expression and pose portraits; no NPC Live2D",
+        "artDirection": "User-selected simple flat anime cels close to Soyo",
+        "generationTool": "built-in image_gen",
+        "portraits": 3,
+        "framesPerNpc": 9,
+        "totalFrames": 27,
+        "imageBytes": 6216878,
+        "resourceReference": "assets/npc-portraits/expression-atlases-v3/README.md",
+        "framing": "Complete head, hair, hands, hem and both shoes in every original PNG frame; contain scaling above dialogue on desktop and three tested mobile sizes",
+        "shortScreen": "Removed 175% bust enlargement; 180px scrollable reading layer leaves room for the complete figure",
+        "identity": "Saved NPC names and IDs; same stable 3D appearance mapping",
+        "emotion": "Nine Chinese whitelist emotions; unknown falls back to neutral",
+        "presentation": "Original PNG bytes + inspected viewBox and unique clipPath; no programmatic repainting or additional NPC canvas",
+        "soyoLive2dPreserved": true,
+        "clickOnlyReadsGeneratedText": true,
+        "stateSchema": "1.6.0",
+        "migrationRequired": false
+      },
+      "validation": {
+        "typecheck": "passed",
+        "productionBuild": "passed",
+        "targetedUnitFiles": 4,
+        "targetedUnitTestsPassed": 33,
+        "unitScope": [
+          "novel-npc-portraits",
+          "novel-npc-emotions",
+          "novel-dialogue",
+          "character-assets"
+        ],
+        "pythonPngTestsPassed": 8,
+        "uniqueBrowserScenariosPassed": 4,
+        "browserEvidence": "outputs/npc-fullbody-browser-results.json",
+        "allFinalBrowserScenariosUseSameBundle": true,
+        "checks": [
+          "Full frame transformed bounds fit SVG/wrapper/viewport",
+          "No frame overlap with dialogue layer",
+          "Source alpha has head and shoe padding",
+          "Distinct expression pixels and neutral fallback",
+          "Previous/next sentence state and cursor preservation",
+          "One reused Soyo canvas",
+          "Clickable controls"
+        ],
+        "visualInspection": "27 desktop expression crops, 36 mobile compositions and returning Soyo views inspected; complete head-to-toe NPCs, no neighboring sprites or visible alpha debris. Added 720px short-screen boundary check after aligning the mobile breakpoints at 760px."
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 41676540,
+        "sha256": "421459f85a7671bd13f6f68664e2ab931a3dfd8340556d5fab1af5753176d830"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-NPC全身立绘版.png",
+        "bytes": 56356213,
+        "sha256": "da45d7f8b5d3fda39ef1a5da9be9647e6e9e27c28bba3a26881cf020188bb71c"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 56462637,
+        "sha256": "eb2f064112e43f67fcaaa9c025a28fba2c2a980f2ed32a3dea10abd4b8de1f91"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\npc-fullbody-card-before.png",
+      "packagingEvidence": "outputs/npc-fullbody-packaging.json",
+      "scriptsExactlyMatch": true,
+      "preservation": {
+        "protectedFiles": 6,
+        "originalArchives": 6,
+        "chatsComparedWithFreshBaseline": 29,
+        "chatCount": 29,
+        "chatsUnchangedDuringInstallation": 29,
+        "chatFilesWrittenByInstaller": false
+      },
+      "screenshots": [
+        "outputs/npc-fullbody-desktop-xiaoyang-angry.png",
+        "outputs/npc-fullbody-390-xiaoyang-thinking.png",
+        "outputs/npc-fullbody-320-deepseek-thinking.png",
+        "outputs/npc-fullbody-320-claude-angry.png"
+      ],
+      "boundaries": {
+        "controlledTavernHelperFixture": true,
+        "nativeSillyTavernPageValidatedThisTurn": false,
+        "nativePageReason": "Previously blocked by browser URL safety; not bypassed.",
+        "physicalTauriTavernValidated": false,
+        "realStoryLlmRequestsThisTurn": 0,
+        "committedPushedOrReleased": false
+      },
+      "independentAuditEvidence": "outputs/npc-fullbody-independent-audit.json"
+    },
+    "convenienceStoreCheck": {
+      "status": "passed-local-controlled-validation",
+      "date": "2026-10-18",
+      "stateSchema": "1.7.0",
+      "catalogItems": 12,
+      "tiersPerCategory": 3,
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 41703267,
+        "sha256": "730ba0e0aac68284976f61a43b9ffa0902f3c2a3545cfb544a23c63c134ac129"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-便利店与状态版.png",
+        "bytes": 56392609,
+        "sha256": "321ca6fc6042a69b7922131be220e0626aa85462fa649a6d014e0f9a4e8fdbfd"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 56499033,
+        "sha256": "ff2ddf19ed1916a69205349d40c6b4c4468edd16f5d6baca1feff244b049da35"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\convenience-store-card-before.png",
+      "checks": {
+        "typecheckAndProductionBuild": true,
+        "unit": {
+          "uniquePassed": 286,
+          "files": 29,
+          "firstFullRunPassed": 284,
+          "firstFullRunFailed": 2,
+          "correction": "Two old-version fixtures stripped new 1.7 fields; production parser unchanged; those two files rerun with all 15 tests passing."
+        },
+        "pythonPngPassed": 8,
+        "browserUniquePassed": 4,
+        "browserEvidence": "outputs/convenience-store-browser-results.json",
+        "independentSourceReview": "No blocking issues found in migration, fixed prices, costs, nutrition, save-before-display, App entry and model summary.",
+        "packagingEvidence": "outputs/convenience-store-packaging.json",
+        "readOnlyAuditEvidence": "outputs/convenience-store-independent-audit.json"
+      },
+      "preservation": {
+        "protectedFiles": 7,
+        "originalArchives": 6,
+        "unchangedChats": 29,
+        "metadataCoverOtherScriptsPreserved": true,
+        "assetsPreserved": "4 character GLBs, 13 backgrounds, 84 byte-exact Soyo assets plus structured model definition, 3 full-body NPC atlases"
+      },
+      "nativeSillyTavernValidated": false,
+      "physicalTauriTavernValidated": false,
+      "realStoryLlmRequests": 0,
+      "phoneSourceChanged": false,
+      "commitPushOrReleasePerformed": false
+    },
+    "novelEnergyAndProductsCheck": {
+      "status": "passed-local-controlled-validation",
+      "date": "2026-10-18",
+      "stateSchema": "1.8.0",
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58125624,
+        "sha256": "0a25d2c3b7c1b34097a6abeaf54ecb078d227f3d80c2599cce9df17a55781989"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-轻量出行与商品图版.png",
+        "bytes": 78289713,
+        "sha256": "e757ffcc603d80296cb63707abb849a436a39465351759481c064471bf6cd5b0"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78396137,
+        "sha256": "8d96a1564ee7f151a8261ba2308e7d5939fa483593b38e318c58d47743483a4b"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\novel-energy-card-before.png",
+      "behavior": {
+        "novelTravelBaseMultiplier": 0.1,
+        "departureConditions": "1 + ((50-health)+(50-satiety)+(stress-50))/300; range 0.5–1.5; neutral at 50",
+        "actualEnergyCost": "Rounded once to 0.01 and capped at remaining energy; zero energy never blocks novel travel",
+        "allNovelTravelEntrypoints": [
+          "map",
+          "schedule destination",
+          "approach transit stop"
+        ],
+        "activities": "Energy-cost activities require enough energy; study reduces morale and increases stress; authored relaxing activities/rest restore morale; dialogue and observation remain free",
+        "legacyMigration": "Strict 1.0–1.7 migration; preserve needs, inventory and progress; default morale 70; no historical resettlement"
+      },
+      "productImages": {
+        "count": 12,
+        "totalBytes": 12311139,
+        "generator": "built-in image_gen.imagegen",
+        "originalPixelsPreserved": true,
+        "independentTransparentImages": true,
+        "manifest": "assets/store-products/manifest.json",
+        "fullPrompts": "assets/store-products/generation-prompts.json"
+      },
+      "checks": {
+        "typecheckAndProductionBuild": true,
+        "unit": {
+          "passed": 305,
+          "files": 31,
+          "failed": 0
+        },
+        "pythonPngPassed": 8,
+        "browserUniquePassed": 4,
+        "browserEvidence": "outputs/novel-energy-browser-results.json",
+        "sourceReview": "Found and fixed schedule/transit approach bypasses of novel travel; all three entry points verified at zero energy",
+        "packagingEvidence": "outputs/novel-energy-packaging.json",
+        "readOnlyAuditEvidence": "outputs/novel-energy-independent-audit.json"
+      },
+      "preservation": {
+        "protectedFiles": 8,
+        "originalArchives": 6,
+        "unchangedChats": 29,
+        "metadataCoverOtherScriptsPreserved": true,
+        "assetsPreserved": "4 character GLBs, 13 backgrounds, 84 byte-exact Soyo assets plus structured model definition, 3 full-body NPC atlases"
+      },
+      "nativeSillyTavernValidated": false,
+      "physicalTauriTavernValidated": false,
+      "phoneHost": "stub in controlled browser scenarios; physical phone not revalidated",
+      "realStoryLlmRequests": 0,
+      "phoneSourceChanged": false,
+      "commitPushOrReleasePerformed": false
+    },
+    "academicChoiceCheck": {
+      "status": "passed-local-controlled-validation",
+      "date": "2026-10-18",
+      "stateSchema": "1.9.0",
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58147818,
+        "sha256": "af94dbe8312cfa3e56f6b8119fcca8d3a8e0457ba423a9214df7ee017a0c0525"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-专业学科学习版.png",
+        "bytes": 78319825,
+        "sha256": "9ac10685d6cc83c3339e8537657675387f4aa38abc0779fb74425182b80d0ae3"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78426249,
+        "sha256": "2b4b65bd2be15837f2de62ff7c230d6be8e296a5970f7ba86aa34769d5f75899"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\academic-choice-card-before.png",
+      "academics": {
+        "majors": 8,
+        "subjects": 24,
+        "initialSelection": "Explicit major and one belonging subject, no default choice; one selection per saved chat",
+        "studyPointsPerMinute": 1,
+        "stageTargets": [
+          120,
+          360,
+          720
+        ],
+        "settlement": "Only committed classroom/library study awards points for actual sampled minutes; no historical awards or model-assigned progress",
+        "migration": "Strictly preserve 1.0–1.8 existing fields, including decimal energy, needs, inventory and lastStudy; academics defaults null",
+        "ui": "Initial selection, subject-specific goals and receipt, status/schedule progress, reload without repeated settlement",
+        "modelContext": "Confirmed major, subject, goal, points, stage and historical lastGain provided as data"
+      },
+      "checks": {
+        "typecheckAndProductionBuild": true,
+        "unit": {
+          "passed": 335,
+          "files": 32,
+          "failed": 0
+        },
+        "pythonPngPassed": 8,
+        "browserUniquePassed": 3,
+        "browserEvidence": "outputs/academic-choice-browser-results.json",
+        "independentSourceReview": "No blocking issues in same-selection idempotency, atomic study/save failure, migration, protocol, persisted receipt and preserved low-energy travel",
+        "packagingEvidence": "outputs/academic-choice-packaging.json",
+        "readOnlyAuditEvidence": "outputs/academic-choice-independent-audit.json",
+        "olderE2EFixtures": "Updated for explicit initial academic selection; not claiming the entire historical browser suite was rerun"
+      },
+      "preservation": {
+        "protectedFiles": 9,
+        "originalArchives": 6,
+        "unchangedChats": 29,
+        "metadataCoverOtherScriptsPreserved": true,
+        "assetsPreserved": "4 GLBs, 13 backgrounds, 84 byte-exact Soyo assets and structured model definition, 3 full-body NPC atlases, 12 product images"
+      },
+      "nativeSillyTavernValidated": false,
+      "physicalTauriTavernValidated": false,
+      "phoneHost": "stub in controlled browser scenarios; real phone not revalidated",
+      "realStoryLlmRequests": 0,
+      "phoneSourceChanged": false,
+      "commitPushOrReleasePerformed": false
+    },
+    "academicCurriculumCheck": {
+      "status": "passed-local-controlled-validation",
+      "date": "2026-10-18",
+      "stateSchema": "1.10.0",
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58170335,
+        "sha256": "bffa6c4c578d030025e890167e278e225db99126e4f2465b649de122c84238f0"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-多科学习与课程表版.png",
+        "bytes": 78350001,
+        "sha256": "e6d8ae5671ef31ae96ba72624d4c1e7c31004be45b2ce406c353429b6fad3055"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78456425,
+        "sha256": "d03d85321a8a5c48175bd0589320ac09e54f905b45103e5fbfc46e1a714ac5a5"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\academic-curriculum-card-before.png",
+      "academics": {
+        "majors": 8,
+        "catalogSubjects": 24,
+        "subjectsPerMajor": 3,
+        "initialSelection": "Explicit major selection once per saved chat; all three belonging subjects start at zero, with no default choice",
+        "progress": "Each subject owns independent exact half-point progress, targets and stage; other-major subjects appear after committed reading",
+        "stageTargets": [
+          120,
+          360,
+          720
+        ],
+        "majorStudyPointsPerMinute": 1,
+        "channels": {
+          "classroom": "Major subjects only",
+          "library": "Major or cross-major subjects at the study desk or explicit reading anchor",
+          "bookshop": "Explicit reading at the existing bookshop location in both 3D and novel modes; no added interior"
+        },
+        "crossMajorOutcomes": [
+          {
+            "id": "inspiration",
+            "probability": 0.25,
+            "pointsMultiplier": 1.5,
+            "extraEnergyCost": 0,
+            "extraMorale": 3,
+            "extraStress": -2
+          },
+          {
+            "id": "confusion",
+            "probability": 0.25,
+            "pointsMultiplier": 0.5,
+            "extraEnergyCost": 3,
+            "extraMorale": -4,
+            "extraStress": 5
+          },
+          {
+            "id": "normal",
+            "probability": 0.5,
+            "pointsMultiplier": 1,
+            "extraEnergyCost": 0,
+            "extraMorale": 0,
+            "extraStress": 0
+          }
+        ],
+        "settlement": "Eligibility, worst-case energy, clock and points limits checked before sampling; time and cross-major outcome drawn only on explicit confirmation, then resources, subject points, receipt and journal saved atomically",
+        "netEffects": "Outcome modifiers are added to normal study costs before clamping; lastGain stores actual net morale/stress and energy consumed",
+        "migration": "Strict 1.9 migration retains every old point on the old selected subject and adds the other two major subjects at zero; historical lastGain survives with unknown channel/outcome/effects null. Earlier supported saves keep all existing data and academics null. No retrospective awards.",
+        "existingData": "Existing decimal energy, needs, inventory, lastStudy, phone, story, contacts, journal, transit, scene and original one-off schedule are preserved",
+        "timetable": "Fixed derived weekly six-slot timetable for the selected major; opening it does not mark attendance, mutate the original schedule or award points",
+        "receipt": "Saved channel and interaction identity distinguish classroom/library results from bookshop reading; refresh consumes saved results without resampling",
+        "nonLearningActions": "Free observation, ten-minute shelf browsing, selecting subjects, opening the timetable, completing old schedule items and dialogue award no study points",
+        "travel": "Zero-energy novel travel remains permitted and charges at most the available energy; study resource requirements remain separate",
+        "modelContext": "All saved subject progress, stage goals, timetable and lastGain are supplied as authoritative data; no model-assigned progress"
+      },
+      "checks": {
+        "typecheckAndProductionBuild": true,
+        "unit": {
+          "passed": 346,
+          "files": 32,
+          "failed": 0,
+          "firstRun": {
+            "passed": 345,
+            "failed": 1,
+            "total": 346,
+            "evidence": "outputs/academic-curriculum-unit-results.json"
+          },
+          "targetedRetry": {
+            "passed": 12,
+            "failed": 0,
+            "evidence": "outputs/academic-curriculum-unit-movement-retry.json",
+            "sameSource": true,
+            "sameSourceConfirmation": "Parent reported the targeted retry used the same production and test source"
+          },
+          "initialFailure": {
+            "test": "scene-only free movement can actually walk from the original south-gate spawn along connected paths to every campus and street landmark",
+            "kind": "15000ms resource/time limit; no assertion failure reported"
+          },
+          "aggregation": "346 unique initial test identities; the single timed-out traversal is covered by the 12/12 same-source targeted rerun. This does not claim an entirely green first run."
+        },
+        "pythonPngPassed": 8,
+        "browserUniquePassed": 3,
+        "browserEvidence": "outputs/academic-curriculum-browser-results.json",
+        "browserScenarios": [
+          {
+            "title": "academic curriculum desktop 专业三科独立成长与六节周课表",
+            "status": "passed",
+            "durationMs": 31580
+          },
+          {
+            "title": "academic curriculum 320 跨专业图书馆灵感与书店困惑按次保存",
+            "status": "passed",
+            "durationMs": 26198
+          },
+          {
+            "title": "academic curriculum 390 旧1.9单科迁移与第二科保存失败重试",
+            "status": "passed",
+            "durationMs": 25086
+          }
+        ],
+        "browserChecks": [],
+        "independentSourceReview": "No blocking runtime issues found in migration, one-time outcome settlement, save failure, per-subject progress, channel matching, clock bound or preserved zero-energy novel travel",
+        "packagingEvidence": "outputs/academic-curriculum-packaging.json",
+        "readOnlyAuditEvidence": "outputs/academic-curriculum-independent-audit.json",
+        "olderE2EFixtures": "Existing fixtures adapted where required; the three current unique scenarios do not imply the full historical browser suite was rerun"
+      },
+      "preservation": {
+        "protectedFiles": 10,
+        "originalArchives": 6,
+        "unchangedChats": 29,
+        "metadataCoverOtherScriptsPreserved": true,
+        "assetsPreserved": "4 GLBs, 13 backgrounds, 84 byte-exact Soyo files plus structured model definition, 3 full-body NPC atlases, 12 product images",
+        "oldPortraitVariantsEmbedded": false
+      },
+      "nativeSillyTavernValidated": false,
+      "physicalTauriTavernValidated": false,
+      "phoneHost": "Stub in controlled browser scenarios; real phone not revalidated. Source and installed panel-host.js independently hash-checked.",
+      "realStoryLlmRequests": 0,
+      "phoneSourceChanged": false,
+      "commitPushOrReleasePerformed": false
+    },
+    "locationServicesCheck": {
+      "date": "2026-10-18",
+      "status": "implemented-and-local-checks-passed",
+      "stateSchema": "1.10.0",
+      "newPersistedFields": [],
+      "features": [
+        "常驻地点入口，包含全文阅读和3D",
+        "10项按地点结算的服务",
+        "共享营业时间与跨午夜安排",
+        "书店最长阅读区间营业检查",
+        "已保存结果和地点服务进入叙事上下文"
+      ],
+      "typecheck": "passed; final E2E source also checked with vue-tsc --noEmit",
+      "productionBuild": "passed; final UI copy refinement rebuilt before browser acceptance",
+      "unitTests": {
+        "files": 33,
+        "passed": 364,
+        "failed": 0,
+        "command": "npx vitest run --maxWorkers 2"
+      },
+      "pythonTests": {
+        "passed": 8,
+        "failed": 0
+      },
+      "baseCardValidation": "passed",
+      "browserTests": {
+        "uniquePassed": 5,
+        "uniqueFailed": 0,
+        "viewports": [
+          "1280x900",
+          "390x844",
+          "320x568"
+        ],
+        "aggregation": "Five unique test identities. Use the targeted retry for desktop, 390px, 320px and midnight cases, plus the passing zero-energy/store/bookshop case from the first completed run. An earlier interrupted pre-final-build run is not acceptance evidence. Repeated executions are not added to the unique count.",
+        "report": "outputs/location-services-browser-results.json"
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58188878,
+        "sha256": "220a8df42588b5b5745f13eae019ab847898bd117cee3a90b513fc5da7569e93"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-地点服务版.png",
+        "bytes": 78374781,
+        "sha256": "4e1363cee31a12bc8db28577465af154c71c6591d7461c336d01ac8efb300189"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78481205,
+        "sha256": "dc1884dfa157b2003d2ce2db758bf820815eaacdf62b197a0deb3baafd1bae21"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\location-services-card-before.png",
+      "packagingReport": "outputs/location-services-packaging.json",
+      "protectedFilesUnchanged": 11,
+      "originalArchivesUnchanged": 6,
+      "chatFilesUnchanged": 29,
+      "physicalTauriTavernValidated": false,
+      "realStoryLlmRequests": 0,
+      "nativeSillyTavernPageValidated": false,
+      "browserPhone": "stub; no new phone runtime acceptance",
+      "gitCommitPushOrRelease": false,
+      "independentAudit": {
+        "status": "passed",
+        "report": "outputs/location-services-independent-audit.json",
+        "scriptMatchedCards": 3,
+        "protectedFiles": 11,
+        "originalArchives": 6,
+        "chatFiles": 29
+      }
+    },
+    "llmActionsAndBackpackCheck": {
+      "date": "2026-10-19",
+      "status": "implemented-and-local-checks-passed",
+      "stateSchema": "1.10.0",
+      "newPersistedFields": [],
+      "features": [
+        "常驻地点互动与相邻入口",
+        "严格world_actions模型行动与精确分钟",
+        "人物入口移除、独立背包及细分状态",
+        "每份2元食物打包",
+        "真实库存赠送与关系增益"
+      ],
+      "typecheck": "passed",
+      "productionBuild": "passed; browser checks use final IIFE SHA256",
+      "unitTests": {
+        "files": 35,
+        "passed": 399,
+        "failed": 0,
+        "aggregation": "397 passed in full run; two obsolete prompt-text expectations updated and both affected files rerun (51 passed). Counts are unique tests, not execution sums."
+      },
+      "pythonTests": {
+        "passed": 8,
+        "failed": 0
+      },
+      "baseCardValidation": "passed",
+      "browserTests": {
+        "recordedOn": "2026-10-19",
+        "uniquePassed": 15,
+        "uniqueFailed": 0,
+        "bundleSha256": "f13d5e48f066076163eda2284b2e4b39c231825f879bddbb0ccf8b967c7ccc0e",
+        "bundleBytes": 58223727,
+        "browser": "Microsoft Edge (msedge)",
+        "workers": 1,
+        "controlledHost": true,
+        "realStoryLlmRequests": 0,
+        "nativeSillyTavernPageValidated": false,
+        "physicalTauriTavernValidated": false,
+        "phone": "stub; no new phone runtime acceptance",
+        "finalRawReports": [
+          "outputs/llm-actions-final-results.json",
+          "outputs/llm-actions-legacy-results.json"
+        ],
+        "diagnosticFirstRun": "outputs/llm-actions-first-run-results.json",
+        "aggregation": "15 unique test identities: final complete run covers 7 new cases plus 5 location-service regressions; supplemental run covers 3 selected legacy cases and repeats the 2 existing mobile cases with explicit scrollability and backpack-control reachability checks. Repeats are not added. The first candidate run is diagnostic only and excluded from acceptance.",
+        "viewportEvidence": [
+          {
+            "viewport": {
+              "width": 320,
+              "height": 568
+            },
+            "compactText": {
+              "clientHeight": 78,
+              "scrollHeight": 134,
+              "speechHeight": 102
+            },
+            "testedScrollTop": 24,
+            "pageErrors": [],
+            "stateReport": "outputs/llm-actions-320-state.json",
+            "screenshots": [
+              "outputs/llm-actions-320-compact.png",
+              "outputs/llm-actions-320-persistent.png",
+              "outputs/llm-actions-320-coffee.png",
+              "outputs/llm-actions-320-inventory.png",
+              "outputs/llm-actions-320-status.png"
+            ]
+          },
+          {
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "compactText": {
+              "clientHeight": 157,
+              "scrollHeight": 157,
+              "speechHeight": 91.78125
+            },
+            "testedScrollTop": 0,
+            "pageErrors": [],
+            "stateReport": "outputs/llm-actions-390-state.json",
+            "screenshots": [
+              "outputs/llm-actions-390-compact.png",
+              "outputs/llm-actions-390-persistent.png",
+              "outputs/llm-actions-390-coffee.png",
+              "outputs/llm-actions-390-inventory.png",
+              "outputs/llm-actions-390-status.png"
+            ]
+          }
+        ],
+        "cases": [
+          {
+            "file": "location-services.spec.ts",
+            "title": "desktop 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 17823
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "320px 常驻交互在全文阅读直接往返学生公寓与宿舍，服务结算保留草稿",
+            "status": "passed",
+            "report": "outputs/llm-actions-legacy-results.json",
+            "durationMs": 4689
+          },
+          {
+            "file": "convenience-store.spec.ts",
+            "title": "desktop便利店购买入包与使用独立结算，状态和草稿保持",
+            "status": "passed",
+            "report": "outputs/llm-actions-legacy-results.json",
+            "durationMs": 36793
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "模型在一轮依次旅行和精确睡眠，地点与消耗一起提交",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 3359
+          },
+          {
+            "file": "academics.spec.ts",
+            "title": "academic curriculum 320 跨专业图书馆灵感与书店困惑按次保存",
+            "status": "passed",
+            "report": "outputs/llm-actions-legacy-results.json",
+            "durationMs": 15668
+          },
+          {
+            "file": "location-services.spec.ts",
+            "title": "午夜校园咖啡店明确打烊，地图展示时间并可前往营业至次日两点的街边咖啡馆",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 6932
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "自然语言睡十小时精确推进600分钟，状态正文和手机整轮保存，刷新不重复结算",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 6156
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "模型处理中切换聊天或退出后，迟到的行动正文和手机结果不会写入",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 6043
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "390px 常驻交互在全文阅读直接往返学生公寓与宿舍，服务结算保留草稿",
+            "status": "passed",
+            "report": "outputs/llm-actions-legacy-results.json",
+            "durationMs": 4827
+          },
+          {
+            "file": "location-services.spec.ts",
+            "title": "390 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 13117
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "食品加2元打包进入独立背包，可由模型赠送扣库存并改善关系，状态与刷新一致",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 6728
+          },
+          {
+            "file": "llm-actions.spec.ts",
+            "title": "保存失败或动作无法执行都拒绝整轮，保留草稿且没有部分时间正文手机，再次发送可成功",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 3650
+          },
+          {
+            "file": "location-services.spec.ts",
+            "title": "320 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 12377
+          },
+          {
+            "file": "novel.spec.ts",
+            "title": "纯小说与3D切换保留剧情草稿，偏好和地点背景刷新恢复",
+            "status": "passed",
+            "report": "outputs/llm-actions-legacy-results.json",
+            "durationMs": 27854
+          },
+          {
+            "file": "location-services.spec.ts",
+            "title": "零精力运动受限但公园休憩可结算，便利店和书店保留各自功能入口",
+            "status": "passed",
+            "report": "outputs/llm-actions-final-results.json",
+            "durationMs": 7649
+          }
+        ]
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58223727,
+        "sha256": "f13d5e48f066076163eda2284b2e4b39c231825f879bddbb0ccf8b967c7ccc0e"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-自由行动与背包版.png",
+        "bytes": 78421549,
+        "sha256": "54bb9eea951903c8171aacfe37960b9dfd8da50b76c07d31a935463b2c11044b"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78527973,
+        "sha256": "c69c2716b726900972eacd80c3d5c77deab22b942888c80988d7aa9d8bd5ba03"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\llm-actions-card-before.png",
+      "packagingReport": "outputs/llm-actions-packaging.json",
+      "protectedFilesUnchanged": 12,
+      "originalArchivesUnchanged": 6,
+      "chatFilesUnchanged": 29,
+      "physicalTauriTavernValidated": false,
+      "realStoryLlmRequests": 0,
+      "nativeSillyTavernPageValidated": false,
+      "browserPhone": "controlled stub; no new phone runtime acceptance",
+      "gitCommitPushOrRelease": false,
+      "codeAudit": {
+        "status": "no blocking findings",
+        "report": "outputs/llm-actions-code-audit.json"
+      },
+      "independentAudit": {
+        "status": "passed",
+        "report": "outputs/llm-actions-independent-audit.json",
+        "scriptMatchedCards": 3,
+        "protectedFiles": 12,
+        "originalArchives": 6,
+        "chatFiles": 29
+      }
+    },
+    "interactionEventsCheck": {
+      "date": "2026-10-19",
+      "status": "implemented-and-local-checks-passed",
+      "stateSchema": "1.10.0",
+      "newPersistedFields": [],
+      "features": [
+        "地点操作移入悬浮窗并恢复正文空间",
+        "按钮交互短进度动画",
+        "80%独立概率事件确认",
+        "是：LLM事件及实际影响；否：正常原交互",
+        "原交互与事件单次保存及缓存重试",
+        "取消/后台/切聊天/退出隔离"
+      ],
+      "probability": {
+        "event": 0.8,
+        "boundary": "Math.random() < 0.8",
+        "normal": 0.2,
+        "quotaPerFive": false
+      },
+      "animationDurationMs": 1200,
+      "typecheck": "passed",
+      "productionBuild": "passed; browser checks use final IIFE SHA256",
+      "unitTests": {
+        "files": 36,
+        "passed": 416,
+        "failed": 0,
+        "command": "npm test"
+      },
+      "pythonTests": {
+        "passed": 8,
+        "failed": 0
+      },
+      "baseCardValidation": "passed",
+      "browserTests": {
+        "bundleSha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7",
+        "bundleBytes": 58233173,
+        "scenarios": [
+          {
+            "name": "1280px 阅读无遮挡，地点悬浮窗可相邻往返且显示交互进度",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "390px 阅读无遮挡，地点悬浮窗可相邻往返且显示交互进度",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "320px 阅读无遮挡，地点悬浮窗可相邻往返且显示交互进度",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "80%范围内选择是：原交互与模型事件影响、正文、手机原子保存，刷新不重结算",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "选择否正常完成原交互，不调用模型也不产生事件副作用",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "恰好0.8在80%范围外，进度完成后直接普通结算，没有是否提示",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "生成失败与保存失败均保留整轮状态，错误时选正常继续只结算一次原交互",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "突发事件生成中切聊天或退出，迟到回复不发布原交互、事件正文或手机",
+            "status": "passed",
+            "expectedStatus": "passed"
+          },
+          {
+            "name": "3D进入室内和公交乘车选择事件后，异步收尾不会再次收起新正文",
+            "status": "passed",
+            "expectedStatus": "passed"
+          }
+        ],
+        "uniqueScenarios": 9,
+        "uniquePassed": 9,
+        "uniqueFailed": 0,
+        "scope": {
+          "productionIife": true,
+          "controlledHelperHost": true,
+          "phoneContract": "stub",
+          "realModelCalls": 0,
+          "nativeSillyTavernPage": false,
+          "physicalTauriTavern": false
+        },
+        "bundleHashVerifiedAfterRun": true,
+        "viewedScreenshots": [
+          "interaction-events-320-reading.png",
+          "interaction-events-choice.png",
+          "interaction-events-3d-enter-event.png",
+          "interaction-events-3d-transit-event.png"
+        ],
+        "firstRunEvidence": "outputs/interaction-events-first-run/interaction-events-browser-first-run.json"
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58233173,
+        "sha256": "f9587bca3df2d0869decd33bb6e8173bbf6f21efaa336ccc9fe1dedd055c9cd7"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-交互事件与进度版.png",
+        "bytes": 78434193,
+        "sha256": "4ae6296469947be17d0c82632ffd2d8c41981dca0fce79e27f11d8951f672b10"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78540617,
+        "sha256": "e00f983d3941385afdf52bcc246e19ca77422bad29307461b886becf57c9179b"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\interaction-events-card-before.png",
+      "packagingReport": "outputs/interaction-events-packaging.json",
+      "protectedFilesUnchanged": 13,
+      "originalArchivesUnchanged": 6,
+      "chatFilesUnchanged": 29,
+      "codeAudit": {
+        "status": "passed",
+        "report": "outputs/interaction-events-code-audit.json"
+      },
+      "independentAudit": {
+        "status": "passed",
+        "report": "outputs/interaction-events-independent-audit.json"
+      },
+      "physicalTauriTavernValidated": false,
+      "realStoryLlmRequests": 0,
+      "nativeSillyTavernPageValidated": false,
+      "browserPhone": "controlled stub; no new phone runtime acceptance",
+      "gitCommitPushOrRelease": false
+    },
+    "socialCharactersCheck": {
+      "date": "2026-10-19",
+      "status": "implemented-and-local-checks-passed",
+      "stateSchema": "1.11.0",
+      "migration": "Strict 1.0.0–1.10.0 migration preserves old contact IDs, profiles, affinity, story and phone data.",
+      "newPersistedFields": [
+        "contacts[].portraitId",
+        "contacts[].sourcePersonId",
+        "contacts[].isMain",
+        "story[].participantIds (optional)"
+      ],
+      "features": [
+        "陌生人搭话立即显示稳定立绘，真实附近人物可在地点悬浮窗搭话或手机建档",
+        "对白在原阅读框内默认折叠、可展开，事件旁白与原始记录保留",
+        "真实内嵌手机确认或编辑姓名、三种本地立绘及短介绍",
+        "保存为主要人物并同步当前聊天正文、日记与后续模型上下文，稳定ID和消息不变",
+        "明确点击允许按钮才生成简介，先回编辑框，保存后才正式生效",
+        "简介请求筛选该角色已出现的对白，限制条数与字数，不发送完整历史或行动目录"
+      ],
+      "introductionContext": {
+        "maximumRelatedTurns": 6,
+        "maximumRelatedCharacters": 2400,
+        "maximumCharactersPerTurn": 600,
+        "matching": "stable participant IDs; legacy known names and IDs; adjacent dialogue pairs; chronological output",
+        "mutatesWorldOnGeneration": false,
+        "requiresExplicitConsent": true
+      },
+      "typecheck": "passed",
+      "productionBuild": "passed; final browser tests load the exact built IIFE",
+      "unitTests": {
+        "files": 40,
+        "passed": 444,
+        "failed": 0,
+        "execution": "435 tests in the complete 39-file run, then the changed 19-test targeted group passed, including nine additional unique tests. Repeated tests are not counted twice."
+      },
+      "phoneUnitTests": {
+        "passed": 42,
+        "failed": 0,
+        "files": 2,
+        "command": "node --test core/story-link.test.js core/panel-host.test.js"
+      },
+      "pythonTests": {
+        "passed": 8,
+        "failed": 0
+      },
+      "baseCardValidation": "passed",
+      "browserTests": {
+        "checkedOn": "2026-10-19",
+        "bundleSha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd",
+        "bundleBytes": 58263350,
+        "uniquePassed": 8,
+        "uniqueFailed": 0,
+        "scenarios": [
+          {
+            "name": "390px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+            "status": "passed",
+            "durationMs": 14250,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "320px 陌生人交流立即显示立绘，原显示框内默认只留事件且可展开对白",
+            "status": "passed",
+            "durationMs": 12310,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "陌生人经真实手机确认姓名、立绘和简介，稳定人物ID与主要人物事件随聊天刷新保留",
+            "status": "passed",
+            "durationMs": 22977,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "手机联系人可手动扩展新主要人物，编辑资料沿用同一个ID",
+            "status": "passed",
+            "durationMs": 16296,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "简介只在主动许可后生成，注入此人精简出场上下文并允许编辑后保存",
+            "status": "passed",
+            "durationMs": 13370,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "简介生成和人物保存失败都保留编辑草稿，保存失败不发布人物或剧情",
+            "status": "passed",
+            "durationMs": 14074,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "关闭手机后迟到简介不修改草稿或世界，再次打开仍可手动编辑",
+            "status": "passed",
+            "durationMs": 13476,
+            "report": "outputs/social-characters-browser-results-main.json"
+          },
+          {
+            "name": "切换聊天会丢弃迟到简介，当前聊天的人物、正文和时钟都不受污染",
+            "status": "passed",
+            "durationMs": 14652,
+            "report": "outputs/social-characters-browser-results-chat-switch.json"
+          }
+        ],
+        "report": "outputs/social-characters-browser-results.json",
+        "realModelRequests": 0,
+        "externalNetworkRequests": 0,
+        "scope": {
+          "browser": "Microsoft Edge",
+          "workers": 1,
+          "productionShellIIFE": true,
+          "actualEmbeddedPhone": true,
+          "phoneStandIn": false,
+          "controlledTavernHelperHost": true,
+          "controlledGenerationReplies": true,
+          "staticFixtureHostNoViteHMR": true,
+          "nativeSillyTavern": false,
+          "tauriTavernMobileDevice": false,
+          "note": "Actual embedded production phone with controlled Tavern host and local literal generation replies; every non-5178 origin is blocked. No real model, native Tavern page, or physical mobile validation."
+        },
+        "diagnosticRuns": {
+          "initialReport": "outputs/social-characters-browser-results-first.json",
+          "initialCountedInFinal": false,
+          "initialReason": "Fixture assumed contact-save returns directly to Contacts and Vite HMR could reset the test host during parallel source changes.",
+          "frozenMainReport": "outputs/social-characters-browser-results-main.json",
+          "frozenMainPassed": 7,
+          "frozenMainFailed": 1,
+          "finalTargetedReport": "outputs/social-characters-browser-results-chat-switch.json",
+          "finalTargetedPassed": 1,
+          "finalTargetedFailed": 0,
+          "targetedReason": "Retained actual phone stays in the chat app after switching chats; test now opens Contacts directly.",
+          "productionChangesBetweenMainAndTargeted": false
+        },
+        "screenshots": [
+          {
+            "path": "outputs/social-dialogue-390.png",
+            "sha256": "0f39ee7e8eb7396c29db6b06d451df91072dcac018355596059b6c4bc853f045"
+          },
+          {
+            "path": "outputs/social-dialogue-320.png",
+            "sha256": "c4f01b4f854bffdebe34f7a925f6c210c75e92429944d119b33441e67b194924"
+          },
+          {
+            "path": "outputs/social-contact-form-390.png",
+            "sha256": "87da990ed4b330f453d576496ae37d84db724705614430deec4ca00bcf63395f"
+          },
+          {
+            "path": "outputs/social-contact-form-320.png",
+            "sha256": "d9472c832e07e47ef8d2c7ac31c5c657be7ade85dc2216d1e08420c09cfb232c"
+          }
+        ]
+      },
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 58263350,
+        "sha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd"
+      },
+      "delivery": {
+        "path": "D:\\.study\\cc\\outputs\\未读之城-相遇与主要人物版.png",
+        "bytes": 78474965,
+        "sha256": "d191f48d8c89e4342f637b053caafcd3db7d0caaa3985eda1fe44cee935a6abb"
+      },
+      "installedTestCard": {
+        "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+        "bytes": 78581389,
+        "sha256": "0298c61bdd06e0a214e88dc25ef2cfb2cd843e99a816a93ed20870b625606702"
+      },
+      "installedBackup": "D:\\.study\\cc\\dist\\social-characters-card-before.png",
+      "packagingReport": "outputs/social-characters-packaging.json",
+      "protectedFilesUnchanged": 14,
+      "originalArchivesUnchanged": 6,
+      "chatFilesUnchanged": 29,
+      "codeAudit": {
+        "status": "passed",
+        "report": "outputs/social-characters-code-audit.json"
+      },
+      "independentAudit": {
+        "status": "passed",
+        "report": "outputs/social-characters-independent-audit.json"
+      },
+      "localPhoneDeployment": {
+        "status": "passed",
+        "updatedFiles": 7,
+        "report": "outputs/social-characters-phone-deployment.json",
+        "backup": "D:\\.study\\cc\\dist\\social-characters-phone-before",
+        "requiresPageRefresh": true,
+        "sourceInstalledHttpByteExact": true,
+        "settingsAndChatsUnchanged": true
+      },
+      "browserPhone": "Actual ST-iPhonie runtime/UI from the final embedded production bundle; Tavern host and model replies are controlled fixtures.",
+      "physicalTauriTavernValidated": false,
+      "realStoryLlmRequests": 0,
+      "realIntroductionLlmRequests": 0,
+      "nativeSillyTavernPageValidated": false,
+      "gitCommitPushOrRelease": false
+    },
+    "remoteLoadingOptimization": {
+      "recordedOn": "2026-10-19",
+      "status": "deployed-and-verified",
+      "evidence": "outputs/remote-loading-verification.json",
+      "artifact": "outputs/未读之城-远程加载优化版.png",
+      "serverChanges": "Lazy list, opt-in compact data, authenticated per-user revalidated IndexedDB cache; default third-party response retained.",
+      "imageChanges": "15 lossless WebP derivatives; every RGBA byte and all frame coordinates retained; originals preserved.",
+      "validationBoundary": "Native local ST entry, four desktop/mobile viewport tests and remote API measurements through forwarding URL; no physical TauriTavern or true LLM test."
+    },
+    "tauriCompressedImportAlternative": {
+      "date": "2026-10-19",
+      "status": "user-reported-physical-ios-import-and-normal-use-passed",
+      "artifact": "outputs/未读之城-Tauri导入压缩版.png",
+      "artifactBytes": 35199463,
+      "artifactSha256": "412decafbc2d049ccc47be7ec04fbf4c31085545fc3b5b7fa496df6c5897c439",
+      "source": "outputs/未读之城-远程加载优化版.png",
+      "sourceBytes": 66491521,
+      "packaging": "PNG zTXt chara using zlib method 0; Tauri-specific alternative",
+      "allCardMetadataAndOtherPngChunksUnchanged": true,
+      "canonicalPngAndBundleAndInstalledStCardUnchanged": true,
+      "report": "outputs/未读之城-Tauri导入压缩版.verification.json",
+      "independentAudit": "outputs/tauri-import-independent-audit.json",
+      "upstreamVersionInspected": "v2.3.0",
+      "upstreamCommit": "a1855be4a4f8b6ee7cd0374a84dbb3709c3e5375",
+      "actualUserVersionPlatformAndErrorKnown": true,
+      "physicalTauriTavernImportVerified": true,
+      "runtimeOrUiChanged": false,
+      "limitations": [
+        "Compression only reduces input file size; full card still expands in memory.",
+        "Tauri import save flow rewrites uncompressed card metadata; stored file can grow.",
+        "Retain canonical tEXt PNG for ordinary SillyTavern."
+      ],
+      "upstreamParserAndCoverDecodeVerified": true,
+      "pythonPackagingTestsPassed": 14,
+      "physicalVerificationSource": "direct user report; not agent-operated device",
+      "agentOperatedPhysicalDevice": false,
+      "allFeaturesIndividuallyVerified": false,
+      "userAcceptanceEvidence": "outputs/tauri-ios-user-acceptance.json"
     }
   },
   "remainingValidation": [
@@ -2514,5 +4262,155 @@
       "本机测试等同手机 TauriTavern 真机验证"
     ],
     "validationReference": "validation.phoneStoryLinkCheck"
+  },
+  "characterModelsDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户提供四个角色压缩包并指定素世主角；追加默认第三人称、手机正面画面、单手拿手机",
+    "player": "soyo",
+    "npcReplacement": "appearance-only-stable-existing-identity",
+    "defaultView": "third-person",
+    "phoneView": "temporary-front-right-hand-phone-left-arm-relaxed",
+    "delivery": "same-single-v2-png-and-embedded-helper-script",
+    "validationReference": "validation.characterModelsCheck"
+  },
+  "phoneProportionalPresentationDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户指出直接等比例缩放手机即可",
+    "viewport": "390x844",
+    "fit": "contain-centered-uniform-scale",
+    "scope": "内置手机与本地已安装扩展托管路径；原生非托管布局保持",
+    "validationReference": "validation.phoneProportionalCheck"
+  },
+  "phoneBarePresentationDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求把巨大绿色窗口直接杀了",
+    "presentation": "手机本体等比例显示，移除外层绿色背景、标题栏、边框和阴影，仅保留44px关闭/放大图标",
+    "pointerEvents": "透明外层和宿主不拦截空白，iframe与按钮保留交互",
+    "scope": "同一助手脚本与PNG内嵌手机，以及本地已安装扩展托管路径",
+    "validationReference": "validation.phoneBareCheck"
+  },
+  "novelModeDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求纯小说模式、复用压缩包背景、校园仅保留更新沙盘，并接入素世Live2D、LLM台词格式及点击推进。",
+    "existing3dModePreserved": true,
+    "navigation": "18 existing destinations; existing walking/transit costs; atomic save before scene change",
+    "dialogue": "Pipe-delimited display rows inside strict JSON story; local expressions; click does not generate",
+    "delivery": "one V2 PNG with embedded helper IIFE, phone, backgrounds and Cubism2 resources",
+    "validationReference": "validation.novelModeCheck"
+  },
+  "npcPortraitsDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户明确选择接近素世的简洁平涂动画风，随后要求立绘不要截断、最好全身。",
+    "appearance": "Three existing NPC designs, 27 complete head-to-toe static anime expressions/poses",
+    "framing": "Contain entire figure above dialogue on desktop and mobile; no 175% bust crop",
+    "dialogue": "Existing |charac|emot|says| rows and saved names, nine whitelisted emotions",
+    "soyo": "Existing Live2D retained; NPCs have no Live2D",
+    "delivery": "same V2 PNG and helper IIFE",
+    "validationReference": "validation.npcFullBodyCheck",
+    "previousValidationReference": "validation.npcPortraitsCheck"
+  },
+  "convenienceStoreDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求便利店商品、状态扩展、食物能量与品牌品质；香烟50元一盒，显著恢复精力和减压但损失健康。",
+    "catalog": "12 fictional products; meal/snack/drink/cigarette, each with basic/standard/premium tiers",
+    "standardCigarette": {
+      "pricePerBox": 50,
+      "unitsPerBox": 20,
+      "minutesPerUse": 5,
+      "energy": 35,
+      "stress": -30,
+      "health": -6
+    },
+    "stateSchema": "1.7.0",
+    "newState": [
+      "player.health",
+      "player.stress",
+      "player.satiety",
+      "player.foodEnergy",
+      "inventory"
+    ],
+    "migration": "Strictly preserve supported 1.0–1.6 saves; add initial needs and empty inventory, without recomputing past consumption",
+    "settlement": "Buy only at convenience store; use one owned unit anywhere; fixed catalog, program settlement and save before UI receipt; no model call",
+    "nutrition": "2 kcal per settled minute and 1 satiety per absolute quarter-hour boundary; no additional low-reserve energy penalty in this version",
+    "delivery": "same V2 PNG with embedded helper script, existing full-body portraits, Soyo and phone",
+    "validationReference": "validation.convenienceStoreCheck"
+  },
+  "novelEnergyAndProductImagesDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求小说转场基础精力倍率0.1、50%为身体状态分界，生成商品图片；追加学习等交互影响精力与精神，并明确低精力不限制转场。",
+    "stateSchema": "1.8.0",
+    "energy": "Hundredth-unit arithmetic; original route energy multiplied by 0.1 and departure conditions; actual spending is capped at remaining energy",
+    "conditionMultiplier": "1 + ((50-health)+(50-satiety)+(stress-50))/300, range 0.5–1.5",
+    "lowEnergyPolicy": "Novel scene changes remain available at zero energy. Energy-consuming activities retain affordability checks; rest and free observation remain available.",
+    "morale": "0–100 mental state, legacy default 70; studies deplete it, rest and authored relaxing activities restore it; not double-counted in travel multiplier",
+    "migration": "Strict 1.0–1.7 migration preserving all prior fields and inventory; no historical activity resettlement",
+    "images": "12 independent built-in image_gen transparent PNGs, fixed product-ID allowlist, original pixels embedded once and shared by shelf/backpack",
+    "delivery": "same V2 PNG and helper IIFE; existing characters, Soyo, backgrounds and phone preserved",
+    "validationReference": "validation.novelEnergyAndProductsCheck"
+  },
+  "academicChoiceDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求增加初始专业和学科选择，使后续学习目标与提升跟随所选方向。",
+    "selection": "8 majors, 3 subjects each; explicit selection once per chat; no automatic selection for new or legacy saves",
+    "progress": "Actual classroom/library study minutes award equal points only to chosen subject; authored goals at 120/360/720 points",
+    "migration": "1.9.0; supported 1.0–1.8 saves preserve all prior progress, academics null; no retrospective awards",
+    "delivery": "same V2 PNG and helper IIFE; previous characters, phone and product illustrations preserved",
+    "validationReference": "validation.academicChoiceCheck"
+  },
+  "academicCurriculumDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求一个专业包含多门学科、每周课程表与各科学习进度，并允许图书馆及书店跨专业阅读产生概率性收获和身心代价。",
+    "selection": "8 majors with 3 subjects each; choose one major once, choose the subject separately for each learning action",
+    "curriculum": "Independent subject progress and targets at120/360/720; derived weekly timetable does not replace existing one-off schedule",
+    "crossMajorReading": "Library and existing bookshop: inspiration25%, confusion25%, normal50%; modifiers added to standard study costs and actual results saved once",
+    "migration": "1.10.0 strictly preserves1.9 old-subject points and historical gain; other major subjects start at0, no retroactive rewards",
+    "travel": "Keep existing low-energy and zero-energy novel travel rule",
+    "delivery": "Same V2PNG and helper IIFE; original phone, characters, backgrounds and product illustrations remain embedded",
+    "validationReference": "validation.academicCurriculumCheck"
+  },
+  "locationServicesDecision": {
+    "recordedOn": "2026-10-18",
+    "source": "用户要求扩展地点功能，避免咖啡店意图被统一引向便利店。",
+    "catalog": "10 deterministic services at existing cafes, commercial district, sports ground, parks and promenade",
+    "hours": "Authored prototype hours; current-clock status shared by UI, map and model; cross-midnight and complete-duration checks",
+    "interaction": "Persistent location entry in novel full history and 3D; single pay-and-use action; journal receipt after save",
+    "existingFeatures": "Convenience store inventory unchanged; bookshop reading additionally checks operating hours",
+    "stateSchema": "1.10.0 unchanged; no historical resettlement or new interior rooms",
+    "validationReference": "validation.locationServicesCheck"
+  },
+  "llmActionsAndBackpackDecision": {
+    "recordedOn": "2026-10-19",
+    "source": "用户明确要求常驻相邻交互、提高LLM行动权限，移除人物入口并加入独立背包、打包与赠送",
+    "supersedes": "历史的耗时活动仅由按钮执行，以及背包嵌入状态页；不删除手机联系人或角色立绘",
+    "modelActions": "通过固定协议顺序结算，允许精确时长和目录外日常活动；整轮保存，旧记录不重放",
+    "packagingFeePerItem": 2,
+    "gift": "扣实际库存、按情境增加既有联系人亲密度，不重复营养收益",
+    "stateSchema": "1.10.0",
+    "report": "outputs/llm-actions-verification.json"
+  },
+  "interactionEventsDecision": {
+    "recordedOn": "2026-10-19",
+    "source": "用户要求移除遮挡正文的常驻操作、改为悬浮窗；交互有80%概率询问事件，并添加进度动画",
+    "supersedes": "阅读层固定两行地点操作；地点工具栏和相邻入口保留",
+    "eventProbability": 0.8,
+    "accept": "调用模型生成有实际影响的事件，原交互与事件一起保存",
+    "decline": "不调用模型，正常完成原交互",
+    "progress": "1200ms短动画，未确认状态不写入存档",
+    "stateSchema": "1.10.0",
+    "report": "outputs/interaction-events-verification.json"
+  },
+  "socialCharactersDecision": {
+    "recordedOn": "2026-10-19",
+    "source": "用户要求陌生人交流展示立绘、对白在原显示框可展开；手机确认角色姓名立绘与主要人物；生成短介绍须用户许可并注入此人出场对白。",
+    "dialogue": "Default fold inside original reader, expandable; preserve narration, events and raw saved dialogue.",
+    "profile": "Explicit phone save confirms stable identity/name/local portrait and optional summary as a main character in the current chat.",
+    "introduction": "Only explicit permission button requests the model. Include at most six relevant turns/2400 characters. Return an editable draft without state effects.",
+    "sourceRepositories": [
+      "D:\\.study\\cc",
+      "D:\\.study\\ST-iPhonie"
+    ],
+    "delivery": "Whitelist phone runtime embedded in the same helper IIFE and PNG. Seven code files in the existing local independent phone were backed up and synchronized to prevent stale-instance reuse. No public push; page refresh required.",
+    "stateSchema": "1.11.0",
+    "report": "outputs/social-characters-verification.json"
   }
 }

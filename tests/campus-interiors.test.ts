@@ -7,12 +7,17 @@ import { createCampusWorld } from '../src/frontend/scene-world';
 import { isScenePositionWalkable } from '../src/frontend/scene-movement';
 import { createTavernBridge } from '../src/runtime/bridge';
 import type { WorldAction } from '../src/frontend/types';
+import { withoutPlayerNeeds, withAcademicSelection } from './legacy-state';
+import { initialPlayerNeeds } from '../src/runtime/convenience-store';
 
 const exterior = (roomId = 'dorm-room') => {
   const room = getCampusInterior(roomId)!;
   return reduceState(createInitialState(), { type: 'walk', ...room.entrance, seed: 'campus-room-test' });
 };
-const entered = (roomId = 'dorm-room') => reduceState(exterior(roomId), { type: 'enter_interior', roomId });
+const entered = (roomId = 'dorm-room') => {
+  const state = reduceState(exterior(roomId), { type: 'enter_interior', roomId });
+  return roomId === 'dorm-room' ? state : withAcademicSelection(state);
+};
 afterEach(() => vi.restoreAllMocks());
 
 describe('campus interiors and deterministic facilities', () => {
@@ -32,7 +37,7 @@ describe('campus interiors and deterministic facilities', () => {
   it('strictly migrates all supported exterior saves without changing their existing facts', () => {
     const current = exterior('study-room');
     current.airTraffic = reduceState(current, { type: 'air_traffic_tick', now: 1792257329272 }).airTraffic;
-    const { interior: _interior, transit: _transit, ...old12Fields } = current;
+    const { interior: _interior, transit: _transit, ...old12Fields } = withoutPlayerNeeds(current);
     const old12 = { ...old12Fields, schema_version: '1.2.0' };
     const before = JSON.stringify(old12);
     expect(parseState(JSON.parse(before))).toEqual(current);
@@ -169,11 +174,11 @@ describe('campus interiors and deterministic facilities', () => {
   it('preserves legacy half-hour rest saves and their original completed activity context', () => {
     const near = reduceState(entered(), { type: 'interior_walk', x: -2.3, z: -1, yaw: 0 });
     const { lastRest: _lastRest, lastStudy: _lastStudy, ...legacyInterior } = near.interior!;
-    const { transit: _transit, ...legacyNear } = near;
-    const saved = { ...legacyNear, schema_version: '1.3.0', clock: { day: 1, hour: 17, minute: 50 }, player: { ...near.player, energy: 92 }, interior: { ...legacyInterior, activityId: 'dorm-rest' }, journal: [...near.journal, { id: 'legacy-rest', at: '第 1 天 17:50', text: '在宿舍床边休息了半小时。耗时 30 分钟，恢复至多 12 点精力。' }] };
+    const { transit: _transit, ...legacyNear } = withoutPlayerNeeds(near);
+    const saved = { ...legacyNear, schema_version: '1.3.0', clock: { day: 1, hour: 17, minute: 50 }, player: { ...legacyNear.player, energy: 92 }, interior: { ...legacyInterior, activityId: 'dorm-rest' }, journal: [...near.journal, { id: 'legacy-rest', at: '第 1 天 17:50', text: '在宿舍床边休息了半小时。耗时 30 分钟，恢复至多 12 点精力。' }] };
     const before = JSON.stringify(saved);
     const reloaded = parseState(JSON.parse(JSON.stringify(saved)));
-    expect(reloaded).toEqual({ ...saved, schema_version: '1.6.0', transit: createInitialState().transit, interior: { ...saved.interior, lastRest: null, lastStudy: null } });
+    expect(reloaded).toEqual({ ...saved, schema_version: '1.11.0', contacts: createInitialState().contacts, academics: null, inventory: [], player: { ...saved.player, ...initialPlayerNeeds }, transit: createInitialState().transit, interior: { ...saved.interior, lastRest: null, lastStudy: null } });
     expect(parseState(JSON.parse(JSON.stringify(reloaded)))).toEqual(reloaded);
     expect(JSON.stringify(saved)).toBe(before);
     expect(getSceneContext(reloaded.scene, reloaded.interior)?.lastInteraction).toEqual({ id: 'dorm-rest', label: '床边休息', result: '在宿舍床边休息了半小时。', alreadyCommitted: true, minutes: 30, energyDelta: 12 });
@@ -191,7 +196,7 @@ describe('campus interiors and deterministic facilities', () => {
     const before = JSON.stringify(rested);
     for (const patch of [
       { optionId: 'dorm-rest-long' }, { optionId: '__proto__' }, { minutes: 59 }, { minutes: 121 }, { minutes: 90.5 }, { minutes: NaN },
-      { energyRecovered: -1 }, { energyRecovered: 37 }, { energyRecovered: Infinity }, { energyRecovered: 0.5 }, { extra: true },
+      { energyRecovered: -1 }, { energyRecovered: 37 }, { energyRecovered: Infinity }, { energyRecovered: 0.005 }, { extra: true },
     ]) expect(() => parseState({ ...rested, interior: { ...rested.interior, lastRest: { ...rested.interior!.lastRest, ...patch } } })).toThrow(/存档格式无效/);
     for (const lastRest of [null, undefined]) expect(() => parseState({ ...rested, interior: { ...rested.interior, lastRest } })).toThrow(/lastRest/);
     expect(() => parseState({ ...rested, interior: { ...rested.interior, activityId: 'dorm-desk' } })).toThrow(/lastRest/);
@@ -223,12 +228,12 @@ describe('campus interiors and deterministic facilities', () => {
     expect(() => reduceState(initial, { type: 'interior_interact', interactionId: 'dorm-rest' })).toThrow(/附近/);
     const classroom = reduceState(entered('classroom'), { type: 'interior_walk', x: 1.3, z: -1.5, yaw: 0 });
     vi.spyOn(Math, 'random').mockReturnValue(1);
-    const studied = reduceState(classroom, { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short' });
+    const studied = reduceState(classroom, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' });
     expect(studied.clock).toEqual({ day: 1, hour: 17, minute: 50 });
     expect(studied.player.energy).toBe(75);
     for (const key of ['phone', 'contacts', 'schedule', 'story', 'scene', 'airTraffic'] as const) expect(studied[key]).toEqual(classroom[key]);
     const exhausted = { ...classroom, player: { ...classroom.player, energy: 4 } };
-    expect(() => reduceState(exhausted, { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/精力不足/);
+    expect(() => reduceState(exhausted, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/精力不足/);
     expect(exhausted.player.energy).toBe(4);
     const observed = reduceState(reduceState(initial, { type: 'interior_walk', x: 3, z: 1.8, yaw: 0 }), { type: 'interior_interact', interactionId: 'dorm-wardrobe' });
     expect(observed.clock).toEqual(initial.clock);
@@ -238,7 +243,7 @@ describe('campus interiors and deterministic facilities', () => {
 
   it('provides completed indoor facts without outdoor people or sky events', () => {
     vi.spyOn(Math, 'random').mockReturnValue(1);
-    const inside = reduceState(reduceState(entered('study-room'), { type: 'interior_walk', x: 0, z: -2, yaw: 0 }), { type: 'interior_study', interactionId: 'study-focus', optionId: 'study-short' });
+    const inside = reduceState(reduceState(entered('study-room'), { type: 'interior_walk', x: 0, z: -2, yaw: 0 }), { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'study-focus', optionId: 'study-short' });
     const context = getSceneContext(inside.scene, inside.interior);
     expect(context).toMatchObject({ areaId: 'study-room', outdoors: false, skyVisible: false, nearbyPeople: [], nearbyLandmarks: [], encounter: null, lastInteraction: { id: 'study-focus', alreadyCommitted: true, minutes: 30 } });
     expect(reduceState(inside, { type: 'air_traffic_tick', now: 1792257329272 })).toEqual(inside);
@@ -264,7 +269,7 @@ describe('campus interiors and deterministic facilities', () => {
       const anchor = room.interactions.find(item => item.id === interactionId)!;
       const near = reduceState(entered(roomId), { type: 'interior_walk', x: anchor.x, z: anchor.z, yaw: 0 });
       const before = JSON.stringify(near);
-      const studied = reduceState(near, { type: 'interior_study', interactionId: interactionId!, optionId });
+      const studied = reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId: interactionId!, optionId });
       const energyConsumed = Math.ceil(minutes / 6);
       const totalMinutes = 17 * 60 + 20 + minutes;
       expect(studied.clock).toEqual({ day: 1, hour: Math.floor(totalMinutes / 60), minute: totalMinutes % 60 });
@@ -295,21 +300,21 @@ describe('campus interiors and deterministic facilities', () => {
     expect(isStudyInteraction('study-focus')).toBe(true);
     expect(isStudyInteraction('dorm-desk')).toBe(false);
     expect(() => reduceState(near, { type: 'interior_interact', interactionId: 'classroom-notes' })).toThrow(/请选择学习时长/);
-    for (const optionId of ['dorm-rest-short', 'missing', '__proto__', 'classroom-notes']) expect(() => reduceState(near, { type: 'interior_study', interactionId: 'classroom-notes', optionId })).toThrow(/有效的学习时长/);
-    for (const interactionId of ['study-focus', 'classroom-board', '__proto__', 'missing']) expect(() => reduceState(near, { type: 'interior_study', interactionId, optionId: 'study-short' })).toThrow(/不属于/);
-    expect(() => reduceState(createInitialState(), { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/先进入/);
-    expect(() => reduceState(entered('dorm-room'), { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/不属于/);
-    expect(() => reduceState(entered('classroom'), { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/附近/);
+    for (const optionId of ['dorm-rest-short', 'missing', '__proto__', 'classroom-notes']) expect(() => reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId })).toThrow(/有效的学习时长/);
+    for (const interactionId of ['study-focus', 'classroom-board', '__proto__', 'missing']) expect(() => reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId, optionId: 'study-short' })).toThrow(/不属于/);
+    expect(() => reduceState(createInitialState(), { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/先进入/);
+    expect(() => reduceState(entered('dorm-room'), { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/不属于/);
+    expect(() => reduceState(entered('classroom'), { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' })).toThrow(/附近/);
     for (const option of studyDurationOptions) {
       const minimumEnergy = getStudyEnergyCost(option.maxMinutes);
       const exhausted = { ...near, player: { ...near.player, energy: minimumEnergy - 1 } };
       const original = JSON.stringify(exhausted);
-      expect(() => reduceState(exhausted, { type: 'interior_study', interactionId: 'classroom-notes', optionId: option.id })).toThrow(/精力不足/);
+      expect(() => reduceState(exhausted, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: option.id })).toThrow(/精力不足/);
       expect(JSON.stringify(exhausted)).toBe(original);
     }
     expect(random).not.toHaveBeenCalled();
     const enough = { ...near, player: { ...near.player, energy: 5 } };
-    const studied = reduceState(enough, { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-short', minutes: 999, energyConsumed: -100 } as WorldAction);
+    const studied = reduceState(enough, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short', minutes: 999, energyConsumed: -100 } as WorldAction);
     expect(studied.interior?.lastStudy).toEqual({ interactionId: 'classroom-notes', optionId: 'study-short', minutes: 15, energyConsumed: 3 });
     expect(studied.player.energy).toBe(2);
     expect(random).toHaveBeenCalledTimes(1);
@@ -322,18 +327,18 @@ describe('campus interiors and deterministic facilities', () => {
     near.clock = { day: 7, hour: 23, minute: 45 };
     near.player.energy = 40;
     const before = JSON.stringify(near);
-    const studied = reduceState(near, { type: 'interior_study', interactionId: 'study-focus', optionId: 'study-long' });
+    const studied = reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'study-focus', optionId: 'study-long' });
     expect(studied.clock).toEqual({ day: 8, hour: 3, minute: 45 });
     expect(studied.player.energy).toBe(0);
     expect(studied.interior?.lastStudy).toEqual({ interactionId: 'study-focus', optionId: 'study-long', minutes: 240, energyConsumed: 40 });
     expect(studied.journal.at(-1)?.at).toBe('第 8 天 03:45');
     for (const sample of [NaN, Infinity, -Infinity, -0.1, 1.1]) {
       random.mockReturnValue(sample);
-      expect(() => reduceState(near, { type: 'interior_study', interactionId: 'study-focus', optionId: 'study-long' })).toThrow(/生成失败/);
+      expect(() => reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'study-focus', optionId: 'study-long' })).toThrow(/生成失败/);
     }
     random.mockReturnValue(1);
     const limit = { ...near, clock: { day: 365000, hour: 23, minute: 45 } };
-    expect(() => reduceState(limit, { type: 'interior_study', interactionId: 'study-focus', optionId: 'study-long' })).toThrow(/最大天数/);
+    expect(() => reduceState(limit, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'study-focus', optionId: 'study-long' })).toThrow(/最大天数/);
     expect(limit.clock).toEqual({ day: 365000, hour: 23, minute: 45 });
     expect(JSON.stringify(near)).toBe(before);
   });
@@ -341,7 +346,7 @@ describe('campus interiors and deterministic facilities', () => {
   it('strictly validates study records and retains the saved result while walking', () => {
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const near = reduceState(entered('classroom'), { type: 'interior_walk', x: 1.3, z: -1.5, yaw: 0 });
-    const studied = reduceState(near, { type: 'interior_study', interactionId: 'classroom-notes', optionId: 'study-medium' });
+    const studied = reduceState(near, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-medium' });
     const before = JSON.stringify(studied);
     for (const patch of [
       { interactionId: 'study-focus' }, { interactionId: 'classroom-board' }, { optionId: 'study-short' }, { optionId: '__proto__' },
@@ -369,11 +374,11 @@ describe('campus interiors and deterministic facilities', () => {
     for (const [roomId, activityId] of [['classroom', 'classroom-notes'], ['study-room', 'study-focus']]) {
       const current = entered(roomId);
       const { lastStudy: _lastStudy, ...interior14 } = current.interior!;
-      const { transit: _transit, ...legacyCurrent } = current;
-      const old14 = { ...legacyCurrent, schema_version: '1.4.0', interior: { ...interior14, activityId }, clock: { day: 1, hour: 17, minute: 50 }, player: { ...current.player, energy: 75 } };
+      const { transit: _transit, ...legacyCurrent } = withoutPlayerNeeds(current);
+      const old14 = { ...legacyCurrent, schema_version: '1.4.0', interior: { ...interior14, activityId }, clock: { day: 1, hour: 17, minute: 50 }, player: { ...legacyCurrent.player, energy: 75 } };
       const before = JSON.stringify(old14);
       const migrated = parseState(JSON.parse(before));
-      expect(migrated).toEqual({ ...old14, schema_version: '1.6.0', transit: createInitialState().transit, interior: { ...old14.interior, lastStudy: null } });
+      expect(migrated).toEqual({ ...old14, schema_version: '1.11.0', contacts: createInitialState().contacts, academics: null, inventory: [], player: { ...old14.player, ...initialPlayerNeeds }, transit: createInitialState().transit, interior: { ...old14.interior, lastStudy: null } });
       expect(getSceneContext(migrated.scene, migrated.interior)?.lastInteraction).toMatchObject({ id: activityId, minutes: 30, energyDelta: -5, alreadyCommitted: true });
       expect(parseState(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
       expect(JSON.stringify(old14)).toBe(before);
@@ -385,9 +390,9 @@ describe('campus interiors and deterministic facilities', () => {
     const nearBed = reduceState(entered(), { type: 'interior_walk', x: -2.3, z: -1, yaw: 0 });
     const rested = reduceState(nearBed, { type: 'interior_rest', optionId: 'dorm-rest-short' });
     const { lastStudy: _lastStudy, ...rest14 } = rested.interior!;
-    const { transit: _transit, ...legacyRested } = rested;
+    const { transit: _transit, ...legacyRested } = withoutPlayerNeeds(rested);
     const oldRest = { ...legacyRested, schema_version: '1.4.0', interior: rest14 };
-    expect(parseState(JSON.parse(JSON.stringify(oldRest)))).toEqual(rested);
+    expect(parseState(JSON.parse(JSON.stringify(oldRest)))).toEqual({ ...rested, player: { ...rested.player, ...initialPlayerNeeds } });
     expect(random).toHaveBeenCalledTimes(1);
   });
 
@@ -403,7 +408,7 @@ describe('campus interiors and deterministic facilities', () => {
     expect(summary.locationDetails.name).toBe('图书馆自习室');
     expect(summary.scene).toMatchObject({ outdoors: false, nearbyPeople: [], skyVisible: false });
     expect(summary.airTraffic).toMatchObject({ active: null, canTriggerPass: false, skyVisible: false });
-    expect(request!.injects[0].content).toContain('本轮玩家在室内');
+    expect(request!.injects[0].content).toContain('行动前玩家在室内');
     generate.mockResolvedValueOnce(JSON.stringify({ story: '出现飞机。', phone_messages: [], world_events: [{ type: 'airliner_pass' }] }));
     await expect(bridge.generate('看看房间', state)).rejects.toThrow(/未写入/);
     bridge.dispose();

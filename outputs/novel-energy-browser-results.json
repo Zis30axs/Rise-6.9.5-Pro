@@ -1,0 +1,72 @@
+{
+  "recordedAt": "2026-10-18T21:11:13.651371+08:00",
+  "finalBundle": {
+    "sha256": "0a25d2c3b7c1b34097a6abeaf54ecb078d227f3d80c2599cce9df17a55781989",
+    "path": "dist/immersive-shell.js",
+    "bytes": 58125624
+  },
+  "uniqueScenarios": 4,
+  "passed": 4,
+  "errors": [],
+  "browser": "Microsoft Edge, one worker",
+  "scenarios": [
+    {
+      "status": "passed",
+      "evidence": "outputs/novel-energy-first-layout-results.json",
+      "name": "Desktop 1280x900 product images and decimal travel"
+    },
+    {
+      "status": "passed",
+      "evidence": "outputs/novel-energy-first-layout-results.json",
+      "name": "390x844 product images and inventory"
+    },
+    {
+      "status": "passed",
+      "evidence": "outputs/novel-energy-retry-playwright-results.json",
+      "name": "320x568 product images and inventory"
+    },
+    {
+      "status": "passed",
+      "evidence": "outputs/novel-energy-retry-playwright-results.json",
+      "name": "320x568 zero energy travel, free observation, schedule, bus approach, rest, desk, study"
+    }
+  ],
+  "checks": [
+    "12 unique decoded inline PNG images, fixed catalog IDs, object-fit contain, cards inside viewport, purchase controls reachable in all 3 sizes",
+    "Neutral health/satiety/stress 50: route base 5 x 0.1 x 1 = 0.50, saved energy 10 -> 9.5",
+    "Purchases and item use preserve exact balances/inventory/player changes, 74.5 decimal energy retained, morale stays unchanged by food/tobacco",
+    "Energy 0.01 -> classroom arrival at 0; free observation leaves player and clock unchanged; zero-energy schedule library and transit approach bus-stop succeed",
+    "Zero-energy study options and desk disabled; rest available; recovered desk/study values strictly match actual sampled minutes and morale/stress effects",
+    "Draft kept through shopping and timed activities; refresh preserves full final state, no repeated settlement; generation count 0",
+    "Desktop and 390/320 product/shelf/inventory/status screenshots and 320 duration pickers actually viewed"
+  ],
+  "probeCorrections": [
+    "Initial shop morale text assertion incorrectly omitted formatting spaces; corrected whitespace matching, numeric state comparisons remain exact",
+    "Activity scenario originally clicked map behind an intentionally open activity popover; now closes the menu through its summary before changing location, without force clicks",
+    "One first-pass 320 inventory screenshot was taken before async image paint despite loaded dimensions. Explicit img.decode plus two rendering frames produced the complete image on retest; source and production bundle unchanged"
+  ],
+  "screenshotGlob": "outputs/novel-energy-*.png",
+  "keyScreenshots": [
+    "outputs/novel-energy-desktop-meal.png",
+    "outputs/novel-energy-desktop-cigarette.png",
+    "outputs/novel-energy-desktop-map.png",
+    "outputs/novel-energy-390-inventory.png",
+    "outputs/novel-energy-320-inventory.png",
+    "outputs/novel-energy-320-rest-picker.png",
+    "outputs/novel-energy-320-study-picker.png",
+    "outputs/novel-energy-320-activity-receipt.png"
+  ],
+  "validation": {
+    "productionChangedDuringAcceptance": false,
+    "newTestsTypecheck": "vue-tsc --noEmit passed"
+  },
+  "boundaries": {
+    "realLLMCalls": 0,
+    "server": "Playwright-owned server ended with test process",
+    "mobile": "Desktop browser viewports only, no physical TauriTavern device test",
+    "host": "Controlled test host at 127.0.0.1:5178 with final production bundle",
+    "phone": "Stub; real phone not retested in this round",
+    "native8000": "Not accessed"
+  },
+  "status": "passed"
+}

@@ -1,0 +1,141 @@
+{
+  "recordedAtUtc": "2026-10-18T17:01:33.444628+00:00",
+  "reviewMode": "Independent read-only review of world profile migration, main-character identity, local portrait/dialogue UI, phone edit/save RPC, and consented introduction generation. Production files were not modified.",
+  "candidateBundleSha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd",
+  "previousCandidateBundleSha256": "c098ed4b2aaeb5b5dd5dabb79182fe7391efbd8ac09505f70286b05dbfd7068d",
+  "finalBuildBindingStatus": "Final production bundle and all three built/delivered/installed PNG scripts independently verified byte-for-byte after installation.",
+  "files": [
+    {
+      "path": "D:\\.study\\cc\\src\\runtime\\characters.ts",
+      "sha256": "f3e23153c6df1714d5bce781f6f373815394fa8782d3aa5690ca0f52ddd40bd7"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\runtime\\model.ts",
+      "sha256": "1469686adc89083e82f70829cf6343080cbbc62fb24817df3110eabb84d7b15b"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\runtime\\scene-context.ts",
+      "sha256": "faca49fe4f8b2ee728e5f2ea6a3e2acfd6fd4ff758424976e5817812764084cd"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\runtime\\character-context.ts",
+      "sha256": "43e981560a0f04aab9d4db8a5562540f349ee46e683a9df4c0516358a90a6b29"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\runtime\\bridge.ts",
+      "sha256": "bbba4814f906df1c2e502ee4032e1d8308a1a554d094730058dc9af590d50084"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\story-phone.ts",
+      "sha256": "a35aaa24367b3c52e7e765889c9e217ebca293e1924a2e7ec778269e40da72c9"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\lifecycle.ts",
+      "sha256": "2c32a795e42148997f52179b738e7bdd5282c184737f4ccf8da74dd8748f4cce"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\types.ts",
+      "sha256": "6fc1675d5d484c2e66e7d1559866cf02701ee0162956422e841f713f1ab38534"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\App.vue",
+      "sha256": "4aa9d7aea6ba2615e18947f9505ee316d05db470fba11f636b5df2d4b1028a18"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\StoryEntryContent.vue",
+      "sha256": "959ff418a3ed435dc09fc24b70e75dfba38252e4dbe38bfe5aac80d2566ff034"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\NovelDialogue.vue",
+      "sha256": "9ce2444688ee8ef01fb1728cc081b61a9a791e7090240f53d140086571250ba0"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\NovelNpcPortrait.vue",
+      "sha256": "24158789a3aaf19cb6d66cd5f4b6c9a1ff4cab166f8da8b613867fa2dd650e3a"
+    },
+    {
+      "path": "D:\\.study\\cc\\src\\frontend\\novel-npc-portraits.ts",
+      "sha256": "a4121d8d32785ca273ac8d32d90f559534b57f3e6614bd9c9476043012b6b9e8"
+    },
+    {
+      "path": "D:\\.study\\ST-iPhonie\\story-host.js",
+      "sha256": "8dfff7eb289e7edec0894f601dc4d57608ed976e3a787db3a004ff9230388769"
+    },
+    {
+      "path": "D:\\.study\\ST-iPhonie\\core\\story-link.js",
+      "sha256": "d71f0f11123e371e044048eaea52667ed5f9754af5b5416c5ef57365e88ec2af"
+    },
+    {
+      "path": "D:\\.study\\ST-iPhonie\\ui\\chat.js",
+      "sha256": "65b01690eb2ff0db24221af18c32203de66651de1d5be88e6f7104bee05cbe94"
+    },
+    {
+      "path": "D:\\.study\\ST-iPhonie\\ui\\phone.js",
+      "sha256": "448e6f251826c5e8945e66de00bd6a0b74afc4907086b209e21e8604c1da1376"
+    },
+    {
+      "path": "D:\\.study\\ST-iPhonie\\index.js",
+      "sha256": "dc0dc4e5a085d396f987ec882807722adaea3470262bc0fda3efc73f1f842261"
+    }
+  ],
+  "blockingFindings": [],
+  "resolvedFindings": [
+    {
+      "id": "legacy-summary-phone-boundary",
+      "priority": "P2",
+      "status": "resolved-source-rechecked",
+      "files": [
+        "D:\\.study\\cc\\src\\runtime\\model.ts",
+        "D:\\.study\\cc\\src\\frontend\\story-phone.ts",
+        "D:\\.study\\ST-iPhonie\\core\\story-link.js"
+      ],
+      "finding": "Legacy world contacts permit summaries up to 2,000 characters. Passing the complete value as the new phone summary field violated the phone contract limit of 500, which rejected bind/sync for otherwise valid legacy saves.",
+      "resolution": "contactsOf now bounds only the phone summary field to 500; the full description and authoritative world summary remain unchanged. New user edits retain the 500-character constraint.",
+      "verification": "Source correction independently read. Parent owns the added regression test and full build."
+    }
+  ],
+  "conclusion": "No unresolved substantive blocking defect was identified after the legacy-summary correction in the reviewed scope. This is not a claim of native-client or real-model execution.",
+  "checked": [
+    "Schema 1.11.0 reconstructs supported old versions without resettling gameplay; legacy contact IDs, names, summaries, affinities, phone references and story text remain intact, with deterministic profile defaults.",
+    "Encounter identity derives from the saved scene seed and anchor. Confirmation reuses the source person ID; rename changes profile data without replacing NPC identity or phone event/read IDs.",
+    "Profile edits use a parsed clone and write the authoritative chat before publishing model state. Phone mirror creation follows a successful callback; failed mirror writes cache the already committed profile for same-request retries.",
+    "A profile save does not advance the game clock, spend resources or run story actions. Introduction generation returns editable text without adding contacts, story, messages or gameplay state; only a later explicit save commits it.",
+    "Generation is initiated by the explicitly labeled consent button. It uses a dedicated protocol with target evidence, up to six related turns and 2,400 total related-turn characters, and rejects actions/events/messages in the result.",
+    "The introduction prompt contains target evidence rather than the ordinary full action catalog; trusted portrait thumbnails are produced locally, used by the phone UI and are not passed to the introduction prompt.",
+    "Epoch, chat session, phone sequence and open-panel checks discard late generated introductions after phone close or session change. The phone form also checks draft identity and view disposal before applying a late result.",
+    "Phone requests validate their session and stable IDs; old-chat leases cannot save/generate through a replacement binding. Ordinary phone contact settings are not used for major-character saves.",
+    "Expandable dialogue stays in the existing story reader with framework-escaped text. Explicit encounters select a deterministic portrait immediately; confirmed profiles override the same identity rather than allocating new artwork randomly."
+  ],
+  "additionalCheck": {
+    "kind": "One bounded in-memory concurrency probe, no production or phone storage writes.",
+    "implementation": "Loaded the current story-phone adapter with mocked artwork/environment dependencies and the real phone story-host. A delayed sync was followed by a queued profile save and another queued sync.",
+    "observedOrder": [
+      "mirror Old",
+      "world New",
+      "mirror New",
+      "mirror New"
+    ],
+    "result": "The normal adapter queue did not reproduce the initially suspected stale-profile overwrite; both final world and phone profile names were New. This concern is not listed as a defect."
+  },
+  "limitations": [
+    "No complete unit, browser or Python suite was rerun by this reviewer; parent execution evidence is recorded separately.",
+    "No real model request, original installed native SillyTavern page validation or physical TauriTavern validation was performed.",
+    "Separately installed legacy phone-extension synchronization is outside this PNG audit; the packaged embedded phone is covered through exact bundle equality."
+  ],
+  "preparedPackagingAudit": {
+    "path": "D:\\.study\\cc\\outputs\\social-characters-work\\independent_audit.py",
+    "executed": true,
+    "baselineCounts": {
+      "protected": 14,
+      "originalArchives": 6,
+      "chats": 29
+    },
+    "expectedBundleSha256": "20922a05a8a1d76ca7b65f1a805791ff3b844ba02eebeab68629ff0a6f69b9cd",
+    "passed": true,
+    "report": "D:\\.study\\cc\\outputs\\social-characters-independent-audit.json",
+    "reportSha256": "1ef1eb632e7798734d06c12ae0c8115b2378bcd704aaa2301add3a00e466a4e3"
+  },
+  "candidateBundleBytes": 58263350,
+  "reviewUpdatedAtUtc": "2026-10-18T17:04:40.318947+00:00",
+  "packagingAuditUpdatedAtUtc": "2026-10-18T17:11:32.519588+00:00"
+}

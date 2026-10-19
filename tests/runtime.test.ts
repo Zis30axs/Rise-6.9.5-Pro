@@ -4,6 +4,7 @@ import { createTavernBridge } from '../src/runtime/bridge';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import type { WorldAction } from '../src/frontend/types';
 import { getScenePeople } from '../src/runtime/scene-context';
+import { withAcademicSelection } from './legacy-state';
 
 describe('deterministic prototype state', () => {
   it('validates nested data and refuses damaged or unsupported saves', () => {
@@ -13,8 +14,8 @@ describe('deterministic prototype state', () => {
     const damaged: unknown[] = [
       null, {}, { ...original, schema_version: '2.0.0' },
       { ...original, clock: { day: 1, hour: 24, minute: 0 } },
-      { ...original, player: { energy: NaN, balance: 1 } },
-      { ...original, player: { energy: 100, balance: -1 } },
+      { ...original, player: { ...original.player, energy: NaN, balance: 1 } },
+      { ...original, player: { ...original.player, energy: 100, balance: -1 } },
       { ...original, phone: [{ ...original.phone[0], read: 'false' }] },
       { ...original, phone: [{ ...original.phone[0], npcId: 'missing' }] },
       { ...original, contacts: [original.contacts[0], original.contacts[0]] },
@@ -37,7 +38,7 @@ describe('deterministic prototype state', () => {
     expect(before.player.energy).toBe(80);
     expect(reduceState(after, { type: 'travel', locationId: 'library' })).toEqual(after);
     expect(() => reduceState(before, { type: 'travel', locationId: 'unknown' })).toThrow(/不存在/);
-    expect(() => reduceState({ ...before, player: { energy: 4, balance: 0 } }, { type: 'travel', locationId: 'library' })).toThrow(/精力不足/);
+    expect(() => reduceState({ ...before, player: { ...before.player, energy: 4, balance: 0 } }, { type: 'travel', locationId: 'library' })).toThrow(/精力不足/);
   });
 
   it('keeps route previews stable across repeated openings and save restoration', () => {
@@ -68,7 +69,7 @@ describe('deterministic prototype state', () => {
       const action = { type: 'travel' as const, locationId: 'cafe', extraMinutes: 999, minutes: 999 };
       const after = reduceState(before, action);
       expect(absoluteMinutes(after.clock) - absoluteMinutes(before.clock)).toBe(15 + outlook.extraMinutes);
-      expect(after.player).toEqual({ ...before.player, energy: before.player.energy - 5 });
+      expect(after.player).toEqual({ ...before.player, energy: before.player.energy - 5, foodEnergy: before.player.foodEnergy - (15 + outlook.extraMinutes) * 2, satiety: before.player.satiety - (Math.floor(absoluteMinutes(after.clock) / 15) - Math.floor(absoluteMinutes(before.clock) / 15)) });
       expect(after.locationId).toBe('cafe');
       expect(after.journal).toHaveLength(before.journal.length + 1);
       expect(after.journal.at(-1)?.text).toContain(outlook.event.title);
@@ -189,7 +190,7 @@ describe('validated story and phone transaction', () => {
     const latest = acknowledgePhoneRead(before, ['phone-lin']);
     const reply = parseGeneratedStory(envelope(), before);
     const after = commitStoryTurn(latest, ' 等消息 ', reply, ids);
-    expect(after.schema_version).toBe('1.6.0');
+    expect(after.schema_version).toBe('1.11.0');
     expect(after.phone[0].read).toBe(true);
     expect(after.phone.at(-1)).toEqual({ id: 'turn-1-assistant:phone:0', npcId: 'lin', text: '我还在图书馆。', read: false, at: '第 1 天 17:20' });
     expect(after.story.slice(-2)).toEqual([{ id: ids.userId, role: 'user', text: '等消息' }, { id: ids.assistantId, role: 'assistant', text: reply.text }]);
@@ -267,6 +268,127 @@ function mockHost() {
 }
 
 describe('chat-owned Tavern-Helper bridge', () => {
+  it('requests a consented event against the prepared interaction without promoting its data into system instructions', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = reduceState(reduceState(createInitialState(), { type: 'novel_travel', locationId: 'cafe' }), { type: 'location_service', serviceId: 'drink-coffee' });
+    const before = JSON.stringify(state);
+    const world_actions = [{ type: 'relationship', npcId: 'lin', delta: 2, reason: '帮忙找回遗落的笔记' }];
+    mock.api.generate.mockResolvedValue(JSON.stringify({ story: '在露台捡到林同学落下的笔记，物归原主。', phone_messages: [], world_actions }));
+    const reply = await bridge.generate('继续探索异常。', state, { kind: 'interaction_event', interaction: { label: 'DATA_ONLY_EVENT_MARKER', action: { type: 'location_service', serviceId: 'drink-coffee' } } });
+    expect(reply.worldActions).toEqual(world_actions);
+    const config = mock.api.generate.mock.calls.at(-1)![0];
+    const context = JSON.parse((config.user_input as string).split('\n')[1]!);
+    expect(context.preparedInteraction).toEqual({ label: 'DATA_ONLY_EVENT_MARKER', action: { type: 'location_service', serviceId: 'drink-coffee' } });
+    expect(context.clock).toEqual(state.clock); expect(context.player.balance).toBe(state.player.balance);
+    const protocol = (config.injects as { content: string }[])[0].content;
+    expect(protocol).toContain('不要再次购买、食用、旅行、睡眠、学习');
+    expect(protocol).toContain('world_actions必须包含至少一项有实际效果');
+    expect(protocol).not.toContain('DATA_ONLY_EVENT_MARKER');
+    expect(JSON.stringify(state)).toBe(before); expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    bridge.dispose();
+  });
+  it('requires event effects only for consented events and keeps ordinary conversation compatible', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = createInitialState();
+    await expect(bridge.generate('继续探索异常。', state, { kind: 'interaction_event', interaction: { label: '休息', action: { type: 'wait', minutes: 15 } } })).rejects.toThrow(/缺少实际影响/);
+    await expect(bridge.generate('看看周围。', state)).resolves.toMatchObject({ phoneMessages: [] });
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled(); bridge.dispose();
+  });
+  it('provides actionable catalogs and accepts ordered natural-language actions without modifying the snapshot', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = reduceState(createInitialState(), { type: 'novel_travel', locationId: 'dorm' });
+    const before = JSON.stringify(state);
+    const actions = [{ type: 'travel', locationId: 'dorm-room' }, { type: 'rest', kind: 'sleep', minutes: 600 }];
+    mock.api.generate.mockResolvedValue(JSON.stringify({ story: '回到宿舍，十小时后醒来。', phone_messages: [], world_actions: actions }));
+    const reply = await bridge.generate('回宿舍睡10小时', state);
+    expect(reply.worldActions).toEqual(actions);
+    const summary = JSON.parse((mock.api.generate.mock.calls.at(-1)![0].user_input as string).split('\n')[1]!);
+    expect(summary.actionCatalog.destinations).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'dorm-room' }), expect.objectContaining({ id: 'convenience' })]));
+    expect(summary.actionCatalog.adjacentLocations[0]).toMatchObject({ id: 'dorm-room', kind: 'enter' });
+    expect(summary.actionCatalog.storeItems.length).toBeGreaterThan(0);
+    expect(summary.actionCatalog.services).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'] })]));
+    expect(summary.actionCatalog.services.find((service: { id: string }) => service.id === 'drink-coffee').takeawayItem.id).toBe('takeaway-drink-coffee');
+    expect(summary.actionCatalog.packagingFeePerItem).toBe(2);
+    expect(summary.actionCatalog.subjects).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'cs-programming' })]));
+    expect(summary.schedule).toEqual(state.schedule);
+    expect(JSON.stringify(state)).toBe(before);
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    bridge.dispose();
+  });
+  it('checks sky events against the scene after requested travel without speculative execution', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = reduceState(createInitialState(), { type: 'novel_travel', locationId: 'dorm-room' });
+    mock.api.generate.mockResolvedValue(JSON.stringify({ story: '走出宿舍，看见高空客机。', phone_messages: [], world_actions: [{ type: 'travel', locationId: 'dorm' }], world_events: [{ type: 'airliner_pass' }] }));
+    const reply = await bridge.generate('走出去看天空', state);
+    const next = commitStoryTurn(state, '走出去看天空', reply, { userId: 'leave-user', assistantId: 'leave-assistant' });
+    expect(next.interior).toBeNull(); expect(next.airTraffic.sequence).toBe(1);
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    bridge.dispose();
+  });
+  it('passes only saved academic choices and committed gains to narrative generation without awarding progress', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const initial = createInitialState();
+    await bridge.generate('我想学习', initial);
+    let config = mock.api.generate.mock.calls.at(-1)![0];
+    expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics).toBeNull();
+    const selected = withAcademicSelection(initial);
+    await bridge.generate('看看学习目标', selected);
+    config = mock.api.generate.mock.calls.at(-1)![0];
+    expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics).toMatchObject({ majorId: 'computer-science', major: '计算机', totalPoints: 0, subjects: [{ subjectId: 'cs-programming', subject: '程序设计', points: 0, goal: '理解变量、条件与循环' }, { subjectId: 'cs-algorithms', points: 0 }, { subjectId: 'cs-networks', points: 0 }], lastGain: null });
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const desk = reduceState(reduceState(selected, { type: 'novel_travel', locationId: 'classroom' }), { type: 'novel_approach', interactionId: 'classroom-notes' });
+    const studied = reduceState(desk, { type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' });
+    const saved = JSON.stringify(studied);
+    await bridge.generate('继续故事', studied);
+    config = mock.api.generate.mock.calls.at(-1)![0];
+    expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics).toMatchObject({ totalPoints: 15, subjects: [{ subjectId: 'cs-programming', points: 15, remaining: 105 }, { subjectId: 'cs-algorithms', points: 0 }, { subjectId: 'cs-networks', points: 0 }], lastGain: { points: 15, totalPoints: 15, outcome: 'normal', channel: 'classroom', interactionId: 'classroom-notes' } });
+    expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics.timetable).toHaveLength(6);
+    expect((config.injects as { content: string }[])[0].content).toContain('不重复奖励');
+    expect((config.injects as { content: string }[])[0].content).toContain('各有独立学习点');
+    expect((config.injects as { content: string }[])[0].content).toContain('不重抽');
+    expect(JSON.stringify(studied)).toBe(saved); expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    random.mockRestore(); bridge.dispose();
+  });
+  it('provides actual cafe hours and local services even at midnight without sending every intent to the convenience store', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = reduceState(createInitialState(), { type: 'novel_travel', locationId: 'cafe' });
+    state.clock = { day: 2, hour: 0, minute: 20 };
+    const before = JSON.stringify(state);
+    await bridge.generate('喝杯咖啡吧', state);
+    let config = mock.api.generate.mock.calls.at(-1)![0];
+    let summary = JSON.parse((config.user_input as string).split('\n')[1]!);
+    expect(summary.venue).toMatchObject({ locationId: 'cafe', isOpen: false, hoursLabel: '08:00–22:00', minutesUntilOpen: 460 });
+    expect(summary.locationServices).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'drink-coffee', available: false, blockedReason: expect.any(String) })]));
+    expect(summary.scene.outdoors).toBe(true);
+    expect(summary.serviceAlternatives).toEqual(expect.arrayContaining([expect.objectContaining({ locationId: 'street-cafe', isOpen: true })]));
+    const instructions = (config.injects as { content: string }[])[0].content;
+    expect(instructions).not.toContain('购买仅通过便利店');
+    expect(instructions).toContain('此地服务');
+    expect(instructions).toContain('营业时间');
+    expect(JSON.stringify(state)).toBe(before);
+    state.clock = { day: 2, hour: 10, minute: 0 };
+    await bridge.generate('喝杯咖啡吧', state);
+    config = mock.api.generate.mock.calls.at(-1)![0];
+    summary = JSON.parse((config.user_input as string).split('\n')[1]!);
+    expect(summary.venue.isOpen).toBe(true);
+    expect(summary.locationServices).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'drink-coffee', available: true, blockedReason: null })]));
+    bridge.dispose();
+  });
+
+  it('exposes inventory, store and needs as settled facts without buying or spending during generation', async () => {
+    const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
+    const state = reduceState({ ...createInitialState(), locationId: 'convenience' }, { type: 'buy_item', itemId: 'cigarette-standard', quantity: 1 });
+    const before = JSON.stringify(state);
+    await bridge.generate('看看货架', state);
+    const config = mock.api.generate.mock.calls.at(-1)![0];
+    const summary = JSON.parse((config.user_input as string).split('\n')[1]!);
+    expect(summary.player).toMatchObject({ balance: 278, health: 90, stress: 25, satiety: 70, foodEnergy: 1200 });
+    expect(summary.inventory).toEqual([expect.objectContaining({ itemId: 'cigarette-standard', name: '夜渡香烟', brand: '夜渡', quantity: 20, unit: '支' })]);
+    expect(summary.store.available).toBe(true); expect(summary.store.items).toHaveLength(12);
+    expect(JSON.stringify(state)).toBe(before);
+    expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    bridge.dispose();
+  });
   it('includes current and historical air traffic, permits occasional passes, and refuses cooldown violations', async () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(1_790_000_000_000);
     const mock = mockHost();
@@ -449,11 +571,20 @@ describe('chat-owned Tavern-Helper bridge', () => {
     const system = (config.injects as { content: string }[])[0].content;
     expect(system).toContain('必填 story 和 phone_messages，可选 world_events');
     expect(system).toContain('旧输出格式的要求不适用于本轮');
-    expect(system).toContain('只由前端按钮的程序规则结算');
-    expect(system).toContain('自由输入本身不推进游戏时间或改变精力');
-    expect(system).toContain('不在正文中跳过时段、声称活动已经完成');
-    expect(system).toContain('床铺选择休息时长、室内物件进行学习或整理、地图选择前往');
+    expect(system).toContain('world_actions');
+    expect(system).toContain('不再要求玩家先点按钮');
+    expect(system).toContain('余额、背包数量');
+    expect(system).toContain('购买不自动吃掉');
+    expect(system).toContain('rest 的600分钟');
+    expect(system).toContain('不受按钮的时长档位限制');
+    expect(system).toContain('只是询问、假设、否定或回顾已有记录时不执行');
+    expect(system).not.toContain('只由前端按钮');
+    expect(system).toContain('赠送不增加玩家饱腹或精力');
     expect(system).toContain('不重复结算、不重抽时长');
+    expect(system).toContain('|charac|emot|says|');
+    expect(system).toContain('|素世|开心|今天天气真好|');
+    expect(system).toContain('不改变外层 JSON 协议');
+    expect(system).toContain('表情与动画由前端白名单映射');
     expect(system).not.toContain('PLAYER_ONLY_MARKER');
     expect(system).not.toContain('HISTORY_ONLY_MARKER');
     expect(config.user_input).toContain(input);

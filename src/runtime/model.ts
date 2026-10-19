@@ -1,20 +1,38 @@
-import type { GeneratedStory, InteriorPresence, Location, ScenePresence, TransitState, WorldAction, WorldState } from '../frontend/types';
-import { sceneAreas } from '../frontend/scene-layout';
+import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
+import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
-import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
+import { adjustEnergy, energyDifference, energyUnits } from './energy';
+import { getActivityEffects, type ActivityKind } from './activity-effects';
+import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
+import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
+import { storyActionFingerprint, validateStoryActions } from './story-actions';
+import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
+import { parseNovelDialogue } from '../frontend/novel-dialogue';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
+/** Every outdoor place on the local sandtable. Gate, library, cafe, dorm,
+ * teaching and the bus stop keep the primary labels; the remaining existing
+ * places use compact numbered markers. */
 export const mapLocations: Location[] = [
   { id: 'gate', name: '校园南门', subtitle: '城市与校园的交界', description: `【示例场景】${sceneEnvironments['south-gate']}`, x: 46, y: 75 },
   { id: 'library', name: '图书馆', subtitle: '图书馆外的前庭', description: `【示例场景】${sceneEnvironments.library}`, x: 36, y: 28 },
   { id: 'cafe', name: '街角咖啡店', subtitle: '校园咖啡店外的露台', description: `【示例场景】${sceneEnvironments['campus-cafe']}`, x: 76, y: 64 },
   { id: 'dorm', name: '学生公寓', subtitle: '公寓外的宿舍院落', description: `【示例场景】${sceneEnvironments.residences}`, x: 70, y: 23 },
   { id: 'teaching', name: '教学楼', subtitle: '教学楼外的广场', description: `【示例场景】${sceneEnvironments.teaching}`, x: 48, y: 13 },
+  { id: 'sports', name: '运动场', subtitle: '跑道、球场与看台', description: `【示例场景】${sceneEnvironments.sports}`, x: 46, y: -11 },
+  { id: 'junction', name: '南门十字路口', subtitle: '斑马线、交通灯与商铺', description: `【示例场景】${sceneEnvironments.junction}`, x: 0, y: 48 },
+  { id: 'bookshop', name: '街角书店', subtitle: '书店门前的橱窗', description: `【示例场景】${sceneEnvironments.bookshop}`, x: -22, y: 56.5 },
+  { id: 'convenience', name: '便利店', subtitle: '便利店门前', description: `【示例场景】${sceneEnvironments.convenience}`, x: 21, y: 56.5 },
+  { id: 'street-cafe', name: '街边咖啡馆', subtitle: '街边露台', description: `【示例场景】${sceneEnvironments['street-cafe']}`, x: 48, y: 56.5 },
+  { id: 'pocket-park', name: '口袋公园', subtitle: '步道、长椅与小喷泉', description: `【示例场景】${sceneEnvironments['pocket-park']}`, x: 37, y: 80 },
+  { id: 'bus-stop', name: '南门公交站', subtitle: '候车棚与公交线路入口', description: `【示例场景】${sceneEnvironments['bus-stop']}`, x: 47, y: 39.5 },
 ];
 export const locations: Location[] = [
   ...mapLocations,
@@ -24,6 +42,125 @@ export const locations: Location[] = [
   })),
   ...campusInteriors.map(room => ({ id: room.id, name: room.label, subtitle: '校园室内', description: room.description, x: room.entrance.x, y: room.entrance.z })),
 ];
+
+/** Navigation remains limited to existing, reachable landmarks and authored rooms. */
+export interface NovelDestination {
+  id: string;
+  name: string;
+  description: string;
+  kind: 'outdoor' | 'interior';
+  parentLocationId?: string;
+}
+export const novelDestinations: readonly NovelDestination[] = [
+  ...sceneLandmarks.map(landmark => {
+    const location = locations.find(item => item.id === sceneLocationId(landmark.id))!;
+    return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
+  }),
+  ...campusInteriors.map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+];
+
+export interface NovelTravelQuote {
+  minutes: number;
+  baseEnergyCost: number;
+  baseEnergyMultiplier: 0.1;
+  conditionMultiplier: number;
+  calculatedEnergyCost: number;
+  energyCost: number;
+  foodEnergyCost: number;
+  satietyCost: number;
+  fare: number;
+  rides: { vehicleId: string; fromStopId: string; toStopId: string; minutes: number; fare: number }[];
+  alreadyThere: boolean;
+  blockedReason: string | null;
+}
+
+/** Both preview and commit execute the same deterministic plan on a private clone. */
+function planNovelTravel(state: WorldState, locationId: string, vehicleId: string) {
+  let next = parseState(state);
+  const departure = { ...next.player };
+  // Capture conditions before any leg consumes nutrition. The rational form
+  // also gives exact rounding at half-cent boundaries without float drift.
+  const conditionNumerator = Math.min(450, Math.max(150, 350 - departure.health - departure.satiety + departure.stress));
+  const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier: conditionNumerator / 300, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
+  try {
+    if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
+    if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
+    if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
+    // Quote the complete trip even when the real player cannot afford it. This
+    // private planning budget is replaced with the real balance before commit.
+    next.player = { ...next.player, energy: 100, balance: 1_000_000 };
+    const seed = next.scene?.seed ?? 'novel-world-v1';
+    const position = (id: string) => {
+      const stop = transitStops.find(item => item.locationId === id);
+      const landmark = sceneLandmarks.find(item => sceneLocationId(item.id) === id);
+      const point = stop ?? landmark;
+      if (!point) throw new Error('此地点没有可用的到达位置。');
+      const coordinates = sceneCoordinates(point.x, point.z, stop?.yaw ?? 0);
+      if (sceneLocationId(coordinates.areaId) !== id) throw new Error('地图到达位置与地点不一致。');
+      next.scene = { ...coordinates, seed, encounterId: null };
+      next.locationId = id;
+    };
+    const walk = (id: string) => {
+      if (next.locationId !== id) {
+        const outlook = getRouteOutlook(next, id);
+        const minutes = 15 + outlook.extraMinutes;
+        advance(next, minutes); next.player.energy -= 5;
+        next.locationId = id;
+        const eventNote = outlook.event ? `途中遇到${outlook.event.title}，额外停留 ${outlook.extraMinutes} 分钟。${outlook.event.description}` : '';
+        note(next, `前往${locations.find(item => item.id === id)!.name}，步行耗时 ${minutes} 分钟。${eventNote}`);
+      }
+      position(id);
+    };
+    const ride = (toStopId: string) => {
+      next = reduceState(next, { type: 'ride_transit', vehicleId, stopId: toStopId });
+      const saved = next.transit.lastRide!;
+      quote.rides.push({ vehicleId: saved.vehicleId, fromStopId: saved.fromStopId, toStopId: saved.toStopId, minutes: saved.minutes, fare: saved.fare });
+    };
+    if (next.interior) next = reduceState(next, { type: 'leave_interior' });
+    const room = getCampusInterior(locationId);
+    const target = room?.parentLocationId ?? locationId;
+    const targetStop = transitStops.find(stop => stop.id !== 'campus' && stop.locationId === target);
+    let originStop = transitStops.find(stop => stop.id !== 'campus' && stop.locationId === next.locationId);
+    // A save can be on a connecting road, outside every named district. Use its
+    // nearest existing stop, then keep the normal campus transfer graph.
+    if (!originStop && requiresTransitReturn(next.locationId, next.scene) && next.scene) {
+      const point = next.scene;
+      originStop = [...transitStops].sort((a, b) => Math.hypot(point.x - a.x, point.z - a.z) - Math.hypot(point.x - b.x, point.z - b.z))[0];
+    }
+    if (originStop) {
+      position(originStop.locationId);
+      if (originStop.id !== 'campus' && originStop.id !== targetStop?.id) ride('campus');
+    }
+    if (targetStop) {
+      if (next.locationId !== target) { walk('bus-stop'); ride(targetStop.id); }
+      position(target);
+    } else {
+      walk(target);
+      if (room) {
+        next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
+        next = reduceState(next, { type: 'enter_interior', roomId: room.id });
+      }
+    }
+    const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
+    quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
+    quote.baseEnergyCost = 100 - next.player.energy;
+    quote.calculatedEnergyCost = Math.round(quote.baseEnergyCost * conditionNumerator / 30) / 100;
+    quote.energyCost = Math.min(energyUnits(departure.energy), energyUnits(quote.calculatedEnergyCost)) / 100;
+    quote.foodEnergyCost = state.player.foodEnergy - next.player.foodEnergy;
+    quote.satietyCost = state.player.satiety - next.player.satiety;
+    quote.fare = 1_000_000 - next.player.balance;
+    if (departure.balance < quote.fare) quote.blockedReason = `余额不足，本次出行需要 ${quote.fare} 元。`;
+    next.player = { ...next.player, energy: adjustEnergy(departure.energy, -quote.energyCost), balance: departure.balance - quote.fare };
+  } catch (error) {
+    quote.blockedReason = error instanceof Error ? error.message : '无法规划本次出行。';
+  }
+  return { next, quote };
+}
+
+/** Viewing a route never writes a save, moves the player or samples rest/study time. */
+export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId = 'btr82a'): NovelTravelQuote {
+  return planNovelTravel(state, locationId, vehicleId).quote;
+}
 
 export interface RouteOutlook {
   extraMinutes: number;
@@ -55,17 +192,19 @@ export function getRouteOutlook(state: WorldState, targetId: string): RouteOutlo
 
 export function createInitialState(): WorldState {
   return {
-    schema_version: '1.6.0', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
+    schema_version: '1.11.0', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
-    player: { energy: 80, balance: 328 },
+    player: { energy: 80, balance: 328, ...initialPlayerNeeds },
+    inventory: [],
+    academics: null,
     phone: [
       { id: 'phone-lin', npcId: 'lin', text: '【示例剧情消息】我在图书馆整理笔记。你经过的话，可以来坐一会儿。', read: false, at: '第 1 天 17:12' },
       { id: 'phone-zhou', npcId: 'zhou', text: '【示例剧情消息】社团活动的时间暂定今晚六点，在街角咖啡店。', read: false, at: '第 1 天 17:16' },
     ],
     contacts: [
-      { id: 'lin', name: '林同学', tag: '演示 NPC · 同学', summary: '用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。', affinity: 12, status: '正在图书馆整理笔记' },
-      { id: 'zhou', name: '周同学', tag: '演示 NPC · 社团成员', summary: '用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。', affinity: 5, status: '准备晚间的社团活动' },
+      { id: 'lin', name: '林同学', tag: '演示 NPC · 同学', summary: '用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。', affinity: 12, status: '正在图书馆整理笔记', ...legacyCharacterProfile('lin') },
+      { id: 'zhou', name: '周同学', tag: '演示 NPC · 社团成员', summary: '用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。', affinity: 5, status: '准备晚间的社团活动', ...legacyCharacterProfile('zhou') },
     ],
     schedule: [
       { id: 'library-notes', title: '【演示】去图书馆整理笔记', locationId: 'library', time: '17:30', done: false },
@@ -95,6 +234,11 @@ function id(value: unknown, path: string): string {
 function number(value: unknown, path: string, min: number, max: number, integer = true): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) return invalid(path);
   return value;
+}
+function energyNumber(value: unknown, path: string, max = 100): number {
+  const parsed = number(value, path, 0, max, false);
+  if (energyUnits(parsed) / 100 !== parsed) return invalid(`${path} 最多保留两位小数`);
+  return parsed;
 }
 function boolean(value: unknown, path: string): boolean {
   if (typeof value !== 'boolean') return invalid(path);
@@ -156,8 +300,8 @@ function interiorCoordinates(roomId: string, x: unknown, z: unknown, yaw: unknow
   return { ...point, yaw: Math.max(-3.141, Math.min(3.141, Math.round(wrappedYaw * 1000) / 1000)) || 0 };
 }
 
-function parseInteriorPresence(value: unknown, version: '1.3.0' | '1.4.0' | '1.5.0' | '1.6.0'): InteriorPresence {
-  const hasStudy = version === '1.5.0' || version === '1.6.0';
+function parseInteriorPresence(value: unknown, version: '1.3.0' | '1.4.0' | '1.5.0' | '1.6.0' | '1.7.0' | '1.8.0' | '1.9.0' | '1.10.0' | '1.11.0'): InteriorPresence {
+  const hasStudy = version === '1.5.0' || version === '1.6.0' || version === '1.7.0' || version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const item = object(value, ['roomId', 'x', 'z', 'yaw', 'activityId', ...(version === '1.3.0' ? [] : ['lastRest']), ...(hasStudy ? ['lastStudy'] : [])], 'interior');
   const roomId = id(item.roomId, 'interior.roomId');
   const room = getCampusInterior(roomId);
@@ -165,6 +309,7 @@ function parseInteriorPresence(value: unknown, version: '1.3.0' | '1.4.0' | '1.5
   const coordinates = interiorCoordinates(roomId, item.x, item.z, item.yaw);
   const activityId = item.activityId === null ? null : id(item.activityId, 'interior.activityId');
   if (activityId && !getInteriorActivity(room, activityId)) return invalid('interior.activityId');
+  if (activityId === 'study-reading' && version !== '1.10.0' && version !== '1.11.0') return invalid('旧版 interior.activityId');
   let lastRest: InteriorPresence['lastRest'] = null;
   if (version !== '1.3.0' && item.lastRest !== null) {
     const saved = object(item.lastRest, ['optionId', 'minutes', 'energyRecovered'], 'interior.lastRest');
@@ -173,7 +318,7 @@ function parseInteriorPresence(value: unknown, version: '1.3.0' | '1.4.0' | '1.5
     if (roomId !== 'dorm-room' || !option || activityId !== optionId) return invalid('interior.lastRest 与房间或活动不一致');
     const minutes = number(saved.minutes, 'interior.lastRest.minutes', option.minMinutes, option.maxMinutes);
     const maximumRecovery = option.id === 'dorm-rest-long' ? 100 : Math.floor(minutes * 0.4);
-    lastRest = { optionId, minutes, energyRecovered: number(saved.energyRecovered, 'interior.lastRest.energyRecovered', 0, maximumRecovery) };
+    lastRest = { optionId, minutes, energyRecovered: version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? energyNumber(saved.energyRecovered, 'interior.lastRest.energyRecovered', maximumRecovery) : number(saved.energyRecovered, 'interior.lastRest.energyRecovered', 0, maximumRecovery) };
   }
   if (bedRestOptions.some(option => option.id === activityId) && !lastRest) return invalid('interior.lastRest 缺少已结算休息记录');
   let lastStudy: InteriorPresence['lastStudy'] = null;
@@ -185,7 +330,7 @@ function parseInteriorPresence(value: unknown, version: '1.3.0' | '1.4.0' | '1.5
     if (!isStudyInteraction(interactionId) || !room.interactions.some(interaction => interaction.id === interactionId) || activityId !== interactionId || !option || lastRest) return invalid('interior.lastStudy 与房间或活动不一致');
     const minutes = number(saved.minutes, 'interior.lastStudy.minutes', option.minMinutes, option.maxMinutes);
     const energyConsumed = number(saved.energyConsumed, 'interior.lastStudy.energyConsumed', 0, 100);
-    if (energyConsumed !== getStudyEnergyCost(minutes)) return invalid('interior.lastStudy.energyConsumed 与实际时长不一致');
+    if (energyConsumed !== getStudyEnergyCost(minutes) && !((version === '1.10.0' || version === '1.11.0') && energyConsumed === getStudyEnergyCost(minutes) + 3)) return invalid('interior.lastStudy.energyConsumed 与实际时长不一致');
     lastStudy = { interactionId, optionId, minutes, energyConsumed };
   }
   return { roomId, ...coordinates, activityId, lastRest, lastStudy };
@@ -214,34 +359,128 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   return { sequence, lastRide: { id: rideId, vehicleId: vehicle.id, fromStopId, toStopId, minutes: route.minutes, fare: route.fare, at } };
 }
 
+function academicPoints(value: unknown, path: string): number {
+  const result = number(value, path, 0, MAX_ACADEMIC_POINTS, false);
+  if (!Number.isInteger(result * 2)) return invalid(path);
+  return result;
+}
+function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: boolean): AcademicState | null {
+  if (value === null) return null;
+  const item = object(value, legacy ? ['majorId', 'subjectId', 'points', 'lastGain'] : ['majorId', 'subjects', 'lastGain'], 'academics');
+  const majorId = id(item.majorId, 'academics.majorId');
+  const major = getAcademicMajor(majorId);
+  if (!major) return invalid('academics.majorId');
+  const subjects: AcademicState['subjects'] = [];
+  if (legacy) {
+    const subjectId = id(item.subjectId, 'academics.subjectId');
+    if (!getAcademicSubject(majorId, subjectId)) return invalid('academics 专业与学科不匹配');
+    const points = number(item.points, 'academics.points', 0, MAX_ACADEMIC_POINTS);
+    subjects.push(...major.subjects.map(subject => ({ subjectId: subject.id, points: subject.id === subjectId ? points : 0 })));
+  } else {
+    if (!Array.isArray(item.subjects) || item.subjects.length < 3 || item.subjects.length > 24) return invalid('academics.subjects');
+    for (const [index, raw] of item.subjects.entries()) {
+      const path = `academics.subjects[${index}]`;
+      const entry = object(raw, ['subjectId', 'points'], path);
+      const subjectId = id(entry.subjectId, `${path}.subjectId`);
+      if (!getAcademicSubjectById(subjectId) || subjects.some(subject => subject.subjectId === subjectId)) return invalid(`${path}.subjectId`);
+      const points = academicPoints(entry.points, `${path}.points`);
+      if (!getAcademicSubject(majorId, subjectId) && points === 0) return invalid(`${path} 跨专业科目缺少学习进度`);
+      subjects.push({ subjectId, points });
+    }
+    if (major.subjects.some(subject => !subjects.some(entry => entry.subjectId === subject.id))) return invalid('academics.subjects 缺少本专业课程');
+  }
+  if (item.lastGain === null) {
+    if (subjects.some(subject => subject.points !== 0)) return invalid('academics.lastGain 缺少已结算学习记录');
+    return { majorId, subjects, lastGain: null };
+  }
+  const extras = ['outcome', 'channel', 'interactionId', 'energyConsumed', 'moraleChange', 'stressChange'];
+  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
+  const subjectId = id(gain.subjectId, 'academics.lastGain.subjectId');
+  const entry = subjects.find(subject => subject.subjectId === subjectId);
+  const minutes = number(gain.minutes, 'academics.lastGain.minutes', 15, 240);
+  const points = legacy ? number(gain.points, 'academics.lastGain.points', 0, MAX_ACADEMIC_POINTS) : academicPoints(gain.points, 'academics.lastGain.points');
+  const totalPoints = academicPoints(gain.totalPoints, 'academics.lastGain.totalPoints');
+  if (!entry || totalPoints !== entry.points || points > totalPoints || (legacy && subjectId !== item.subjectId)) return invalid('academics.lastGain 与学科或实际学习进度不一致');
+  const at = text(gain.at, 'academics.lastGain.at', 40);
+  const stamp = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(at);
+  const day = stamp ? Number(stamp[1]) : 0;
+  const total = stamp ? day * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]) : 0;
+  if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('academics.lastGain.at');
+  if (legacy || gain.outcome === null) {
+    if (points !== minutes || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
+    return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null } };
+  }
+  const outcome = gain.outcome;
+  if (outcome !== 'normal' && outcome !== 'inspiration' && outcome !== 'confusion') return invalid('academics.lastGain.outcome');
+  const channel = gain.channel;
+  if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop') return invalid('academics.lastGain.channel');
+  const interactionId = gain.interactionId === null ? null : id(gain.interactionId, 'academics.lastGain.interactionId');
+  if (channel === 'bookshop' ? interactionId !== null : !getCampusInterior(channel)!.interactions.some(item => item.id === interactionId && isStudyInteraction(item.id))) return invalid('academics.lastGain.interactionId');
+  const crossMajor = !getAcademicSubject(majorId, subjectId);
+  if ((!crossMajor && outcome !== 'normal') || (crossMajor && channel === 'classroom')) return invalid('academics.lastGain 学习渠道或结果不一致');
+  const multiplier = outcome === 'inspiration' ? 3 : outcome === 'confusion' ? 1 : 2;
+  const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
+  if (points * 2 !== minutes * multiplier || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
+  const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
+  const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
+  const base = getActivityEffects('study', minutes);
+  const morale = base.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0);
+  const stress = base.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0);
+  if (moraleChange < Math.min(0, morale) || moraleChange > Math.max(0, morale) || stressChange < Math.min(0, stress) || stressChange > Math.max(0, stress)) return invalid('academics.lastGain 精神或压力净变化不一致');
+  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange } };
+}
+
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
 export function parseState(value: unknown): WorldState {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
-  if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0') return invalid('schema_version（支持 1.0.0 至 1.6.0）');
-  const hasTransit = version === '1.6.0';
+  if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
+  const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
+  const hasInventory = version === '1.7.0' || hasMorale;
+  const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
-  const state = object(value, ['schema_version', 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : [])], 'state');
+  const state = object(value, ['schema_version', 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : [])], 'state');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
-  const player = object(state.player, ['energy', 'balance'], 'player');
+  const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
+  const inventory: WorldState['inventory'] = [];
+  if (hasInventory) {
+    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length) return invalid('inventory');
+    for (const [index, value] of state.inventory.entries()) {
+      const path = `inventory[${index}]`;
+      const item = object(value, ['itemId', 'quantity'], path);
+      const itemId = id(item.itemId, `${path}.itemId`);
+      if (!getStoreItem(itemId) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
+      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, INVENTORY_ITEM_LIMIT) });
+    }
+  }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
   const result: WorldState = {
-    schema_version: '1.6.0',
+    schema_version: '1.11.0',
     clock: parsedClock,
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene),
     interior: hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
-    player: { energy: number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 1_000_000, false) },
+    player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 1_000_000, false),
+      ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
+      morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
+    inventory,
+    academics: (version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? parseAcademics(state.academics, parsedClock, version === '1.9.0') : null,
     phone: list(state.phone, 'phone', STATE_LIMITS.phone, (value, path) => {
       const item = object(value, ['id', 'npcId', 'text', 'read', 'at'], path);
       return { id: id(item.id, `${path}.id`), npcId: id(item.npcId, `${path}.npcId`), text: text(item.text, `${path}.text`, 4000), read: boolean(item.read, `${path}.read`), at: text(item.at, `${path}.at`, 40) };
     }),
-    contacts: list(state.contacts, 'contacts', 50, (value, path) => {
-      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status'], path);
-      return { id: id(item.id, `${path}.id`), name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200) };
+    contacts: list(state.contacts, 'contacts', CONTACT_PROFILE_LIMITS.contacts, (value, path) => {
+      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status', ...(version === '1.11.0' ? ['portraitId', 'sourcePersonId', 'isMain'] : [])], path);
+      const contactId = id(item.id, `${path}.id`);
+      const profile = version === '1.11.0' ? {
+        portraitId: isCharacterPortraitId(item.portraitId) ? item.portraitId : invalid(`${path}.portraitId`),
+        sourcePersonId: item.sourcePersonId === null ? null : id(item.sourcePersonId, `${path}.sourcePersonId`),
+        isMain: boolean(item.isMain, `${path}.isMain`),
+      } : legacyCharacterProfile(contactId);
+      return { id: contactId, name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200), ...profile };
     }),
     schedule: list(state.schedule, 'schedule', 100, (value, path) => {
       const item = object(value, ['id', 'title', 'locationId', 'time', 'done'], path);
@@ -252,12 +491,21 @@ export function parseState(value: unknown): WorldState {
       return { id: id(item.id, `${path}.id`), text: text(item.text, `${path}.text`, 1000), at: text(item.at, `${path}.at`, 40) };
     }),
     story: list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
-      const item = object(value, ['id', 'role', 'text'], path);
+      const hasParticipants = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'participantIds');
+      const item = object(value, ['id', 'role', 'text', ...(hasParticipants ? ['participantIds'] : [])], path);
       if (item.role !== 'user' && item.role !== 'assistant') return invalid(`${path}.role`);
-      return { id: id(item.id, `${path}.id`), role: item.role, text: text(item.text, `${path}.text`, STATE_LIMITS.storyText) };
+      let participantIds: string[] | undefined;
+      if (hasParticipants) {
+        if (!Array.isArray(item.participantIds) || item.participantIds.length > 8) return invalid(`${path}.participantIds`);
+        participantIds = item.participantIds.map((value, index) => id(value, `${path}.participantIds[${index}]`));
+        if (new Set(participantIds).size !== participantIds.length) return invalid(`${path}.participantIds 重复`);
+      }
+      return { id: id(item.id, `${path}.id`), role: item.role, text: text(item.text, `${path}.text`, STATE_LIMITS.storyText), ...(participantIds ? { participantIds } : {}) };
     }),
   };
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
+  const sourceIds = result.contacts.flatMap(contact => contact.sourcePersonId ? [contact.sourcePersonId] : []);
+  if (new Set(sourceIds).size !== sourceIds.length) return invalid('contacts.sourcePersonId 重复');
   if (version === '1.0.0' && !['gate', 'library', 'cafe', 'dorm'].includes(result.locationId)) return invalid('1.0.0 locationId');
   if (!hasInterior && getCampusInterior(result.locationId)) return invalid('旧版 locationId');
   if (!hasTransit && (isFarTransitLocation(result.locationId) || (result.scene && (result.scene.x < -70 || result.scene.x > 70 || result.scene.z < -60 || result.scene.z > 90)))) return invalid('旧版 scene 或 locationId 超出原范围');
@@ -265,12 +513,126 @@ export function parseState(value: unknown): WorldState {
     const room = getCampusInterior(result.interior.roomId)!;
     if (result.locationId !== room.id || !result.scene || sceneLocationId(result.scene.areaId) !== room.parentLocationId
       || Math.hypot(result.scene.x - room.entrance.x, result.scene.z - room.entrance.z) > INTERIOR_ENTRANCE_RANGE) return invalid('interior 与室外返回位置或 locationId 不一致');
+    const study = result.interior.lastStudy;
+    if (study && study.energyConsumed > getStudyEnergyCost(study.minutes)) {
+      const gain = result.academics?.lastGain;
+      if (!gain || gain.outcome !== 'confusion' || gain.channel !== room.id || gain.interactionId !== study.interactionId
+        || gain.minutes !== study.minutes || gain.energyConsumed !== study.energyConsumed) return invalid('interior.lastStudy 额外消耗缺少已结算阅读结果');
+    }
   } else {
     if (getCampusInterior(result.locationId)) return invalid('locationId 缺少 interior');
     if (isFarTransitLocation(result.locationId) && !result.scene) return invalid('远地 locationId 缺少 scene');
     if (result.scene && sceneLocationId(result.scene.areaId) !== result.locationId) return invalid('scene 与 locationId 不一致');
   }
   return result;
+}
+
+/** Apply a validated sequence on a private clone; the caller alone persists it. */
+export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+  let next = parseState(state);
+  const validated = validateStoryActions(actions, next);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
+  const clearInteriorActivity = () => {
+    if (next.interior) { next.interior.activityId = null; next.interior.lastRest = null; next.interior.lastStudy = null; }
+  };
+  for (const [index, action] of validated.entries()) {
+    switch (action.type) {
+      case 'travel': next = reduceState(next, { type: 'novel_travel', locationId: action.locationId }); break;
+      case 'service': next = reduceState(next, { type: 'location_service', serviceId: action.serviceId }); break;
+      case 'buy': next = reduceState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }); break;
+      case 'pack': next = reduceState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
+      case 'takeaway': next = reduceState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
+      case 'gift': next = reduceState(next, { ...action, type: 'gift_item' }); break;
+      case 'use': next = reduceState(next, { type: 'use_item', itemId: action.itemId }); break;
+      case 'interact':
+        if (action.interactionId === 'dorm-rest' || isStudyInteraction(action.interactionId)) throw new Error('休息或学习请使用包含明确分钟数的剧情行动。');
+        next = reduceState(next, { type: 'novel_approach', interactionId: action.interactionId });
+        next = reduceState(next, { type: 'interior_interact', interactionId: action.interactionId });
+        break;
+      case 'rest': {
+        const before = { ...next.player };
+        advance(next, action.minutes);
+        const recovery = action.kind === 'sleep' && action.minutes >= 420 ? 100
+          : action.kind === 'wait' ? Math.floor(action.minutes / 15) * 2 : Math.floor(action.minutes * .4);
+        next.player.energy = adjustEnergy(next.player.energy, recovery);
+        applyActivityEffects(next, action.kind === 'wait' ? 'wait' : 'rest', action.minutes);
+        clearInteriorActivity();
+        note(next, `根据你的行动${{ sleep: '睡眠', rest: '休息', wait: '等待' }[action.kind]} ${action.minutes} 分钟。${activityChangeNote(before, next.player)}`);
+        break;
+      }
+      case 'study': {
+        const subject = getAcademicSubjectById(action.subjectId)!;
+        if (!next.academics) throw new Error('请先选择专业，再开始学习。');
+        const channel = next.locationId;
+        if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop') throw new Error('请先前往教室、图书馆自习室或书店再学习。');
+        const crossMajor = !getAcademicSubject(next.academics.majorId, action.subjectId);
+        if (channel === 'classroom' && crossMajor) throw new Error('教室仅学习本专业课程；跨专业阅读请去图书馆或书店。');
+        if (channel === 'bookshop') {
+          const venue = getLocationStatus(channel, next.clock)!;
+          if (!venue.isOpen) throw new Error(`书店已打烊，营业时间 ${venue.hoursLabel}。`);
+          if (venue.minutesUntilClose !== null && action.minutes > venue.minutesUntilClose) throw new Error('这段阅读无法在书店关门前完成。');
+        }
+        // A stable draw makes previews/retries agree, while preserving the
+        // existing 25% inspiration / 25% confusion / 50% ordinary distribution.
+        let sample = 2166136261;
+        const seed = `${next.clock.day}:${next.clock.hour}:${next.clock.minute}:${action.subjectId}:${action.minutes}:${index}`;
+        for (let i = 0; i < seed.length; i++) sample = Math.imul(sample ^ seed.charCodeAt(i), 16777619);
+        const draw = (sample >>> 0) % 100;
+        const outcome = !crossMajor || draw >= 50 ? 'normal' : draw < 25 ? 'inspiration' : 'confusion';
+        const energyConsumed = getStudyEnergyCost(action.minutes) + (outcome === 'confusion' ? 3 : 0);
+        if (next.player.energy < energyConsumed) throw new Error(`精力不足，此次学习需要 ${energyConsumed} 点精力，请先休息。`);
+        const points = action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1);
+        let progress = next.academics.subjects.find(entry => entry.subjectId === action.subjectId);
+        if ((progress?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
+        const before = { ...next.player };
+        advance(next, action.minutes);
+        next.player.energy = adjustEnergy(next.player.energy, -energyConsumed);
+        const effects = getActivityEffects('study', action.minutes);
+        next.player.morale = Math.max(0, Math.min(100, next.player.morale + effects.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0)));
+        next.player.stress = Math.max(0, Math.min(100, next.player.stress + effects.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0)));
+        if (!progress) { progress = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(progress); }
+        progress.points += points;
+        const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
+        next.academics.lastGain = { subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
+          interactionId: channel === 'bookshop' ? null : channel === 'classroom' ? 'classroom-notes' : 'study-focus',
+          energyConsumed, moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
+        clearInteriorActivity();
+        note(next, `学习${subject.name} ${action.minutes} 分钟，进度 +${points}，累计 ${progress.points} 点。${crossMajor ? `跨专业阅读结果：${{ inspiration: '灵感', confusion: '困惑', normal: '普通' }[outcome]}。` : ''}${activityChangeNote(before, next.player)}`);
+        break;
+      }
+      case 'schedule': {
+        if (next.schedule.length >= 100) throw new Error('日程已满，本轮未新增安排。');
+        const id = `${turnId}:schedule:${index}`;
+        if (next.schedule.some(entry => entry.id === id)) throw new Error('日程 ID 冲突。');
+        next.schedule.push({ id, title: action.title, locationId: action.locationId, time: action.time, done: false });
+        note(next, `新增日程：${action.time}，${locations.find(place => place.id === action.locationId)!.name}，${action.title}。`);
+        break;
+      }
+      case 'complete_schedule': next = reduceState(next, action); break;
+      case 'relationship': {
+        const contact = next.contacts.find(contact => contact.id === action.npcId)!;
+        const before = contact.affinity;
+        contact.affinity = Math.max(-100, Math.min(100, contact.affinity + action.delta));
+        note(next, `${contact.name}的关系变化 ${contact.affinity - before >= 0 ? '+' : ''}${contact.affinity - before}：${action.reason}`);
+        break;
+      }
+      case 'activity': {
+        const before = { ...next.player };
+        if (action.effects.balance < 0 && next.player.balance < -action.effects.balance) throw new Error(`余额不足，${action.label}需要 ${-action.effects.balance} 元。`);
+        if (next.player.balance + action.effects.balance > 1_000_000) throw new Error('余额超过存档上限，本轮未结算。');
+        if (action.effects.energy < 0 && energyUnits(next.player.energy) < -energyUnits(action.effects.energy)) throw new Error(`精力不足，无法完成${action.label}，请先休息。`);
+        advance(next, action.minutes);
+        next.player.energy = adjustEnergy(next.player.energy, action.effects.energy);
+        for (const key of ['morale', 'stress', 'health', 'satiety'] as const) next.player[key] = Math.max(0, Math.min(100, next.player[key] + action.effects[key]));
+        next.player.foodEnergy = Math.max(0, Math.min(3000, next.player.foodEnergy + action.effects.foodEnergy));
+        next.player.balance += action.effects.balance;
+        clearInteriorActivity();
+        note(next, `${action.label}，耗时 ${action.minutes} 分钟。${action.effects.balance ? `余额${action.effects.balance > 0 ? '+' : ''}${action.effects.balance} 元。` : ''}${activityChangeNote(before, next.player)}`);
+        break;
+      }
+    }
+  }
+  return parseState(next);
 }
 
 /**
@@ -285,7 +647,7 @@ export function commitStoryTurn(
   ids: { userId: string; assistantId: string },
   now = Date.now(),
 ): WorldState {
-  const next = parseState(state);
+  let next = parseState(state);
   if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText || input.includes('\u0000')) {
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
@@ -297,6 +659,11 @@ export function commitStoryTurn(
   const flightId = `${ids.assistantId}:airliner`;
   const hasFlight = reply.worldEvents?.length === 1;
   const recordedFlight = next.airTraffic.lastFlight?.id === flightId || next.journal.some(entry => entry.id === flightId);
+  const worldActions = reply.worldActions ?? [];
+  const actionPrefix = `${ids.assistantId}:wa:`;
+  const actionReceiptId = `${actionPrefix}${storyActionFingerprint(worldActions)}`;
+  const recordedActions = next.journal.filter(entry => entry.id.startsWith(actionPrefix));
+  const unchangedActions = worldActions.length ? recordedActions.length === 1 && recordedActions[0].id === actionReceiptId : recordedActions.length === 0;
   const existingUser = next.story.find(entry => entry.id === ids.userId);
   const existingAssistant = next.story.find(entry => entry.id === ids.assistantId);
   if (existingUser || existingAssistant) {
@@ -306,11 +673,13 @@ export function commitStoryTurn(
         return existing && existing.npcId === message.npcId && existing.text === message.text;
       });
       const prefix = `${ids.assistantId}:phone:`;
-      if (unchanged && next.phone.filter(item => item.id.startsWith(prefix)).length === reply.phoneMessages.length && hasFlight === recordedFlight) return next;
+      if (unchanged && next.phone.filter(item => item.id.startsWith(prefix)).length === reply.phoneMessages.length && hasFlight === recordedFlight && unchangedActions) return next;
     }
     throw new Error('剧情记录 ID 冲突；本轮未写入。');
   }
   if (recordedFlight) throw new Error('空中事件 ID 冲突；本轮未写入。');
+  if (recordedActions.length) throw new Error('剧情行动 ID 冲突；本轮未写入。');
+  next = applyStoryActions(next, worldActions, ids.assistantId);
   // Reject the entire turn on cooldown. Accepting prose while dropping its
   // requested pass would leave the narrated scene different from saved facts.
   if (hasFlight) {
@@ -332,11 +701,28 @@ export function commitStoryTurn(
     return true;
   });
   next.phone.push(...messages);
+  const participants = new Set<string>();
+  for (const snapshot of [state, next]) {
+    if (snapshot.scene?.encounterId && !snapshot.interior) participants.add(snapshot.scene.encounterId);
+    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts) : [];
+    for (const segment of parseNovelDialogue(reply.text)) {
+      if (!segment.speaker) continue;
+      const matches = [
+        ...snapshot.contacts.filter(contact => contact.id === segment.speaker || contact.name === segment.speaker).map(contact => contact.id),
+        ...people.filter(person => person.id === segment.speaker || person.name === segment.speaker || person.candidateName === segment.speaker).map(person => person.contactId ?? person.id),
+      ];
+      const unique = [...new Set(matches)];
+      if (unique.length === 1) participants.add(unique[0]);
+    }
+  }
+  const participantIds = [...participants].slice(0, 8);
+  const participantEvidence = participantIds.length ? { participantIds } : {};
   next.story.push(
-    { id: ids.userId, role: 'user', text: inputText },
-    { id: ids.assistantId, role: 'assistant', text: reply.text },
+    { id: ids.userId, role: 'user', text: inputText, ...participantEvidence },
+    { id: ids.assistantId, role: 'assistant', text: reply.text, ...participantEvidence },
   );
   next.story = next.story.slice(-STATE_LIMITS.story);
+  if (worldActions.length) note(next, `已结算本轮 ${worldActions.length} 项剧情行动。`, actionReceiptId);
   return parseState(next);
 }
 
@@ -350,6 +736,7 @@ export function acknowledgePhoneRead(state: WorldState, ids: readonly string[]):
 }
 
 function advance(state: WorldState, minutes: number) {
+  state.player = advancePlayerNutrition(state.player, state.clock, minutes);
   const next = state.clock.hour * 60 + state.clock.minute + minutes;
   state.clock = { day: state.clock.day + Math.floor(next / 1440), hour: Math.floor(next / 60) % 24, minute: next % 60 };
   if (state.clock.day > 365000) throw new Error('原型已到达最大天数，无法继续推进。');
@@ -360,19 +747,160 @@ function note(state: WorldState, message: string, stableId?: string) {
   let sequence = 1;
   while (occupied.has(`${prefix}${sequence}`)) sequence++;
   const at = `第 ${state.clock.day} 天 ${String(state.clock.hour).padStart(2, '0')}:${String(state.clock.minute).padStart(2, '0')}`;
-  state.journal = [...state.journal, { id: stableId ?? `${prefix}${sequence}`, text: message, at }].slice(-STATE_LIMITS.journal);
+  const entries = [...state.journal, { id: stableId ?? `${prefix}${sequence}`, text: message, at }];
+  // Keep replay evidence for every still-visible story turn, even after many
+  // button actions. Once its story is pruned, its receipt may be pruned too.
+  const storyIds = new Set(state.story.filter(item => item.role === 'assistant').map(item => item.id));
+  const protectedReceipt = (entry: WorldState['journal'][number]) => {
+    const match = /^(.*):wa:[0-9a-f]{24}$/.exec(entry.id);
+    return !!match && storyIds.has(match[1]);
+  };
+  while (entries.length > STATE_LIMITS.journal) {
+    const index = entries.findIndex(entry => !protectedReceipt(entry));
+    entries.splice(index < 0 ? 0 : index, 1);
+  }
+  state.journal = entries;
+}
+
+function applyActivityEffects(state: WorldState, kind: ActivityKind, minutes: number) {
+  const changes = getActivityEffects(kind, minutes);
+  for (const key of ['morale', 'stress', 'health'] as const) state.player[key] = Math.min(100, Math.max(0, state.player[key] + changes[key]));
+}
+
+function activityChangeNote(before: PlayerState, after: PlayerState): string {
+  const labels = { energy: '精力', morale: '精神', stress: '压力', health: '健康', satiety: '饱腹', foodEnergy: '食物能量' } as const;
+  const changes = (Object.keys(labels) as (keyof typeof labels)[]).flatMap(key => {
+    const delta = key === 'energy' ? energyDifference(after.energy, before.energy) : after[key] - before[key];
+    return delta ? [`${labels[key]}${delta > 0 ? '+' : ''}${delta}${key === 'foodEnergy' ? ' kcal' : ''}`] : [];
+  });
+  return changes.length ? `实际变化：${changes.join('，')}。` : '身心状态未变化。';
 }
 
 /**
  * Prototype rules: travel costs 15 min plus the deterministic route outlook / 5 energy; waiting 1..120 min restores
  * 2 energy per complete 15 min. Reading costs no time. A schedule item is a
  * one-off task: complete at its location at/after its HH:mm on the current day.
- * There is no recurrence, deadline, relationship reward or LLM state mutation.
+ * Structured narrative actions share these transactions; exact-duration rest,
+ * study, contextual effects and relationship changes are handled above.
  */
 export function reduceState(state: WorldState, action: WorldAction): WorldState {
   const next = parseState(state);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
+    case 'save_contact': {
+      const { type: _type, ...input } = action;
+      const profile = validateContactProfileInput(input);
+      const existing = next.contacts.find(contact => contact.id === profile.id);
+      if (!existing && next.contacts.length >= CONTACT_PROFILE_LIMITS.contacts) throw new Error('主要人物已达50位，请先编辑已有联系人。');
+      if (next.contacts.some(contact => contact.id !== profile.id && contact.name.trim() === profile.name)) throw new Error('已有同名联系人，请使用可区分的姓名。');
+      const sourcePersonId = profile.sourcePersonId === undefined ? existing?.sourcePersonId ?? null : profile.sourcePersonId;
+      if (existing?.sourcePersonId && sourcePersonId !== existing.sourcePersonId) throw new Error('已确认人物的来源身份不能更换。');
+      if (sourcePersonId && sourcePersonId !== existing?.sourcePersonId) {
+        const person = next.scene && getScenePeople(next.scene).find(person => person.id === sourcePersonId);
+        if (!person) throw new Error('这位陌生人不属于当前场景。');
+        if (!existing && profile.id !== sourcePersonId) throw new Error('请沿用陌生人的稳定人物 ID。');
+      }
+      if (sourcePersonId && next.contacts.some(contact => contact.id !== profile.id && (contact.sourcePersonId === sourcePersonId || contact.id === sourcePersonId))) throw new Error('这位人物已经是联系人。');
+      if (existing && existing.name === profile.name && existing.portraitId === profile.portraitId && existing.summary === profile.summary && existing.sourcePersonId === sourcePersonId && existing.isMain) return next;
+      const contact = existing
+        ? { ...existing, name: profile.name, portraitId: profile.portraitId, summary: profile.summary, sourcePersonId, isMain: true }
+        : { id: profile.id, name: profile.name, portraitId: profile.portraitId, summary: profile.summary, sourcePersonId, isMain: true, tag: '主要人物', affinity: 0, status: '已记入联系人' };
+      if (existing) next.contacts[next.contacts.indexOf(existing)] = contact;
+      else next.contacts.push(contact);
+      // Profile text remains narrative data, including when an introduction
+      // happens to contain the dialogue table delimiter used by the reader.
+      const eventText = `人物档案已记录：${contact.name}。${contact.summary}`.replaceAll('|', '｜').replace(/[\r\n]+/g, ' ');
+      note(next, eventText);
+      const prefix = `profile-${next.clock.day}-${next.clock.hour}-${next.clock.minute}-`;
+      let sequence = 1;
+      while (next.story.some(entry => entry.id === `${prefix}${sequence}`)) sequence++;
+      next.story.push({ id: `${prefix}${sequence}`, role: 'assistant', text: eventText, participantIds: [contact.id] });
+      next.story = next.story.slice(-STATE_LIMITS.story);
+      break;
+    }
+    case 'choose_academics': {
+      const major = getAcademicMajor(action.majorId);
+      if (!major) throw new Error('请选择有效的专业。');
+      if (next.academics) {
+        if (next.academics.majorId === action.majorId) return next;
+        throw new Error('专业已经确认，本阶段不能重新选择。');
+      }
+      next.academics = { majorId: major.id, subjects: major.subjects.map(subject => ({ subjectId: subject.id, points: 0 })), lastGain: null };
+      note(next, `确认专业：${major.name}。本专业三门课程分别积累进度，周课表已生成；旧学习记录不补算。`);
+      break;
+    }
+    case 'buy_item': {
+      if (!Number.isInteger(action.quantity) || action.quantity < 1) throw new Error('购买数量必须是 1–20 的整数。');
+      const quote = getPurchaseQuote(next, action.itemId, action.quantity);
+      if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
+      next.player.balance -= quote.totalPrice;
+      const owned = next.inventory.find(entry => entry.itemId === action.itemId);
+      if (owned) owned.quantity += quote.unitsAdded;
+      else next.inventory.push({ itemId: quote.item.id, quantity: quote.unitsAdded });
+      note(next, `购买${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 元；背包增加 ${quote.unitsAdded} ${quote.item.useUnit}。`);
+      break;
+    }
+    case 'pack_item':
+    case 'pack_service': {
+      const quote = action.type === 'pack_item' ? getPackItemQuote(next, action.itemId, action.quantity) : getTakeawayQuote(next, action.serviceId, action.quantity);
+      if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '无法打包这份食品。');
+      next.player.balance -= quote.totalPrice;
+      const owned = next.inventory.find(entry => entry.itemId === quote.item!.id);
+      if (owned) owned.quantity += quote.unitsAdded;
+      else next.inventory.push({ itemId: quote.item.id, quantity: quote.unitsAdded });
+      note(next, `打包${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 元（含打包费 ${quote.packagingFee} 元），已放入背包；尚未食用。`);
+      break;
+    }
+    case 'gift_item': {
+      const item = getStoreItem(action.itemId);
+      const contact = next.contacts.find(contact => contact.id === action.npcId);
+      if (!item || !contact) throw new Error('不存在的礼物或收礼人。');
+      if (!Number.isInteger(action.quantity) || action.quantity < 1 || action.quantity > 20) throw new Error('赠送数量必须是 1–20 的整数。');
+      if (!Number.isInteger(action.affinityDelta) || action.affinityDelta < 0 || action.affinityDelta > 20) throw new Error('送礼关系增益必须是 0–20 的整数。');
+      if (typeof action.reason !== 'string' || !action.reason.trim() || action.reason.length > 240 || action.reason.includes('\u0000')) throw new Error('请提供送礼的情境依据。');
+      const owned = next.inventory.find(entry => entry.itemId === action.itemId);
+      if (!owned || owned.quantity < action.quantity) throw new Error('背包中的礼物数量不足，无法赠送。');
+      next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > action.quantity ? [{ ...entry, quantity: entry.quantity - action.quantity }] : []);
+      const before = contact.affinity;
+      contact.affinity = Math.min(100, contact.affinity + action.affinityDelta);
+      note(next, `将${item.name} ${action.quantity} ${item.useUnit}送给${contact.name}，关系 +${contact.affinity - before}。${action.reason.trim()}`);
+      break;
+    }
+    case 'use_item': {
+      const quote = getUseItemQuote(next, action.itemId);
+      if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
+      advance(next, quote.minutes);
+      next.player = quote.playerAfter;
+      next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
+      const labels = { energy: '精力', health: '健康', morale: '精神', stress: '压力', satiety: '饱腹', foodEnergy: '食物能量' } as const;
+      const changes = (Object.keys(labels) as (keyof typeof labels)[]).filter(key => (quote.changes[key] ?? 0) !== 0).map(key => `${labels[key]}${(quote.changes[key] ?? 0) > 0 ? '+' : ''}${quote.changes[key]}${key === 'foodEnergy' ? ' kcal' : ''}`).join('，');
+      note(next, `使用${quote.item.name} 1 ${quote.item.useUnit}，耗时 ${quote.minutes} 分钟。${changes ? `实际变化：${changes}。` : '状态已达边界，未产生额外变化。'}`);
+      break;
+    }
+    case 'location_service': {
+      const quote = getLocationServiceQuote(next, action.serviceId);
+      if (quote.blockedReason || !quote.service) throw new Error(quote.blockedReason ?? '不存在的地点活动。');
+      const before = { ...next.player };
+      const status = getLocationStatus(next.locationId, next.clock)!;
+      advance(next, quote.minutes);
+      // The quote already includes elapsed nutrition; replace, never apply twice.
+      next.player = quote.playerAfter;
+      note(next, `在${status.label}${quote.service.label}，${quote.price ? `支付 ${quote.price} 元` : '免费'}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
+      break;
+    }
+    case 'novel_travel': {
+      const planned = planNovelTravel(next, action.locationId, action.vehicleId ?? 'btr82a');
+      if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
+      return parseState(planned.next);
+    }
+    case 'novel_approach': {
+      if (!next.interior) throw new Error('请先进入室内。');
+      const room = getCampusInterior(next.interior.roomId)!;
+      const interaction = room.interactions.find(item => item.id === action.interactionId);
+      if (!interaction) throw new Error('这项设施不属于当前房间。');
+      next.interior = { ...next.interior, ...interiorCoordinates(room.id, interaction.x, interaction.z, next.interior.yaw) };
+      break;
+    }
     case 'air_traffic_tick':
       if (next.interior) return next;
       next.airTraffic = advanceAirTraffic(next.airTraffic, action.now, next.scene?.seed);
@@ -405,7 +933,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (next.player.energy < 5) throw new Error('精力不足，请先等待休息。');
       const outlook = getRouteOutlook(next, action.locationId);
       const minutes = 15 + outlook.extraMinutes;
-      advance(next, minutes); next.player.energy -= 5; next.locationId = action.locationId; next.scene = null;
+      advance(next, minutes); next.player.energy = adjustEnergy(next.player.energy, -5); next.locationId = action.locationId; next.scene = null;
       const eventNote = outlook.event ? `途中遇到${outlook.event.title}，额外停留 ${outlook.extraMinutes} 分钟。${outlook.event.description}` : '';
       note(next, `前往${locations.find(location => location.id === action.locationId)!.name}，步行耗时 ${minutes} 分钟。${eventNote}`);
       break;
@@ -465,12 +993,15 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (isStudyInteraction(interaction.id)) throw new Error('请选择学习时长。');
       if (interaction.energyDelta < 0 && next.player.energy < -interaction.energyDelta) throw new Error('精力不足，请先休息。');
       if (interaction.minutes === 0 && interaction.energyDelta === 0 && next.interior.activityId === interaction.id) return next;
+      const playerBefore = { ...next.player };
       advance(next, interaction.minutes);
-      next.player.energy = Math.min(100, Math.max(0, next.player.energy + interaction.energyDelta));
+      next.player.energy = adjustEnergy(next.player.energy, interaction.energyDelta);
+      if (interaction.id === 'dorm-desk') applyActivityEffects(next, 'desk', interaction.minutes);
+      if (interaction.id === 'study-shelf') applyActivityEffects(next, 'bookshelf', interaction.minutes);
       next.interior.activityId = interaction.id;
       next.interior.lastRest = null;
       next.interior.lastStudy = null;
-      note(next, `${interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。` : '未消耗时间或精力。'}`);
+      note(next, `${interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。'}`);
       break;
     }
     case 'interior_rest': {
@@ -482,41 +1013,64 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (!Number.isFinite(sample) || sample < 0 || sample > 1) throw new Error('休息时长生成失败，本次休息未结算，请重试。');
       const minutes = option.minMinutes + Math.min(option.maxMinutes - option.minMinutes, Math.floor(sample * (option.maxMinutes - option.minMinutes + 1)));
       const energyBefore = next.player.energy;
+      const playerBefore = { ...next.player };
       const recovery = option.id === 'dorm-rest-long' ? 100 : Math.floor(minutes * 0.4);
       advance(next, minutes);
-      next.player.energy = Math.min(100, energyBefore + recovery);
+      next.player.energy = adjustEnergy(energyBefore, recovery);
+      applyActivityEffects(next, 'rest', minutes);
       next.interior.activityId = option.id;
-      next.interior.lastRest = { optionId: option.id, minutes, energyRecovered: next.player.energy - energyBefore };
+      next.interior.lastRest = { optionId: option.id, minutes, energyRecovered: energyDifference(next.player.energy, energyBefore) };
       next.interior.lastStudy = null;
-      note(next, getInteriorActivity(getCampusInterior(next.interior.roomId)!, option.id, next.interior.lastRest)!.result);
+      note(next, getInteriorActivity(getCampusInterior(next.interior.roomId)!, option.id, next.interior.lastRest)!.result + activityChangeNote(playerBefore, next.player));
       break;
     }
-    case 'interior_study': {
-      if (!next.interior) throw new Error('请先进入教室或自习室，在学习设施旁选择学习时长。');
-      const room = getCampusInterior(next.interior.roomId)!;
-      const interaction = room.interactions.find(item => item.id === action.interactionId);
-      if (!interaction || !isStudyInteraction(interaction.id)) throw new Error('这项学习交互不属于当前房间。');
-      const option = studyDurationOptions.find(item => item.id === action.optionId);
-      if (!option) throw new Error('请选择有效的学习时长。');
-      if (Math.hypot(next.interior.x - interaction.x, next.interior.z - interaction.z) > INTERIOR_INTERACTION_RANGE) throw new Error('请先走到学习设施附近再学习。');
-      if (next.player.energy < getStudyEnergyCost(option.maxMinutes)) throw new Error(`精力不足，此档学习至少需要 ${getStudyEnergyCost(option.maxMinutes)} 点精力，请先休息。`);
+    case 'interior_study':
+    case 'read_subject': {
+      const quote = getAcademicStudyQuote(next, { subjectId: action.subjectId, optionId: action.optionId,
+        ...(action.type === 'interior_study' ? { interactionId: action.interactionId } : {}) });
+      if (quote.blockedReason || !quote.option || !quote.subject || !next.academics) throw new Error(quote.blockedReason ?? '无法开始学习。');
+      const option = quote.option;
       const sample = Math.random();
       if (!Number.isFinite(sample) || sample < 0 || sample > 1) throw new Error('学习时长生成失败，本次学习未结算，请重试。');
       const minutes = option.minMinutes + Math.min(option.maxMinutes - option.minMinutes, Math.floor(sample * (option.maxMinutes - option.minMinutes + 1)));
-      const energyConsumed = getStudyEnergyCost(minutes);
+      let outcome = quote.outcomes[0];
+      if (quote.isCrossMajor) {
+        const result = Math.random();
+        if (!Number.isFinite(result) || result < 0 || result > 1) throw new Error('阅读结果生成失败，本次学习未结算，请重试。');
+        outcome = quote.outcomes[result < .25 ? 0 : result < .5 ? 1 : 2];
+      }
+      const energyConsumed = getStudyEnergyCost(minutes) + outcome.extraEnergy;
+      const points = minutes * (outcome.pointsMultiplier * 2) / 2;
+      const playerBefore = { ...next.player };
       advance(next, minutes);
-      next.player.energy -= energyConsumed;
-      next.interior.activityId = interaction.id;
-      next.interior.lastRest = null;
-      next.interior.lastStudy = { interactionId: interaction.id, optionId: option.id, minutes, energyConsumed };
-      note(next, getInteriorActivity(room, interaction.id, null, next.interior.lastStudy)!.result);
+      next.player.energy = adjustEnergy(next.player.energy, -energyConsumed);
+      const mental = getActivityEffects('study', minutes);
+      next.player.morale = Math.min(100, Math.max(0, next.player.morale + mental.morale + outcome.morale));
+      next.player.stress = Math.min(100, Math.max(0, next.player.stress + mental.stress + outcome.stress));
+      const channel = action.type === 'read_subject' ? 'bookshop' : next.interior!.roomId as 'classroom' | 'study-room';
+      if (action.type === 'interior_study') {
+        next.interior!.activityId = action.interactionId;
+        next.interior!.lastRest = null;
+        next.interior!.lastStudy = { interactionId: action.interactionId, optionId: option.id, minutes, energyConsumed };
+      }
+      let subject = next.academics.subjects.find(item => item.subjectId === action.subjectId);
+      if (!subject) { subject = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(subject); }
+      subject.points = (subject.points * 2 + points * 2) / 2;
+      const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
+      next.academics.lastGain = { subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
+        outcome: outcome.id, channel, interactionId: action.type === 'interior_study' ? action.interactionId : null, energyConsumed, moraleChange: next.player.morale - playerBefore.morale, stressChange: next.player.stress - playerBefore.stress };
+      const place = channel === 'bookshop' ? '书店' : getCampusInterior(channel)!.label;
+      note(next, `在${place}学习${quote.subject.name} ${minutes} 分钟，消耗 ${energyConsumed} 点精力。${quote.isCrossMajor ? `跨专业阅读：${outcome.label}。` : ''}${activityChangeNote(playerBefore, next.player)}${quote.subject.name}学习进度 +${points}，累计 ${subject.points} 点。`);
       break;
     }
-    case 'wait':
+    case 'wait': {
       if (!Number.isInteger(action.minutes) || action.minutes < 1 || action.minutes > 120) throw new Error('等待时间必须是 1–120 的整数分钟。');
-      advance(next, action.minutes); next.player.energy = Math.min(100, next.player.energy + Math.floor(action.minutes / 15) * 2);
-      note(next, `休息等待 ${action.minutes} 分钟。`);
+      const playerBefore = { ...next.player };
+      advance(next, action.minutes); next.player.energy = adjustEnergy(next.player.energy, Math.floor(action.minutes / 15) * 2);
+      applyActivityEffects(next, 'wait', action.minutes);
+      note(next, `休息等待 ${action.minutes} 分钟。${activityChangeNote(playerBefore, next.player)}`);
       break;
+    }
     case 'read_phone': {
       const message = next.phone.find(message => message.id === action.id);
       if (!message) throw new Error('找不到这条消息。');

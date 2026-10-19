@@ -1,6 +1,6 @@
-import { expect, test, type Frame, type Page } from '@playwright/test';
+import { createSelectedInitialState } from './academics-fixture';
+import { expect, test, type Frame, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { createInitialState } from '../../src/runtime/model';
 import type { WorldState } from '../../src/frontend/types';
 
 const bundle = readFileSync(new URL('../../dist/immersive-shell.js', import.meta.url), 'utf8');
@@ -17,7 +17,7 @@ type HelperFixture = {
 
 /** The phone itself is the production bundle. Only the Tavern/Helper host is a
  * fixture; all model/network generation is rejected, never sent to a service. */
-async function withRealEmbeddedPhone(page: Page, initial = createInitialState()) {
+async function withRealEmbeddedPhone(page: Page, initial = createSelectedInitialState()) {
   const errors: string[] = [];
   const modelRequests: string[] = [];
   const extensionResources: string[] = [];
@@ -132,6 +132,104 @@ async function openPhone(page: Page) {
   await expect(phoneFrame(page).locator('.device')).toBeVisible();
 }
 
+/** The phone keeps its full design viewport; only its presentation scale changes. */
+async function expectProportionalPhone(page: Page) {
+  const iframe = page.locator('#sttts-panel iframe');
+  await expect.poll(() => iframe.evaluate(element => ({ width: element.clientWidth, height: element.clientHeight })))
+    .toEqual({ width: 390, height: 844 });
+  const content = (await (await iframe.elementHandle())!.contentFrame())!;
+  await expect.poll(() => content.evaluate(() => ({ width: innerWidth, height: innerHeight })))
+    .toEqual({ width: 390, height: 844 });
+  // Wait for the presentation resize observer before comparing the fitted rectangle.
+  await expect.poll(async () => {
+    const slot = (await page.locator('[data-unread-city-phone-slot]').boundingBox())!;
+    const frame = (await iframe.boundingBox())!;
+    const scale = Math.min(slot.width / 390, slot.height / 844);
+    return Math.max(Math.abs(frame.width / 390 - scale), Math.abs(frame.height / 844 - scale));
+  }).toBeLessThan(0.001);
+  const slot = (await page.locator('[data-unread-city-phone-slot]').boundingBox())!;
+  const frame = (await iframe.boundingBox())!;
+  expect(frame.x).toBeGreaterThanOrEqual(slot.x - 1);
+  expect(frame.y).toBeGreaterThanOrEqual(slot.y - 1);
+  expect(frame.x + frame.width).toBeLessThanOrEqual(slot.x + slot.width + 1);
+  expect(frame.y + frame.height).toBeLessThanOrEqual(slot.y + slot.height + 1);
+  expect(Math.abs(frame.x + frame.width / 2 - slot.x - slot.width / 2)).toBeLessThan(1);
+  expect(Math.abs(frame.y + frame.height / 2 - slot.y - slot.height / 2)).toBeLessThan(1);
+  expect(frame.width / 390).toBeCloseTo(frame.height / 844, 3);
+  return frame;
+}
+
+async function expectUncoveredPhoneHome(page: Page) {
+  await expect.poll(() => phoneFrame(page).locator('.screen').evaluate(screen => {
+    const bounds = screen.getBoundingClientRect();
+    const foot = screen.querySelector('.home-foot')!.getBoundingClientRect();
+    const content = ['.clock-block', '.widgets', '.home-page .apps-grid'].map(selector => screen.querySelector(selector)!.getBoundingClientRect());
+    const bottomControls = ['.phone-dock', '.home-indicator'].map(selector => screen.querySelector(selector)!.getBoundingClientRect());
+    return {
+      contentAboveDock: content.every(rect => rect.top >= bounds.top - 1 && rect.bottom <= foot.top + 1),
+      controlsInsideScreen: bottomControls.every(rect => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1),
+    };
+  })).toEqual({ contentAboveDock: true, controlsInsideScreen: true });
+}
+
+async function expectBarePhonePresentation(page: Page) {
+  const window = page.locator('.phone-window');
+  await expect(window.locator('.window-heading, h1, .window-phone-label')).toHaveCount(0);
+  for (const container of [window, page.locator('[data-unread-city-phone-slot]'), page.locator('#sttts-panel')]) {
+    await expect.poll(() => container.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        transparent: style.backgroundColor === 'rgba(0, 0, 0, 0)' || style.backgroundColor === 'transparent',
+        backgroundImage: style.backgroundImage,
+        shadow: style.boxShadow,
+        border: ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].reduce((sum, key) => sum + parseFloat(style[key as keyof CSSStyleDeclaration] as string), 0),
+        pointerEvents: style.pointerEvents,
+      };
+    })).toEqual({ transparent: true, backgroundImage: 'none', shadow: 'none', border: 0, pointerEvents: 'none' });
+  }
+  const phone = (await page.locator('#sttts-panel iframe').boundingBox())!;
+  const controls = [window.getByRole('button', { name: '关闭手机窗口', exact: true }), window.getByRole('button', { name: /^(放大手机|人物同框)$/ })];
+  await expect(window.getByRole('button')).toHaveCount(2);
+  const controlBounds: { x: number; y: number; width: number; height: number }[] = [];
+  for (const control of controls) {
+    await expect(control).toBeInViewport({ ratio: 1 });
+    await control.click({ trial: true });
+    const bounds = (await control.boundingBox())!;
+    expect(bounds.height).toBeGreaterThanOrEqual(44);
+    expect(bounds.width).toBeGreaterThanOrEqual(44);
+    expect(bounds.x + bounds.width <= phone.x + 1 || phone.x + phone.width <= bounds.x + 1
+      || bounds.y + bounds.height <= phone.y + 1 || phone.y + phone.height <= bounds.y + 1).toBe(true);
+    controlBounds.push(bounds);
+  }
+  const slot = (await page.locator('[data-unread-city-phone-slot]').boundingBox())!;
+  const emptyPoints = [
+    { x: slot.x + 2, y: slot.y + slot.height / 2 },
+    { x: slot.x + slot.width - 2, y: slot.y + slot.height / 2 },
+    { x: slot.x + slot.width / 2, y: slot.y + 2 },
+    { x: slot.x + slot.width / 2, y: slot.y + slot.height - 2 },
+  ].filter(point => ![phone, ...controlBounds].some(rect => point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height));
+  // A transparent rectangle must also stop intercepting input beside the actual phone.
+  for (const point of emptyPoints) {
+    expect(await page.evaluate(({ x, y }) => {
+      let target = document.elementFromPoint(x, y);
+      while (target?.shadowRoot) {
+        const next = target.shadowRoot.elementFromPoint(x, y);
+        if (!next || next === target) break;
+        target = next;
+      }
+      return !!target?.closest('#sttts-panel, .phone-window, [data-unread-city-phone-slot]');
+    }, point)).toBe(false);
+  }
+}
+
+/** Use actual parent-page coordinates to exercise input mapping through the scaled iframe. */
+async function clickScaledPhone(page: Page, target: Locator) {
+  await expect(target).toBeVisible();
+  await target.click({ trial: true });
+  const bounds = (await target.boundingBox())!;
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+}
+
 test('未安装手机扩展时，PNG 内的真实手机启动并保留设置、备忘录与草稿', async ({ page }) => {
   test.setTimeout(60000);
   const fixture = await withRealEmbeddedPhone(page);
@@ -140,6 +238,11 @@ test('未安装手机扩展时，PNG 内的真实手机启动并保留设置、�
   await expect(page.locator('#sttts-panel')).not.toBeVisible();
   await openPhone(page);
   await expect(page.locator('script[data-unread-city-embedded-phone]')).toHaveCount(1);
+  await expectProportionalPhone(page);
+  await expectUncoveredPhoneHome(page);
+  await expectBarePhonePresentation(page);
+  await expect(page.locator('[data-unread-city-scene]')).toHaveAttribute('data-player-status', 'ready');
+  await page.screenshot({ path: 'outputs/phone-bare-desktop.png' });
   const phone = phoneFrame(page);
   await phone.getByRole('button', { name: '设置', exact: true }).click();
   await phone.getByRole('button', { name: '夜间', exact: true }).click();
@@ -186,7 +289,8 @@ test('未安装手机扩展时，PNG 内的真实手机启动并保留设置、�
 });
 
 for (const size of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
-  test(`${size.width}px 手机入口常驻可点，阅读和真实手机均不遮挡恢复入口`, async ({ page }) => {
+  test(`${size.width}px 手机入口常驻可点，真实手机等比例完整显示并保留草稿`, async ({ page }) => {
+    test.setTimeout(60000);
     await page.setViewportSize(size);
     const fixture = await withRealEmbeddedPhone(page);
     const entry = page.getByRole('button', { name: '手机', exact: true });
@@ -204,9 +308,45 @@ for (const size of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
     const entryBounds = await entry.boundingBox();
     expect(phone).not.toBeNull(); expect(entryBounds).not.toBeNull();
     expect(phone!.y + phone!.height).toBeLessThanOrEqual(entryBounds!.y + 1);
+    const phoneIframe = await page.locator('#sttts-panel iframe').elementHandle();
+    const fitted = await expectProportionalPhone(page);
+    await expectUncoveredPhoneHome(page);
+    await expectBarePhonePresentation(page);
+    await expect(page.locator('[data-unread-city-scene]')).toHaveAttribute('data-player-status', 'ready');
+    await page.screenshot({ path: `outputs/phone-bare-${size.width}.png` });
+    await page.getByRole('button', { name: '放大手机', exact: true }).click();
+    await expect.poll(async () => (await page.locator('#sttts-panel').boundingBox())!.height).toBeGreaterThan(phone!.height + 50);
+    const expanded = await expectProportionalPhone(page);
+    expect(expanded.height).toBeGreaterThan(fitted.height + 20);
+    await expectUncoveredPhoneHome(page);
+    await expectBarePhonePresentation(page);
+    await page.screenshot({ path: `outputs/phone-bare-${size.width}-expanded.png` });
+    await page.getByRole('button', { name: '人物同框', exact: true }).click();
+    await expect.poll(async () => Math.abs((await page.locator('#sttts-panel').boundingBox())!.height - phone!.height)).toBeLessThan(2);
+    await expectProportionalPhone(page);
+    expect(await phoneIframe!.evaluate(element => element === document.querySelector('#sttts-panel iframe'))).toBe(true);
+
+    const app = phoneFrame(page);
+    await clickScaledPhone(page, app.getByRole('button', { name: '备忘录', exact: true }));
+    await clickScaledPhone(page, app.getByRole('button', { name: '新增备忘录', exact: true }));
+    const draft = app.locator('textarea[data-field="text"]');
+    await clickScaledPhone(page, draft);
+    await expect(draft).toBeFocused();
+    await page.keyboard.insertText(`缩放后仍可输入 ${size.width}px 草稿`);
+    await expect(draft).toHaveValue(`缩放后仍可输入 ${size.width}px 草稿`);
+    await page.getByRole('button', { name: '放大手机', exact: true }).click();
+    await expectProportionalPhone(page);
+    await expect(draft).toHaveValue(`缩放后仍可输入 ${size.width}px 草稿`);
+    await page.getByRole('button', { name: '人物同框', exact: true }).click();
+    await expectProportionalPhone(page);
+    await expect(draft).toHaveValue(`缩放后仍可输入 ${size.width}px 草稿`);
+    expect(await phoneIframe!.evaluate(element => element === document.querySelector('#sttts-panel iframe'))).toBe(true);
     await entry.click();
     await expect(page.locator('#sttts-panel')).not.toBeVisible();
     await openPhone(page);
+    await expectProportionalPhone(page);
+    expect(await phoneIframe!.evaluate(element => element === document.querySelector('#sttts-panel iframe'))).toBe(true);
+    await expect(draft).toHaveValue(`缩放后仍可输入 ${size.width}px 草稿`);
     await page.locator('[data-unread-city-rescue]').click();
     await expect(root(page)).toHaveCount(0);
     await page.locator('#native-phone-input').fill('恢复后可以输入');
@@ -214,8 +354,76 @@ for (const size of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
     expect(fixture.errors).toEqual([]);
     expect(fixture.modelRequests).toEqual([]);
+    expect(fixture.extensionResources).toEqual([]);
   });
 }
+
+test('纯小说模式真实手机缩放与重开保留同一草稿，返回后继续原句阅读', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const initial = createSelectedInitialState();
+  initial.story = [{ id: 'novel-phone-opening', role: 'assistant', text: '|素世|开心|先看看今天的安排。|\n|素世|思考|这一句读到一半，先记下来。|\n|素世|安心|手机收好，我们继续。|' }];
+  const fixture = await withRealEmbeddedPhone(page, initial);
+  const shell = page.locator('.uc-shell'), background = page.locator('[data-novel-background]');
+  await page.getByRole('button', { name: '纯小说', exact: true }).click();
+  await expect(shell).toHaveAttribute('data-presentation-mode', 'novel');
+  await expect(background.locator('img')).toBeVisible();
+  await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+  await expect(page.locator('.novel-speech')).toHaveText('这一句读到一半，先记下来。');
+  const segment = await page.locator('[data-novel-dialogue]').getAttribute('data-segment');
+  const backgroundId = await background.getAttribute('data-background-id');
+  const saved = await fixture.helper.evaluate(() => (window as unknown as HelperFixture).fixtureRead());
+
+  const expectNovelPhone = async () => {
+    await expect(shell).toHaveAttribute('data-presentation-mode', 'novel');
+    await expect(page.locator('[data-unread-city-scene], [data-unread-city-interior]')).toHaveCount(0);
+    await expect(background).toHaveAttribute('data-background-id', backgroundId!);
+    await expectProportionalPhone(page);
+    for (const container of [page.locator('.phone-window'), page.locator('[data-unread-city-phone-slot]'), page.locator('#sttts-panel')]) {
+      await expect.poll(() => container.evaluate(element => {
+        const style = getComputedStyle(element);
+        return { background: style.backgroundColor, image: style.backgroundImage, shadow: style.boxShadow, border: parseFloat(style.borderTopWidth) + parseFloat(style.borderRightWidth) + parseFloat(style.borderBottomWidth) + parseFloat(style.borderLeftWidth) };
+      })).toEqual({ background: 'rgba(0, 0, 0, 0)', image: 'none', shadow: 'none', border: 0 });
+    }
+  };
+
+  await openPhone(page);
+  await expect(shell).toHaveAttribute('data-phone-expanded', 'true');
+  await expect(page.getByRole('button', { name: '缩小手机', exact: true })).toBeVisible();
+  await expectNovelPhone();
+  await expectUncoveredPhoneHome(page);
+  const phone = phoneFrame(page), draft = phone.locator('textarea[data-field="text"]');
+  await phone.getByRole('button', { name: '备忘录', exact: true }).click();
+  await phone.getByRole('button', { name: '新增备忘录', exact: true }).click();
+  await phone.locator('input[data-field="title"]').fill('小说阅读中的备忘录');
+  await draft.fill('逐句阅读暂停时写下的未保存草稿。');
+  const originalFrame = await page.locator('#sttts-panel iframe').elementHandle();
+  for (const [name, expanded] of [['缩小手机', 'false'], ['放大手机', 'true']] as const) {
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(shell).toHaveAttribute('data-phone-expanded', expanded);
+    await expectNovelPhone();
+    await expect(draft).toHaveValue('逐句阅读暂停时写下的未保存草稿。');
+    expect(await originalFrame!.evaluate(element => element === document.querySelector('#sttts-panel iframe'))).toBe(true);
+  }
+  await page.screenshot({ path: 'outputs/novel-real-phone-390.png' });
+  await page.getByRole('button', { name: '关闭手机窗口', exact: true }).click();
+  await expect(page.locator('#sttts-panel')).not.toBeVisible();
+  await expect(page.locator('[data-novel-dialogue]')).toHaveAttribute('data-segment', segment!);
+  await expect(page.locator('.novel-speech')).toHaveText('这一句读到一半，先记下来。');
+  await openPhone(page);
+  await expectNovelPhone();
+  await expect(draft).toHaveValue('逐句阅读暂停时写下的未保存草稿。');
+  expect(await originalFrame!.evaluate(element => element === document.querySelector('#sttts-panel iframe'))).toBe(true);
+  await page.getByRole('button', { name: '关闭手机窗口', exact: true }).click();
+  await expect(page.locator('[data-novel-dialogue]')).toHaveAttribute('data-segment', segment!);
+  await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+  await expect(page.locator('.novel-speech')).toHaveText('手机收好，我们继续。');
+  await expect(background).toHaveAttribute('data-background-id', backgroundId!);
+  expect(await fixture.helper.evaluate(() => (window as unknown as HelperFixture).fixtureRead())).toEqual(saved);
+  await expect(page.locator('body')).not.toHaveAttribute('data-model-calls');
+  await expect(fixture.helper.locator('body')).not.toHaveAttribute('data-fixture-generations');
+  onlyLocalCalls(fixture);
+});
 
 test('切换角色释放手机展示，助手脚本卸载清理后台和全局入口', async ({ page }) => {
   const fixture = await withRealEmbeddedPhone(page);
@@ -263,7 +471,7 @@ function onlyLocalCalls(fixture: Awaited<ReturnType<typeof withRealEmbeddedPhone
 
 test('剧情消息进入真实 NPC 联系人，读回执回到存档，收起和重新加载均不重发', async ({ page }) => {
   test.setTimeout(90000);
-  const initial = createInitialState(); initial.phone = [];
+  const initial = createSelectedInitialState(); initial.phone = [];
   const fixture = await withRealEmbeddedPhone(page, initial);
   const first = '第一条剧情消息：图书馆二楼靠窗的位置还空着。';
   const second = '第二条剧情消息：我已整理好笔记，等你过来。';
@@ -318,7 +526,7 @@ test('剧情消息进入真实 NPC 联系人，读回执回到存档，收起和
 
 test('同一角色的不同聊天隔离手机消息，切换后的迟到剧情不得写入新会话', async ({ page }) => {
   test.setTimeout(90000);
-  const initial = createInitialState(); initial.phone = [];
+  const initial = createSelectedInitialState(); initial.phone = [];
   const fixture = await withRealEmbeddedPhone(page, initial);
   const aText = '存档 A：我在图书馆等你。';
   const bText = '存档 B：我在校园南门等你。';

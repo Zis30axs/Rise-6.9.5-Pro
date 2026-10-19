@@ -1,0 +1,140 @@
+{
+  "id": "deepseek",
+  "tool": "Built-in image_gen.imagegen",
+  "file": "deepseek.png",
+  "bytes": 1627817,
+  "sha256": "e51fcd552635caef4729e826dd51e39d4d7cc1309cabfe81bb95169d287387a7",
+  "width": 1122,
+  "height": 1402,
+  "mode": "RGBA",
+  "alphaExtrema": [
+    0,
+    255
+  ],
+  "transparentPixels": 809691,
+  "lowAlphaPixels1To4": 112620,
+  "opaquePixels": 1609,
+  "sourceReference": "assets/npc-portraits/deepseek.webp",
+  "sourceReferenceSha256": "06b22ac9ebff69c2c2b835103dfd82185749d3375f8043c180c6cb9b8536f905",
+  "prompts": "deepseek-prompts.json",
+  "sourceType": "Image-tool generated derivative of the user-supplied character, not native 3D morphs.",
+  "frames": [
+    {
+      "emotion": "neutral",
+      "x": 44,
+      "y": 70,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        29,
+        19,
+        305,
+        405
+      ]
+    },
+    {
+      "emotion": "happy",
+      "x": 392,
+      "y": 70,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        30,
+        19,
+        304,
+        405
+      ]
+    },
+    {
+      "emotion": "sad",
+      "x": 746,
+      "y": 70,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        28,
+        19,
+        302,
+        405
+      ]
+    },
+    {
+      "emotion": "angry",
+      "x": 44,
+      "y": 500,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        27,
+        20,
+        310,
+        401
+      ]
+    },
+    {
+      "emotion": "surprised",
+      "x": 392,
+      "y": 500,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        28,
+        19,
+        308,
+        401
+      ]
+    },
+    {
+      "emotion": "shy",
+      "x": 746,
+      "y": 500,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        27,
+        18,
+        311,
+        401
+      ]
+    },
+    {
+      "emotion": "thinking",
+      "x": 44,
+      "y": 925,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        28,
+        19,
+        311,
+        403
+      ]
+    },
+    {
+      "emotion": "serious",
+      "x": 392,
+      "y": 925,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        29,
+        18,
+        310,
+        403
+      ]
+    },
+    {
+      "emotion": "relieved",
+      "x": 746,
+      "y": 925,
+      "width": 336,
+      "height": 420,
+      "visibleBoundsAlpha120": [
+        26,
+        19,
+        311,
+        403
+      ]
+    }
+  ]
+}

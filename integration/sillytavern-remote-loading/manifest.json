@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "createdOn": "2026-10-19",
+  "scope": "Source-only archive of already-deployed SillyTavern remote-loading changes; no live installation edits or service restart.",
+  "observedInstallation": {
+    "version": "1.18.0",
+    "gitCommit": null,
+    "gitCommitReason": "Installed copy has no .git directory. Exact baseline file hashes are authoritative.",
+    "packageJsonSha256": "d712414b552e27c6284cb75202fb9af75ad0db1f340ce1fa7ea739e625a9a960",
+    "packageLockSha256": "7484f87e7dc6e99044ad532b80111c3e93463aaf1d5dbe377b3a4486bfe65f6f"
+  },
+  "baselineSource": {
+    "relativeBackupDirectory": "backups/character-transport-20261019",
+    "stage": "Before compact transport and persistent cache",
+    "files": [
+      "public/script.js",
+      "src/endpoints/characters.js"
+    ]
+  },
+  "intermediateSource": {
+    "relativeBackupDirectory": "backups/character-cache-20261019",
+    "stage": "Compact transport deployed; before persistent cache"
+  },
+  "patch": {
+    "path": "sillytavern-remote-loading.patch",
+    "sha256": "efa0d4ca65c66da1dca3bc3236e511967397d4fcb974ab5e03268e5836e83fe3",
+    "bytes": 57950,
+    "containsNewFiles": true,
+    "newFilesCopiesPurpose": "Readability only; already included in the unified patch."
+  },
+  "files": [
+    {
+      "path": "public/script.js",
+      "operation": "modify",
+      "baselineSha256": "606762e1e36805a12429708defcafac7287a3df78393813bf460c53524a27403",
+      "deployedSha256": "9a1f69542afd058cfd1e2c655e89a2c99fb62b06435bcf97fa0fabd07ba1f129",
+      "deployedBytes": 495586,
+      "intermediateBeforeCacheSha256": "399d163978fd1b46f392037a11c1ed5e4032318abdbab676375510668821109a"
+    },
+    {
+      "path": "src/endpoints/characters.js",
+      "operation": "modify",
+      "baselineSha256": "255751d3be5fe42faa993882514a3d3da9a19cb5e9c1b7e9883311d84f870b70",
+      "deployedSha256": "3f70251092184be049dc408f44a317bd6426294690013406928b2582a77fea96",
+      "deployedBytes": 68640,
+      "intermediateBeforeCacheSha256": "f8f54a12db73f3748906d82a65cdfdc7d66269b41684b81ab89583a2146dc281"
+    },
+    {
+      "path": "public/scripts/character-transport.js",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "242f11e8c73296d04dc4e85baa6e384dabb93fd64af6cfafdd768575e15b679c",
+      "deployedBytes": 2217,
+      "intermediateBeforeCacheSha256": "f25108e5fd915c66558f62f2dd870b17d36d519515e0f92b841876d3a1bca18f",
+      "reviewCopy": "new-files/public/scripts/character-transport.js"
+    },
+    {
+      "path": "public/scripts/character-cache.js",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "46f55e41c146b0df0b0326ed41a64ad071d1b52f44ca6ec0af68b5ca7be8decf",
+      "deployedBytes": 5849,
+      "reviewCopy": "new-files/public/scripts/character-cache.js"
+    },
+    {
+      "path": "src/character-transport.js",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "0f7f06f3eb36392ba51b8a1417532c2afcf1dd3c044d3ea9ac5949d4fe706263",
+      "deployedBytes": 3904,
+      "intermediateBeforeCacheSha256": "1e51c9978d63514895cd562c5498141f6c4d6a430399e1a96af811eeef7f4226",
+      "reviewCopy": "new-files/src/character-transport.js"
+    },
+    {
+      "path": "tests/character-transport.node-test.mjs",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "a93a62f2157898a24a0da0672028a2c799016554a06068efdedc582eb5880487",
+      "deployedBytes": 13943,
+      "intermediateBeforeCacheSha256": "b82f76f3a80c7cff0c4e89459bd6ce5519af9f31a1fe6aa71db83fff4f0f314e",
+      "reviewCopy": "new-files/tests/character-transport.node-test.mjs"
+    },
+    {
+      "path": "tests/character-cache.node-test.mjs",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "813169811fdfd0ccabfc8ef08861f258610fcff844738a65fa5abf9ad0c4532c",
+      "deployedBytes": 16366,
+      "reviewCopy": "new-files/tests/character-cache.node-test.mjs"
+    },
+    {
+      "path": "tests/character-cache.browser-test.mjs",
+      "operation": "add",
+      "baselineSha256": null,
+      "deployedSha256": "27fda58b224e78456b94bbaab2dbafc0c63c89ed369363240ffc7cd5191c9ad2",
+      "deployedBytes": 9557,
+      "reviewCopy": "new-files/tests/character-cache.browser-test.mjs"
+    }
+  ],
+  "configNote": {
+    "included": false,
+    "singleSeparateChange": "performance.lazyLoadCharacters = true",
+    "rollback": "Restore the prior field value recorded by the installation owner; do not replace config.yaml wholesale."
+  },
+  "historicalValidation": {
+    "nodeUniquePassed": 28,
+    "ordinaryNodePassed": 27,
+    "optionalRealCardTestPassed": 1,
+    "realCardsCompared": 6,
+    "isolatedBrowserChecksPassed": 6,
+    "rerunDuringPackaging": false,
+    "testSecretsAreSynthetic": true
+  },
+  "packagingValidation": {
+    "isolatedTemporaryDirectory": true,
+    "gitCommandConfig": {
+      "core.autocrlf": false,
+      "core.eol": "lf"
+    },
+    "check": {
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    "apply": {
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    "allDeployedHashesMatch": [
+      {
+        "path": "public/script.js",
+        "sha256Match": true
+      },
+      {
+        "path": "src/endpoints/characters.js",
+        "sha256Match": true
+      },
+      {
+        "path": "public/scripts/character-transport.js",
+        "sha256Match": true
+      },
+      {
+        "path": "public/scripts/character-cache.js",
+        "sha256Match": true
+      },
+      {
+        "path": "src/character-transport.js",
+        "sha256Match": true
+      },
+      {
+        "path": "tests/character-transport.node-test.mjs",
+        "sha256Match": true
+      },
+      {
+        "path": "tests/character-cache.node-test.mjs",
+        "sha256Match": true
+      },
+      {
+        "path": "tests/character-cache.browser-test.mjs",
+        "sha256Match": true
+      }
+    ],
+    "reverseCheck": {
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    "reverseApply": {
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    "restoredOriginalBytes": true,
+    "addedPathsAbsentAfterReverse": true,
+    "liveInstallationMutated": false
+  },
+  "excluded": [
+    "config.yaml",
+    "user settings",
+    "character cards",
+    "chats",
+    "authentication/credentials",
+    "browser storage",
+    "node_modules",
+    "screenshots"
+  ],
+  "notes": [
+    "No functional changes were introduced while packaging.",
+    "All source and test review copies are byte-identical to the current installed source.",
+    "The patched transport/cache is not embedded in the distributed character PNG."
+  ]
+}

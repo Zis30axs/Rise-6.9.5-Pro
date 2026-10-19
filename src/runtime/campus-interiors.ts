@@ -50,7 +50,7 @@ export const studyDurationOptions: readonly StudyDurationOption[] = [
   { id: 'study-long', label: '长时学习', minMinutes: 120, maxMinutes: 240 },
 ];
 export function isStudyInteraction(id: string | null | undefined): boolean {
-  return id === 'classroom-notes' || id === 'study-focus';
+  return id === 'classroom-notes' || id === 'study-focus' || id === 'study-reading';
 }
 export function getStudyEnergyCost(minutes: number): number {
   return Math.ceil(minutes / 6);
@@ -70,7 +70,7 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       // Retain the original completed-activity metadata for existing 1.3.0 saves.
       { id: 'dorm-rest', label: '床边休息', description: '休息 30 分钟，恢复 12 点精力。', ...bedRestAnchor, minutes: 30, energyDelta: 12, result: '在宿舍床边休息了半小时。', prompt: '我已经在宿舍床边休息了半小时，程序已推进 30 分钟并恢复至多 12 点精力。请从休息结束的现场继续，不要重复结算。' },
-      { id: 'dorm-desk', label: '整理书桌', description: '整理学习用品 20 分钟，消耗 3 点精力。', x: 2, z: -2, minutes: 20, energyDelta: -3, result: '在宿舍书桌旁整理了学习用品。', prompt: '我已经整理好宿舍书桌上的学习用品，程序已推进 20 分钟并扣除 3 点精力。请从整理结束后继续，不要重复结算。' },
+      { id: 'dorm-desk', label: '整理书桌', description: '整理学习用品 20 分钟，精力 -3、压力 -4、精神 +3。', x: 2, z: -2, minutes: 20, energyDelta: -3, result: '在宿舍书桌旁整理了学习用品。', prompt: '我已经整理好宿舍书桌上的学习用品，程序已推进 20 分钟并扣除 3 点精力。请从整理结束后继续，不要重复结算。' },
       { id: 'dorm-wardrobe', label: '看看衣柜', description: '观察衣柜与宿舍陈设，不消耗时间或精力。', x: 3, z: 1.8, minutes: 0, energyDelta: 0, result: '查看了宿舍衣柜与房间陈设，没有取放物品。', prompt: '我已经看过宿舍衣柜与周围陈设，没有取放物品，也未消耗时间或精力。请描写眼前环境，不要自行增加物品或结算。' },
     ],
   },
@@ -104,7 +104,8 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
     interactions: [
       { id: 'study-focus', label: '专注自习', description: '在自习桌旁学习 30 分钟，消耗 5 点精力。', x: 0, z: -2, minutes: 30, energyDelta: -5, result: '在图书馆自习室专注学习了半小时。', prompt: '我已经在图书馆自习室专注学习了半小时，程序已推进 30 分钟并扣除 5 点精力。请从学习结束后继续，不要重复结算或自动完成日程。' },
-      { id: 'study-shelf', label: '浏览书架', description: '浏览书架 10 分钟，消耗 1 点精力；不办理借阅。', x: -3.4, z: 1.8, minutes: 10, energyDelta: -1, result: '在自习室浏览了十分钟书架，没有借走书籍。', prompt: '我已经在图书馆自习室浏览了十分钟书架，程序已推进 10 分钟并扣除 1 点精力，没有借走书籍。请从浏览结束后继续，不要重复结算或自动增加物品。' },
+      { id: 'study-reading', label: '选书阅读', description: '选择学科与阅读时长；本专业正常积累，跨专业可能获得灵感或遇到困惑，不办理借阅。', x: -3.4, z: 1.8, minutes: 0, energyDelta: 0, result: '在图书馆书架旁选择了阅读方向。', prompt: '' },
+      { id: 'study-shelf', label: '浏览书架', description: '浏览书架 10 分钟，精力 -1、压力 -2、精神 +2；不办理借阅。', x: -3.4, z: 1.8, minutes: 10, energyDelta: -1, result: '在自习室浏览了十分钟书架，没有借走书籍。', prompt: '我已经在图书馆自习室浏览了十分钟书架，程序已推进 10 分钟并扣除 1 点精力，没有借走书籍。请从浏览结束后继续，不要重复结算或自动增加物品。' },
       { id: 'study-window', label: '看看自习环境', description: '观察自习室的光线与桌椅，不消耗时间或精力。', x: 4.6, z: 2.9, minutes: 0, energyDelta: 0, result: '观察了图书馆自习室的光线、桌椅与安静环境。', prompt: '我已经观察过图书馆自习室的光线与桌椅，未消耗时间或精力。请保持室内安静情境，不要把室外行人当作在场人物。' },
     ],
   },

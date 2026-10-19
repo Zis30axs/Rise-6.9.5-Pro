@@ -1,0 +1,587 @@
+{
+  "generatedOn": "2026-10-18",
+  "tool": "prepare_character_models.py + prepare_character_models.mjs",
+  "models": [
+    {
+      "vertices": 15614,
+      "triangles": 21908,
+      "bones": 348,
+      "sourceName": "长崎素世",
+      "sourceComments": [
+        "作者：很ying的哈呵\r\n转换：桔橙",
+        "exported by mmd_tools"
+      ],
+      "originalMorphsDropped": true,
+      "id": "soyo",
+      "archive": "soyo_by_jvjiang_5286b1d1c646ade8f33983104074cd9c.zip",
+      "archiveSha256": "1683a9db7c08309e2e86d0f2c65c3e2dc717420e907effed1594c1c1173f0fba",
+      "archiveBytes": 3788663,
+      "sourceModel": "soyo.pmx",
+      "sourceModelBytes": 3037506,
+      "sourceSha256": "7f8007f266ed5f26cd807570e7fa020a08142e41c9126a801166a6c577914477",
+      "output": "soyo.glb",
+      "bytes": 1174348,
+      "sha256": "6d8d6630907732b79dd9652853b8dfe69be3c6c3c5479aca9d5ebefbb9d2fc58",
+      "sourceTriangles": 46870,
+      "sourceVertices": 30315,
+      "bounds": {
+        "min": [
+          -0.22688283579467566,
+          -1.3366922178195534e-16,
+          -0.20320198136273912
+        ],
+        "max": [
+          0.22688283578934942,
+          1.6199999999999999,
+          0.2032019814733344
+        ],
+        "height": 1.62
+      },
+      "pose": "Relaxed standing; arm bones lowered; original rig retained without IK/physics",
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "skins": 1,
+      "animationClips": 0,
+      "textures": 3,
+      "meshPrimitives": 15,
+      "primitiveStats": [
+        {
+          "mesh": 0,
+          "primitive": 0,
+          "triangles": 2082,
+          "vertices": 1288,
+          "error": 0.0005584167083725333
+        },
+        {
+          "mesh": 0,
+          "primitive": 1,
+          "triangles": 196,
+          "vertices": 156,
+          "error": 0.0031736406963318586
+        },
+        {
+          "mesh": 0,
+          "primitive": 2,
+          "triangles": 461,
+          "vertices": 256,
+          "error": 0.00015459083078894764
+        },
+        {
+          "mesh": 0,
+          "primitive": 3,
+          "triangles": 140,
+          "vertices": 90,
+          "error": 0.0005561544676311314
+        },
+        {
+          "mesh": 0,
+          "primitive": 4,
+          "triangles": 336,
+          "vertices": 240,
+          "error": 0.0019551923032850027
+        },
+        {
+          "mesh": 0,
+          "primitive": 5,
+          "triangles": 202,
+          "vertices": 202,
+          "error": 0.00008590806828578934
+        },
+        {
+          "mesh": 0,
+          "primitive": 6,
+          "triangles": 188,
+          "vertices": 140,
+          "error": 0.0005552697111852467
+        },
+        {
+          "mesh": 0,
+          "primitive": 7,
+          "triangles": 3666,
+          "vertices": 2092,
+          "error": 0.00037548202089965343
+        },
+        {
+          "mesh": 0,
+          "primitive": 8,
+          "triangles": 806,
+          "vertices": 752,
+          "error": 0.0008616721606813371
+        },
+        {
+          "mesh": 0,
+          "primitive": 9,
+          "triangles": 1368,
+          "vertices": 1202,
+          "error": 0.0011698583839461207
+        },
+        {
+          "mesh": 0,
+          "primitive": 10,
+          "triangles": 1170,
+          "vertices": 686,
+          "error": 0.00010099847713718191
+        },
+        {
+          "mesh": 0,
+          "primitive": 11,
+          "triangles": 168,
+          "vertices": 158,
+          "error": 0.0015006610192358494
+        },
+        {
+          "mesh": 0,
+          "primitive": 12,
+          "triangles": 4324,
+          "vertices": 3120,
+          "error": 0.00012939542648382485
+        },
+        {
+          "mesh": 0,
+          "primitive": 13,
+          "triangles": 6770,
+          "vertices": 5193,
+          "error": 0.0004399271565489471
+        },
+        {
+          "mesh": 0,
+          "primitive": 14,
+          "triangles": 31,
+          "vertices": 39,
+          "error": 0.0006147300009615719
+        }
+      ]
+    },
+    {
+      "vertices": 18058,
+      "triangles": 22968,
+      "bones": 183,
+      "skins": 23,
+      "sourceAsset": {
+        "generator": "UniGLTF-2.35.2",
+        "version": "2.0",
+        "extras": {
+          "sourceSha256": "41662f3dc76731e1c0b4cd83b0861629027948ae5a47edf1187482c2eec9b053",
+          "upAxis": "+Y",
+          "sourceFormat": ".vrm",
+          "sourceVrmMeta": {
+            "allowedUserName": "OnlyAuthor",
+            "author": "K",
+            "commercialUssageName": "Disallow",
+            "licenseName": "Redistribution_Prohibited",
+            "sexualUssageName": "Disallow",
+            "texture": 6,
+            "title": "DS",
+            "version": "1.1",
+            "violentUssageName": "Disallow"
+          }
+        }
+      },
+      "sourceVrmMeta": {
+        "allowedUserName": "OnlyAuthor",
+        "author": "K",
+        "commercialUssageName": "Disallow",
+        "licenseName": "Redistribution_Prohibited",
+        "sexualUssageName": "Disallow",
+        "texture": 6,
+        "title": "DS",
+        "version": "1.1",
+        "violentUssageName": "Disallow"
+      },
+      "originalMorphsDropped": true,
+      "id": "deepseek",
+      "archive": "deepseek蓝色大肥鱼（少女版本）_by_QCQKK_8ed7c5b3227a09952f2a58212253fe9e.zip",
+      "archiveSha256": "238035bd3400a6e1a530dd2854215975c10dc767290dba57e3301ee550ff3d0c",
+      "archiveBytes": 10360742,
+      "sourceModel": "DS.vrm",
+      "sourceModelBytes": 19770344,
+      "sourceSha256": "41662f3dc76731e1c0b4cd83b0861629027948ae5a47edf1187482c2eec9b053",
+      "output": "deepseek.glb",
+      "bytes": 1709620,
+      "sha256": "b981ca56e84f813e67e69f1baf09b93e80f2b33c6851e6277b5dfa07675befaa",
+      "sourceTriangles": 143896,
+      "sourceVertices": 94585,
+      "bounds": {
+        "min": [
+          -0.32353344351668956,
+          -6.938893903907228e-18,
+          -0.5264767291477
+        ],
+        "max": [
+          0.32353344351300034,
+          1.65,
+          0.5264767361785536
+        ],
+        "height": 1.65
+      },
+      "pose": "Relaxed standing; arm bones lowered; original rig retained without IK/physics",
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "animationClips": 0,
+      "textures": 6,
+      "meshPrimitives": 23,
+      "primitiveStats": [
+        {
+          "mesh": 0,
+          "primitive": 0,
+          "triangles": 312,
+          "vertices": 246,
+          "error": 0.006847082171589136
+        },
+        {
+          "mesh": 1,
+          "primitive": 0,
+          "triangles": 194,
+          "vertices": 149,
+          "error": 0.0088351434096694
+        },
+        {
+          "mesh": 2,
+          "primitive": 0,
+          "triangles": 312,
+          "vertices": 260,
+          "error": 0.008765273727476597
+        },
+        {
+          "mesh": 3,
+          "primitive": 0,
+          "triangles": 310,
+          "vertices": 321,
+          "error": 0.006065132562071085
+        },
+        {
+          "mesh": 4,
+          "primitive": 0,
+          "triangles": 114,
+          "vertices": 88,
+          "error": 0.012848497368395329
+        },
+        {
+          "mesh": 5,
+          "primitive": 0,
+          "triangles": 358,
+          "vertices": 277,
+          "error": 0.005483254790306091
+        },
+        {
+          "mesh": 6,
+          "primitive": 0,
+          "triangles": 588,
+          "vertices": 579,
+          "error": 0.0009359532850794494
+        },
+        {
+          "mesh": 7,
+          "primitive": 0,
+          "triangles": 1949,
+          "vertices": 1759,
+          "error": 0.0033773735631257296
+        },
+        {
+          "mesh": 8,
+          "primitive": 0,
+          "triangles": 119,
+          "vertices": 178,
+          "error": 0.006905991584062576
+        },
+        {
+          "mesh": 9,
+          "primitive": 0,
+          "triangles": 1348,
+          "vertices": 1191,
+          "error": 0.0047782473266124725
+        },
+        {
+          "mesh": 10,
+          "primitive": 0,
+          "triangles": 1122,
+          "vertices": 685,
+          "error": 0.0008060077670961618
+        },
+        {
+          "mesh": 11,
+          "primitive": 0,
+          "triangles": 368,
+          "vertices": 261,
+          "error": 0.015356999821960926
+        },
+        {
+          "mesh": 12,
+          "primitive": 0,
+          "triangles": 270,
+          "vertices": 167,
+          "error": 0.004248916171491146
+        },
+        {
+          "mesh": 13,
+          "primitive": 0,
+          "triangles": 1506,
+          "vertices": 1128,
+          "error": 0.0031619598157703876
+        },
+        {
+          "mesh": 14,
+          "primitive": 0,
+          "triangles": 1412,
+          "vertices": 1233,
+          "error": 0.004251787438988686
+        },
+        {
+          "mesh": 15,
+          "primitive": 0,
+          "triangles": 186,
+          "vertices": 154,
+          "error": 0.014853422529995441
+        },
+        {
+          "mesh": 16,
+          "primitive": 0,
+          "triangles": 56,
+          "vertices": 58,
+          "error": 0.020788200199604034
+        },
+        {
+          "mesh": 17,
+          "primitive": 0,
+          "triangles": 278,
+          "vertices": 293,
+          "error": 0.005297519266605377
+        },
+        {
+          "mesh": 18,
+          "primitive": 0,
+          "triangles": 4792,
+          "vertices": 3853,
+          "error": 0.0014222743920981884
+        },
+        {
+          "mesh": 19,
+          "primitive": 0,
+          "triangles": 596,
+          "vertices": 608,
+          "error": 0.01655801199376583
+        },
+        {
+          "mesh": 20,
+          "primitive": 0,
+          "triangles": 588,
+          "vertices": 527,
+          "error": 0.0009733124170452356
+        },
+        {
+          "mesh": 21,
+          "primitive": 0,
+          "triangles": 4817,
+          "vertices": 2864,
+          "error": 0.0008275524014607072
+        },
+        {
+          "mesh": 22,
+          "primitive": 0,
+          "triangles": 1373,
+          "vertices": 1179,
+          "error": 0.006326864007860422
+        }
+      ]
+    },
+    {
+      "vertices": 19404,
+      "triangles": 27981,
+      "bones": 187,
+      "skins": 9,
+      "sourceAsset": {
+        "generator": "UniGLTF-2.65.3",
+        "version": "2.0",
+        "extras": {
+          "sourceSha256": "f8e1a4c665805a62602ecc43fb713b45849416b76bb78fa05d70593a11e74c12",
+          "upAxis": "+Y",
+          "sourceFormat": ".vrm",
+          "sourceVrmMeta": {
+            "allowedUserName": "OnlyAuthor",
+            "author": "1",
+            "commercialUssageName": "Disallow",
+            "licenseName": "Redistribution_Prohibited",
+            "sexualUssageName": "Disallow",
+            "title": "学生服小洋2026",
+            "version": "1",
+            "violentUssageName": "Disallow"
+          }
+        }
+      },
+      "sourceVrmMeta": {
+        "allowedUserName": "OnlyAuthor",
+        "author": "1",
+        "commercialUssageName": "Disallow",
+        "licenseName": "Redistribution_Prohibited",
+        "sexualUssageName": "Disallow",
+        "title": "学生服小洋2026",
+        "version": "1",
+        "violentUssageName": "Disallow"
+      },
+      "originalMorphsDropped": true,
+      "id": "xiaoyang",
+      "archive": "小洋学生服2026 (1)_by_蜂神扇_6a4a43ed0269fc66409bdc583e436240.zip",
+      "archiveSha256": "d201de947c499e7492120fd17dfff99a3570643379f5496caf7d56227fc937aa",
+      "archiveBytes": 25220782,
+      "sourceModel": "小洋学生服2026 (1).vrm",
+      "sourceModelBytes": 107747876,
+      "sourceSha256": "f8e1a4c665805a62602ecc43fb713b45849416b76bb78fa05d70593a11e74c12",
+      "output": "xiaoyang.glb",
+      "bytes": 1842624,
+      "sha256": "57032dc78a07264df0368c4629254240341d5282c3f0de6af95c58ab69e1533a",
+      "sourceTriangles": 196091,
+      "sourceVertices": 156096,
+      "bounds": {
+        "min": [
+          -0.3080832166819414,
+          -4.339795390979763e-17,
+          -0.22838193608395418
+        ],
+        "max": [
+          0.30808321668194116,
+          1.6199999999999999,
+          0.22838193936026893
+        ],
+        "height": 1.6199999999999999
+      },
+      "pose": "Relaxed standing; arm bones lowered; original rig retained without IK/physics",
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "animationClips": 0,
+      "textures": 7,
+      "meshPrimitives": 10,
+      "primitiveStats": [
+        {
+          "mesh": 0,
+          "primitive": 0,
+          "triangles": 509,
+          "vertices": 357,
+          "error": 0.003069686470553279
+        },
+        {
+          "mesh": 1,
+          "primitive": 0,
+          "triangles": 2827,
+          "vertices": 1749,
+          "error": 0.0019521734211593866
+        },
+        {
+          "mesh": 1,
+          "primitive": 1,
+          "triangles": 8028,
+          "vertices": 5229,
+          "error": 0.0002926818560808897
+        },
+        {
+          "mesh": 2,
+          "primitive": 0,
+          "triangles": 4297,
+          "vertices": 2633,
+          "error": 0.0010914847953245044
+        },
+        {
+          "mesh": 3,
+          "primitive": 0,
+          "triangles": 4102,
+          "vertices": 2718,
+          "error": 0.0009446837357245386
+        },
+        {
+          "mesh": 4,
+          "primitive": 0,
+          "triangles": 2985,
+          "vertices": 2296,
+          "error": 0.0021809996105730534
+        },
+        {
+          "mesh": 5,
+          "primitive": 0,
+          "triangles": 1956,
+          "vertices": 1456,
+          "error": 0.001918263966217637
+        },
+        {
+          "mesh": 6,
+          "primitive": 0,
+          "triangles": 1886,
+          "vertices": 1621,
+          "error": 0.0010616605868563056
+        },
+        {
+          "mesh": 7,
+          "primitive": 0,
+          "triangles": 484,
+          "vertices": 385,
+          "error": 0.0076596844010055065
+        },
+        {
+          "mesh": 8,
+          "primitive": 0,
+          "triangles": 907,
+          "vertices": 960,
+          "error": 0.009159820154309273
+        }
+      ]
+    },
+    {
+      "vertices": 63956,
+      "triangles": 60000,
+      "bones": 0,
+      "skins": 0,
+      "sourceAsset": {
+        "generator": "Khronos glTF Blender I/O v4.5.51",
+        "version": "2.0",
+        "extras": {
+          "sourceSha256": "0c21643b27555eba475bdedd63a4481944b97c3687b9d74175232c4bc9a2ca39",
+          "upAxis": "+Y",
+          "sourceFormat": ".glb",
+          "sourceVrmMeta": null
+        }
+      },
+      "sourceVrmMeta": null,
+      "originalMorphsDropped": true,
+      "id": "claude",
+      "archive": "Claude｜成年·幼年3D角色模型【Blender+GLB】_by_Manny0517_550ec3162a07141f687b92ee744c3c22.zip",
+      "archiveSha256": "6bdf24e6986bc36c1b5f9401acdec9d295720344f866aac1f1f7154f87717578",
+      "archiveBytes": 48178078,
+      "sourceModel": "claude-child/claude-child.glb",
+      "sourceModelBytes": 31581292,
+      "sourceSha256": "0c21643b27555eba475bdedd63a4481944b97c3687b9d74175232c4bc9a2ca39",
+      "output": "claude.glb",
+      "bytes": 3675416,
+      "sha256": "88cdf55a99aa9807fd8810d8a4dab398782666573a86b134df7b7291ec148c41",
+      "sourceTriangles": 261202,
+      "sourceVertices": 195413,
+      "bounds": {
+        "min": [
+          -0.3235112974608441,
+          0,
+          -0.228240230850786
+        ],
+        "max": [
+          0.32351129746084417,
+          1.0500000000000003,
+          0.228240230850786
+        ],
+        "height": 1.0500000000000003
+      },
+      "pose": "Original static standing pose; source has no rig",
+      "forwardAxis": "+Z",
+      "upAxis": "+Y",
+      "animationClips": 0,
+      "textures": 1,
+      "meshPrimitives": 1,
+      "primitiveStats": [
+        {
+          "mesh": 0,
+          "primitive": 0,
+          "triangles": 60000,
+          "vertices": 63956,
+          "error": 0.0016913602594286203
+        }
+      ]
+    }
+  ],
+  "totalBytes": 8402008,
+  "originalModelBytes": 162137018
+}

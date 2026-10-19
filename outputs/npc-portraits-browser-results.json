@@ -1,0 +1,116 @@
+{
+  "task": "三位NPC平涂静态表情图集与素世Live2D切换",
+  "assetVersion": "expression-atlases-v2",
+  "uniqueScenarios": 3,
+  "passed": 3,
+  "errors": [],
+  "finalBundle": {
+    "path": "dist/immersive-shell.js",
+    "bytes": 40639612,
+    "sha256": "f465c260a335d13237e96ab149b141706cb6aadeb48ed3f1a85f460a6173e020"
+  },
+  "execution": {
+    "browser": "Microsoft Edge via Playwright",
+    "workers": 1,
+    "sessionId": 58754,
+    "exitCode": 0,
+    "rawResults": "outputs/npc-portraits-playwright-results.json",
+    "tests": [
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        },
+        "name": "desktop NPC静态表情裁片按真实姓名切换，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 75318,
+        "emotionsPerNpc": 9
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "name": "390 NPC静态表情裁片按真实姓名切换，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 58389,
+        "emotionsPerNpc": 4
+      },
+      {
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "name": "320 NPC静态表情裁片按真实姓名切换，素世往返保留Live2D与阅读游标",
+        "status": "passed",
+        "durationMs": 46143,
+        "emotionsPerNpc": 4
+      }
+    ],
+    "automaticServer": {
+      "url": "http://127.0.0.1:5178",
+      "owner": "Playwright webServer",
+      "cleanedUp": true,
+      "postRunListeningPort5178": false
+    },
+    "earlierSinglePortraitRuns": "Previous single-image attempts and the corrected ShadowRoot hit-test diagnostic are not counted. All three final v2 scenarios passed on the finalBundle above."
+  },
+  "assertions": {
+    "identity": "Actual contact names lin/林同学 and zhou/周同学 plus the saved seed's current DeepSeek-appearance encounter select the existing identity-derived appearance. Actual names are present in the controlled generation context.",
+    "imageSelection": "Each NPC uses one fixed embedded PNG href; supported emotions select distinct viewBox rectangles. Three NPCs have distinct PNG href values.",
+    "pixelVerification": {
+      "desktop": "For each of three NPCs, all nine supported emotion viewBoxes and isolated SVG screenshot SHA-256 values are distinct.",
+      "mobile": "For each NPC at 320px and 390px, neutral/happy/angry/thinking have distinct viewBoxes and isolated SVG screenshot SHA-256 values.",
+      "fallback": "Undefined emotion produces exactly the neutral viewBox and the same screenshot SHA-256 for every NPC at every tested viewport.",
+      "isolation": "Surrounding UI and dialogue were temporarily hidden only during SVG screenshot sampling so text changes cannot produce a false portrait difference.",
+      "reports": [
+        "outputs/npc-portrait-pixels-desktop.json",
+        "outputs/npc-portrait-pixels-390.json",
+        "outputs/npc-portrait-pixels-320.json"
+      ]
+    },
+    "soyo": "NPC presentation pauses/hides the existing Soyo portrait; the same canvas element remains mounted. Returning to Soyo restores ready status, visible opacity and the requested emotion. No additional NPC canvas appears.",
+    "unknownSpeaker": "Unknown speaker shows neither a stale NPC portrait nor Soyo.",
+    "cursorAndState": "Previous/next sentence navigation restores the correct speaker and portrait. Original story text and the full saved state remain unchanged by portrait navigation. Exactly one controlled generation occurs per scenario.",
+    "controls": "ShadowRoot-aware hit tests confirm mode switch, location map, next sentence, composer and rescue control remain reachable.",
+    "capturedPageErrors": []
+  },
+  "visualReview": {
+    "completed": true,
+    "method": "Actual saved screenshots opened with view_image: all 27 desktop expressions, all 24 mobile NPC/neutral-happy-angry-thinking scenes, and Soyo returning at all three sizes.",
+    "results": [
+      "The three NPCs use consistent flat illustrated linework and fit the painted background; faces, brows, mouths and static hand gestures visibly change.",
+      "Each displayed frame contains one character. No adjacent atlas character or noticeable low-alpha preview debris was visible in the normal browser composition.",
+      "All reviewed heads and hair tops remain intact. Desktop and 390px views show the upper-body gestures.",
+      "320px uses the intended right-side bust crop: faces and raised thinking/waving hands remain visible; lower waist-level gestures can be below the dialogue edge.",
+      "No face is covered by the mode/map controls; reading, input and rescue controls remain separate.",
+      "Soyo returns as the existing real Live2D model after static NPC and unknown-speaker segments."
+    ],
+    "representativeScreenshots": [
+      "outputs/npc-portraits-desktop-claude-angry.png",
+      "outputs/npc-portraits-desktop-xiaoyang-angry.png",
+      "outputs/npc-portraits-desktop-deepseek-angry.png",
+      "outputs/npc-portraits-390-claude-thinking.png",
+      "outputs/npc-portraits-390-xiaoyang-thinking.png",
+      "outputs/npc-portraits-390-deepseek-thinking.png",
+      "outputs/npc-portraits-320-claude-happy.png",
+      "outputs/npc-portraits-320-xiaoyang-thinking.png",
+      "outputs/npc-portraits-320-deepseek-thinking.png",
+      "outputs/npc-portraits-desktop-soyo.png",
+      "outputs/npc-portraits-390-soyo.png",
+      "outputs/npc-portraits-320-soyo.png"
+    ],
+    "clarifiedObservation": "An initial concern about DeepSeek thinking/relieved hair-top clipping was checked against the actual screenshot pixels: 12/13 top rows are background, matching neutral/serious. The concern was a preview misreading, not a product defect; no frame or bundle change was needed."
+  },
+  "boundaries": {
+    "independentSimulatedTavernHelperHost": true,
+    "controlledLLMReplies": true,
+    "realLLMCalled": false,
+    "nativePort8000Accessed": false,
+    "phoneHostMocked": true,
+    "phoneTauriTavernPhysicalDeviceTested": false,
+    "mobileEvidence": "Desktop Edge viewport simulation only.",
+    "networkEvidence": "No claim of a complete network capture across these cases. Tests explicitly verify the NPC image href values are embedded data URLs.",
+    "pngPackagingAndInstallation": "Owned by the parent agent and not asserted by this browser report."
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "viewport": {
+    "label": "390",
+    "width": 390,
+    "height": 844
+  },
+  "sourceCount": 3,
+  "emotionsPerNpc": 4,
+  "unknownEmotionFallbackPassed": true,
+  "frames": {
+    "claude": {
+      "neutral": {
+        "viewBox": "20 55 360 410",
+        "sha256": "812fcffb43cef8405299ebc5f2af9e7c5b0a76804a23dbc4074b3a03f3ebe956",
+        "screenshot": "outputs/npc-portrait-crop-390-claude-neutral.png"
+      },
+      "happy": {
+        "viewBox": "390 55 360 410",
+        "sha256": "ed1a2b5ec3f75d2fd90a4ac504e58a1b9983343f84642bbd7aba13569725b545",
+        "screenshot": "outputs/npc-portrait-crop-390-claude-happy.png"
+      },
+      "angry": {
+        "viewBox": "20 508 360 410",
+        "sha256": "3dd240a4f36da92d50e98bb0adcbb8d2172ebe6e6525d17189e050c9df53a6a9",
+        "screenshot": "outputs/npc-portrait-crop-390-claude-angry.png"
+      },
+      "thinking": {
+        "viewBox": "20 964 360 410",
+        "sha256": "c06c74020de352fea13cc495edf8b7d96ed8e0cb68f5b9bbd7986dbb8de8b733",
+        "screenshot": "outputs/npc-portrait-crop-390-claude-thinking.png"
+      }
+    },
+    "xiaoyang": {
+      "neutral": {
+        "viewBox": "50 20 340 450",
+        "sha256": "75da1c6ec8e84fddcaf01946f2ec8b579c3418e1ddb01263f73b76ad3636d7c7",
+        "screenshot": "outputs/npc-portrait-crop-390-xiaoyang-neutral.png"
+      },
+      "happy": {
+        "viewBox": "400 20 340 450",
+        "sha256": "413ad05899e7a69bc66ddd5019a02d9bb9e31e60598e56e02a2a3b484c507b2a",
+        "screenshot": "outputs/npc-portrait-crop-390-xiaoyang-happy.png"
+      },
+      "angry": {
+        "viewBox": "50 490 340 450",
+        "sha256": "3ec0fe0f77f5cfeaa10a3e77bd0e679389acea31fe096d7bc12203e0d183d1e8",
+        "screenshot": "outputs/npc-portrait-crop-390-xiaoyang-angry.png"
+      },
+      "thinking": {
+        "viewBox": "50 950 340 450",
+        "sha256": "aee9fda9232d5cea645e69d8c71c73b8fc1b1454c98f6f882366043813ba45fd",
+        "screenshot": "outputs/npc-portrait-crop-390-xiaoyang-thinking.png"
+      }
+    },
+    "deepseek": {
+      "neutral": {
+        "viewBox": "50 10 350 440",
+        "sha256": "1ff545435486dc55b58442c5b3fcccf4051488693f42b41b717ad741f1973e2c",
+        "screenshot": "outputs/npc-portrait-crop-390-deepseek-neutral.png"
+      },
+      "happy": {
+        "viewBox": "396 14 350 440",
+        "sha256": "8025623f4615336ca8ab596b45dccb49011df5d27c8c57e78b85ba770e3ac2b8",
+        "screenshot": "outputs/npc-portrait-crop-390-deepseek-happy.png"
+      },
+      "angry": {
+        "viewBox": "50 490 350 440",
+        "sha256": "ebf06d5badc46d911a230b8f38db70003b1407cf50905f22408666556184aec0",
+        "screenshot": "outputs/npc-portrait-crop-390-deepseek-angry.png"
+      },
+      "thinking": {
+        "viewBox": "50 946 350 440",
+        "sha256": "98352db61cffa7b5aa1025b467ed2d0d6680c04912b3d56412313b9e99fdc034",
+        "screenshot": "outputs/npc-portrait-crop-390-deepseek-thinking.png"
+      }
+    }
+  }
+}

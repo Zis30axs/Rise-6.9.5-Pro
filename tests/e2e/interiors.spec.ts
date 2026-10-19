@@ -1,6 +1,6 @@
+import { createSelectedInitialState } from './academics-fixture';
 import { expect, test, type Frame, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { createInitialState } from '../../src/runtime/model';
 import { getCampusInterior, getInteriorMovementWorld } from '../../src/runtime/campus-interiors';
 import { getSceneArea, sceneLocationId } from '../../src/runtime/scene-context';
 import { isScenePositionWalkable, SCENE_WALK_RADIUS } from '../../src/frontend/scene-movement';
@@ -19,6 +19,11 @@ const studyActivities = [
   { roomId: 'classroom', id: 'classroom-notes', label: '温习笔记', x: 1.3, z: -1.5 },
   { roomId: 'study-room', id: 'study-focus', label: '专注自习', x: 0, z: -2 },
 ];
+/** The 80% route-event prompt is optional; accept the original interaction when it appears. */
+async function finishInteraction(page: Page) {
+  const normal = page.getByRole('button', { name: '否，正常进行', exact: true });
+  await normal.waitFor({ state: 'visible', timeout: 1500 }).then(() => normal.click()).catch(() => {});
+}
 
 /** This host fixture preserves its chat variables across a real browser reload. */
 async function withCampusHost(page: Page, initial?: WorldState, deferred = false): Promise<Frame> {
@@ -78,7 +83,7 @@ async function savedState(page: Page): Promise<WorldState> {
 
 function outsideState(roomId: string): WorldState {
   const room = getCampusInterior(roomId)!;
-  const state = createInitialState();
+  const state = createSelectedInitialState();
   const area = getSceneArea(room.entrance.x, room.entrance.z)!;
   state.scene = { ...room.entrance, yaw: 0, areaId: area.id, seed: 'campus-test-seed', encounterId: null };
   state.locationId = sceneLocationId(area.id);
@@ -145,6 +150,7 @@ test('校园室内：教室温习先在本地结算，确认对话才发送房�
   await page.getByRole('button', { name: '室内物件', exact: true }).click();
   const rest = page.locator('[data-interior-action="classroom-notes"]');
   await expect(rest).toBeEnabled(); await rest.click();
+  await page.locator('[data-study-subject]').selectOption('cs-programming');
   await page.locator('[data-study-option="study-short"]').click();
   const rested = await savedState(page);
   const lastStudy = rested.interior!.lastStudy!;
@@ -242,8 +248,9 @@ for (const activity of studyActivities) {
       await page.getByRole('button', { name: '室内物件', exact: true }).click();
       await page.locator(`[data-interior-action="${activity.id}"]`).click();
       const picker = page.locator('[data-study-picker]');
+      await picker.locator('[data-study-subject]').selectOption('cs-programming');
       await expect(picker).toHaveRole('dialog');
-      await expect(picker).toHaveAccessibleName('选择学习时长');
+      await expect(picker).toHaveAccessibleName('选择学习科目与时长');
       await expect(picker.locator('[data-study-option]')).toHaveCount(3);
       expect(await savedState(page)).toEqual(initial);
       const choice = picker.locator(`[data-study-option="${option.id}"]`);
@@ -265,7 +272,20 @@ for (const activity of studyActivities) {
       expect(studied.player).toEqual({ ...initial.player, energy: initial.player.energy - lastStudy.energyConsumed });
       expect(studied.interior).toEqual({ ...initial.interior!, activityId: activity.id, lastRest: null, lastStudy });
       expect(studied.journal).toHaveLength(initial.journal.length + 1);
-      expect({ ...studied, clock: initial.clock, player: initial.player, interior: initial.interior, journal: initial.journal }).toEqual(initial);
+      expect(studied.academics).toEqual({
+        ...initial.academics!,
+        subjects: initial.academics!.subjects.map(subject => ({ ...subject, points: subject.subjectId === 'cs-programming' ? lastStudy.minutes : subject.points })),
+        lastGain: {
+          subjectId: 'cs-programming', minutes: lastStudy.minutes,
+          points: lastStudy.minutes, totalPoints: lastStudy.minutes,
+          outcome: 'normal', channel: activity.roomId, interactionId: activity.id,
+          energyConsumed: lastStudy.energyConsumed,
+          moraleChange: Math.max(0, initial.player.morale - Math.ceil(lastStudy.minutes / 15)) - initial.player.morale,
+          stressChange: Math.min(100, initial.player.stress + Math.ceil(lastStudy.minutes / 30)) - initial.player.stress,
+          at: `第 ${studied.clock.day} 天 ${String(studied.clock.hour).padStart(2, '0')}:${String(studied.clock.minute).padStart(2, '0')}`,
+        },
+      });
+      expect({ ...studied, clock: initial.clock, player: initial.player, interior: initial.interior, journal: initial.journal, academics: initial.academics }).toEqual(initial);
       const receipt = page.locator('[data-local-activity-receipt]');
       await expect(receipt).toHaveRole('status');
       await expect(receipt).toBeVisible();
@@ -295,6 +315,7 @@ test('学习三档：打开与取消都不结算，Esc 仅关闭选择器，学�
   await page.getByRole('button', { name: '室内物件', exact: true }).click();
   await page.locator('[data-interior-action="classroom-notes"]').click();
   const picker = page.locator('[data-study-picker]');
+  await picker.locator('[data-study-subject]').selectOption('cs-programming');
   await expect(picker).toHaveRole('dialog');
   expect(await savedState(page)).toEqual(initial);
   const stopped = await interior(page).getAttribute('data-position');
@@ -324,6 +345,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await page.getByRole('button', { name: '室内物件', exact: true }).click();
     await page.locator('[data-interior-action="study-focus"]').click();
     const picker = page.locator('[data-study-picker]');
+    await picker.locator('[data-study-subject]').selectOption('cs-programming');
     await expect(picker).toBeInViewport({ ratio: 1 });
     const options = picker.locator('[data-study-option]');
     await expect(options).toHaveCount(3);
@@ -362,6 +384,7 @@ test(`学习三档：精力 ${energy} 时只开放能承担整个区间的档位
   await page.getByRole('button', { name: '室内物件', exact: true }).click();
   await page.locator('[data-interior-action="classroom-notes"]').click();
   const picker = page.locator('[data-study-picker]');
+  await picker.locator('[data-study-subject]').selectOption('cs-programming');
   await expect(picker).toBeVisible();
   for (const option of [{ id: 'study-short', cost: 5 }, { id: 'study-medium', cost: 20 }, { id: 'study-long', cost: 40 }]) {
     const button = picker.locator(`[data-study-option="${option.id}"]`);
@@ -398,7 +421,7 @@ test('校园室内：零耗时观察仍准备场景对话，点击观察不调�
 });
 
 test('校园长椅：休息十五分钟由程序结算、保留草稿，刷新不再次恢复精力', async ({ page }) => {
-  const initial = createInitialState();
+  const initial = createSelectedInitialState();
   initial.player.energy = 60;
   initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
   await withCampusHost(page, initial);
@@ -581,25 +604,25 @@ test('校园室内：围墙碰撞、开窗停步，整页刷新恢复同一室�
 });
 
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
-  test(`校园设施地图：${viewport.width}px 五处地点触控区分离，教学楼前往后可进入教室`, async ({ page }) => {
+  test(`校园设施地图：${viewport.width}px 十二处地点触控区分离，教学楼前往后可进入教室`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    const initial = createInitialState(); initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
+    const initial = createSelectedInitialState(); initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
     await withCampusHost(page, initial);
     await page.getByRole('button', { name: '地图', exact: true }).click();
     const map = page.locator('.world-map');
     const layers = page.getByRole('navigation', { name: '地图范围', exact: true });
     const targets = map.locator('.cms-place-pin');
-    for (const label of ['校园', '沙盘']) {
+    for (const label of ['沙盘']) {
       await layers.getByRole('button', { name: label, exact: true }).click();
-      await expect(map).toHaveAttribute('data-map-layer', label === '校园' ? 'campus' : 'sandtable');
-      await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-depth', label === '校园' ? '0.000' : '1.000');
-      await expect(targets).toHaveCount(5);
+      await expect(map).toHaveAttribute('data-map-layer', 'sandtable');
+      await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-depth', '0.000');
+      await expect(targets).toHaveCount(6);
+      await expect(map.locator('.cms-place-dot')).toHaveCount(viewport.width >= 330 ? 6 : 0);
       for (const target of await targets.all()) {
         await expect(target).toBeInViewport({ ratio: 1 });
       }
-      // Read one settled projection, rather than mixing rectangles from several
-      // animation frames while the plan rises into the sandtable.
-      const boxes = await targets.evaluateAll(elements => elements.map(element => {
+      // Inspect the same settled sandtable projection for all twelve targets.
+      const boxes = await map.locator('.cms-place-pin, .cms-place-dot').evaluateAll(elements => elements.map(element => {
         const box = element.getBoundingClientRect();
         return { id: element.getAttribute('data-map-target'), x: box.x, y: box.y, width: box.width, height: box.height };
       }));
@@ -609,6 +632,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       }
     }
     await map.locator('[data-map-target="teaching"]').click();
+    await finishInteraction(page);
     await expect(page.locator('.topbar-world')).toContainText('教学楼');
     const travelled = await savedState(page);
     expect(travelled.locationId).toBe('teaching'); expect(travelled.interior).toBeNull();
@@ -618,6 +642,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await page.getByRole('button', { name: '关闭地图窗口', exact: true }).click();
     await page.getByRole('button', { name: '自由行走', exact: true }).click();
     await page.getByRole('button', { name: '进入普通教室', exact: true }).click();
+    await finishInteraction(page);
     await expect(interior(page)).toHaveAttribute('data-room-id', 'classroom');
     await expect(interior(page)).toHaveAttribute('data-renderer', 'webgl');
     await expect(page.locator('body')).not.toHaveAttribute('data-campus-generations');

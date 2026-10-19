@@ -1,0 +1,35 @@
+.location-services { display:grid; gap:14px; min-width:0; }
+.location-service-heading, .location-service-title, .location-service-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.location-service-heading > div, .location-service-title h3 { min-width:0; }
+.location-service-heading small { color:var(--muted); font-size:11px; }
+.location-service-heading h2 { font-size:22px; font-weight:500; }
+.location-open-status { flex-shrink:0; border:1px solid #a6c5944d; border-radius:20px; color:#d0e8b9; background:#a6c59412; padding:4px 10px; font-size:11px; }
+.location-open-status.closed { color:#ddc9a6; border-color:#ddc9a64d; }
+.location-services .location-hours { color:var(--gold); font-size:12px; margin-top:-7px; }
+.location-description, .location-guidance p { color:#c0cbb8; font-size:13px; line-height:1.9; }
+.location-closed-note, .location-service-blocked { color:#dfbd91; font-size:12px; }
+.location-service-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.location-service-card { display:flex; flex-direction:column; gap:9px; min-width:0; padding:16px; background:#10231c66; border:1px solid #c7c8a633; border-radius:12px; }
+.location-service-title h3 { font-size:16px; font-weight:500; }
+.location-service-title strong { flex-shrink:0; color:var(--gold); font-weight:500; }
+.location-service-card > p { font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.location-service-card > p:not(.location-service-blocked) { color:#c8d0bd; }
+.location-service-duration { color:#b1bfa5; font-size:11px; }
+.location-service-effects .harmful { color:#dfb38b; }
+.uc-shell .location-services button { min-height:44px; border:1px solid #d2bc8559; border-radius:8px; padding:8px 14px; color:#f0d9aa; background:#d2bc850d; font-size:12px; }
+.uc-shell .location-service-card button { margin-top:auto; width:100%; background:#e0c389; border-color:#e0c389; color:#26382a; }
+.location-services .location-service-note { color:#a5b39c; font-size:11px; }
+.location-service-receipt { padding:12px 14px; border-left:2px solid #d9c084; color:#eee0bd; background:#cfb66e12; font-size:12px; line-height:1.9; }
+.location-service-error { color:#f1b7a6; font-size:12px; }
+.location-service-error span { display:block; margin-top:5px; }
+.location-guidance { display:grid; justify-items:start; gap:12px; padding:16px; border:1px solid #c7c8a633; border-radius:12px; }
+.location-service-footer { border-top:1px solid var(--line); padding-top:12px; }
+.location-service-footer small { color:#b4c0a8; font-size:11px; }
+@media (max-width:600px) {
+  .location-service-list { grid-template-columns:minmax(0,1fr); }
+  .location-service-card { padding:13px; }
+  .location-service-heading { align-items:flex-start; flex-wrap:wrap; gap:6px; }
+  .location-service-heading h2 { font-size:19px; }
+}
+.uc-shell .location-service-card .location-service-pack{background:#d4bd8b0d;border-color:#d6c19466;color:#e8d2a5;margin-top:8px;display:block;min-height:52px;line-height:1.5}
+.location-service-pack small{display:block;font-size:10px;color:#c0c5ae;margin-top:3px}

@@ -1,0 +1,28 @@
+{
+  "measuredAt": "2026-10-19T06:50:32.945Z",
+  "origin": "http://jp-tyo-bgp-1.ofalias.net:46447",
+  "mode": "once",
+  "requests": [
+    {
+      "path": "/",
+      "status": 200,
+      "wireBytes": 85680,
+      "decodedBytes": 734570,
+      "ttfbMs": 1334,
+      "totalMs": 1461,
+      "encoding": "gzip"
+    },
+    {
+      "path": "/api/characters/all",
+      "status": 200,
+      "wireBytes": 4530,
+      "decodedBytes": 9146,
+      "ttfbMs": 547,
+      "totalMs": 548,
+      "encoding": "gzip",
+      "run": 1,
+      "characterCount": 6,
+      "shallowCount": 6
+    }
+  ]
+}

@@ -44,6 +44,25 @@ export const streetRoutes: Record<string, StreetNode[]> = {
   'bus-stop': [
     { label: '南门公交站', position: [46, 1.7, 38], yaw: 3.141 },
   ],
+  sports: [
+    { label: '运动场入口', position: [39, 1.7, -11], yaw: 0 },
+    { label: '跑道边', position: [46, 1.7, -11], yaw: 0 },
+  ],
+  junction: [
+    { label: '十字路口', position: [0, 1.7, 48], yaw: 0 },
+  ],
+  bookshop: [
+    { label: '书店门前', position: [-22, 1.7, 53], yaw: 3.141 },
+  ],
+  convenience: [
+    { label: '便利店门前', position: [21, 1.7, 53], yaw: 3.141 },
+  ],
+  'street-cafe': [
+    { label: '街边咖啡露台', position: [48, 1.7, 53], yaw: 3.141 },
+  ],
+  'pocket-park': [
+    { label: '口袋公园', position: [37, 1.7, 76], yaw: 3.141 },
+  ],
   home: [
     { label: '住宅区公交站', position: [-180, 1.7, 150], yaw: 0 },
     { label: '家门前庭院', position: [-190, 1.7, 130], yaw: 0 },

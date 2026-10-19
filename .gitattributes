@@ -1,0 +1,9 @@
+# Preserve packaged resources and recorded artifacts byte-for-byte on Windows.
+assets/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+outputs/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+vendor/** -text -whitespace
+# Upstream motion files retain their original line endings and spacing.
+assets/live2d-soyo/** -whitespace
+# Unified diffs contain meaningful leading spaces and must retain exact bytes.
+integration/**/*.patch -text -whitespace
+integration/sillytavern-remote-loading/new-files/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

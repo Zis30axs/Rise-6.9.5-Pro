@@ -1,0 +1,304 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\.study\\cc\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/e2e/convenience-store.spec.ts",
+      "--workers=1",
+      "--timeout=90000",
+      "--reporter=list,json",
+      "--output=test-results/store-final"
+    ],
+    "configFile": "D:\\.study\\cc\\playwright.config.ts",
+    "rootDir": "D:/.study/cc/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/.study/cc/test-results/store-final",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/.study/cc/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\.study\\cc\\test-results\\store-final",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "D:\\.study\\cc\\tests\\e2e",
+        "snapshotDir": "D:\\.study\\cc\\tests\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://127.0.0.1:5178",
+          "browserName": "chromium",
+          "channel": "msedge"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev -- --port 5178 --strictPort",
+      "url": "http://127.0.0.1:5178",
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [
+    {
+      "title": "convenience-store.spec.ts",
+      "file": "convenience-store.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "desktop便利店购买入包与使用独立结算，状态和草稿保持",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "timedOut",
+                  "duration": 90117,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts",
+                        "column": 114,
+                        "line": 83
+                      },
+                      "message": "Error: locator.click: Test timeout of 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.wm-destination').filter({ has: locator('b').filter({ hasText: /^便利店$/ }) })\u001b[22m\n\n\n  81 |   await closeWindow(page);\n  82 |   await page.getByRole('button', { name: '打开地图切换地点', exact: true }).click();\n> 83 |   await page.locator('.wm-destination').filter({ has: page.locator('b', { hasText: new RegExp(`^${name}$`) }) }).click();\n     |                                                                                                                  ^\n  84 |   await expect(page.locator('[data-window=map]')).toHaveCount(0);\n  85 |   await expect.poll(async () => (await saved(page)).locationId).toBe(locationId);\n  86 | }\n    at travel (D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts:83:114)\n    at D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts:147:39"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T11:49:47.472Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\.study\\cc\\test-results\\store-final\\convenience-store-desktop便利店购买入包与使用独立结算，状态和草稿保持\\error-context.md"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "868bd891818647af2e06-d19f9265788476b6b093",
+          "file": "convenience-store.spec.ts",
+          "line": 142,
+          "column": 3
+        },
+        {
+          "title": "390便利店购买入包与使用独立结算，状态和草稿保持",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13666,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T11:51:21.257Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "868bd891818647af2e06-dad3a54a1d567f76f335",
+          "file": "convenience-store.spec.ts",
+          "line": 142,
+          "column": 3
+        },
+        {
+          "title": "320便利店购买入包与使用独立结算，状态和草稿保持",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12018,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T11:51:35.430Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "868bd891818647af2e06-63e58ec0793d8752f2ba",
+          "file": "convenience-store.spec.ts",
+          "line": 142,
+          "column": 3
+        },
+        {
+          "title": "旧1.6存档迁移补充状态，零余额禁买且刷新不重复结算",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 16987,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"generations\": 0,\u001b[22m\n\u001b[32m-   \"saves\": 2,\u001b[39m\n\u001b[31m+   \"saves\": 3,\u001b[39m\n\u001b[2m  }\u001b[22m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"generations\": 0,\u001b[22m\n\u001b[32m-   \"saves\": 2,\u001b[39m\n\u001b[31m+   \"saves\": 3,\u001b[39m\n\u001b[2m  }\u001b[22m\n    at D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts:238:92",
+                    "location": {
+                      "file": "D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts",
+                      "column": 92,
+                      "line": 238
+                    },
+                    "snippet": "  236 |   expect(migrated.story).toEqual(legacy.story); expect(migrated.phone).toEqual(legacy.phone); expect(migrated.contacts).toEqual(legacy.contacts);\n  237 |   const afterCalls = await calls(page); expect(afterCalls.saves).toBe(beforeCalls.saves + 1);\n> 238 |   await host(page); expect(await saved(page)).toEqual(migrated); expect(await calls(page)).toEqual(afterCalls);\n      |                                                                                            ^\n  239 |   expect((await calls(page)).generations).toBe(0);\n  240 |   writeFileSync('outputs/store-migration-state.json', JSON.stringify({ fromVersion: '1.6.0', toVersion: migrated.schema_version, state: migrated, calls: await calls(page) }, null, 2));\n  241 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts",
+                        "column": 92,
+                        "line": 238
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"generations\": 0,\u001b[22m\n\u001b[32m-   \"saves\": 2,\u001b[39m\n\u001b[31m+   \"saves\": 3,\u001b[39m\n\u001b[2m  }\u001b[22m\n\n  236 |   expect(migrated.story).toEqual(legacy.story); expect(migrated.phone).toEqual(legacy.phone); expect(migrated.contacts).toEqual(legacy.contacts);\n  237 |   const afterCalls = await calls(page); expect(afterCalls.saves).toBe(beforeCalls.saves + 1);\n> 238 |   await host(page); expect(await saved(page)).toEqual(migrated); expect(await calls(page)).toEqual(afterCalls);\n      |                                                                                            ^\n  239 |   expect((await calls(page)).generations).toBe(0);\n  240 |   writeFileSync('outputs/store-migration-state.json', JSON.stringify({ fromVersion: '1.6.0', toVersion: migrated.schema_version, state: migrated, calls: await calls(page) }, null, 2));\n  241 | });\n    at D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts:238:92"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T11:51:47.468Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\.study\\cc\\test-results\\store-final\\convenience-store-旧1-6存档迁移补充状态，零余额禁买且刷新不重复结算\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\.study\\cc\\tests\\e2e\\convenience-store.spec.ts",
+                    "column": 92,
+                    "line": 238
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "868bd891818647af2e06-736d5b8c8f44818e0464",
+          "file": "convenience-store.spec.ts",
+          "line": 215,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-18T11:49:41.684Z",
+    "duration": 144236.016,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

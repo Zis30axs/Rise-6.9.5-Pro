@@ -1,0 +1,179 @@
+{
+  "date": "2026-10-18",
+  "status": "local-build-and-controlled-browser-verified",
+  "request": "直接将整部手机等比例缩放，完整显示，不通过挤压iframe高度裁切内容",
+  "implementation": {
+    "source": "D:\\.study\\ST-iPhonie\\panel-host.js",
+    "installedCopy": "D:\\SillyTavern\\data\\default-user\\extensions\\ST-iPhonie\\panel-host.js",
+    "sourceAndInstalledSha256": "09b59fdaf1e958f5f235689c5d1d26f247cca19395c2c24c99da57ad22e235fc",
+    "logicalViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scale": "min(slotWidth / 390, slotHeight / 844)",
+    "alignment": "center",
+    "frameRecreatedOnResize": false,
+    "nativeStyleRestoredOnRelease": true,
+    "embeddedRuntimeSha256": "96e71bf5e1ec2589f71acd12c61bd28ef00c4c3985c00fe1549ccae04bf4a745"
+  },
+  "validation": {
+    "typecheckAndBuild": "passed",
+    "phoneHostUnitCases": 18,
+    "worldPhoneUnitCases": 15,
+    "pythonAndPngCases": 8,
+    "browser": {
+      "recordedAt": "2026-10-18T14:51:00+08:00",
+      "bundle": {
+        "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+        "bytes": 27767926,
+        "sha256": "965f102e852cb99bdfa78d747b7cf982ff68036ea6c52450841ef838ce4d7591"
+      },
+      "suite": "tests/e2e/embedded-phone.spec.ts",
+      "browser": "Microsoft Edge / Playwright Chromium, single worker",
+      "uniqueTestCases": 8,
+      "passed": 8,
+      "failed": 0,
+      "retries": 0,
+      "reportedDuration": "4.4 minutes",
+      "caseResults": [
+        {
+          "case": "Real bundled phone settings, note draft persistence and backend reload",
+          "status": "passed"
+        },
+        {
+          "case": "390px uniform complete phone fit, physical click/input mapping, same iframe and draft",
+          "status": "passed"
+        },
+        {
+          "case": "320px uniform complete phone fit, physical click/input mapping, same iframe and draft",
+          "status": "passed"
+        },
+        {
+          "case": "Character switch and helper unload release phone presentation",
+          "status": "passed"
+        },
+        {
+          "case": "Story messages enter real NPC contacts; read receipts and no duplicate delivery",
+          "status": "passed"
+        },
+        {
+          "case": "Same-character chat isolation and late reply rejection",
+          "status": "passed"
+        },
+        {
+          "case": "390px NPC conversation touch targets and unread count clearing",
+          "status": "passed"
+        },
+        {
+          "case": "320px NPC conversation touch targets and unread count clearing",
+          "status": "passed"
+        }
+      ],
+      "proportionalFit": {
+        "logicalIframeViewport": {
+          "width": 390,
+          "height": 844
+        },
+        "scaleRule": "min(slotWidth / 390, slotHeight / 844)",
+        "uniformBothAxes": true,
+        "centeredAndContainedInSlot": true,
+        "homeClockWidgetsAndEightAppsAboveDock": true,
+        "dockAndHomeIndicatorInsideScreen": true,
+        "sameLogicalViewportAfterResize": true,
+        "realGlobalCoordinateClickAndKeyboardInput": true,
+        "sameIframeAndDraftAfterExpandCollapseCloseReopen": true
+      },
+      "visualReview": {
+        "passed": true,
+        "allFourScreenshotsReviewed": true,
+        "completePhoneWithoutCropping": true,
+        "singleHandCharacterPreserved": true
+      },
+      "screenshots": [
+        {
+          "viewportWidth": 390,
+          "mode": "character-and-phone",
+          "path": "D:\\.study\\cc\\outputs\\phone-proportional-390.png",
+          "bytes": 168109,
+          "sha256": "ac65593776ad91be051b2735a653e63110b78c2edca3428f474275dc2a410329",
+          "visuallyReviewed": true
+        },
+        {
+          "viewportWidth": 390,
+          "mode": "expanded",
+          "path": "D:\\.study\\cc\\outputs\\phone-proportional-390-expanded.png",
+          "bytes": 164353,
+          "sha256": "fd867d2788fb9412440b775626b4806f5f5b2aa16073d63278fab3be86ba2795",
+          "visuallyReviewed": true
+        },
+        {
+          "viewportWidth": 320,
+          "mode": "character-and-phone",
+          "path": "D:\\.study\\cc\\outputs\\phone-proportional-320.png",
+          "bytes": 103502,
+          "sha256": "8fd583828f52a4af4ae462dc513ab5f43d2559e97afa9de58877cd182e55cffb",
+          "visuallyReviewed": true
+        },
+        {
+          "viewportWidth": 320,
+          "mode": "expanded",
+          "path": "D:\\.study\\cc\\outputs\\phone-proportional-320-expanded.png",
+          "bytes": 94049,
+          "sha256": "ab864add293072223ec042ecc8da0ab68149c29d0a7beb2f335c578e5911a3ab",
+          "visuallyReviewed": true
+        }
+      ],
+      "regressionBoundaries": {
+        "phoneSettingsAndDraftPersistence": true,
+        "chatIsolationAndUnreadReceipts": true,
+        "releaseAndNativeInputRecovery": true,
+        "pageErrors": 0,
+        "modelRequests": 0,
+        "nativeSillyTavernPageTested": false,
+        "physicalTauriTavernTested": false
+      },
+      "scope": "Production embedded phone and release IIFE in a controlled Tavern/Helper host; no live model service was called."
+    },
+    "visualReview": "实际查看320/390默认同框与放大图；完整状态栏、时钟、组件、8应用、dock和home条，无互盖裁切"
+  },
+  "delivery": {
+    "path": "D:\\.study\\cc\\outputs\\未读之城-手机等比缩放版.png",
+    "bytes": 37807617,
+    "sha256": "79afcf0296320e6c655b860a59aaf0738ce0152493f52a149279511efdd2d40c"
+  },
+  "bundle": {
+    "path": "D:\\.study\\cc\\dist\\immersive-shell.js",
+    "bytes": 27767926,
+    "sha256": "965f102e852cb99bdfa78d747b7cf982ff68036ea6c52450841ef838ce4d7591"
+  },
+  "installedTestCard": {
+    "path": "D:\\SillyTavern\\data\\default-user\\characters\\未读之城 · 前端联调.png",
+    "bytes": 37914041,
+    "sha256": "d9ecfacb23a7ee2634b6ef04cdcabc3b770bead9097fb1caa154fbba7d200ceb"
+  },
+  "preserved": {
+    "protected": {
+      "checked": 4,
+      "unchanged": 4
+    },
+    "chats": {
+      "checked": 29,
+      "unchanged": 29
+    },
+    "originalArchives": {
+      "checked": 4,
+      "unchanged": 4
+    }
+  },
+  "packagingEvidence": "outputs/phone-proportional-packaging.json",
+  "independentAudit": "outputs/phone-proportional-independent-audit.json",
+  "boundaries": {
+    "nativeSillyTavernPageVerified": false,
+    "physicalMobileTauriTavernVerified": false,
+    "realModelCalls": 0,
+    "gitCommitPushOrRelease": false,
+    "phoneAppStorageChanged": false,
+    "worldSchema": "1.6.0",
+    "priorModelAndCameraBehaviorChanged": false
+  }
+}

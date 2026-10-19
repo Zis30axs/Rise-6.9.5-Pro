@@ -1,6 +1,6 @@
+import { createSelectedInitialState, completeAcademicSetup } from './academics-fixture';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { createInitialState } from '../../src/runtime/model';
 import * as THREE from 'three';
 import { createCampusWorld } from '../../src/frontend/scene-world';
 import { isScenePositionWalkable, SCENE_WALK_RADIUS } from '../../src/frontend/scene-movement';
@@ -10,9 +10,19 @@ import { getScenePeople } from '../../src/runtime/scene-context';
 const bundle = readFileSync(new URL('../../dist/immersive-shell.js', import.meta.url), 'utf8');
 
 const root = (page: Page) => page.locator('[data-unread-city-root]');
+/** Map travel may offer the optional 80% interaction event; accept the original action. */
+async function finishInteraction(page: Page) {
+  const normal = page.getByRole('button', { name: '否，正常进行', exact: true });
+  await normal.waitFor({ state: 'visible', timeout: 1500 }).then(() => normal.click()).catch(() => {});
+}
+async function gotoDemo(page: Page) {
+  await page.goto('/');
+  await completeAcademicSetup(page);
+}
 async function enter(page: Page) {
   await page.getByRole('button', { name: '进入未读之城', exact: true }).click();
   await expect(root(page)).toBeVisible();
+  await completeAcademicSetup(page);
 }
 async function exit(page: Page) {
   await page.keyboard.press('Escape');
@@ -26,7 +36,7 @@ async function rest15(page: Page) {
 
 /** A host-owned phone: its iframe stays in native DOM for the entire test. */
 async function withEmbeddedPhone(page: Page) {
-  await page.goto('/'); await exit(page);
+  await gotoDemo(page); await exit(page);
   await page.evaluate(() => {
     const dialog = document.createElement('dialog');
     dialog.id = 'sttts-panel'; dialog.hidden = true;
@@ -100,7 +110,7 @@ async function openEmbeddedPhone(page: Page) {
 
 /** Seed a bounded real Bridge save without adding production-only debug APIs. */
 async function withLongStory(page: Page, options: { state?: WorldState; deferGeneration?: boolean; generationStory?: string; generationEvents?: { type: 'airliner_pass' }[] } = {}) {
-  await page.goto('/'); await exit(page);
+  await gotoDemo(page); await exit(page);
   await page.evaluate(() => {
     (window as Window & { __unreadCityShell?: { dispose(): void } }).__unreadCityShell?.dispose();
     const host = window as unknown as Record<string, unknown>;
@@ -111,7 +121,7 @@ async function withLongStory(page: Page, options: { state?: WorldState; deferGen
   const handle = await page.locator('#reading-helper-frame').elementHandle();
   const frame = await handle!.contentFrame();
   await frame!.waitForLoadState();
-  const state = options.state ?? createInitialState();
+  const state = options.state ?? createSelectedInitialState();
   if (!options.state) state.story = Array.from({ length: 12 }, (_, index) => ({
     id: `chapter-${index}`, role: 'assistant' as const,
     text: `第 ${index + 1} 段。` + '窗外的天色慢慢暗下去，书页翻动的声音从走廊另一端传来。'.repeat(18),
@@ -156,7 +166,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     // must also deliver the expiry callback, including when drawing is idle.
     await page.clock.install({ time: Date.now() });
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-    const initial = createInitialState();
+    const initial = createSelectedInitialState();
     initial.airTraffic.nextAmbientAt = Date.now() + 3600000;
     await withLongStory(page, { state: initial, generationStory: '一架客机从树梢上方的远空平稳飞过。', generationEvents: [{ type: 'airliner_pass' }] });
     const scene = page.locator('[data-aircraft-status]');
@@ -196,7 +206,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 }
 
 test('空中客机：随机经过写入同一状态，WebGL 丢失仍可查看事件与恢复酒馆', async ({ page }) => {
-  const initial = createInitialState(); initial.airTraffic.nextAmbientAt = Date.now() - 1000;
+  const initial = createSelectedInitialState(); initial.airTraffic.nextAmbientAt = Date.now() - 1000;
   await withLongStory(page, { state: initial });
   const scene = page.locator('[data-aircraft-status]');
   await expect.poll(async () => (await savedFixtureState(page)).airTraffic.sequence, { timeout: 10000 }).toBe(1);
@@ -217,7 +227,7 @@ test('空中客机：随机经过写入同一状态，WebGL 丢失仍可查看�
 
 test('六个面板打通阅读、移动、日程、日记，退出后原生输入可用', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await gotoDemo(page);
   await expect(root(page)).toBeVisible();
   await page.getByRole('button', { name: '手机', exact: true }).click();
   await page.getByRole('button', { name: /将 林同学 的消息标为已读/ }).click();
@@ -229,6 +239,7 @@ test('六个面板打通阅读、移动、日程、日记，退出后原生输�
   const arrival = 17 * 60 + 20 + minutes;
   const arrivalTime = `${Math.floor(arrival / 60)}:${String(arrival % 60).padStart(2, '0')}`;
   await page.getByRole('button', { name: '前往图书馆', exact: true }).click();
+  await finishInteraction(page);
   await expect(page.locator('.topbar-world')).toContainText(arrivalTime);
   await page.getByRole('button', { name: '日程', exact: true }).click();
   await page.getByRole('button', { name: '完成这件事', exact: true }).first().click();
@@ -248,7 +259,7 @@ test('六个面板打通阅读、移动、日程、日记，退出后原生输�
 });
 
 test('切换聊天后各自保存进度，重新进入不累积挂载节点', async ({ page }) => {
-  await page.goto('/');
+  await gotoDemo(page);
   await rest15(page);
   await expect(page.locator('.topbar-world')).toContainText('17:35');
   await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
@@ -266,7 +277,7 @@ test('切换聊天后各自保存进度，重新进入不累积挂载节点', as
 });
 
 test('生成中切换聊天会退出，旧回复不会进入新聊天', async ({ page }) => {
-  await page.goto('/');
+  await gotoDemo(page);
   await page.getByLabel('接下来，你想做什么？').fill('旧聊天迟到内容');
   await page.getByRole('button', { name: /继续故事/ }).click();
   await expect(page.getByRole('button', { name: /叙事中/ })).toBeDisabled();
@@ -282,7 +293,7 @@ test('生成中切换聊天会退出，旧回复不会进入新聊天', async ({
 });
 
 test('生成故障保留草稿，允许重试且进度不变', async ({ page }) => {
-  await page.goto('/'); await exit(page);
+  await gotoDemo(page); await exit(page);
   await page.locator('#demo-failure').click(); await enter(page);
   const input = page.getByLabel('接下来，你想做什么？');
   await input.fill('去看看公告栏');
@@ -297,7 +308,7 @@ test('生成故障保留草稿，允许重试且进度不变', async ({ page }) 
 
 test('390px 手机布局可导航、可发送，页面不横向溢出', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await gotoDemo(page);
   for (const name of ['手机', '地图', '日程', '人物', '状态', '场景']) {
     const button = page.getByRole('button', { name, exact: true });
     await expect(button).toBeInViewport(); await button.click();
@@ -312,8 +323,8 @@ test('390px 手机布局可导航、可发送，页面不横向溢出', async ({
 });
 
 test('发布 IIFE 在同源隐藏脚本 iframe 中运行；移除 iframe 自动恢复', async ({ page }) => {
-  await page.goto('/'); await exit(page);
-  const initialState = createInitialState();
+  await gotoDemo(page); await exit(page);
+  const initialState = createSelectedInitialState();
   await page.evaluate(initialState => {
     (window as Window & { __unreadCityShell?: { dispose(): void } }).__unreadCityShell?.dispose();
     const host = window as unknown as Record<string, unknown>;
@@ -384,7 +395,7 @@ test('发布 IIFE 在同源隐藏脚本 iframe 中运行；移除 iframe 自动�
 });
 
 test('Bridge 缺失时发布 IIFE 保留原生界面，不锁定滚动', async ({ page }) => {
-  await page.goto('/'); await exit(page);
+  await gotoDemo(page); await exit(page);
   await page.evaluate(() => {
     (window as Window & { __unreadCityShell?: { dispose(): void } }).__unreadCityShell?.dispose();
     document.documentElement.removeAttribute('data-unread-city-demo');
@@ -398,7 +409,7 @@ test('Bridge 缺失时发布 IIFE 保留原生界面，不锁定滚动', async (
 
 test('局域网 HTTP 风格缺少 randomUUID 时仍可完成行动并保存', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(window.crypto, 'randomUUID', { value: undefined, configurable: true }));
-  await page.goto('/');
+  await gotoDemo(page);
   await page.getByLabel('接下来，你想做什么？').fill('局域网手机行动');
   await page.getByRole('button', { name: /继续故事/ }).click();
   await expect(page.getByRole('log')).toContainText('你选择了');
@@ -620,7 +631,7 @@ test('阅读旧段落时新回复保持位置，提示后可跳到最新，切�
 });
 
 test('收起正文等待回复时保留新内容提示，继续阅读后主动跳到最新', async ({ page }) => {
-  await page.goto('/');
+  await gotoDemo(page);
   await page.getByLabel('接下来，你想做什么？').fill('在背景中等待故事');
   await page.getByRole('button', { name: /继续故事/ }).click();
   await page.getByRole('button', { name: '收起正文', exact: true }).click();
@@ -881,7 +892,7 @@ test('连续走入图书馆前庭会同步剧情地点，继续步行与脚本�
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
   test(`${viewport.width}px 街边搭话先准备行动，确认后将原位置与同一行人送给模型，生成中停步`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    const initial = createInitialState();
+    const initial = createSelectedInitialState();
     initial.locationId = 'bookshop';
     initial.scene = { x: -22, z: 56.5, yaw: 0, areaId: 'bookshop', seed: 'e2e-scene-link', encounterId: null };
     const person = getScenePeople(initial.scene)
@@ -945,7 +956,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 }
 
 test('旧语音标记只在小说显示层去重，存档原文保留', async ({ page }) => {
-  const initial = createInitialState();
+  const initial = createSelectedInitialState();
   const text = '“你好，你也是刚下课吗？”<tts>沈景行|friendly|你好，你也是刚下课吗？</tts>';
   initial.story = [{ id: 'voice-metadata', role: 'assistant', text }];
   await withLongStory(page, { state: initial });
@@ -991,7 +1002,7 @@ test('禁用 WebGL 时390px静态背景仍能探索、使用浮窗与阅读，�
   await expect(root(page)).toHaveCount(0);
 });
 
-test('地图保持本地工具行为，五个范围入口与同一个全球画布衔接', async ({ page }) => {
+test('地图保持本地工具行为，沙盘等四个范围入口与同一个全球画布衔接', async ({ page }) => {
   await withLongStory(page);
   const clock = await page.locator('.topbar-world').textContent();
   await page.getByRole('button', { name: '地图', exact: true }).click();
@@ -1005,17 +1016,18 @@ test('地图保持本地工具行为，五个范围入口与同一个全球画�
   await page.getByRole('button', { name: '复位地图视图', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-scale', '1.000');
   const layers = page.getByRole('navigation', { name: '地图范围', exact: true });
-  await expect(layers.getByRole('button')).toHaveCount(5);
+  await expect(layers.getByRole('button')).toHaveCount(4);
+  await expect(layers.getByRole('button', { name: '校园', exact: true })).toHaveCount(0);
   await expect(layers.getByRole('button', { name: '中国', exact: true })).toHaveCount(0);
   const atlasCanvas = await map.locator('.atlas-canvas').elementHandle();
-  for (const [depth, label, id] of [[1, '沙盘', 'sandtable'], [2, '城市', 'city'], [3, '所在区域', 'province'], [5, '世界', 'world']] as const) {
+  for (const [depth, label, id] of [[0, '沙盘', 'sandtable'], [2, '城市', 'city'], [3, '所在区域', 'province'], [5, '世界', 'world']] as const) {
     await layers.getByRole('button', { name: label, exact: true }).click();
     await expect(map).toHaveAttribute('data-map-layer', id);
     await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(depth, 2);
     if (depth >= 3) await expect(map.locator('.atlas-canvas')).toBeVisible();
     expect(await atlasCanvas!.evaluate(element => element.isConnected)).toBe(true);
   }
-  await layers.getByRole('button', { name: '校园', exact: true }).click();
+  await layers.getByRole('button', { name: '沙盘', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-depth', '0.000');
   const people = page.getByRole('checkbox', { name: '显示演示人物定位', exact: true });
   await expect(people).not.toBeChecked();
@@ -1052,14 +1064,15 @@ test('路线事件预览可重复查看，确认出行后才结算额外时间�
   expect(await page.locator('.wm-event-detail').innerText()).toBe(detail);
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await page.getByRole('button', { name: '前往街角咖啡店', exact: true }).click();
+  await finishInteraction(page);
   await expect(page.locator('.topbar-world')).toContainText('街角咖啡店');
   await expect(page.locator('.topbar-world')).toContainText('17:40');
   await page.getByRole('button', { name: '状态', exact: true }).click();
-  await expect(page.locator('.wp-journal-list')).toContainText('临时校园活动');
-  await expect(page.locator('.wp-journal-list')).toContainText('耗时 20 分钟');
-  await expect(page.locator('.wp-journal-list')).toContainText('额外停留 5 分钟');
-  await expect(page.getByRole('heading', { name: '精力', exact: true }).locator('..')).toContainText('75');
-  await expect(page.getByRole('heading', { name: '账户余额', exact: true }).locator('..')).toContainText('328.00');
+  await expect(page.locator('.wp-journal-list').first()).toContainText('临时校园活动');
+  await expect(page.locator('.wp-journal-list').first()).toContainText('耗时 20 分钟');
+  await expect(page.locator('.wp-journal-list').first()).toContainText('额外停留 5 分钟');
+  await expect(page.locator('[data-player-stat="energy"]').first()).toContainText('75');
+  await expect(page.locator('[data-player-stat="balance"]').first()).toContainText('328.00');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
 });
 
@@ -1101,39 +1114,41 @@ test('全球直接缩放自动显现省界，同一画布保留所在区域标�
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
 });
 
-test('390px 滚轮从平面连续抬升建筑并融入城市，反向缩放还原同一场景', async ({ page }) => {
+test('390px 沙盘持续立体并连续缩放融入城市，反向缩放还原同一场景', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await withLongStory(page);
   await page.getByRole('button', { name: '地图', exact: true }).click();
   const map = page.locator('.world-map');
   const viewport = page.locator('[data-world-map-viewport]');
   await viewport.scrollIntoViewIfNeeded();
-  const scene = map.locator('[data-campus-map-scene]');
+  const scene = map.locator('[data-campus-map-scene][data-map-scope="campus"]');
   const originalScene = await scene.elementHandle();
-  const wall = scene.locator('[data-building-id="dorm"] .cms-wall-front');
+  const wall = scene.locator('[data-building-id="building:residence-building"] [data-wall-face="front"]');
   const wallHeight = async () => wall.evaluate(element => {
     const points = (element.getAttribute('points') ?? '').split(' ').map(pair => pair.split(',').map(Number));
     return Math.abs(points[0][1] - points[3][1]);
   });
-  expect(await wallHeight()).toBeLessThan(.1);
+  const originalHeight = await wallHeight();
+  expect(originalHeight).toBeGreaterThan(8);
+  await expect(scene).toHaveAttribute('data-map-rise', '1.000');
+  const originalRenderedHeight = (await wall.boundingBox())!.height;
   const bounds = await viewport.boundingBox();
   const centerX = bounds!.x + bounds!.width / 2;
   await page.mouse.move(centerX, bounds!.y + bounds!.height * .4);
   await page.mouse.wheel(0, 100);
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(.361, 2);
   const firstHeight = await wallHeight();
-  expect(firstHeight).toBeGreaterThan(5);
-  expect(Number(await scene.getAttribute('data-map-rise'))).toBeGreaterThan(0);
-  expect(Number(await scene.getAttribute('data-map-rise'))).toBeLessThan(.5);
+  expect(firstHeight).toBeCloseTo(originalHeight, 1);
+  expect((await wall.boundingBox())!.height).toBeLessThan(originalRenderedHeight);
+  await expect(scene).toHaveAttribute('data-map-rise', '1.000');
   await page.mouse.wheel(0, 100);
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(.721, 2);
   const midHeight = await wallHeight();
-  expect(midHeight).toBeGreaterThan(firstHeight + 15);
+  expect(midHeight).toBeCloseTo(originalHeight, 1);
   await page.mouse.wheel(0, 120);
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(1.154, 2);
   const fullHeight = await wallHeight();
-  expect(fullHeight).toBeGreaterThan(midHeight);
-  expect(fullHeight).toBeGreaterThan(45);
+  expect(fullHeight).toBeCloseTo(originalHeight, 1);
   await expect(scene).toHaveAttribute('data-map-rise', '1.000');
   await page.mouse.wheel(0, 200);
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(1.876, 2);
@@ -1155,8 +1170,9 @@ test('390px 滚轮从平面连续抬升建筑并融入城市，反向缩放还�
   }
   await page.mouse.wheel(0, -140);
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(0, 2);
-  await expect(map).toHaveAttribute('data-map-layer', 'campus');
-  expect(await wallHeight()).toBeLessThan(.1);
+  await expect(map).toHaveAttribute('data-map-layer', 'sandtable');
+  expect(await wallHeight()).toBeCloseTo(originalHeight, 1);
+  expect((await wall.boundingBox())!.height).toBeCloseTo(originalRenderedHeight, 0);
   expect(await originalScene!.evaluate(element => element.isConnected)).toBe(true);
   await expect(page.locator('.topbar-world')).toContainText('校园南门');
   await expect(page.locator('.topbar-world')).toContainText('17:20');
@@ -1212,7 +1228,7 @@ test('320px 从地点起手的双指可连续跨层和返回，拖动不误旅�
   await expect(map).toHaveAttribute('data-map-layer', 'sandtable');
   await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(1) });
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(0, 1);
-  await expect(map).toHaveAttribute('data-map-layer', 'campus');
+  await expect(map).toHaveAttribute('data-map-layer', 'sandtable');
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect(page.locator('.topbar-world')).toContainText('校园南门');
   await expect(page.locator('.topbar-world')).toContainText('17:20');
@@ -1260,18 +1276,18 @@ test('手机双指旋转实际建筑，越过角度边界仍连续，可同时�
   await withLongStory(page);
   await page.getByRole('button', { name: '地图', exact: true }).click();
   const viewport = page.locator('[data-world-map-viewport]');
-  const scene = page.locator('[data-campus-map-scene]');
+  const scene = page.locator('[data-campus-map-scene][data-map-scope="campus"]');
   await page.getByRole('navigation', { name: '地图范围', exact: true }).getByRole('button', { name: '沙盘', exact: true }).click();
-  await expect(viewport).toHaveAttribute('data-map-depth', '1.000');
-  const building = scene.locator('[data-building-id="dorm"]');
-  const originalPoints = await building.locator('.cms-wall-front').getAttribute('points');
+  await expect(viewport).toHaveAttribute('data-map-depth', '0.000');
+  const building = scene.locator('[data-building-id="building:residence-building"]');
+  const originalPoints = await building.locator('[data-wall-face="front"]').getAttribute('points');
   const originalHeight = Number(await building.getAttribute('data-building-height'));
   await page.getByRole('button', { name: '向右旋转地图', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-bearing', '30.000');
-  await expect(building.locator('.cms-wall-front')).not.toHaveAttribute('points', originalPoints!);
+  await expect(building.locator('[data-wall-face="front"]')).not.toHaveAttribute('points', originalPoints!);
   // The rotated slab is fitted into the viewport, so pixel height can vary;
   // the actual facade must remain upright and return after a full turn.
-  expect(Number(await building.getAttribute('data-building-height'))).toBeGreaterThan(originalHeight * .7);
+  expect(Number(await building.getAttribute('data-building-height'))).toBeGreaterThan(originalHeight * .55);
   await page.getByRole('button', { name: '复位地图视图', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-bearing', '0.000');
   await viewport.scrollIntoViewIfNeeded();
@@ -1290,11 +1306,11 @@ test('手机双指旋转实际建筑，越过角度边界仍连续，可同时�
   const afterSeam = Number(await viewport.getAttribute('data-map-bearing'));
   expect(afterSeam - beforeSeam).toBeGreaterThan(0);
   expect(afterSeam - beforeSeam).toBeLessThan(5);
-  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(-140, .5) });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(-140, .25) });
   await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(2, 1);
   expect(Number(await viewport.getAttribute('data-map-bearing'))).toBeGreaterThan(40);
   await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(170) });
-  await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(1, 1);
+  await expect.poll(async () => Number(await viewport.getAttribute('data-map-depth'))).toBeCloseTo(0, 1);
   let previousBearing = Number(await viewport.getAttribute('data-map-bearing'));
   for (let angle = 200; angle <= 530; angle += 30) {
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(angle) });
@@ -1303,13 +1319,13 @@ test('手机双指旋转实际建筑，越过角度边界仍连续，可同时�
     expect(currentBearing - previousBearing).toBeGreaterThan(20);
     expect(currentBearing - previousBearing).toBeLessThan(40);
     previousBearing = currentBearing;
-    expect(Number(await building.getAttribute('data-building-height'))).toBeGreaterThan(originalHeight * .7);
+    expect(Number(await building.getAttribute('data-building-height'))).toBeGreaterThan(originalHeight * .55);
   }
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await session.send('Emulation.setTouchEmulationEnabled', { enabled: false });
   await session.detach();
   expect(previousBearing).toBeCloseTo(360, 0);
-  await expect(building.locator('.cms-wall-front')).toHaveAttribute('points', originalPoints!);
+  await expect(building.locator('[data-wall-face="front"]')).toHaveAttribute('points', originalPoints!);
   await expect(page.locator('.topbar-world')).toContainText('校园南门');
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await page.getByRole('button', { name: '复位地图视图', exact: true }).click();

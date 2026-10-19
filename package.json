@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "d3-geo": "^3.1.1",
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "6.5.10",
     "three": "^0.186.1",
     "vue": "^3.5.22"
   },
@@ -35,5 +37,8 @@
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
     "vue-tsc": "^3.1.1"
+  },
+  "overrides": {
+    "gh-pages": "6.1.1"
   }
 }

@@ -5,18 +5,19 @@ import { getSceneArea, getSceneContext, getScenePeople, sampleSceneIdentity, sce
 import { isScenePositionWalkable } from '../src/frontend/scene-movement';
 import { createCampusWorld } from '../src/frontend/scene-world';
 import type { ScenePresence, WorldAction } from '../src/frontend/types';
+import { withoutPlayerNeeds } from './legacy-state';
 
 const walk = (x: number, z: number, yaw = 0, seed = 'scene-test-seed') => ({ type: 'walk' as const, x, z, yaw, seed });
 
 describe('persistent outdoor scene and weighted encounters', () => {
   it('migrates exactly the old nine-field save while preserving every narrative and phone record', () => {
     const current = createInitialState();
-    const { scene: _scene, airTraffic: _airTraffic, interior: _interior, transit: _transit, ...fields } = current;
+    const { scene: _scene, airTraffic: _airTraffic, interior: _interior, transit: _transit, ...fields } = withoutPlayerNeeds(current);
     const legacy = { ...fields, schema_version: '1.0.0' };
     const before = JSON.stringify(legacy);
     const migrated = parseState(JSON.parse(before));
     expect(migrated).toEqual({ ...current, scene: null });
-    expect(migrated.schema_version).toBe('1.6.0');
+    expect(migrated.schema_version).toBe('1.11.0');
     expect(JSON.stringify(legacy)).toBe(before);
     expect(() => parseState({ ...legacy, scene: null })).toThrow(/字段/);
     expect(() => parseState({ ...legacy, unexpected: 1 })).toThrow(/字段/);
@@ -40,7 +41,7 @@ describe('persistent outdoor scene and weighted encounters', () => {
     expect(after.phone).toEqual(before.phone);
     expect(after.story).toEqual(before.story);
     expect(before.scene).toBeNull();
-    expect(mapLocations.map(location => location.id)).toEqual(['gate', 'library', 'cafe', 'dorm', 'teaching']);
+    expect(mapLocations.map(location => location.id)).toEqual(['gate', 'library', 'cafe', 'dorm', 'teaching', 'sports', 'junction', 'bookshop', 'convenience', 'street-cafe', 'pocket-park', 'bus-stop']);
     expect(locations.find(location => location.id === 'bookshop')?.description).toContain('尚未进入店内');
     expect(new Set(locations.map(location => location.id)).size).toBe(locations.length);
     expect(locations.map(location => location.id)).toEqual(expect.arrayContaining(['home', 'commercial', 'city-park']));
@@ -130,6 +131,9 @@ describe('persistent outdoor scene and weighted encounters', () => {
     const samePlace = reduceState(moved, { type: 'travel', locationId: 'library' });
     expect(samePlace.scene).toBeNull();
     expect(samePlace.clock).toEqual(moved.clock);
-    expect(() => reduceState(state, { type: 'travel', locationId: 'bookshop' } as WorldAction)).toThrow(/不存在/);
+    const bookshopTrip = reduceState(state, { type: 'travel', locationId: 'bookshop' });
+    expect(bookshopTrip.locationId).toBe('bookshop');
+    expect(bookshopTrip.scene).toBeNull();
+    expect(() => reduceState(state, { type: 'travel', locationId: 'missing-place' } as WorldAction)).toThrow(/不存在/);
   });
 });

@@ -1,7 +1,7 @@
 import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Bridge, GeneratedStory } from '../src/frontend/types';
-import { createInitialState } from '../src/runtime/model';
+import { acknowledgePhoneRead, createInitialState } from '../src/runtime/model';
 
 const component = vi.hoisted(() => ({ fail: false }));
 vi.mock('../src/frontend/App.vue', async () => {
@@ -30,7 +30,7 @@ function fixture() {
     generate: () => new Promise(resolve => { finish = resolve; }),
     cancel: vi.fn(), dispose: vi.fn(),
   };
-  return { bridge, change: () => { current = 'b'; change?.(); }, finish: (text: string) => finish?.({ text, phoneMessages: [] }) };
+  return { bridge, change: () => { current = 'b'; change?.(); }, finish: (text: string) => finish?.({ text, phoneMessages: [] }), finishReply: (reply: GeneratedStory) => finish?.(reply) };
 }
 
 function phoneFixture() {
@@ -50,7 +50,287 @@ function phoneFixture() {
   return { api, leases, callbacks, anchor };
 }
 
+describe('interaction progress and event choices', () => {
+  function mountInteraction(roll = .2) {
+    vi.useFakeTimers();
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture();
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const random = vi.spyOn(Math, 'random').mockReturnValue(roll);
+    return { ...f, random, handle: handle! };
+  }
+
+  it.each([0, .799999])('roll %s pauses at 75%% without saving; No commits the original once and never calls the model', async roll => {
+    const f = mountInteraction(roll);
+    f.bridge.generate = vi.fn();
+    const before = JSON.stringify(f.handle.model.state);
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 30 });
+    expect(f.handle.model.busy).toBe(true);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'progress', progress: 0 });
+    await vi.advanceTimersByTimeAsync(600);
+    expect(f.handle.model.interaction!.progress).toBeGreaterThan(0);
+    expect(f.handle.model.interaction!.progress).toBeLessThan(75);
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    await vi.advanceTimersByTimeAsync(600);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'choice', progress: 75 });
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await pending).toBe(true);
+    expect(f.handle.model.state.clock).toEqual({ day: 1, hour: 17, minute: 50 });
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    expect(f.bridge.generate).not.toHaveBeenCalled();
+    expect(f.handle.model.busy).toBe(false);
+    expect(f.handle.model.interaction).toBeNull();
+    expect(f.random).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([.8, .999999])('roll %s completes normally at the exact 80%% boundary', async roll => {
+    const f = mountInteraction(roll);
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await pending).toBe(true);
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    expect(f.handle.model.interaction).toBeNull();
+    expect(f.handle.model.state.clock.minute).toBe(35);
+  });
+
+  it('prepares a random rest once; save failure and retry preserve the sampled duration', async () => {
+    const f = mountInteraction();
+    f.handle.actions.dispatch({ type: 'novel_travel', locationId: 'dorm-room' });
+    f.handle.actions.dispatch({ type: 'novel_approach', interactionId: 'dorm-rest' });
+    vi.mocked(f.bridge.save).mockClear();
+    f.random.mockReset().mockReturnValueOnce(.99).mockReturnValueOnce(.2);
+    const before = JSON.stringify(f.handle.model.state);
+    const pending = f.handle.actions.interact!({ type: 'interior_rest', optionId: 'dorm-rest-short' });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(f.random).toHaveBeenCalledTimes(2);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('保存失败'); });
+    await f.handle.actions.resolveInteraction!(false);
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'error', error: '保存失败' });
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await pending).toBe(true);
+    expect(f.handle.model.state.interior!.lastRest!.minutes).toBe(30);
+    expect(f.random).toHaveBeenCalledTimes(2);
+    expect(f.bridge.save).toHaveBeenCalledTimes(2);
+  });
+
+  it('Yes commits original activity, event effects, story and phone together after one successful save', async () => {
+    const f = mountInteraction();
+    const before = JSON.stringify(f.handle.model.state);
+    const generate = vi.fn(f.bridge.generate);
+    f.bridge.generate = generate;
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    const resolving = f.handle.actions.resolveInteraction!(true);
+    expect(f.handle.model.interaction!.phase).toBe('generating');
+    expect(generate.mock.calls[0][1].clock).toEqual({ day: 1, hour: 17, minute: 35 });
+    expect(generate.mock.calls[0][2]).toMatchObject({ kind: 'interaction_event', interaction: { action: { type: 'wait', minutes: 15 } } });
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    f.finishReply({ text: '帮同学捡回飞走的便笺，你们因此熟悉了些。', phoneMessages: [{ npcId: 'lin', text: '刚才多谢啦。' }], worldActions: [{ type: 'relationship', npcId: 'lin', delta: 4, reason: '帮忙捡回便笺' }] });
+    await resolving;
+    expect(await pending).toBe(true);
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    expect(f.handle.model.state.clock.minute).toBe(35);
+    expect(f.handle.model.state.contacts.find(item => item.id === 'lin')!.affinity).toBe(createInitialState().contacts.find(item => item.id === 'lin')!.affinity + 4);
+    expect(f.handle.model.state.phone.filter(item => item.text === '刚才多谢啦。')).toHaveLength(1);
+    expect(f.handle.model.state.story.at(-1)!.text).toContain('便笺');
+  });
+
+  it('caches a valid event through save failure; retry does not regenerate or apply the original twice', async () => {
+    const f = mountInteraction();
+    const generate = vi.fn(async () => ({ text: '一阵凉风让你精神一振。', phoneMessages: [], worldActions: [{ type: 'relationship' as const, npcId: 'lin', delta: 2, reason: '一起闲谈' }] }));
+    f.bridge.generate = generate;
+    const before = JSON.stringify(f.handle.model.state);
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('写入失败'); });
+    await f.handle.actions.resolveInteraction!(true);
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.handle.model.interaction!.phase).toBe('error');
+    await f.handle.actions.resolveInteraction!(true);
+    expect(await pending).toBe(true);
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(f.bridge.save).toHaveBeenCalledTimes(2);
+    expect(f.handle.model.state.clock.minute).toBe(35);
+    expect(f.handle.model.state.story.filter(item => item.role === 'assistant' && item.text.includes('凉风'))).toHaveLength(1);
+  });
+
+  it('rejects decorative events without effects and can normally finish after a model failure', async () => {
+    const f = mountInteraction();
+    f.bridge.generate = vi.fn(async () => ({ text: '似乎发生了什么。', phoneMessages: [] }));
+    const before = JSON.stringify(f.handle.model.state);
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    await f.handle.actions.resolveInteraction!(true);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'error' });
+    expect(f.handle.model.notice).toContain('实际影响');
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await pending).toBe(true);
+    expect(f.handle.model.state.story).toEqual(createInitialState().story);
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('merges phone read receipts received during the held activity', async () => {
+    const f = mountInteraction();
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    f.handle.model.state = acknowledgePhoneRead(f.handle.model.state, [f.handle.model.state.phone[0].id]);
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await pending).toBe(true);
+    expect(f.handle.model.state.phone[0].read).toBe(true);
+    expect(f.handle.model.state.clock.minute).toBe(35);
+  });
+
+  it('cancellation, backgrounding and a chat switch discard private state and late model replies', async () => {
+    const f = mountInteraction();
+    const before = JSON.stringify(f.handle.model.state);
+    const canceled = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    f.handle.actions.cancelInteraction!();
+    expect(await canceled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    const background = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    vi.mocked(Object.getOwnPropertyDescriptor(document, 'hidden')!.get!).mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(await background).toBe(false);
+    vi.mocked(Object.getOwnPropertyDescriptor(document, 'hidden')!.get!).mockReturnValue(false);
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    const resolving = f.handle.actions.resolveInteraction!(true);
+    f.change();
+    expect(await pending).toBe(false);
+    f.finishReply({ text: '迟到事件', phoneMessages: [], worldActions: [{ type: 'rest', kind: 'rest', minutes: 60 }] });
+    await resolving;
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+  });
+
+  it('invalid actions do not roll; duplicate clicks, background ticks and ordinary dialogue cannot start an extra event', async () => {
+    const f = mountInteraction();
+    expect(await f.handle.actions.interact!({ type: 'location_service', serviceId: 'drink-coffee' })).toBe(false);
+    expect(f.random).not.toHaveBeenCalled();
+    const pending = f.handle.actions.interact!({ type: 'wait', minutes: 15 });
+    expect(await f.handle.actions.interact!({ type: 'wait', minutes: 15 })).toBe(false);
+    f.handle.actions.dispatch({ type: 'wait', minutes: 15 });
+    await f.handle.actions.send('闲聊');
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    expect(f.random).toHaveBeenCalledTimes(1);
+    f.handle.actions.cancelInteraction!();
+    expect(await pending).toBe(false);
+    const ordinary = f.handle.actions.send('闲聊');
+    f.finish('只是普通对话。'); await ordinary;
+    expect(f.random).toHaveBeenCalledTimes(1);
+    expect(f.handle.model.interaction).toBeNull();
+  });
+});
+
 describe('Immersive Shell 生命周期', () => {
+  it('model sleep, narrative and phone commit together only after save; retry and refresh do not duplicate the action', async () => {
+    const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
+    const before = JSON.stringify(handle.model.state);
+    const reply: GeneratedStory = { text: '睡了十小时后醒来，手机收到新消息。', phoneMessages: [{ npcId: 'lin', text: '醒了联系我。' }], worldActions: [{ type: 'rest', kind: 'sleep', minutes: 600 }] };
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('模拟写入失败'); });
+    const failed = handle.actions.send('睡了10小时'); f.finishReply(reply); await failed;
+    expect(JSON.stringify(handle.model.state)).toBe(before); expect(handle.model.notice).toBe('模拟写入失败');
+    const retried = handle.actions.send('睡了10小时'); f.finishReply(reply); await retried;
+    expect(handle.model.state.clock).toEqual({ day: 2, hour: 3, minute: 20 });
+    expect(handle.model.state.phone.filter(item => item.text === '醒了联系我。')).toHaveLength(1);
+    expect(handle.model.state.story.filter(item => item.text === reply.text)).toHaveLength(1);
+    const accepted = JSON.parse(JSON.stringify(handle.model.state));
+    f.bridge.load = () => accepted;
+    const saves = vi.mocked(f.bridge.save).mock.calls.length;
+    handle.dispose(); handle = mountShell(window, window, f.bridge, vi.fn());
+    expect(handle.model.state).toEqual(accepted); expect(f.bridge.save).toHaveBeenCalledTimes(saves);
+  });
+  it('rejects partial model actions and discards actionable replies after a chat switch', async () => {
+    const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
+    const before = JSON.stringify(handle.model.state);
+    const invalid = handle.actions.send('睡一小时并喝水');
+    f.finishReply({ text: '睡醒喝了汽水。', phoneMessages: [], worldActions: [{ type: 'rest', kind: 'sleep', minutes: 60 }, { type: 'use', itemId: 'drink-basic' }] });
+    await invalid;
+    expect(JSON.stringify(handle.model.state)).toBe(before); expect(f.bridge.save).not.toHaveBeenCalled();
+    const late = handle.actions.send('睡10小时');
+    f.change(); f.finishReply({ text: '醒了。', phoneMessages: [], worldActions: [{ type: 'rest', kind: 'sleep', minutes: 600 }] }); await late;
+    expect(JSON.stringify(handle.model.state)).toBe(before); expect(f.bridge.save).not.toHaveBeenCalled();
+  });
+  it('专业选择与学习先保存再发布；写入失败不确认选科、不增加学习进度或扣资源', () => {
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
+    const initial = JSON.stringify(handle.model.state);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('学业存档写入失败'); });
+    handle.actions.dispatch({ type: 'choose_academics', majorId: 'computer-science' });
+    expect(JSON.stringify(handle.model.state)).toBe(initial);
+    expect(handle.model.notice).toBe('学业存档写入失败');
+    handle.actions.dispatch({ type: 'choose_academics', majorId: 'computer-science' });
+    expect(handle.model.state.academics).toMatchObject({ subjects: [{ subjectId: 'cs-programming', points: 0 }, { subjectId: 'cs-algorithms', points: 0 }, { subjectId: 'cs-networks', points: 0 }], lastGain: null });
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'classroom' });
+    handle.actions.dispatch({ type: 'novel_approach', interactionId: 'classroom-notes' });
+    const beforeStudy = JSON.stringify(handle.model.state);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('学习存档写入失败'); });
+    handle.actions.dispatch({ type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' });
+    expect(JSON.stringify(handle.model.state)).toBe(beforeStudy);
+    expect(handle.model.notice).toBe('学习存档写入失败');
+    handle.actions.dispatch({ type: 'interior_study', subjectId: 'cs-programming', interactionId: 'classroom-notes', optionId: 'study-short' });
+    expect(handle.model.state.academics).toMatchObject({ subjects: [{ subjectId: 'cs-programming', points: 15 }, { subjectId: 'cs-algorithms', points: 0 }, { subjectId: 'cs-networks', points: 0 }], lastGain: { points: 15, totalPoints: 15 } });
+    expect(handle.model.notice).toBe('');
+  });
+  it('跨科阅读保存失败不扣资源或加科，成功后重进不重复抽样', () => {
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
+    handle.actions.dispatch({ type: 'choose_academics', majorId: 'computer-science' });
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'bookshop' });
+    const random = vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(.3);
+    const before = JSON.stringify(handle.model.state);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('跨科保存失败'); });
+    handle.actions.dispatch({ type: 'read_subject', subjectId: 'music-theory', optionId: 'study-short' });
+    expect(JSON.stringify(handle.model.state)).toBe(before); expect(handle.model.notice).toBe('跨科保存失败');
+    expect(random).toHaveBeenCalledTimes(2);
+    random.mockReset().mockReturnValueOnce(0).mockReturnValueOnce(0);
+    handle.actions.dispatch({ type: 'read_subject', subjectId: 'music-theory', optionId: 'study-short' });
+    expect(handle.model.state.academics!.lastGain).toMatchObject({ outcome: 'inspiration', points: 22.5, channel: 'bookshop' });
+    expect(random).toHaveBeenCalledTimes(2);
+    const accepted = handle.model.state;
+    const saves = vi.mocked(f.bridge.save).mock.calls.length;
+    f.bridge.load = () => JSON.parse(JSON.stringify(accepted));
+    handle.dispose(); handle = mountShell(window, window, f.bridge, vi.fn());
+    expect(handle.model.state).toEqual(accepted);
+    expect(f.bridge.save).toHaveBeenCalledTimes(saves);
+  });
+  it('小说地图出行一次保存，保存失败全量回滚；后台、忙碌和退出后不执行', async () => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture();
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const initial = JSON.stringify(handle.model.state);
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('暂时无法写入存档'); });
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'home' });
+    expect(JSON.stringify(handle.model.state)).toBe(initial);
+    expect(handle.model.notice).toBe('暂时无法写入存档');
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    hidden.mockReturnValue(true);
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'home' });
+    hidden.mockReturnValue(false);
+    const pending = handle.actions.send('看看附近');
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'home' });
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    f.finish('仍站在校园南门。'); await pending;
+    vi.mocked(f.bridge.save).mockClear();
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'home' });
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    expect(handle.model.state.locationId).toBe('home');
+    expect(handle.model.state.transit.sequence).toBe(1);
+    expect(handle.model.notice).toBe('');
+    const beforeExit = JSON.stringify(handle.model.state);
+    handle.dispose();
+    handle.actions.dispatch({ type: 'novel_travel', locationId: 'commercial' });
+    expect(f.bridge.save).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(handle.model.state)).toBe(beforeExit);
+  });
+
   it('空中随机事件先保存再呈现，等待期间不反复写存档或推进剧情时间', () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-17T12:00:00Z'));
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);

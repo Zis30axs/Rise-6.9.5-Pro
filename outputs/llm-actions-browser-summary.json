@@ -1,0 +1,171 @@
+{
+  "recordedOn": "2026-10-19",
+  "uniquePassed": 15,
+  "uniqueFailed": 0,
+  "bundleSha256": "f13d5e48f066076163eda2284b2e4b39c231825f879bddbb0ccf8b967c7ccc0e",
+  "bundleBytes": 58223727,
+  "browser": "Microsoft Edge (msedge)",
+  "workers": 1,
+  "controlledHost": true,
+  "realStoryLlmRequests": 0,
+  "nativeSillyTavernPageValidated": false,
+  "physicalTauriTavernValidated": false,
+  "phone": "stub; no new phone runtime acceptance",
+  "finalRawReports": [
+    "outputs/llm-actions-final-results.json",
+    "outputs/llm-actions-legacy-results.json"
+  ],
+  "diagnosticFirstRun": "outputs/llm-actions-first-run-results.json",
+  "aggregation": "15 unique test identities: final complete run covers 7 new cases plus 5 location-service regressions; supplemental run covers 3 selected legacy cases and repeats the 2 existing mobile cases with explicit scrollability and backpack-control reachability checks. Repeats are not added. The first candidate run is diagnostic only and excluded from acceptance.",
+  "viewportEvidence": [
+    {
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "compactText": {
+        "clientHeight": 78,
+        "scrollHeight": 134,
+        "speechHeight": 102
+      },
+      "testedScrollTop": 24,
+      "pageErrors": [],
+      "stateReport": "outputs/llm-actions-320-state.json",
+      "screenshots": [
+        "outputs/llm-actions-320-compact.png",
+        "outputs/llm-actions-320-persistent.png",
+        "outputs/llm-actions-320-coffee.png",
+        "outputs/llm-actions-320-inventory.png",
+        "outputs/llm-actions-320-status.png"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "compactText": {
+        "clientHeight": 157,
+        "scrollHeight": 157,
+        "speechHeight": 91.78125
+      },
+      "testedScrollTop": 0,
+      "pageErrors": [],
+      "stateReport": "outputs/llm-actions-390-state.json",
+      "screenshots": [
+        "outputs/llm-actions-390-compact.png",
+        "outputs/llm-actions-390-persistent.png",
+        "outputs/llm-actions-390-coffee.png",
+        "outputs/llm-actions-390-inventory.png",
+        "outputs/llm-actions-390-status.png"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "file": "location-services.spec.ts",
+      "title": "desktop 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 17823
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "320px 常驻交互在全文阅读直接往返学生公寓与宿舍，服务结算保留草稿",
+      "status": "passed",
+      "report": "outputs/llm-actions-legacy-results.json",
+      "durationMs": 4689
+    },
+    {
+      "file": "convenience-store.spec.ts",
+      "title": "desktop便利店购买入包与使用独立结算，状态和草稿保持",
+      "status": "passed",
+      "report": "outputs/llm-actions-legacy-results.json",
+      "durationMs": 36793
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "模型在一轮依次旅行和精确睡眠，地点与消耗一起提交",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 3359
+    },
+    {
+      "file": "academics.spec.ts",
+      "title": "academic curriculum 320 跨专业图书馆灵感与书店困惑按次保存",
+      "status": "passed",
+      "report": "outputs/llm-actions-legacy-results.json",
+      "durationMs": 15668
+    },
+    {
+      "file": "location-services.spec.ts",
+      "title": "午夜校园咖啡店明确打烊，地图展示时间并可前往营业至次日两点的街边咖啡馆",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 6932
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "自然语言睡十小时精确推进600分钟，状态正文和手机整轮保存，刷新不重复结算",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 6156
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "模型处理中切换聊天或退出后，迟到的行动正文和手机结果不会写入",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 6043
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "390px 常驻交互在全文阅读直接往返学生公寓与宿舍，服务结算保留草稿",
+      "status": "passed",
+      "report": "outputs/llm-actions-legacy-results.json",
+      "durationMs": 4827
+    },
+    {
+      "file": "location-services.spec.ts",
+      "title": "390 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 13117
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "食品加2元打包进入独立背包，可由模型赠送扣库存并改善关系，状态与刷新一致",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 6728
+    },
+    {
+      "file": "llm-actions.spec.ts",
+      "title": "保存失败或动作无法执行都拒绝整轮，保留草稿且没有部分时间正文手机，再次发送可成功",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 3650
+    },
+    {
+      "file": "location-services.spec.ts",
+      "title": "320 全文阅读可直接使用咖啡店服务，原子保存并保持草稿与刷新结果",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 12377
+    },
+    {
+      "file": "novel.spec.ts",
+      "title": "纯小说与3D切换保留剧情草稿，偏好和地点背景刷新恢复",
+      "status": "passed",
+      "report": "outputs/llm-actions-legacy-results.json",
+      "durationMs": 27854
+    },
+    {
+      "file": "location-services.spec.ts",
+      "title": "零精力运动受限但公园休憩可结算，便利店和书店保留各自功能入口",
+      "status": "passed",
+      "report": "outputs/llm-actions-final-results.json",
+      "durationMs": 7649
+    }
+  ]
+}
