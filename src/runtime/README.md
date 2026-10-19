@@ -1,3 +1,11 @@
+# 2026-10-19：剧情标签解析与独立叙事 API
+
+本分支修复生成器回复格式依赖严格整体 JSON 的问题。推荐模型返回 `<story>可换行的叙事正文</story>`、`<phone_messages>[]</phone_messages>`，按需增加 `<world_actions>[...合法行动...]</world_actions>` 和 `<world_events>[...合法事件...]</world_events>`。正文内沿用 `|角色名|情绪|台词|` 对话标记；旧版纯 JSON（含代码围栏）仍然兼容。标签之外的说明不入游戏；重复标签、残缺标签、非法联系人/行动/事件仍然整轮拒绝，原有原子结算、动作白名单、会话隔离与存档不变。
+
+在游戏「状态」面板底部的「独立叙事引擎」里，可切换酒馆当前模型或自定义模型；自定义接口支持 OpenAI Chat Completions / Responses 风格，单独设置 HTTPS 接口、模型 ID 与角色卡叙事预设。采用独立浏览器请求，与酒馆主预设和主生成队列分开；取消/切换聊天会中止该请求，失败不自动转交主模型。接口必须支持当前运行环境的跨域 CORS；本机 `localhost` 可以走 HTTP，其他接口必须为 HTTPS。API 密钥仅写当前标签页的 `sessionStorage`，不会写进仓库或导出的角色卡，但**同源脚本仍可能读取它**，请勿向不受信任的脚本或代理提供敏感密钥。
+
+回归覆盖新增至 `tests/story-api.test.ts`、`tests/story-output-compat.test.ts`、`tests/runtime.test.ts` 和 `tests/story-actions.test.ts`。此处是开发分支代码，尚未重新构建并在手机端验收 PNG。
+
 # 2026-10-19：结构化模型行动与带走物品
 
 最新人物更新（1.11.0）：`characters.ts` 校验新建/编辑人物，固定本地portraitId、sourcePersonId与isMain；`save_contact` 同步联系人、人物档案story及journal，重复保存不重复登记。旧contacts补稳定默认立绘，其他进度保留。`commitStoryTurn` 为新出场保存可选participantIds，不改旧正文。`character-context.ts` 以目标人物编号优先提取相关对话，旧记录兼容名称匹配，最多6条/2400字符；`contact_introduction` Bridge模式只返回<=500字简介，拒绝手机消息与状态动作，用户再次保存后生效。
