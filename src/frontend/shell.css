@@ -14,6 +14,7 @@
 @import './place-actions.css';
 @import './interaction-overlay.css';
 @import './social-interaction.css';
+@import './story-engine-settings.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
 .uc-shell *, .uc-shell *::before, .uc-shell *::after { box-sizing:border-box; }
