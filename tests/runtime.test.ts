@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { acknowledgePhoneRead, commitStoryTurn, createInitialState, getRouteOutlook, parseState, reduceState, STATE_LIMITS } from '../src/runtime/model';
 import { createTavernBridge } from '../src/runtime/bridge';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
+import { saveStoryApiSettings, saveStoryApiKey } from '../src/runtime/story-api';
 import type { WorldAction } from '../src/frontend/types';
 import { getScenePeople } from '../src/runtime/scene-context';
 import { withAcademicSelection } from './legacy-state';
@@ -283,6 +284,57 @@ function mockHost() {
 }
 
 describe('chat-owned Tavern-Helper bridge', () => {
+  it('runs independent card generation without calling the host Tavern model', async () => {
+    const mock = mockHost();
+    const settings = { mode: 'custom' as const, format: 'chat' as const, endpoint: 'https://models.example/v1',
+      model: 'scene-only', preset: '侧重细节' };
+    saveStoryApiSettings(settings);
+    saveStoryApiKey('only-in-tab');
+    mock.context.mainApi = 'legacy-non-chat-mode';
+    const fetchMock = vi.fn(async () => ({
+      ok: true, status: 200, headers: { get: () => null },
+      text: async () => JSON.stringify({ choices: [{ message: { content: '<story>独立剧情。</story><phone_messages>[]</phone_messages>' } }] }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const bridge = createTavernBridge(mock.window)!;
+    try {
+      const reply = await bridge.generate('继续观察', createInitialState());
+      expect(reply.text).toBe('独立剧情。');
+      expect(mock.api.generate).not.toHaveBeenCalled();
+      expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+      const args = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(args.messages[0].content).toContain('world_actions');
+      expect(args.messages[0].content).toContain('侧重细节');
+      expect(args.messages[1].content).toContain('继续观察');
+    } finally {
+      bridge.dispose();
+      vi.unstubAllGlobals();
+      saveStoryApiKey('');
+      localStorage.removeItem('unread-city:story-api:v1');
+    }
+  });
+  it('cancels only independent requests when its chat changes', async () => {
+    const mock = mockHost();
+    saveStoryApiSettings({ mode: 'custom', format: 'chat', endpoint: 'https://models.example/v1',
+      model: 'scene-only', preset: '' });
+    const fetchMock = vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const bridge = createTavernBridge(mock.window)!;
+    try {
+      const inFlight = bridge.generate('继续观察', createInitialState());
+      mock.switchChat('chat-b');
+      await expect(inFlight).rejects.toThrow(/取消|聊天/);
+      expect(mock.api.stopGenerationById).not.toHaveBeenCalled();
+      expect(mock.api.replaceVariables).not.toHaveBeenCalled();
+    } finally {
+      bridge.dispose();
+      vi.unstubAllGlobals();
+      localStorage.removeItem('unread-city:story-api:v1');
+    }
+  });
+
   it('requests a consented event against the prepared interaction without promoting its data into system instructions', async () => {
     const mock = mockHost(); const bridge = createTavernBridge(mock.window)!;
     const state = reduceState(reduceState(createInitialState(), { type: 'novel_travel', locationId: 'cafe' }), { type: 'location_service', serviceId: 'drink-coffee' });
