@@ -38,9 +38,9 @@ export interface DualProtagonistLedger {
   phoneAccess: AccessRecord[];
 }
 const limits = { balance: 100_000_000, entries: 10_000, detail: 240 };
-const assertActor = (value: unknown): asserts value is ProtagonistId => {
+function assertActor(value: unknown): asserts value is ProtagonistId {
   if (value !== 'soyo' && value !== 'sakiko') throw new Error('未知主角');
-};
+}
 function cents(value: number): number {
   if (!Number.isSafeInteger(value) || value < 0 || value > limits.balance) throw new Error('金额必须为合法非负分数');
   return value;
