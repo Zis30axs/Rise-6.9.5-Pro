@@ -53,19 +53,55 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
   return parsed;
 }
 
-/** A whole JSON envelope (optionally fenced) is required. Prose is never scraped for events. */
+/**
+ * Prefer explicit data tags when a model cannot keep a whole JSON envelope.
+ * Only these four tags are structural; text outside them is never executed.
+ * The model's actions still pass the exact same whitelist validator as JSON.
+ */
+function parseTaggedStory(source: string): Record<string, unknown> | null {
+  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events)>([\s\S]*?)<\/\1>/gi)];
+  if (!matches.length) return null;
+  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events)>/gi)];
+  if (tokens.length !== matches.length * 2) return invalid('关键标签重复或未闭合');
+  const blocks = new Map<string, string>();
+  let end = 0;
+  for (const match of matches) {
+    const start = match.index ?? 0;
+    if (start < end) return invalid('关键标签嵌套');
+    end = start + match[0].length;
+    const name = match[1].toLowerCase();
+    if (blocks.has(name)) return invalid('关键标签重复');
+    blocks.set(name, match[2].trim());
+  }
+  if (!blocks.has('story')) return invalid('缺少 story 标签');
+  const jsonArray = (name: string): unknown => {
+    const original = blocks.get(name);
+    if (original === undefined || !original) return [];
+    const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(original);
+    try { return JSON.parse((fenced ? fenced[1] : original).trim()); }
+    catch { return invalid(name + ' 必须为 JSON 数组'); }
+  };
+  return {
+    story: blocks.get('story'),
+    phone_messages: jsonArray('phone_messages'),
+    ...(blocks.has('world_actions') ? { world_actions: jsonArray('world_actions') } : {}),
+    ...(blocks.has('world_events') ? { world_events: jsonArray('world_events') } : {}),
+  };
+}
+
+/** Both legacy JSON and tagged narrative share one strict validation path. */
 export function parseGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
   if (typeof value !== 'string' || !value.trim() || value.length > STORY_OUTPUT_LIMITS.protocolText) return invalid('回复为空或过长');
   let source = value.trim();
   if (source.startsWith('```')) {
-    const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(source);
-    if (!fenced) return invalid('请返回完整 JSON');
-    source = fenced[1].trim();
+    const fenced = /^```(?:json|xml|text)?\s*\n([\s\S]*?)\n```$/i.exec(source);
+    if (fenced) source = fenced[1].trim();
   }
   let valueObject: unknown;
   try { valueObject = JSON.parse(source); }
-  catch { return invalid('请返回完整 JSON'); }
-  const envelope = record(valueObject, ['story', 'phone_messages'], 'JSON', ['world_events', 'world_actions']);
+  catch { valueObject = parseTaggedStory(source); }
+  if (!valueObject) return invalid('请返回 JSON 或包含 <story> 的标签块');
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
