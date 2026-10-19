@@ -64,7 +64,8 @@ export function saveStoryApiSettings(settings: StoryApiSettings): void {
   const preset = settings.preset.trim();
   if (preset.length > 4000) throw new Error('独立叙事预设最多 4000 字。');
   if (mode === 'custom' && (!model || model.length > 200)) throw new Error('请填写有效的独立模型 ID。');
-  const endpoint = mode === 'custom' ? normalizeStoryEndpoint(settings.endpoint, format) : settings.endpoint.trim().slice(0, 2048);
+  const endpoint = settings.endpoint.trim().slice(0, 2048);
+  if (mode === 'custom') normalizeStoryEndpoint(endpoint, format); // validate without rewriting the editable base URL
   try {
     globalThis.localStorage.setItem(SETTINGS_KEY, JSON.stringify({ mode, format, endpoint, model, preset }));
   } catch { throw new Error('本机无法保存接口设置，请检查浏览器存储权限。'); }
