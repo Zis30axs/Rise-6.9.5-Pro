@@ -82,7 +82,7 @@ describe('independent narrative API', () => {
   it('sends a separate Chat Completion request and reads its content', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, headers: new Headers(),
-      json: async () => ({ choices: [{ message: { content: '<story>一段新故事。</story><phone_messages>[]</phone_messages>' } }] }),
+      text: async () => JSON.stringify({ choices: [{ message: { content: '<story>一段新故事。</story><phone_messages>[]</phone_messages>' } }] }),
     });
     vi.stubGlobal('fetch', fetchMock);
     saveStoryApiKey('test-session-token');
@@ -102,7 +102,7 @@ describe('independent narrative API', () => {
   it('supports Responses output_text and actual output blocks', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true, status: 200, headers: new Headers(),
-      json: async () => ({ output: [{ type: 'message', content: [{ type: 'output_text', text: '<story>回应。</story>' }] }] }),
+      text: async () => JSON.stringify({ output: [{ type: 'message', content: [{ type: 'output_text', text: '<story>回应。</story>' }] }] }),
     }));
     const response = await requestStoryFromCustomApi({ ...custom, format: 'responses' }, '继续', '协议', new AbortController().signal);
     expect(response).toBe('<story>回应。</story>');
