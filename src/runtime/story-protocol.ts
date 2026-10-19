@@ -100,7 +100,7 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   let valueObject: unknown;
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
-  if (!valueObject) return invalid('请返回 JSON 或包含 <story> 的标签块');
+  if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
   const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
