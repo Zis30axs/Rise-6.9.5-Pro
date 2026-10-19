@@ -52,6 +52,7 @@ export function normalizeStoryEndpoint(endpoint: string, format: StoryApiFormat)
   const suffix = format === 'responses' ? '/responses' : '/chat/completions';
   if (!path) path = '/v1' + suffix;
   else if (path.endsWith('/v1')) path += suffix;
+  else if (!path.endsWith(suffix)) path += '/v1' + suffix;
   url.pathname = path;
   return url.toString();
 }
@@ -122,7 +123,7 @@ export async function requestStoryFromCustomApi(settings: StoryApiSettings, user
     ] };
   let response: Response;
   try {
-    response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body), signal });
+    response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body), signal, redirect: 'error' });
   } catch {
     if (signal.aborted) throw new Error('本次模型请求已取消。');
     throw new Error('独立 API 连接失败：检查接口、跨域 CORS 和 TauriTavern 网络权限。');
@@ -131,8 +132,14 @@ export async function requestStoryFromCustomApi(settings: StoryApiSettings, user
   const length = Number(response.headers.get('content-length') || 0);
   if (length > 1_000_000) throw new Error('独立 API 回复体积超过限制。');
   let data: unknown;
-  try { data = await response.json(); }
-  catch { throw new Error('独立 API 没有返回有效 JSON 响应。'); }
+  try {
+    const payload = await response.text();
+    if (payload.length > 1_000_000) throw new Error('独立 API 回复体积超过限制。');
+    data = JSON.parse(payload);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('超过限制')) throw error;
+    throw new Error('独立 API 没有返回有效 JSON 响应。');
+  }
   const output = readResponseText(data, settings.format);
   if (!output.trim() || output.length > 160000) throw new Error('独立 API 未返回可识别的模型正文。');
   return output;
