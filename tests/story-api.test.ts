@@ -20,7 +20,7 @@ describe('independent card narrative API', () => {
   it('persists model configuration separately from tab-session credentials', () => {
     saveStoryApiSettings(settings);
     saveStoryApiKey('test-only-private-token');
-    expect(loadStoryApiSettings()).toEqual({ ...settings, endpoint: 'https://models.example/v1/chat/completions' });
+    expect(loadStoryApiSettings()).toEqual(settings);
     expect(loadStoryApiKey()).toBe('test-only-private-token');
     expect(localStorage.getItem('unread-city:story-api:v1')).not.toContain('test-only-private-token');
     expect(JSON.stringify(DEFAULT_STORY_API)).not.toContain('test-only-private-token');
