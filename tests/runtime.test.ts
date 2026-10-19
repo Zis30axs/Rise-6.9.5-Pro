@@ -140,14 +140,29 @@ describe('validated story and phone transaction', () => {
   const envelope = (story = '手机亮起，林同学发来了一条新消息。') => JSON.stringify({ story, phone_messages: [{ npcId: 'lin', text: '我还在图书馆。' }] });
   const ids = { userId: 'turn-1-user', assistantId: 'turn-1-assistant' };
 
-  it('accepts a complete JSON envelope or whole fenced JSON, and rejects prose scraping', () => {
+  it('accepts legacy JSON or tagged stories while rejecting unstructured prose', () => {
     const state = createInitialState();
     const expected = { text: '手机亮起，林同学发来了一条新消息。', phoneMessages: [{ npcId: 'lin', text: '我还在图书馆。' }] };
     expect(parseGeneratedStory(envelope(), state)).toEqual(expected);
     expect(parseGeneratedStory(['', '```json', envelope(), '```', ''].join('\n'), state)).toEqual(expected);
-    expect(() => parseGeneratedStory('林同学发来一条消息：“我还在图书馆。”', state)).toThrow(/完整 JSON/);
-    expect(() => parseGeneratedStory(`说明\n${envelope()}`, state)).toThrow(/完整 JSON/);
-    expect(() => parseGeneratedStory(`\`\`\`json\n${envelope()}\n\`\`\`\n补充说明`, state)).toThrow(/完整 JSON/);
+    const tagged = [
+      '<story>', '手机亮起，林同学发来了一条新消息。', '</story>',
+      '<phone_messages>[{"npcId":"lin","text":"我还在图书馆。"}]</phone_messages>',
+    ].join('\n');
+    expect(parseGeneratedStory(tagged, state)).toEqual(expected);
+    expect(parseGeneratedStory('无关的前置说明\n' + tagged + '\n无关的后置说明', state)).toEqual(expected);
+    expect(parseGeneratedStory('<story>风把纸页翻了个角。</story>', state)).toEqual({ text: '风把纸页翻了个角。', phoneMessages: [] });
+    expect(() => parseGeneratedStory('林同学发来一条消息：“我还在图书馆。”', state)).toThrow(/JSON|标签块/);
+    expect(() => parseGeneratedStory('说明\n' + envelope(), state)).toThrow(/JSON|标签块/);
+    expect(() => parseGeneratedStory('```json\n' + envelope() + '\n```\n补充说明', state)).toThrow(/JSON|标签块/);
+    for (const bad of [
+      '<story>故事</story><story>重复</story>',
+      '<story>故事</story><phone_messages>[]</phone_messages><phone_messages>[]</phone_messages>',
+      '<story>故事</story><world_actions>[{not-json}]</world_actions>',
+      '<story>故事<phone_messages>[]</phone_messages>',
+      '<story>故事</story><world_actions>[{"type":"travel","locationId":"unknown"}]</world_actions>',
+      '<story>故事</story><phone_messages>[{"npcId":"unknown","text":"假消息"}]</phone_messages>',
+    ]) expect(() => parseGeneratedStory(bad, state)).toThrow(/格式不正确/);
   });
 
   it('reconstructs a strict allowlist and refuses unknown NPCs, arbitrary fields and unbounded payloads', () => {
