@@ -11,6 +11,26 @@ const reply = (worldActions: StoryAction[]): GeneratedStory => ({ text: '行动�
 const effects = { energy: 0, morale: 0, stress: 0, health: 0, balance: 0, satiety: 0, foodEnergy: 0 };
 
 describe('structured narrative actions', () => {
+  it('extracts structured world actions from tagged narrative without bypassing validation', () => {
+    const state = createInitialState();
+    const tagged = [
+      '<story>', '你回到宿舍，决定睡十个小时。', '</story>',
+      '<phone_messages>[]</phone_messages>',
+      '<world_actions>[{"type":"travel","locationId":"dorm-room"},{"type":"rest","kind":"sleep","minutes":600}]</world_actions>',
+    ].join('\n');
+    const parsed = parseGeneratedStory(tagged, state);
+    expect(parsed.text).toContain('宿舍');
+    expect(parsed.worldActions).toEqual([{ type: 'travel', locationId: 'dorm-room' }, sleep]);
+    const after = commitStoryTurn(state, '回宿舍睡十小时', parsed, ids);
+    expect(after.locationId).toBe('dorm-room');
+    expect(after.clock.day).toBe(2);
+    expect(() => parseGeneratedStory(
+      '<story>危险补丁</story><world_actions>[{"type":"rest","kind":"sleep","minutes":600,"balance":999999}]</world_actions>',
+      state,
+    )).toThrow(/字段/);
+    expect(state.locationId).toBe('gate');
+  });
+
   it('accepts old envelopes and optional strict action envelopes', () => {
     const state = createInitialState();
     expect(parseGeneratedStory('{"story":"看看周围。","phone_messages":[]}', state)).toEqual({ text: '看看周围。', phoneMessages: [] });
