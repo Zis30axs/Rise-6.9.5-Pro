@@ -1,4 +1,4 @@
-import { mountShell, type ShellHandle } from './lifecycle';
+import { mountShell, type ShellHandle } from './responsive-shell';
 import { createTavernBridge } from '../runtime/bridge';
 import { createDemoHost } from './demo';
 import { createPhoneRuntime } from './phone-runtime';
