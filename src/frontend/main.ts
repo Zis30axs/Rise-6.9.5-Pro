@@ -2,6 +2,8 @@ import { mountShell, type ShellHandle } from './lifecycle';
 import { createTavernBridge } from '../runtime/bridge';
 import { createDemoHost } from './demo';
 import { createPhoneRuntime } from './phone-runtime';
+import { bindShellViewport, type ShellViewportLease } from './shell-viewport';
+import viewportCss from './shell-viewport.css?inline';
 
 const ENTRY = '进入未读之城';
 const RESTORE = '恢复原生界面';
@@ -56,20 +58,28 @@ function bootstrap() {
     clearFeedback();
     const sequence = ++launchSequence;
     let bridge;
+    let mounted: ShellHandle | undefined;
+    let viewport: ShellViewportLease | undefined;
     try {
       bridge = demo ? demo.createBridge() : createTavernBridge(owner);
       if (!bridge) { feedback('未检测到兼容的 Tavern-Helper 或单人聊天。请先安装助手并打开角色聊天；原生界面保持可用。'); return; }
       let exitedDuringMount = false;
-      const mounted = mountShell(host, owner, bridge, reason => {
+      mounted = mountShell(host, owner, bridge, reason => {
         exitedDuringMount = true;
+        viewport?.dispose(); viewport = undefined;
         // Invalidate any reference immediately even on synchronous Vue mount failure.
         if (sequence === launchSequence) shell = undefined;
         if (ownerFrame && !ownerFrame.isConnected) shutdown();
         else if (!shutDown) feedback(reason);
       }, phoneRuntime);
-      if (!exitedDuringMount) shell = mounted;
+      if (!exitedDuringMount) {
+        viewport = bindShellViewport(host, viewportCss);
+        shell = mounted;
+      }
     } catch (error) {
-      bridge?.dispose();
+      viewport?.dispose();
+      if (mounted) mounted.dispose();
+      else bridge?.dispose();
       shell = undefined;
       feedback(error instanceof Error ? error.message : '启动失败，已恢复原生界面。');
     }
