@@ -1,0 +1,76 @@
+/* Scoped to this Shell lease; never changes SillyTavern's native layout. */
+:host([data-uc-viewport]) {
+  --uc-safe-top:env(safe-area-inset-top,0px);
+  --uc-safe-right:env(safe-area-inset-right,0px);
+  --uc-safe-bottom:env(safe-area-inset-bottom,0px);
+  --uc-safe-left:env(safe-area-inset-left,0px);
+  --uc-dock-height:66px;
+  --uc-dock-bottom:max(12px,var(--uc-safe-bottom));
+  --uc-bottom-clearance:calc(var(--uc-dock-bottom) + var(--uc-dock-height) + 12px);
+}
+:host([data-uc-viewport]) #unread-city-app,
+:host([data-uc-viewport]) .uc-shell { height:100%; min-height:0; }
+:host([data-uc-viewport]) .composer { min-width:0; }
+:host([data-uc-viewport]) .composer > button { min-height:44px; white-space:nowrap; }
+:host([data-uc-viewport]) .room-activity-receipt { max-height:80px; overflow:auto; overscroll-behavior:contain; }
+:host([data-uc-viewport]) .composer-error { flex-shrink:0; max-height:48px; overflow:auto; }
+@media(max-width:760px) {
+  :host([data-uc-viewport]) .world-chrome {
+    padding-top:calc(17px + var(--uc-safe-top));
+    padding-left:max(16px,var(--uc-safe-left));
+    padding-right:calc(max(12px,var(--uc-safe-right)) + var(--uc-rescue-space,100px));
+  }
+  /* The independent rescue replaces the duplicate mobile Exit control. */
+  :host([data-uc-viewport]) .host-actions > button[aria-label="退出沉浸界面，恢复酒馆原生界面"] { display:none; }
+  :host([data-uc-viewport]) .host-actions { gap:0; flex-shrink:0; }
+  :host([data-uc-viewport]) .host-actions > button { min-height:44px; }
+  :host([data-uc-viewport]) .presentation-switch { top:calc(82px + var(--uc-safe-top)); }
+  :host([data-uc-viewport]) .uc-shell[data-reading-mode=hidden] .presentation-switch { top:auto; bottom:calc(var(--uc-bottom-clearance) + 54px); }
+  :host([data-uc-viewport]) .tool-dock { bottom:var(--uc-dock-bottom); max-width:calc(100% - 16px); }
+  :host([data-uc-viewport]) .reading-layer,
+  :host([data-uc-viewport]) .uc-shell[data-presentation-mode=novel] .reading-layer {
+    bottom:var(--uc-bottom-clearance);
+    height:clamp(240px,calc(var(--uc-viewport-height) * .42),360px);
+    max-height:calc(var(--uc-viewport-height) - var(--uc-safe-top) - 144px - var(--uc-bottom-clearance));
+    min-height:0;
+  }
+  :host([data-uc-viewport]) .reading-layer.reading-expanded,
+  :host([data-uc-viewport]) .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded {
+    top:calc(144px + var(--uc-safe-top)); height:auto; max-height:none;
+  }
+  :host([data-uc-viewport]) .uc-shell .composer { align-items:flex-end; gap:8px; }
+  :host([data-uc-viewport]) .uc-shell .composer textarea {
+    height:68px; min-height:68px; max-height:112px; padding:8px 0;
+    font-size:16px; line-height:24px; resize:none; overflow:auto;
+  }
+  :host([data-uc-viewport]) .uc-shell .composer > button { min-width:64px; padding:10px; }
+  :host([data-uc-viewport]) .resume-reading { bottom:var(--uc-bottom-clearance); }
+  :host([data-uc-viewport]) .floating-window:not(.phone-window) {
+    top:calc(100px + var(--uc-safe-top));
+    max-height:calc(var(--uc-viewport-height) - var(--uc-safe-top) - 100px - var(--uc-bottom-clearance));
+  }
+  :host([data-uc-viewport]) .floating-window.phone-window {
+    max-height:calc(var(--uc-viewport-height) - var(--uc-safe-top) - 100px - var(--uc-bottom-clearance));
+  }
+  :host([data-uc-viewport]) .uc-shell[data-active-window=phone]:not([data-phone-expanded=true]) .phone-window {
+    --phone-top:clamp(148px,calc(var(--uc-viewport-height) * .31),260px);
+    top:calc(var(--phone-top) + var(--uc-safe-top));
+    height:calc(var(--uc-viewport-height) - var(--uc-safe-top) - var(--phone-top) - var(--uc-bottom-clearance));
+  }
+  :host([data-uc-viewport]) .notice { top:calc(76px + var(--uc-safe-top)); max-height:80px; overflow:auto; }
+}
+@media(max-width:360px) {
+  :host([data-uc-viewport]) .uc-shell .composer textarea { height:88px; min-height:88px; }
+}
+/* A keyboard reduces visualViewport without necessarily changing 100dvh. */
+:host([data-uc-short=true]) .reading-layer,
+:host([data-uc-short=true]) .uc-shell[data-presentation-mode=novel] .reading-layer,
+:host([data-uc-short=true]) .reading-layer.reading-expanded,
+:host([data-uc-short=true]) .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded {
+  top:calc(76px + var(--uc-safe-top)); bottom:var(--uc-bottom-clearance); height:auto; max-height:none;
+}
+:host([data-uc-short=true]) .presentation-switch,
+:host([data-uc-short=true]) .reading-heading,
+:host([data-uc-short=true]) .room-activity-receipt,
+:host([data-uc-short=true]) .novel-dialogue-controls { display:none; }
+:host([data-uc-short=true]) .uc-shell .composer textarea { height:44px; min-height:44px; }
