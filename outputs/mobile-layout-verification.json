@@ -1,6 +1,6 @@
 {
   "baseCommit": "dc1b01669a5f269c2a37d8d57e1a7fe2c4cba34b",
-  "branch": "fix/mobile-rescue-composer-safe-area",
+  "branch": "fix/mobile-viewport-footer",
   "scope": "Isolated Chromium live DOM/CSS fixture: relevant unchanged production CSS rules + exact new source/style. No full Vue/Three.js bundle or native phone validation.",
   "executed": {
     "typescriptStrictStandalone": true,
@@ -45,5 +45,6 @@
     "src/frontend/shell-viewport.ts":"c451b005229cbebc9c655f652ba07929a18ebb05b9fc5b01b85862cc560c34c6",
     "src/frontend/responsive-shell.ts":"f2ed69ba0325a5348f5f6e20293340f3a8bccfbdcc4b01720b0d6466970c395a",
     "src/frontend/viewport-layout.css":"3ddc6adc0dec5ce4d44185dbe4929cf301101c3a48a962e1867a6b62baacb94c"
-  }
+  },
+  "concurrentWorkPreserved": "Original fix/mobile-rescue-composer-safe-area advanced to 011a68307f8db0ed543512dac25853c53aa634f2 during work. No force update was applied; this tested footer alternative was published separately."
 }
