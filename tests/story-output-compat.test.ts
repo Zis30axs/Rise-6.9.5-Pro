@@ -61,7 +61,7 @@ describe('tagged story transport', () => {
       '<story>继续</story><world_actions>[{"type":"activity","label":"改余额","minutes":1,"effects":{"balance":999999999}}]</world_actions>',
       '<story>继续</story><world_actions>not-json</world_actions>',
       '<story>继续</story><world_actions>[{"type":"admin_patch","data":{}}]</world_actions>',
-    ]) expect(() => parseGeneratedStory(reply, state)).toThrow(/格式不正确|世界行动/);
+    ]) expect(() => parseGeneratedStory(reply, state)).toThrow(/格式不正确|剧情行动无效/);
     expect(JSON.stringify(state)).toBe(before);
   });
 });
@@ -70,7 +70,7 @@ describe('independent narrative API', () => {
   it('persists non-secret settings only, with a session-only credential', () => {
     saveStoryApiSettings(custom);
     saveStoryApiKey('test-session-token');
-    expect(loadStoryApiSettings()).toMatchObject(custom);
+    expect(loadStoryApiSettings()).toEqual(custom);
     expect(loadStoryApiKey()).toBe('test-session-token');
     expect(localStorage.getItem('unread-city:story-api:v1')).not.toContain('test-session-token');
     expect(normalizeStoryEndpoint('https://example.invalid/v1/', 'chat')).toBe('https://example.invalid/v1/chat/completions');
