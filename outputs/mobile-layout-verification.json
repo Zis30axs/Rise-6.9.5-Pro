@@ -1,0 +1,50 @@
+{
+  "baseCommit": "dc1b01669a5f269c2a37d8d57e1a7fe2c4cba34b",
+  "branch": "fix/mobile-viewport-footer",
+  "scope": "Isolated Chromium live DOM/CSS fixture: relevant unchanged production CSS rules + exact new source/style. No full Vue/Three.js bundle or native phone validation.",
+  "executed": {
+    "typescriptStrictStandalone": true,
+    "geometryAssertions": 5,
+    "browserLayoutScenarios": 14,
+    "noPageErrorCheck": true,
+    "viewports": [[1440,900],[1280,800],[390,844],[320,568]],
+    "driver": "Python Playwright + /usr/bin/chromium",
+    "screenshotsVisuallyInspected": ["novel-320x568.png","after-390x844-native780.png","novel-1280x800.png","scene-1440x900.png"]
+  },
+  "reproduction": {
+    "before": {"overlap":true,"dockInView":false,"sendHit":false,"inputInsidePanel":true,"readingAboveRescue":false},
+    "after": {"overlap":false,"dockInView":true,"sendHit":true,"inputInsidePanel":true,"readingAboveRescue":true}
+  },
+  "passedCaseNames": [
+    "reproduced_native_viewport_mismatch",
+    "novel_1440x900_safe_area",
+    "scene_1440x900_safe_area",
+    "novel_1280x800_safe_area",
+    "scene_1280x800_safe_area",
+    "novel_390x844_safe_area",
+    "scene_390x844_safe_area",
+    "novel_320x568_safe_area",
+    "scene_320x568_safe_area",
+    "translated_zero_height_host",
+    "keyboard_visual_shrink_and_pan",
+    "keyboard_close_preserves_draft",
+    "dialog_clear_390",
+    "dialog_clear_320",
+    "no_browser_exceptions"
+  ],
+  "notExecuted": [
+    "Full npm test/check/build",
+    "Node standalone browser runner with complete CSS imports",
+    "DSH browser",
+    "Native SillyTavern",
+    "Physical iPhone/TauriTavern",
+    "New PNG packaging/deployment"
+  ],
+  "sourceSha256": {
+    "src/frontend/main.ts":"6ed56c8d61f0191f614ec4e7c2dcdeafdbad7c8dc7398eb7c224e2c3bba2a43d",
+    "src/frontend/shell-viewport.ts":"c451b005229cbebc9c655f652ba07929a18ebb05b9fc5b01b85862cc560c34c6",
+    "src/frontend/responsive-shell.ts":"f2ed69ba0325a5348f5f6e20293340f3a8bccfbdcc4b01720b0d6466970c395a",
+    "src/frontend/viewport-layout.css":"3ddc6adc0dec5ce4d44185dbe4929cf301101c3a48a962e1867a6b62baacb94c"
+  },
+  "concurrentWorkPreserved": "Original fix/mobile-rescue-composer-safe-area advanced to 011a68307f8db0ed543512dac25853c53aa634f2 during work. No force update was applied; this tested footer alternative was published separately."
+}
