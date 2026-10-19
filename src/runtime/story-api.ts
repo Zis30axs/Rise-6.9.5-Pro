@@ -50,6 +50,8 @@ export function normalizeStoryEndpoint(endpoint: string, format: StoryApiFormat)
   }
   let path = url.pathname.replace(/\/+$/, '');
   const suffix = format === 'responses' ? '/responses' : '/chat/completions';
+  const alternate = format === 'responses' ? '/chat/completions' : '/responses';
+  if (path.endsWith(alternate)) path = path.slice(0, -alternate.length);
   if (!path) path = '/v1' + suffix;
   else if (path.endsWith('/v1')) path += suffix;
   else if (!path.endsWith(suffix)) path += '/v1' + suffix;
