@@ -1,0 +1,18 @@
+.uc-narrative-settings { display:flex; flex-direction:column; gap:12px; margin:16px 0; padding:18px; border:1px solid rgba(224,216,184,.24); border-radius:12px; color:#ecebdc; background:#213b2fd9; }
+.uc-narrative-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.uc-narrative-heading h2 { font-size:15px; color:#f1dfb5; }
+.uc-narrative-heading small { font-size:11px; color:#b9ccb9; }
+.uc-narrative-settings label { display:flex; flex-direction:column; gap:5px; min-width:0; font-size:12px; color:#dcdcc9; }
+.uc-narrative-settings select, .uc-narrative-settings input, .uc-narrative-settings textarea { display:block; width:100%; min-height:44px; padding:10px 12px; border:1px solid #bed0b75e; border-radius:8px; outline:none; background:#12291f; color:#f8f4df; font:14px/1.5 system-ui,sans-serif; min-width:0; }
+.uc-narrative-settings textarea { min-height:110px; resize:vertical; overflow:auto; overflow-wrap:anywhere; }
+.uc-narrative-settings input:focus-visible, .uc-narrative-settings select:focus-visible, .uc-narrative-settings textarea:focus-visible { border-color:#e7c989; outline:2px solid #e7c989; outline-offset:1px; }
+.uc-narrative-settings .uc-narrative-note { font-size:11px; color:#b2c6b5; line-height:1.7; overflow-wrap:anywhere; }
+.uc-narrative-buttons { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.uc-shell .uc-narrative-buttons button { min-height:44px; padding:8px 13px; border:1px solid #c5be9a88; border-radius:8px; background:#344f3e; font-size:12px; }
+.uc-shell .uc-narrative-buttons button:first-child { background:#e1c791; border-color:#e1c791; color:#203a29; }
+.uc-narrative-settings .uc-narrative-notice { font-size:12px; padding:8px 10px; border-left:2px solid #dabb7a; background:#dabb7a0f; overflow-wrap:anywhere; }
+@media (max-width:760px) {
+  .uc-narrative-settings { padding:12px; margin:12px 0; gap:11px; }
+  .uc-narrative-buttons { flex-direction:column; align-items:stretch; }
+  .uc-shell .uc-narrative-buttons button { width:100%; }
+}
