@@ -186,7 +186,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await page.getByRole('button', { name: '状态', exact: true }).click();
     await expect(page.getByRole('heading', { name: '空中动态', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('剧情触发');
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await page.evaluate(() => (window as Window & { __unreadCityShell?: { open(): void } }).__unreadCityShell?.open());
     await expect(root(page)).toBeVisible();
     await expect(scene).toHaveAttribute('data-aircraft-status', 'ready', { timeout: 10000 });
@@ -218,7 +218,7 @@ test('空中客机：随机经过写入同一状态，WebGL 丢失仍可查看�
   await expect(scene).toHaveAttribute('data-aircraft-status', 'fallback');
   await page.getByRole('button', { name: '状态', exact: true }).click();
   await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('随机环境');
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('飞机经过后继续使用原生聊天');
   await expect(page.locator('#native-input')).toHaveValue('飞机经过后继续使用原生聊天');
@@ -269,7 +269,7 @@ test('切换聊天后各自保存进度，重新进入不累积挂载节点', as
   await expect(page.locator('.topbar-world')).toContainText('17:35');
   for (let i = 0; i < 3; i++) {
     await expect(root(page)).toHaveCount(1);
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await expect(root(page)).toHaveCount(0);
     await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
     await enter(page);
@@ -318,7 +318,7 @@ test('390px 手机布局可导航、可发送，页面不横向溢出', async ({
   await expect(page.getByRole('log')).toContainText('手机操作');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.locator('[data-reading-layer]').evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
 });
 
@@ -540,7 +540,7 @@ test('390px 嵌入手机保留 Shell 的退出与导航空间', async ({ page })
   await expect(page.getByRole('region', { name: '探索地图' })).toBeVisible();
 });
 
-test('390px 宿主根元素 transform 且高度为零时，Shell 与恢复按钮仍完整可见', async ({ page }) => {
+test('390px 宿主根元素 transform 且高度为零时，Shell 与右上角切换聊天仍完整可见', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     // SillyTavern themes can turn html into a zero-height fixed containing block.
@@ -711,7 +711,7 @@ test('三维自由行走支持 WASD 和环视，停止与恢复阅读保留位�
   await expect(page.getByRole('group', { name: '移动摇杆' })).toHaveCount(0);
   await page.getByRole('button', { name: '继续阅读', exact: true }).click();
   await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('三维场景失效后仍可使用原生界面');
   expect(errors).toEqual([]);
@@ -788,7 +788,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await expect(scene).toHaveAttribute('data-position', canceled!);
     await page.getByRole('button', { name: '继续阅读', exact: true }).click();
     await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await expect(root(page)).toHaveCount(0);
     await page.locator('#native-input').fill('行走退出后仍能输入');
     await session.detach();
@@ -875,7 +875,7 @@ test('连续走入图书馆前庭会同步剧情地点，继续步行与脚本�
   expect(saved.player).toEqual(initial.player);
   expect(saved.phone).toEqual(initial.phone);
   expect(saved.story).toEqual(initial.story);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   const helper = await (await page.locator('#reading-helper-frame').elementHandle())!.contentFrame();
   await helper!.addScriptTag({ content: bundle });
@@ -998,7 +998,7 @@ test('禁用 WebGL 时390px静态背景仍能探索、使用浮窗与阅读，�
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
 });
 
@@ -1244,15 +1244,15 @@ test('320px 从地点起手的双指可连续跨层和返回，拖动不误旅�
   await session.detach();
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
   await page.setViewportSize({ width: 320, height: 568 });
-  await expect(page.locator('[data-unread-city-rescue]')).toBeInViewport({ ratio: 1 });
-  const rescueBounds = await page.locator('[data-unread-city-rescue]').boundingBox();
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+  const dockBounds = await page.locator('.tool-dock').boundingBox();
   const windowBounds = await page.getByRole('dialog', { name: '地图窗口', exact: true }).boundingBox();
-  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(rescueBounds!.y);
+  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y - 4);
   for (const label of ['放大地图', '缩小地图', '复位地图视图', '向左旋转地图', '向右旋转地图']) {
     const control = page.getByRole('button', { name: label, exact: true });
     await control.scrollIntoViewIfNeeded();
     const box = await control.boundingBox();
-    expect(box!.x < rescueBounds!.x + rescueBounds!.width && box!.x + box!.width > rescueBounds!.x && box!.y < rescueBounds!.y + rescueBounds!.height && box!.y + box!.height > rescueBounds!.y).toBe(false);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(dockBounds!.y - 1);
   }
   await page.getByRole('button', { name: '向右旋转地图', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-bearing', '30.000');
@@ -1450,7 +1450,7 @@ test('全球图形上下文丢失后仍可浏览与复位，多次开关地图�
     await page.getByRole('button', { name: '关闭地图窗口', exact: true }).click();
     await expect(page.locator('[data-atlas-renderer]')).toHaveCount(0);
   }
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('地图关闭后继续原生输入');
   await expect(page.locator('#native-input')).toHaveValue('地图关闭后继续原生输入');
