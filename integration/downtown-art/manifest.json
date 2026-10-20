@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "reviewStatus": "pending",
+  "status": "runtime-art-not-installed",
+  "releaseLimitBytes": 50000000,
+  "assets": [
+    {
+      "id": "sakiko_casual_neutral",
+      "path": "characters/sakiko/casual/neutral.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_casual_smile",
+      "path": "characters/sakiko/casual/smile.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_casual_troubled",
+      "path": "characters/sakiko/casual/troubled.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_casual_surprised",
+      "path": "characters/sakiko/casual/surprised.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_casual_annoyed",
+      "path": "characters/sakiko/casual/annoyed.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_casual_sad",
+      "path": "characters/sakiko/casual/sad.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_neutral",
+      "path": "characters/sakiko/home/neutral.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_smile",
+      "path": "characters/sakiko/home/smile.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_troubled",
+      "path": "characters/sakiko/home/troubled.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_surprised",
+      "path": "characters/sakiko/home/surprised.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_annoyed",
+      "path": "characters/sakiko/home/annoyed.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "sakiko_home_sad",
+      "path": "characters/sakiko/home/sad.webp",
+      "sha256": null,
+      "size": null,
+      "anchor": null
+    },
+    {
+      "id": "toyokawa_mansion_day",
+      "path": "backgrounds/toyokawa_mansion_day.webp",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "id": "toyokawa_mansion_dusk",
+      "path": "backgrounds/toyokawa_mansion_dusk.webp",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "id": "toyokawa_mansion_night",
+      "path": "backgrounds/toyokawa_mansion_night.webp",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "id": "toyokawa_living_room",
+      "path": "backgrounds/toyokawa_living_room.webp",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "id": "downtown_day",
+      "path": "backgrounds/downtown_day.webp",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "id": "downtown_night",
+      "path": "backgrounds/downtown_night.webp",
+      "sha256": null,
+      "size": null
+    }
+  ]
+}
