@@ -124,10 +124,11 @@ const cityPlaces = [
   { id: 'campus', name: '校园与南门', description: '校园位于中心偏北，南门连接十字街、书店、便利店、咖啡馆、公交站与口袋公园。' },
   { id: 'home', name: '家与住宅区', description: '位于校园西南侧，三栋住宅围着庭院，家园站连接校园南门。' },
   { id: 'commercial', name: '商业区', description: '位于校园东南侧，沿街商店、步行广场与商业区站相连。' },
+  { id: 'downtown', name: '市中心区', description: '更繁华、车费更高的市中心，有市中心站、商业街和丰川家。ZBD-04A 专线往返。' },
   { id: 'city-park', name: '城市公园', description: '位于校园东北侧，湖泊、湖畔绿道与公园公交站共同组成现有户外区域。' },
 ];
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
-const cityRoute = computed(() => getTransitRoutes('campus').find(route => route.stop.id === selectedCity.value));
+const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
 const novelQuotes = computed(() => new Map(novelDestinations.map(place => [place.id, getNovelTravelQuote(props.model.state, place.id)])));
 function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
@@ -389,7 +390,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <p v-if="novelMode" class="wm-detail-note" data-novel-energy-quote>{{ energyCalculationNote(selectedCity) }}</p>
             <p v-if="novelMode" class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p>
             <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }}</button>
-            <template v-else><p v-if="cityRoute" class="wm-detail-note">校园南门站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · BTR-82A / ZBD-04A</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
+            <template v-else><p v-if="cityRoute" class="wm-detail-note">校园南门站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? 'ZBD-04A 专线' : 'BTR-82A / ZBD-04A' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
           </template>
           <button type="button" class="wm-outline-button" @click="goToLayer('sandtable')">查看沙盘</button>
         </template>

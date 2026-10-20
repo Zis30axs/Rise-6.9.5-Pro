@@ -63,6 +63,15 @@ export function createInteriorWorld(scene: THREE.Scene, room: CampusInterior, ow
         box(Math.min(w * 0.5, 0.7), 0.4, 0.05, palette.dark, x, top + 0.33, z - d * 0.2, furnitureGroup);
         box(0.08, 0.18, 0.08, palette.metal, x, top + 0.12, z - d * 0.2, furnitureGroup);
       }
+    } else if (obstacle.kind === 'piano') {
+      // Reuse low-cost primitives; visible piano stays inside its saved collision footprint.
+      box(w, 0.9, d, palette.dark, x, 0.65, z, furnitureGroup);
+      box(w * 0.88, 0.08, d * 0.32, palette.paper, x, 1.14, z + d * 0.24, furnitureGroup);
+      for (let key = 0; key < 12; key++) {
+        const xx = x - w * 0.38 + key * w * 0.069;
+        box(w * 0.03, 0.04, d * 0.18, palette.dark, xx, 1.2, z + d * 0.27, furnitureGroup);
+      }
+      box(w * 0.92, 0.08, d * 0.9, palette.wood, x, 1.24, z, furnitureGroup);
     } else if (obstacle.kind === 'board') {
       const wide = w >= d;
       box(w, 1.35, d, palette.trim, x, 1.9, z, furnitureGroup);
@@ -76,7 +85,7 @@ export function createInteriorWorld(scene: THREE.Scene, room: CampusInterior, ow
         for (const dx of [-0.1, 0.1]) box(0.025, 0.24, d + 0.04, palette.paper, x + dx, 1.1, z, furnitureGroup);
       } else {
         // Open shelves face the central aisle. Every shelf stays in its collision footprint.
-        const front = z + (z > 0 ? -1 : 1) * Math.max(0, d / 2 - 0.18);
+        const front = z + (z > 0 ? -1 : 1) * Math.max(0, d / 2 - Math.max(d * 0.075, Math.min(d * 0.7, 0.3) / 2) - 0.04);
         box(w * 0.91, h * 0.88, d * 0.15, palette.dark, x, h / 2, front, furnitureGroup);
         for (let row = 0; row < 4; row++) {
           box(w * 0.94, 0.055, d * 0.85, palette.paper, x, 0.18 + row * 0.48, z, furnitureGroup);

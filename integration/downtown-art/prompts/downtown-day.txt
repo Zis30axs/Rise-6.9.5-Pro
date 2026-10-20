@@ -1,0 +1,6 @@
+Use case: stylized-concept
+Asset type: one finished 16:9 visual novel background.
+Primary request: an unnamed fictional contemporary city center in Zhejiang, China; a broad clean tree-lined pedestrian street with modern mid-rise glass and pale stone buildings, understated storefront windows without signage, a small paved plaza, benches and warm stone planters. Everyday contemporary urban streetscape, not a futuristic metropolis. Eye-level view along the walking street, broad open foreground for character overlays. Background distant pedestrians may be omitted entirely; no foreground people.
+Style: polished hand-painted Japanese anime visual novel environment, accurate perspective, clean architectural lines, natural soft daylight, blue sky, restrained warm gray stone, green trees. Harmonize with a refined mansion visual novel background.
+Composition: one 1536x864 landscape; central vanishing point, open lower third, no board or panels. This exact camera and street will be reused at night.
+Constraints: no text, no letters, no numbers, no signs, no logos, no watermark, no UI, no map, no labels, no fantasy objects, no specific real-city landmarks.

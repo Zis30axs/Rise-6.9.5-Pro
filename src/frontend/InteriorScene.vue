@@ -8,7 +8,7 @@ import { applyCharacterCamera, createCharacterAssetPool, createScenePlayerCharac
 import { loadBundledCharacter } from './scene-character-bundle';
 
 interface InteriorPresence { roomId: string; x: number; z: number; yaw: number; activityId: string | null }
-const props = withDefaults(defineProps<{ interior: InteriorPresence; hour: number; paused?: boolean; freeWalk?: boolean; busy?: boolean; phoneActive?: boolean }>(), { paused: false, freeWalk: false, busy: false, phoneActive: false });
+const props = withDefaults(defineProps<{ interior: InteriorPresence; hour: number; paused?: boolean; freeWalk?: boolean; busy?: boolean; protagonist?: 'soyo' | 'sakiko'; phoneActive?: boolean }>(), { paused: false, freeWalk: false, busy: false, protagonist: 'soyo', phoneActive: false });
 const emit = defineEmits<{ presence: [point: { x: number; z: number; yaw: number }]; interact: [interactionId: string]; leave: [] }>();
 const room = computed(() => getCampusInterior(props.interior.roomId)!);
 const root = ref<HTMLElement>(), canvas = ref<HTMLCanvasElement>(), joystick = ref<HTMLElement>();
@@ -51,7 +51,7 @@ function flushPresence(force = true) {
 function updateCamera() {
   position.value = `${eye.x.toFixed(3)},1.700,${eye.z.toFixed(3)}`; view.value = `${yaw.toFixed(3)},${pitch.toFixed(3)}`;
   if (!camera) return;
-  const showPlayer = props.phoneActive || cameraMode.value === 'third-person';
+  const showPlayer = props.protagonist !== 'sakiko' && (props.phoneActive || cameraMode.value === 'third-person');
   playerCharacter?.setPhoneActive(props.phoneActive);
   const displayYaw = world ? applyCharacterCamera(camera, eye, yaw, pitch, world.movementWorld, cameraMode.value, props.phoneActive, width, height, 2.6) : yaw;
   playerCharacter?.update(eye, displayYaw, showPlayer);
@@ -183,7 +183,7 @@ onBeforeUnmount(() => { dead = true; stop(); resizeObserver?.disconnect(); inter
 </script>
 
 <template>
-  <div ref="root" class="interior-scene" :class="{ 'is-paused': paused, 'is-free-walk': freeWalk, 'is-fallback': mode === 'fallback' }" data-unread-city-interior :data-room-id="interior.roomId" :data-renderer="mode" :data-position="position" :data-view="view" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" data-player-model="soyo" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
+  <div ref="root" class="interior-scene" :class="{ 'is-paused': paused, 'is-free-walk': freeWalk, 'is-fallback': mode === 'fallback' }" data-unread-city-interior :data-room-id="interior.roomId" :data-renderer="mode" :data-position="position" :data-view="view" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'sakiko' ? 'none' : 'soyo'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
     <div v-if="mode === 'fallback'" class="interior-static-scene" aria-label="室内静态示意图"><span class="interior-static-window"/><span class="interior-static-board">{{ room.label }}</span><span class="interior-static-table"/><span class="interior-static-floor"/></div>
     <canvas ref="canvas" class="interior-canvas" :class="{ 'is-visible': mode === 'webgl' }" aria-label="室内三维场景" :tabindex="phoneActive || paused || busy || mode !== 'webgl' ? -1 : 0" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerEnd" @pointercancel="pointerEnd" @lostpointercapture="pointerEnd" @keydown="keydown" @blur="keyboardBlur" />
     <div v-show="!paused && !phoneActive" class="interior-hud">

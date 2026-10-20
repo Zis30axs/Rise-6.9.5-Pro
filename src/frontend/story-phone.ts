@@ -1,3 +1,4 @@
+import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import type { CharacterPortraitId, ContactProfileDraft, WorldState } from './types';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { getScenePeople, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
@@ -35,7 +36,7 @@ export interface StoryPhoneLink {
 
 const contactsOf = (state: WorldState): StoryPhoneContact[] => state.contacts.map(contact => ({
   id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
-  portraitId: contact.portraitId, summary: contact.summary.slice(0, 500), sourcePersonId: contact.sourcePersonId, isMain: contact.isMain,
+  ...(contact.id.startsWith('protagonist-') ? {} : { portraitId: contact.portraitId }), summary: contact.summary.slice(0, 500), sourcePersonId: contact.sourcePersonId, isMain: contact.isMain,
 }));
 
 function candidatesOf(state: WorldState): StoryPhoneContact[] {
@@ -106,12 +107,13 @@ export function createStoryPhoneLink(options: {
     if (typeof api?.bind !== 'function') throw new Error('当前手机尚不支持剧情联动。请停用旧的独立手机插件，再刷新并进入本卡；已有手机数据会保留。');
     const tuple: unknown = JSON.parse(options.session);
     if (!Array.isArray(tuple) || tuple.length !== 2 || tuple.some(value => typeof value !== 'string' || !value)) throw new Error('无法识别当前剧情存档。');
-    const bytes = new TextEncoder().encode(options.session);
+    const deviceOwner = activeProtagonist(options.state());
+    const bytes = new TextEncoder().encode(deviceOwner === 'soyo' ? options.session : JSON.stringify([...tuple, deviceOwner]));
     if (!options.hostWindow.crypto?.subtle) throw new Error('当前环境缺少安全摘要能力，无法绑定剧情手机空间。');
     sessionId = [...new Uint8Array(await options.hostWindow.crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
     assertCurrent();
     portraits = await portraitChoices(options.hostWindow); assertCurrent();
-    const acquired = await api.bind({ sessionId, chatId: tuple[1] as string, label: '未读之城', contacts: contactsOf(options.state()), candidates: candidatesOf(options.state()), portraits,
+    const acquired = await api.bind({ sessionId, chatId: tuple[1] as string, label: `未读之城 · ${protagonistNames[deviceOwner]}`, contacts: contactsOf(options.state()), candidates: candidatesOf(options.state()), portraits,
       ...(options.saveContact ? { onContactSave: async (raw: ContactProfileDraft) => {
         assertCurrent(); const draft = validateContactProfileDraft(raw);
         const result = await options.saveContact!(draft); assertCurrent(); return result;

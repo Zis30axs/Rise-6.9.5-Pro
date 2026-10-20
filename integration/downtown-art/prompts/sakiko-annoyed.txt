@@ -1,0 +1,3 @@
+Use case: identity-preserve
+Edit target: the supplied full-body visual novel character sprite.
+Change ONLY her facial expression to restrained annoyance: eyebrows angled down toward center, direct narrowed amber eyes, small firmly pressed mouth. Refined irritation, not a caricature. Keep exactly the same Sakiko identity, hair, ribbons, face shape, body, outfit, hands, pose, proportions, scale, framing, shading and canvas. One character, complete head to both feet. Preserve background transparency; otherwise use solid flat #00ff00. No writing, props, scene, floor shadow, collage or watermark. Expression must be visibly distinct from neutral; no outfit change.

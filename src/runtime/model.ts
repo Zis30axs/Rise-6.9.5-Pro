@@ -1,3 +1,4 @@
+import { finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
@@ -5,7 +6,7 @@ import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
-import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
@@ -82,6 +83,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   // also gives exact rounding at half-cent boundaries without float drift.
   const conditionNumerator = Math.min(450, Math.max(150, 350 - departure.health - departure.satiety + departure.stress));
   const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier: conditionNumerator / 300, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
+  // Exiting an already visited room is free and must retain its real exterior pose;
+  // never teleport the player back to a distant bus stop on a same-district exit.
+  if (state.interior && getCampusInterior(state.interior.roomId)?.parentLocationId === locationId) {
+    return { next: reduceState(next, { type: 'leave_interior' }), quote };
+  }
   try {
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
@@ -136,10 +142,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       position(target);
     } else {
       walk(target);
-      if (room) {
-        next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
-        next = reduceState(next, { type: 'enter_interior', roomId: room.id });
-      }
+    }
+    // A far-city residence is still an indoor destination after its transit leg.
+    if (room) {
+      next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
+      next = reduceState(next, { type: 'enter_interior', roomId: room.id });
     }
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
@@ -158,8 +165,8 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 }
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
-export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId = 'btr82a'): NovelTravelQuote {
-  return planNovelTravel(state, locationId, vehicleId).quote;
+export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
+  return planNovelTravel(legacyView(state), locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
 }
 
 export interface RouteOutlook {
@@ -349,7 +356,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   const vehicle = transitVehicles.find(vehicle => vehicle.id === ride.vehicleId);
   const fromStopId = id(ride.fromStopId, 'transit.lastRide.fromStopId');
   const toStopId = id(ride.toStopId, 'transit.lastRide.toStopId');
-  const route = getTransitRoutes(fromStopId).find(route => route.stop.id === toStopId);
+  const route = vehicle && getTransitRoutes(fromStopId, vehicle.id).find(route => route.stop.id === toStopId);
   if (!vehicle || rideId !== `transit-ride-${sequence}` || !route || ride.minutes !== route.minutes || ride.fare !== route.fare) return invalid('transit.lastRide 车辆、路线或结算不一致');
   const at = text(ride.at, 'transit.lastRide.at', 40);
   const stamp = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(at);
@@ -432,6 +439,11 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
 
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
 export function parseState(value: unknown): WorldState {
+  if (value && typeof value === 'object' && !Array.isArray(value) && (value as Record<string, unknown>).schema_version === '1.12.0') {
+    const { protagonists, ...rest } = value as Record<string, unknown>;
+    const base = parseState({ ...rest, schema_version: '1.11.0' });
+    return { ...base, schema_version: '1.12.0', protagonists: parseProtagonists(protagonists, base, parseState) };
+  }
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
   if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
@@ -528,7 +540,7 @@ export function parseState(value: unknown): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   let next = parseState(state);
   const validated = validateStoryActions(actions, next);
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
@@ -640,7 +652,7 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
  * delivers its persisted phone records and displays the accepted world event.
  * Retrying delivery keeps the same IDs. Legacy saves retain their existing data.
  */
-export function commitStoryTurn(
+function commitLegacyStoryTurn(
   state: WorldState,
   input: string,
   result: GeneratedStory,
@@ -783,7 +795,7 @@ function activityChangeNote(before: PlayerState, after: PlayerState): string {
  * Structured narrative actions share these transactions; exact-duration rest,
  * study, contextual effects and relationship changes are handled above.
  */
-export function reduceState(state: WorldState, action: WorldAction): WorldState {
+function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
   const next = parseState(state);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
@@ -889,7 +901,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       break;
     }
     case 'novel_travel': {
-      const planned = planNovelTravel(next, action.locationId, action.vehicleId ?? 'btr82a');
+      const planned = planNovelTravel(next, action.locationId, selectTravelVehicle(next.locationId, action.locationId, action.vehicleId));
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
       return parseState(planned.next);
     }
@@ -943,7 +955,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (!currentStop) throw new Error('请先走到室外公交站候车区，再选择乘车。');
       const vehicle = transitVehicles.find(vehicle => vehicle.id === action.vehicleId);
       if (!vehicle) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
-      const route = getTransitRoutes(currentStop.id).find(route => route.stop.id === action.stopId);
+      const route = getTransitRoutes(currentStop.id, vehicle.id).find(route => route.stop.id === action.stopId);
       if (!route) throw new Error('当前站点没有这条路线；远地之间请返回校园站换乘。');
       if (next.player.balance < route.fare) throw new Error(`余额不足，本程需要 ${route.fare} 元。`);
       if (next.transit.sequence >= TRANSIT_SEQUENCE_LIMIT) throw new Error('乘车记录已达到上限，本次未扣费。');
@@ -1092,4 +1104,20 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     default: throw new Error('不支持的行动。');
   }
   return next;
+}
+
+/** Public reducers keep the active legacy view as a compatibility projection only. */
+export function reduceState(state: WorldState, action: WorldAction): WorldState {
+  const before = parseState(state);
+  if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') return parseState(reduceProtagonistAction(before, action));
+  const next = reduceLegacyState(legacyView(before), action);
+  return parseState(finishPersonalChange(before, next, `世界行动：${action.type}`));
+}
+export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+  const before = parseState(state);
+  return parseState(finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动'));
+}
+export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
+  const before = parseState(state);
+  return parseState(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算'));
 }

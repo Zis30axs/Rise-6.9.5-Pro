@@ -1,0 +1,17 @@
+{
+  "sourceBytes": 76992717,
+  "bytes": 42712038,
+  "sourceSha256": "b660372203c1693f28982bc0f4d4741d946ff6dcdbaa0142fb9fde3ef5f16da1",
+  "sha256": "5e3b70fd92ce0b5b002ebf33ab0aa527b3092ecc4bdfb4648b739d4d719d8378",
+  "metadataEncoding": "zTXt/chara/zlib-method-0",
+  "metadataTextBytes": 76936768,
+  "compressedMetadataBytes": 42656088,
+  "metadataTextSha256": "5840c60e48de8aba8dca25b0db6b7f68d01f0290fab27b73197413a77a7e635b",
+  "decompressedMetadataByteIdentical": true,
+  "allOtherPngChunksByteIdentical": true,
+  "embeddedScriptChanged": false,
+  "tauriNativeImportTested": false,
+  "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern.",
+  "source": "dist/unread-city.png",
+  "artifact": "outputs/未读之城-祥子与市中心素材版-Tauri.png"
+}

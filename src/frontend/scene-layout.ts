@@ -23,6 +23,7 @@ export const sceneAreas: SceneArea[] = [
   { id: 'junction', label: '南门十字路口', minX: -10, maxX: 10, minZ: 39, maxZ: 59 },
   { id: 'home', label: '家与住宅区', minX: -250, maxX: -150, minZ: 120, maxZ: 210 },
   { id: 'commercial', label: '城市商业区', minX: 130, maxX: 250, minZ: 110, maxZ: 210 },
+  { id: 'downtown', label: '市中心区', minX: -115, maxX: 110, minZ: 145, maxZ: 255 },
   { id: 'city-park', label: '城市公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
   { id: 'campus', label: '校园步行区', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
   { id: 'neighborhood', label: '南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
@@ -45,6 +46,7 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'pocket-park', label: '口袋公园', x: 37, z: 80 },
   { id: 'home', label: '住宅区公交站', x: -180, z: 150 },
   { id: 'commercial', label: '商业区公交站', x: 180, z: 150 },
+  { id: 'downtown', label: '市中心公交站', x: -20, z: 185 },
   { id: 'city-park', label: '公园公交站', x: 180, z: -150 },
 ];
 
@@ -60,6 +62,13 @@ export const scenePaths: ScenePath[] = [
   { x: -180, z: 141, width: 120, depth: 10, kind: 'road' },
   { x: 180, z: 141, width: 120, depth: 10, kind: 'road' },
   { x: 180, z: -159, width: 120, depth: 10, kind: 'road' },
+  // A northern arterial joins the campus street grid to a separate downtown block.
+  { x: 0, z: 131, width: 10, depth: 166, kind: 'road' },
+  { x: 0, z: 185, width: 195, depth: 10, kind: 'road' },
+  { x: 0, z: 208, width: 180, depth: 6, kind: 'walk' },
+  { x: -20, z: 185, width: 98, depth: 6, kind: 'walk' },
+  { x: 50, z: 219, width: 6, depth: 34, kind: 'walk' },
+  { x: -12, z: 131, width: 4.6, depth: 156, kind: 'walk' },
   { x: -151.5, z: 56.5, width: 165, depth: 5, kind: 'walk' },
   { x: 151.5, z: 56.5, width: 165, depth: 5, kind: 'walk' },
   { x: -171.5, z: 103, width: 5, depth: 98, kind: 'walk' },

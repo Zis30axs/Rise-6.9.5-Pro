@@ -1,5 +1,5 @@
 /**
- * Dual-protagonist prototype. Not wired into WorldState or ST-iPhonie yet.
+ * Immutable ledger primitives used by the connected protagonist world.
  * No external payment services and no access to real device data.
  */
 export const PROTAGONISTS = ['soyo', 'sakiko'] as const;
@@ -94,12 +94,12 @@ export function recordPhoneAccess(s: DualProtagonistLedger, event: AccessRecord)
   if (!['inspect', 'send_message', 'change_calendar', 'order_delivery', 'buy'].includes(event.operation)) throw new Error('访问操作无效');
   if (typeof event.authorized !== 'boolean' || typeof event.detail !== 'string' || event.detail.length > limits.detail ||
       typeof event.at !== 'string' || !event.at || event.at.length > 80) throw new Error('访问记录无效');
-  if (s.phoneAccess.length >= limits.entries) throw new Error('手机操作审计记录达到上限');
   const previous = s.phoneAccess.find(row => row.id === event.id);
   if (previous) {
     if (JSON.stringify(previous) !== JSON.stringify(event)) throw new Error('重复手机事件 ID 的数据不一致');
     return s;
   }
+  if (s.phoneAccess.length >= limits.entries) throw new Error('手机操作审计记录达到上限');
   const next = clone(s);
   next.phoneAccess.push({...event});
   return next;
