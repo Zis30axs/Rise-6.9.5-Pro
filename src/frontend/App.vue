@@ -10,6 +10,7 @@ import SoyoLive2D from './SoyoLive2D.vue';
 import { resolveNovelNpcPortrait } from './novel-npc-portraits';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
+import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
 import WorldPanels from './WorldPanels.vue';
 import TransitPanel from './TransitPanel.vue';
 import ConvenienceStore from './ConvenienceStore.vue';
@@ -37,6 +38,15 @@ type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
 const phoneExpanded = ref(false);
 const readingMode = ref<ReadingMode>('compact');
+const layoutEditing = ref(false);
+let layoutLease: ShellLayoutLease | undefined;
+function toggleLayoutEditing() {
+  layoutEditing.value = !layoutEditing.value;
+  layoutLease?.setEditing(layoutEditing.value);
+}
+function resetLayout() {
+  layoutLease?.reset();
+}
 const presentationMode = ref<PresentationMode>(readPresentationMode());
 const novelMode = computed(() => presentationMode.value === 'novel');
 const novelHistory = ref(false);
@@ -659,12 +669,20 @@ onMounted(async () => {
   props.actions.setDismissHandler?.(dismissOverlay);
   hostWindow = shell.value?.ownerDocument.defaultView ?? null;
   hostWindow?.addEventListener('resize', resized);
+  if (shell.value) layoutLease = bindShellLayout(shell.value, () => {
+    if (requestedPhoneSlot && props.model.externalPhoneOpen) {
+      void nextTick(() => {
+        if (requestedPhoneSlot?.isConnected && props.model.externalPhoneOpen) props.actions.openPhone(requestedPhoneSlot);
+      });
+    }
+  });
   await nextTick(); jumpToLatest();
 });
 onBeforeUnmount(() => {
   unmounting = true; phoneMountRevision++;
   props.actions.setDismissHandler?.(undefined);
   hostWindow?.removeEventListener('resize', resized);
+  layoutLease?.dispose(); layoutLease = undefined;
   releasePhone();
 });
 </script>
@@ -678,7 +696,7 @@ onBeforeUnmount(() => {
     <InteriorScene v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
-    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>第 {{ model.state.clock.day }} 天</span><time>{{ time }}</time></div></div><div class="host-actions"><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button><button aria-label="退出沉浸界面，恢复酒馆原生界面" @click="actions.exit()">退出酒馆 <span aria-hidden="true">↗</span></button></div></header>
+    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>第 {{ model.state.clock.day }} 天</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
@@ -713,6 +731,7 @@ onBeforeUnmount(() => {
     <nav class="tool-dock" aria-label="世界面板"><button v-for="item in nav" :key="item.id" :class="{ 'phone-launcher': item.id === 'phone' }" :data-location-entry="item.id === 'location' ? '' : undefined" :data-inventory-entry="item.id === 'inventory' ? '' : undefined" :aria-label="item.title" :aria-pressed="activeWindow === item.id" :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息，点击打开手机` : activeWindow === 'phone' ? '收起手机' : '打开手机，阅读时也可使用') : item.id === 'location' ? '查看此地服务与开放时间' : item.id === 'inventory' ? '打开随身背包，使用或查看携带物品' : undefined" @click="openWindow(item.id)"><span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg><span v-if="item.id === 'phone' && unread" class="phone-unread-badge" :data-phone-unread="unread">{{ unread > 99 ? '99+' : unread }}</span></span><span class="tool-label">{{ item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : activeWindow === 'phone' ? '已打开' : '常驻' }}</small></span></button></nav>
     <span class="sr-only" role="status" aria-live="polite">{{ unread ? `手机有 ${unread} 条未读消息` : '手机没有未读消息' }}</span>
     <section v-show="readingMode !== 'hidden'" class="reading-layer" data-reading-layer aria-label="小说正文" :class="{ 'reading-expanded': readingMode === 'expanded' }">
+      <button type="button" class="reading-resize-grip" data-layout-handle="reading-height" aria-label="上下拖动调整正文高度" title="拖动改变正文高度"><span aria-hidden="true"></span></button>
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
