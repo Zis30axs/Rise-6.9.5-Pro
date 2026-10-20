@@ -5,7 +5,7 @@ export const INTERIOR_ENTRANCE_RANGE = 5;
 export const INTERIOR_INTERACTION_RANGE = 3;
 export interface InteriorObstacle {
   id: string;
-  kind: 'bed' | 'desk' | 'shelf' | 'board' | 'wardrobe' | 'podium';
+  kind: 'bed' | 'desk' | 'shelf' | 'board' | 'wardrobe' | 'podium' | 'piano';
   minX: number; maxX: number; minZ: number; maxZ: number;
 }
 export interface InteriorInteraction {
@@ -107,6 +107,21 @@ export const campusInteriors: readonly CampusInterior[] = [
       { id: 'study-reading', label: '选书阅读', description: '选择学科与阅读时长；本专业正常积累，跨专业可能获得灵感或遇到困惑，不办理借阅。', x: -3.4, z: 1.8, minutes: 0, energyDelta: 0, result: '在图书馆书架旁选择了阅读方向。', prompt: '' },
       { id: 'study-shelf', label: '浏览书架', description: '浏览书架 10 分钟，精力 -1、压力 -2、精神 +2；不办理借阅。', x: -3.4, z: 1.8, minutes: 10, energyDelta: -1, result: '在自习室浏览了十分钟书架，没有借走书籍。', prompt: '我已经在图书馆自习室浏览了十分钟书架，程序已推进 10 分钟并扣除 1 点精力，没有借走书籍。请从浏览结束后继续，不要重复结算或自动增加物品。' },
       { id: 'study-window', label: '看看自习环境', description: '观察自习室的光线与桌椅，不消耗时间或精力。', x: 4.6, z: 2.9, minutes: 0, energyDelta: 0, result: '观察了图书馆自习室的光线、桌椅与安静环境。', prompt: '我已经观察过图书馆自习室的光线与桌椅，未消耗时间或精力。请保持室内安静情境，不要把室外行人当作在场人物。' },
+    ],
+  },
+  {
+    id: 'toyokawa-house', label: '丰川家会客厅', parentLocationId: 'downtown',
+    description: '【本卡后日谈场景】丰川家位于市中心。这里是入门后的会客与钢琴区域，不代表其他房间可以任意进入。祥子与家族正尝试修复关系，但此刻是否有人在场、是否接受来访由实际剧情决定。',
+    entrance: { x: 50, z: 222, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'toyokawa-piano', kind: 'piano', minX: -5.2, maxX: -2.2, minZ: -3.8, maxZ: -2.1 },
+      { id: 'toyokawa-bookcase', kind: 'shelf', minX: 4.4, maxX: 5.4, minZ: -2.7, maxZ: 2.4 },
+    ],
+    interactions: [
+      { id: 'toyokawa-piano-observe', label: '看看钢琴', description: '观察钢琴与室内摆设，不自动演奏，也不会替任何人作决定。',
+        x: -1.4, z: -2.8, minutes: 0, energyDelta: 0, result: '观察了会客厅里的钢琴，没有触碰琴键。', prompt: '你已在丰川家会客厅观察钢琴，没有演奏或改变物品。请基于在场事实叙述，不虚构祥子在场或家人已同意任何重大决定。' },
+      { id: 'toyokawa-room-observe', label: '查看会客厅', description: '观察会客区与书架，不翻找私人信件。',
+        x: 3.4, z: 1.4, minutes: 0, energyDelta: 0, result: '看过了会客厅的陈设和书架，未获取私人物品。', prompt: '已观察会客厅，没有自动搜查私人区域、阅读秘密文件或推进家族关系。' },
     ],
   },
 ];
