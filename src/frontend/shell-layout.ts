@@ -95,8 +95,8 @@ function partKey(part: HTMLElement): string {
   if (part.classList.contains('world-chrome')) return 'header';
   if (part.classList.contains('presentation-switch')) return 'mode';
   if (part.classList.contains('tool-dock')) return 'dock';
-  if (part.classList.contains('reading-layer')) return 'reading';
-  if (part.classList.contains('floating-window')) return 'panel-' + (part.dataset.window ?? 'other').replace(/[^a-z0-9-]/g, '');
+  if (part.classList.contains('reading-layer')) return part.classList.contains('reading-expanded') ? 'reading-expanded' : 'reading';
+  if (part.classList.contains('floating-window')) return 'panel-' + (part.dataset.window ?? 'other').replace(/[^a-z0-9-]/g, '') + (part.classList.contains('phone-window') && part.closest('.uc-shell[data-phone-expanded="true"]') ? '-expanded' : '');
   if (part.classList.contains('novel-npc-portrait')) return 'portrait';
   if (part.classList.contains('walk-launcher')) return 'walk';
   if (part.classList.contains('encounter-caption')) return 'encounter';
@@ -224,7 +224,8 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
       element.dataset.layoutPart = part;
       knownParts.add(element);
       if (editing) addHandles(element); else removeHandles(element);
-      if (changed || seen.get(element) !== key) {
+      const identity = key + ':' + part;
+      if (changed || seen.get(element) !== identity) {
         clearGeometry(element);
         const saved = load(key)[part];
         if (saved && width > 0 && height > 0) {
@@ -234,7 +235,7 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
             width: saved.w * width, height: saved.h * height,
           }, width, height, min.width, min.height));
         }
-        seen.set(element, key);
+        seen.set(element, identity);
       }
     }
     for (const element of knownParts) {
@@ -300,16 +301,17 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
     event.stopPropagation();
   }
   const observer = new win.MutationObserver(mutations => {
-    // Observe only relevant mutations: canvas/phone internals are not layout controls.
-    if (mutations.some(m => m.type === 'childList' || m.target === shell ||
-      (m.target instanceof HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
+    // Canvas and phone content changes are not HUD layout changes.
+    if (mutations.some(m => m.target === shell ||
+      (m.type === 'childList' && (m.target === shell || (m.target instanceof HTMLElement && m.target.hasAttribute('data-layout-part')))) ||
+      (m.type === 'attributes' && m.target instanceof HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
   });
   shell.addEventListener('pointerdown', pointerDown, true);
   shell.addEventListener('pointermove', pointerMove, true);
   shell.addEventListener('pointerup', pointerUp, true);
   shell.addEventListener('pointercancel', pointerUp, true);
   win.addEventListener('resize', schedule);
-  observer.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'data-presentation-mode'] });
+  observer.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'data-presentation-mode', 'data-phone-expanded'] });
   discover();
   return {
     place(element, rect) {
