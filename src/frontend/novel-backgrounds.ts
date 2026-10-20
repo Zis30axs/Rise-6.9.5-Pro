@@ -38,8 +38,8 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   sports: 'park', promenade: 'park', campus: 'park',
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
-  'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial',
-  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom',
+  'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial',
+  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom',
 });
 
 export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
