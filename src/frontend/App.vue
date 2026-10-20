@@ -93,12 +93,10 @@ const portraitLabel = computed(() => encounterPerson.value && !novelHistory.valu
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
-const windowPosition = ref<{ left: number; top: number }>();
 let requestedPhoneSlot: HTMLElement | undefined;
 let phoneMountRevision = 0;
 let unmounting = false;
-let drag: { id: number; x: number; y: number; left: number; top: number; width: number; height: number } | undefined;
-let hostWindow: Window | null = null;
+let drag: { id: number; x: number; y: number; left: number; top: number; width: number; height: number; element: HTMLElement } | undefined;
 let savedReadingScroll = 0;
 const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'phone', title: '手机', path: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1ZM10 5h4M11 19h2' },
@@ -173,7 +171,6 @@ const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhon
 const scenePaused = computed(() => !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
 const storyEntries = computed(() => props.model.state.story);
-const windowStyle = computed(() => windowPosition.value ? { left: `${windowPosition.value.left}px`, top: `${windowPosition.value.top}px`, right: 'auto', bottom: 'auto', transform: 'none' } : undefined);
 
 function releasePhone() {
   if (!requestedPhoneSlot) return;
@@ -215,7 +212,7 @@ function openWindow(panel: WindowPanel) {
   bookReadingPicker.value = false;
   studyInteractionId.value = '';
   if (activeWindow.value === panel) { closeWindow(); return; }
-  releasePhone(); windowPosition.value = undefined; phoneExpanded.value = novelMode.value && panel === 'phone'; activeWindow.value = panel;
+  releasePhone(); phoneExpanded.value = novelMode.value && panel === 'phone'; activeWindow.value = panel;
 }
 async function openLocationActivities() {
   await nextTick();
@@ -650,7 +647,7 @@ function startWindowDrag(event: PointerEvent) {
   if (!element) return;
   const rect = element.getBoundingClientRect();
   const base = shell.value.getBoundingClientRect();
-  drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left - base.left, top: rect.top - base.top, width: rect.width, height: rect.height };
+  drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left - base.left, top: rect.top - base.top, width: rect.width, height: rect.height, element };
   handle.setPointerCapture(event.pointerId); event.preventDefault();
 }
 function moveWindow(event: PointerEvent) {
@@ -660,15 +657,14 @@ function moveWindow(event: PointerEvent) {
   const rightInset = shell.value.clientWidth > 760 ? 112 : 10;
   const left = Math.min(Math.max(10, drag.left + event.clientX - drag.x), Math.max(10, shell.value.clientWidth - drag.width - rightInset));
   const top = Math.min(Math.max(70, drag.top + event.clientY - drag.y), Math.max(70, shell.value.clientHeight - drag.height - 20));
-  windowPosition.value = { left, top };
-  nextTick(() => { if (requestedPhoneSlot && props.model.externalPhoneOpen) props.actions.openPhone(requestedPhoneSlot); });
+  layoutLease?.place(drag.element, { left, top, width: drag.width, height: drag.height });
 }
-function endWindowDrag() { drag = undefined; }
-function resized() { windowPosition.value = undefined; }
+function endWindowDrag() {
+  if (drag) layoutLease?.save(drag.element);
+  drag = undefined;
+}
 onMounted(async () => {
   props.actions.setDismissHandler?.(dismissOverlay);
-  hostWindow = shell.value?.ownerDocument.defaultView ?? null;
-  hostWindow?.addEventListener('resize', resized);
   if (shell.value) layoutLease = bindShellLayout(shell.value, () => {
     if (requestedPhoneSlot && props.model.externalPhoneOpen) {
       void nextTick(() => {
@@ -681,7 +677,6 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   unmounting = true; phoneMountRevision++;
   props.actions.setDismissHandler?.(undefined);
-  hostWindow?.removeEventListener('resize', resized);
   layoutLease?.dispose(); layoutLease = undefined;
   releasePhone();
 });
@@ -742,7 +737,7 @@ onBeforeUnmount(() => {
       <p v-if="composerError" class="composer-error" role="alert">{{ composerError }}</p>
     </section>
     <button v-if="readingMode === 'hidden'" class="resume-reading" aria-label="继续阅读" @click="setReadingMode('compact')">继续阅读 <span v-if="hasNewContent" class="resume-dot">有新内容</span><span aria-hidden="true">↑</span></button>
-    <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'" :style="windowStyle">
+    <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'">
       <div v-if="activeWindow === 'phone'" class="phone-controls" aria-label="手机显示操作"><button type="button" class="phone-size-toggle" :aria-label="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :title="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :aria-expanded="phoneExpanded" @click="togglePhoneSize"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="phoneExpanded ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5' : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5'" /></svg></button><button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
       <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>
