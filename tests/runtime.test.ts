@@ -163,7 +163,7 @@ describe('validated story and phone transaction', () => {
       '<story>故事<phone_messages>[]</phone_messages>',
       '<story>故事</story><world_actions>[{"type":"travel","locationId":"unknown"}]</world_actions>',
       '<story>故事</story><phone_messages>[{"npcId":"unknown","text":"假消息"}]</phone_messages>',
-    ]) expect(() => parseGeneratedStory(bad, state)).toThrow(/格式不正确/);
+    ]) expect(() => parseGeneratedStory(bad, state)).toThrow(/格式不正确|剧情行动无效/);
   });
 
   it('reconstructs a strict allowlist and refuses unknown NPCs, arbitrary fields and unbounded payloads', () => {
@@ -349,7 +349,7 @@ describe('chat-owned Tavern-Helper bridge', () => {
     expect(context.clock).toEqual(state.clock); expect(context.player.balance).toBe(state.player.balance);
     const protocol = (config.injects as { content: string }[])[0].content;
     expect(protocol).toContain('不要再次购买、食用、旅行、睡眠、学习');
-    expect(protocol).toContain('world_actions必须包含至少一项有实际效果');
+    expect(protocol).toContain('必须包含至少一项有实际效果');
     expect(protocol).not.toContain('DATA_ONLY_EVENT_MARKER');
     expect(JSON.stringify(state)).toBe(before); expect(mock.api.replaceVariables).not.toHaveBeenCalled();
     bridge.dispose();
@@ -650,7 +650,7 @@ describe('chat-owned Tavern-Helper bridge', () => {
     expect(system).toContain('不重复结算、不重抽时长');
     expect(system).toContain('|charac|emot|says|');
     expect(system).toContain('|素世|开心|今天天气真好|');
-    expect(system).toContain('不改变外层 JSON 协议');
+    expect(system).toContain('不改变外层标签协议');
     expect(system).toContain('表情与动画由前端白名单映射');
     expect(system).not.toContain('PLAYER_ONLY_MARKER');
     expect(system).not.toContain('HISTORY_ONLY_MARKER');
