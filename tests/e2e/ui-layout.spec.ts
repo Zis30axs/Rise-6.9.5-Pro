@@ -121,3 +121,31 @@ test('narrow software keyboard viewport keeps scrolling panels clear of dock', a
   await panel.locator('.window-content').evaluate(node => { node.scrollTop = node.scrollHeight; });
   await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
 });
+
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test('novel-mode scene and reading clearance at ' + viewport.width + 'x' + viewport.height, async ({ page }) => {
+    test.setTimeout(60000);
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await completeAcademicSetup(page);
+    await page.getByRole('button', { name: '纯小说', exact: true }).click();
+    const shell = page.locator('.uc-shell');
+    await expect(shell).toHaveAttribute('data-presentation-mode', 'novel');
+    const reading = page.locator('[data-reading-layer]');
+    const a = await reading.boundingBox(), dock = await page.locator('.tool-dock').boundingBox();
+    expect(a!.height).toBeLessThanOrEqual(260);
+    expect(a!.y + a!.height).toBeLessThanOrEqual(dock!.y - 4);
+    await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '切换聊天并恢复原生界面' })).toBeVisible();
+    await mkdir('outputs/ui-layout-qa', { recursive: true });
+    await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-novel-initial.png' });
+    await page.getByRole('button', { name: '地点', exact: true }).click();
+    const panel = page.locator('.floating-window[data-window="location"]');
+    await expect(panel).toBeVisible();
+    const bounds = await panel.boundingBox();
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(dock!.y - 4);
+    await panel.locator('.window-content').evaluate(el => { el.scrollTop = el.scrollHeight; });
+    await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-novel-location.png' });
+  });
+}
