@@ -14,6 +14,7 @@ import zlib
 from pathlib import Path
 
 from card_codec import CardError, PNG_SIGNATURE, extract_card, read_chunks, write_chunk
+from release_budget import check_tauri_release_size
 
 
 def compress_card_metadata(source: bytes) -> tuple[bytes, dict]:
@@ -47,7 +48,10 @@ def compress_card_metadata(source: bytes) -> tuple[bytes, dict]:
             restored.append((kind, payload))
     if changed != 1 or restored != chunks:
         raise CardError("压缩后还原校验失败")
+    # Enforce the complete-file cap BEFORE the CLI can write either artifact.
+    budget = check_tauri_release_size(len(output))
     report = {
+        **budget,
         "sourceBytes": len(source), "bytes": len(output),
         "sourceSha256": hashlib.sha256(source).hexdigest(),
         "sha256": hashlib.sha256(output).hexdigest(),

@@ -1,0 +1,86 @@
+{
+  "scope": "downtown recovery checkpoint 1; lore, isolated transit policy and packaging gate",
+  "verifiedAtUtc": "2026-10-20T01:22:30.429220+00:00",
+  "baseCommit": "3d440d9283269f5668da941f0c03c8cd8f5fc24c",
+  "branch": "feature/downtown-sakiko-recovery",
+  "checks": {
+    "python": {
+      "passed": 17,
+      "failed": 0
+    },
+    "node": {
+      "passed": 12,
+      "failed": 0
+    },
+    "typescriptStrict": {
+      "passed": true,
+      "scope": "downtown-transit-policy.ts only"
+    }
+  },
+  "environment": {
+    "python": "3.13.5",
+    "node": "22.16.0",
+    "typescript": "5.8.3",
+    "networkPackageInstall": false
+  },
+  "testFixture": "synthetic complete 1x1 RGBA PNG with actual new worldbook; not a game release",
+  "limits": {
+    "tauriPngExclusiveLimitBytes": 50000000,
+    "productionPngBuilt": false,
+    "productionPngBytes": null
+  },
+  "notVerified": [
+    "full npm test/check/build/card",
+    "map/reducer/UI integration",
+    "four-viewport UI regression",
+    "physical iPhone/TauriTavern",
+    "real LLM worldbook injection"
+  ],
+  "recoveredPriorWorkFiles": false,
+  "baselineFilesVerifiedByGitBlobSha": {
+    "scripts/card_codec.py": "ad2c38a9ce3643ce2dcb2fb79356b8ff2329e440",
+    "scripts/build_tauri_import_card.py": "3887a85061b6142c220c294abe58ddb5e937dbcd"
+  },
+  "files": {
+    "src/worldbook/toyokawa-sakiko.json": {
+      "bytes": 5011,
+      "sha256": "86fbb2d4f9f5ffcee56e200d2a2dc47650f73a0645258a9ce7df087932989bbe",
+      "gitBlobSha": "00b03b31fb1b4bf7f4726c8f629f340848fbebc8"
+    },
+    "src/runtime/downtown-transit-policy.ts": {
+      "bytes": 3880,
+      "sha256": "f06dde78cbdcd4daf92bde0037a1967a0aca3ad76fa7c1313dab78dacdc607b7",
+      "gitBlobSha": "5ea620df3e75ffd9dfa0ced215883f6e66f1a839"
+    },
+    "scripts/release_budget.py": {
+      "bytes": 885,
+      "sha256": "06e284a25164f7f99d84d7f7d06a26c1a5165b02e431c05c89b3c047fae75ef1",
+      "gitBlobSha": "a6cf9ce87c40ac378d208038555e9f661445416d"
+    },
+    "scripts/build_tauri_import_card.py": {
+      "bytes": 4248,
+      "sha256": "ad68abf4bd86a2bb7da0e4c6af8c158a29389fa5ec63853663ad981dcb6ff283",
+      "gitBlobSha": "7ac88c3deb4769c53bb3de02a176421c338947e3"
+    },
+    "scripts/verify_downtown_transit.cjs": {
+      "bytes": 1583,
+      "sha256": "911b1d7b4b62cca094f9df87f1b1919daff254f14858d12ef1f9134ea78914e3",
+      "gitBlobSha": "548c7474cf130790c1cb69bfa9548a34ae93c90a"
+    },
+    "tests/test_downtown_recovery.py": {
+      "bytes": 9465,
+      "sha256": "bf3e2001f5a383bd9c643e6aecf954a651e0afd4d34b14cac83a0bec6144ad27",
+      "gitBlobSha": "29c62a56af130681a2e853af502b2538d654a298"
+    },
+    "tests/downtown-transit-policy.node.cjs": {
+      "bytes": 4753,
+      "sha256": "b9d1f66edc241f981cd99754aa85ac5849bdc7f24f2eccfaade8608f844beffb",
+      "gitBlobSha": "a16796e3ebce5a28e12aab2fb106688a8bf94a19"
+    },
+    "integration/downtown-recovery/README.md": {
+      "bytes": 4081,
+      "sha256": "3b80e8d9460e26538e40695208d17d0f33e735284c2757c854b77fc73c876124",
+      "gitBlobSha": "87e30424fcb97c074f96ebc6fa65684221e7d6ce"
+    }
+  }
+}
