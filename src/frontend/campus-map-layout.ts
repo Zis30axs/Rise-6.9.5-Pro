@@ -8,7 +8,7 @@ export interface MapBuilding { id: string; x: number; z: number; width: number; 
 export const campusMapBounds = { minX: -74, maxX: 74, minZ: -64, maxZ: 94 };
 export const mapBounds = (scope: CampusMapScope) => scope === 'city' ? sceneBounds : campusMapBounds;
 export const mapPaths = scenePaths;
-export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park'].includes(area.id));
+export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown'].includes(area.id));
 export const mapLandmarks = sceneLandmarks;
 
 // Major building footprints mirror the outdoor scene. A regression compares
@@ -31,6 +31,10 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:commercial-shop:178', x: 178, z: 111, width: 23, depth: 15, height: 9.2, color: '#aa726d' },
   { id: 'building:commercial-shop:210', x: 210, z: 111, width: 28, depth: 15, height: 9.2, color: '#a38365' },
   { id: 'building:commercial-corner', x: 216, z: 184, width: 28, depth: 20, height: 14, color: '#ad846c' },
+  { id: 'building:downtown-office-west', x: -78, z: 226, width: 22, depth: 22, height: 16.2, color: '#ada58c' },
+  { id: 'building:downtown-office-south', x: -82, z: 157, width: 22, depth: 17, height: 18.6, color: '#9ba9a0' },
+  { id: 'building:downtown-shop-east', x: 87, z: 226, width: 17, depth: 18, height: 13.2, color: '#aa8770' },
+  { id: 'building:toyokawa-residence', x: 50, z: 235, width: 24, depth: 20, height: 12.8, color: '#b7ac8b' },
 ];
 
 const aliases: Record<string, string> = { gate: 'south-gate', cafe: 'campus-cafe', dorm: 'residences' };
@@ -47,7 +51,8 @@ export function visibleMapBuildings(scope: CampusMapScope): readonly MapBuilding
 
 /** Four separate touch targets; choose the shortest leaders as the map rotates. */
 export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonly T[], width: number, height: number): (T & { label: MapPoint })[] {
-  const slots = [56, width - 56].flatMap(x => [28, height - 48].map(y => ({ x, y })));
+  const slotXs = items.length > 4 ? [56, width / 2, width - 56] : [56, width - 56];
+  const slots = slotXs.flatMap(x => [28, height - 48].map(y => ({ x, y })));
   let best: MapPoint[] = [], bestDistance = Infinity;
   const assign = (labels: MapPoint[], remaining: MapPoint[], distance: number) => {
     if (labels.length === items.length) { if (distance < bestDistance) { best = labels; bestDistance = distance; } return; }
