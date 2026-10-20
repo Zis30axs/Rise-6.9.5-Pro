@@ -1,10 +1,12 @@
 import type { InteriorPresence, ScenePresence, TransitState } from '../frontend/types';
 
+export type TransitVehicleId = 'btr82a' | 'zbd04a';
+
 export const TRANSIT_STOP_RANGE = 6;
 export const TRANSIT_SEQUENCE_LIMIT = 1_000_000_000;
 
 export interface TransitStop {
-  id: 'campus' | 'home' | 'commercial' | 'city-park';
+  id: 'campus' | 'home' | 'commercial' | 'city-park' | 'downtown';
   label: string;
   locationId: string;
   x: number;
@@ -17,6 +19,7 @@ export const transitStops: readonly TransitStop[] = [
   { id: 'campus', label: '校园南门站', locationId: 'bus-stop', x: 46, z: 38, yaw: 3.141 },
   { id: 'home', label: '家园站', locationId: 'home', x: -180, z: 150, yaw: 0 },
   { id: 'commercial', label: '商业区站', locationId: 'commercial', x: 180, z: 150, yaw: 0 },
+  { id: 'downtown', label: '市中心站', locationId: 'downtown', x: -20, z: 185, yaw: 0 },
   { id: 'city-park', label: '城市公园站', locationId: 'city-park', x: 180, z: -150, yaw: 0 },
 ];
 
@@ -30,6 +33,8 @@ const cityRoutes = [
   { stopId: 'home', minutes: 45, fare: 6 },
   { stopId: 'commercial', minutes: 25, fare: 3 },
   { stopId: 'city-park', minutes: 35, fare: 4 },
+  // Only the ZBD-04A express serves downtown. Its 12-yuan fare exceeds every ordinary route.
+  { stopId: 'downtown', minutes: 55, fare: 12 },
 ] as const;
 
 export function createTransitState(): TransitState { return { sequence: 0, lastRide: null }; }
@@ -40,10 +45,19 @@ export function getNearbyTransitStop(scene: ScenePresence | null, interior: Inte
 }
 
 /** Each outer district has a direct return service; changing outer lines takes place at campus. */
-export function getTransitRoutes(stopId: string): TransitRoute[] {
-  if (stopId === 'campus') return cityRoutes.map(route => ({ stop: transitStops.find(stop => stop.id === route.stopId)!, minutes: route.minutes, fare: route.fare }));
+export function getTransitRoutes(stopId: string, vehicleId: TransitVehicleId = 'btr82a'): TransitRoute[] {
+  if (stopId === 'campus') return cityRoutes.filter(route => route.stopId !== 'downtown' || vehicleId === 'zbd04a')
+    .map(route => ({ stop: transitStops.find(stop => stop.id === route.stopId)!, minutes: route.minutes, fare: route.fare }));
+  if (stopId === 'downtown' && vehicleId !== 'zbd04a') return [];
   const route = cityRoutes.find(route => route.stopId === stopId);
   return route ? [{ stop: transitStops[0]!, minutes: route.minutes, fare: route.fare }] : [];
+}
+
+/** Novel-mode route planning chooses the express only when downtown is involved. */
+export function selectTravelVehicle(originLocationId: string, destinationLocationId: string, requested?: string): string {
+  if (requested) return requested;
+  const downtown = (id: string) => id === 'downtown' || id === 'toyokawa-house';
+  return downtown(originLocationId) || downtown(destinationLocationId) ? 'zbd04a' : 'btr82a';
 }
 
 export function isFarTransitLocation(locationId: string): boolean {
@@ -64,7 +78,9 @@ export function getTransitContext(transit: TransitState, scene: ScenePresence | 
   const ride = transit.lastRide;
   return {
     count: transit.sequence,
-    nearbyStop: nearbyStop ? { id: nearbyStop.id, label: nearbyStop.label, routes: getTransitRoutes(nearbyStop.id).map(route => ({ toStopId: route.stop.id, destination: route.stop.label, minutes: route.minutes, fare: route.fare })) } : null,
+    nearbyStop: nearbyStop ? { id: nearbyStop.id, label: nearbyStop.label,
+      routes: getTransitRoutes(nearbyStop.id, nearbyStop.id === 'downtown' ? 'zbd04a' : 'btr82a')
+        .map(route => ({ toStopId: route.stop.id, destination: route.stop.label, minutes: route.minutes, fare: route.fare })) } : null,
     lastRide: ride ? {
       ...ride,
       vehicle: transitVehicles.find(vehicle => vehicle.id === ride.vehicleId)!.label,
