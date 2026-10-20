@@ -44,6 +44,16 @@ for (const viewport of viewports) {
     expect(chatRect!.y + chatRect!.height).toBeLessThanOrEqual(viewport.height + 1);
 
     const dock = page.locator('.tool-dock');
+    // The reported screenshot uses pure-novel presentation; check that mode as well.
+    await page.getByRole('button', { name: '纯小说', exact: true }).click();
+    await expect(shell).toHaveAttribute('data-presentation-mode', 'novel');
+    await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-novel.png' });
+    const novelReading = await page.locator('.reading-layer').boundingBox();
+    const novelDock = await dock.boundingBox();
+    expect(novelReading).not.toBeNull();
+    if (viewport.width <= 760) expect(novelReading!.y + novelReading!.height).toBeLessThanOrEqual(novelDock!.y - 5);
+    await page.getByRole('button', { name: '3D 漫游', exact: true }).click();
+    await expect(shell).toHaveAttribute('data-presentation-mode', 'scene');
     for (const menu of ['地图', '地点', '背包', '状态', '日程']) {
       await page.getByRole('button', { name: menu, exact: true }).click();
       const panel = page.locator('.floating-window:not(.phone-window)');
