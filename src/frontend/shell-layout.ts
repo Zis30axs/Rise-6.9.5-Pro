@@ -34,6 +34,7 @@ const EDITABLE = [
   '.reading-layer',
   '.floating-window',
   '.novel-npc-portrait',
+  '.soyo-live2d',
   '.walk-launcher',
   '.encounter-caption:not(.encounter-caption-inline)',
   '.resume-reading',
@@ -98,6 +99,7 @@ function partKey(part: HTMLElement): string {
   if (part.classList.contains('reading-layer')) return part.classList.contains('reading-expanded') ? 'reading-expanded' : 'reading';
   if (part.classList.contains('floating-window')) return 'panel-' + (part.dataset.window ?? 'other').replace(/[^a-z0-9-]/g, '') + (part.classList.contains('phone-window') && part.closest('.uc-shell[data-phone-expanded="true"]') ? '-expanded' : '');
   if (part.classList.contains('novel-npc-portrait')) return 'portrait';
+  if (part.classList.contains('soyo-live2d')) return 'soyo-live2d';
   if (part.classList.contains('walk-launcher')) return 'walk';
   if (part.classList.contains('encounter-caption')) return 'encounter';
   if (part.classList.contains('resume-reading')) return 'resume';
@@ -115,7 +117,7 @@ function minimum(part: HTMLElement): { width: number; height: number } {
   if (part.classList.contains('reading-layer')) return { width: 160, height: 150 };
   if (part.classList.contains('floating-window')) return { width: 190, height: 185 };
   if (part.classList.contains('tool-dock')) return { width: 200, height: 52 };
-  if (part.classList.contains('novel-npc-portrait')) return { width: 120, height: 150 };
+  if (part.classList.contains('novel-npc-portrait') || part.classList.contains('soyo-live2d')) return { width: 120, height: 150 };
   if (part.classList.contains('world-chrome')) return { width: 230, height: 56 };
   return { width: RESIZE_MIN, height: RESIZE_MIN };
 }
