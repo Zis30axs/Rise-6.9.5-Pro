@@ -410,7 +410,8 @@ describe('Immersive Shell 生命周期', () => {
     handle = mountShell(window, window, bridge, onExit);
     await nextTick();
     expect(document.body.style.overflow).toBe('hidden');
-    expect(document.querySelector('[data-unread-city-rescue]')).not.toBeNull();
+    expect(document.querySelector('[data-unread-city-rescue]')).toBeNull();
+    expect(document.querySelector('[data-unread-city-root]')).not.toBeNull();
     handle.dispose(); handle.dispose();
     expect(document.body.style.overflow).toBe('scroll');
     expect(document.activeElement).toBe(native);
@@ -438,10 +439,11 @@ describe('Immersive Shell 生命周期', () => {
     expect(bridge.save).not.toHaveBeenCalled();
   });
 
-  it('独立恢复按钮与 Esc 均可退出，且不覆盖其他扩展的新样式', () => {
+  it('无独立恢复按钮，切换聊天和 Esc 都能退出且不覆盖其他扩展的新样式', () => {
     const { bridge } = fixture(); handle = mountShell(window, window, bridge, vi.fn());
+    expect(document.querySelector('[data-unread-city-rescue]')).toBeNull();
     document.body.style.setProperty('overflow', 'auto');
-    document.querySelector<HTMLButtonElement>('[data-unread-city-rescue]')!.click();
+    handle.actions.switchChat();
     expect(document.body.style.overflow).toBe('auto');
     handle = mountShell(window, window, fixture().bridge, vi.fn());
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
