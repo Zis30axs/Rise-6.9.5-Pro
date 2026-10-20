@@ -51,8 +51,10 @@ export function visibleMapBuildings(scope: CampusMapScope): readonly MapBuilding
 
 /** Four separate touch targets; choose the shortest leaders as the map rotates. */
 export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonly T[], width: number, height: number): (T & { label: MapPoint })[] {
-  const slotXs = items.length > 4 ? [56, width / 2, width - 56] : [56, width - 56];
-  const slots = slotXs.flatMap(x => [28, height - 48].map(y => ({ x, y })));
+  // On 240px-wide city maps, five 104px labels need two columns and three rows.
+  const lastRow = height - 48;
+  const rows = items.length > 4 ? [28, (28 + lastRow) / 2, lastRow] : [28, lastRow];
+  const slots = [56, width - 56].flatMap(x => rows.map(y => ({ x, y })));
   let best: MapPoint[] = [], bestDistance = Infinity;
   const assign = (labels: MapPoint[], remaining: MapPoint[], distance: number) => {
     if (labels.length === items.length) { if (distance < bestDistance) { best = labels; bestDistance = distance; } return; }
