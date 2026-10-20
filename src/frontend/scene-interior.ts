@@ -85,7 +85,7 @@ export function createInteriorWorld(scene: THREE.Scene, room: CampusInterior, ow
         for (const dx of [-0.1, 0.1]) box(0.025, 0.24, d + 0.04, palette.paper, x + dx, 1.1, z, furnitureGroup);
       } else {
         // Open shelves face the central aisle. Every shelf stays in its collision footprint.
-        const front = z + (z > 0 ? -1 : 1) * Math.max(0, d / 2 - (d * 0.15) / 2 - 0.04);
+        const front = z + (z > 0 ? -1 : 1) * Math.max(0, d / 2 - Math.max(d * 0.075, Math.min(d * 0.7, 0.3) / 2) - 0.04);
         box(w * 0.91, h * 0.88, d * 0.15, palette.dark, x, h / 2, front, furnitureGroup);
         for (let row = 0; row < 4; row++) {
           box(w * 0.94, 0.055, d * 0.85, palette.paper, x, 0.18 + row * 0.48, z, furnitureGroup);
