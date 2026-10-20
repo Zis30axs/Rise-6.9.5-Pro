@@ -46,13 +46,6 @@ export function mountShell(
   mount.id = 'unread-city-app';
   shadow.append(style, mount);
 
-  // This control is independent of Vue and its shadow DOM.
-  const rescue = doc.createElement('button');
-  rescue.type = 'button';
-  rescue.textContent = '恢复酒馆';
-  rescue.title = '恢复原生界面（Esc）';
-  rescue.setAttribute('data-unread-city-rescue', '');
-  rescue.style.cssText = 'position:fixed;right:12px;top:calc(100dvh - 46px);z-index:2147483647;padding:8px 12px;border:1px solid #a4b6a7;border-radius:6px;background:#f5f1e5;color:#263c39;font:12px system-ui;cursor:pointer;';
 
   const phoneApi = () => {
     if (phoneRuntime) return phoneRuntime.available();
@@ -112,10 +105,7 @@ export function mountShell(
       () => doc.removeEventListener('focusin', focusin, true),
       () => doc.removeEventListener('visibilitychange', visibilitychange),
       () => ownerWindow.removeEventListener('pagehide', pagehide),
-      () => hostWindow.removeEventListener('resize', layoutRescue),
-      () => rescue.removeEventListener('click', rescueClick),
       () => host.remove(),
-      () => rescue.remove(),
     ];
     for (const cleanup of cleanups) {
       try { cleanup(); } catch (error) { console.error('[UnreadCity] cleanup', error); }
@@ -390,7 +380,6 @@ export function mountShell(
       const frame = doc.querySelector<HTMLIFrameElement>('#sttts-panel iframe');
       if (frame) focusables.push(frame);
     }
-    focusables.push(rescue);
     const first = focusables[0]; const last = focusables.at(-1);
     const focused = shadow.activeElement ?? doc.activeElement;
     if (event.shiftKey && (focused === first || !focusables.includes(focused as HTMLElement))) {
@@ -402,41 +391,29 @@ export function mountShell(
   function focusin(event: FocusEvent) {
     if (dead) return;
     const target = event.target as Node | null;
-    if (target === host || host.contains(target) || target === rescue) return;
+    if (target === host || host.contains(target)) return;
     if (phoneLease && doc.getElementById('sttts-panel')?.contains(target)) return;
     shadow.querySelector<HTMLElement>('button:not(:disabled)')?.focus({ preventScroll: true });
   }
   function pagehide() { dispose('角色脚本已关闭，已恢复原生界面。'); }
-  function rescueClick() { dispose(); }
-  function layoutRescue() {
-    // SillyTavern may transform its zero-height html element. A fixed bottom
-    // offset then uses that element instead of the visible viewport.
-    const inset = hostWindow.innerWidth <= 760 ? 80 : 12;
-    const height = Math.ceil(rescue.getBoundingClientRect().height) || 34;
-    rescue.style.top = `${Math.max(8, hostWindow.innerHeight - inset - height)}px`;
-    rescue.style.bottom = 'auto';
-  }
 
   try {
     app = createApp(App, { model, actions });
     app.config.errorHandler = (error) => { console.error('[UnreadCity]', error); dispose('界面发生错误，已恢复酒馆。'); };
-    doc.body.append(host, rescue);
+    doc.body.append(host);
     doc.body.style.setProperty('overflow', 'hidden', 'important');
     appliedOverflowPriority = doc.body.style.getPropertyPriority('overflow');
     doc.addEventListener('keydown', keydown, true);
     doc.addEventListener('focusin', focusin, true);
     doc.addEventListener('visibilitychange', visibilitychange);
     ownerWindow.addEventListener('pagehide', pagehide);
-    hostWindow.addEventListener('resize', layoutRescue);
-    layoutRescue();
-    rescue.addEventListener('click', rescueClick);
     stopSession = bridge.onSessionChange(() => dispose('聊天已切换，已恢复原生界面。'));
     const integrity = () => {
       const api = phoneApi();
       model.externalPhoneAvailable = !!api;
       model.phoneSource = phoneRuntime?.source() ?? (api ? 'extension' : 'none');
       if (phoneLease && (mountedPhoneApi !== api || !phoneAnchor?.isConnected)) closePhone();
-      if (!host.isConnected || !rescue.isConnected || (ownerFrame && !ownerFrame.isConnected)) {
+      if (!host.isConnected || (ownerFrame && !ownerFrame.isConnected)) {
         dispose('界面或角色脚本已卸载，已恢复酒馆。');
       } else if (bridge.session() !== session) dispose('聊天已切换，已恢复原生界面。');
     };
