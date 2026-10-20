@@ -19,6 +19,8 @@ type PointerDrag = {
 export interface ShellLayoutLease {
   setEditing(active: boolean): void;
   reset(): void;
+  place(element: HTMLElement, rect: LayoutRect): void;
+  save(element: HTMLElement): void;
   dispose(): void;
 }
 
@@ -310,6 +312,15 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
   observer.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'data-presentation-mode'] });
   discover();
   return {
+    place(element, rect) {
+      if (disposed || !shell.contains(element)) return;
+      const min = minimum(element);
+      setGeometry(element, clampLayout(rect, shell.clientWidth, shell.clientHeight, min.width, min.height));
+      onGeometryChange?.();
+    },
+    save(element) {
+      if (!disposed && shell.contains(element)) persist(element, partKey(element));
+    },
     setEditing(value) {
       editing = value;
       shell.dataset.layoutEdit = value ? 'true' : 'false';
