@@ -82,6 +82,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   // also gives exact rounding at half-cent boundaries without float drift.
   const conditionNumerator = Math.min(450, Math.max(150, 350 - departure.health - departure.satiety + departure.stress));
   const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier: conditionNumerator / 300, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
+  // Exiting an already visited room is free and must retain its real exterior pose;
+  // never teleport the player back to a distant bus stop on a same-district exit.
+  if (state.interior && getCampusInterior(state.interior.roomId)?.parentLocationId === locationId) {
+    return { next: reduceState(next, { type: 'leave_interior' }), quote };
+  }
   try {
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
