@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
 import { completeAcademicSetup } from './academics-fixture';
 
 const viewports = [
@@ -15,6 +16,8 @@ for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.goto('/');
     await completeAcademicSetup(page);
+    await mkdir('outputs/ui-layout-qa', { recursive: true });
+    await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-initial.png' });
 
     const shell = page.locator('.uc-shell');
     const switchChat = page.getByRole('button', { name: '切换聊天并恢复原生界面' });
@@ -44,6 +47,7 @@ for (const viewport of viewports) {
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(dockBounds!.x - 4);
       }
 
+      if (menu === '地点') await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-location-menu.png' });
       const contents = panel.locator('.window-content');
       await expect(contents).toBeVisible();
       await contents.evaluate(node => { node.scrollTop = node.scrollHeight; });
@@ -84,6 +88,7 @@ for (const viewport of viewports) {
     await expect.poll(async () => (await reading.boundingBox())?.height ?? 0).toBeGreaterThan(before!.height - 10);
     await page.getByRole('button', { name: '完成界面布局编辑' }).click();
     await expect(shell).toHaveAttribute('data-layout-edit', 'false');
+    await page.screenshot({ path: 'outputs/ui-layout-qa/' + viewport.width + 'x' + viewport.height + '-restored.png' });
 
     expect(errors).toEqual([]);
   });
