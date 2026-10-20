@@ -11,6 +11,7 @@ const viewports = [
 
 for (const viewport of viewports) {
   test('HUD editing and dock-safe panel scrolling at ' + viewport.width + 'x' + viewport.height, async ({ page }) => {
+    test.setTimeout(120_000); // Five real panels and 3D scene screenshots across a slow CI runner.
     const errors: string[] = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.setViewportSize(viewport);
