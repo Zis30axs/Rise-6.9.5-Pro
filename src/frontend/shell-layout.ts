@@ -300,11 +300,11 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
     onGeometryChange?.();
     event.stopPropagation();
   }
-  const observer = new win.MutationObserver(mutations => {
+  const observer = new (win as Window & typeof globalThis).MutationObserver(mutations => {
     // Canvas and phone content changes are not HUD layout changes.
     if (mutations.some(m => m.target === shell ||
-      (m.type === 'childList' && (m.target === shell || (m.target instanceof HTMLElement && m.target.hasAttribute('data-layout-part')))) ||
-      (m.type === 'attributes' && m.target instanceof HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
+      (m.type === 'childList' && (m.target === shell || (m.target instanceof (win as Window & typeof globalThis).HTMLElement && m.target.hasAttribute('data-layout-part')))) ||
+      (m.type === 'attributes' && m.target instanceof (win as Window & typeof globalThis).HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
   });
   shell.addEventListener('pointerdown', pointerDown, true);
   shell.addEventListener('pointermove', pointerMove, true);
