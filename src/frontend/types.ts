@@ -65,6 +65,7 @@ export interface TransitState {
 export interface PlayerState {
   /** Immediate energy, 0..100 in exact hundredths. */
   energy: number;
+  /** Legacy-compatible projection; in 1.12 Appie Pay is authoritative. */
   balance: number;
   health: number;
   stress: number;
@@ -120,7 +121,9 @@ export interface ContactProfileInput {
 export type ContactProfileDraft = Omit<ContactProfileInput, 'id'> & { id?: string };
 
 export interface WorldState {
-  schema_version: '1.11.0';
+  schema_version: '1.11.0' | '1.12.0';
+  /** Added lazily when a dual-protagonist feature is first used. */
+  protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };
   locationId: string;
   scene: ScenePresence | null;
@@ -139,6 +142,8 @@ export interface WorldState {
 }
 
 export type WorldAction =
+  | { type: 'switch_protagonist'; target: import('../runtime/dual-protagonists').ProtagonistId }
+  | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
   | { type: 'buy_item'; itemId: string; quantity: number }

@@ -1,3 +1,4 @@
+import { finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
@@ -165,7 +166,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
 export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
-  return planNovelTravel(state, locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
+  return planNovelTravel(legacyView(state), locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
 }
 
 export interface RouteOutlook {
@@ -438,6 +439,11 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
 
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
 export function parseState(value: unknown): WorldState {
+  if (value && typeof value === 'object' && !Array.isArray(value) && (value as Record<string, unknown>).schema_version === '1.12.0') {
+    const { protagonists, ...rest } = value as Record<string, unknown>;
+    const base = parseState({ ...rest, schema_version: '1.11.0' });
+    return { ...base, schema_version: '1.12.0', protagonists: parseProtagonists(protagonists, base, parseState) };
+  }
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
   if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
@@ -534,7 +540,7 @@ export function parseState(value: unknown): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   let next = parseState(state);
   const validated = validateStoryActions(actions, next);
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
@@ -646,7 +652,7 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
  * delivers its persisted phone records and displays the accepted world event.
  * Retrying delivery keeps the same IDs. Legacy saves retain their existing data.
  */
-export function commitStoryTurn(
+function commitLegacyStoryTurn(
   state: WorldState,
   input: string,
   result: GeneratedStory,
@@ -789,7 +795,7 @@ function activityChangeNote(before: PlayerState, after: PlayerState): string {
  * Structured narrative actions share these transactions; exact-duration rest,
  * study, contextual effects and relationship changes are handled above.
  */
-export function reduceState(state: WorldState, action: WorldAction): WorldState {
+function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
   const next = parseState(state);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
@@ -1098,4 +1104,20 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     default: throw new Error('不支持的行动。');
   }
   return next;
+}
+
+/** Public reducers keep the active legacy view as a compatibility projection only. */
+export function reduceState(state: WorldState, action: WorldAction): WorldState {
+  const before = parseState(state);
+  if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') return parseState(reduceProtagonistAction(before, action));
+  const next = reduceLegacyState(legacyView(before), action);
+  return parseState(finishPersonalChange(before, next, `世界行动：${action.type}`));
+}
+export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+  const before = parseState(state);
+  return parseState(finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动'));
+}
+export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
+  const before = parseState(state);
+  return parseState(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算'));
 }

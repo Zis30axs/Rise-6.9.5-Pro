@@ -208,3 +208,5 @@
 @media(max-width:390px) { .bed-rest-dialog { padding:19px 15px; } .bed-rest-options { gap:7px; margin-top:16px; } .bed-rest-options strong { font-size:16px; } }
 @media(max-width:390px) and (max-height:620px) { .uc-shell .bed-rest-cancel { width:calc(100% - 88px); } }
 @media(max-height:620px) { .bed-rest-overlay { padding-top:74px; padding-bottom:84px; } .bed-rest-dialog { padding:16px; } .bed-rest-options { margin:14px 0 11px; } .uc-shell .bed-rest-options button { min-height:100px; } .uc-shell .bed-rest-dialog h2 { font-size:21px; } .uc-shell .bed-rest-receipt { top:206px; } }
+
+.presentation-switch select { color: inherit; background: #172824d9; border: 1px solid #9db6a755; border-radius: 6px; min-height: 44px; max-width: 128px; font: inherit; padding: 4px 8px; }

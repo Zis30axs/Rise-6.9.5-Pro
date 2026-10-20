@@ -1,3 +1,4 @@
+import { activeProtagonist, protagonistNames } from './protagonist-world';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
 import { getSceneContext } from './scene-context';
@@ -220,7 +221,10 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (snapshot.interior) { airTraffic.active = null; airTraffic.canTriggerPass = false; }
       const summary = {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
+        protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
         clock: snapshot.clock, location: snapshot.locationId, player: snapshot.player,
+        phoneCalendar: snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [],
+        phoneNotifications: snapshot.protagonists?.devices[activeProtagonist(snapshot)].notifications.filter(n => !n.read) ?? [],
         academics: (() => {
           const overview = getAcademicOverview(snapshot.academics);
           return overview ? { majorId: overview.major.id, major: overview.major.name,
@@ -272,7 +276,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
         '玩家本次行动：', input.trim(),
       ].join('\n');
-      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
+      const perspective = `当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。只使用当前主角已知的记录；不得把另一主角的秘密或离屏经历当作当前主角已知。不要根据历史默认身份把祥子视角改回素世。`;
+      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${perspective}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
       try {
         const response = await Promise.race([
           storyApi.mode === 'custom'
