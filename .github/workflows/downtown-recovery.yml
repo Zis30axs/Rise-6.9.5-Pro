@@ -1,0 +1,38 @@
+name: Downtown recovery checks
+on:
+  push:
+    branches:
+      - recovery/downtown-sakiko-20261020
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  targeted-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      # The private ST-iPhonie sibling checkout is not provided in CI. Test the
+      # affected world-state and scene modules without asserting a full phone build.
+      - name: World-state, map, movement and story-mode regression
+        run: npx vitest run tests/downtown-recovery.test.ts tests/transit.test.ts tests/campus-interiors.test.ts tests/scene-interior.test.ts tests/novel-navigation.test.ts tests/campus-map-layout.test.ts tests/scene-movement.test.ts tests/scene-context.test.ts tests/location-links.test.ts tests/novel-backgrounds.test.ts --maxWorkers=1
+      - name: Validate worldbook assembly in basic PNG
+        run: |
+          python3 scripts/build_card.py --output dist/downtown-basic-check.png
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from card_codec import decode_card
+          data = decode_card(Path('dist/downtown-basic-check.png').read_bytes())
+          entries = data['data']['character_book']['entries']
+          assert any('丰川祥子' in entry.get('name', '') for entry in entries)
+          print('Worldbook entries:', len(entries))
+          PY
