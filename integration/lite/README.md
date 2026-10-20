@@ -1,6 +1,6 @@
 # 未读之城 Lite · 本地资源外挂预发行
 
-版本：lite-v0.1.0-rc1；与 PR #6 已合并主线同步，但不包含 Draft 中的 PR #4 双主角。本分支不覆盖 main 和 42.7 MB 完整卡。
+版本：lite-v0.1.0-rc2；与 PR #6 已合并主线同步，但不包含 Draft 中的 PR #4 双主角。本分支不覆盖 main 和 42.7 MB 完整卡。
 
 ## 发布物
 
@@ -32,3 +32,7 @@ GitHub Actions 的 .github/workflows/lite-prerelease.yml 在 push lite 分支时
 - ZIP 使用不压缩的 STORE 格式，避免额外解压库和一次性展开压缩 ZIP 的内存峰值。
 - 只把静态资源文本移出 IIFE 并在导入后替换成 Blob URL，不执行 ZIP 内容；Lite 分支已适配人物/车辆/飞机 GLB 与素世 Live2D 的本地 Blob URL 读取。仍须在 iPhone 上验证实际渲染。
 - 用户聊天、已有存档、完整卡、main、PR #4 不作更改。游戏原有模型调用流程不被扩展为在线素材下载。
+
+## RC2 修复：丰川家会客厅 / 祥子立绘
+
+main 和 lite 原本使用相同的 toyokawa_living_room.webp（相同 Git Blob SHA 和清单 SHA-256），但 RC1 外挂 ZIP 加载后将素材地址变成 blob: URL，旧的运行时 PNG/WebP 校验只接受 data: URL，导致会客厅错误回退到默认 bedroom-day 背景，且祥子立绘也受影响。RC2 仅在 Lite 分支接受 SHA-verified ZIP 安装后恢复的本地 Blob 图片地址，保留不受信任 URL 拦截和素材字段校验。新增对应回归测试。RC1 保持可下载，用于回退或对比。

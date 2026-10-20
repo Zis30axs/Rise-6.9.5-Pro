@@ -73,15 +73,15 @@ jobs:
         run: |
           # Replace only our automatically generated pre-release after every check passes.
           # Recreate the tag to keep it aligned with the newly verified source commit.
-          if gh release view lite-v0.1.0-rc1 >/dev/null 2>&1; then
-            gh release delete lite-v0.1.0-rc1 --yes --cleanup-tag
+          if gh release view lite-v0.1.0-rc2 >/dev/null 2>&1; then
+            gh release delete lite-v0.1.0-rc2 --yes --cleanup-tag
           fi
-          gh release create lite-v0.1.0-rc1 \
+          gh release create lite-v0.1.0-rc2 \
             dist/unread-city-lite-tauri.png \
             dist/unread-city-lite-assets.zip \
             dist/lite-verification.json \
             dist/lite-assets-report.json \
             --target "$GITHUB_SHA" --prerelease \
-            --title "未读之城 Lite v0.1.0-rc1（本地 ZIP 外挂）" \
+            --title "未读之城 Lite v0.1.0-rc2（会客厅 Blob 修复）" \
             --notes-file integration/lite/README.md
           # Never replace the release before all build, byte and SHA checks pass.
