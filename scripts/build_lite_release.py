@@ -61,7 +61,7 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     loader = bootstrap.replace('__UC_LITE_ASSET_LIST__', json.dumps(entries, separators=(',', ':')))
     loader = loader.replace('__UC_LITE_PACK_DIGEST__', json.dumps(manifest_sha))
     script = ('/* UNREAD_CITY_IMMERSIVE_BUNDLE LITE; extracted assets are data-only. */\n'
-              '(async function(){\n' + loader + '\nawait __uc_lite_init__();\n' + compact +
+              '(async function(){\n' + loader + '\nif (await __uc_lite_init__()) {\n' + compact + '\n}\n' +
               '\n})().catch(error => console.error("[UnreadCity Lite] launch failed",error));\n')
     from io import BytesIO
     output = BytesIO()
