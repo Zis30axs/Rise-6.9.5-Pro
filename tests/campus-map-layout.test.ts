@@ -16,7 +16,7 @@ describe('校园与城市沙盘的真实场景布局', () => {
     try {
       expect(mapPaths).toBe(scenePaths);
       expect(mapBounds('city')).toBe(sceneBounds);
-      expect(mapBuildings).toHaveLength(17);
+      expect(mapBuildings).toHaveLength(21);
       for (const building of mapBuildings) {
         const collider = world.movementWorld.colliders.find(item => item.id === building.id);
         expect(collider, building.id).toBeDefined();
@@ -30,14 +30,14 @@ describe('校园与城市沙盘的真实场景布局', () => {
   });
 
   it('18 个小说目的地均有真实入口坐标，室内沿用所属建筑门口', () => {
-    expect(novelDestinations).toHaveLength(18);
+    expect(novelDestinations).toHaveLength(20);
     for (const destination of novelDestinations) expect(mapLocationPoint(destination.id), destination.id).toBeDefined();
     for (const room of campusInteriors) expect(mapLocationPoint(room.id)).toEqual(room.entrance);
     expect(mapLocationPoint('dorm')).toEqual(sceneLandmarks.find(item => item.id === 'residences'));
     expect(mapLocationPoint('gate')).toEqual(sceneLandmarks.find(item => item.id === 'south-gate'));
     expect(mapLocationPoint('imaginary-station')).toBeUndefined();
     expect(visibleMapBuildings('campus')).toHaveLength(10);
-    expect(visibleMapBuildings('city')).toHaveLength(17);
+    expect(visibleMapBuildings('city')).toHaveLength(21);
   });
 
   it('朝北时宿舍在西、教学楼在北、商业区在东南、公园在东北', () => {
@@ -68,7 +68,7 @@ describe('校园与城市沙盘的真实场景布局', () => {
     }
   });
 
-  it('城市四片区标签在小屏旋转后仍各有独立 104×44 点击区域', () => {
+  it('五片区标签在小屏旋转后仍各有独立 104×44 点击区域', () => {
     for (const [width, height] of [[240, 170], [320, 250], [620, 420]]) for (const bearing of [0, 45, 90, 180, 270]) {
       const projection = createCampusMapProjection(width, height, bearing, 'city');
       const districts = mapDistrictLabels(transitStops.map(stop => ({ id: stop.id, anchor: projection.project(stop.x, stop.z) })), width, height);
@@ -80,12 +80,12 @@ describe('校园与城市沙盘的真实场景布局', () => {
     }
   });
 
-  it('校园内目的地为 15 处，另外 3 处在城市层，所有边界均来自实景', () => {
+  it('校园内目的地为 15 处，市中心与丰川家在城市层，所有边界均来自实景', () => {
     const campus = novelDestinations.filter(destination => {
       const point = mapLocationPoint(destination.id)!;
       return point.x >= campusMapBounds.minX && point.x <= campusMapBounds.maxX && point.z >= campusMapBounds.minZ && point.z <= campusMapBounds.maxZ;
     });
     expect(campus).toHaveLength(15);
-    expect(novelDestinations.filter(destination => !campus.includes(destination)).map(destination => destination.id)).toEqual(['home', 'commercial', 'city-park']);
+    expect(novelDestinations.filter(destination => !campus.includes(destination)).map(destination => destination.id)).toEqual(['home', 'commercial', 'downtown', 'city-park', 'toyokawa-house']);
   });
 });
