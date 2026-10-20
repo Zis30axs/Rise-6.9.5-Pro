@@ -56,6 +56,8 @@ jobs:
       # This build audits integration, not a replacement for the private installed phone.
       - name: Full frontend build with pinned baseline phone
         run: npm run card
+      - name: Whole-project Vitest regression after phone packaging
+        run: npx vitest run --maxWorkers=1
       - name: Tauri lossless PNG and strict size gate
         run: |
           python3 scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/unread-city-downtown-tt-preview.png
