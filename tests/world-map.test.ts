@@ -42,7 +42,7 @@ describe('沙盘与小说出行界面', () => {
     expect(host.querySelectorAll('.cms-place-dot')).toHaveLength(6);
     button(host, '城市', '.wm-layers').click(); await nextTick();
     expect(viewport.getAttribute('data-map-layer')).toBe('city');
-    expect([...host.querySelectorAll('.wm-district-list button')].map(item => item.textContent)).toEqual(['校园与南门', '家与住宅区', '商业区', '城市公园']);
+    expect([...host.querySelectorAll('.wm-district-list button')].map(item => item.textContent)).toEqual(['校园与南门', '家与住宅区', '商业区', '城市公园', '市中心区']);
     button(host, '世界', '.wm-layers').click(); await nextTick();
     expect(viewport.getAttribute('data-map-layer')).toBe('world'); expect(dispatch).not.toHaveBeenCalled();
   });
