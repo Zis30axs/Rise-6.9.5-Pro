@@ -1,0 +1,197 @@
+{
+  "status": "assets-verified",
+  "assetCount": 18,
+  "assets": [
+    {
+      "id": "sakiko_casual_neutral",
+      "path": "characters/sakiko/casual/neutral.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "c485b2394e82057aca0428ca19e2c2627d7cd6bdcdb9af7db9f62770e784a35c",
+      "bytes": 300562
+    },
+    {
+      "id": "sakiko_casual_smile",
+      "path": "characters/sakiko/casual/smile.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "94a2c1b58f859665b15036b0fb456a17aa391f0b01cfd55a407683372cde506e",
+      "bytes": 311014
+    },
+    {
+      "id": "sakiko_casual_troubled",
+      "path": "characters/sakiko/casual/troubled.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "84fb74c5fce6b5e3953a0bc3a7a42791094498030018e5bb52782d934394cc71",
+      "bytes": 314924
+    },
+    {
+      "id": "sakiko_casual_surprised",
+      "path": "characters/sakiko/casual/surprised.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "51a5072d78ef81bf155e3370c5ed4f3a0671441823fa4381cb338c33a3dfc267",
+      "bytes": 307876
+    },
+    {
+      "id": "sakiko_casual_annoyed",
+      "path": "characters/sakiko/casual/annoyed.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "569674f0f3d86003e30709f4c39a66d9f6b353b3abd82a35fafe012dee740fa2",
+      "bytes": 310766
+    },
+    {
+      "id": "sakiko_casual_sad",
+      "path": "characters/sakiko/casual/sad.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "f371fa7a6a2fa68626b08fa84e6fdcb9b1b389d4f66c5b6ee8a9d6fc5b5ba480",
+      "bytes": 311992
+    },
+    {
+      "id": "sakiko_home_neutral",
+      "path": "characters/sakiko/home/neutral.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "98a3783882132c0d92da7d583678db3a3eea6d202171c229e0508f20d8a5be4e",
+      "bytes": 325596
+    },
+    {
+      "id": "sakiko_home_smile",
+      "path": "characters/sakiko/home/smile.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "934d8f3c26a2204143a13665c900d46cb4dbe4a0690d25355d9f0693550fb6a2",
+      "bytes": 335970
+    },
+    {
+      "id": "sakiko_home_troubled",
+      "path": "characters/sakiko/home/troubled.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "ab98c88eecc274cbd448e937ff373227c0ca5ce8edba27bddc0c2b3271fa9834",
+      "bytes": 329558
+    },
+    {
+      "id": "sakiko_home_surprised",
+      "path": "characters/sakiko/home/surprised.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "6cc7b9deea011bde6aebee8e3b69dfd1fb5155759822426d7d91ab7f3672c2b4",
+      "bytes": 339210
+    },
+    {
+      "id": "sakiko_home_annoyed",
+      "path": "characters/sakiko/home/annoyed.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "a1d6fe3bc3f13356a1201294dfd68bfaa88221769b86b88f067e8e92d9c66e78",
+      "bytes": 333090
+    },
+    {
+      "id": "sakiko_home_sad",
+      "path": "characters/sakiko/home/sad.webp",
+      "size": [
+        768,
+        1344
+      ],
+      "sha256": "522532b4d8f5af620c3194365cfc840bcb1a22c2c42b3544a02c875e7007da66",
+      "bytes": 336492
+    },
+    {
+      "id": "toyokawa_mansion_day",
+      "path": "backgrounds/toyokawa_mansion_day.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",
+      "bytes": 363248
+    },
+    {
+      "id": "toyokawa_mansion_dusk",
+      "path": "backgrounds/toyokawa_mansion_dusk.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "0f39d8f4937a7981fa1131a666e5650b0fa6df947faf4e7b89ace83b7819a2d3",
+      "bytes": 367982
+    },
+    {
+      "id": "toyokawa_mansion_night",
+      "path": "backgrounds/toyokawa_mansion_night.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "d4a665df87b90117a3e2cddb86097a2b369e3a284b38fd679bf343c1164f9073",
+      "bytes": 322490
+    },
+    {
+      "id": "toyokawa_living_room",
+      "path": "backgrounds/toyokawa_living_room.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "f7878aba17fa973e6935e84aeca30ff7f3768ab12321e696052d46664cd76e17",
+      "bytes": 259602
+    },
+    {
+      "id": "downtown_day",
+      "path": "backgrounds/downtown_day.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "f714f810b2ac72813cbb4298eeff3096c21dbe157affa7125b716807c57773fc",
+      "bytes": 388462
+    },
+    {
+      "id": "downtown_night",
+      "path": "backgrounds/downtown_night.webp",
+      "size": [
+        1536,
+        864
+      ],
+      "sha256": "5939c833cb116e4a3e361e32553dc53635e414ffd7ea0c13fe2200fb1e5c48cb",
+      "bytes": 322416
+    }
+  ],
+  "assetBytes": 5881250,
+  "visualReview": "manifest approval required; not inferred from filenames or tests",
+  "card": {
+    "status": "embedded-card-verified",
+    "bytes": 42712038,
+    "limitBytes": 50000000,
+    "sha256": "5e3b70fd92ce0b5b002ebf33ab0aa527b3092ecc4bdfb4648b739d4d719d8378",
+    "embeddedAssetCount": 18,
+    "visualViewportTests": "not performed by this validator",
+    "physicalDeviceTest": "not performed"
+  }
+}

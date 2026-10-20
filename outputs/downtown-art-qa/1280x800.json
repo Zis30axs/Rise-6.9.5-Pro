@@ -1,0 +1,367 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "bundleSha256": "cff7088ba621a2d1107cdbf1a602d2f320f91f31ab8922d3ec4d20d0c816ec3e",
+  "images": {
+    "toyokawa_mansion_day": {
+      "hash": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    },
+    "sakiko_casual_neutral": {
+      "hash": "c485b2394e82057aca0428ca19e2c2627d7cd6bdcdb9af7db9f62770e784a35c",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_casual_smile": {
+      "hash": "94a2c1b58f859665b15036b0fb456a17aa391f0b01cfd55a407683372cde506e",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_casual_troubled": {
+      "hash": "84fb74c5fce6b5e3953a0bc3a7a42791094498030018e5bb52782d934394cc71",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_casual_surprised": {
+      "hash": "51a5072d78ef81bf155e3370c5ed4f3a0671441823fa4381cb338c33a3dfc267",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_casual_annoyed": {
+      "hash": "569674f0f3d86003e30709f4c39a66d9f6b353b3abd82a35fafe012dee740fa2",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_casual_sad": {
+      "hash": "f371fa7a6a2fa68626b08fa84e6fdcb9b1b389d4f66c5b6ee8a9d6fc5b5ba480",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "toyokawa_living_room": {
+      "hash": "f7878aba17fa973e6935e84aeca30ff7f3768ab12321e696052d46664cd76e17",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    },
+    "sakiko_home_neutral": {
+      "hash": "98a3783882132c0d92da7d583678db3a3eea6d202171c229e0508f20d8a5be4e",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_home_smile": {
+      "hash": "934d8f3c26a2204143a13665c900d46cb4dbe4a0690d25355d9f0693550fb6a2",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_home_troubled": {
+      "hash": "ab98c88eecc274cbd448e937ff373227c0ca5ce8edba27bddc0c2b3271fa9834",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_home_surprised": {
+      "hash": "6cc7b9deea011bde6aebee8e3b69dfd1fb5155759822426d7d91ab7f3672c2b4",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_home_annoyed": {
+      "hash": "a1d6fe3bc3f13356a1201294dfd68bfaa88221769b86b88f067e8e92d9c66e78",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "sakiko_home_sad": {
+      "hash": "522532b4d8f5af620c3194365cfc840bcb1a22c2c42b3544a02c875e7007da66",
+      "size": [
+        768,
+        1344
+      ],
+      "inline": true,
+      "geometry": {
+        "frame": {
+          "left": 389,
+          "top": 90,
+          "right": 781,
+          "bottom": 776
+        },
+        "reading": {
+          "top": 495,
+          "bottom": 775
+        },
+        "fit": "contain",
+        "w": 1280,
+        "h": 800,
+        "overlapsReading": true
+      }
+    },
+    "toyokawa_mansion_dusk": {
+      "hash": "0f39d8f4937a7981fa1131a666e5650b0fa6df947faf4e7b89ace83b7819a2d3",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    },
+    "toyokawa_mansion_night": {
+      "hash": "d4a665df87b90117a3e2cddb86097a2b369e3a284b38fd679bf343c1164f9073",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    },
+    "downtown_day": {
+      "hash": "f714f810b2ac72813cbb4298eeff3096c21dbe157affa7125b716807c57773fc",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    },
+    "downtown_night": {
+      "hash": "5939c833cb116e4a3e361e32553dc53635e414ffd7ea0c13fe2200fb1e5c48cb",
+      "size": [
+        1536,
+        864
+      ],
+      "inline": true
+    }
+  },
+  "screenshots": [
+    "outputs/downtown-art-qa/1280x800-casual-neutral.png",
+    "outputs/downtown-art-qa/1280x800-casual-smile.png",
+    "outputs/downtown-art-qa/1280x800-casual-troubled.png",
+    "outputs/downtown-art-qa/1280x800-casual-surprised.png",
+    "outputs/downtown-art-qa/1280x800-casual-annoyed.png",
+    "outputs/downtown-art-qa/1280x800-casual-sad.png",
+    "outputs/downtown-art-qa/1280x800-home-neutral.png",
+    "outputs/downtown-art-qa/1280x800-home-smile.png",
+    "outputs/downtown-art-qa/1280x800-home-troubled.png",
+    "outputs/downtown-art-qa/1280x800-home-surprised.png",
+    "outputs/downtown-art-qa/1280x800-home-annoyed.png",
+    "outputs/downtown-art-qa/1280x800-home-sad.png",
+    "outputs/downtown-art-qa/1280x800-scroll.png",
+    "outputs/downtown-art-qa/1280x800-phone.png",
+    "outputs/downtown-art-qa/1280x800-toyokawa_mansion_dusk.png",
+    "outputs/downtown-art-qa/1280x800-toyokawa_mansion_night.png",
+    "outputs/downtown-art-qa/1280x800-downtown_day.png",
+    "outputs/downtown-art-qa/1280x800-downtown_night.png"
+  ],
+  "status": "passed",
+  "physicalTauriDevice": "not tested"
+}

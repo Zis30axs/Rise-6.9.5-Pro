@@ -672,8 +672,8 @@ onBeforeUnmount(() => {
 <template>
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus">
     <div :inert="!model.state.academics || !!model.interaction" :aria-hidden="!model.state.academics || !!model.interaction || undefined" style="display: contents">
-    <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" />
-    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" />
+    <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
+    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />
     <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="novelSegment.speaker" :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />

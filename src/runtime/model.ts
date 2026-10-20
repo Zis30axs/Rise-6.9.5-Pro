@@ -5,7 +5,7 @@ import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
-import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
@@ -82,6 +82,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   // also gives exact rounding at half-cent boundaries without float drift.
   const conditionNumerator = Math.min(450, Math.max(150, 350 - departure.health - departure.satiety + departure.stress));
   const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier: conditionNumerator / 300, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
+  // Exiting an already visited room is free and must retain its real exterior pose;
+  // never teleport the player back to a distant bus stop on a same-district exit.
+  if (state.interior && getCampusInterior(state.interior.roomId)?.parentLocationId === locationId) {
+    return { next: reduceState(next, { type: 'leave_interior' }), quote };
+  }
   try {
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
@@ -136,10 +141,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       position(target);
     } else {
       walk(target);
-      if (room) {
-        next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
-        next = reduceState(next, { type: 'enter_interior', roomId: room.id });
-      }
+    }
+    // A far-city residence is still an indoor destination after its transit leg.
+    if (room) {
+      next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
+      next = reduceState(next, { type: 'enter_interior', roomId: room.id });
     }
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
@@ -158,8 +164,8 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 }
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
-export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId = 'btr82a'): NovelTravelQuote {
-  return planNovelTravel(state, locationId, vehicleId).quote;
+export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
+  return planNovelTravel(state, locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
 }
 
 export interface RouteOutlook {
@@ -349,7 +355,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   const vehicle = transitVehicles.find(vehicle => vehicle.id === ride.vehicleId);
   const fromStopId = id(ride.fromStopId, 'transit.lastRide.fromStopId');
   const toStopId = id(ride.toStopId, 'transit.lastRide.toStopId');
-  const route = getTransitRoutes(fromStopId).find(route => route.stop.id === toStopId);
+  const route = vehicle && getTransitRoutes(fromStopId, vehicle.id).find(route => route.stop.id === toStopId);
   if (!vehicle || rideId !== `transit-ride-${sequence}` || !route || ride.minutes !== route.minutes || ride.fare !== route.fare) return invalid('transit.lastRide 车辆、路线或结算不一致');
   const at = text(ride.at, 'transit.lastRide.at', 40);
   const stamp = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(at);
@@ -889,7 +895,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       break;
     }
     case 'novel_travel': {
-      const planned = planNovelTravel(next, action.locationId, action.vehicleId ?? 'btr82a');
+      const planned = planNovelTravel(next, action.locationId, selectTravelVehicle(next.locationId, action.locationId, action.vehicleId));
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
       return parseState(planned.next);
     }
@@ -943,7 +949,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (!currentStop) throw new Error('请先走到室外公交站候车区，再选择乘车。');
       const vehicle = transitVehicles.find(vehicle => vehicle.id === action.vehicleId);
       if (!vehicle) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
-      const route = getTransitRoutes(currentStop.id).find(route => route.stop.id === action.stopId);
+      const route = getTransitRoutes(currentStop.id, vehicle.id).find(route => route.stop.id === action.stopId);
       if (!route) throw new Error('当前站点没有这条路线；远地之间请返回校园站换乘。');
       if (next.player.balance < route.fare) throw new Error(`余额不足，本程需要 ${route.fare} 元。`);
       if (next.transit.sequence >= TRANSIT_SEQUENCE_LIMIT) throw new Error('乘车记录已达到上限，本次未扣费。');

@@ -7,15 +7,17 @@
   },
   "type": "module",
   "scripts": {
+    "art:build": "python scripts/build_downtown_art.py",
     "phone:build": "node scripts/build_embedded_phone.mjs",
-    "predev": "npm run phone:build",
-    "precheck": "npm run phone:build",
+    "predev": "npm run art:build && npm run phone:build",
+    "precheck": "npm run art:build && npm run phone:build",
     "dev": "vite --host 127.0.0.1",
     "check": "vue-tsc --noEmit",
     "build": "npm run check && vite build",
     "test": "vitest run",
     "test:e2e": "npm run build && playwright test",
-    "card": "npm run build && python scripts/build_card.py --frontend dist/immersive-shell.js"
+    "card": "npm run build && python scripts/build_card.py --frontend dist/immersive-shell.js",
+    "card:art": "python scripts/build_downtown_art.py --require-ready && npm run card && python scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/unread-city-downtown-art-tauri.png && python scripts/verify_downtown_art.py --root assets/downtown-art --manifest integration/downtown-art/manifest.json --card dist/unread-city-downtown-art-tauri.png --report outputs/downtown-art-release.json"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

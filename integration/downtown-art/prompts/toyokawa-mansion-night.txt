@@ -1,0 +1,2 @@
+Use case: lighting-weather
+Edit the supplied Toyokawa mansion daytime background. Change ONLY time of day and lighting to night: deep blue evening sky, cool moonlit cream stone and garden, soft warm light from the same windows and entrance lanterns, path still readable. Preserve exact house architecture, all doors and windows, trees, fence, stone path, camera position, lens, crop and perspective. Single finished 16:9 visual novel backdrop with the same empty foreground. No people, no text, no signs, no UI, no collage, no watermark. No structural redesign.
