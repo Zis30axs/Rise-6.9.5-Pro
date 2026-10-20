@@ -47,6 +47,34 @@ describe('custom shell HUD geometry', () => {
     expect(minimal.height).toBeGreaterThanOrEqual(150);
   });
 
+  it('clamps customized mobile windows above the visible bottom navigation dock', () => {
+    const shell = document.createElement('div');
+    shell.className = 'uc-shell';
+    Object.defineProperty(shell, 'clientWidth', { value: 390 });
+    Object.defineProperty(shell, 'clientHeight', { value: 844 });
+    shell.getBoundingClientRect = () => new DOMRect(0, 0, 390, 844);
+    const dock = document.createElement('nav');
+    dock.className = 'tool-dock';
+    dock.getBoundingClientRect = () => new DOMRect(40, 754, 310, 70);
+    const panel = document.createElement('section');
+    panel.className = 'floating-window';
+    panel.dataset.window = 'location';
+    panel.getBoundingClientRect = () => new DOMRect(
+      Number.parseFloat(panel.style.left) || 12,
+      Number.parseFloat(panel.style.top) || 100,
+      Number.parseFloat(panel.style.width) || 360,
+      Number.parseFloat(panel.style.height) || 550,
+    );
+    shell.append(dock, panel);
+    document.body.append(shell);
+    const lease = bindShellLayout(shell);
+    lease.place(panel, { left: 12, top: 650, width: 366, height: 255 });
+    const top = Number.parseFloat(panel.style.top);
+    const height = Number.parseFloat(panel.style.height);
+    expect(top + height).toBeLessThanOrEqual(754 - 8);
+    lease.dispose();
+  });
+
   it('saves the placement locally; reveals handles only in edit mode; reset removes saved geometry', () => {
     const shell = document.createElement('div');
     shell.className = 'uc-shell';
