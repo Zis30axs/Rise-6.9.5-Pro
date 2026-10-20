@@ -13,7 +13,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 # Only complete JavaScript string literals are candidates. Small icons stay inline.
 DATA_URL = re.compile(
-    r'(?P<quote>[\x22\x27])data:(?P<mime>[a-zA-Z0-9.+-]+/[a-zA-Z0-9.+-]+);base64,'
+    r'(?P<quote>[\x22\x27\x60])data:(?P<mime>[a-zA-Z0-9.+-]+/[a-zA-Z0-9.+-]+);base64,'
     r'(?P<encoded>[A-Za-z0-9+/]{40000,}={0,2})(?P=quote)'
 )
 MIN_REMOVED_BYTES = 20_000_000
