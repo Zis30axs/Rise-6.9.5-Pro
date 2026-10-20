@@ -1,0 +1,83 @@
+name: Build Lite offline ZIP pre-release
+on:
+  push:
+    branches: [lite]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Python and Node dependencies
+        run: |
+          python -m pip install Pillow
+          npm ci
+      - name: Restore precisely pinned and locally patched ST-iPhonie (no publishing)
+        run: |
+          git init ../ST-iPhonie
+          git -C ../ST-iPhonie remote add origin https://github.com/Zis30axs/ST-iPhonie.git
+          git -C ../ST-iPhonie fetch --depth 1 origin 24295193aa1adff606edcd4e63c8b07923533f2b
+          git -C ../ST-iPhonie checkout --detach FETCH_HEAD
+          git -C ../ST-iPhonie apply --check "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+          git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+      - name: Verify source and resource loader
+        run: |
+          python -m unittest discover -s tests -p 'test*.py' -v
+          node --check scripts/lite_asset_loader.js
+          node --experimental-strip-types --test tests/sakiko-art-policy.node.mjs
+          python scripts/check_downtown_art_status.py
+      - name: Build existing phone, artwork and frontend
+        run: |
+          npm run build
+          npx vitest run --maxWorkers=1
+      - name: Construct and audit Lite card and offline ZIP
+        run: |
+          python scripts/build_lite_release.py
+          node --check dist/immersive-shell-lite.js
+          python scripts/build_lite_card.py
+          python scripts/build_tauri_import_card.py --source dist/unread-city-lite.png --output dist/unread-city-lite-tauri.png
+          python scripts/verify_lite_release.py
+          python - <<'PY'
+          import json
+          r=json.load(open('dist/lite-verification.json'))
+          assert r['status']=='passed-build-only-not-tested-on-iphone'
+          assert r['approvedNewArtExternalized']==18
+          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources')
+          PY
+      - name: Preserve built PNG, ZIP and audit as CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: unread-city-lite-offline-prerelease
+          path: |
+            dist/unread-city-lite-tauri.png
+            dist/unread-city-lite-tauri.verification.json
+            dist/unread-city-lite-assets.zip
+            dist/lite-verification.json
+            dist/lite-assets-report.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Create GitHub Pre-release only after validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create lite-v0.1.0-rc1 \
+            dist/unread-city-lite-tauri.png \
+            dist/unread-city-lite-assets.zip \
+            dist/lite-verification.json \
+            dist/lite-assets-report.json \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "未读之城 Lite v0.1.0-rc1（本地 ZIP 外挂）" \
+            --notes-file integration/lite/README.md
+          # Do not publish on failed tests or upload incomplete artifacts. A
+          # tag collision fails instead of silently overwriting a prior release.
