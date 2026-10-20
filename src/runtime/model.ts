@@ -355,7 +355,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   const vehicle = transitVehicles.find(vehicle => vehicle.id === ride.vehicleId);
   const fromStopId = id(ride.fromStopId, 'transit.lastRide.fromStopId');
   const toStopId = id(ride.toStopId, 'transit.lastRide.toStopId');
-  const route = getTransitRoutes(fromStopId).find(route => route.stop.id === toStopId);
+  const route = vehicle && getTransitRoutes(fromStopId, vehicle.id).find(route => route.stop.id === toStopId);
   if (!vehicle || rideId !== `transit-ride-${sequence}` || !route || ride.minutes !== route.minutes || ride.fare !== route.fare) return invalid('transit.lastRide 车辆、路线或结算不一致');
   const at = text(ride.at, 'transit.lastRide.at', 40);
   const stamp = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(at);
