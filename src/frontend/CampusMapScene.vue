@@ -81,7 +81,7 @@ const extraMarkers = computed(() => {
 });
 const districts = computed(() => mapDistrictLabels([
   { id: 'campus', name: '校园与南门', x: 0, z: 15 },
-  ...transitStops.filter(stop => stop.id !== 'campus').map(stop => ({ id: stop.id, name: stop.id === 'home' ? '家与住宅区' : stop.id === 'commercial' ? '商业区' : '城市公园', x: stop.x, z: stop.z })),
+  ...transitStops.filter(stop => stop.id !== 'campus').map(stop => ({ id: stop.id, name: stop.id === 'home' ? '家与住宅区' : stop.id === 'commercial' ? '商业区' : stop.id === 'downtown' ? '市中心区' : '城市公园', x: stop.x, z: stop.z })),
 ].map(item => ({ ...item, anchor: project(item.x, item.z) })), props.width, props.height));
 const player = computed(() => {
   const point = props.position ?? mapLocationPoint(props.locationId);
