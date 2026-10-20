@@ -20,7 +20,8 @@ class LiteExtractionTests(unittest.TestCase):
             raw = hashlib.shake_256(str(index).encode('ascii')).digest(900_000)
             encoded = base64.b64encode(raw).decode('ascii')
             original[lite.digest(raw)] = raw
-            literals.append('const a' + str(index) + '="data:image/webp;base64,' + encoded + '";')
+            quote = ('"', "'", '`')[index % 3]
+            literals.append('const a' + str(index) + '=' + quote + 'data:image/webp;base64,' + encoded + quote + ';')
         source = '/* UNREAD_CITY_IMMERSIVE_BUNDLE */\n' + '\n'.join(literals)
         with self.assertRaisesRegex(ValueError, 'extraction too small'):
             # Real release has a 20 MB gate: synthetic 16.2 MB input is too small.
