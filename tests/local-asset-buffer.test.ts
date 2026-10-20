@@ -8,7 +8,7 @@ describe('local verified asset bytes for Lite and full cards', () => {
     await expect(readLocalAssetBytes('data:application/octet-stream;base64,QUJD', 2, 'too large')).rejects.toThrow('too large');
   });
   it('accepts only local Blob URL resources subject to original size bound', async () => {
-    const fetcher = vi.fn(async () => ({ ok: true, blob: async () => new Blob([new Uint8Array([1, 2, 3, 4])]) }));
+    const fetcher = vi.fn(async () => ({ ok: true, blob: async () => ({ size: 4, arrayBuffer: async () => new Uint8Array([1, 2, 3, 4]).buffer }) }));
     vi.stubGlobal('fetch', fetcher);
     try {
       expect([...await readLocalAssetBytes('blob:tauri://localhost/test', 16, 'invalid')]).toEqual([1, 2, 3, 4]);
