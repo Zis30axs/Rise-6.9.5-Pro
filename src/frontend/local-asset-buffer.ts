@@ -1,5 +1,5 @@
 /** Loads only embedded Base64 or locally-created Blob URLs. Never accepts remote URLs. */
-export async function readLocalAssetBytes(source: string, encodedLimit: number, message: string): Promise<Uint8Array> {
+export async function readLocalAssetBytes(source: string, encodedLimit: number, message: string): Promise<Uint8Array<ArrayBuffer>> {
   const inline = /^data:[^;,]*;base64,([A-Za-z0-9+/=]+)$/.exec(source);
   if (inline) {
     if (inline[1].length > encodedLimit) throw new Error(message);
