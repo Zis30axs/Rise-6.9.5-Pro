@@ -36,3 +36,55 @@ jobs:
           assert any('丰川祥子' in entry.get('name', '') for entry in entries)
           print('Worldbook entries:', len(entries))
           PY
+
+  integrated-card-audit:
+    needs: targeted-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Fetch pinned public ST-iPhonie baseline
+        run: |
+          git clone --quiet --depth 1 https://github.com/Zis30axs/ST-iPhonie.git ../ST-iPhonie
+          test "$(git -C ../ST-iPhonie rev-parse HEAD)" = "24295193aa1adff606edcd4e63c8b07923533f2b"
+      - run: npm ci
+      # Public ST-iPhonie lacks the user's later unpublished contact-editor fixes.
+      # This build audits integration, not a replacement for the private installed phone.
+      - name: Full frontend build with pinned baseline phone
+        run: npm run card
+      - name: Tauri lossless PNG and strict size gate
+        run: |
+          python3 scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/unread-city-downtown-tt-preview.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys, hashlib, json
+          sys.path.insert(0, 'scripts')
+          from card_codec import extract_card
+          plain = Path('dist/unread-city.png')
+          tauri = Path('dist/unread-city-downtown-tt-preview.png')
+          card = extract_card(plain.read_bytes())
+          script = card['data']['extensions']['tavern_helper']['scripts']
+          assert any('UNREAD_CITY_IMMERSIVE_BUNDLE' in s.get('content','') for s in script)
+          entries = card['data']['character_book']['entries']
+          assert any('丰川祥子' in e.get('name','') for e in entries)
+          size = tauri.stat().st_size
+          assert size < 50_000_000, f'Tauri import PNG exceeds strict 50 MB: {size} bytes'
+          report = json.loads(tauri.with_suffix('.verification.json').read_text())
+          assert report['decompressedMetadataByteIdentical'] is True
+          assert report['allOtherPngChunksByteIdentical'] is True
+          print('Downtown packaged preview bytes:', size)
+          print('Downtown packaged preview SHA256:', hashlib.sha256(tauri.read_bytes()).hexdigest())
+          print('Public phone source revision: 24295193aa1adff606edcd4e63c8b07923533f2b')
+          print('WARNING: Public phone baseline lacks later unpublished contact editor; preview only, not final release or iPhone acceptance')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downtown-tt-PREVIEW-public-phone-baseline
+          path: |
+            dist/unread-city-downtown-tt-preview.png
+            dist/unread-city-downtown-tt-preview.verification.json
+          retention-days: 7
