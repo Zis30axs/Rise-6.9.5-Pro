@@ -122,6 +122,20 @@ function minimum(part: HTMLElement): { width: number; height: number } {
   return { width: RESIZE_MIN, height: RESIZE_MIN };
 }
 
+function confinement(shell: HTMLElement, part: HTMLElement): { width: number; height: number } {
+  const width = shell.clientWidth;
+  let height = shell.clientHeight;
+  if (width <= 760 && (part.classList.contains('floating-window') || part.classList.contains('reading-layer'))) {
+    const dock = shell.querySelector<HTMLElement>('.tool-dock');
+    const edge = dock?.getBoundingClientRect().top;
+    const origin = shell.getBoundingClientRect().top;
+    if (edge !== undefined && Number.isFinite(edge) && edge - origin > 100) {
+      height = Math.min(height, edge - origin - 8);
+    }
+  }
+  return { width, height };
+}
+
 function viewportRect(shell: HTMLElement, target: HTMLElement): LayoutRect {
   const a = shell.getBoundingClientRect();
   const b = target.getBoundingClientRect();
@@ -232,10 +246,11 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
         const saved = load(key)[part];
         if (saved && width > 0 && height > 0) {
           const min = minimum(element);
+          const bounds = confinement(shell, element);
           setGeometry(element, clampLayout({
             left: saved.x * width, top: saved.y * height,
             width: saved.w * width, height: saved.h * height,
-          }, width, height, min.width, min.height));
+          }, bounds.width, bounds.height, min.width, min.height));
         }
         seen.set(element, identity);
       }
@@ -280,7 +295,7 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
     if (!drag || drag.pointerId !== event.pointerId) return;
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
-    const min = minimum(drag.part), width = shell.clientWidth, height = shell.clientHeight;
+    const min = minimum(drag.part), { width, height } = confinement(shell, drag.part);
     let rect: LayoutRect;
     if (drag.action === 'reading-height') {
       rect = resizeFromTop(drag.rect, dy, width, height, min.height);
@@ -319,7 +334,8 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
     place(element, rect) {
       if (disposed || !shell.contains(element)) return;
       const min = minimum(element);
-      setGeometry(element, clampLayout(rect, shell.clientWidth, shell.clientHeight, min.width, min.height));
+      const bounds = confinement(shell, element);
+      setGeometry(element, clampLayout(rect, bounds.width, bounds.height, min.width, min.height));
       onGeometryChange?.();
     },
     save(element) {
