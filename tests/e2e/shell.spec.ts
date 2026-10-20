@@ -1508,3 +1508,57 @@ test('小国聚焦后按钮、滚轮与双指按实际比例连续缩放，中�
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
 });
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test(`布局编辑与底栏无遮挡：${viewport.width}×${viewport.height}`, async ({ page }) => {
+    test.setTimeout(90000);
+    const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+    await page.setViewportSize(viewport); await gotoDemo(page);
+    await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+    const switchChat = page.getByRole('button', { name: '切换聊天并恢复原生界面' });
+    await expect(switchChat).toBeInViewport({ ratio: 1 });
+    const titleBox = await page.locator('.wordmark').boundingBox(), chatBox = await switchChat.boundingBox();
+    expect(chatBox!.x).toBeGreaterThan(titleBox!.x + titleBox!.width - 2);
+    expect(chatBox!.x + chatBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(await page.locator('.uc-shell').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    const reading = page.locator('[data-reading-layer]'), before = await reading.boundingBox();
+    const grip = await reading.getByRole('button', { name: '上下拖动调整正文高度' }).boundingBox();
+    await page.mouse.move(grip!.x + grip!.width / 2, grip!.y + grip!.height / 2); await page.mouse.down();
+    await page.mouse.move(grip!.x + grip!.width / 2, grip!.y + grip!.height / 2 - 35, { steps: 5 }); await page.mouse.up();
+    const after = await reading.boundingBox();
+    expect(after!.height).toBeGreaterThan(before!.height + 18);
+    expect(Math.abs(after!.y + after!.height - before!.y - before!.height)).toBeLessThan(3);
+    await page.getByRole('button', { name: '编辑界面布局' }).click();
+    const mode = page.locator('.presentation-switch'), modeBefore = await mode.boundingBox();
+    const move = await mode.locator('[data-layout-handle="move"]').boundingBox();
+    expect(move).not.toBeNull();
+    await page.mouse.move(move!.x + 18, move!.y + 18); await page.mouse.down();
+    await page.mouse.move(move!.x + 36, move!.y + 36, { steps: 4 }); await page.mouse.up();
+    const modeAfter = await mode.boundingBox();
+    expect(Math.abs(modeAfter!.x - modeBefore!.x) + Math.abs(modeAfter!.y - modeBefore!.y)).toBeGreaterThan(9);
+    await page.getByRole('button', { name: '完成界面布局编辑' }).click();
+    for (const [name, id] of [['地图', 'map'], ['地点', 'location'], ['背包', 'inventory']] as const) {
+      await page.locator('.tool-dock').getByRole('button', { name, exact: true }).click();
+      const panel = page.locator(`.floating-window[data-window="${id}"]`);
+      await expect(panel).toBeVisible();
+      if (viewport.width <= 760) {
+        const a = await panel.boundingBox(), b = await page.locator('.tool-dock').boundingBox();
+        expect(a!.y + a!.height).toBeLessThanOrEqual(b!.y - 4);
+      }
+      const content = panel.locator('.window-content');
+      await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await expect(content.locator(':scope > :last-child')).toBeVisible();
+      await page.locator('.tool-dock').getByRole('button', { name, exact: true }).click();
+    }
+    await switchChat.click(); await expect(root(page)).toHaveCount(0); await enter(page);
+    const restored = await reading.boundingBox();
+    expect(Math.abs(restored!.height - after!.height)).toBeLessThan(3);
+    await page.getByRole('button', { name: '编辑界面布局' }).click();
+    await page.getByRole('button', { name: '重置界面布局' }).click();
+    const reset = await reading.boundingBox(), modeReset = await mode.boundingBox();
+    expect(Math.abs(reset!.height - before!.height)).toBeLessThan(5);
+    expect(Math.abs(modeReset!.x - modeBefore!.x)).toBeLessThan(5);
+    await page.getByRole('button', { name: '完成界面布局编辑' }).click();
+    expect(errors).toEqual([]);
+  });
+}
