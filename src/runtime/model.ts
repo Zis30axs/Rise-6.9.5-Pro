@@ -5,7 +5,7 @@ import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
-import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
@@ -136,10 +136,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       position(target);
     } else {
       walk(target);
-      if (room) {
-        next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
-        next = reduceState(next, { type: 'enter_interior', roomId: room.id });
-      }
+    }
+    // A far-city residence is still an indoor destination after its transit leg.
+    if (room) {
+      next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
+      next = reduceState(next, { type: 'enter_interior', roomId: room.id });
     }
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
@@ -158,8 +159,8 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 }
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
-export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId = 'btr82a'): NovelTravelQuote {
-  return planNovelTravel(state, locationId, vehicleId).quote;
+export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
+  return planNovelTravel(state, locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
 }
 
 export interface RouteOutlook {
@@ -889,7 +890,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       break;
     }
     case 'novel_travel': {
-      const planned = planNovelTravel(next, action.locationId, action.vehicleId ?? 'btr82a');
+      const planned = planNovelTravel(next, action.locationId, selectTravelVehicle(next.locationId, action.locationId, action.vehicleId));
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
       return parseState(planned.next);
     }
@@ -943,7 +944,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
       if (!currentStop) throw new Error('请先走到室外公交站候车区，再选择乘车。');
       const vehicle = transitVehicles.find(vehicle => vehicle.id === action.vehicleId);
       if (!vehicle) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
-      const route = getTransitRoutes(currentStop.id).find(route => route.stop.id === action.stopId);
+      const route = getTransitRoutes(currentStop.id, vehicle.id).find(route => route.stop.id === action.stopId);
       if (!route) throw new Error('当前站点没有这条路线；远地之间请返回校园站换乘。');
       if (next.player.balance < route.fare) throw new Error(`余额不足，本程需要 ${route.fare} 元。`);
       if (next.transit.sequence >= TRANSIT_SEQUENCE_LIMIT) throw new Error('乘车记录已达到上限，本次未扣费。');
