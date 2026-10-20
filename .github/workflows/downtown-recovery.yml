@@ -30,8 +30,8 @@ jobs:
           import sys
           from pathlib import Path
           sys.path.insert(0, 'scripts')
-          from card_codec import decode_card
-          data = decode_card(Path('dist/downtown-basic-check.png').read_bytes())
+          from card_codec import extract_card
+          data = extract_card(Path('dist/downtown-basic-check.png').read_bytes())
           entries = data['data']['character_book']['entries']
           assert any('丰川祥子' in entry.get('name', '') for entry in entries)
           print('Worldbook entries:', len(entries))
