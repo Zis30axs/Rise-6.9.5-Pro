@@ -178,4 +178,5 @@ async function __uc_lite_init__() {
     for (const url of __UC_LITE_URLS__.values()) URL.revokeObjectURL(url);
     __UC_LITE_URLS__.clear();
   }, {once: true});
+  return installed;
 }
