@@ -1,0 +1,196 @@
+{
+  "model": "gpt-image-2.5-sunburst",
+  "mode": "authorized imagegen fallback CLI",
+  "spriteCanvas": [
+    768,
+    1344
+  ],
+  "anchor": [
+    384,
+    1280
+  ],
+  "spriteEncoding": "lossless WebP after documented alpha cleanup and alignment",
+  "backgroundEncoding": "1536x864 WebP quality 90",
+  "sources": [
+    {
+      "id": "sakiko_casual_neutral",
+      "path": "assets/downtown-art/sources/sakiko-casual-neutral.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 743304,
+      "sha256": "7395c28e55fbf4ed473a4dfd3346fec77f8b88514881336b449ca0813089c281"
+    },
+    {
+      "id": "sakiko_casual_smile",
+      "path": "assets/downtown-art/sources/sakiko-casual-smile.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 769700,
+      "sha256": "4d5836fd15c088d65b685e4b05884292399ae02862436ff06904b48af3381629"
+    },
+    {
+      "id": "sakiko_casual_troubled",
+      "path": "assets/downtown-art/sources/sakiko-casual-troubled.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 778027,
+      "sha256": "1de244e05cdc15f7b482765f26e495a0f50bc76bc1e26f2c5ae8fb4556827c64"
+    },
+    {
+      "id": "sakiko_casual_surprised",
+      "path": "assets/downtown-art/sources/sakiko-casual-surprised.png",
+      "size": [
+        948,
+        1660
+      ],
+      "bytes": 781703,
+      "sha256": "8e9d8c12ef8fcd3e910d2d2efe99fe45896ec210498f1afd09b0542b7ac866f7"
+    },
+    {
+      "id": "sakiko_casual_annoyed",
+      "path": "assets/downtown-art/sources/sakiko-casual-annoyed.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 769783,
+      "sha256": "466f686b47b499d6c50eba77e3cb3276ade860b1f860ab2cedb1c429f6e29f81"
+    },
+    {
+      "id": "sakiko_casual_sad",
+      "path": "assets/downtown-art/sources/sakiko-casual-sad.png",
+      "size": [
+        948,
+        1660
+      ],
+      "bytes": 764135,
+      "sha256": "cc85421c9f8c52c17de53f1a842c922f9520e433dc6de47f4175761a4e20534a"
+    },
+    {
+      "id": "sakiko_home_neutral",
+      "path": "assets/downtown-art/sources/sakiko-home-neutral.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 798876,
+      "sha256": "b65b5950267b37c082de02124c6eb79e949846a072ae0001d75958772dc39f70"
+    },
+    {
+      "id": "sakiko_home_smile",
+      "path": "assets/downtown-art/sources/sakiko-home-smile.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 816934,
+      "sha256": "f2f52dea99288fe5a70cbf778f5a6b7671f4f56f56540a7ef3b0569a62cf0225"
+    },
+    {
+      "id": "sakiko_home_troubled",
+      "path": "assets/downtown-art/sources/sakiko-home-troubled.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 801720,
+      "sha256": "6623082bc530dea7a6647b9f5668f75d91c9e046c106c835b91c2dc40d81d366"
+    },
+    {
+      "id": "sakiko_home_surprised",
+      "path": "assets/downtown-art/sources/sakiko-home-surprised.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 822776,
+      "sha256": "6170871e0d47a279b2831b4566b278ecc30d0f84059112ff6bd53615e97db5ea"
+    },
+    {
+      "id": "sakiko_home_annoyed",
+      "path": "assets/downtown-art/sources/sakiko-home-annoyed.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 815530,
+      "sha256": "0f4a2048e1d1429957929354354c7bc304f01765d3277525d4430fadcb4abf19"
+    },
+    {
+      "id": "sakiko_home_sad",
+      "path": "assets/downtown-art/sources/sakiko-home-sad.png",
+      "size": [
+        948,
+        1659
+      ],
+      "bytes": 820886,
+      "sha256": "6b7550378e159093487b0d387d5fc8d0c2d50bb80184955beb0fcf0beaac3f0d"
+    },
+    {
+      "id": "toyokawa_mansion_day",
+      "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 2784844,
+      "sha256": "2355d00ebb39638d5aa6d64c78171dceebf5330e17c77dd3f747cb35078aabd9"
+    },
+    {
+      "id": "toyokawa_mansion_dusk",
+      "path": "assets/downtown-art/sources/toyokawa-mansion-dusk.png",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 2606111,
+      "sha256": "e5685953568fa2c64eb7cfbf495dc0b41e0f35edded91219b7e4eece252b9354"
+    },
+    {
+      "id": "toyokawa_mansion_night",
+      "path": "assets/downtown-art/sources/toyokawa-mansion-night.png",
+      "size": [
+        1671,
+        941
+      ],
+      "bytes": 2602704,
+      "sha256": "88a8643996b4825969b15ce0c82c0abf05a26c9286704ab688c486eedf3e98eb"
+    },
+    {
+      "id": "toyokawa_living_room",
+      "path": "assets/downtown-art/sources/toyokawa-living-room.png",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 2286203,
+      "sha256": "a206d5efaff31a260535cce189032131b9ffc8cd51532b17b5aada95ec5ab421"
+    },
+    {
+      "id": "downtown_day",
+      "path": "assets/downtown-art/sources/downtown-day.png",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 2954010,
+      "sha256": "d19f69635098d7d0e9990b752d21e42ced69c03ece88bc4754c0c19ed39abda1"
+    },
+    {
+      "id": "downtown_night",
+      "path": "assets/downtown-art/sources/downtown-night.png",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 2599242,
+      "sha256": "fc52e60d3201202303f158024769f0846a76f8628b83f7252f838eae6a06487a"
+    }
+  ]
+}

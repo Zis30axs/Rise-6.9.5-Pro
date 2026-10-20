@@ -1,0 +1,121 @@
+{
+  "reviewedOn": "2026-10-20",
+  "model": "gpt-image-2.5-sunburst",
+  "sourceReview": "All 18 independent files inspected via decoded source and normalized full-body, face and background QA views. QA sheets are derived evidence, not deliverable assets.",
+  "sprites": {
+    "count": 12,
+    "identityConsistent": true,
+    "outfitsDistinct": true,
+    "sixFacialExpressionsPerOutfit": true,
+    "fullHeadHandsAndBothShoes": true,
+    "actualAlpha": true,
+    "canvas": [
+      768,
+      1344
+    ],
+    "anchor": [
+      384,
+      1280
+    ]
+  },
+  "backgrounds": {
+    "count": 6,
+    "mansionCameraAndBuildingConsistent": true,
+    "downtownCameraAndBuildingsConsistent": true,
+    "textAndUiAbsent": true
+  },
+  "files": [
+    {
+      "id": "sakiko_casual_neutral",
+      "sha256": "c485b2394e82057aca0428ca19e2c2627d7cd6bdcdb9af7db9f62770e784a35c",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_casual_smile",
+      "sha256": "94a2c1b58f859665b15036b0fb456a17aa391f0b01cfd55a407683372cde506e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_casual_troubled",
+      "sha256": "84fb74c5fce6b5e3953a0bc3a7a42791094498030018e5bb52782d934394cc71",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_casual_surprised",
+      "sha256": "51a5072d78ef81bf155e3370c5ed4f3a0671441823fa4381cb338c33a3dfc267",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_casual_annoyed",
+      "sha256": "569674f0f3d86003e30709f4c39a66d9f6b353b3abd82a35fafe012dee740fa2",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_casual_sad",
+      "sha256": "f371fa7a6a2fa68626b08fa84e6fdcb9b1b389d4f66c5b6ee8a9d6fc5b5ba480",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_neutral",
+      "sha256": "98a3783882132c0d92da7d583678db3a3eea6d202171c229e0508f20d8a5be4e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_smile",
+      "sha256": "934d8f3c26a2204143a13665c900d46cb4dbe4a0690d25355d9f0693550fb6a2",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_troubled",
+      "sha256": "ab98c88eecc274cbd448e937ff373227c0ca5ce8edba27bddc0c2b3271fa9834",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_surprised",
+      "sha256": "6cc7b9deea011bde6aebee8e3b69dfd1fb5155759822426d7d91ab7f3672c2b4",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_annoyed",
+      "sha256": "a1d6fe3bc3f13356a1201294dfd68bfaa88221769b86b88f067e8e92d9c66e78",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "sakiko_home_sad",
+      "sha256": "522532b4d8f5af620c3194365cfc840bcb1a22c2c42b3544a02c875e7007da66",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "toyokawa_mansion_day",
+      "sha256": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "toyokawa_mansion_dusk",
+      "sha256": "0f39d8f4937a7981fa1131a666e5650b0fa6df947faf4e7b89ace83b7819a2d3",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "toyokawa_mansion_night",
+      "sha256": "d4a665df87b90117a3e2cddb86097a2b369e3a284b38fd679bf343c1164f9073",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "toyokawa_living_room",
+      "sha256": "f7878aba17fa973e6935e84aeca30ff7f3768ab12321e696052d46664cd76e17",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "downtown_day",
+      "sha256": "f714f810b2ac72813cbb4298eeff3096c21dbe157affa7125b716807c57773fc",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "downtown_night",
+      "sha256": "5939c833cb116e4a3e361e32553dc53635e414ffd7ea0c13fe2200fb1e5c48cb",
+      "visuallyReviewed": true
+    }
+  ],
+  "physicalTauriDevice": "not tested",
+  "viewportReview": "performed separately by production bundle browser tests"
+}

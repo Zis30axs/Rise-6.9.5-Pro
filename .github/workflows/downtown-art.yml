@@ -21,12 +21,8 @@ jobs:
         run: node --experimental-strip-types --test tests/sakiko-art-policy.node.mjs
       - name: Image and embedded-card gate tests
         run: python -m unittest discover -s tests -p test_downtown_art_gate.py -v
-      - name: Confirm pending art cannot be released
-        run: |
-          if python scripts/verify_downtown_art.py --root assets/downtown-art --manifest integration/downtown-art/manifest.json; then
-            echo 'Pending manifest was incorrectly accepted'
-            exit 1
-          fi
+      - name: Check actual review state and image files
+        run: python scripts/check_downtown_art_status.py
       - name: Source checkpoint for isolated development
         run: git archive --format=zip -o downtown-source-checkpoint.zip HEAD src scripts tests integration .github package.json package-lock.json tsconfig.json vite.config.ts vitest.config.ts playwright.config.ts index.html AGENTS.md CODEX.md DeepSeek.md README.md
       - uses: actions/upload-artifact@v4

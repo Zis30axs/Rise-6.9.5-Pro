@@ -1,0 +1,6 @@
+Use case: stylized-concept
+Asset type: one finished 16:9 visual novel interior background.
+Primary request: the formal sitting room of a refined contemporary family mansion. Cream plaster walls with subtle moldings, dark polished wooden floor and an understated beige rug, a light upholstered sofa and two armchairs around a low walnut coffee table, tall windows with pale curtains looking onto a green garden. A black grand piano near the far side window, a small tasteful vase, neatly arranged books. Elegant but lived in, calm and welcoming, no ostentatious palace decor. Eye-level wide view with clear open foreground for full-body character overlays, door visible at side for continuity.
+Style: polished Japanese anime visual novel background painting, coherent perspective, clean architectural lines, warm natural window light, soft cel-like shadows, subdued cream, walnut and muted green palette. Match the Toyokawa exterior and city backgrounds.
+Composition: one continuous 1536x864 landscape; open central lower area; no character, no layout board.
+Constraints: no people, no faces, no silhouettes, no text, no writing, no labels, no UI, no collage, no logos, no watermark.

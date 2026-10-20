@@ -54,6 +54,10 @@ jobs:
       - run: npm ci
       # Public ST-iPhonie lacks the user's later unpublished contact-editor fixes.
       # This build audits integration, not a replacement for the private installed phone.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Pillow
       - name: Full frontend build with pinned baseline phone
         run: npm run card
       - name: Whole-project Vitest regression after phone packaging

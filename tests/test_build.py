@@ -22,7 +22,8 @@ class CardBuildTests(unittest.TestCase):
     def test_card_assembly(self):
         card = assemble_card()
         self.assertEqual(card["spec"], "chara_card_v2")
-        self.assertEqual(len(card["data"]["character_book"]["entries"]), 2)
+        # Core rules plus the four preserved Sakiko/AU entries on PR #6.
+        self.assertEqual(len(card["data"]["character_book"]["entries"]), 6)
 
     def test_png_round_trip(self):
         card = assemble_card()
