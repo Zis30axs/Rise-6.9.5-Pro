@@ -233,6 +233,12 @@
 }
 .uc-shell[data-layout-edit=true] .uc-layout-move { top:0; left:0; }
 .uc-shell[data-layout-edit=true] .uc-layout-resize { bottom:0; right:0; cursor:nwse-resize; }
+/* Portrait layers normally ignore input, but their edit handles must remain reachable. */
+.uc-shell[data-layout-edit=true] .novel-npc-portrait,
+.uc-shell[data-layout-edit=true] .soyo-live2d { pointer-events:auto; }
+.uc-shell[data-layout-edit=true] .novel-npc-portrait .uc-layout-resize,
+.uc-shell[data-layout-edit=true] .soyo-live2d .uc-layout-resize { top:0; right:0; bottom:auto; }
+
 .uc-shell .host-actions .layout-mode-button[aria-pressed=true] {
   color:#1c372a; background:#f3dfa8; text-shadow:none;
 }
