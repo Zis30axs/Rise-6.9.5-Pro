@@ -71,6 +71,11 @@ export const streetRoutes: Record<string, StreetNode[]> = {
     { label: '商业区公交站', position: [180, 1.7, 150], yaw: 0 },
     { label: '商店步行广场', position: [196, 1.7, 127], yaw: 0 },
   ],
+  downtown: [
+    { label: '市中心公交站', position: [-20, 1.7, 185], yaw: 0 },
+    { label: '市中心步行广场', position: [20, 1.7, 208], yaw: 0 },
+    { label: '丰川家门前', position: [50, 1.7, 222], yaw: 0 },
+  ],
   'city-park': [
     { label: '公园公交站', position: [180, 1.7, -150], yaw: 0 },
     { label: '湖畔绿道', position: [207, 1.7, -174], yaw: 0 },
@@ -425,6 +430,17 @@ export function createCampusWorld(scene: THREE.Scene) {
     solidBox(`commercial-bench:${x}`, x, 130.1, 4.4, 0.9);
   }
 
+  // Downtown and the Toyokawa residence use procedural geometry; no duplicate texture bundle.
+  box(188, 0.026, 38, palette.path, 0, 0.008, 217);
+  build(-78, 226, 22, 16.2, 22, 5, 8, palette.stone, 'downtown-office-west');
+  build(-82, 157, 22, 18.6, 17, 6, 6, palette.facade, 'downtown-office-south');
+  build(87, 226, 17, 13.2, 18, 4, 6, palette.brick, 'downtown-shop-east');
+  const residence = build(50, 235, 24, 12.8, 20, 4, 7, palette.facade, 'toyokawa-residence');
+  box(25, 0.35, 2.5, palette.trim, 50, 4.3, 224.9);
+  box(4.4, 3.2, 0.16, palette.glass, 50, 1.9, 224.85);
+  solidBox('toyokawa-exterior-door', 50, 224.85, 4.4, 0.16);
+  tag(residence, 'observe');
+  for (const [x, z] of [[-99, 244], [-60, 245], [94, 243], [15, 238], [-42, 225]]) tree(x, z, 1.35, Math.abs(x) % 4);
   box(114, 0.025, 92, palette.grass, 188, 0, -160);
   // Reapply the park avenue above its turf; the lake has a real collision shore.
   for (const path of scenePaths.filter(path => path.z < -100)) box(path.width, 0.035, path.depth, path.kind === 'road' ? palette.asphalt : palette.path, path.x, path.kind === 'road' ? 0.005 : 0.025, path.z);
@@ -456,7 +472,8 @@ export function createCampusWorld(scene: THREE.Scene) {
     for (let index = 0; index < 4; index++) box(0.75, 0.04, 0.04, palette.trim, x - 8, 2.95 - index * 0.24, z - 0.1);
   };
   cityShelter('home', -180, 150); cityShelter('commercial', 180, 150); cityShelter('city-park', 180, -150);
-  for (const [x, z] of [[-180, 141], [180, 141], [180, -159]]) {
+  cityShelter('downtown', -20, 185);
+  for (const [x, z] of [[-180, 141], [180, 141], [180, -159], [-20, 176]]) {
     for (let dx = -53; dx <= 53; dx += 7) if (Math.abs(dx) > 9) box(3.5, 0.025, 0.12, palette.roadPaint, x + dx, 0.035, z);
     for (let dz = -4; dz <= 4; dz += 1.1) box(3, 0.025, 0.5, palette.roadPaint, x - 14, 0.035, z + dz);
   }
