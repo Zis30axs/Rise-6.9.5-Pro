@@ -50,21 +50,6 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     entries = [{'sha256': sha, 'mime': mime, 'bytes': len(raw), 'path': 'assets/' + sha}
                for sha, (mime, raw) in sorted(assets.items())]
     total = sum(row['bytes'] for row in entries)
-    if not entries:
-        patterns = ('data:image/', 'data:model/', 'data:application/', 'base64,', 'UklGR', 'glTF')
-        print('LITE_DIAG_COUNTS:', {p: source.count(p) for p in patterns})
-        for p in patterns:
-            pos = source.find(p)
-            if pos >= 0:
-                after = source[pos:pos + 160]
-                before = source[max(0, pos - 70):pos]
-                print('LITE_DIAG_SAMPLE:', p, repr(before), repr(after))
-                if 'base64,' in after:
-                    at = pos + after.index('base64,') + 7
-                    match = re.match(r'[A-Za-z0-9+/=]+', source[at:])
-                    if match:
-                        offset = at + len(match.group(0))
-                        print('LITE_DIAG_TERMINATOR:', len(match.group(0)), repr(source[offset:offset+120]))
     if len(entries) < 18 or total < MIN_REMOVED_BYTES or len(compact) >= len(source) - 15_000_000:
         raise ValueError(f'Lite resource extraction too small: {len(entries)} resources, {total} bytes')
     manifest = {'schema': 'unread-city-lite-assets-v1', 'sourceSha256': digest(source.encode('utf-8')),

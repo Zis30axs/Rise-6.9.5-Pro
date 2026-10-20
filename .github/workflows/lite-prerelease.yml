@@ -71,6 +71,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          # Replace only our automatically generated pre-release after every check passes.
+          # Recreate the tag to keep it aligned with the newly verified source commit.
+          if gh release view lite-v0.1.0-rc1 >/dev/null 2>&1; then
+            gh release delete lite-v0.1.0-rc1 --yes --cleanup-tag
+          fi
           gh release create lite-v0.1.0-rc1 \
             dist/unread-city-lite-tauri.png \
             dist/unread-city-lite-assets.zip \
@@ -79,5 +84,4 @@ jobs:
             --target "$GITHUB_SHA" --prerelease \
             --title "未读之城 Lite v0.1.0-rc1（本地 ZIP 外挂）" \
             --notes-file integration/lite/README.md
-          # Do not publish on failed tests or upload incomplete artifacts. A
-          # tag collision fails instead of silently overwriting a prior release.
+          # Never replace the release before all build, byte and SHA checks pass.

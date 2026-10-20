@@ -30,5 +30,5 @@ GitHub Actions 的 .github/workflows/lite-prerelease.yml 在 push lite 分支时
 
 - 预发行并非 iPhone 真机验收：IndexedDB 配额、文件选择权限、WebKit Blob URL 资源解析需要手机确认。
 - ZIP 使用不压缩的 STORE 格式，避免额外解压库和一次性展开压缩 ZIP 的内存峰值。
-- 只把静态资源文本移出 IIFE 并在导入后替换成 Blob URL，不执行 ZIP 里的任何内容；某些第三方库若强依赖 data: URL 格式，可能需要额外兼容处理。
+- 只把静态资源文本移出 IIFE 并在导入后替换成 Blob URL，不执行 ZIP 内容；Lite 分支已适配人物/车辆/飞机 GLB 与素世 Live2D 的本地 Blob URL 读取。仍须在 iPhone 上验证实际渲染。
 - 用户聊天、已有存档、完整卡、main、PR #4 不作更改。游戏原有模型调用流程不被扩展为在线素材下载。
