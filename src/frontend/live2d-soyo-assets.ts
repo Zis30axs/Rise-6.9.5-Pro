@@ -36,6 +36,7 @@ export function getSoyoAssetReferences(): string[] {
 export function createSoyoAssetLease() {
   const allowed = new Set(getSoyoAssetReferences());
   const urls = new Map<string, string>();
+  const borrowed = new Set<string>();
   let released = false;
   return {
     resolve(file: string): string {
@@ -44,6 +45,11 @@ export function createSoyoAssetLease() {
       const cached = urls.get(file);
       if (cached) return cached;
       const source = embedded[`../../assets/live2d-soyo/${file}`];
+      if (typeof source === 'string' && source.startsWith('blob:')) {
+        urls.set(file, source);
+        borrowed.add(source);
+        return source;
+      }
       const match = /^data:([^;,]*);base64,([A-Za-z0-9+/=]+)$/.exec(source ?? '');
       if (!match) throw new Error('立绘素材未完整内嵌。');
       const decoded = atob(match[2]);
@@ -55,7 +61,8 @@ export function createSoyoAssetLease() {
     release() {
       if (released) return;
       released = true;
-      for (const url of urls.values()) URL.revokeObjectURL(url);
+      for (const url of urls.values()) if (!borrowed.has(url)) URL.revokeObjectURL(url);
+      borrowed.clear();
       urls.clear();
     },
   };

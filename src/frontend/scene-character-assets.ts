@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { readLocalAssetBytes } from './local-asset-buffer';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { isScenePositionWalkable, type SceneMovementWorld } from './scene-movement';
@@ -14,9 +15,7 @@ const heights: Record<CharacterModelId, number> = { soyo: 1.62, deepseek: 1.65, 
 
 /** Ordinary embedded GLB only; imported models cannot load outside buffers, images or decoders. */
 export async function loadCharacterModel(dataUrl: string): Promise<CharacterModel> {
-  const match = /^data:[^;,]*;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-  if (!match || match[1].length > 16_000_000) throw new Error('Invalid bundled character');
-  const bytes = Uint8Array.from(atob(match[1]), character => character.charCodeAt(0));
+  const bytes = await readLocalAssetBytes(dataUrl, 16000000, 'Invalid bundled character');
   if (bytes.length < 20) throw new Error('Invalid character GLB');
   const view = new DataView(bytes.buffer);
   if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2 || view.getUint32(8, true) !== bytes.length

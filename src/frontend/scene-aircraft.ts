@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { readLocalAssetBytes } from './local-asset-buffer';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { AirlinerPass } from './types';
 
@@ -28,9 +29,7 @@ export function aircraftPose(pass: AirlinerPass | null, now: number) {
 
 /** Decode only our self-contained asset; a model can never request an external image or buffer. */
 export async function loadAircraftModel(dataUrl: string): Promise<THREE.Group> {
-  const match = /^data:[^;,]*;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-  if (!match || match[1].length > 6_000_000) throw new Error('Invalid bundled aircraft');
-  const bytes = Uint8Array.from(atob(match[1]), character => character.charCodeAt(0));
+  const bytes = await readLocalAssetBytes(dataUrl, 6000000, 'Invalid bundled aircraft');
   const buffer = bytes.buffer;
   const view = new DataView(buffer);
   if (bytes.length < 20 || view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2 || view.getUint32(8, true) !== bytes.length || view.getUint32(16, true) !== 0x4e4f534a) throw new Error('Invalid aircraft GLB');

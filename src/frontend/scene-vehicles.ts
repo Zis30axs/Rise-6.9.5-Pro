@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { readLocalAssetBytes } from './local-asset-buffer';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export const groundVehicleIds = ['btr82a', 'zbd04a', 't84'] as const;
@@ -30,9 +31,7 @@ export function groundVehiclePose(id: GroundVehicleId, seconds: number, stop: Ve
 
 /** Only embedded, ordinary GLB is accepted; no model can fetch an outside image or decoder. */
 export async function loadGroundVehicleModel(dataUrl: string): Promise<THREE.Group> {
-  const match = /^data:[^;,]*;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-  if (!match || match[1].length > 8_000_000) throw new Error('Invalid bundled vehicle');
-  const bytes = Uint8Array.from(atob(match[1]), character => character.charCodeAt(0));
+  const bytes = await readLocalAssetBytes(dataUrl, 8000000, 'Invalid bundled vehicle');
   if (bytes.length < 20) throw new Error('Invalid vehicle GLB');
   const view = new DataView(bytes.buffer);
   if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2 || view.getUint32(8, true) !== bytes.length
