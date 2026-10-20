@@ -552,16 +552,16 @@ test('390px 宿主根元素 transform 且高度为零时，Shell 与右上角切
   const shellBounds = await root(page).boundingBox();
   expect(shellBounds).not.toBeNull();
   expect(shellBounds!.height).toBeGreaterThanOrEqual(843);
-  const rescue = page.locator('[data-unread-city-rescue]');
-  await expect(rescue).toBeInViewport({ ratio: 1 });
-  const rescueBounds = await rescue.boundingBox();
-  expect(rescueBounds).not.toBeNull();
-  expect(rescueBounds!.y).toBeGreaterThanOrEqual(0);
-  expect(rescueBounds!.y + rescueBounds!.height).toBeLessThanOrEqual(844);
-
-  await rescue.click();
+  const chat = page.getByRole('button', { name: '切换聊天并恢复原生界面' });
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+  await expect(chat).toBeInViewport({ ratio: 1 });
+  const chatBounds = await chat.boundingBox();
+  expect(chatBounds).not.toBeNull();
+  expect(chatBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(chatBounds!.y + chatBounds!.height).toBeLessThanOrEqual(844);
+  await chat.click();
   await expect(root(page)).toHaveCount(0);
-  await expect(rescue).toHaveCount(0);
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
   await expect(page.locator('#sttts-panel')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute('data-phone-releases', '1');
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
