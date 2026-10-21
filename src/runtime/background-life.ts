@@ -1,4 +1,5 @@
 import type { PlayerState, WorldState } from '../frontend/types';
+import { recordWeeklyEvidence } from './weekly-memory';
 import { adjustEnergy } from './energy';
 import { getActivityEffects } from './activity-effects';
 import { advancePlayerNutrition, getInventoryCatalog, getStoreItem, storeCatalog } from './convenience-store';
@@ -126,6 +127,7 @@ export function backgroundLifeSummary(state: WorldState, owner: ProtagonistId = 
 function record(state: WorldState, owner: ProtagonistId, event: BackgroundEvent) {
   const p = state.protagonists!.backgroundLife!.people[owner];
   if (p.events.some(previous => previous.id === event.id)) return;
+  recordWeeklyEvidence(state, owner, event);
   p.events.push(event); p.events = p.events.slice(-EVENT_LIMIT);
   const personal = personState(state, owner);
   if (!personal.journal.some(entry => entry.id === event.id)) personal.journal.push({ id: event.id, text: event.text, at: atLabel(event.at) });
