@@ -35,7 +35,10 @@ export function createWorldPhoneApi(options: {
       other: {id:otherProtagonist(active),name:protagonistNames[otherProtagonist(active)],...phoneAccess(enabled,otherProtagonist(active))},
     }));
   };
+  const listeners=new Set<() => void>();
   return Object.freeze({
+    subscribe(callback: () => void) { listeners.add(callback); return () => { listeners.delete(callback); }; },
+    notify() { for(const listener of [...listeners]) { try { listener(); } catch { /* A detached phone view cannot stop world state saves. */ } } },
     read() { if(!options.current()) throw Error('剧情手机连接已结束');return view(options.state()); },
     async act(raw: {binding:string;revision:number;requestId:string;owner:ProtagonistId;command:PhoneCommand}) {
       if(!options.current()||options.busy()) throw Error('请等待当前行动结束后再操作手机');
