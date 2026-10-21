@@ -1,5 +1,5 @@
 import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
-import { captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
+import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
@@ -1130,6 +1130,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const next = recordProtagonistNarrative(before, after, result, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
   captureNewJournalEvidence(after, next);
+  applyWeeklySummary(next, result.weeklySummary);
   return parseState(next);
 }
 
