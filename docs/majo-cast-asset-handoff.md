@@ -25,6 +25,6 @@
 
 - 半主要角色只配置一套主立绘和表情差分，沿用九种情绪标准；见 `DeepSeek.md` 与 `CODEX.md`。
 - 已恢复并提交的静态文件见 `assets/majo-cast/README.md`，当前为 Twiitch 的 13 张 SVG 及本地增量 ZIP。
-- 人物、住所、不同街区和通用住宅室内的原始 PNG 在提交完成前被自动工作区清理移除，恢复检查未找到持久副本。本次未将其记为已提交或差分齐全，需恢复原图后另行补交。
+- 五张角色原始三姿态图集已恢复并打包至 `assets/majo-cast/packs/unread-city-majo-five-character-source-sheets-20261022.zip`，SHA-256 与身份记录见 `assets/majo-cast/character-source-sheets-20261022.json`。每张为 1536×1024 三联图，现阶段按原图保存，不代表九种独立表情差分齐全，也未接入运行时。此前登记的十张场景／参考图仍保留在 `assets/majo-cast/recovery-intake-20261022.json`；其余住宅、街区和通用室内素材仍需继续恢复或补交。
 - 希罗常服为和服；二阶堂家为日式宅邸，包含庭院、和室、入鞘武士刀刀架及练剑空间。住宅图像不作为官方住宅设定声明。
 - 不修改游戏逻辑，不合并 PR，不混入 PR #15。

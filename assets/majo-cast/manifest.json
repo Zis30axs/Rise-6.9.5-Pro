@@ -94,5 +94,17 @@
       "sha256": "034956e144beb0fe486657b0e722dd4515fad335519d3d77248ef309227e6485"
     }
   ],
-  "characterAndScenePngStatus": "not-recovered-after-workspace-pruning"
+  "characterAndScenePngStatus": "five-character-jpg-source-sheets-recovered; remaining-character-and-scene-art-pending",
+  "sourcePacks": [
+    {
+      "id": "character-source-sheets-20261022",
+      "file": "packs/unread-city-majo-five-character-source-sheets-20261022.zip",
+      "mime": "application/zip",
+      "bytes": 1985524,
+      "sha256": "7146d0d994c32c0665130bda81313b46438a855a98e9e00d6c863b901632f1ff",
+      "storage": "ZIP_STORED",
+      "manifest": "character-source-sheets-20261022.json",
+      "purpose": "Five original three-panel character source sheets; static reference only, not wired into runtime."
+    }
+  ]
 }
