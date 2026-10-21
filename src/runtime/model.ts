@@ -1126,7 +1126,11 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
-  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算');
+  // The legacy single-protagonist reducer cannot validate a world-level weekly
+  // summary; commit its ordinary story/actions first, then atomically apply the
+  // validated omniscient report to the dual-protagonist candidate snapshot.
+  const { weeklySummary, ...legacyResult } = result;
+  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now), '剧情结算');
   const next = recordProtagonistNarrative(before, after, result, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
   captureNewJournalEvidence(after, next);
