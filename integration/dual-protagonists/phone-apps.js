@@ -5,7 +5,27 @@ export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,world
 const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'主角消息'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
-const time = minutes => `第 ${Math.floor(minutes/1440)+1} 天 ${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+// The same UTC day-1 anchor as src/runtime/game-calendar.ts. Host clock stays authoritative.
+const CALENDAR_EPOCH = Date.UTC(2025, 7, 28);
+const DAY_MILLISECONDS = 86400000;
+const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const civilDate = day => {
+  const d = new Date(CALENDAR_EPOCH + (day - 1) * DAY_MILLISECONDS);
+  return `${d.getUTCFullYear()}年${d.getUTCMonth()+1}月${d.getUTCDate()}日 ${weekday[d.getUTCDay()]}`;
+};
+const time = minutes => `${civilDate(Math.floor(minutes/1440)+1)} ${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+const historicalTime = stamp => {
+  const found = /^第 ([0-9]+) 天 ([0-9]{2}:[0-9]{2})$/.exec(stamp);
+  return found ? `${civilDate(Number(found[1]))} ${found[2]}` : stamp;
+};
+const gameDayForDate = iso => {
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(iso)) throw Error('请选择有效的年月日');
+  const utc = Date.parse(iso + 'T00:00:00.000Z');
+  if (!Number.isFinite(utc) || new Date(utc).toISOString().slice(0,10) !== iso) throw Error('日期无效');
+  const day = (utc - CALENDAR_EPOCH) / DAY_MILLISECONDS + 1;
+  if (!Number.isSafeInteger(day) || day < 1 || day > 365000) throw Error('日期不在游戏时间范围内');
+  return day;
+};
 const requestId = win => win.crypto.randomUUID();
 const total = data => Object.values(data.cards).reduce((a,b)=>a+b,0);
 function worldApp(ctx,id) {
@@ -29,6 +49,7 @@ function worldApp(ctx,id) {
   function render() {
     if(v.disposed)return;
     let html=heading(labels[id],`${data.name} · ${time(data.now)}`,'Unread City');
+    if(data.reporting && (id==='worldcalendar' || id==='worldmessages')) html+=`<p class="hint">${esc(data.reporting)}</p>`;
     html+='<style>.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}</style>';
     const identity=worldDeviceHeading(data), appearance=worldAppearance(data);
     html+=`<div class="world-device-header"><div><strong>${esc(identity.device)}</strong><small>${esc(identity.title)}</small></div></div>`;
@@ -46,8 +67,8 @@ function worldApp(ctx,id) {
         html+=`<div class="group pad">${field('收货地点',`<select data-world-field="address">${destinations()}</select>`)}${field('支付卡',`<select data-world-field="card">${cards()}</select>`)}<p class="hint">${delivery?'配送费 ¥3，预计 30 游戏分钟':'免运费，预计 60 游戏分钟'}。确认后扣款，送达后领取到背包。</p></div><div class="group">${data.catalog.filter(x=>!delivery||x.category!=='cigarette').map(x=>`<article class="world-product"><strong>${esc(x.name)}</strong><p>¥${x.price} / ${esc(x.purchaseUnit)}</p>${btn('buy','下单','secondary',`data-item="${x.id}"`)}</article>`).join('')}</div>`;
       }
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
-      if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('第几天',`<input data-world-field="day" type="number" min="${data.clock.day}" value="${data.clock.day}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
-      if(section==='worldmessages'||section==='messages') html+=`<div class="group">${data.messages.map(m=>`<article class="world-event"><small>${esc(m.at)}</small><p>${esc(m.text)}</p></article>`).join('')||'<p class="hint">暂无消息</p>'}</div><div class="group world-form">${field('发给另一位主角','<textarea data-world-field="message" maxlength="1000" rows="3"></textarea>')}${btn('send','发送消息','primary')}</div>`;
+      if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
+      if(section==='worldmessages'||section==='messages') html+=`<div class="group">${data.messages.map(m=>`<article class="world-event"><small>${esc(historicalTime(m.at))}</small><p>${esc(m.text)}</p></article>`).join('')||'<p class="hint">暂无消息</p>'}</div><div class="group world-form">${field('发给另一位主角','<textarea data-world-field="message" maxlength="1000" rows="3"></textarea>')}${btn('send','发送消息','primary')}</div>`;
     }
     if(!peek)html+=`<details class="group pad"><summary>锁屏与共享许可</summary><div class="world-form">${field('锁屏',`<select data-world-field="locked">${options([['false','解锁'],['true','锁定']],String(data.locked))}</select>`)}${field('借用许可',`<select data-world-field="share">${options([['none','未授权'],['read','允许查看'],['write','允许代操作']],data.share)}</select>`)}${btn('device','保存手机设置','secondary')}</div></details>`;
     html+=`<details class="group pad"><summary>通知 ${data.notifications.filter(x=>!x.read).length}</summary>${[...data.notifications].reverse().map(n=>`<p>${esc(n.text)}<small>${time(n.at)}</small></p>`).join('')}${btn('read','全部标为已读','text-button')}</details><details class="group pad"><summary>手机操作记录</summary>${[...data.audit].reverse().map(e=>`<p>${esc(e.at)} · ${esc(e.actor)} · ${esc(e.detail)} · ${e.authorized?'已授权':'未授权'}</p>`).join('')||'<p>暂无他人访问</p>'}</details>`;
@@ -65,7 +86,7 @@ function worldApp(ctx,id) {
       case 'cancel':await act({type:'cancel_order',id:el.dataset.id});break;
       case 'receive':await act({type:'receive_order',id:el.dataset.id});break;
       case 'transfer':await act({type:'transfer',from:formValue('from'),to:formValue('to'),cents:Math.round(Number(formValue('amount'))*100)});break;
-      case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(Number(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
+      case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
       case 'send':await act({type:'send_message',text:formValue('message')});break;
       case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
