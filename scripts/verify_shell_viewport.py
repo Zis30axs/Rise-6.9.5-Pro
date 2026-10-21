@@ -23,18 +23,18 @@ def check_layout(m, width, height, top=0, safe=0):
     assert abs(m['root']['height']-height)<1, ('root height',m)
     assert abs(m['shell']['height']-height)<1, ('shell height',m)
     assert not m['overflow'], ('horizontal overflow',m)
-    for label in ['rescue','input','send','dock']:
+    assert m['rescueCount']==0, ('independent rescue must not exist',m)
+    for label in ['chat','input','send','dock']:
         b=m[label]
         assert b['x']>=-.5 and b['right']<=width+.5 and b['y']>=top-.5 and b['bottom']<=top+height+.5,(label,m)
-    assert not overlap(m['rescue'],m['send']), ('restore/send overlap',m)
-    assert not overlap(m['rescue'],m['input']), ('restore/input overlap',m)
+    assert not overlap(m['chat'],m['title']), ('chat switch/title overlap',m)
     assert m['input']['bottom'] <= m['reading']['bottom']-2, ('input clipped by reading',m)
     assert m['send']['bottom'] <= m['reading']['bottom']-2, ('send clipped by reading',m)
     if width <= 760:
         assert m['reading']['bottom']+8 <= m['dock']['y'], ('dock/read overlap',m)
         assert m['dock']['bottom'] <= top+height-max(12,safe)+.5, ('unsafe dock bottom',m)
-        assert not overlap(m['rescue'],m['title']), ('restore/title overlap',m)
-        assert not overlap(m['rescue'],m['chat']), ('restore/chat overlap',m)
+        if m['panel']:
+            assert m['panel']['bottom'] <= m['dock']['y'] - 4, ('panel bottom obstructed by dock',m)
     for b in m['nav']:
         assert b['x']>=-.5 and b['right']<=width+.5 and b['bottom']<=top+height+.5, ('nav clipped',m)
 
@@ -79,22 +79,33 @@ def main():
             page.wait_for_timeout(60)
             metrics=page.evaluate('layoutMetrics()')
             check_layout(metrics,c['width'],c.get('visible',c['height']),c.get('top',0),c.get('safe',0))
-            page.locator('textarea').fill('测试草稿，不能被恢复按钮遮挡。')
+            page.locator('textarea').fill('测试草稿，不能被底栏挡住。')
             page.locator('button[type=submit]').click()
-            assert page.locator('body').get_attribute('data-submitted')=='测试草稿，不能被恢复按钮遮挡。'
+            assert page.locator('body').get_attribute('data-submitted')=='测试草稿，不能被底栏挡住。'
             # Pointer hit-testing, not just bounding boxes.
             for label in ['手机','地图','地点','日程','背包','状态']:
                 page.locator(f'.tool-dock button[aria-label="{label}"]').click()
+            page.evaluate('openFixturePanel()')
+            page.wait_for_timeout(70)
+            panel_metrics=page.evaluate('layoutMetrics()')
+            check_layout(panel_metrics,c['width'],c.get('visible',c['height']),c.get('top',0),c.get('safe',0))
+            panel=page.locator('.floating-window .window-content')
+            panel.evaluate('(el)=>{el.scrollTop=el.scrollHeight;}')
+            last=panel.locator('button').last.bounding_box()
+            panel_box=page.locator('.floating-window').bounding_box()
+            assert last['y']+last['height'] <= panel_box['y']+panel_box['height']+1, ('last menu control occluded',c,last,panel_box)
             screenshot=f'{index+1:02d}-{c["width"]}x{c["height"]}-{c["mode"]}.png'
             page.screenshot(path=str(args.output/screenshot))
+            page.locator('.floating-window').evaluate('(el)=>el.remove()')
             page.locator('.novel-dialogue-text').evaluate('(el)=>{el.scrollTop=el.scrollHeight;}')
             # Full-text presentation remains clear of both fixed controls.
             if c.get('visible',c['height'])>=470:
                 page.locator('.reading-layer').evaluate('(el)=>el.classList.add("reading-expanded")')
                 page.wait_for_timeout(50)
                 check_layout(page.evaluate('layoutMetrics()'),c['width'],c.get('visible',c['height']),c.get('top',0),c.get('safe',0))
-            page.locator('[data-unread-city-rescue]').click()
+            page.locator('[aria-label="切换聊天并恢复原生界面"]').click()
             assert page.locator('[data-unread-city-root]').count()==0
+            assert page.locator('[data-unread-city-rescue]').count()==0
             page.locator('#native-input').fill('恢复后仍可输入')
             assert page.locator('#native-input').input_value()=='恢复后仍可输入'
             assert not errors,errors

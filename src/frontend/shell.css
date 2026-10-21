@@ -210,3 +210,47 @@
 @media(max-height:620px) { .bed-rest-overlay { padding-top:74px; padding-bottom:84px; } .bed-rest-dialog { padding:16px; } .bed-rest-options { margin:14px 0 11px; } .uc-shell .bed-rest-options button { min-height:100px; } .uc-shell .bed-rest-dialog h2 { font-size:21px; } .uc-shell .bed-rest-receipt { top:206px; } }
 
 .presentation-switch select { color: inherit; background: #172824d9; border: 1px solid #9db6a755; border-radius: 6px; min-height: 44px; max-width: 128px; font: inherit; padding: 4px 8px; }
+
+
+/* HUD editor: handles are intentionally unavailable outside explicit layout mode. */
+.uc-shell .reading-resize-grip {
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%); z-index:7;
+  display:grid; place-items:center; width:88px; height:32px;
+  border:1px solid #d8cda896; border-radius:18px;
+  background:#1b2938e8; color:#e8dec6; touch-action:none;
+  cursor:ns-resize; pointer-events:auto;
+  box-shadow:0 3px 12px #0005;
+}
+.uc-shell .reading-resize-grip span { width:40px; height:4px; border-radius:4px; background:currentColor; opacity:.85; }
+.uc-shell .reading-resize-grip:focus-visible { outline:2px solid #f6dfa9; outline-offset:2px; }
+.uc-shell[data-layout-edit=true] [data-layout-part] { outline:1px dashed #e8d69e99; outline-offset:-2px; }
+.uc-shell .uc-layout-handle { display:none; }
+.uc-shell[data-layout-edit=true] .uc-layout-handle {
+  position:absolute; z-index:25; display:grid; place-items:center;
+  width:36px; height:36px; min-width:36px; min-height:36px;
+  padding:0; border:1px solid #f6dcab; border-radius:10px;
+  background:#182f2af5; color:#fff1c7; font:23px/1 system-ui;
+  pointer-events:auto; touch-action:none; user-select:none; cursor:grab;
+  box-shadow:0 3px 12px #0007; transform:none;
+}
+.uc-shell[data-layout-edit=true] .uc-layout-move { top:0; left:0; }
+.uc-shell[data-layout-edit=true] .uc-layout-resize { bottom:0; right:0; cursor:nwse-resize; }
+/* Portrait layers normally ignore input, but their edit handles must remain reachable. */
+.uc-shell[data-layout-edit=true] .novel-npc-portrait,
+.uc-shell[data-layout-edit=true] .soyo-live2d { pointer-events:auto; }
+.uc-shell[data-layout-edit=true] .novel-npc-portrait .uc-layout-resize,
+.uc-shell[data-layout-edit=true] .soyo-live2d .uc-layout-resize { top:0; right:0; bottom:auto; }
+
+.uc-shell .host-actions .layout-mode-button[aria-pressed=true] {
+  color:#1c372a; background:#f3dfa8; text-shadow:none;
+}
+@media(max-width:760px) {
+  .uc-shell .world-chrome .host-actions { gap:5px; }
+  .uc-shell .world-chrome .host-actions > button {
+    min-width:44px; padding:7px 6px; font-size:10px;
+    border-left:1px solid #e6d7b277; white-space:nowrap;
+  }
+  .uc-shell .world-chrome .topbar-world { white-space:normal; flex-wrap:wrap; gap:3px 6px; }
+  .uc-shell .reading-resize-grip { top:-17px; width:82px; height:30px; }
+  .uc-shell[data-layout-edit=true] .uc-layout-handle { width:44px; height:44px; min-width:44px; min-height:44px; }
+}

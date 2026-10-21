@@ -10,6 +10,7 @@ import SoyoLive2D from './SoyoLive2D.vue';
 import { resolveNovelNpcPortrait } from './novel-npc-portraits';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
+import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
 import WorldPanels from './WorldPanels.vue';
 import TransitPanel from './TransitPanel.vue';
 import ConvenienceStore from './ConvenienceStore.vue';
@@ -45,6 +46,15 @@ type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
 const phoneExpanded = ref(false);
 const readingMode = ref<ReadingMode>('compact');
+const layoutEditing = ref(false);
+let layoutLease: ShellLayoutLease | undefined;
+function toggleLayoutEditing() {
+  layoutEditing.value = !layoutEditing.value;
+  layoutLease?.setEditing(layoutEditing.value);
+}
+function resetLayout() {
+  layoutLease?.reset();
+}
 const presentationMode = ref<PresentationMode>(readPresentationMode());
 const novelMode = computed(() => presentationMode.value === 'novel');
 const novelHistory = ref(false);
@@ -91,12 +101,10 @@ const portraitLabel = computed(() => encounterPerson.value && !novelHistory.valu
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
-const windowPosition = ref<{ left: number; top: number }>();
 let requestedPhoneSlot: HTMLElement | undefined;
 let phoneMountRevision = 0;
 let unmounting = false;
-let drag: { id: number; x: number; y: number; left: number; top: number; width: number; height: number } | undefined;
-let hostWindow: Window | null = null;
+let drag: { id: number; x: number; y: number; left: number; top: number; width: number; height: number; element: HTMLElement } | undefined;
 let savedReadingScroll = 0;
 const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'phone', title: '手机', path: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1ZM10 5h4M11 19h2' },
@@ -171,7 +179,6 @@ const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhon
 const scenePaused = computed(() => !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
 const storyEntries = computed(() => props.model.state.story);
-const windowStyle = computed(() => windowPosition.value ? { left: `${windowPosition.value.left}px`, top: `${windowPosition.value.top}px`, right: 'auto', bottom: 'auto', transform: 'none' } : undefined);
 
 function releasePhone() {
   if (!requestedPhoneSlot) return;
@@ -213,7 +220,7 @@ function openWindow(panel: WindowPanel) {
   bookReadingPicker.value = false;
   studyInteractionId.value = '';
   if (activeWindow.value === panel) { closeWindow(); return; }
-  releasePhone(); windowPosition.value = undefined; phoneExpanded.value = novelMode.value && panel === 'phone'; activeWindow.value = panel;
+  releasePhone(); phoneExpanded.value = novelMode.value && panel === 'phone'; activeWindow.value = panel;
 }
 async function openLocationActivities() {
   await nextTick();
@@ -648,7 +655,7 @@ function startWindowDrag(event: PointerEvent) {
   if (!element) return;
   const rect = element.getBoundingClientRect();
   const base = shell.value.getBoundingClientRect();
-  drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left - base.left, top: rect.top - base.top, width: rect.width, height: rect.height };
+  drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left - base.left, top: rect.top - base.top, width: rect.width, height: rect.height, element };
   handle.setPointerCapture(event.pointerId); event.preventDefault();
 }
 function moveWindow(event: PointerEvent) {
@@ -658,21 +665,27 @@ function moveWindow(event: PointerEvent) {
   const rightInset = shell.value.clientWidth > 760 ? 112 : 10;
   const left = Math.min(Math.max(10, drag.left + event.clientX - drag.x), Math.max(10, shell.value.clientWidth - drag.width - rightInset));
   const top = Math.min(Math.max(70, drag.top + event.clientY - drag.y), Math.max(70, shell.value.clientHeight - drag.height - 20));
-  windowPosition.value = { left, top };
-  nextTick(() => { if (requestedPhoneSlot && props.model.externalPhoneOpen) props.actions.openPhone(requestedPhoneSlot); });
+  layoutLease?.place(drag.element, { left, top, width: drag.width, height: drag.height });
 }
-function endWindowDrag() { drag = undefined; }
-function resized() { windowPosition.value = undefined; }
+function endWindowDrag() {
+  if (drag) layoutLease?.save(drag.element);
+  drag = undefined;
+}
 onMounted(async () => {
   props.actions.setDismissHandler?.(dismissOverlay);
-  hostWindow = shell.value?.ownerDocument.defaultView ?? null;
-  hostWindow?.addEventListener('resize', resized);
+  if (shell.value) layoutLease = bindShellLayout(shell.value, () => {
+    if (requestedPhoneSlot && props.model.externalPhoneOpen) {
+      void nextTick(() => {
+        if (requestedPhoneSlot?.isConnected && props.model.externalPhoneOpen) props.actions.openPhone(requestedPhoneSlot);
+      });
+    }
+  });
   await nextTick(); jumpToLatest();
 });
 onBeforeUnmount(() => {
   unmounting = true; phoneMountRevision++;
   props.actions.setDismissHandler?.(undefined);
-  hostWindow?.removeEventListener('resize', resized);
+  layoutLease?.dispose(); layoutLease = undefined;
   releasePhone();
 });
 </script>
@@ -686,7 +699,7 @@ onBeforeUnmount(() => {
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
-    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>第 {{ model.state.clock.day }} 天</span><time>{{ time }}</time></div></div><div class="host-actions"><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button><button aria-label="退出沉浸界面，恢复酒馆原生界面" @click="actions.exit()">退出酒馆 <span aria-hidden="true">↗</span></button></div></header>
+    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>第 {{ model.state.clock.day }} 天</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
@@ -721,6 +734,7 @@ onBeforeUnmount(() => {
     <nav class="tool-dock" aria-label="世界面板"><button v-for="item in nav" :key="item.id" :class="{ 'phone-launcher': item.id === 'phone' }" :data-location-entry="item.id === 'location' ? '' : undefined" :data-inventory-entry="item.id === 'inventory' ? '' : undefined" :aria-label="item.title" :aria-pressed="activeWindow === item.id" :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息，点击打开手机` : activeWindow === 'phone' ? '收起手机' : '打开手机，阅读时也可使用') : item.id === 'location' ? '查看此地服务与开放时间' : item.id === 'inventory' ? '打开随身背包，使用或查看携带物品' : undefined" @click="openWindow(item.id)"><span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg><span v-if="item.id === 'phone' && unread" class="phone-unread-badge" :data-phone-unread="unread">{{ unread > 99 ? '99+' : unread }}</span></span><span class="tool-label">{{ item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : activeWindow === 'phone' ? '已打开' : '常驻' }}</small></span></button></nav>
     <span class="sr-only" role="status" aria-live="polite">{{ unread ? `手机有 ${unread} 条未读消息` : '手机没有未读消息' }}</span>
     <section v-show="readingMode !== 'hidden'" class="reading-layer" data-reading-layer aria-label="小说正文" :class="{ 'reading-expanded': readingMode === 'expanded' }">
+      <button type="button" class="reading-resize-grip" data-layout-handle="reading-height" aria-label="上下拖动调整正文高度" title="拖动改变正文高度"><span aria-hidden="true"></span></button>
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
@@ -731,7 +745,7 @@ onBeforeUnmount(() => {
       <p v-if="composerError" class="composer-error" role="alert">{{ composerError }}</p>
     </section>
     <button v-if="readingMode === 'hidden'" class="resume-reading" aria-label="继续阅读" @click="setReadingMode('compact')">继续阅读 <span v-if="hasNewContent" class="resume-dot">有新内容</span><span aria-hidden="true">↑</span></button>
-    <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'" :style="windowStyle">
+    <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'">
       <div v-if="activeWindow === 'phone'" class="phone-controls" aria-label="手机显示操作"><button type="button" class="phone-size-toggle" :aria-label="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :title="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :aria-expanded="phoneExpanded" @click="togglePhoneSize"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="phoneExpanded ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5' : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5'" /></svg></button><button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
       <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>

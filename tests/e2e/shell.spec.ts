@@ -186,7 +186,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await page.getByRole('button', { name: '状态', exact: true }).click();
     await expect(page.getByRole('heading', { name: '空中动态', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('剧情触发');
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await page.evaluate(() => (window as Window & { __unreadCityShell?: { open(): void } }).__unreadCityShell?.open());
     await expect(root(page)).toBeVisible();
     await expect(scene).toHaveAttribute('data-aircraft-status', 'ready', { timeout: 10000 });
@@ -218,7 +218,7 @@ test('空中客机：随机经过写入同一状态，WebGL 丢失仍可查看�
   await expect(scene).toHaveAttribute('data-aircraft-status', 'fallback');
   await page.getByRole('button', { name: '状态', exact: true }).click();
   await expect(page.getByRole('region', { name: '个人状态与日记' })).toContainText('随机环境');
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('飞机经过后继续使用原生聊天');
   await expect(page.locator('#native-input')).toHaveValue('飞机经过后继续使用原生聊天');
@@ -269,7 +269,7 @@ test('切换聊天后各自保存进度，重新进入不累积挂载节点', as
   await expect(page.locator('.topbar-world')).toContainText('17:35');
   for (let i = 0; i < 3; i++) {
     await expect(root(page)).toHaveCount(1);
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await expect(root(page)).toHaveCount(0);
     await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
     await enter(page);
@@ -318,7 +318,7 @@ test('390px 手机布局可导航、可发送，页面不横向溢出', async ({
   await expect(page.getByRole('log')).toContainText('手机操作');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.locator('[data-reading-layer]').evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
 });
 
@@ -540,7 +540,7 @@ test('390px 嵌入手机保留 Shell 的退出与导航空间', async ({ page })
   await expect(page.getByRole('region', { name: '探索地图' })).toBeVisible();
 });
 
-test('390px 宿主根元素 transform 且高度为零时，Shell 与恢复按钮仍完整可见', async ({ page }) => {
+test('390px 宿主根元素 transform 且高度为零时，Shell 与右上角切换聊天仍完整可见', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     // SillyTavern themes can turn html into a zero-height fixed containing block.
@@ -552,16 +552,16 @@ test('390px 宿主根元素 transform 且高度为零时，Shell 与恢复按钮
   const shellBounds = await root(page).boundingBox();
   expect(shellBounds).not.toBeNull();
   expect(shellBounds!.height).toBeGreaterThanOrEqual(843);
-  const rescue = page.locator('[data-unread-city-rescue]');
-  await expect(rescue).toBeInViewport({ ratio: 1 });
-  const rescueBounds = await rescue.boundingBox();
-  expect(rescueBounds).not.toBeNull();
-  expect(rescueBounds!.y).toBeGreaterThanOrEqual(0);
-  expect(rescueBounds!.y + rescueBounds!.height).toBeLessThanOrEqual(844);
-
-  await rescue.click();
+  const chat = page.getByRole('button', { name: '切换聊天并恢复原生界面' });
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+  await expect(chat).toBeInViewport({ ratio: 1 });
+  const chatBounds = await chat.boundingBox();
+  expect(chatBounds).not.toBeNull();
+  expect(chatBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(chatBounds!.y + chatBounds!.height).toBeLessThanOrEqual(844);
+  await chat.click();
   await expect(root(page)).toHaveCount(0);
-  await expect(rescue).toHaveCount(0);
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
   await expect(page.locator('#sttts-panel')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute('data-phone-releases', '1');
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
@@ -711,7 +711,7 @@ test('三维自由行走支持 WASD 和环视，停止与恢复阅读保留位�
   await expect(page.getByRole('group', { name: '移动摇杆' })).toHaveCount(0);
   await page.getByRole('button', { name: '继续阅读', exact: true }).click();
   await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('三维场景失效后仍可使用原生界面');
   expect(errors).toEqual([]);
@@ -788,7 +788,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await expect(scene).toHaveAttribute('data-position', canceled!);
     await page.getByRole('button', { name: '继续阅读', exact: true }).click();
     await expect(page.getByRole('log', { name: '故事记录' })).toBeVisible();
-    await page.locator('[data-unread-city-rescue]').click();
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
     await expect(root(page)).toHaveCount(0);
     await page.locator('#native-input').fill('行走退出后仍能输入');
     await session.detach();
@@ -875,7 +875,7 @@ test('连续走入图书馆前庭会同步剧情地点，继续步行与脚本�
   expect(saved.player).toEqual(initial.player);
   expect(saved.phone).toEqual(initial.phone);
   expect(saved.story).toEqual(initial.story);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   const helper = await (await page.locator('#reading-helper-frame').elementHandle())!.contentFrame();
   await helper!.addScriptTag({ content: bundle });
@@ -998,7 +998,7 @@ test('禁用 WebGL 时390px静态背景仍能探索、使用浮窗与阅读，�
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
 });
 
@@ -1244,15 +1244,15 @@ test('320px 从地点起手的双指可连续跨层和返回，拖动不误旅�
   await session.detach();
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
   await page.setViewportSize({ width: 320, height: 568 });
-  await expect(page.locator('[data-unread-city-rescue]')).toBeInViewport({ ratio: 1 });
-  const rescueBounds = await page.locator('[data-unread-city-rescue]').boundingBox();
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+  const dockBounds = await page.locator('.tool-dock').boundingBox();
   const windowBounds = await page.getByRole('dialog', { name: '地图窗口', exact: true }).boundingBox();
-  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(rescueBounds!.y);
+  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y - 4);
   for (const label of ['放大地图', '缩小地图', '复位地图视图', '向左旋转地图', '向右旋转地图']) {
     const control = page.getByRole('button', { name: label, exact: true });
     await control.scrollIntoViewIfNeeded();
     const box = await control.boundingBox();
-    expect(box!.x < rescueBounds!.x + rescueBounds!.width && box!.x + box!.width > rescueBounds!.x && box!.y < rescueBounds!.y + rescueBounds!.height && box!.y + box!.height > rescueBounds!.y).toBe(false);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(dockBounds!.y - 1);
   }
   await page.getByRole('button', { name: '向右旋转地图', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-map-bearing', '30.000');
@@ -1450,7 +1450,7 @@ test('全球图形上下文丢失后仍可浏览与复位，多次开关地图�
     await page.getByRole('button', { name: '关闭地图窗口', exact: true }).click();
     await expect(page.locator('[data-atlas-renderer]')).toHaveCount(0);
   }
-  await page.locator('[data-unread-city-rescue]').click();
+  await page.getByRole('button', { name: '切换聊天并恢复原生界面' }).click();
   await expect(root(page)).toHaveCount(0);
   await page.locator('#native-input').fill('地图关闭后继续原生输入');
   await expect(page.locator('#native-input')).toHaveValue('地图关闭后继续原生输入');
@@ -1508,3 +1508,57 @@ test('小国聚焦后按钮、滚轮与双指按实际比例连续缩放，中�
   await expect(page.locator('.topbar-world')).toContainText('17:20');
   await expect(page.locator('body')).not.toHaveAttribute('data-fixture-generations');
 });
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test(`布局编辑与底栏无遮挡：${viewport.width}×${viewport.height}`, async ({ page }) => {
+    test.setTimeout(90000);
+    const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+    await page.setViewportSize(viewport); await gotoDemo(page);
+    await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+    const switchChat = page.getByRole('button', { name: '切换聊天并恢复原生界面' });
+    await expect(switchChat).toBeInViewport({ ratio: 1 });
+    const titleBox = await page.locator('.wordmark').boundingBox(), chatBox = await switchChat.boundingBox();
+    expect(chatBox!.x).toBeGreaterThan(titleBox!.x + titleBox!.width - 2);
+    expect(chatBox!.x + chatBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(await page.locator('.uc-shell').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    const reading = page.locator('[data-reading-layer]'), before = await reading.boundingBox();
+    const grip = await reading.getByRole('button', { name: '上下拖动调整正文高度' }).boundingBox();
+    await page.mouse.move(grip!.x + grip!.width / 2, grip!.y + grip!.height / 2); await page.mouse.down();
+    await page.mouse.move(grip!.x + grip!.width / 2, grip!.y + grip!.height / 2 - 35, { steps: 5 }); await page.mouse.up();
+    const after = await reading.boundingBox();
+    expect(after!.height).toBeGreaterThan(before!.height + 18);
+    expect(Math.abs(after!.y + after!.height - before!.y - before!.height)).toBeLessThan(3);
+    await page.getByRole('button', { name: '编辑界面布局' }).click();
+    const mode = page.locator('.presentation-switch'), modeBefore = await mode.boundingBox();
+    const move = await mode.locator('[data-layout-handle="move"]').boundingBox();
+    expect(move).not.toBeNull();
+    await page.mouse.move(move!.x + 18, move!.y + 18); await page.mouse.down();
+    await page.mouse.move(move!.x + 36, move!.y + 36, { steps: 4 }); await page.mouse.up();
+    const modeAfter = await mode.boundingBox();
+    expect(Math.abs(modeAfter!.x - modeBefore!.x) + Math.abs(modeAfter!.y - modeBefore!.y)).toBeGreaterThan(9);
+    await page.getByRole('button', { name: '完成界面布局编辑' }).click();
+    for (const [name, id] of [['地图', 'map'], ['地点', 'location'], ['背包', 'inventory']] as const) {
+      await page.locator('.tool-dock').getByRole('button', { name, exact: true }).click();
+      const panel = page.locator(`.floating-window[data-window="${id}"]`);
+      await expect(panel).toBeVisible();
+      if (viewport.width <= 760) {
+        const a = await panel.boundingBox(), b = await page.locator('.tool-dock').boundingBox();
+        expect(a!.y + a!.height).toBeLessThanOrEqual(b!.y - 4);
+      }
+      const content = panel.locator('.window-content');
+      await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await expect(content.locator(':scope > :last-child')).toBeVisible();
+      await page.locator('.tool-dock').getByRole('button', { name, exact: true }).click();
+    }
+    await switchChat.click(); await expect(root(page)).toHaveCount(0); await enter(page);
+    const restored = await reading.boundingBox();
+    expect(Math.abs(restored!.height - after!.height)).toBeLessThan(3);
+    await page.getByRole('button', { name: '编辑界面布局' }).click();
+    await page.getByRole('button', { name: '重置界面布局' }).click();
+    const reset = await reading.boundingBox(), modeReset = await mode.boundingBox();
+    expect(Math.abs(reset!.height - before!.height)).toBeLessThan(5);
+    expect(Math.abs(modeReset!.x - modeBefore!.x)).toBeLessThan(5);
+    await page.getByRole('button', { name: '完成界面布局编辑' }).click();
+    expect(errors).toEqual([]);
+  });
+}
