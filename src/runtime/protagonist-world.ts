@@ -303,6 +303,11 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       if(p.conversations.length>=10000) fail('短信历史达到存档上限，请先导出历史');
       if(receiver.phone.length>=200) fail('对方消息已满');
       if(!receiver.contacts.some(c=>c.id===npcId)) receiver.contacts.push({id:npcId,name:protagonistNames[owner],tag:'另一位主角',summary:'在同一世界中生活的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
+      const senderContactId=`protagonist-${recipient}`;
+      if(!target.contacts.some(c=>c.id===senderContactId)){
+        if(target.contacts.length>=50) fail('发送方联系人已满');
+        target.contacts.push({id:senderContactId,name:protagonistNames[recipient],tag:'另一位主角',summary:'在同一世界中生活的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
+      }
       receiver.phone.push({id:`dual:${requestId}`,npcId,text:command.text,read:false,at:`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`});
       const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;
       const sentText=who===owner?`向${protagonistNames[recipient]}发消息：${command.text}`:`${protagonistNames[who]}使用你的手机向${protagonistNames[recipient]}发消息：${command.text}（设备操作记录，不代表你本人发言。）`;
