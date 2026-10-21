@@ -205,6 +205,9 @@ export interface GeneratedStory {
 }
 
 export type StoryGenerationOptions = {
+  kind: 'phone_reply';
+  messageId: string;
+} | {
   kind: 'interaction_event';
   interaction: { label: string; action: WorldAction };
 } | {
