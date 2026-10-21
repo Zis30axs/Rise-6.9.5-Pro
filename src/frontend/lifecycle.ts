@@ -1,4 +1,4 @@
-import { activeProtagonist } from '../runtime/protagonist-world';
+import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { createWorldPhoneApi } from './world-phone';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
@@ -357,7 +357,8 @@ export function mountShell(
           model.busy = false;
         }
         model.state = next;
-        model.notice = '';
+        model.notice = action.type === 'switch_protagonist'
+          ? `已切换到${protagonistNames[activeProtagonist(next)]}，可在状态页回顾这段时间的日常。` : '';
         if (action.type === 'switch_protagonist') bindStoryPhone();
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
@@ -516,3 +517,4 @@ function message(error: unknown): string {
   } catch { /* A rejected value may expose a throwing message getter. */ }
   return '操作未完成，请退出并重新进入。';
 }
+

@@ -1,8 +1,9 @@
 import type { WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, makeDualLedger, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
-import { advancePlayerNutrition, initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
+import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -27,6 +28,8 @@ export interface ProtagonistWorld {
   devices: Record<ProtagonistId, DeviceState>;
   orders: PhoneOrder[];
   operations: { id: string; actor: ProtagonistId; owner: ProtagonistId; command: string }[];
+  /** Older 1.12 saves receive this lazily at their current world clock. */
+  backgroundLife?: BackgroundLife;
 }
 export type PhoneCommand =
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -65,7 +68,11 @@ const share = (x: unknown): DeviceState['share'] => x === 'none' || x === 'read'
 const money = (x: number) => { const result = Math.round(x * 100); if (Math.abs(result / 100 - x) > 1e-7) fail('金额最多两位小数'); return integer(result); };
 
 export function enableProtagonists(s: WorldState): WorldState {
-  if (s.protagonists) return clone(s);
+  if (s.protagonists) {
+    const next = clone(s);
+    next.protagonists!.backgroundLife ??= initializeBackgroundLife(next);
+    return next;
+  }
   const point = sceneLandmarks.find(x => x.id === 'downtown')!;
   const room = getCampusInterior('toyokawa-house')!;
   const x = room.entrance.x, z = room.entrance.z;
@@ -76,13 +83,15 @@ export function enableProtagonists(s: WorldState): WorldState {
     contacts: [], phone: [], schedule: [], journal: [],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: '市中心的街灯渐次亮起。此刻，你以丰川祥子的视角继续同一段日常。' }],
   };
-  return { ...clone(s), schema_version: '1.12.0', protagonists: { revision: 0, inactive,
+  const next: WorldState = { ...clone(s), schema_version: '1.12.0', protagonists: { revision: 0, inactive,
     accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS),
     devices: { soyo: {locked: false, share: 'none', calendar: [], notifications: []}, sakiko: {locked: false, share: 'none', calendar: [], notifications: []} }, orders: [], operations: [] } };
+  next.protagonists!.backgroundLife = initializeBackgroundLife(next);
+  return next;
 }
 
 export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState): ProtagonistWorld {
-  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations']);
+  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : [])]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), people = exact(a.people, ['soyo','sakiko']);
   const accounts = makeDualLedger(0, 0); accounts.active = who;
@@ -126,7 +135,9 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const operations = distinct(array(p.operations,2000,raw => {
     const r=exact(raw,['id','actor','owner','command']); return {id:identifier(r.id),actor:actor(r.actor),owner:actor(r.owner),command:string(r.command,2000)};
   }));
-  return {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations};
+  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations};
+  result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy) : initializeBackgroundLife({...base,schema_version:'1.12.0',protagonists:result});
+  return result;
 }
 function isKnownLocation(locationId: string): boolean {
   return !!getCampusInterior(locationId) || sceneLandmarks.some(x=>x.id===locationId) || ['gate','library','cafe','dorm','teaching','sports','junction','bookshop','convenience','street-cafe','pocket-park','bus-stop'].includes(locationId);
@@ -149,25 +160,32 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   }
   const elapsed=gameMinute(after)-gameMinute(before);
   if (elapsed < 0) fail('世界时钟不能倒退');
-  if (elapsed) p.inactive.player=advancePlayerNutrition(p.inactive.player,before.clock,elapsed);
   const next={...after,schema_version:'1.12.0' as const,protagonists:p};
+  settleBackgroundLife(before,next);
   settlePhoneTime(next); p.revision++; return next;
 }
-function notify(s: WorldState, owner: ProtagonistId, id: string, text: string) {
+function notify(s: WorldState, owner: ProtagonistId, id: string, text: string, at = gameMinute(s)) {
   const d=s.protagonists!.devices[owner]; if(d.notifications.some(n=>n.id===id)) return;
   if(d.notifications.length>=200){ const index=d.notifications.findIndex(n=>n.read); if(index<0) fail('未读通知已满，请先阅读');d.notifications.splice(index,1); }
-  d.notifications.push({id,text,at:gameMinute(s),read:false});
+  // Source times and a stable tie-break keep delayed reminders independent of step size.
+  const index=d.notifications.findIndex(n=>n.at>at || n.at===at && n.id>id);
+  d.notifications.splice(index<0?d.notifications.length:index,0,{id,text,at,read:false});
 }
 export function settlePhoneTime(s: WorldState) {
   const p=s.protagonists!;
-  for(const o of p.orders) if(o.status==='paid'&&o.due<=gameMinute(s)){o.status='delivered';notify(s,o.owner,`order:${o.id}:arrived`,'订单已送达，请到收货地点领取。');}
-  for(const owner of ['soyo','sakiko'] as const) for(const e of p.devices[owner].calendar) if(!e.reminded && e.start<=gameMinute(s)) {e.reminded=true;notify(s,owner,`calendar:${e.id}:${e.start}`,`日程提醒：${e.title}`);}
+  for(const o of p.orders) if(o.status==='paid'&&o.due<=gameMinute(s)){o.status='delivered';notify(s,o.owner,`order:${o.id}:arrived`,'订单已送达，请到收货地点领取。',o.due);}
+  for(const owner of ['soyo','sakiko'] as const) for(const e of p.devices[owner].calendar) if(!e.reminded && e.start<=gameMinute(s)) {e.reminded=true;notify(s,owner,`calendar:${e.id}:${e.start}`,`日程提醒：${e.title}`,e.start);}
+}
+export function protagonistsNearby(s: WorldState): boolean {
+  const other=s.protagonists?.inactive;
+  if(!other || s.locationId!==other.locationId) return false;
+  return !!(s.interior&&other.interior ? s.interior.roomId===other.interior.roomId&&Math.hypot(s.interior.x-other.interior.x,s.interior.z-other.interior.z)<=3 : !s.interior&&!other.interior&&s.scene&&other.scene&&Math.hypot(s.scene.x-other.scene.x,s.scene.z-other.scene.z)<=3);
 }
 export function phoneAccess(s: WorldState, owner: ProtagonistId) {
   const active=activeProtagonist(s); if(owner===active) return {read:true,write:true,authorized:true,reason:''};
   if(!s.protagonists) return {read:false,write:false,authorized:false,reason:'尚未启用双主角'};
-  const other=s.protagonists.inactive, device=s.protagonists.devices[owner];
-  const near=s.locationId===other.locationId && (s.interior&&other.interior ? s.interior.roomId===other.interior.roomId&&Math.hypot(s.interior.x-other.interior.x,s.interior.z-other.interior.z)<=3 : !s.interior&&!other.interior&&s.scene&&other.scene&&Math.hypot(s.scene.x-other.scene.x,s.scene.z-other.scene.z)<=3);
+  const device=s.protagonists.devices[owner];
+  const near=protagonistsNearby(s);
   if(!near) return {read:false,write:false,authorized:false,reason:'需要走到对方身边才能接触这台手机'};
   const read=!device.locked || device.share!=='none', write=!device.locked || device.share==='write';
   return {read,write,authorized:device.share!=='none',reason:!read?'手机已锁定，尚未获得许可':!write?'只获得了查看许可':''};
@@ -193,6 +211,8 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   const s=enableProtagonists(state), p=s.protagonists!, who=p.accounts.active;
   if(action.type==='switch_protagonist'){
     const target=actor(action.target); if(target===who) return s;
+    suspendBackgroundActivity(s,target);
+    suspendBackgroundActivity(s,who);
     const leaving=personalState(s); Object.assign(s,personalState(p.inactive));p.inactive=leaving;p.accounts.active=target;p.revision++;
     return s;
   }
@@ -250,6 +270,11 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       if(receiver.phone.length>=200) fail('对方消息已满');
       if(!receiver.contacts.some(c=>c.id===npcId)) receiver.contacts.push({id:npcId,name:protagonistNames[owner],tag:'另一位主角',summary:'在同一世界中生活的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
       receiver.phone.push({id:`dual:${requestId}`,npcId,text:command.text,read:false,at:`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`});
+      const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;
+      const sentText=who===owner?`向${protagonistNames[recipient]}发消息：${command.text}`:`${protagonistNames[who]}使用你的手机向${protagonistNames[recipient]}发消息：${command.text}（设备操作记录，不代表你本人发言。）`;
+      target.journal.push({id:`sent:dual:${requestId}`,text:sentText.slice(0,1000),at});
+      const storyIds=new Set(target.story.filter(entry=>entry.role==='assistant').map(entry=>entry.id));
+      while(target.journal.length>100){const index=target.journal.findIndex(entry=>{const match=/^(.*):wa:[0-9a-f]{24}$/.exec(entry.id);return !match||!storyIds.has(match[1]);});target.journal.splice(index<0?0:index,1);}
       notify(s,recipient,`message:${requestId}`,`${protagonistNames[owner]}发来新消息。`);break;
     }
     case 'read_notifications':device.notifications.forEach(n=>{n.read=true;});break;
@@ -262,4 +287,5 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   p.operations.push({id:requestId,actor:who,owner,command:key});p.revision++;
   return s;
 }
+
 
