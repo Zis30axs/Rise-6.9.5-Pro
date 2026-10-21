@@ -1,5 +1,6 @@
 import type { WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
+import { pruneVariableEcho } from './prompt-pruning';
 
 /**
  * Extractive, provenance-bound seven-game-day memory. This is a compact record
@@ -16,7 +17,6 @@ export interface WeeklyMemory {
 }
 
 const WEEK_MINUTES = 7 * 1440;
-const MAX_MINUTE = 525_599_999;
 const OPEN_LIMIT = 49;
 const CLOSED_LIMIT = 12;
 const SUMMARY_LIMIT = 1800;
@@ -84,7 +84,7 @@ export function parseWeeklyMemory(raw: unknown, clock: WorldState['clock']): Wee
 
 /** Restrict regex cleanup to formatting. No claimed facts are inferred or modified. */
 export function evidenceText(source: string): string {
-  return source
+  return pruneVariableEcho(source)
     .replace(/\|([^|\n]{1,40})\|([^|\n]{1,20})\|([^|\n]{1,300})\|/g, '$1说：“$3”')
     .replace(/[\r\n\t ]+/g, ' ').trim();
 }
