@@ -1,0 +1,98 @@
+{
+  "schema": "unread-city-majo-cast-art-v1",
+  "phase": "partial-recovery",
+  "assets": [
+    {
+      "id": "twiitch/coco-avatar",
+      "file": "twiitch/coco-avatar.svg",
+      "mime": "image/svg+xml",
+      "bytes": 668,
+      "sha256": "9d2f48d5745c22ab89a42d3e51bc6ec438284c0170442e7dbe6c191c557d9791"
+    },
+    {
+      "id": "twiitch/coco-channel-cover",
+      "file": "twiitch/coco-channel-cover.svg",
+      "mime": "image/svg+xml",
+      "bytes": 990,
+      "sha256": "171d3c279e9c2277f0e17dcd588de906ed611a11585f31c2d80dfc63554ede1c"
+    },
+    {
+      "id": "twiitch/icon-coco",
+      "file": "twiitch/icon-coco.svg",
+      "mime": "image/svg+xml",
+      "bytes": 531,
+      "sha256": "b9794e79f4cf2d02f298bc85c936013f37605b867aeaac808d63b4fba507ac89"
+    },
+    {
+      "id": "twiitch/icon-default",
+      "file": "twiitch/icon-default.svg",
+      "mime": "image/svg+xml",
+      "bytes": 531,
+      "sha256": "bab38eb0557cdebe2907e4cccd0f5629b7ec026e3f9a0a2440c72a42109b1281"
+    },
+    {
+      "id": "twiitch/icon-sakiko",
+      "file": "twiitch/icon-sakiko.svg",
+      "mime": "image/svg+xml",
+      "bytes": 531,
+      "sha256": "bef7000e66e08cac7d3d28029b748b5eee3f38f8e82e17b257cc795594ec672b"
+    },
+    {
+      "id": "twiitch/icon-soyo",
+      "file": "twiitch/icon-soyo.svg",
+      "mime": "image/svg+xml",
+      "bytes": 531,
+      "sha256": "22693c891914982ba546582c2018988d9ba6724faced6816da53702d9c03aed4"
+    },
+    {
+      "id": "twiitch/offline-card",
+      "file": "twiitch/offline-card.svg",
+      "mime": "image/svg+xml",
+      "bytes": 961,
+      "sha256": "0f2b077e706c61dd2f495de5b09a19654c6d0288aa5ccfecf361e7d5e8c99731"
+    },
+    {
+      "id": "twiitch/reaction-cat",
+      "file": "twiitch/reaction-cat.svg",
+      "mime": "image/svg+xml",
+      "bytes": 425,
+      "sha256": "76ea7f3790e48015250e6d2ade98dff10400660f78494369482cad4f2122eef0"
+    },
+    {
+      "id": "twiitch/reaction-heart",
+      "file": "twiitch/reaction-heart.svg",
+      "mime": "image/svg+xml",
+      "bytes": 262,
+      "sha256": "9c74d921a4a37137b2c19483e3f94d9e26ffa0b19f0ac37a3c82054bff828af2"
+    },
+    {
+      "id": "twiitch/reaction-star",
+      "file": "twiitch/reaction-star.svg",
+      "mime": "image/svg+xml",
+      "bytes": 245,
+      "sha256": "ca63f1ae8d0d8ca389c973604cab18d4cfcb3ee6128a34d0b3e73824df1ce7a2"
+    },
+    {
+      "id": "twiitch/reaction-wave",
+      "file": "twiitch/reaction-wave.svg",
+      "mime": "image/svg+xml",
+      "bytes": 285,
+      "sha256": "b924f54eea18d04dbfa10eb28fcc73cf6d3380922ff2628022104fc0feb2c730"
+    },
+    {
+      "id": "twiitch/stream-overlay",
+      "file": "twiitch/stream-overlay.svg",
+      "mime": "image/svg+xml",
+      "bytes": 493,
+      "sha256": "a068ecb53b2c9c051cb08a5c5ea70674afcc6438771a4aa7d3810c991e8419f0"
+    },
+    {
+      "id": "twiitch/wordmark",
+      "file": "twiitch/wordmark.svg",
+      "mime": "image/svg+xml",
+      "bytes": 591,
+      "sha256": "034956e144beb0fe486657b0e722dd4515fad335519d3d77248ef309227e6485"
+    }
+  ],
+  "characterAndScenePngStatus": "not-recovered-after-workspace-pruning"
+}
