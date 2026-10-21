@@ -224,7 +224,18 @@ export function mountShell(
       }, 40);
     });
   }
-  function visibilitychange() { if (doc.hidden) cancelInteraction(); }
+  function visibilitychange() {
+    if (!doc.hidden) return;
+    cancelInteraction();
+    if (activePhoneReply) {
+      // Phone work never keeps generating in a hidden or retired session.
+      epoch++;
+      try { bridge.cancel(); } catch { /* Preserve the saved question for retry. */ }
+      activePhoneReply = null;
+      model.busy = false;
+      model.notice = '短信已保存，隐藏页面时停止了自动回复；重新打开短信后可重试。';
+    }
+  }
   function tickAirTraffic() {
     if (dead || model.busy || doc.hidden || !host.isConnected || bridge.session() !== session) return;
     try {
