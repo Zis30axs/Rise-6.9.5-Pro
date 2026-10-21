@@ -1,5 +1,6 @@
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { createWorldPhoneApi } from './world-phone';
+import { applyPhoneReply } from '../runtime/protagonist-world';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
@@ -331,11 +332,44 @@ export function mountShell(
     }
   }
 
+  /** A single one-shot model call; never a permanently running NPC agent. */
+  let activePhoneReply: string | null = null;
+  async function requestPhoneReply(messageId: string): Promise<void> {
+    if (dead || doc.hidden || bridge.session() !== session) throw new Error('请在当前游戏聊天中重试短信回复');
+    if (model.busy || activePhoneReply) throw new Error('上一项剧情或短信回复仍在处理');
+    const saved = snapshot();
+    const source = saved.protagonists?.conversations?.find(row=>row.id===messageId);
+    if (!source || !source.expectsReply || source.from !== activeProtagonist(saved)) throw new Error('短信回复来源与当前主角不一致');
+    if (saved.protagonists?.conversations?.some(row=>row.replyTo===messageId)) return;
+    const request=++epoch;
+    activePhoneReply=messageId; model.busy=true; model.notice='';
+    try {
+      const reply=await bridge.generate('请根据收到的短信和当前人物资料回复对方。',saved,{kind:'phone_reply',messageId});
+      if (!stillCurrent(request)) return;
+      // Always validate and apply to the latest chat snapshot: only a canonical
+      // reply is added. All read receipts, player moves and world facts survive.
+      const next=applyPhoneReply(snapshot(),messageId,reply.text);
+      bridge.save(next);
+      model.state=next;
+      worldPhone.notify();
+      if (storyPhone) void storyPhone.sync().catch(()=>{});
+    } catch(error) {
+      if(stillCurrent(request)) model.notice=`自动短信回复失败，原短信已保存；可在手机中重试：${message(error)}`;
+      throw error;
+    } finally {
+      if(activePhoneReply===messageId) activePhoneReply=null;
+      if(stillCurrent(request)) model.busy=false;
+    }
+  }
+
   const worldPhone = createWorldPhoneApi({
     session, current: () => !dead && bridge.session() === session,
     busy: () => model.busy || doc.hidden, state: snapshot,
+    onOutgoingMessage(messageId) { void requestPhoneReply(messageId).catch(()=>{}); },
+    requestReply: requestPhoneReply,
     commit(action) {
       const next = reduceState(snapshot(), action); bridge.save(next); model.state = next;
+      worldPhone.notify();
       if (storyPhone) void storyPhone.sync().catch(() => {});
       return next;
     },
@@ -357,6 +391,7 @@ export function mountShell(
           model.busy = false;
         }
         model.state = next;
+        worldPhone.notify();
         model.notice = action.type === 'switch_protagonist'
           ? `已切换到${protagonistNames[activeProtagonist(next)]}，可在状态页回顾这段时间的日常。` : '';
         if (action.type === 'switch_protagonist') bindStoryPhone();
@@ -499,6 +534,12 @@ export function mountShell(
     app.mount(mount);
     if (dead) throw new Error('界面启动失败，已恢复原生界面。');
     bindStoryPhone();
+    // A failed/aborted one-shot reply stays pending in the save and is resumed
+    // on the next deliberate entry; never polls or spawns a background agent.
+    const pendingReply = model.state.protagonists?.conversations?.find(row=>
+      row.expectsReply && row.from===activeProtagonist(model.state) &&
+      !model.state.protagonists!.conversations!.some(reply=>reply.replyTo===row.id));
+    if (pendingReply && !doc.hidden) void requestPhoneReply(pendingReply.id).catch(()=>{});
     shadow.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
     return { dispose, model, actions };
   } catch (error) {
