@@ -71,12 +71,17 @@ function worldApp(ctx,id) {
       if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
       if(section==='worldmessages'||section==='messages') {
         const thread=(data.conversation||[]);
-        const shown=thread.length?thread.map(m=>{
+        const canonicalIds=new Set(thread.map(row=>row.id));
+        // Preserve all pre-upgrade incoming messages, including earlier
+        // ST-iPhonie deliveries; canonical reply rows are not duplicated.
+        const legacy=data.messages.filter(m=>!canonicalIds.has(m.id))
+          .map(m=>`<article class="sms-bubble incoming"><time>${esc(historicalTime(m.at))}</time><p>${esc(m.text)}</p></article>`).join('');
+        const shown=legacy+thread.map(m=>{
           const outgoing=m.direction==='outgoing';
           const waiting=outgoing&&m.expectsReply&&!m.answered;
           const sent=outgoing?'<span class="sms-state" aria-label="已送达，对方已获知"><span class="sms-read-animation"><i>未读</i><b>已读 ✓</b></span></span>':'';
           return `<article class="sms-bubble ${outgoing?'outgoing':'incoming'}" data-message-id="${esc(m.id)}"><time>${esc(time(m.at))} · ${outgoing?'我':esc(data.other.name)}</time><p>${esc(m.text)}</p>${sent}${waiting?btn('retry-reply','重新请求对方回复','text-button',`data-id="${esc(m.id)}"`):''}</article>`;
-        }).join(''):data.messages.map(m=>`<article class="sms-bubble incoming"><time>${esc(historicalTime(m.at))}</time><p>${esc(m.text)}</p></article>`).join('');
+        }).join('');
         html+=`<div class="sms-thread" aria-label="真实双向短信记录">${shown||'<p class="hint">暂无消息</p>'}</div>${!peek?`<div class="group world-form">${field('发给另一位主角','<textarea data-world-field="message" maxlength="1000" rows="3"></textarea>')}${btn('send','发送消息','primary')}</div>`:''}`;
       }
     }
