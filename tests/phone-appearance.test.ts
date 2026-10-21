@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {createInitialState,parseState,reduceState} from '../src/runtime/model';
-import {defaultPhoneAppearance,enableProtagonists,parsePhoneAppearance,personalState} from '../src/runtime/protagonist-world';
+import {defaultPhoneAppearance,enableProtagonists,parsePhoneAppearance} from '../src/runtime/protagonist-world';
 import {createWorldPhoneApi} from '../src/frontend/world-phone';
 
 describe('device-owned phone appearance',()=>{
@@ -27,8 +27,6 @@ describe('device-owned phone appearance',()=>{
     expect(()=>parsePhoneAppearance({wallpaper:'https://example.com/a',theme:'dark',layout:'daily'})).toThrow();
     expect(()=>parsePhoneAppearance({wallpaper:'plain',theme:'dark',layout:'daily',url:'file://bad'})).toThrow();
     const s=enableProtagonists(createInitialState());
-    s.protagonists!.inactive=personalState(s);
-    s.protagonists!.inactive.player.balance=1200;
     expect(()=>reduceState(s,{type:'phone_app',owner:'sakiko',requestId:'not-my-phone',command:{type:'appearance',appearance:defaultPhoneAppearance('sakiko')}})).toThrow(/只有本人/);
   });
   it('rejects a late preference save after a protagonist switch',async()=>{

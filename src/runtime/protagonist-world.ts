@@ -201,9 +201,9 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   const previous=p.operations.find(o=>o.id===requestId);
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
+  if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置锁屏与许可');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
-  if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置锁屏与许可');
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){

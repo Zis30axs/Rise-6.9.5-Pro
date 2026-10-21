@@ -47,7 +47,7 @@ for(const viewport of [{width:1440,height:900},{width:1280,height:800},{width:39
     await phone.getByRole('button',{name:'保存外观',exact:true}).click();
     await expect(phone.locator('.screen')).toHaveAttribute('data-world-layout','focus');
     await expect(phone.locator('html')).toHaveAttribute('data-theme','dark');
-    await page.getByRole('button',{name:'收起手机',exact:true}).click();
+    await page.getByRole('button',{name:'关闭手机窗口',exact:true}).click();
     await page.locator('[data-protagonist-select]').selectOption('sakiko');
     phone=await openPhone(page);
     await expect(phone.locator('.screen')).toHaveAttribute('data-world-device','unread-city-phone-sakiko');
@@ -64,14 +64,14 @@ for(const viewport of [{width:1440,height:900},{width:1280,height:800},{width:39
     await phone.locator('[data-theme="light"]').click();
     await expect(phone.locator('html')).toHaveAttribute('data-theme','light');
     await home(phone);
-    await page.getByRole('button',{name:'收起手机',exact:true}).click();
+    await page.getByRole('button',{name:'关闭手机窗口',exact:true}).click();
     await page.locator('[data-protagonist-select]').selectOption('soyo');
     phone=await openPhone(page);
     await expect(phone.locator('.screen')).toHaveAttribute('data-world-layout','focus');
     await expect(phone.locator('.screen')).toHaveAttribute('data-world-wallpaper','plain');
     await expect(phone.locator('html')).toHaveAttribute('data-theme','dark');
     await shot('soyo-restored');
-    await page.getByRole('button',{name:'收起手机',exact:true}).click();
+    await page.getByRole('button',{name:'关闭手机窗口',exact:true}).click();
     await page.locator('[data-protagonist-select]').selectOption('sakiko');
     phone=await openPhone(page);
     await expect(phone.locator('html')).toHaveAttribute('data-theme','light');
