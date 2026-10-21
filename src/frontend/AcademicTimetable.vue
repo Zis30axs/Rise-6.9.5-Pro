@@ -9,7 +9,7 @@ const weekday = computed(() => gameWeekday(props.day));
 const calendar = computed(() => gameCalendar(props.day));
 const beforeLectures = computed(() => !hasStartedAcademicWeek(props.day));
 const reporting = computed(() => registrationNotice(props.day));
-const weekdayLabel = computed(() => ['周一','周二','周三','周四','周五','周六','周日'][weekday.value - 1]);
+const weekdayLabel = computed(() => calendar.value.weekdayLabel);
 const timetable = computed(() => getAcademicTimetable(props.majorId));
 const lessons = computed(() => view.value === 'week' ? timetable.value : beforeLectures.value ? [] : timetable.value.filter(item => item.weekday === weekday.value));
 function slotStatus(lesson: (typeof timetable.value)[number]) {
