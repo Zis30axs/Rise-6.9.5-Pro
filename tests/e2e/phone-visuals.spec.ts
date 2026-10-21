@@ -23,7 +23,10 @@ async function noOverflow(phone:FrameLocator) {
 for(const viewport of [{width:1440,height:900},{width:1280,height:800},{width:390,height:844},{width:320,height:568}]) {
   test(`${viewport.width}x${viewport.height} device art, preferences and switching`,async({page})=>{
     test.setTimeout(90000);await page.setViewportSize(viewport);
-    const fixture=await withArtPhone(page,enableProtagonists(createSelectedInitialState()));
+    const source=enableProtagonists(createSelectedInitialState());
+    // Both test devices have completed enrolment; production keeps separate academic progress.
+    source.protagonists!.inactive.academics=structuredClone(source.academics);
+    const fixture=await withArtPhone(page,source);
     const screenshots:string[]=[];
     mkdirSync('outputs/phone-visuals-qa',{recursive:true});
     const prefix=`outputs/phone-visuals-qa/${viewport.width}x${viewport.height}`;

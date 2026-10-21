@@ -18,3 +18,9 @@
 .world-appearance {display:grid;gap:8px}
 .world-appearance .world-field {margin:4px 0}
 @media(max-width:350px){.world-card{min-height:170px;padding:17px}.world-card .world-card-balance{margin-top:30px}.world-card .world-card-holder{letter-spacing:0}}
+
+.screen[data-world-owner] .home-clock,.screen[data-world-owner] .home-date {text-shadow:none;-webkit-text-stroke:0;filter:none}
+.screen[data-world-owner] .home-clock {font-weight:650;letter-spacing:-.04em}
+.screen[data-world-owner=soyo] .view[data-app=appie] .wallet-card {background:linear-gradient(120deg,#dce6ce,#bacaad);color:#304d40;box-shadow:none}
+.screen[data-world-owner=sakiko] .view[data-app=appie] .wallet-card {background:linear-gradient(120deg,#1b2f4d,#3c5273);color:#edf2fa;box-shadow:none}
+.screen[data-world-owner] .view[data-app=appie] .wallet-card strong {font-weight:600}
