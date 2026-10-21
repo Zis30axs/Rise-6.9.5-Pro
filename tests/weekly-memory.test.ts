@@ -23,7 +23,7 @@ describe('seven-game-day personal memory', () => {
     const state = dual();
     const start = gameMinute(state);
     recordWeeklyEvidence(state, 'soyo', { id: 'shared:test-witness', at: start, text: '素世听到一段已经发生的交流。' });
-    recordWeeklyEvidence(state, 'soyo', { id: 'private:soyo', at: start + 3, text: '素世选择保留一封信。' });
+    recordWeeklyEvidence(state, 'soyo', { id: 'private:soyo', at: start, text: '素世选择保留一封信。' });
     recordWeeklyEvidence(state, 'sakiko', { id: 'private:sakiko', at: start, text: '祥子保留自己的私人笔记。' });
     state.clock = { day: 8, hour: 0, minute: 0 };
     settleWeeklyMemory(state);
@@ -40,7 +40,7 @@ describe('seven-game-day personal memory', () => {
     expect(own.closed[0].sources).toContain('private:soyo');
     const once = structuredClone(state.protagonists!.weeklyMemory);
     settleWeeklyMemory(state);
-    recordWeeklyEvidence(state, 'soyo', { id: 'private:soyo', at: start + 3, text: '过期重放' });
+    recordWeeklyEvidence(state, 'soyo', { id: 'private:soyo', at: start, text: '过期重放' });
     expect(state.protagonists!.weeklyMemory).toEqual(once);
     expect(parseWeeklyMemory(state.protagonists!.weeklyMemory, state.clock)).toEqual(once);
   });
@@ -57,6 +57,7 @@ describe('seven-game-day personal memory', () => {
 
   it('keeps a source-backed daily quota without losing the first day to busy days', () => {
     const state = dual();
+    state.clock = { day: 1, hour: 18, minute: 0 };
     for (let n = 0; n < 30; n++) {
       recordWeeklyEvidence(state, 'soyo', { id: 'routine:' + n, at: 1040 + n, text: '日常整理第' + n + '次' });
     }
