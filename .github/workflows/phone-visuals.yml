@@ -1,0 +1,80 @@
+name: Dual phone visuals and offline packaging
+on:
+  push:
+    branches: [feat/dual-phone-visuals-20261021]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        baseline: [main, lite]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply the same isolated phone change to pinned Lite for compatibility
+        if: matrix.baseline == 'lite'
+        run: |
+          git diff --binary 092da77f4c4b49907a88898e0159d4706e3d0761 HEAD > /tmp/phone-visuals.patch
+          git checkout --detach 4a4e970e0738492110f961e6c78db41ce91232e9
+          git apply --check /tmp/phone-visuals.patch
+          git apply /tmp/phone-visuals.patch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: python -m pip install Pillow
+      - name: Restore the existing pinned phone, preserving one runtime
+        run: |
+          git clone https://github.com/Zis30axs/ST-iPhonie.git ../ST-iPhonie
+          git -C ../ST-iPhonie checkout --detach 24295193aa1adff606edcd4e63c8b07923533f2b
+          git -C ../ST-iPhonie apply --check "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+          git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+      - name: Verify reproducible assets and missing-resource behavior
+        run: |
+          python scripts/build_phone_art.py --check
+          node --test tests/phone-visuals.node.mjs
+      - name: Build actual artwork, phone and frontend
+        run: npm run build
+      - name: Device state and phone lifecycle regression
+        run: npx vitest run tests/dual-protagonists.test.ts tests/phone-appearance.test.ts tests/phone-runtime.test.ts --maxWorkers=1
+      - name: Construct PNG and verify exact embedded frontend
+        run: |
+          python scripts/build_card.py --frontend dist/immersive-shell.js
+          python scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/phone-visuals-tauri.png
+          python scripts/audit_phone_visuals.py --card dist/phone-visuals-tauri.png
+      - name: Construct and audit Lite PNG and local ZIP
+        if: matrix.baseline == 'lite'
+        run: |
+          python scripts/build_lite_release.py
+          node --check dist/immersive-shell-lite.js
+          python scripts/build_lite_card.py
+          python scripts/build_tauri_import_card.py --source dist/unread-city-lite.png --output dist/unread-city-lite-tauri.png
+          python scripts/verify_lite_release.py
+          python scripts/audit_phone_visuals.py --card dist/unread-city-lite-tauri.png --lite
+      - run: npx playwright install --with-deps chromium
+      - name: Real embedded phone at four desktop and mobile viewports
+        run: npx playwright test tests/e2e/phone-visuals.spec.ts --workers=1 --reporter=line
+      - name: Preserve review files without publishing or replacing releases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-visuals-${{ matrix.baseline }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            outputs/phone-visuals-qa/
+            outputs/phone-visuals-audit*.json
+            dist/phone-visuals-tauri.png
+            dist/unread-city-lite-tauri.png
+            dist/unread-city-lite-assets.zip
+            dist/lite-verification.json
+            test-results/

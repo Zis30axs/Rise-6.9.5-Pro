@@ -1,0 +1,20 @@
+/* Original device art is scoped to the embedded game phone. */
+.screen[data-world-owner] .icon-tile {background:transparent!important;box-shadow:0 3px 8px #0002}
+.screen[data-world-owner] .icon-tile>svg {width:100%;height:100%}
+.screen[data-world-owner] .app-label {font-weight:600;text-shadow:0 1px 3px #0002}
+.screen[data-world-owner=soyo] .phone-dock {background:#f6f2e5b8;border:1px solid #fff9}
+.screen[data-world-owner=sakiko] .phone-dock {background:#102039b8;border:1px solid #a3b8d655}
+.screen[data-world-owner] .world-device-header {display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #8883;border-radius:16px;margin:12px 0}
+.screen[data-world-owner] .world-device-mark {width:46px;flex:0 0 46px}
+.world-device-header strong,.world-device-header small {display:block}
+.world-cards {display:grid;gap:14px}
+.world-card {position:relative;isolation:isolate;box-sizing:border-box;min-height:190px;aspect-ratio:12/7;padding:20px 22px;border-radius:23px;overflow:hidden;color:#fff;background:#344c42;box-shadow:0 6px 16px #0002}
+.world-card[data-card-owner=sakiko] {background:#243953}
+.world-card .world-card-art {position:absolute;inset:0;z-index:-1;background-size:100% 100%;background-repeat:no-repeat}
+.world-card .world-card-brand {display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:1px}
+.world-card .world-card-balance {display:block;font-size:clamp(22px,7vw,29px);font-weight:600;letter-spacing:1px;margin:36px 0 12px;font-variant-numeric:tabular-nums}
+.world-card .world-card-holder {display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;align-items:end;font-size:11px;letter-spacing:1px;padding-right:25px}
+.world-card small {color:inherit;opacity:.8}
+.world-appearance {display:grid;gap:8px}
+.world-appearance .world-field {margin:4px 0}
+@media(max-width:350px){.world-card{min-height:170px;padding:17px}.world-card .world-card-balance{margin-top:30px}.world-card .world-card-holder{letter-spacing:0}}

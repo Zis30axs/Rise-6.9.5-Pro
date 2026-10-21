@@ -11,7 +11,14 @@ export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'play
 export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
 export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean }
 export interface PhoneNotification { id: string; text: string; at: number; read: boolean }
-export interface DeviceState { locked: boolean; share: 'none' | 'read' | 'write'; calendar: CalendarEvent[]; notifications: PhoneNotification[] }
+export interface PhoneAppearance { wallpaper: 'signature' | 'plain'; theme: 'light' | 'dark' | 'system'; layout: 'daily' | 'focus' }
+export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='sakiko'?'dark':'light',layout:'daily'});
+export function parsePhoneAppearance(raw: unknown): PhoneAppearance {
+  const a=exact(raw,['wallpaper','theme','layout']);
+  if(!['signature','plain'].includes(String(a.wallpaper))||!['light','dark','system'].includes(String(a.theme))||!['daily','focus'].includes(String(a.layout)))return fail('手机外观无效');
+  return {wallpaper:a.wallpaper as PhoneAppearance['wallpaper'],theme:a.theme as PhoneAppearance['theme'],layout:a.layout as PhoneAppearance['layout']};
+}
+export interface DeviceState { appearance?: PhoneAppearance; locked: boolean; share: 'none' | 'read' | 'write'; calendar: CalendarEvent[]; notifications: PhoneNotification[] }
 export interface PhoneOrder { id: string; owner: ProtagonistId; actor: ProtagonistId; kind: 'shop' | 'delivery'; itemId: string; quantity: number; card: FictionalCardId; totalCents: number; address: string; due: number; status: 'paid' | 'delivered' | 'received' | 'cancelled' }
 export interface ProtagonistWorld {
   revision: number;
@@ -23,6 +30,7 @@ export interface ProtagonistWorld {
 }
 export type PhoneCommand =
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
+  | { type: 'appearance'; appearance: PhoneAppearance }
   | { type: 'device'; locked: boolean; share: DeviceState['share'] }
   | { type: 'transfer'; from: FictionalCardId; to: FictionalCardId; cents: number }
   | { type: 'order'; kind: PhoneOrder['kind']; itemId: string; quantity: number; card: FictionalCardId; address: string }
@@ -98,8 +106,8 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   if (money(base.player.balance) !== appiePayBalance(accounts, who) || money(inactive.player.balance) !== appiePayBalance(accounts, otherProtagonist(who))) fail('余额投影与 Appie Pay 不一致');
   const rawDevices = exact(p.devices, ['soyo','sakiko']);
   const parseDevice = (x: unknown): DeviceState => {
-    const d = exact(x, ['locked','share','calendar','notifications']);
-    return { locked: boolean(d.locked), share: share(d.share), calendar: distinct(array(d.calendar,100,raw => {
+    const d = exact(x, ['locked','share','calendar','notifications',...(x && typeof x==='object' && Object.hasOwn(x,'appearance')?['appearance']:[])]);
+    return { ...(Object.hasOwn(d,'appearance')?{appearance:parsePhoneAppearance(d.appearance)}:{}), locked: boolean(d.locked), share: share(d.share), calendar: distinct(array(d.calendar,100,raw => {
       const e = exact(raw, ['id','title','locationId','start','duration','reminded']);
       const locationId = string(e.locationId,80); if (!isKnownLocation(locationId)) fail('日历地点无效');
       return {id: identifier(e.id), title: string(e.title,100), locationId, start: integer(e.start,525600000), duration: integer(e.duration,1440,1), reminded: boolean(e.reminded)};
@@ -166,11 +174,12 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
 }
 function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
-  const fields: Record<PhoneCommand['type'],string[]>={inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],send_message:['text'],read_notifications:[]};
+  const fields: Record<PhoneCommand['type'],string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],send_message:['text'],read_notifications:[]};
   if(!Object.hasOwn(fields,type)) return fail('手机操作无效');
   const c=exact(raw,['type',...fields[type]]);
   switch(type){
     case 'inspect': if(!['messages','calendar','orders','wallet'].includes(String(c.section))) return fail('读取范围无效');return {type,section:c.section as 'messages'};
+    case 'appearance': return {type,appearance:parsePhoneAppearance(c.appearance)};
     case 'device': return {type,locked:boolean(c.locked),share:share(c.share)};
     case 'transfer': return {type,from:card(c.from),to:card(c.to),cents:integer(c.cents,100000000,1)};
     case 'order': if(c.kind!=='shop'&&c.kind!=='delivery') return fail('订单类型无效');return {type,kind:c.kind,itemId:identifier(c.itemId),quantity:integer(c.quantity,20,1),card:card(c.card),address:identifier(c.address)};
@@ -194,7 +203,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   if(p.operations.length>=2000) fail('手机操作记录已满');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
-  if(command.type==='device'&&owner!==who) fail('只有本人能设置锁屏与许可');
+  if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置锁屏与许可');
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
@@ -203,6 +212,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       if(owner!==who){const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;s.journal.push({id:`peek:${requestId}`,text:`查看${protagonistNames[owner]}的手机：${content||'暂无记录'}`.slice(0,1000),at});s.journal=s.journal.slice(-100);}
       break;
     }
+    case 'appearance':device.appearance=command.appearance;break;
     case 'device':device.locked=command.locked;device.share=command.share;break;
     case 'transfer':if(command.from===command.to) fail('请选择不同卡片');tx(command.from,-command.cents,'from','Appie Pay 卡间转出');tx(command.to,command.cents,'to','Appie Pay 卡间转入');break;
     case 'order': {
@@ -252,3 +262,4 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   p.operations.push({id:requestId,actor:who,owner,command:key});p.revision++;
   return s;
 }
+
