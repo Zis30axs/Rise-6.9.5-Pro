@@ -1,5 +1,6 @@
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { narrativeContext } from './protagonist-narrative';
+import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { weeklyMemoryContext } from './weekly-memory';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
@@ -233,7 +234,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
         narrative,
         weeklyMemory: weeklyMemoryContext(snapshot),
-        clock: snapshot.clock, location: snapshot.locationId, player: snapshot.player,
+        clock: snapshot.clock, calendarDate: gameCalendar(snapshot.clock.day),
+        reporting: registrationNotice(snapshot.clock.day), coursesStarted: hasStartedAcademicWeek(snapshot.clock.day),
+        location: snapshot.locationId, player: snapshot.player,
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
           .slice(0, PROMPT_CONTEXT_LIMITS.calendarEntries),
@@ -300,14 +303,16 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const weekly = weeklyMemoryContext(snapshot);
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括两位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
       const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
+      const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。';
+      const combinedSystemPrompt = options?.kind === 'contact_introduction' ? systemPrompt : `${calendarInstruction}\n${systemPrompt}`;
       try {
         const response = await Promise.race([
           storyApi.mode === 'custom'
-            ? requestStoryFromCustomApi(storyApi, prompt, systemPrompt, controller!.signal)
+            ? requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt, controller!.signal)
             : api.generate({
             generation_id: generationId,
             user_input: prompt,
-            injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: systemPrompt }],
+            injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: combinedSystemPrompt }],
             should_stream: false, should_silence: true, max_chat_history: 0,
           }),
           aborted,
