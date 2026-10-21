@@ -2,7 +2,7 @@ name: Weekly memory and prompt pruning
 
 on:
   push:
-    branches: [feat/weekly-memory-prompt-pruning-20261021]
+    branches: [feat/weekly-memory-prompt-pruning-20261021, 'fix/weekly-memory-*']
   pull_request:
     branches: [lite]
 
@@ -37,11 +37,11 @@ jobs:
       - name: Typecheck and build real embedded frontend
         run: npm run build
       - name: Weekly memory, token pruning and lifecycle regressions
-        run: npx vitest run tests/weekly-memory.test.ts tests/prompt-pruning.test.ts tests/dual-narrative.test.ts tests/background-life.test.ts tests/dual-protagonists.test.ts tests/lifecycle.test.ts tests/story-output-compat.test.ts --maxWorkers=1
+        run: npx vitest run --maxWorkers=1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Check narrative layouts at desktop and mobile viewports
-        run: npx playwright test tests/e2e/dual-narrative.spec.ts --workers=1 --max-failures=1 --reporter=line
+        run: npx playwright test tests/e2e/dual-narrative.spec.ts tests/e2e/weekly-memory.spec.ts --workers=1 --max-failures=1 --reporter=line
       - name: Save UI checks
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,4 +51,5 @@ jobs:
           if-no-files-found: warn
           path: |
             outputs/dual-narrative-qa/
+            outputs/weekly-memory-qa/
             test-results/

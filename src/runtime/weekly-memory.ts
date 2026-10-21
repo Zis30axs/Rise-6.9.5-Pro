@@ -35,6 +35,7 @@ const weekAt = (at: number) => Math.floor(at / WEEK_MINUTES) + 1;
 const dayAt = (at: number) => Math.floor(at / 1440) + 1;
 const nowMinute = (clock: WorldState['clock']) => (clock.day - 1) * 1440 + clock.hour * 60 + clock.minute;
 const idPattern = /^[A-Za-z0-9][\w:.-]{0,127}$/;
+const sourcePattern = /^(?:soyo|sakiko):[A-Za-z0-9][\w:.-]{0,127}$/;
 const timePattern = /^第 (\d+) 天 (\d{2}):(\d{2})$/;
 
 export function createWeeklyMemory(at: number): WeeklyMemory {
@@ -81,7 +82,8 @@ export function parseWeeklyMemory(raw: unknown, clock: WorldState['clock']): Wee
     const w = object(rawWeek, ['week', 'evidence', 'summary', 'sources']);
     const week = int(w.week, weekAt(startedAt), openWeek - 1);
     const evidence = evidenceList(w.evidence, CLOSED_EVIDENCE_LIMIT, startedAt, now, week);
-    const sources = list(w.sources, CLOSED_EVIDENCE_LIMIT, identity);
+    const sources = list(w.sources, CLOSED_EVIDENCE_LIMIT, source =>
+      typeof source === 'string' && sourcePattern.test(source) ? source : error());
     if (new Set(sources).size !== sources.length) return error();
     const summary = w.summary === null ? null : safeText(w.summary, SUMMARY_LIMIT);
     if ((summary === null && (!evidence.length || !sources.length))
