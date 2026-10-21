@@ -1,0 +1,135 @@
+name: Publish verified Lite rc3 without replacing earlier releases
+on:
+  push:
+    branches: [release/lite-v0.1.0-rc3]
+    paths: [.github/workflows/publish-lite-rc3.yml]
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_SHA: f22c8ab942d0e71ec9263b14ee35883fc7f6497d
+      SOURCE_RUN: '39527429861'
+      RELEASE_TAG: lite-v0.1.0-rc3
+    steps:
+      - name: Require the successful build of the exact synchronized Lite commit
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/actions/runs/$SOURCE_RUN" > /tmp/source-run.json
+          python - <<'PY'
+          import json, os
+          run=json.load(open('/tmp/source-run.json'))
+          assert run['head_sha']==os.environ['SOURCE_SHA']
+          assert run['head_branch']=='lite'
+          assert run['path']=='.github/workflows/lite-prerelease.yml'
+          assert run['status']=='completed' and run['conclusion']=='success'
+          print('Verified source build',run['id'],run['head_sha'])
+          PY
+          gh api "repos/$GH_REPO/releases/tags/lite-v0.1.0-rc1" > /tmp/rc1-before.json
+          gh api "repos/$GH_REPO/releases/tags/lite-v0.1.0-rc2" > /tmp/rc2-before.json
+          gh api "repos/$GH_REPO/git/ref/tags/lite-v0.1.0-rc1" > /tmp/rc1-tag-before.json
+          gh api "repos/$GH_REPO/git/ref/tags/lite-v0.1.0-rc2" > /tmp/rc2-tag-before.json
+      - name: Download the already built and audited PNG and local ZIP
+        run: |
+          gh run download "$SOURCE_RUN" --repo "$GH_REPO" --name unread-city-lite-offline-prerelease --dir dist
+      - name: Check bytes and hashes and prepare source-specific release notes
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,zipfile
+          from pathlib import Path
+          root=Path('dist')
+          verify=json.loads((root/'lite-verification.json').read_text())
+          report=json.loads((root/'lite-assets-report.json').read_text())
+          sha=lambda data:hashlib.sha256(data).hexdigest()
+          png=root/'unread-city-lite-tauri.png'
+          archive=root/'unread-city-lite-assets.zip'
+          assert verify['status']=='passed-build-only-not-tested-on-iphone'
+          assert verify['offline'] is True and verify['physicalDeviceTested'] is False
+          assert verify['approvedNewArtExternalized']==18
+          assert png.stat().st_size==verify['liteCardBytes']
+          assert sha(png.read_bytes())==verify['liteCardSha256']
+          assert archive.stat().st_size==verify['zipBytes']==report['zipBytes']
+          assert sha(archive.read_bytes())==verify['zipSha256']==report['zipSha256']
+          with zipfile.ZipFile(archive) as z:
+              raw=z.read('manifest.json')
+              assert sha(raw)==report['manifestSha256']
+              manifest=json.loads(raw)
+              assert len(manifest['assets'])==verify['externalAssets']==report['assets']
+              assert set(z.namelist())=={'manifest.json',*(a['path'] for a in manifest['assets'])}
+              for a in manifest['assets']:
+                  data=z.read(a['path'])
+                  assert len(data)==a['bytes'] and sha(data)==a['sha256']
+                  assert z.getinfo(a['path']).compress_type==0
+          provenance={'schema':'unread-city-release-provenance-v1','tag':os.environ['RELEASE_TAG'],
+              'sourceCommit':os.environ['SOURCE_SHA'],'sourceBuildRun':int(os.environ['SOURCE_RUN']),
+              'sourceBuildUrl':f"https://github.com/{os.environ['GH_REPO']}/actions/runs/{os.environ['SOURCE_RUN']}",
+              'publicationRun':os.environ['GITHUB_RUN_ID'],'publicationWorkflowCommit':os.environ['GITHUB_SHA'],
+              'pngSha256':verify['liteCardSha256'],'zipSha256':verify['zipSha256'],
+              'physicalDeviceTested':False}
+          (root/'release-provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
+          notes=f'''# 未读之城 Lite rc3 · 双主角手机视觉版
+
+          已包含 PR #4 双主角与独立账户、PR #6 市中心/祥子正式素材，以及已合并 PR #8 的手机视觉。
+
+          - 素世：奶油绿花叶；祥子：深蓝银色乐谱。共 54 件原创离线 SVG，包含壁纸、应用图标和 Appie Pay 银行卡底图。
+          - 两台手机分别保存壁纸、主题和日常/专注排列，切换主角后恢复；继续复用同一内嵌 ST-iPhonie。
+          - 保留 Appie Pay、购物、外卖、日历、主角消息及可审计的查手机功能。
+          - PNG + 本地 ZIP 离线资源架构；无需在线图片服务器。PR #7 布局改动尚未包含。
+
+          ## 下载和安装
+
+          下载本页同一版本的 `unread-city-lite-tauri.png` 与 `unread-city-lite-assets.zip`。PNG 导入 TauriTavern；进入角色聊天后点“安装 Lite 素材 ZIP”，选取本次 ZIP，安装后刷新。ZIP 不作为角色卡导入。酒馆助手仍需安装并授权。
+
+          ## 来源与校验
+
+          - 构建源：`{os.environ['SOURCE_SHA']}`。
+          - [实际发行构建](https://github.com/{os.environ['GH_REPO']}/actions/runs/{os.environ['SOURCE_RUN']})：成功；直接复用其产物。
+          - [双基线四视口与资源审计](https://github.com/{os.environ['GH_REPO']}/actions/runs/39520998156)：main/Lite 两条任务全部通过。
+          - PNG：{verify['liteCardBytes']:,} 字节；SHA-256 `{verify['liteCardSha256']}`。
+          - ZIP：{verify['zipBytes']:,} 字节；SHA-256 `{verify['zipSha256']}`。
+          - ZIP 共 {verify['externalAssets']} 项静态资源，包含 18 张已批准市中心/祥子图片；54 件小 SVG 继续内嵌。
+
+          rc1、rc2 的标签与附件均保留。此预发行已通过构建与自动化检查，尚未做 iPhone/TauriTavern 真机导入验收。后台自主日程、LLM 手机补充、完整知情边界、全部旧笔记/相册的设备分区等 PR #4 后续内容不计入本次完成范围。
+          '''
+          (root/'release-notes.md').write_text(notes)
+          print('Release byte and ZIP checks passed:',verify['liteCardBytes'],verify['zipBytes'])
+          PY
+      - name: Create only the new rc3 pre-release and upload matching files
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo '::error::rc3 already exists; refusing to replace it'; exit 1
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo '::error::rc3 tag already exists; refusing to move it'; exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            dist/unread-city-lite-tauri.png \
+            dist/unread-city-lite-assets.zip \
+            dist/lite-verification.json \
+            dist/lite-assets-report.json \
+            dist/release-provenance.json \
+            --target "$SOURCE_SHA" --prerelease \
+            --title '未读之城 Lite rc3 · 双主角手机视觉版' \
+            --notes-file dist/release-notes.md
+      - name: Confirm historical release attachments and tags stayed unchanged
+        run: |
+          gh api "repos/$GH_REPO/releases/tags/lite-v0.1.0-rc1" > /tmp/rc1-after.json
+          gh api "repos/$GH_REPO/releases/tags/lite-v0.1.0-rc2" > /tmp/rc2-after.json
+          gh api "repos/$GH_REPO/git/ref/tags/lite-v0.1.0-rc1" > /tmp/rc1-tag-after.json
+          gh api "repos/$GH_REPO/git/ref/tags/lite-v0.1.0-rc2" > /tmp/rc2-tag-after.json
+          python - <<'PY'
+          import json
+          for name in ['rc1','rc2']:
+              before=json.load(open(f'/tmp/{name}-before.json'))
+              after=json.load(open(f'/tmp/{name}-after.json'))
+              assets=lambda r:sorted((a['id'],a['name'],a['size'],a.get('digest')) for a in r['assets'])
+              assert before['id']==after['id'] and assets(before)==assets(after)
+              assert json.load(open(f'/tmp/{name}-tag-before.json'))['object']==json.load(open(f'/tmp/{name}-tag-after.json'))['object']
+          print('RC1 and RC2 release files and tags preserved')
+          PY
