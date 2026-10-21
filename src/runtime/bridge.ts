@@ -8,7 +8,7 @@ import { parseGeneratedStory, STORY_ACTION_LIMITS } from './story-protocol';
 import { loadStoryApiSettings, requestStoryFromCustomApi } from './story-api';
 import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
-import { getServiceTakeawayItem, getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
+import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { campusInteriors } from './campus-interiors';
