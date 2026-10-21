@@ -4,6 +4,7 @@ import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './conven
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
+import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -30,6 +31,8 @@ export interface ProtagonistWorld {
   operations: { id: string; actor: ProtagonistId; owner: ProtagonistId; command: string }[];
   /** Older 1.12 saves receive this lazily at their current world clock. */
   backgroundLife?: BackgroundLife;
+  /** Seven-game-day extractive memories, never a replacement for live state. */
+  weeklyMemory?: WeeklyMemory;
 }
 export type PhoneCommand =
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -71,6 +74,7 @@ export function enableProtagonists(s: WorldState): WorldState {
   if (s.protagonists) {
     const next = clone(s);
     next.protagonists!.backgroundLife ??= initializeBackgroundLife(next);
+    next.protagonists!.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
     return next;
   }
   const point = sceneLandmarks.find(x => x.id === 'downtown')!;
@@ -87,11 +91,12 @@ export function enableProtagonists(s: WorldState): WorldState {
     accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS),
     devices: { soyo: {locked: false, share: 'none', calendar: [], notifications: []}, sakiko: {locked: false, share: 'none', calendar: [], notifications: []} }, orders: [], operations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
+  next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
   return next;
 }
 
 export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState): ProtagonistWorld {
-  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : [])]);
+  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'weeklyMemory') ? ['weeklyMemory'] : [])]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), people = exact(a.people, ['soyo','sakiko']);
   const accounts = makeDualLedger(0, 0); accounts.active = who;
@@ -137,6 +142,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   }));
   const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations};
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy) : initializeBackgroundLife({...base,schema_version:'1.12.0',protagonists:result});
+  result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   return result;
 }
 function isKnownLocation(locationId: string): boolean {
@@ -162,7 +168,10 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   if (elapsed < 0) fail('世界时钟不能倒退');
   const next={...after,schema_version:'1.12.0' as const,protagonists:p};
   settleBackgroundLife(before,next);
-  settlePhoneTime(next); p.revision++; return next;
+  settlePhoneTime(next);
+  captureNewJournalEvidence(before,next);
+  settleWeeklyMemory(next);
+  p.revision++; return next;
 }
 function notify(s: WorldState, owner: ProtagonistId, id: string, text: string, at = gameMinute(s)) {
   const d=s.protagonists!.devices[owner]; if(d.notifications.some(n=>n.id===id)) return;
