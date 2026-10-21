@@ -24,6 +24,7 @@ describe('device-owned phone appearance',()=>{
     expect(s.protagonists!.devices.sakiko.appearance).toEqual(sakiko);
   });
   it('rejects invalid resource choices and changing another device',()=>{
+    expect(()=>parsePhoneAppearance({wallpaper:['plain'],theme:'dark',layout:'daily'})).toThrow();
     expect(()=>parsePhoneAppearance({wallpaper:'https://example.com/a',theme:'dark',layout:'daily'})).toThrow();
     expect(()=>parsePhoneAppearance({wallpaper:'plain',theme:'dark',layout:'daily',url:'file://bad'})).toThrow();
     const s=enableProtagonists(createInitialState());

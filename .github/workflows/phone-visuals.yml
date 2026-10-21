@@ -55,6 +55,8 @@ jobs:
         if: matrix.baseline == 'lite'
         run: |
           python scripts/build_lite_release.py
+          node --test tests/lite-phone-compat.node.mjs
+          python -m unittest discover -s tests -p test_lite_release.py -v
           node --check dist/immersive-shell-lite.js
           python scripts/build_lite_card.py
           python scripts/build_tauri_import_card.py --source dist/unread-city-lite.png --output dist/unread-city-lite-tauri.png
@@ -62,7 +64,7 @@ jobs:
           python scripts/audit_phone_visuals.py --card dist/unread-city-lite-tauri.png --lite
       - run: npx playwright install --with-deps chromium
       - name: Real embedded phone at four desktop and mobile viewports
-        run: npx playwright test tests/e2e/phone-visuals.spec.ts --workers=1 --reporter=line
+        run: npx playwright test tests/e2e/phone-visuals.spec.ts --workers=1 --max-failures=1 --reporter=line
       - name: Preserve review files without publishing or replacing releases
         if: always()
         uses: actions/upload-artifact@v4

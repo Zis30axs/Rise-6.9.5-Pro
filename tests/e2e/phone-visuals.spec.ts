@@ -4,6 +4,8 @@ import {createSelectedInitialState} from './academics-fixture';
 import {withArtPhone} from './downtown-art-fixture';
 import {enableProtagonists} from '../../src/runtime/protagonist-world';
 
+test.use({screenshot:'only-on-failure'});
+
 async function openPhone(page:Page) {
   await page.getByRole('button',{name:'手机',exact:true}).click();
   await expect(page.locator('[data-unread-city-phone-slot]')).toHaveAttribute('data-phone-status','ready',{timeout:20000});
@@ -20,7 +22,7 @@ async function noOverflow(phone:FrameLocator) {
 }
 for(const viewport of [{width:1440,height:900},{width:1280,height:800},{width:390,height:844},{width:320,height:568}]) {
   test(`${viewport.width}x${viewport.height} device art, preferences and switching`,async({page})=>{
-    test.setTimeout(180000);await page.setViewportSize(viewport);
+    test.setTimeout(90000);await page.setViewportSize(viewport);
     const fixture=await withArtPhone(page,enableProtagonists(createSelectedInitialState()));
     const screenshots:string[]=[];
     mkdirSync('outputs/phone-visuals-qa',{recursive:true});

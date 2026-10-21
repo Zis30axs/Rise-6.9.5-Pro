@@ -15,7 +15,7 @@ export interface PhoneAppearance { wallpaper: 'signature' | 'plain'; theme: 'lig
 export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='sakiko'?'dark':'light',layout:'daily'});
 export function parsePhoneAppearance(raw: unknown): PhoneAppearance {
   const a=exact(raw,['wallpaper','theme','layout']);
-  if(!['signature','plain'].includes(String(a.wallpaper))||!['light','dark','system'].includes(String(a.theme))||!['daily','focus'].includes(String(a.layout)))return fail('手机外观无效');
+  if(!['signature','plain'].includes(a.wallpaper as string)||!['light','dark','system'].includes(a.theme as string)||!['daily','focus'].includes(a.layout as string))return fail('手机外观无效');
   return {wallpaper:a.wallpaper as PhoneAppearance['wallpaper'],theme:a.theme as PhoneAppearance['theme'],layout:a.layout as PhoneAppearance['layout']};
 }
 export interface DeviceState { appearance?: PhoneAppearance; locked: boolean; share: 'none' | 'read' | 'write'; calendar: CalendarEvent[]; notifications: PhoneNotification[] }
@@ -201,7 +201,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   const previous=p.operations.find(o=>o.id===requestId);
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
-  if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置锁屏与许可');
+  if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
   const target=personState(s,owner),device=p.devices[owner];
