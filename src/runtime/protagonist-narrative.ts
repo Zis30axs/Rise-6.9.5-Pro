@@ -2,7 +2,6 @@ import type { GeneratedStory, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { backgroundLifeSummary } from './background-life';
-import { weeklyMemoryContext } from './weekly-memory';
 import { activeProtagonist, otherProtagonist, personState, protagonistNames, protagonistsNearby } from './protagonist-world';
 
 const JOURNAL_LIMIT = 100;
@@ -55,7 +54,6 @@ export function narrativeContext(state: WorldState) {
   const recentSources = new Set(recentLife.map(entry => sourceId(entry.id)));
   return {
     owner,
-    weeklyMemory: weeklyMemoryContext(state, owner),
     recentLife,
     knownExchanges: state.journal.filter(entry => /^(shared:|sent:|peek:)/.test(entry.id) && !recentSources.has(sourceId(entry.id))).slice(-3)
       .map(entry => ({ id: entry.id, at: entry.at, text: entry.text.slice(0, 240) })),
