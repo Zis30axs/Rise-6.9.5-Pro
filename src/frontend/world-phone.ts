@@ -1,5 +1,5 @@
 import type { WorldState } from './types';
-import { activeProtagonist, enableProtagonists, gameMinute, otherProtagonist, personState, phoneAccess, protagonistNames, type PhoneCommand } from '../runtime/protagonist-world';
+import { activeProtagonist, defaultPhoneAppearance, enableProtagonists, gameMinute, otherProtagonist, personState, phoneAccess, protagonistNames, type PhoneCommand } from '../runtime/protagonist-world';
 import { locations } from '../runtime/model';
 import { storeCatalog } from '../runtime/convenience-store';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -15,6 +15,7 @@ export function createWorldPhoneApi(options: {
     return JSON.parse(JSON.stringify({
       binding: JSON.stringify([options.session, active]), revision: p.revision,
       active, owner, name: protagonistNames[owner], now: gameMinute(s), clock: s.clock,
+      deviceId: p.accounts.people[owner].deviceId, appearance: d.appearance ?? defaultPhoneAppearance(owner),
       locationId: person.locationId, theme: p.accounts.people[owner].theme,
       cards: p.accounts.people[owner].cards, ledger: p.accounts.ledger.filter(e=>e.actor===owner).slice(-60),
       calendar: d.calendar, dailyPlans: person.schedule, notifications: d.notifications,
@@ -38,3 +39,4 @@ export function createWorldPhoneApi(options: {
     },
   });
 }
+

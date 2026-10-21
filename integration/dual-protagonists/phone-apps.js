@@ -1,6 +1,8 @@
 // Private card-specific apps. Loaded through the existing ST-iPhonie app registry.
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
-const labels = {appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'主角消息'};
+import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
+export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
+const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'主角消息'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
 const time = minutes => `第 ${Math.floor(minutes/1440)+1} 天 ${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
@@ -27,15 +29,17 @@ function worldApp(ctx,id) {
   function render() {
     if(v.disposed)return;
     let html=heading(labels[id],`${data.name} · ${time(data.now)}`,'Unread City');
-    html+='<style>.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-cards{display:grid;gap:12px}.world-card{padding:20px;border-radius:18px;color:#fff;background:linear-gradient(135deg,#35445c,#7287a4)}.world-card.claude{background:linear-gradient(135deg,#9c5a44,#dbad8b)}.world-card.gemini{background:linear-gradient(135deg,#3657ae,#9b72b6)}.world-card strong{display:block;font-size:25px;margin:14px 0}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}</style>';
-    html+=`<p class="hint">${data.name}的手机 · ${data.theme==='sakiko-blue'?'蓝色主题':'暖色主题'}</p>`;
+    html+='<style>.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}</style>';
+    const identity=worldDeviceHeading(data), appearance=worldAppearance(data);
+    html+=`<div class="world-device-header"><div><strong>${esc(identity.device)}</strong><small>${esc(identity.title)}</small></div></div>`;
+    if(id==='worldstyle')html+=`<div class="group pad world-appearance"><p class="hint">外观保存在这台手机的剧情存档中。</p>${field('壁纸',`<select data-world-field="wallpaper">${options([['signature',identity.title],['plain','纯色']],appearance.wallpaper)}</select>`)}${field('界面主题',`<select data-world-field="theme">${options([['light','日间'],['dark','夜间'],['system','跟随系统']],appearance.theme)}</select>`)}${field('应用排列',`<select data-world-field="layout">${options([['daily','日常'],['focus','专注']],appearance.layout)}</select>`)}${btn('appearance','保存外观','primary')}</div>`;
     if(pending) html+=`<div class="world-notice">${btn('retry','重试保存','secondary')}${btn('discard','取消本次操作','text-button')}</div>`;
     if(id==='worldpeek'&&!peek){
       html+=`<div class="group pad"><h3>${esc(data.other.name)}的手机</h3><p>${esc(data.other.reason||'手机在身边，可以选择查看内容。')}</p><p class="hint">读取与代操作会留下记录。锁屏和许可由手机主人设置。</p><div class="world-tabs">${['wallet','calendar','orders','messages'].map(x=>btn('inspect',({wallet:'Appie Pay',calendar:'日历',orders:'订单',messages:'消息'})[x],'secondary',`data-section="${x}" ${data.other.read?'':'disabled'}`)).join('')}</div></div>`;
     } else {
       if(id==='worldpeek')html+=`<p class="world-notice">正在查看${esc(data.name)}的真实手机记录。${btn('own','返回自己的手机','text-button')}</p><div class="world-tabs">${['wallet','calendar','orders','messages'].map(x=>btn('inspect',({wallet:'Appie Pay',calendar:'日历',orders:'订单',messages:'消息'})[x],'secondary',`data-section="${x}"`)).join('')}</div>`;
       if(section==='appie'||section==='wallet') {
-        html+=`<div class="wallet-card"><small>Appie Pay · 游戏账户</small><strong>${money(total(data))}</strong></div><div class="world-cards">${Object.entries(cardNames).map(([key,label])=>`<article class="world-card ${key}"><small>${label}</small><strong>${money(data.cards[key])}</strong><span>${esc(data.name)}</span></article>`).join('')}</div><details class="group pad"><summary>卡间转账</summary><div class="world-form">${field('转出卡',`<select data-world-field="from">${cards()}</select>`)}${field('转入卡',`<select data-world-field="to">${options(Object.entries(cardNames),'claude')}</select>`)}${field('金额（元）','<input data-world-field="amount" type="number" min="0.01" step="0.01">')}${btn('transfer','确认转账','primary')}</div></details><div class="group">${[...data.ledger].reverse().map(e=>`<article class="world-event"><b>${esc(e.note)}</b><p>${money(e.deltaCents)} · ${cardNames[e.card]}</p></article>`).join('')||'<p class="hint">暂无流水</p>'}</div>`;
+        html+=`<div class="wallet-card"><small>Appie Pay · 游戏账户</small><strong>${money(total(data))}</strong></div><div class="world-cards">${Object.entries(cardNames).map(([key,label])=>`<article class="world-card ${key}" data-card-owner="${data.owner}" aria-label="${esc(data.name)}的${label}"><span class="world-card-art" style='background-image:${worldCardArt(data.owner,key)}' aria-hidden="true"></span><div class="world-card-brand"><span>${label}</span><small>APPIE PAY</small></div><strong class="world-card-balance">${money(data.cards[key])}</strong><div class="world-card-holder"><span>${esc(data.name)}<small> · 游戏账户</small></span><span>•• ${data.owner==='sakiko'?'0202':'0101'} · ${key.toUpperCase()}</span></div></article>`).join('')}</div><details class="group pad"><summary>卡间转账</summary><div class="world-form">${field('转出卡',`<select data-world-field="from">${cards()}</select>`)}${field('转入卡',`<select data-world-field="to">${options(Object.entries(cardNames),'claude')}</select>`)}${field('金额（元）','<input data-world-field="amount" type="number" min="0.01" step="0.01">')}${btn('transfer','确认转账','primary')}</div></details><div class="group">${[...data.ledger].reverse().map(e=>`<article class="world-event"><b>${esc(e.note)}</b><p>${money(e.deltaCents)} · ${cardNames[e.card]}</p></article>`).join('')||'<p class="hint">暂无流水</p>'}</div>`;
       }
       if(section==='worldshop'||section==='worlddelivery') {
         const delivery=section==='worlddelivery';
@@ -52,6 +56,7 @@ function worldApp(ctx,id) {
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
     switch(el.dataset.action){
+      case 'appearance':if(await act({type:'appearance',appearance:{wallpaper:formValue('wallpaper'),theme:formValue('theme'),layout:formValue('layout')}}))ctx.win.stTtsPhone?.home?.(true);break;
       case 'retry': await act(pending.command,pending.owner);break;
       case 'discard':pending=null;data=base();peek=false;section=id;render();break;
       case 'own':refresh();break;
@@ -71,11 +76,3 @@ function worldApp(ctx,id) {
   v.refresh();return v;
 }
 export const worldPhoneFactories=Object.fromEntries(Object.keys(labels).map(id=>[id,ctx=>worldApp(ctx,id)]));
-export function applyWorldPhoneTheme(screen) {
-  try {
-    const s=screen.ownerDocument.defaultView.parent.__unreadCityWorldPhone?.read();if(!s)return;
-    screen.dataset.worldOwner=s.active;
-    screen.style.setProperty('--wall',s.active==='sakiko'?'linear-gradient(145deg,#172c50,#7896c4)':'linear-gradient(145deg,#d8b9a4,#f1dcc4)');
-    screen.style.setProperty('--wall-ink',s.active==='sakiko'?'#fff':'#483c35');
-  } catch {}
-}
