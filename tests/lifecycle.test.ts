@@ -1,7 +1,9 @@
 import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Bridge, GeneratedStory } from '../src/frontend/types';
-import { acknowledgePhoneRead, createInitialState } from '../src/runtime/model';
+import { acknowledgePhoneRead, applyStoryActions, createInitialState } from '../src/runtime/model';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { recordWeeklyStory, weeklyMemoryContext } from '../src/runtime/weekly-memory';
 
 const component = vi.hoisted(() => ({ fail: false }));
 vi.mock('../src/frontend/App.vue', async () => {
@@ -229,6 +231,51 @@ describe('interaction progress and event choices', () => {
 });
 
 describe('Immersive Shell 生命周期', () => {
+  function weeklyFixture() {
+    const initial = enableProtagonists(createInitialState());
+    recordWeeklyStory(initial, 'soyo', 'saved-week', '素世保存了一段日常经历。');
+    const state = applyStoryActions(initial, [{ type: 'rest', kind: 'wait', minutes: 7 * 1440 }], 'close-week');
+    const f = fixture();
+    f.bridge.load = () => state;
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    return f;
+  }
+
+  it('retains pending weekly evidence after invalid output and save failure, then retries atomically', async () => {
+    const f = weeklyFixture();
+    const before = JSON.stringify(handle!.model.state);
+    const evidence = structuredClone(weeklyMemoryContext(handle!.model.state).pending);
+    expect(evidence?.week).toBe(1);
+    const invalid = handle!.actions.send('继续这一周的生活');
+    f.finishReply({ text: '继续。', phoneMessages: [], weeklySummary: { week: 2, text: '错误周次。' } });
+    await invalid;
+    expect(JSON.stringify(handle!.model.state)).toBe(before);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    const reply: GeneratedStory = { text: '新一周开始了。', phoneMessages: [], weeklySummary: { week: 1, text: '两人的一周已被整理，秘密仍未彼此公开。' } };
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('周报保存失败'); });
+    const failed = handle!.actions.send('继续这一周的生活'); f.finishReply(reply); await failed;
+    expect(handle!.model.notice).toBe('周报保存失败');
+    expect(JSON.stringify(handle!.model.state)).toBe(before);
+    expect(weeklyMemoryContext(handle!.model.state).pending).toEqual(evidence);
+    const retried = handle!.actions.send('继续这一周的生活'); f.finishReply(reply); await retried;
+    expect(weeklyMemoryContext(handle!.model.state).pending).toBeNull();
+    expect(weeklyMemoryContext(handle!.model.state).summaries).toEqual([{ week: 1, text: reply.weeklySummary!.text }]);
+    expect(handle!.model.state.story.filter(row => row.text === reply.text)).toHaveLength(1);
+    expect(f.bridge.save).toHaveBeenCalledTimes(2);
+  });
+
+  it('discards a late weekly summary after a chat switch without consuming its evidence', async () => {
+    const f = weeklyFixture();
+    const before = JSON.stringify(handle!.model.state);
+    const pending = handle!.actions.send('继续');
+    f.change();
+    f.finishReply({ text: '迟到的正文。', phoneMessages: [], weeklySummary: { week: 1, text: '迟到的摘要。' } });
+    await pending;
+    expect(JSON.stringify(handle!.model.state)).toBe(before);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    expect(f.bridge.cancel).toHaveBeenCalled();
+  });
+
   it('model sleep, narrative and phone commit together only after save; retry and refresh do not duplicate the action', async () => {
     const f = fixture(); handle = mountShell(window, window, f.bridge, vi.fn());
     const before = JSON.stringify(handle.model.state);

@@ -374,9 +374,12 @@ describe('chat-owned Tavern-Helper bridge', () => {
     expect(summary.actionCatalog.adjacentLocations[0]).toMatchObject({ id: 'dorm-room', kind: 'enter' });
     expect(summary.actionCatalog.storeItems.length).toBeGreaterThan(0);
     expect(summary.actionCatalog.services).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'] })]));
-    expect(summary.actionCatalog.services.find((service: { id: string }) => service.id === 'drink-coffee').takeawayItem.id).toBe('takeaway-drink-coffee');
+    expect(summary.actionCatalog.services.find((service: { id: string }) => service.id === 'drink-coffee')).toEqual({ id: 'drink-coffee', label: expect.any(String), locationIds: ['cafe', 'street-cafe'] });
     expect(summary.actionCatalog.packagingFeePerItem).toBe(2);
-    expect(summary.actionCatalog.subjects).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'cs-programming' })]));
+    expect(summary.actionCatalog.subjects).toEqual([]);
+    await bridge.generate('看看学习课程', state);
+    const studySummary = JSON.parse((mock.api.generate.mock.calls.at(-1)![0].user_input as string).split('\n')[1]!);
+    expect(studySummary.actionCatalog.subjects).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'cs-programming' })]));
     expect(summary.schedule).toEqual(state.schedule);
     expect(JSON.stringify(state)).toBe(before);
     expect(mock.api.replaceVariables).not.toHaveBeenCalled();
@@ -409,6 +412,9 @@ describe('chat-owned Tavern-Helper bridge', () => {
     await bridge.generate('继续故事', studied);
     config = mock.api.generate.mock.calls.at(-1)![0];
     expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics).toMatchObject({ totalPoints: 15, subjects: [{ subjectId: 'cs-programming', points: 15, remaining: 105 }, { subjectId: 'cs-algorithms', points: 0 }, { subjectId: 'cs-networks', points: 0 }], lastGain: { points: 15, totalPoints: 15, outcome: 'normal', channel: 'classroom', interactionId: 'classroom-notes' } });
+    expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics.timetable).toEqual([]);
+    await bridge.generate('查看课表', studied);
+    config = mock.api.generate.mock.calls.at(-1)![0];
     expect(JSON.parse((config.user_input as string).split('\n')[1]!).academics.timetable).toHaveLength(6);
     expect((config.injects as { content: string }[])[0].content).toContain('不重复奖励');
     expect((config.injects as { content: string }[])[0].content).toContain('各有独立学习点');

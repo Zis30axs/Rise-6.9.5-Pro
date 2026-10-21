@@ -19,7 +19,7 @@ export const PROMPT_CONTEXT_LIMITS = {
 
 // Both patterns require a recognisable, balanced wrapper. Ordinary quotes,
 // JSON embedded in prose, dialogue tags and the player's request are untouched.
-const MACHINE_TAG = /<unread_city_(?:state|variables)>[\s\S]*?<\/unread_city_(?:state|variables)>/gi;
+const MACHINE_TAG = /<unread_city_(state|variables)>[\s\S]*?<\/unread_city_\1>/gi;
 const MACHINE_FENCE = /```(?:unread_city_state|unread_city_variables)[ \t]*\r?\n[\s\S]*?\r?\n```/gi;
 
 export function pruneVariableEcho(savedText: string): string {

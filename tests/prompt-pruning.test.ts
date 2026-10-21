@@ -1,13 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTavernBridge } from '../src/runtime/bridge';
-import { createInitialState } from '../src/runtime/model';
+import { applyStoryActions, createInitialState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { recordWeeklyStory } from '../src/runtime/weekly-memory';
 import {
   promptTopicHints, pruneVariableEcho, selectPromptJournal, selectPromptPhone,
   selectPromptStory,
 } from '../src/runtime/prompt-pruning';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+function tavernFixture() {
+  const context = {
+    characterId: 0, groupId: null, chatId: 'prompt-pruning-test', mainApi: 'openai',
+    characters: [{ avatar: 'test.png' }], getCurrentChatId: () => context.chatId,
+  };
+  const api = {
+    parent: { SillyTavern: { getContext: () => context } },
+    tavern_events: { CHAT_CHANGED: 'chat_changed' },
+    getVariables: vi.fn(() => ({})), replaceVariables: vi.fn(),
+    eventOn: vi.fn(), eventRemoveListener: vi.fn(),
+    generate: vi.fn(async (_config: { user_input: string; max_chat_history: number; injects: { content: string }[] }) => '<story>她看向夜色。</story><phone_messages>[]</phone_messages>'),
+    stopGenerationById: vi.fn(() => true),
+  };
+  return { api, bridge: createTavernBridge(api as unknown as Window)! };
+}
 
 describe('bounded prompt context and regex variable pruning', () => {
   it('removes only explicit machine-state wrappers, not quotes or free-form dialogue', () => {
@@ -20,6 +37,8 @@ describe('bounded prompt context and regex variable pruning', () => {
     expect(pruned).toContain('{"ordinary":true}');
     expect(pruned).not.toMatch(/SECRET_MACHINE_ECHO|SECOND_ECHO/);
     expect(pruneVariableEcho('玩家真的说了 <variables> 这样的字符。')).toContain('<variables>');
+    const mismatched = '<unread_city_state>保留不完整的原文</unread_city_variables>';
+    expect(pruneVariableEcho(mismatched)).toBe(mismatched);
   });
 
   it('keeps the most recent story/phone records bounded and deduplicates journal sources', () => {
@@ -46,18 +65,7 @@ describe('bounded prompt context and regex variable pruning', () => {
   });
 
   it('uses the actual Tavern bridge with compact catalog and single self-contained prompt', async () => {
-    const context = {
-      characterId: 0, groupId: null, chatId: 'prompt-pruning-test', mainApi: 'openai',
-      characters: [{ avatar: 'test.png' }], getCurrentChatId: () => context.chatId,
-    };
-    const api = {
-      parent: { SillyTavern: { getContext: () => context } },
-      tavern_events: { CHAT_CHANGED: 'chat_changed' },
-      getVariables: vi.fn(() => ({})), replaceVariables: vi.fn(),
-      eventOn: vi.fn(), eventRemoveListener: vi.fn(),
-      generate: vi.fn(async (_config: { user_input: string; max_chat_history: number }) => '<story>她看向夜色。</story><phone_messages>[]</phone_messages>'),
-      stopGenerationById: vi.fn(() => true),
-    };
+    const { api, bridge } = tavernFixture();
     const state = enableProtagonists(createInitialState());
     state.journal.push({ id: 'machine:echo', at: '第 1 天 17:20',
       text: '<unread_city_state>SUPER_REPEATED_VAR_SENTINEL</unread_city_state>' });
@@ -66,11 +74,10 @@ describe('bounded prompt context and regex variable pruning', () => {
         read: i < 15, at: '第 1 天 17:20' });
     }
     const before = structuredClone(state);
-    const bridge = createTavernBridge(api as unknown as Window)!;
     try {
       await bridge.generate('抬头看看夜空', state);
       expect(api.generate).toHaveBeenCalledTimes(1);
-      const config = api.generate.mock.calls[0][0] as {user_input: string; max_chat_history: number};
+      const config = api.generate.mock.calls[0][0];
       expect(config.max_chat_history).toBe(0);
       const summary = JSON.parse(config.user_input.split('\n')[1]);
       expect(summary.protagonist.id).toBe('soyo');
@@ -84,6 +91,29 @@ describe('bounded prompt context and regex variable pruning', () => {
       expect(summary.actionCatalog.subjects).toEqual([]);
       expect(summary.contacts.every((p: object) => !Object.keys(p).includes('balance'))).toBe(true);
       expect(JSON.stringify(state)).toBe(JSON.stringify(before));
+      expect(api.replaceVariables).not.toHaveBeenCalled();
+    } finally { bridge.dispose(); }
+  });
+
+  it('sends both owners to the author in one request without projecting their secrets into character knowledge', async () => {
+    const { api, bridge } = tavernFixture();
+    const initial = enableProtagonists(createInitialState());
+    recordWeeklyStory(initial, 'soyo', 'private-soyo', 'SOYO_SECRET：她私下写了一页笔记。');
+    recordWeeklyStory(initial, 'sakiko', 'private-sakiko', 'SAKIKO_SECRET：她藏起了信。');
+    const state = applyStoryActions(initial, [{ type: 'rest', kind: 'wait', minutes: 7 * 1440 }], 'pending-week');
+    const before = structuredClone(state);
+    try {
+      await bridge.generate('继续', state);
+      expect(api.generate).toHaveBeenCalledTimes(1);
+      const config = api.generate.mock.calls[0][0];
+      const context = JSON.parse(config.user_input.split('\n')[1]);
+      expect(JSON.stringify(context.weeklyMemory.pending)).toMatch(/SOYO_SECRET/);
+      expect(JSON.stringify(context.weeklyMemory.pending)).toMatch(/SAKIKO_SECRET/);
+      expect(JSON.stringify(context.narrative)).not.toMatch(/SOYO_SECRET|SAKIKO_SECRET/);
+      expect(config.injects[0].content).toContain('不得把全知信息自动当作任一角色已知事实');
+      expect(config.injects[0].content).toContain('<weekly_summary>');
+      expect(config.max_chat_history).toBe(0);
+      expect(state).toEqual(before);
       expect(api.replaceVariables).not.toHaveBeenCalled();
     } finally { bridge.dispose(); }
   });

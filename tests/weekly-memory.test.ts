@@ -4,6 +4,7 @@ import { enableProtagonists, gameMinute } from '../src/runtime/protagonist-world
 import { applyWeeklySummary, createWeeklyMemory, parseWeeklyMemory, recordWeeklyEvidence,
   recordWeeklyStory, settleWeeklyMemory, weeklyMemoryContext } from '../src/runtime/weekly-memory';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
+import { narrativeContext, protagonistRecap } from '../src/runtime/protagonist-narrative';
 
 const dual = () => enableProtagonists(createInitialState());
 
@@ -32,6 +33,53 @@ describe('omniscient 7-game-day story memory', () => {
     expect(weeklyMemoryContext(state).pending).toBeNull();
     expect(state.protagonists!.weeklyMemory!.closed[0].evidence).toEqual([]);
     expect(state.protagonists!.weeklyMemory!.closed[0].sources).toContain('soyo:soyo-secret');
+    expect(parseWeeklyMemory(state.protagonists!.weeklyMemory, state.clock)).toEqual(state.protagonists!.weeklyMemory);
+  });
+
+  it('closes exactly at day 8 midnight and skips empty weeks during long jumps', () => {
+    const state = dual();
+    recordWeeklyStory(state, 'soyo', 'boundary', '第七天前保存的经历。');
+    state.clock = { day: 7, hour: 23, minute: 59 }; settleWeeklyMemory(state);
+    expect(weeklyMemoryContext(state).pending).toBeNull();
+    state.clock = { day: 8, hour: 0, minute: 0 }; settleWeeklyMemory(state);
+    expect(weeklyMemoryContext(state).pending?.week).toBe(1);
+    const evidence = structuredClone(weeklyMemoryContext(state).pending);
+    settleWeeklyMemory(state);
+    state.clock = { day: 29, hour: 0, minute: 0 }; settleWeeklyMemory(state);
+    expect(weeklyMemoryContext(state).pending).toEqual(evidence);
+    expect(state.protagonists!.weeklyMemory!.closed.map(w => w.week)).toEqual([1]);
+    expect(state.protagonists!.weeklyMemory!.openWeek).toBe(5);
+  });
+
+  it('does not invent completed weeks when migrating a late legacy save', () => {
+    const state = dual();
+    const clock = { day: 22, hour: 13, minute: 40 };
+    const legacy = { ...state, schema_version: '1.11.0', clock };
+    delete legacy.protagonists;
+    const restored = enableProtagonists(parseState(legacy));
+    expect(restored.protagonists!.weeklyMemory).toEqual(createWeeklyMemory(gameMinute(restored)));
+    expect(weeklyMemoryContext(restored)).toEqual({ summaries: [], pending: null });
+  });
+
+  it('keeps character journals, recaps and knowledge unchanged by an omniscient summary', () => {
+    const state = dual();
+    recordWeeklyStory(state, 'sakiko', 'private', 'SAKIKO_SECRET：一封尚未公开的信。');
+    state.clock = { day: 8, hour: 0, minute: 0 }; settleWeeklyMemory(state);
+    const narrative = narrativeContext(state);
+    const recap = protagonistRecap(state);
+    const journal = structuredClone(state.journal);
+    applyWeeklySummary(state, { week: 1, text: 'SAKIKO_SECRET：祥子独自保管着一封信，素世并不知情。' });
+    expect(weeklyMemoryContext(state).summaries[0].text).toContain('SAKIKO_SECRET');
+    expect(narrativeContext(state)).toEqual(narrative);
+    expect(protagonistRecap(state)).toEqual(recap);
+    expect(state.journal).toEqual(journal);
+    expect(JSON.stringify([state.journal, narrativeContext(state)])).not.toContain('SAKIKO_SECRET');
+  });
+
+  it('round-trips provenance for the longest accepted event ID', () => {
+    const state = dual();
+    recordWeeklyEvidence(state, 'sakiko', { id: 'a'.repeat(128), at: gameMinute(state), text: '合法来源。' });
+    state.clock = { day: 8, hour: 0, minute: 0 }; settleWeeklyMemory(state);
     expect(parseWeeklyMemory(state.protagonists!.weeklyMemory, state.clock)).toEqual(state.protagonists!.weeklyMemory);
   });
 

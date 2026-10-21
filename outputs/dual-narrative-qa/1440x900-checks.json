@@ -1,0 +1,122 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "summaries": [
+    {
+      "owner": "sakiko",
+      "clock": {
+        "day": 1,
+        "hour": 18,
+        "minute": 20
+      },
+      "eventIds": [
+        "bg:sakiko:1050:calendar",
+        "bg:sakiko:1065:routine"
+      ],
+      "panelBox": {
+        "x": 275,
+        "y": 96,
+        "width": 890,
+        "height": 750
+      },
+      "dockBox": {
+        "x": 1340,
+        "y": 285,
+        "width": 76,
+        "height": 330
+      },
+      "overflow": {
+        "horizontal": 0,
+        "height": 2802,
+        "viewport": 695
+      },
+      "scroll": {
+        "top": 2107,
+        "height": 2802,
+        "viewport": 695
+      },
+      "textMetrics": [
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        }
+      ]
+    },
+    {
+      "owner": "soyo",
+      "clock": {
+        "day": 1,
+        "hour": 19,
+        "minute": 20
+      },
+      "eventIds": [
+        "dual:bg:soyo:1110:message",
+        "bg:soyo:1110:calendar",
+        "bg:soyo:1125:calendar",
+        "bg:soyo:1140:calendar"
+      ],
+      "panelBox": {
+        "x": 275,
+        "y": 96,
+        "width": 890,
+        "height": 750
+      },
+      "dockBox": {
+        "x": 1340,
+        "y": 285,
+        "width": 76,
+        "height": 330
+      },
+      "overflow": {
+        "horizontal": 0,
+        "height": 3689,
+        "viewport": 695
+      },
+      "scroll": {
+        "top": 2994,
+        "height": 3689,
+        "viewport": 695
+      },
+      "textMetrics": [
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        },
+        {
+          "width": 0,
+          "fontSize": 12
+        }
+      ]
+    }
+  ],
+  "generationCount": 3,
+  "modelRequests": [],
+  "extensionResources": [],
+  "errors": []
+}
