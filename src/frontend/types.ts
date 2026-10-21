@@ -201,6 +201,7 @@ export interface GeneratedStory {
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];
   worldActions?: StoryAction[];
+  weeklySummary?: { week: number; text: string };
 }
 
 export type StoryGenerationOptions = {
