@@ -31,7 +31,7 @@ function text(value: unknown, max: number, path: string): string {
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -50,6 +50,14 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
       return { type: 'airliner_pass' };
     });
   }
+  if (Object.prototype.hasOwnProperty.call(result, 'weeklySummary')) {
+    const week = record(result.weeklySummary, ['week', 'text'], '七日摘要');
+    if (typeof week.week !== 'number' || !Number.isSafeInteger(week.week) || week.week < 1) return invalid('七日摘要周次');
+    const summary = text(week.text, 1800, '七日摘要正文');
+    const pending = state.protagonists?.weeklyMemory?.closed.find(w => w.summary === null);
+    if (!pending || pending.week !== week.week) return invalid('七日摘要必须对应等待总结的周期');
+    parsed.weeklySummary = { week: week.week, text: summary };
+  }
   return parsed;
 }
 
@@ -59,9 +67,9 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
  * The model's actions still pass the exact same whitelist validator as JSON.
  */
 function parseTaggedStory(source: string): Record<string, unknown> | null {
-  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events)>([\s\S]*?)<\/\1>/gi)];
+  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary)>([\s\S]*?)<\/\1>/gi)];
   if (!matches.length) return null;
-  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events)>/gi)];
+  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary)>/gi)];
   if (tokens.length !== matches.length * 2) return invalid('关键标签重复或未闭合');
   const blocks = new Map<string, string>();
   let end = 0;
@@ -86,6 +94,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     phone_messages: jsonArray('phone_messages'),
     ...(blocks.has('world_actions') ? { world_actions: jsonArray('world_actions') } : {}),
     ...(blocks.has('world_events') ? { world_events: jsonArray('world_events') } : {}),
+    ...(blocks.has('weekly_summary') ? { weekly_summary: (() => { try { return JSON.parse(blocks.get('weekly_summary')!); } catch { return invalid('weekly_summary 必须为 JSON 对象'); } })() } : {}),
   };
 }
 
@@ -101,9 +110,10 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
   if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
-  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions']);
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'weekly_summary') ? { weeklySummary: envelope.weekly_summary } : {}),
   }, state);
 }
