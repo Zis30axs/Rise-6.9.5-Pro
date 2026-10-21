@@ -1,12 +1,12 @@
 import {describe,expect,it} from 'vitest';
-import {createInitialState,parseWorldState,reduceState} from '../src/runtime/model';
+import {createInitialState,parseState,reduceState} from '../src/runtime/model';
 import {defaultPhoneAppearance,enableProtagonists,parsePhoneAppearance,personalState} from '../src/runtime/protagonist-world';
 import {createWorldPhoneApi} from '../src/frontend/world-phone';
 
 describe('device-owned phone appearance',()=>{
   it('reads old PR4 saves without adding fields or changing balances',()=>{
     const old=enableProtagonists(createInitialState()), copy=structuredClone(old);
-    const parsed=parseWorldState(JSON.parse(JSON.stringify(old)));
+    const parsed=parseState(JSON.parse(JSON.stringify(old)));
     expect(parsed).toEqual(copy);
     expect(defaultPhoneAppearance('soyo').theme).toBe('light');
     expect(defaultPhoneAppearance('sakiko').theme).toBe('dark');
@@ -18,7 +18,7 @@ describe('device-owned phone appearance',()=>{
     s=reduceState(s,{type:'phone_app',owner:'soyo',requestId:'visual-soyo',command:{type:'appearance',appearance:soyo}});
     s=reduceState(s,{type:'switch_protagonist',target:'sakiko'});
     s=reduceState(s,{type:'phone_app',owner:'sakiko',requestId:'visual-sakiko',command:{type:'appearance',appearance:sakiko}});
-    s=parseWorldState(JSON.parse(JSON.stringify(s)));
+    s=parseState(JSON.parse(JSON.stringify(s)));
     s=reduceState(s,{type:'switch_protagonist',target:'soyo'});
     expect(s.protagonists!.devices.soyo.appearance).toEqual(soyo);
     expect(s.protagonists!.devices.sakiko.appearance).toEqual(sakiko);
