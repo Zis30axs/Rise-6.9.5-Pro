@@ -3,22 +3,32 @@ import type { ProtagonistId } from './dual-protagonists';
 import { pruneVariableEcho } from './prompt-pruning';
 
 /**
- * Extractive, provenance-bound seven-game-day memory. This is a compact record
- * of saved events, NOT an LLM-written fact and never an authority for balances,
- * locations, actions or phone delivery.
+ * One omniscient world-level archive. Evidence identifies who experienced each
+ * event, but summaries are authored by the existing story LLM for BOTH people.
+ * The archive is never authoritative for balances, locations, decisions or
+ * material that an individual protagonist has actually learned.
  */
-export interface WeeklyEvidence { id: string; at: number; text: string }
-export interface ClosedWeek { week: number; text: string; sources: string[] }
-export interface PersonWeeklyMemory { openWeek: number; entries: WeeklyEvidence[]; closed: ClosedWeek[] }
+export interface WeeklyEvidence { id: string; owner: ProtagonistId; at: number; text: string }
+export interface ClosedWeek {
+  week: number;
+  /** Kept until the story LLM summarizes this week; then compacted away. */
+  evidence: WeeklyEvidence[];
+  summary: string | null;
+  sources: string[];
+}
 export interface WeeklyMemory {
   version: 1;
   startedAt: number;
-  people: Record<ProtagonistId, PersonWeeklyMemory>;
+  openWeek: number;
+  entries: WeeklyEvidence[];
+  closed: ClosedWeek[];
 }
 
 const WEEK_MINUTES = 7 * 1440;
-const OPEN_LIMIT = 49;
+const OPEN_LIMIT = 56;
+const DAILY_LIMIT = 8;
 const CLOSED_LIMIT = 12;
+const CLOSED_EVIDENCE_LIMIT = 28;
 const SUMMARY_LIMIT = 1800;
 const EVENT_TEXT_LIMIT = 180;
 const weekAt = (at: number) => Math.floor(at / WEEK_MINUTES) + 1;
@@ -28,10 +38,8 @@ const idPattern = /^[A-Za-z0-9][\w:.-]{0,127}$/;
 const timePattern = /^第 (\d+) 天 (\d{2}):(\d{2})$/;
 
 export function createWeeklyMemory(at: number): WeeklyMemory {
-  const person = (): PersonWeeklyMemory => ({ openWeek: weekAt(at), entries: [], closed: [] });
-  return { version: 1, startedAt: at, people: { soyo: person(), sakiko: person() } };
+  return { version: 1, startedAt: at, openWeek: weekAt(at), entries: [], closed: [] };
 }
-
 function error(): never { throw new Error('双主角状态：七日记忆无效，原存档已保留。'); }
 function object(x: unknown, keys: string[]): Record<string, unknown> {
   if (!x || typeof x !== 'object' || Array.isArray(x)
@@ -41,54 +49,57 @@ function object(x: unknown, keys: string[]): Record<string, unknown> {
 function int(x: unknown, min: number, max: number): number {
   return typeof x === 'number' && Number.isSafeInteger(x) && x >= min && x <= max ? x : error();
 }
-function text(x: unknown, max: number): string {
+function safeText(x: unknown, max: number): string {
   return typeof x === 'string' && !!x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x : error();
 }
-function identity(x: unknown): string {
-  return typeof x === 'string' && idPattern.test(x) ? x : error();
-}
+function identity(x: unknown): string { return typeof x === 'string' && idPattern.test(x) ? x : error(); }
+function ownerId(x: unknown): ProtagonistId { return x === 'soyo' || x === 'sakiko' ? x : error(); }
 function list<T>(x: unknown, max: number, parse: (item: unknown) => T): T[] {
   return Array.isArray(x) && x.length <= max ? x.map(parse) : error();
 }
+const key = (e: WeeklyEvidence) => e.owner + ':' + e.id;
+function evidenceList(raw: unknown, max: number, start: number, end: number, week: number): WeeklyEvidence[] {
+  const entries = list(raw, max, rawEntry => {
+    const e = object(rawEntry, ['id', 'owner', 'at', 'text']);
+    const at = int(e.at, start, end);
+    if (weekAt(at) !== week) return error();
+    return { id: identity(e.id), owner: ownerId(e.owner), at, text: safeText(e.text, EVENT_TEXT_LIMIT) };
+  });
+  if (new Set(entries.map(key)).size !== entries.length) return error();
+  return entries;
+}
 
-/** Old 1.12 saves without this optional block initialize at their current time. */
+/** Legacy 1.12 saves lacking the optional memory block initialize at now. */
 export function parseWeeklyMemory(raw: unknown, clock: WorldState['clock']): WeeklyMemory {
-  const row = object(raw, ['version', 'startedAt', 'people']);
+  const row = object(raw, ['version', 'startedAt', 'openWeek', 'entries', 'closed']);
   if (row.version !== 1) return error();
   const now = nowMinute(clock);
   const startedAt = int(row.startedAt, 0, now);
-  const people = object(row.people, ['soyo', 'sakiko']);
-  const person = (rawPerson: unknown): PersonWeeklyMemory => {
-    const p = object(rawPerson, ['openWeek', 'entries', 'closed']);
-    const openWeek = int(p.openWeek, weekAt(startedAt), weekAt(now));
-    const entries = list(p.entries, OPEN_LIMIT, rawEntry => {
-      const e = object(rawEntry, ['id', 'at', 'text']);
-      const at = int(e.at, startedAt, now);
-      if (weekAt(at) !== openWeek) return error();
-      return { id: identity(e.id), at, text: text(e.text, EVENT_TEXT_LIMIT) };
-    });
-    if (new Set(entries.map(e => e.id)).size !== entries.length) return error();
-    const closed = list(p.closed, CLOSED_LIMIT, rawWeek => {
-      const w = object(rawWeek, ['week', 'text', 'sources']);
-      const week = int(w.week, weekAt(startedAt), openWeek - 1);
-      const sources = list(w.sources, OPEN_LIMIT, identity);
-      if (new Set(sources).size !== sources.length) return error();
-      return { week, text: text(w.text, SUMMARY_LIMIT), sources };
-    });
-    if (new Set(closed.map(w => w.week)).size !== closed.length
-      || closed.some((w, i) => i > 0 && closed[i - 1].week >= w.week)) return error();
-    return { openWeek, entries, closed };
-  };
-  return { version: 1, startedAt, people: { soyo: person(people.soyo), sakiko: person(people.sakiko) } };
+  const openWeek = int(row.openWeek, weekAt(startedAt), weekAt(now));
+  const entries = evidenceList(row.entries, OPEN_LIMIT, startedAt, now, openWeek);
+  const closed = list(row.closed, CLOSED_LIMIT, rawWeek => {
+    const w = object(rawWeek, ['week', 'evidence', 'summary', 'sources']);
+    const week = int(w.week, weekAt(startedAt), openWeek - 1);
+    const evidence = evidenceList(w.evidence, CLOSED_EVIDENCE_LIMIT, startedAt, now, week);
+    const sources = list(w.sources, CLOSED_EVIDENCE_LIMIT, identity);
+    if (new Set(sources).size !== sources.length) return error();
+    const summary = w.summary === null ? null : safeText(w.summary, SUMMARY_LIMIT);
+    if ((summary === null && (!evidence.length || !sources.length))
+      || (summary !== null && evidence.length !== 0)) return error();
+    if (summary === null && sources.join('|') !== evidence.map(key).join('|')) return error();
+    return { week, evidence, summary, sources };
+  });
+  if (new Set(closed.map(w => w.week)).size !== closed.length
+    || closed.some((w, i) => i > 0 && closed[i - 1].week >= w.week)) return error();
+  return { version: 1, startedAt, openWeek, entries, closed };
 }
 
-/** Restrict regex cleanup to formatting. No claimed facts are inferred or modified. */
+/** Formatting cleanup only: never infer facts or modify the original source. */
 export function evidenceText(source: string): string {
   return pruneVariableEcho(source)
     .replace(/\|([^|\n]{1,40})\|([^|\n]{1,20})\|([^|\n]{1,300})\|/g, '$1说：“$3”')
     .replace(/[\r\n\t ]+/g, ' ').trim();
 }
-
 function importance(entry: WeeklyEvidence): number {
   if (/和解|决裂|告白|家庭|重大决定|毕业|退学|答应|拒绝/.test(entry.text)) return 6;
   if (/^(shared:|sent:|peek:)/.test(entry.id)) return 5;
@@ -98,96 +109,79 @@ function importance(entry: WeeklyEvidence): number {
 }
 function evictLowest(rows: WeeklyEvidence[]): void {
   if (!rows.length) return;
-  let index = 0;
+  let at = 0;
   for (let i = 1; i < rows.length; i++) {
-    const a = rows[i], b = rows[index];
-    if (importance(a) < importance(b) || (importance(a) === importance(b) && a.at < b.at)) index = i;
+    if (importance(rows[i]) < importance(rows[at])
+      || (importance(rows[i]) === importance(rows[at]) && rows[i].at < rows[at].at)) at = i;
   }
-  rows.splice(index, 1);
+  rows.splice(at, 1);
 }
-function close(person: PersonWeeklyMemory): void {
-  if (!person.entries.length) return;
+function close(memory: WeeklyMemory): void {
+  if (!memory.entries.length) return;
   const group = new Map<number, WeeklyEvidence[]>();
-  for (const entry of person.entries) {
-    const day = dayAt(entry.at);
-    group.set(day, [...(group.get(day) ?? []), entry]);
-  }
-  // Reserve evidence from every represented day before ranking the remaining
-  // significant entries. An ordinary daily routine cannot crowd out all others.
+  for (const e of memory.entries) group.set(dayAt(e.at), [...(group.get(dayAt(e.at)) ?? []), e]);
   const selected: WeeklyEvidence[] = [];
-  for (const values of group.values()) {
-    selected.push([...values].sort((a, b) => importance(b) - importance(a) || b.at - a.at)[0]);
+  for (const day of group.values()) {
+    for (const owner of ['soyo', 'sakiko'] as const) {
+      const chosen = day.filter(e => e.owner === owner).sort((a, b) => importance(b) - importance(a) || b.at - a.at)[0];
+      if (chosen) selected.push(chosen);
+    }
   }
-  const seen = new Set(selected.map(e => e.id));
-  for (const entry of [...person.entries].sort((a, b) => importance(b) - importance(a) || b.at - a.at)) {
-    if (selected.length >= 28) break;
-    if (!seen.has(entry.id)) { selected.push(entry); seen.add(entry.id); }
+  const seen = new Set(selected.map(key));
+  for (const e of [...memory.entries].sort((a, b) => importance(b) - importance(a) || b.at - a.at)) {
+    if (selected.length >= CLOSED_EVIDENCE_LIMIT) break;
+    if (!seen.has(key(e))) { selected.push(e); seen.add(key(e)); }
   }
-  selected.sort((a, b) => a.at - b.at || a.id.localeCompare(b.id));
-  const chunks: string[] = [], sources: string[] = [];
-  let remaining = SUMMARY_LIMIT;
-  for (const e of selected) {
-    const at = e.at % 1440;
-    const stamp = '第' + dayAt(e.at) + '天 ' + String(Math.floor(at / 60)).padStart(2, '0') + ':' + String(at % 60).padStart(2, '0') + ' ';
-    const chunk = stamp + e.text;
-    if (chunk.length + (chunks.length ? 1 : 0) > remaining) continue;
-    chunks.push(chunk); sources.push(e.id); remaining -= chunk.length + 1;
-  }
-  if (chunks.length) {
-    person.closed.push({ week: person.openWeek, text: chunks.join('；'), sources });
-    person.closed = person.closed.slice(-CLOSED_LIMIT);
-  }
+  selected.sort((a, b) => a.at - b.at || a.owner.localeCompare(b.owner) || a.id.localeCompare(b.id));
+  memory.closed.push({ week: memory.openWeek, evidence: selected, summary: null, sources: selected.map(key) });
+  memory.closed = memory.closed.slice(-CLOSED_LIMIT);
 }
-function advance(person: PersonWeeklyMemory, targetWeek: number): void {
-  if (targetWeek <= person.openWeek) return;
-  close(person);
-  person.openWeek = targetWeek;
-  person.entries = [];
+function advance(memory: WeeklyMemory, targetWeek: number): void {
+  if (targetWeek <= memory.openWeek) return;
+  close(memory);
+  memory.openWeek = targetWeek;
+  memory.entries = [];
 }
 
-/** Called only on the candidate save snapshot; cancellation never persists it. */
-export function recordWeeklyEvidence(state: WorldState, owner: ProtagonistId, entry: WeeklyEvidence): void {
-  if (!state.protagonists || !Number.isSafeInteger(entry.at)) return;
+/** Records are accumulated inside the same candidate save as the story/phone. */
+export function recordWeeklyEvidence(state: WorldState, owner: ProtagonistId, event: Omit<WeeklyEvidence, 'owner'>): void {
+  if (!state.protagonists || !Number.isSafeInteger(event.at)) return;
   const memory = state.protagonists.weeklyMemory ??= createWeeklyMemory(nowMinute(state.clock));
-  if (entry.at < memory.startedAt || entry.at > nowMinute(state.clock) || !idPattern.test(entry.id)) return;
-  const p = memory.people[owner], targetWeek = weekAt(entry.at);
-  if (targetWeek < p.openWeek) return;
-  advance(p, targetWeek);
-  if (p.entries.some(e => e.id === entry.id)) return;
-  const cleaned = evidenceText(entry.text).slice(0, EVENT_TEXT_LIMIT);
-  if (!cleaned) return;
-  p.entries.push({ id: entry.id, at: entry.at, text: cleaned });
-  // Per-day quota and global quota prevent long idle jumps from flooding
-  // the save or overriding the other days' meaningful events.
-  const today = p.entries.filter(e => dayAt(e.at) === dayAt(entry.at));
-  if (today.length > 7) {
-    const candidate = [...today];
-    evictLowest(candidate);
-    const keep = new Set(candidate.map(e => e.id));
-    p.entries = p.entries.filter(e => dayAt(e.at) !== dayAt(entry.at) || keep.has(e.id));
+  if (event.at < memory.startedAt || event.at > nowMinute(state.clock) || !idPattern.test(event.id)) return;
+  const targetWeek = weekAt(event.at);
+  if (targetWeek < memory.openWeek) return;
+  advance(memory, targetWeek);
+  if (memory.entries.some(e => e.id === event.id && e.owner === owner)) return;
+  const content = evidenceText(event.text).slice(0, EVENT_TEXT_LIMIT);
+  if (!content) return;
+  memory.entries.push({ owner, id: event.id, at: event.at, text: content });
+  const day = dayAt(event.at);
+  const today = memory.entries.filter(e => dayAt(e.at) === day);
+  if (today.length > DAILY_LIMIT) {
+    const trimmed = [...today];
+    evictLowest(trimmed);
+    const keep = new Set(trimmed.map(key));
+    memory.entries = memory.entries.filter(e => dayAt(e.at) !== day || keep.has(key(e)));
   }
-  while (p.entries.length > OPEN_LIMIT) evictLowest(p.entries);
+  while (memory.entries.length > OPEN_LIMIT) evictLowest(memory.entries);
 }
 
 export function recordWeeklyStory(state: WorldState, owner: ProtagonistId, turnId: string, story: string): void {
-  const at = nowMinute(state.clock);
   const compact = evidenceText(story);
-  // Front and closing lines preserve both the setup and a possible resolution.
-  const excerpt = compact.length <= EVENT_TEXT_LIMIT ? compact
-    : compact.slice(0, 88) + '…' + compact.slice(-88);
-  recordWeeklyEvidence(state, owner, { id: 'story:' + turnId, at, text: excerpt });
+  const excerpt = compact.length <= EVENT_TEXT_LIMIT ? compact : compact.slice(0, 88) + '…' + compact.slice(-88);
+  recordWeeklyEvidence(state, owner, { id: 'story:' + turnId, at: nowMinute(state.clock), text: excerpt });
 }
 
-/** Compare journals by stable ID instead of re-uploading or replaying old facts. */
+/** Detect newly saved, source-identified journal entries for each protagonist. */
 export function captureNewJournalEvidence(before: WorldState, after: WorldState): void {
   if (!after.protagonists) return;
   for (const owner of ['soyo', 'sakiko'] as const) {
-    const source = (state: WorldState) => state.protagonists
-      ? (state.protagonists.accounts.active === owner ? state.journal : state.protagonists.inactive.journal)
-      : (owner === 'soyo' ? state.journal : []);
-    const existing = new Set(source(before).map(row => row.id));
-    for (const row of source(after)) {
-      if (existing.has(row.id)) continue;
+    const personJournal = (s: WorldState) => s.protagonists
+      ? (s.protagonists.accounts.active === owner ? s.journal : s.protagonists.inactive.journal)
+      : (owner === 'soyo' ? s.journal : []);
+    const old = new Set(personJournal(before).map(row => row.id));
+    for (const row of personJournal(after)) {
+      if (old.has(row.id)) continue;
       const match = timePattern.exec(row.at);
       if (!match) continue;
       const day = Number(match[1]), hour = Number(match[2]), minute = Number(match[3]);
@@ -197,15 +191,42 @@ export function captureNewJournalEvidence(before: WorldState, after: WorldState)
   }
 }
 
-/** Close a finished 7-game-day period, even when it has no additional events. */
 export function settleWeeklyMemory(state: WorldState): void {
   if (!state.protagonists) return;
   const memory = state.protagonists.weeklyMemory ??= createWeeklyMemory(nowMinute(state.clock));
-  const current = weekAt(nowMinute(state.clock));
-  for (const owner of ['soyo', 'sakiko'] as const) advance(memory.people[owner], current);
+  advance(memory, weekAt(nowMinute(state.clock)));
 }
 
-/** Read only the current protagonist's two most recent closed weeks. */
-export function weeklyMemoryContext(state: WorldState, owner: ProtagonistId): { week: number; text: string }[] {
-  return (state.protagonists?.weeklyMemory?.people[owner].closed ?? []).slice(-2).map(w => ({ week: w.week, text: w.text }));
+/** Full omniscient evidence goes to the author model, not into character knowledge. */
+export function weeklyMemoryContext(state: WorldState) {
+  const memory = state.protagonists?.weeklyMemory;
+  if (!memory) return { summaries: [], pending: null };
+  const summaries = memory.closed.filter(c => c.summary !== null).slice(-2)
+    .map(c => ({ week: c.week, text: c.summary! }));
+  const next = memory.closed.find(c => c.summary === null);
+  return {
+    summaries,
+    pending: next ? { week: next.week, evidence: next.evidence.map(e => ({
+      owner: e.owner, day: dayAt(e.at), id: e.id, text: e.text,
+    })) } : null,
+  };
+}
+
+/** Apply one model-produced weekly summary, only if that exact week is pending. */
+export function applyWeeklySummary(state: WorldState, value: { week: number; text: string } | undefined): void {
+  if (!value) return;
+  const memory = state.protagonists?.weeklyMemory;
+  if (!memory) throw new Error('七日摘要不能写入未启用双主角的存档。');
+  const previous = memory.closed.find(w => w.week === value.week);
+  if (previous?.summary !== null && previous?.summary !== undefined) {
+    if (previous.summary !== value.text) throw new Error('七日摘要内容发生冲突，未保存本轮。');
+    return;
+  }
+  const pending = memory.closed.find(w => w.summary === null);
+  if (!pending || pending.week !== value.week || !previous) throw new Error('七日摘要对应的周次已经变化，未保存本轮。');
+  if (!value.text.trim() || value.text.length > SUMMARY_LIMIT || /[\u0000-\u001f]/.test(value.text)) {
+    throw new Error('七日摘要格式无效，未保存本轮。');
+  }
+  previous.summary = value.text.trim();
+  previous.evidence = []; // sources remain as provenance without duplicating old prose.
 }
