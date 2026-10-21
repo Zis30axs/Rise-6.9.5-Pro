@@ -13,6 +13,7 @@ import { transitStops, transitVehicles } from '../runtime/transit';
 import { getStoreAvailability } from '../runtime/convenience-store';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { protagonistRecap } from '../runtime/protagonist-narrative';
+import { formatGameDate, formatGameStamp, gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
@@ -24,6 +25,9 @@ const labels: Record<Panel, string> = {
 const selectedContactId = ref('');
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
+const civilDay = computed(() => gameCalendar(props.model.state.clock.day));
+const calendarLabel = computed(() => formatGameDate(props.model.state.clock.day));
+const registration = computed(() => registrationNotice(props.model.state.clock.day));
 const unread = computed(() => props.model.state.phone.filter(item => !item.read).length);
 const activeContact = computed(() => props.model.state.contacts.find(item => item.id === selectedContactId.value) ?? props.model.state.contacts[0]);
 const contactMessages = computed(() => props.model.state.phone.filter(item => item.npcId === activeContact.value?.id));
@@ -97,7 +101,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
           <div class="wp-conversation-heading"><h2>{{ activeContact.name }}</h2><p>{{ activeContact.tag }} · {{ activeContact.status }}</p></div>
           <div class="wp-message-list">
             <article v-for="message in contactMessages" :key="message.id" class="wp-message">
-              <time>{{ message.at }}</time><p class="wp-message-bubble">{{ message.text }}</p>
+              <time>{{ formatGameStamp(message.at) }}</time><p class="wp-message-bubble">{{ message.text }}</p>
               <button v-if="!message.read" class="wp-text-button" :disabled="model.busy" :aria-label="'将 ' + activeContact.name + ' 的消息标为已读'" @click="actions.dispatch({ type: 'read_phone', id: message.id })">标为已读 <span aria-hidden="true">✓</span></button>
               <span v-else class="wp-message-read">已读 ✓</span>
             </article>
@@ -113,7 +117,8 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 
     <template v-else-if="panel === 'schedule'">
       <AcademicTimetable v-if="model.state.academics" :major-id="model.state.academics.majorId" :day="model.state.clock.day" :hour="model.state.clock.hour" :minute="model.state.clock.minute" :busy="model.busy" :current-location-id="model.state.locationId" :travel-label="novelMode ? '前往课程地点' : '前往建筑入口'" :blocked-reason="courseTravelBlocked" @travel="travelToPlan" />
-      <div class="wp-day-summary"><div><h2>第 {{ model.state.clock.day }} 天</h2><p>{{ time }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
+      <div class="wp-day-summary"><div><h2>{{ calendarLabel }} · {{ civilDay.weekdayLabel }}</h2><p>第 {{ model.state.clock.day }} 天 · {{ time }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
+      <p v-if="registration && !model.state.academics" class="wp-footnote">{{ registration }}</p>
       <div class="wp-day-progress"><span :style="{ width: (model.state.schedule.length ? completedPlans / model.state.schedule.length * 100 : 0) + '%' }"></span></div>
       <div class="wp-plans">
         <article v-for="plan in model.state.schedule" :key="plan.id" class="wp-plan" :class="{ done: plan.done }">
@@ -131,20 +136,20 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
         <summary>{{ protagonistNames[protagonist] }} · 各自的日常</summary>
         <p class="wp-footnote">这是你亲历或已留下记录的事情。继续故事时，会从这些经历接着写。</p>
         <div class="wp-journal-list">
-          <article v-for="entry in [...lifeRecap].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ entry.at }}</time><p>{{ entry.text }}</p></article>
+          <article v-for="entry in [...lifeRecap].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article>
           <p v-if="!lifeRecap.length" class="wp-empty">暂时没有新的个人经历。切换视角并推进游戏时间后，你的日常会留在这里。</p>
         </div>
       </details>
-      <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>第 {{ model.state.clock.day }} 天 · 星期{{ ['一', '二', '三', '四', '五', '六', '日'][(model.state.clock.day - 1) % 7] }}</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
+      <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="resources" aria-label="账户与携带物品"><div class="wp-heading"><h2>账户与携带物品</h2></div><div class="wp-resources"><article class="wp-resource"><h2>Appie Pay</h2><p class="wp-footnote">余额、银行卡与交易流水在手机中查看。</p><button type="button" class="wp-text-button" @click="emit('phone')">打开手机 ↗</button></article><article class="wp-resource"><h2>随身携带</h2><p class="wp-resource-value">{{ model.state.inventory.length }}<small>种 · {{ inventoryCount }} 份／件</small></p><button type="button" class="wp-text-button" data-status-open-inventory @click="emit('inventory')">打开背包 ↗</button></article></div><button v-if="storeAvailability.available" type="button" class="wp-secondary wp-store-entry" data-open-store :disabled="model.busy" @click="emit('store')">逛便利店 ↗</button></section>
-      <section class="wp-status-section" data-status-section="recent" aria-label="最近变化"><div class="wp-heading"><h2>最近变化</h2><small>已保存的活动记录</small></div><div class="wp-journal-list"><article v-for="entry in recentChanges" :key="entry.id" class="wp-journal-entry"><time>{{ entry.at }}</time><p>{{ entry.text }}</p></article><p v-if="!recentChanges.length" class="wp-empty">活动完成后会在这里记录实际结果。</p></div></section>
+      <section class="wp-status-section" data-status-section="recent" aria-label="最近变化"><div class="wp-heading"><h2>最近变化</h2><small>已保存的活动记录</small></div><div class="wp-journal-list"><article v-for="entry in recentChanges" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!recentChanges.length" class="wp-empty">活动完成后会在这里记录实际结果。</p></div></section>
       <AcademicProgress :academics="model.state.academics" />
       <article v-if="interior" class="wp-air-traffic" aria-label="室内活动"><div class="wp-heading"><h2>室内活动</h2><span class="wp-badge">{{ interior.label }}</span></div><p>{{ lastActivity ? lastActivity.result : '已进入室内，可以走近物件进行观察、学习或休息。' }}</p><small>位置与活动按当前聊天保存，退出房间后回到原入口。</small></article>
       <article class="wp-air-traffic" aria-label="公交出行"><div class="wp-heading"><h2>公交出行</h2><span class="wp-badge">已乘坐 {{ model.state.transit.sequence }} 次</span></div><p v-if="model.state.transit.lastRide">{{ transitVehicles.find(vehicle => vehicle.id === model.state.transit.lastRide?.vehicleId)?.label }} · {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.fromStopId)?.label }} → {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.toStopId)?.label }}，{{ model.state.transit.lastRide.minutes }} 分钟，车费 ¥{{ model.state.transit.lastRide.fare }}。</p><p v-else>在南门公交站搭乘 BTR-82A 或 ZBD-04A，前往更远的城区。</p><button class="wp-text-button" @click="emit('transit')">查看公交线路 ↗</button></article>
       <article class="wp-air-traffic" aria-label="空中动态"><div class="wp-heading"><h2>空中动态</h2><span class="wp-badge">累计经过 {{ model.state.airTraffic.sequence }} 次</span></div><p>{{ interior ? '当前在室内，无法直接观察天空；已记录的空中事件保留。' : activeAirliner ? '一架客机正从远处高空平稳经过。' : lastAirliner ? '最近的客机已飞离视野。' : '天空暂时平静，偶尔会有客机经过。' }}</p><small v-if="lastAirliner">最近一次：{{ airlinerSource }} · {{ activeAirliner ? '正在经过' : '已记录' }}</small><small v-else>环境中可能随机出现，也可能由对话剧情触发。</small></article>
-      <article class="wp-journal"><div class="wp-heading"><h2>日常手记</h2><span class="wp-badge">{{ model.state.journal.length }} 条记录</span></div><div class="wp-journal-list"><article v-for="entry in [...model.state.journal].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ entry.at }}</time><p>{{ entry.text }}</p></article><p v-if="!model.state.journal.length" class="wp-empty">新的足迹，会留在这里。</p></div></article>
+      <article class="wp-journal"><div class="wp-heading"><h2>日常手记</h2><span class="wp-badge">{{ model.state.journal.length }} 条记录</span></div><div class="wp-journal-list"><article v-for="entry in [...model.state.journal].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!model.state.journal.length" class="wp-empty">新的足迹，会留在这里。</p></div></article>
       <p class="wp-footnote">{{ model.connection }} · 世界状态按聊天保存。地点、人物与资源为演示内容。</p>
     </template>
   </section>
