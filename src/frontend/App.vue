@@ -26,6 +26,7 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { getAdjacentLocations } from '../runtime/location-links';
 import { getScenePeople, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import type { PlayerState, ShellActions, ShellModel } from './types';
@@ -172,6 +173,7 @@ function studyOutcome(outcome: string | null) {
 }
 const lastWasTimedActivity = computed(() => (lastRoomActivity.value?.minutes ?? 0) > 0);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
+const civilDateLabel = computed(() => `${formatGameDate(props.model.state.clock.day)} · ${gameCalendar(props.model.state.clock.day).weekdayLabel}`);
 const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
@@ -485,7 +487,7 @@ function showLocalActivity(label: string, minutes: number, before: PlayerState) 
     const value = after[key] - before[key];
     return `${{ morale: '精神', stress: '压力', health: '健康' }[key]} ${value > 0 ? '+' : '−'}${Math.abs(value)}`;
   });
-  localActivityReceipt.value = `${label}完成 · 耗时 ${minutes} 分钟 · 第 ${props.model.state.clock.day} 天 ${time.value} · 精力 ${after.energy}（${delta > 0 ? `恢复 ${delta}` : delta < 0 ? `消耗 ${-delta}` : '未变化'}）${changes.length ? ` · ${changes.join(' · ')}` : ''}`;
+  localActivityReceipt.value = `${label}完成 · 耗时 ${minutes} 分钟 · ${civilDateLabel.value} ${time.value} · 精力 ${after.energy}（${delta > 0 ? `恢复 ${delta}` : delta < 0 ? `消耗 ${-delta}` : '未变化'}）${changes.length ? ` · ${changes.join(' · ')}` : ''}`;
 }
 function activityImpact(kind: 'study' | 'rest' | 'desk' | 'bookshelf', minMinutes: number, maxMinutes: number) {
   const low = getActivityEffects(kind, minMinutes), high = getActivityEffects(kind, maxMinutes);
@@ -699,7 +701,7 @@ onBeforeUnmount(() => {
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
-    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>第 {{ model.state.clock.day }} 天</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
+    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
