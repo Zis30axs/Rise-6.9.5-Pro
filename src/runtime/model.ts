@@ -1,4 +1,5 @@
 import { finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
+import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
@@ -1119,5 +1120,7 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
-  return parseState(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算'));
+  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算');
+  return parseState(recordProtagonistNarrative(before, after, result, ids.assistantId));
 }
+

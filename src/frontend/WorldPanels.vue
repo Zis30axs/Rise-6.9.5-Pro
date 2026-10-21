@@ -11,6 +11,8 @@ import { getActiveAirliner } from '../runtime/air-traffic';
 import { getCampusInterior, getInteriorActivity } from '../runtime/campus-interiors';
 import { transitStops, transitVehicles } from '../runtime/transit';
 import { getStoreAvailability } from '../runtime/convenience-store';
+import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { protagonistRecap } from '../runtime/protagonist-narrative';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
@@ -42,6 +44,8 @@ const mindStats = computed(() => [
   { id: 'stress', label: '压力', value: props.model.state.player.stress, maximum: 100, state: props.model.state.player.stress < 30 ? '放松' : props.model.state.player.stress < 70 ? '有压力' : '紧绷', note: '越低越轻松；学习可能增加，休息和散步可缓解' },
 ]);
 const recentChanges = computed(() => props.model.state.journal.slice(-5).reverse());
+const protagonist = computed(() => activeProtagonist(props.model.state));
+const lifeRecap = computed(() => protagonistRecap(props.model.state));
 const inventoryCount = computed(() => props.model.state.inventory.reduce((sum, item) => sum + item.quantity, 0));
 const unreadFor = (npcId: string) => props.model.state.phone.filter(item => item.npcId === npcId && !item.read).length;
 const locationName = (id: string) => locations.find(item => item.id === id)?.name ?? '未知地点';
@@ -123,6 +127,14 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 
     <template v-else-if="panel === 'status'">
       <StoryEngineSettings />
+      <details v-if="model.state.protagonists" class="wp-status-section" data-testid="protagonist-recap" :data-owner="protagonist" open>
+        <summary>{{ protagonistNames[protagonist] }} · 各自的日常</summary>
+        <p class="wp-footnote">这是你亲历或已留下记录的事情。继续故事时，会从这些经历接着写。</p>
+        <div class="wp-journal-list">
+          <article v-for="entry in [...lifeRecap].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ entry.at }}</time><p>{{ entry.text }}</p></article>
+          <p v-if="!lifeRecap.length" class="wp-empty">暂时没有新的个人经历。切换视角并推进游戏时间后，你的日常会留在这里。</p>
+        </div>
+      </details>
       <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>第 {{ model.state.clock.day }} 天 · 星期{{ ['一', '二', '三', '四', '五', '六', '日'][(model.state.clock.day - 1) % 7] }}</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
@@ -137,3 +149,9 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
     </template>
   </section>
 </template>
+
+<style scoped>
+[data-testid="protagonist-recap"] > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+[data-testid="protagonist-recap"] .wp-journal-entry p { overflow-wrap: anywhere; }
+</style>
+
