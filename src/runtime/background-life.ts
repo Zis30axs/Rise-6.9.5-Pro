@@ -5,6 +5,7 @@ import { getActivityEffects } from './activity-effects';
 import { advancePlayerNutrition, getInventoryCatalog, getStoreItem, storeCatalog } from './convenience-store';
 import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, type ProtagonistId } from './dual-protagonists';
 import { getAcademicTimetable } from './academics';
+import { gameWeekday, hasStartedAcademicWeek } from './game-calendar';
 import { applyStoryActions, getNovelTravelQuote, reduceState } from './model';
 import { activeProtagonist, gameMinute, legacyView, otherProtagonist, personalState, personState, protagonistNames, protagonistsNearby, reduceProtagonistAction, settlePhoneTime, type PersonalState, type PhoneCommand } from './protagonist-world';
 export { protagonistsNearby } from './protagonist-world';
@@ -160,7 +161,7 @@ function appointments(state: WorldState, owner: ProtagonistId, at: number): Appo
   const schedule: Appointment[] = personal.schedule.filter(event => !event.done).map(event => ({
     key: `schedule:${stamp(JSON.stringify(event))}`, title: event.title, locationId: event.locationId, start: day * 1440 + toMinutes(event.time), duration: 30, source: 'schedule', shared: otherName.test(event.title),
   }));
-  const academic: Appointment[] = getAcademicTimetable(personal.academics).filter(slot => slot.weekday === day % 7 + 1).map(slot => ({
+  const academic: Appointment[] = getAcademicTimetable(personal.academics).filter(slot => hasStartedAcademicWeek(day + 1) && slot.weekday === gameWeekday(day + 1)).map(slot => ({
     key: `academic:${slot.id}:${day}`, title: slot.subjectName, locationId: slot.locationId, start: day * 1440 + toMinutes(slot.start), duration: toMinutes(slot.end) - toMinutes(slot.start), source: 'academic', subjectId: slot.subjectId, shared: false,
   }));
   return [...calendar, ...schedule, ...academic].sort((a, b) => a.start - b.start || a.key.localeCompare(b.key));
