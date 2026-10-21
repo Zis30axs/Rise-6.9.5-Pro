@@ -58,6 +58,7 @@ for (const viewport of viewports) {
     const root = page.locator('[data-unread-city-root]');
     const input = page.getByRole('textbox', { name: '接下来，你想做什么？' });
     const continueStory = page.getByRole('button', { name: /^继续故事/ });
+    const generating = page.getByRole('button', { name: /^叙事中/ });
     const summaries: Array<Record<string, unknown>> = [];
     const output = `outputs/dual-narrative-qa/${viewport.width}x${viewport.height}`;
     await mkdir('outputs/dual-narrative-qa', { recursive: true });
@@ -69,8 +70,16 @@ for (const viewport of viewports) {
       await queueReply(helper, `SAVED_FRONT_${foreground}：你在自己的位置安静等了一小时。`, 60);
       await input.fill('安静等一小时，然后接着自己的经历。');
       await continueStory.click();
-      await expect(continueStory).toBeEnabled();
-      await expect.poll(async () => gameMinute(await readWorld(helper))).toBe(gameMinute(before) + 60);
+      await expect.poll(async () => {
+        const saved = await readWorld(helper);
+        return {
+          minute: gameMinute(saved),
+          storySaved: saved.story.some(entry => entry.role === 'assistant' && entry.text.includes(`SAVED_FRONT_${foreground}`)),
+        };
+      }).toEqual({ minute: gameMinute(before) + 60, storySaved: true });
+      // A successful submit clears the draft, so its idle button remains disabled.
+      await expect(generating).toHaveCount(0);
+      await expect(input).toHaveValue('');
       const progressed = await readWorld(helper);
       const produced = progressed.protagonists!.backgroundLife!.people[owner].events.filter(event => !event.id.endsWith(':fixture'));
       expect(produced.length).toBeGreaterThan(0);
@@ -131,6 +140,8 @@ for (const viewport of viewports) {
     await input.fill('接着我的日常继续，不要重演刚才的事。');
     await continueStory.click();
     await expect.poll(async () => (await readWorld(helper)).story.some(entry => entry.text.includes('SOYO_CONTINUED'))).toBe(true);
+    await expect(generating).toHaveCount(0);
+    await expect(input).toHaveValue('');
     const prompts = await helper.evaluate(() => (window as unknown as { fixturePrompts(): string[] }).fixturePrompts());
     expect(prompts).toHaveLength(3);
     for (const owner of ['soyo', 'sakiko'] as const) {
