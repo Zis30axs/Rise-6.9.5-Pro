@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commitStoryTurn, createInitialState, parseState } from '../src/runtime/model';
+import { commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists, gameMinute } from '../src/runtime/protagonist-world';
 import { applyWeeklySummary, createWeeklyMemory, parseWeeklyMemory, recordWeeklyEvidence,
   recordWeeklyStory, settleWeeklyMemory, weeklyMemoryContext } from '../src/runtime/weekly-memory';
@@ -66,14 +66,14 @@ describe('omniscient 7-game-day story memory', () => {
   it('checks atomic story commit for LLM-generated global weekly summary', () => {
     const state = dual(); const at = gameMinute(state);
     recordWeeklyEvidence(state, 'soyo', { id: 'hello', at, text: '素世记录了日常。' });
-    state.clock = { day: 8, hour: 0, minute: 0 }; settleWeeklyMemory(state);
-    const snapshot = structuredClone(state);
-    const after = commitStoryTurn(state, '继续。', {
+    const advanced = reduceState(state, { type: 'wait', minutes: 7 * 1440 });
+    const snapshot = structuredClone(advanced);
+    const after = commitStoryTurn(advanced, '继续。', {
       text: '她抬头看见了新的日出。', phoneMessages: [],
       weeklySummary: { week: 1, text: '过去的一周里，素世留下了一份日常记录。' },
     }, { userId: 'weekly-user', assistantId: 'weekly-assistant' }, 0);
     expect(weeklyMemoryContext(after).summaries[0].week).toBe(1);
-    expect(state).toEqual(snapshot);
+    expect(advanced).toEqual(snapshot);
     expect(parseState(after)).toEqual(after);
   });
 
