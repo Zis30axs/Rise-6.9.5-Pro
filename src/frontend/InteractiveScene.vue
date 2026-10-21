@@ -17,7 +17,7 @@ import { recoverScenePresencePosition } from './scene-presence';
 import type { ScenePerson, ScenePresence } from '../runtime/scene-context';
 import type { AirTrafficState } from './types';
 
-const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, phoneActive: false, airTraffic: null });
+const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; protagonist?: 'soyo' | 'sakiko'; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
 const emit = defineEmits<{ hotspot: [action: SceneAction]; presence: [point: { x: number; z: number; yaw: number }]; encounter: [personId: string] }>();
 const root = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
@@ -124,7 +124,7 @@ function canSeePerson(person: ScenePerson): boolean {
 function updateCamera() {
   position.value = `${eye.x.toFixed(3)},${eye.y.toFixed(3)},${eye.z.toFixed(3)}`;
   if (!camera) return;
-  const showPlayer = props.phoneActive || cameraMode.value === 'third-person';
+  const showPlayer = props.protagonist !== 'sakiko' && (props.phoneActive || cameraMode.value === 'third-person');
   playerCharacter?.setPhoneActive(props.phoneActive);
   const displayYaw = campus ? applyCharacterCamera(camera, eye, yaw, pitch, campus.movementWorld, cameraMode.value, props.phoneActive, width, height) : yaw;
   playerCharacter?.update(eye, displayYaw, showPlayer);
@@ -503,7 +503,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" data-player-model="soyo" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
+  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'sakiko' ? 'none' : 'soyo'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
     <svg class="campus-fallback" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="uc-scene-sky" x2="0" y2="1"><stop stop-color="#a5b5b1"/><stop offset=".58" stop-color="#f0d8b5"/><stop offset="1" stop-color="#d4c6a7"/></linearGradient>

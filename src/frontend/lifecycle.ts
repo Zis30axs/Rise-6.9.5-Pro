@@ -1,3 +1,5 @@
+import { activeProtagonist } from '../runtime/protagonist-world';
+import { createWorldPhoneApi } from './world-phone';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
@@ -93,6 +95,7 @@ export function mountShell(
       () => cancelInteraction(),
       () => closePhone(),
       () => storyPhone?.dispose(),
+      () => { if (phoneGlobal.__unreadCityWorldPhone === worldPhone) delete phoneGlobal.__unreadCityWorldPhone; },
       () => { dismissOverlay = undefined; },
       () => stopSession?.(),
       () => bridge.cancel(),
@@ -274,17 +277,88 @@ export function mountShell(
       closePhone(); model.phoneStatus = 'error'; model.phoneError = message(error); model.notice = message(error);
     }
   }
+  function bindStoryPhone() {
+    storyPhone?.dispose(); storyPhone = undefined;
+    model.phoneUnread = 0; model.phoneContactUnread = [];
+    if (bridge.kind === 'tavern' && phoneRuntime) {
+      const deviceOwner = activeProtagonist(model.state);
+      storyPhone = createStoryPhoneLink({
+        hostWindow, session: session!, ensurePhone: () => phoneRuntime.ensure(),
+        isCurrent: () => !dead && bridge.session() === session && activeProtagonist(model.state) === deviceOwner,
+        state: snapshot,
+        async saveContact(raw) {
+          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中保存，或等当前行动结束后重试。');
+          const draft = validateContactProfileDraft(raw);
+          const id = draft.id ?? draft.sourcePersonId ?? `person-${storyId()}`;
+          const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
+          bridge.save(next); model.state = next; model.notice = '';
+          const contact = next.contacts.find(contact => contact.id === id)!;
+          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
+            summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
+        },
+        async generateIntroduction(raw) {
+          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中确认生成简介，或等当前行动结束后重试。');
+          const draft = validateContactProfileDraft(raw);
+          const request = ++epoch;
+          const sequence = phoneSequence;
+          profileRequest = request; model.busy = true; model.notice = '';
+          try {
+            const reply = await bridge.generate('请根据此人的既有出场记录生成简短人物介绍。', snapshot(), { kind: 'contact_introduction',
+              contact: { ...draft, sourcePersonId: draft.sourcePersonId ?? null } });
+            if (!stillCurrent(request) || sequence !== phoneSequence || !model.externalPhoneOpen) throw new Error('人物编辑已关闭，简介未写入。');
+            if (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length) throw new Error('人物简介包含无效内容，请重试。');
+            return reply.text;
+          } finally {
+            if (profileRequest === request) profileRequest = undefined;
+            if (stillCurrent(request)) model.busy = false;
+          }
+        },
+        accept(receipt) {
+          const known = new Set(model.state.contacts.map(contact => contact.id));
+          model.phoneUnread = receipt.unreadTotal;
+          model.phoneContactUnread = receipt.contacts.filter(contact => known.has(contact.npcId)).map(({ npcId, unread }) => ({ npcId, unread }));
+          if (model.state.phone.some(item => !item.read && receipt.receipts.includes(item.id))) {
+            const acknowledged = model.state.phone.filter(item => receipt.receipts.includes(item.id)).map(item => item.id);
+            const next = acknowledgePhoneRead(snapshot(), acknowledged);
+            bridge.save(next); model.state = next;
+          }
+        },
+        status(status, error = '') { model.phoneLinkStatus = status; model.phoneLinkError = error; },
+      });
+      // Materialize a new world's initial messages before the phone sees them.
+      // A failed save leaves its outbox untouched and offers an explicit retry.
+      actions.retryPhoneSync();
+    }
+  }
+
+  const worldPhone = createWorldPhoneApi({
+    session, current: () => !dead && bridge.session() === session,
+    busy: () => model.busy || doc.hidden, state: snapshot,
+    commit(action) {
+      const next = reduceState(snapshot(), action); bridge.save(next); model.state = next;
+      if (storyPhone) void storyPhone.sync().catch(() => {});
+      return next;
+    },
+  });
+  const phoneGlobal = hostWindow as Window & { __unreadCityWorldPhone?: typeof worldPhone };
+  phoneGlobal.__unreadCityWorldPhone = worldPhone;
+
   const actions: ShellActions = {
     interact,
     resolveInteraction,
     cancelInteraction,
     dispatch(action) {
-      if (dead || model.busy || doc.hidden) return;
+      if (dead || (model.busy && action.type !== 'switch_protagonist') || doc.hidden) return;
       try {
         const next = reduceState(snapshot(), action);
         bridge.save(next);
+        if (action.type === 'switch_protagonist') {
+          epoch++; bridge.cancel(); cancelInteraction(); closePhone(); storyPhone?.dispose();
+          model.busy = false;
+        }
         model.state = next;
         model.notice = '';
+        if (action.type === 'switch_protagonist') bindStoryPhone();
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
     },
@@ -423,54 +497,7 @@ export function mountShell(
     airTrafficTimer = hostWindow.setInterval(tickAirTraffic, 5000);
     app.mount(mount);
     if (dead) throw new Error('界面启动失败，已恢复原生界面。');
-    if (bridge.kind === 'tavern' && phoneRuntime) {
-      storyPhone = createStoryPhoneLink({
-        hostWindow, session, ensurePhone: () => phoneRuntime.ensure(),
-        isCurrent: () => !dead && bridge.session() === session,
-        state: snapshot,
-        async saveContact(raw) {
-          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中保存，或等当前行动结束后重试。');
-          const draft = validateContactProfileDraft(raw);
-          const id = draft.id ?? draft.sourcePersonId ?? `person-${storyId()}`;
-          const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
-          bridge.save(next); model.state = next; model.notice = '';
-          const contact = next.contacts.find(contact => contact.id === id)!;
-          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
-            summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
-        },
-        async generateIntroduction(raw) {
-          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中确认生成简介，或等当前行动结束后重试。');
-          const draft = validateContactProfileDraft(raw);
-          const request = ++epoch;
-          const sequence = phoneSequence;
-          profileRequest = request; model.busy = true; model.notice = '';
-          try {
-            const reply = await bridge.generate('请根据此人的既有出场记录生成简短人物介绍。', snapshot(), { kind: 'contact_introduction',
-              contact: { ...draft, sourcePersonId: draft.sourcePersonId ?? null } });
-            if (!stillCurrent(request) || sequence !== phoneSequence || !model.externalPhoneOpen) throw new Error('人物编辑已关闭，简介未写入。');
-            if (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length) throw new Error('人物简介包含无效内容，请重试。');
-            return reply.text;
-          } finally {
-            if (profileRequest === request) profileRequest = undefined;
-            if (stillCurrent(request)) model.busy = false;
-          }
-        },
-        accept(receipt) {
-          const known = new Set(model.state.contacts.map(contact => contact.id));
-          model.phoneUnread = receipt.unreadTotal;
-          model.phoneContactUnread = receipt.contacts.filter(contact => known.has(contact.npcId)).map(({ npcId, unread }) => ({ npcId, unread }));
-          if (model.state.phone.some(item => !item.read && receipt.receipts.includes(item.id))) {
-            const acknowledged = model.state.phone.filter(item => receipt.receipts.includes(item.id)).map(item => item.id);
-            const next = acknowledgePhoneRead(snapshot(), acknowledged);
-            bridge.save(next); model.state = next;
-          }
-        },
-        status(status, error = '') { model.phoneLinkStatus = status; model.phoneLinkError = error; },
-      });
-      // Materialize a new world's initial messages before the phone sees them.
-      // A failed save leaves its outbox untouched and offers an explicit retry.
-      actions.retryPhoneSync();
-    }
+    bindStoryPhone();
     shadow.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
     return { dispose, model, actions };
   } catch (error) {

@@ -1,4 +1,5 @@
 import { build } from 'vite';
+import {loadPhoneArt} from './phone_visual_assets.mjs';
 import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -13,7 +14,9 @@ const text = relative => readFile(path.join(phoneRoot, relative), 'utf8');
 const manifest = JSON.parse(await text('manifest.json'));
 const tokenizers = { 't5.json': await text('tokenizers/t5.json'), 'qwen.txt': await text('tokenizers/qwen.txt') };
 const licenses = { marked: await text('ui/vendor/marked.LICENSE.txt'), tokenizers: await text('tokenizers/LICENSE-Apache-2.0.txt') };
-const phoneCss = (await Promise.all(['ui/phone.css', 'ui/skins.css'].map(text))).join('\n');
+const phoneCss = (await Promise.all(['ui/phone.css', 'ui/skins.css'].map(text))).join('\n') + '\n' + await readFile(path.join(root,'integration/dual-protagonists/phone-visuals.css'),'utf8');
+const phoneArt = await loadPhoneArt(root);
+const artModule = '\0virtual:unread-city-phone-art';
 const hostCss = (await Promise.all(['style.css', 'floating.css'].map(text))).join('\n');
 // All shipped CSS resources are inline SVG data URLs. Fail closed if upstream
 // introduces a file or external asset that has not been explicitly packaged.
@@ -36,21 +39,60 @@ function replaceOnce(code, from, to, label) {
   if (!code.includes(from) || code.indexOf(from) !== code.lastIndexOf(from)) throw Error(`手机源码已变化，请更新内嵌适配：${label}`);
   return code.replace(from, to);
 }
+const worldAppsModule = '\0virtual:unread-city-world-apps';
+const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'));
 const dataModule = '\0virtual:unread-city-phone-data';
 let phoneHtml = '';
 const sourceFiles = new Map();
 function plugin(stage) {
   return {
     name: 'unread-city-private-phone',
-    resolveId(id) { if (id === 'virtual:unread-city-phone-data') return dataModule; },
+    resolveId(id) { if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; },
     load(id) {
+      if(id === artModule) return `export const phoneArt=${JSON.stringify(phoneArt)};`;
+      if (id === worldAppsModule) return worldAppsSource;
       if (id === dataModule) return `export const portableData=${JSON.stringify({ version: manifest.version, manifest, hostCss: stage === 'runtime' ? hostCss : '', phoneHtml, tokenizers: stage === 'runtime' ? tokenizers : {}, sounds, soundManifest })};`;
     },
     async transform(code, id) {
       if (id.startsWith('\0')) return;
+      if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
       const relative = path.relative(phoneRoot, id).replaceAll('\\', '/');
       if (relative.startsWith('../') || path.isAbsolute(relative) || !/^(?:[\w-]+\.js|(?:core|ui|portable)\/[\w./-]+\.js|fish-mobile\/(?:native-host|native-probe|mcp-errors|client)\.js)$/.test(relative) || /(?:^|\/)(?:test|fixtures|node_modules)(?:\/|\.)/.test(relative) || /\.test\.js$/.test(relative)) throw Error(`拒绝打包白名单以外的手机文件：${relative}`);
       sourceFiles.set(relative, createHash('sha256').update(code).digest('hex'));
+      if (relative === 'ui/phone.js') {
+        code = "import {worldPhoneFactories,applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'virtual:unread-city-world-apps';\n" + code;
+        code = replaceOnce(code, 'const FACTORIES = {', 'const FACTORIES = {...worldPhoneFactories,', '游戏手机应用');
+        code = replaceOnce(code, 'peek: peekApp,', 'peek: worldPhoneFactories.worldpeek,', '权威查手机');
+        code = replaceOnce(code, '  let panelVisible = true,', '  let worldViewOwner = null;\n  let panelVisible = true,', '手机视图归属');
+        code = replaceOnce(code, '  function applyThemeMode() {', '  function applyThemeMode() { if(applyWorldPhoneTheme(screen))return;', '设备主题偏好');
+        code = replaceOnce(code, '  function showHome(immediate = false) {', '  function showHome(immediate = false) { renderHome();', '外观保存后刷新桌面');
+        code = replaceOnce(code, '    const art = image ?', '    const art = worldPhoneIcon(screen,id) || (image ?', '独立图标');
+        code = replaceOnce(code, "custom.key : id);", "custom.key : id));", '独立图标闭合');
+        code = replaceOnce(code, 'HOME.pages.map', 'worldPhoneHome(screen,HOME).pages.map', '独立应用排列');
+        code = replaceOnce(code, 'HOME.dock.map', 'worldPhoneHome(screen,HOME).dock.map', '独立快捷栏');
+        code = replaceOnce(code, 'await api.savePhone({theme: el.dataset.theme});', 'if(await saveWorldPhoneTheme(screen,el.dataset.theme)){renderHome();}else await api.savePhone({theme: el.dataset.theme});', '控制中心保存设备主题');
+        code = replaceOnce(code, 'p.theme === key', '(worldPhoneTheme(screen)||p.theme) === key', '控制中心当前设备主题');
+        code = replaceOnce(code, '  function renderHome() {', '  function renderHome() { applyWorldPhoneTheme(screen);', '主角手机主题');
+        code = replaceOnce(code, '    panelVisible = visible;', `    panelVisible = visible;
+          if (visible) {
+            const worldOwner=worldPhoneState(screen)?.active;
+            if(worldViewOwner && worldOwner && worldViewOwner!==worldOwner) {
+              sheet?.close(null);for(const view of views.values())view.dispose?.();views.clear();content.replaceChildren();active=null;showHome(true);
+            }
+            worldViewOwner=worldOwner;renderHome();
+          }`, '切主角后清理旧手机视图');
+      }
+      if (relative === 'ui/apps.js') {
+        code = replaceOnce(code, 'export const APPS = {', `export const APPS = {
+          worldstyle: {name:'桌面与外观',eyebrow:'Appearance',colors:['#e8ecdc','#46665d','#c2a880']},
+          appie: {name:'Appie Pay',eyebrow:'Game Wallet',colors:['#a3c7b8','#47645e','#ffdea5']},
+          worldshop: {name:'购物',eyebrow:'Shopping',colors:['#f6d1a1','#b37644','#f9ea9b']},
+          worlddelivery: {name:'外卖',eyebrow:'Delivery',colors:['#ffdd83','#e59f3e','#fff4c6']},
+          worldcalendar: {name:'日历',eyebrow:'Calendar',colors:['#a6c8e8','#577998','#f2d9bd']},
+          worldmessages: {name:'主角消息',eyebrow:'World Messages',colors:['#b8dfcc','#4a9174','#f5c8dc']},
+          worldpeek: {name:'查手机',eyebrow:'Peek',colors:['#ffc6e0','#c85a9a','#9fe0ff']},`, '游戏应用目录');
+        code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages',SLOT,SLOT,SLOT],", '游戏应用首页');
+      }
       if (relative === 'core/tokens.js') {
         code = replaceOnce(code, "const get = read || (async name => { const r = await fetch(new URL('../tokenizers/' + name, import.meta.url)); if (!r.ok) throw Error('读不到分词表'); return r.text(); });", "const get = read || (async name => { const runtime = globalThis.__unreadCityEmbeddedPhoneRuntime || globalThis.parent?.__unreadCityEmbeddedPhoneRuntime; if (!runtime?.readAsset) throw Error('内嵌分词表未就绪'); return runtime.readAsset(name); });", '内嵌分词表');
       }
@@ -135,6 +177,7 @@ const runtime = await bundle('portable/entry.js', 'UnreadCityPhoneRuntime', 'run
 const guardedRuntime = '/* UNREAD_CITY_EMBEDDED_PHONE */\n(()=>{if(globalThis.STiPhoniePanelHost?.mount||globalThis.__stIphoniePanelBridge?.connect||globalThis.__unreadCityEmbeddedPhoneRuntime)return;\n' + runtime + '\n})();';
 const metadata = { source: 'ST-iPhonie', version: manifest.version, generatedAt: new Date().toISOString(), sourceFiles: sourceFiles.size,
   runtimeBytes: Buffer.byteLength(guardedRuntime), uiBytes: Buffer.byteLength(ui), tokenizerBytes: Object.values(tokenizers).reduce((sum, value) => sum + Buffer.byteLength(value), 0),
+  phoneArtAssets: Object.keys(phoneArt).length, phoneArtBytes: Object.values(phoneArt).reduce((n,s)=>n+Buffer.byteLength(s),0),
   soundPackIncluded: includeSounds, soundFiles: Object.keys(sounds).length, autoServicesOnCardLoad: false, dataNamespace: 'stTtsDialogue',
   runtimeSha256: createHash('sha256').update(guardedRuntime).digest('hex'), sources: Object.fromEntries([...sourceFiles].sort()) };
 await mkdir(generated, { recursive: true });
@@ -142,3 +185,4 @@ await writeFile(path.join(generated, 'embedded-phone-runtime.txt'), guardedRunti
 await writeFile(path.join(generated, 'embedded-phone.ts'), '// Generated by scripts/build_embedded_phone.mjs. No private settings or data.\nimport embeddedPhoneRuntimeSource from \'./embedded-phone-runtime.txt?raw\';\nexport { embeddedPhoneRuntimeSource };\nexport const embeddedPhoneMetadata = ' + JSON.stringify(metadata) + ' as const;\n');
 await writeFile(path.join(generated, 'embedded-phone-licenses.txt'), '# ST-iPhonie private embedded build\nOverall upstream: no license declared; this private build does not grant redistribution rights.\n\n# Marked\n' + licenses.marked + '\n\n# Tokenizer data\n' + await text('tokenizers/README.md') + '\n' + licenses.tokenizers + (includeSounds ? '\n\n' + await text('sounds/README.md') : ''));
 console.log(JSON.stringify({ ...metadata, sources: undefined }));
+

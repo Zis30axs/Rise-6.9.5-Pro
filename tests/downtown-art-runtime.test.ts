@@ -48,6 +48,25 @@ describe('reviewed inline artwork selection', () => {
       expect(getSakikoArt({ ...pack, assets }, { speaker: 'sakiko', expression: 'neutral', outfit: 'home' })).toBeNull();
     }
   });
+  it('restores the approved Toyokawa living room and Sakiko portraits from Lite Blob URLs', () => {
+    const pack = makePack();
+    const assets = { ...pack.assets };
+    const livingRoom = 'blob:tauri://localhost/approved-toyokawa-living-room';
+    const homeSprite = 'blob:tauri://localhost/approved-sakiko-home-smile';
+    assets.toyokawa_living_room = { ...assets.toyokawa_living_room!, src: livingRoom };
+    assets.sakiko_home_smile = { ...assets.sakiko_home_smile!, src: homeSprite };
+    const imported = { ...pack, assets };
+    expect(getDowntownArtBackground(imported, { locationId: 'toyokawa-house', phase: 'night' }))
+      .toMatchObject({ id: 'toyokawa_living_room', src: livingRoom, imagePhase: 'day' });
+    expect(getSakikoArt(imported, { speaker: '祥子', expression: 'smile', locationId: 'toyokawa-house' }))
+      .toMatchObject({ id: 'sakiko_home_smile', src: homeSprite, outfit: 'home' });
+    expect(getDowntownArtBackground({ ...imported, ready: false }, { locationId: 'toyokawa-house', phase: 'day' }))
+      .toBeNull();
+    expect(getDowntownArtBackground(
+      { ...imported, assets: { ...assets, toyokawa_living_room: { ...assets.toyokawa_living_room!, sha256: 'wrong' } } },
+      { locationId: 'toyokawa-house', phase: 'day' },
+    )).toBeNull();
+  });
   it('selects distinct mansion images using the existing phase', () => {
     for (const phase of ['day', 'dusk', 'night'] as const) {
       expect(getDowntownArtBackground(makePack(), { locationId: 'downtown', phase, atHouseEntrance: true })?.id).toBe(`toyokawa_mansion_${phase}`);

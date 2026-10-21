@@ -17,12 +17,12 @@ export interface DowntownArtPack {
   readonly assets: Readonly<Partial<Record<DowntownArtId, DowntownArtAsset>>>;
 }
 
-/** Only trusted, build-time PNG/WebP data can become an image source. */
+/** Accept inlined approved PNG/WebP and local Blob URLs restored from the SHA-verified Lite ZIP. */
 function asset(pack: DowntownArtPack, id: DowntownArtId): DowntownArtAsset | null {
   if (!pack.ready || !Object.hasOwn(pack.assets, id)) return null;
   const image = pack.assets[id];
   if (!image || image.id !== id || typeof image.src !== 'string'
-      || (!image.src.startsWith('data:image/webp;base64,') && !image.src.startsWith('data:image/png;base64,'))
+      || (!image.src.startsWith('data:image/webp;base64,') && !image.src.startsWith('data:image/png;base64,') && !image.src.startsWith('blob:'))
       || !Number.isInteger(image.width) || !Number.isInteger(image.height)
       || image.width <= 0 || image.height <= 0 || !/^[a-f0-9]{64}$/.test(image.sha256)) return null;
   return image;
