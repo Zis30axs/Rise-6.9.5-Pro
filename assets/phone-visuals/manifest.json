@@ -1,0 +1,222 @@
+{
+  "schema": "unread-city-phone-art-v1",
+  "source": "Original SVG; scripts/build_phone_art.py",
+  "assets": {
+    "sakiko/cards/claude.svg": {
+      "bytes": 749,
+      "sha256": "f7a316d5d8ffb108cdac442621f02bc36bca8b39426f2c7c3eb8967b32f136a4"
+    },
+    "sakiko/cards/gemini.svg": {
+      "bytes": 749,
+      "sha256": "14af2d40d62394955f96a2c9e456f550fbfae679bb3d58ade2ffdc74b3eb33e9"
+    },
+    "sakiko/cards/gpt.svg": {
+      "bytes": 749,
+      "sha256": "4dbc8949ea93011a2d4daee20c25edabc15ec6928748cfa05e91d04903de3ae6"
+    },
+    "sakiko/icons/appie.svg": {
+      "bytes": 499,
+      "sha256": "88f5f519af8ccad6f69698f44822d74e6c8562b520180d6ffd6c6d0b1b6aa60c"
+    },
+    "sakiko/icons/assistant.svg": {
+      "bytes": 544,
+      "sha256": "b2abac4f4ecdf9c68deef9218bcc8c1e16eefefee99e0129ea14002ce70f77a0"
+    },
+    "sakiko/icons/chat.svg": {
+      "bytes": 476,
+      "sha256": "f93d1329b4a61a8c5d0a4abbc0a9cc0076b48d851dfe73d552e54b75dd1d38cd"
+    },
+    "sakiko/icons/draw.svg": {
+      "bytes": 495,
+      "sha256": "10580c9ec5b3f439e768defa6f7cfd79394c7f2ef77cbb7840c6db61e2305fd7"
+    },
+    "sakiko/icons/engines.svg": {
+      "bytes": 596,
+      "sha256": "9bc1ddb6b747e1685a612fd7966f4f02f6cf85b7beaae9047cabce8d023efdb8"
+    },
+    "sakiko/icons/forum.svg": {
+      "bytes": 491,
+      "sha256": "b9f0e7ee23714a43dc48687482429b8ede3e6101516bdc56236d61a5d5201682"
+    },
+    "sakiko/icons/gallery.svg": {
+      "bytes": 541,
+      "sha256": "b879d117e3124346cf667d180c7aafc388b6def07702f1d9ae7124d3c2b616f6"
+    },
+    "sakiko/icons/games.svg": {
+      "bytes": 539,
+      "sha256": "d68755b92a2ee4bb91cb528b318fd672fb3fc3a0233944f041fb095f7ee59390"
+    },
+    "sakiko/icons/library.svg": {
+      "bytes": 484,
+      "sha256": "f4c6af3bf18bc3a7a72c851de021e05060b54dae01fd7a7577a8f5da37f193cd"
+    },
+    "sakiko/icons/listen.svg": {
+      "bytes": 488,
+      "sha256": "4fdf32745ff9dc8f6aed5d30ea8a448221a9f3a188b9d759d8c6f77ac3305a43"
+    },
+    "sakiko/icons/music.svg": {
+      "bytes": 538,
+      "sha256": "2bf7a9cc81f914a5f5cb20873c4d919cfd69314bb0079d9e4b67d673ec3665a0"
+    },
+    "sakiko/icons/notes.svg": {
+      "bytes": 491,
+      "sha256": "17091b26160d376fa4f837580fbba4aa19125e5bdf6b9897ca6945193e9ace01"
+    },
+    "sakiko/icons/paint.svg": {
+      "bytes": 611,
+      "sha256": "4ab6cf47837b58b8b59d96e93e8d5c59009a7c2f08ae2b9082c31a1ebf5c7f5b"
+    },
+    "sakiko/icons/peek.svg": {
+      "bytes": 585,
+      "sha256": "40c52051f0991a91355f35ee86a786fb3b1782ea35a59a72a6f6dc62b39a650a"
+    },
+    "sakiko/icons/presets.svg": {
+      "bytes": 550,
+      "sha256": "7063be0e55e2359b3c09f2569cfcdc835077bff38e6a251d516b5b383dbd5bad"
+    },
+    "sakiko/icons/roles.svg": {
+      "bytes": 491,
+      "sha256": "cbb843d33edf2619245c45d5b23a13415a25a334bbec068cc5a4d5eda3bd8917"
+    },
+    "sakiko/icons/settings.svg": {
+      "bytes": 552,
+      "sha256": "827606e19cc9d854045a17b0cdfd47b952cd3f0c721973f9ceab59207f9cf94b"
+    },
+    "sakiko/icons/sounds.svg": {
+      "bytes": 504,
+      "sha256": "e99141c62ff7997ec60303d89fabcfb7ba81af165b2b4242feafa4e2166371d8"
+    },
+    "sakiko/icons/worldcalendar.svg": {
+      "bytes": 532,
+      "sha256": "20266ad8ab5eb27c97b231202d01ce3540dfbb2d1fb51d36e517d2c50f7740e2"
+    },
+    "sakiko/icons/worlddelivery.svg": {
+      "bytes": 545,
+      "sha256": "72b414c7dfec46896388b9afa7b0e3e09fd05d3efdbf2962553d16fd17e7c5af"
+    },
+    "sakiko/icons/worldmessages.svg": {
+      "bytes": 498,
+      "sha256": "1ee5ab890f0b08da8ff7cf9e0f9dafeab176253f978bcfa58a598c60e030e6ed"
+    },
+    "sakiko/icons/worldshop.svg": {
+      "bytes": 476,
+      "sha256": "ce30d74da615df18882224484aea59433d50f513337bd298a9bbc32bba7041f7"
+    },
+    "sakiko/icons/worldstyle.svg": {
+      "bytes": 488,
+      "sha256": "4c7ab59e95ebd09b0414be6aea1298328187fb97089fe7b085ded8944f705cd0"
+    },
+    "sakiko/wallpaper.svg": {
+      "bytes": 1531,
+      "sha256": "6693b8973d5b829f47df86039dcaea4941d341e428d9f830a72c06699addf832"
+    },
+    "soyo/cards/claude.svg": {
+      "bytes": 659,
+      "sha256": "d3a05c52ecdee71f388d4568d33a488f998470fc84bc0ad28507e86800865313"
+    },
+    "soyo/cards/gemini.svg": {
+      "bytes": 659,
+      "sha256": "819576ddd90dad549d65ae9915f914a9666c4bd0cb6d0ead2bbf5eb143ffb87f"
+    },
+    "soyo/cards/gpt.svg": {
+      "bytes": 659,
+      "sha256": "ca95c2030cd1dfc6cc95a83e01d8c7d2087acd24db7dfdb95edfec99c2d09554"
+    },
+    "soyo/icons/appie.svg": {
+      "bytes": 511,
+      "sha256": "5bc09c1bba44e95b3dc3518b00825ee1341e55a965888f9f35fe28e95391f660"
+    },
+    "soyo/icons/assistant.svg": {
+      "bytes": 556,
+      "sha256": "e1702bf1382cb8a7e1c4e6cf008374b77cd410ecdc397136bff162388f98e886"
+    },
+    "soyo/icons/chat.svg": {
+      "bytes": 488,
+      "sha256": "801b1e70fe4def3193118d10ac37858a4a9c79a62eb309a8580a0b5dcfd0e155"
+    },
+    "soyo/icons/draw.svg": {
+      "bytes": 507,
+      "sha256": "9b280b4c5abb4b894675c92bd2db59e68e64b0026990685e1a96394f62a521dc"
+    },
+    "soyo/icons/engines.svg": {
+      "bytes": 608,
+      "sha256": "02d78e07343074912845e0f6aac32105f545e63ff6b8f44cae2bf404e4ef46c6"
+    },
+    "soyo/icons/forum.svg": {
+      "bytes": 503,
+      "sha256": "f4ff4007856294073c8eef43e83db572136b430accbc3807d7d7d0e5df87facc"
+    },
+    "soyo/icons/gallery.svg": {
+      "bytes": 553,
+      "sha256": "f9e24a349afd071bfd7a379efbbe4bb227fc8f4122b5cf1327f358329b868219"
+    },
+    "soyo/icons/games.svg": {
+      "bytes": 551,
+      "sha256": "7dbaa0da85d49a037e435ad9c2fd0f5f269c7668d8d9bbe1b7f6aa83f6ae511e"
+    },
+    "soyo/icons/library.svg": {
+      "bytes": 496,
+      "sha256": "b83cdb40f7b9430d02c2606568a35b2fe0ef079680bdcedcbf5acb965ecdac5a"
+    },
+    "soyo/icons/listen.svg": {
+      "bytes": 500,
+      "sha256": "24451276089c29e929d4b80afca16b30af81956f6ae759a21be587a8b3d8602a"
+    },
+    "soyo/icons/music.svg": {
+      "bytes": 550,
+      "sha256": "562594664cdca392923a721978d58ae487af1d1d5a69d0156f6c4aff2cd25ee0"
+    },
+    "soyo/icons/notes.svg": {
+      "bytes": 503,
+      "sha256": "b1e328b310707f10df16571c88262d79d9388c597635db4ff91ad7c3c96ad388"
+    },
+    "soyo/icons/paint.svg": {
+      "bytes": 623,
+      "sha256": "c7a89b05279f31d48736ee916259269110e48c91084dd4d7163584645023a64f"
+    },
+    "soyo/icons/peek.svg": {
+      "bytes": 597,
+      "sha256": "69bbd38b7e119a9e3209a088d8cbbb8232d9159f53f873334ba6f77c8ea56132"
+    },
+    "soyo/icons/presets.svg": {
+      "bytes": 562,
+      "sha256": "f393f665ba69e889b6a890218f4fef682be4a77ec2c5f4503f6054a0ffd31d7e"
+    },
+    "soyo/icons/roles.svg": {
+      "bytes": 503,
+      "sha256": "a516342be5d4fe063dda8564f39417310b2bd5990a6ea5480b975741b79d12a8"
+    },
+    "soyo/icons/settings.svg": {
+      "bytes": 564,
+      "sha256": "031e78367b8525f32765dc2e41d5c3543656ad0fb6f1648c13b78e8a76c885f2"
+    },
+    "soyo/icons/sounds.svg": {
+      "bytes": 516,
+      "sha256": "bf11ffbd6b19a08edcd97e56a4c2b23c322920b704fb9a16ea4ca58890a35be3"
+    },
+    "soyo/icons/worldcalendar.svg": {
+      "bytes": 544,
+      "sha256": "949821e698d15f99e1cb81430d3ab1c6524736b415548376c4a54818c3336e8f"
+    },
+    "soyo/icons/worlddelivery.svg": {
+      "bytes": 557,
+      "sha256": "2bbb7aca5f3af35e7c5ef87c0766f1d84e9e4d105b5db8ceb46727826ac3b3dd"
+    },
+    "soyo/icons/worldmessages.svg": {
+      "bytes": 510,
+      "sha256": "d498bf17d40a60b1bd9cea17327acede49aa88b9501214cb54205c2a7e54459f"
+    },
+    "soyo/icons/worldshop.svg": {
+      "bytes": 488,
+      "sha256": "dd5c2ca5e4c0b072f41d02d29054b18d9551d649c0946a85b9bb25f24f981432"
+    },
+    "soyo/icons/worldstyle.svg": {
+      "bytes": 500,
+      "sha256": "e9aac3471450c68685f746da8328ef412debd1b8944e80f67a42c55e434219cc"
+    },
+    "soyo/wallpaper.svg": {
+      "bytes": 848,
+      "sha256": "c10b675595607457623a0407b6d2a5bcd9cbdb21a7837a8c0ce5562edf129a44"
+    }
+  }
+}
