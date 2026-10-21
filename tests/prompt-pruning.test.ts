@@ -55,7 +55,7 @@ describe('bounded prompt context and regex variable pruning', () => {
       tavern_events: { CHAT_CHANGED: 'chat_changed' },
       getVariables: vi.fn(() => ({})), replaceVariables: vi.fn(),
       eventOn: vi.fn(), eventRemoveListener: vi.fn(),
-      generate: vi.fn(async () => '<story>她看向夜色。</story><phone_messages>[]</phone_messages>'),
+      generate: vi.fn(async (_config: { user_input: string; max_chat_history: number }) => '<story>她看向夜色。</story><phone_messages>[]</phone_messages>'),
       stopGenerationById: vi.fn(() => true),
     };
     const state = enableProtagonists(createInitialState());
