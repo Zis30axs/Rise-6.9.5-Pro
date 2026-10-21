@@ -74,7 +74,7 @@ describe('bounded prompt context and regex variable pruning', () => {
       expect(config.max_chat_history).toBe(0);
       const summary = JSON.parse(config.user_input.split('\n')[1]);
       expect(summary.protagonist.id).toBe('soyo');
-      expect(summary.narrative.weeklyMemory).toEqual([]);
+      expect(summary.weeklyMemory).toEqual({ summaries: [], pending: null });
       expect(summary.recentPhone).toHaveLength(8);
       expect(summary.recentPhone.at(-1).text.length).toBeLessThanOrEqual(280);
       expect(summary.journal.some((j: {text: string}) => j.text.includes('SUPER_REPEATED_VAR_SENTINEL'))).toBe(false);
