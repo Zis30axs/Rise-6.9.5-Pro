@@ -3,6 +3,11 @@ on:
   push:
     branches: [lite]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'New immutable pre-release tag, for example lite-v0.1.0-rc3'
+        required: true
+        type: string
 permissions:
   contents: write
 jobs:
@@ -66,22 +71,56 @@ jobs:
             dist/lite-assets-report.json
           if-no-files-found: error
           retention-days: 30
-      - name: Create GitHub Pre-release only after validation
+      # Pushes build and upload artifacts only. No existing tag or Release is ever removed.
+      - name: Publish NEW immutable pre-release (manual dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          # Replace only our automatically generated pre-release after every check passes.
-          # Recreate the tag to keep it aligned with the newly verified source commit.
-          if gh release view lite-v0.1.0-rc2 >/dev/null 2>&1; then
-            gh release delete lite-v0.1.0-rc2 --yes --cleanup-tag
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^lite-v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
+            echo '::error::Tag must look like lite-vX.Y.Z-rcN'; exit 1
           fi
-          gh release create lite-v0.1.0-rc2 \
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG already exists; refusing to replace"; exit 1
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $RELEASE_TAG already exists; refusing to move"; exit 1
+          fi
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          tag = os.environ['RELEASE_TAG']
+          sha = os.environ['GITHUB_SHA']
+          info = json.loads(Path('dist/lite-verification.json').read_text('utf-8'))
+          notes = [
+              f'# 未读之城 Lite · {tag}',
+              '',
+              f'构建源提交：`{sha}`。本次交付是该提交的 Lite PNG + 本地 ZIP。',
+              '',
+              '## 使用说明',
+              '- `unread-city-lite-tauri.png`：导入 TauriTavern 的 Character Card V2 PNG。',
+              '- `unread-city-lite-assets.zip`：配套离线 ZIP，不是联网下载；不要当角色卡导入。',
+              '- `lite-verification.json` / `lite-assets-report.json`：构建校验。',
+              '进入角色聊天后点“安装 Lite 素材 ZIP”，选取文件，安装后刷新。',
+              '',
+              '## 校验',
+              f"- PNG: {info['liteCardBytes']} bytes，SHA-256 `{info['liteCardSha256']}`",
+              f"- ZIP: {info['zipBytes']} bytes，SHA-256 `{info['zipSha256']}`",
+              f"- 离线资源：{info['externalAssets']} 项；离线：{info['offline']}",
+              '',
+              '**边界：**构建验证通过，不等于已在 iPhone / TauriTavern 真机验收。',
+              '此发行以本标签的提交与哈希为准，不沿用旧版 RC2 的功能说明。',
+          ]
+          Path('dist/lite-release-notes.md').write_text('\n'.join(notes) + '\n', encoding='utf-8')
+          PY
+          gh release create "$RELEASE_TAG" \
             dist/unread-city-lite-tauri.png \
             dist/unread-city-lite-assets.zip \
             dist/lite-verification.json \
             dist/lite-assets-report.json \
             --target "$GITHUB_SHA" --prerelease \
-            --title "未读之城 Lite v0.1.0-rc2（会客厅 Blob 修复）" \
-            --notes-file integration/lite/README.md
-          # Never replace the release before all build, byte and SHA checks pass.
+            --title "未读之城 Lite $RELEASE_TAG" \
+            --notes-file dist/lite-release-notes.md
