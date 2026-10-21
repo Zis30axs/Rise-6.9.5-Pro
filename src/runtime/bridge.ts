@@ -1,5 +1,6 @@
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { narrativeContext } from './protagonist-narrative';
+import { weeklyMemoryContext } from './weekly-memory';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
@@ -231,6 +232,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
         narrative,
+        weeklyMemory: weeklyMemoryContext(snapshot),
         clock: snapshot.clock, location: snapshot.locationId, player: snapshot.player,
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
@@ -294,7 +296,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
         '玩家本次行动：', input.trim(),
       ].join('\n');
-      const perspective = `当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。素世和祥子各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把另一人的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartInScene 非空时由本轮叙事统筹双方现场交流；为空时不得凭空让另一人到场或替其编造离屏事实。竖线对白仅表示本轮现场实际说出口的话，回忆、想象、内心、旧话引用和手机内容不得伪装成现场对白。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
+      const perspective = `全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世和祥子双方已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。素世和祥子各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把另一人的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartInScene 非空时由本轮叙事统筹双方现场交流；为空时不得凭空让另一人到场或替其编造离屏事实。竖线对白仅表示本轮现场实际说出口的话，回忆、想象、内心、旧话引用和手机内容不得伪装成现场对白。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
       const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : `${perspective}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
       try {
         const response = await Promise.race([
