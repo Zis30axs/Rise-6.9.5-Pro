@@ -1,4 +1,5 @@
-import { finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
+import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
@@ -1110,7 +1111,12 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
 /** Public reducers keep the active legacy view as a compatibility projection only. */
 export function reduceState(state: WorldState, action: WorldAction): WorldState {
   const before = parseState(state);
-  if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') return parseState(reduceProtagonistAction(before, action));
+  if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') {
+    const next = reduceProtagonistAction(before, action);
+    captureNewJournalEvidence(before, next);
+    settleWeeklyMemory(next);
+    return parseState(next);
+  }
   const next = reduceLegacyState(legacyView(before), action);
   return parseState(finishPersonalChange(before, next, `世界行动：${action.type}`));
 }
@@ -1120,7 +1126,15 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
-  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, result, ids, now), '剧情结算');
-  return parseState(recordProtagonistNarrative(before, after, result, ids.assistantId));
+  // The legacy single-protagonist reducer cannot validate a world-level weekly
+  // summary; commit its ordinary story/actions first, then atomically apply the
+  // validated omniscient report to the dual-protagonist candidate snapshot.
+  const { weeklySummary, ...legacyResult } = result;
+  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now), '剧情结算');
+  const next = recordProtagonistNarrative(before, after, result, ids.assistantId);
+  recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
+  captureNewJournalEvidence(after, next);
+  applyWeeklySummary(next, result.weeklySummary);
+  return parseState(next);
 }
 
