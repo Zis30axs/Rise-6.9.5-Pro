@@ -72,5 +72,6 @@
 - `python scripts/prepare_majo_visual_assets.py --check` 通过，确认 9 张艾玛表情与 9 张场景派生图逐字节匹配清单。
 - `python scripts/build_lite_release.py` 通过：77 个外置资源、ZIP 36,336,474 字节。
 - 浏览器：`tests/e2e/majo-visual.spec.ts` 在 1440×900、1280×800、390×844、320×568 检查艾玛九表情切换、二阶堂背景真实字节、手机 Twiitch 页面、无横向溢出与存档不变；使用受控 Helper 宿主、真实生产 IIFE 和真实内嵌手机，模型请求为 0。截图与证据写入 `outputs/majo-visual-qa/`。
-- `.github/workflows/majo-visual.yml` 在本分支复跑类型检查、构建、定向 Vitest、Node 手机素材检查与四视口浏览器场景（Chromium headless）。
+- `.github/workflows/majo-visual.yml` 在本分支复跑类型检查、构建、定向 Vitest、Node 手机素材检查、Lite ZIP 提取与四视口浏览器场景（Chromium headless）；该工作流在 PR #18 上通过。
+- 本地额外回归：`tests/e2e/npc-phone.spec.ts` 4/4 通过，确认新增 Twiitch 应用与住宅/作息改动未破坏现有真实内嵌手机联系人与 NPC 短信路径。
 - 这不是原生酒馆页面或手机真机验收；证据范围以实际运行结果为准。
