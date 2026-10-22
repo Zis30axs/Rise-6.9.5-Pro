@@ -101,8 +101,21 @@ class CardBuildTests(unittest.TestCase):
         majo = json.loads((ROOT / "src/worldbook/majo-residents.json").read_text(encoding="utf-8"))
         emma = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-emma")
         anan = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-anan")
-        self.assertIn("ボク", emma["content"])
-        self.assertIn("わがはい", anan["content"])
+        self.assertIn("中文自称通常是「我」", emma["content"])
+        self.assertIn("希罗酱", emma["content"])
+        self.assertIn("小狗", emma["content"])
+        self.assertIn("受到指责会明显沮丧", emma["content"])
+        self.assertIn("粉色宽松针织开衫", emma["content"])
+        self.assertIn("自称「吾辈」", anan["content"])
+        self.assertNotIn("わがはい", anan["content"])
+        residents = {e.get("extensions", {}).get("personId"): e for e in majo["entries"]}
+        self.assertIn("自称「大叔」", residents["majo-milia"]["content"])
+        self.assertIn("哟♪", residents["majo-noa"]["content"])
+        self.assertIn("彩色挑染", residents["majo-noa"]["content"])
+        self.assertIn("汉娜桑", residents["majo-sherry"]["content"])
+        self.assertIn("雪莉桑", residents["majo-hanna"]["content"])
+        self.assertIn("「ですわ」式大小姐腔", residents["majo-hanna"]["content"])
+        self.assertIn("第一人称自然使用「我」", residents["majo-yuki"]["content"])
         self.assertEqual(emma["extensions"]["home"], "emma-yuki-home")
 
     def test_missing_comment_uses_name(self):
