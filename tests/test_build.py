@@ -109,7 +109,7 @@ class CardBuildTests(unittest.TestCase):
         self.assertIn("自称「吾辈」", anan["content"])
         self.assertNotIn("わがはい", anan["content"])
         residents = {e.get("extensions", {}).get("personId"): e for e in majo["entries"]}
-        self.assertIn("自称「大叔」", residents["majo-milia"]["content"])
+        self.assertIn("第一人称保留「大叔」", residents["majo-milia"]["content"])
         self.assertIn("哟♪", residents["majo-noa"]["content"])
         self.assertIn("彩色挑染", residents["majo-noa"]["content"])
         self.assertIn("汉娜桑", residents["majo-sherry"]["content"])
