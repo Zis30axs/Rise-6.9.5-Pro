@@ -180,7 +180,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'anan-noa-milia-home', label: '安安、诺亚与米莉亚的住处', parentLocationId: 'junction',
-    description: '【住宅原型】三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。共用空间不代表三人同时在場。',
+    description: '【住宅原型】三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。共用空间不代表三人同时在场。',
     entrance: { x: 0, z: 48, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'anan-table', kind: 'desk', minX: -2.4, maxX: 1.6, minZ: -1.2, maxZ: 1.2 },
