@@ -24,7 +24,7 @@
 ## 2026-10-22 交接进度
 
 - 半主要角色只配置一套主立绘和表情差分，沿用九种情绪标准；见 `DeepSeek.md` 与 `CODEX.md`。
-- 已恢复并提交的静态文件见 `assets/majo-cast/README.md`，当前为 Twiitch 的 13 张 SVG 及本地增量 ZIP。
-- 五张角色原始三姿态图集已恢复并打包至 `assets/majo-cast/packs/unread-city-majo-five-character-source-sheets-20261022.zip`，SHA-256 与身份记录见 `assets/majo-cast/character-source-sheets-20261022.json`。每张为 1536×1024 三联图，现阶段按原图保存，不代表九种独立表情差分齐全，也未接入运行时。此前登记的十张场景／参考图仍保留在 `assets/majo-cast/recovery-intake-20261022.json`；其余住宅、街区和通用室内素材仍需继续恢复或补交。
+- 已恢复并提交的静态文件见 `assets/majo-cast/README.md`，当前为 Twiitch 的 13 张 SVG、15 张 JPEG 原图及本地增量 ZIP。
+- 五张角色原始三姿态图集已恢复并打包至 `assets/majo-cast/packs/unread-city-majo-five-character-source-sheets-20261022.zip`，SHA-256 与身份记录见 `assets/majo-cast/character-source-sheets-20261022.json`。每张为 1536×1024 三联图，现阶段按原图保存，不代表九种独立表情差分齐全，也未接入运行时。此前登记的十张场景／参考图现已补交至 `assets/majo-cast/packs/unread-city-majo-recovered-10-part-01-of-04.zip` 至 `part-04-of-04.zip` 四个完整本地 ZIP 分包（6 张住宅室内、3 张街区、1 张角色三姿态参考图）；清单见 `assets/majo-cast/recovered-10-source-images-20261022.json`，两批共 15 张原图汇总于 `assets/majo-cast/recovery-intake-20261022.json`。所有补交原图均为 JPEG，未恢复原始 PNG／透明通道，不能记为九表情齐全。其他指定住宅及街区素材仍需继续恢复或补交。
 - 希罗常服为和服；二阶堂家为日式宅邸，包含庭院、和室、入鞘武士刀刀架及练剑空间。住宅图像不作为官方住宅设定声明。
 - 不修改游戏逻辑，不合并 PR，不混入 PR #15。

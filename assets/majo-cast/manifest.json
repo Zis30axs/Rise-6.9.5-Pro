@@ -94,7 +94,7 @@
       "sha256": "034956e144beb0fe486657b0e722dd4515fad335519d3d77248ef309227e6485"
     }
   ],
-  "characterAndScenePngStatus": "five-character-jpg-source-sheets-recovered; remaining-character-and-scene-art-pending",
+  "characterAndScenePngStatus": "15-jpeg-source-images-recovered: 6-character-sheets-and-9-scenes; original-png-and-remaining-art-pending",
   "sourcePacks": [
     {
       "id": "character-source-sheets-20261022",
@@ -105,6 +105,54 @@
       "storage": "ZIP_STORED",
       "manifest": "character-source-sheets-20261022.json",
       "purpose": "Five original three-panel character source sheets; static reference only, not wired into runtime."
+    },
+    {
+      "id": "recovered-10-source-images-20261022-part-01",
+      "file": "packs/unread-city-majo-recovered-10-part-01-of-04.zip",
+      "mime": "application/zip",
+      "bytes": 1359850,
+      "sha256": "c3a63bf8cfaa6fd63bd08a2e0e160c3fe7ca8f7b2c6ff4abf8d9045057aad573",
+      "storage": "ZIP_STORED",
+      "manifest": "recovered-10-source-images-20261022.json",
+      "part": 1,
+      "parts": 4,
+      "purpose": "Original JPEG source art; static handoff only, not wired into runtime."
+    },
+    {
+      "id": "recovered-10-source-images-20261022-part-02",
+      "file": "packs/unread-city-majo-recovered-10-part-02-of-04.zip",
+      "mime": "application/zip",
+      "bytes": 1403221,
+      "sha256": "68e8a3d62533379fe47517537f17da1d7fd2a5383b8438f1456a7cb351d4ef3f",
+      "storage": "ZIP_STORED",
+      "manifest": "recovered-10-source-images-20261022.json",
+      "part": 2,
+      "parts": 4,
+      "purpose": "Original JPEG source art; static handoff only, not wired into runtime."
+    },
+    {
+      "id": "recovered-10-source-images-20261022-part-03",
+      "file": "packs/unread-city-majo-recovered-10-part-03-of-04.zip",
+      "mime": "application/zip",
+      "bytes": 1081200,
+      "sha256": "bba6e00dd6efabfaeb547a2cd8faeeb0310126c7ea1a11bf13020b9db560b69a",
+      "storage": "ZIP_STORED",
+      "manifest": "recovered-10-source-images-20261022.json",
+      "part": 3,
+      "parts": 4,
+      "purpose": "Original JPEG source art; static handoff only, not wired into runtime."
+    },
+    {
+      "id": "recovered-10-source-images-20261022-part-04",
+      "file": "packs/unread-city-majo-recovered-10-part-04-of-04.zip",
+      "mime": "application/zip",
+      "bytes": 1329281,
+      "sha256": "c4ee11daa881ff50b98c5decc2c1286f1f937f5b6e4c0c43995555a70abb168a",
+      "storage": "ZIP_STORED",
+      "manifest": "recovered-10-source-images-20261022.json",
+      "part": 4,
+      "parts": 4,
+      "purpose": "Original JPEG source art; static handoff only, not wired into runtime."
     }
   ]
 }
