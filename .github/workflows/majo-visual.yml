@@ -37,6 +37,8 @@ jobs:
         run: python scripts/prepare_majo_visual_assets.py --check
       - name: Type-check and build the production frontend with the real embedded phone
         run: npm run build
+      - name: Verify the Lite ZIP externalizes the new artwork
+        run: python scripts/build_lite_release.py
       - name: Runtime art, interiors, Nikaido house and save compatibility
         run: npx vitest run tests/majo-visual.test.ts tests/novel-backgrounds.test.ts tests/campus-interiors.test.ts tests/novel-navigation.test.ts --maxWorkers=1
       - name: Phone art and Twiitch static asset policy

@@ -100,29 +100,34 @@ export const majoDistrictArt: Readonly<Record<string, string>> = Object.freeze({
 
 export interface MajoArtStatus {
   readonly personId: string;
+  readonly tier: 'main' | 'semi-main';
+  readonly targetExpressions: number;
   readonly outfit: string;
   readonly expressions: number;
   readonly complete: boolean;
   readonly note: string;
 }
 
+/** User-confirmed expression tiers: main 9, semi-main 3. Art is still missing for most residents. */
+export const majoExpressionPolicy = Object.freeze({ main: 9, semiMain: 3 } as const);
+
 /**
  * Honest runtime inventory for the status/docs surface. Absent expression art
  * stays absent; the generic atlas fallback is not counted as an expression diff.
  */
 export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
-  { personId: 'majo-emma', outfit: '便服（浅粉针织开衫）', expressions: 9, complete: true, note: '已接入九种表情。' },
-  { personId: 'majo-hiro', outfit: '和服', expressions: 0, complete: false, note: '常服设定为和服；和服立绘与表情差分待补交，黑红和服参考图身份未确认，未接入。' },
-  { personId: 'majo-anan', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-noa', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-milia', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-margo', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-nanoka', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-arisa', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-sherry', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-hanna', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-koko', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-meruru', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-leia', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-yuki', outfit: '待确认', expressions: 0, complete: false, note: '九种表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-emma', tier: 'main', targetExpressions: 9, outfit: '便服（浅粉针织开衫）', expressions: 9, complete: true, note: '已接入九种表情。' },
+  { personId: 'majo-hiro', tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 0, complete: false, note: '常服设定为和服；和服立绘与三/九表情差分待补交，黑红和服参考图身份未确认，未接入。' },
+  { personId: 'majo-anan', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-noa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-leia', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-yuki', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
 ]);

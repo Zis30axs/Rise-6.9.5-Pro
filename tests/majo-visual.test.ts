@@ -5,8 +5,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import manifest from '../assets/majo-runtime/manifest.json';
 import {
-  majoArtStatus, majoDistrictArt, majoEmotions, majoEmmaExpressions, majoExpressionSets,
-  majoInteriorArt, resolveMajoExpressionPortrait, resolveMajoSpeaker,
+  majoArtStatus, majoDistrictArt, majoEmotions, majoEmmaExpressions, majoExpressionPolicy,
+  majoExpressionSets, majoInteriorArt, resolveMajoExpressionPortrait, resolveMajoSpeaker,
 } from '../src/frontend/majo-art';
 import { getNovelBackground } from '../src/frontend/novel-backgrounds';
 import { campusInteriors, getCampusInterior, getInteriorMovementWorld } from '../src/runtime/campus-interiors';
@@ -46,11 +46,13 @@ describe('PR #16 runtime art registry', () => {
 
   it('reports completed and missing art honestly', () => {
     expect(majoArtStatus).toHaveLength(14);
+    expect(majoExpressionPolicy).toEqual({ main: 9, semiMain: 3 });
     expect(new Set(majoArtStatus.map(row => row.personId))).toEqual(new Set(residentCast.map(row => row.id)));
     const emma = majoArtStatus.find(row => row.personId === 'majo-emma')!;
-    expect(emma).toMatchObject({ expressions: 9, complete: true });
+    expect(emma).toMatchObject({ tier: 'main', targetExpressions: 9, expressions: 9, complete: true });
     const hiro = majoArtStatus.find(row => row.personId === 'majo-hiro')!;
-    expect(hiro).toMatchObject({ outfit: '和服', expressions: 0, complete: false });
+    expect(hiro).toMatchObject({ tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 0, complete: false });
+    for (const row of majoArtStatus.filter(row => row.tier === 'semi-main')) expect(row.targetExpressions).toBe(3);
     expect(majoArtStatus.filter(row => row.complete).map(row => row.personId)).toEqual(['majo-emma']);
   });
 
