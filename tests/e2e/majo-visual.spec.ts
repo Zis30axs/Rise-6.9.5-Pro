@@ -31,6 +31,7 @@ function initial(): WorldState {
     text: [
       ...expressions.map((expression, index) => `|艾玛|${labels[index]}|这是${labels[index]}表情的受控验收对白，庭院的光落在缘侧。|`),
       '|希罗|平静|三姿态参考图也已经按人物身份登记，这是平静姿态的受控验收对白。|',
+      '|希罗|生气|这里没有生气差分，应当回退到同一人物的平常立绘。|',
     ].join('\n'),
   }];
   return state;
@@ -77,7 +78,8 @@ for (const viewport of viewports) {
     // transparent sprite. Expanding rewinds to the first line of the entry (Emma).
     const portrait = page.locator('[data-majo-portrait]');
     await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
-    await expect(portrait).toHaveAttribute('data-npc-emotion', 'neutral');
+    await expect(portrait).toHaveAttribute('data-npc-emotion', 'angry');
+    await expect(portrait).toHaveAttribute('data-majo-exact', 'false');
     const hiroBytes = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
     await page.screenshot({ path: `${prefix}-hiro-sprite.png` });
     await page.locator('[data-toggle-dialogue]').click();
@@ -94,6 +96,13 @@ for (const viewport of viewports) {
     await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
     await expect(portrait).toHaveAttribute('data-npc-speaker', '希罗');
     await expect(portrait).toHaveAttribute('data-npc-emotion', 'neutral');
+    // Missing semi-main emotions must show this person's neutral sprite, never a generic face.
+    await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+    await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
+    await expect(portrait).toHaveAttribute('data-npc-emotion', 'angry');
+    await expect(portrait).toHaveAttribute('data-majo-exact', 'false');
+    await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
+    await page.screenshot({ path: `${prefix}-hiro-neutral-fallback.png` });
     await noOverflow(page);
 
     // The real embedded phone must expose the recovered Twiitch artwork as a local app.
