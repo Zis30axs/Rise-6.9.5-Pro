@@ -115,6 +115,7 @@ export function enableProtagonists(s: WorldState): WorldState {
       p.third = personalState(emmaPersonalState(next));
       p.accounts.people.emma ??= { id: 'emma', deviceId: 'unread-city-phone-emma', theme: 'emma-soft', cards: { gpt: EMMA_START_CENTS, claude: 0, gemini: 0 } };
       p.devices.emma ??= defaultDevice();
+      if (p.backgroundLife && !Object.hasOwn(p.backgroundLife.people, 'emma')) p.backgroundLife = initializeBackgroundLife(next);
     }
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
