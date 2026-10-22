@@ -17,7 +17,8 @@
         "publicProfile": "樱羽艾玛，城市里的常驻居民。",
         "anchor": "gate-east",
         "home": "emma-yuki-home"
-      }
+      },
+      "comment": "樱羽艾玛"
     },
     {
       "name": "二阶堂希罗",
@@ -34,7 +35,8 @@
         "publicProfile": "二阶堂希罗，城市里的常驻居民。",
         "anchor": "bookshop-west",
         "home": "nikaido-house"
-      }
+      },
+      "comment": "二阶堂希罗"
     },
     {
       "name": "夏目安安",
@@ -51,7 +53,8 @@
         "publicProfile": "夏目安安，城市里的常驻居民。",
         "anchor": "library-west",
         "home": "anan-noa-milia-home"
-      }
+      },
+      "comment": "夏目安安"
     },
     {
       "name": "城崎诺亚",
@@ -68,7 +71,8 @@
         "publicProfile": "城崎诺亚，城市里的常驻居民。",
         "anchor": "park-west",
         "home": "anan-noa-milia-home"
-      }
+      },
+      "comment": "城崎诺亚"
     },
     {
       "name": "莲见蕾雅",
@@ -85,7 +89,8 @@
         "publicProfile": "莲见蕾雅，城市里的常驻居民。",
         "anchor": "teaching-west",
         "home": "residential-leia"
-      }
+      },
+      "comment": "莲见蕾雅"
     },
     {
       "name": "佐伯米莉亚",
@@ -102,7 +107,8 @@
         "publicProfile": "佐伯米莉亚，城市里的常驻居民。",
         "anchor": "library-east",
         "home": "anan-noa-milia-home"
-      }
+      },
+      "comment": "佐伯米莉亚"
     },
     {
       "name": "宝生玛格",
@@ -119,7 +125,8 @@
         "publicProfile": "宝生玛格，城市里的常驻居民。",
         "anchor": "junction-west",
         "home": "residential-margo"
-      }
+      },
+      "comment": "宝生玛格"
     },
     {
       "name": "黑部奈叶香",
@@ -136,7 +143,8 @@
         "publicProfile": "黑部奈叶香，城市里的常驻居民。",
         "anchor": "avenue-west",
         "home": "residential-nanoka"
-      }
+      },
+      "comment": "黑部奈叶香"
     },
     {
       "name": "紫藤亚里沙",
@@ -153,7 +161,8 @@
         "publicProfile": "紫藤亚里沙，城市里的常驻居民。",
         "anchor": "sports-west",
         "home": "residential-arisa"
-      }
+      },
+      "comment": "紫藤亚里沙"
     },
     {
       "name": "橘雪莉",
@@ -170,7 +179,8 @@
         "publicProfile": "橘雪莉，城市里的常驻居民。",
         "anchor": "street-cafe",
         "home": "sherry-hanna-home"
-      }
+      },
+      "comment": "橘雪莉"
     },
     {
       "name": "远野汉娜",
@@ -187,7 +197,8 @@
         "publicProfile": "远野汉娜，城市里的常驻居民。",
         "anchor": "bookshop-east",
         "home": "sherry-hanna-home"
-      }
+      },
+      "comment": "远野汉娜"
     },
     {
       "name": "泽渡可可",
@@ -204,7 +215,8 @@
         "publicProfile": "泽渡可可，城市里的常驻居民。",
         "anchor": "bus-east",
         "home": "koko-old-house"
-      }
+      },
+      "comment": "泽渡可可"
     },
     {
       "name": "冰上梅露露",
@@ -221,7 +233,8 @@
         "publicProfile": "冰上梅露露，城市里的常驻居民。",
         "anchor": "park-east",
         "home": "residential-meruru"
-      }
+      },
+      "comment": "冰上梅露露"
     },
     {
       "name": "月代雪",
@@ -237,7 +250,8 @@
         "publicProfile": "月代雪，城市里的常驻居民。",
         "anchor": "gate-west",
         "home": "emma-yuki-home"
-      }
+      },
+      "comment": "月代雪"
     },
     {
       "name": "魔裁群像的共同生活",
@@ -248,7 +262,8 @@
       "constant": false,
       "enabled": true,
       "content": "《未读之城》采用明确的平行改编：魔裁十三名少女及月代雪共十四人全部幸存，保留她们在原作的重要经历及由经历形成的人格与关系，但不重演死亡、处刑或既定悲剧作为当前世界必然结果。十四人的群聊与共同生活遵守手机联系人、邀请、日程和实际知情权限；素世与祥子等外来人物不会自动被群体认识。艾玛在本作已是第三位可操作主角，仍沿用 majo-emma 稳定人物 ID，切换视角不复制一个同名 NPC。人物后续关系由存档事件发展，原作关系仅作初始背景，不覆盖玩家实际经历。",
-      "extensions": {}
+      "extensions": {},
+      "comment": "魔裁群像的共同生活"
     }
   ]
 }
