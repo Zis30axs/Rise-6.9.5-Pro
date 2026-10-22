@@ -1,6 +1,6 @@
-import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
+import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { WorldState, WorldAction } from '../frontend/types';
-import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
+import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
@@ -115,7 +115,6 @@ export function enableProtagonists(s: WorldState): WorldState {
       p.third = personalState(emmaPersonalState(next));
       p.accounts.people.emma ??= { id: 'emma', deviceId: 'unread-city-phone-emma', theme: 'emma-soft', cards: { gpt: EMMA_START_CENTS, claude: 0, gemini: 0 } };
       p.devices.emma ??= defaultDevice();
-      p.accounts.active = p.accounts.active;
     }
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
@@ -316,6 +315,8 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     const target=actor(action.target); if(target===who) return s;
     suspendBackgroundActivity(s,target);
     suspendBackgroundActivity(s,who);
+    const controlledPerson=(PROTAGONIST_PERSON_IDS as Record<string,string|undefined>)[target];
+    if(controlledPerson&&p.npcPhone) retireControlledNpcThreads(p.npcPhone);
     const leaving=personalState(s);
     const remaining=otherProtagonists(target);
     const stateOf=(id:ProtagonistId)=>id===who?leaving:personalState(personState(s,id));

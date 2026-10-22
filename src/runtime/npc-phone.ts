@@ -187,7 +187,7 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
 }
 
 /** Called when an existing resident becomes a controllable protagonist. */
-function retireControlledNpcThreads(social: NpcPhoneState): void {
+export function retireControlledNpcThreads(social: NpcPhoneState): void {
   for (const request of social.requests) {
     if (request.status === 'pending' && isProtagonistPerson(request.npcId)) request.status = 'declined';
   }
