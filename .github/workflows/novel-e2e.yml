@@ -1,0 +1,63 @@
+name: Novel mode E2E
+
+on:
+  push:
+    branches: [fix/lite-novel-e2e-20261022]
+  pull_request:
+    branches: [lite]
+    paths:
+      - tests/e2e/novel.spec.ts
+      - tests/e2e/ui-layout.spec.ts
+      - tests/e2e/academics-fixture.ts
+      - src/**
+      - playwright.config.ts
+      - .github/workflows/novel-e2e.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  novel-and-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: python -m pip install Pillow
+      - name: Restore pinned embedded phone and existing patch
+        run: |
+          git init ../ST-iPhonie
+          git -C ../ST-iPhonie remote add origin https://github.com/Zis30axs/ST-iPhonie.git
+          git -C ../ST-iPhonie fetch --depth 1 origin 24295193aa1adff606edcd4e63c8b07923533f2b
+          git -C ../ST-iPhonie checkout --detach FETCH_HEAD
+          git -C ../ST-iPhonie apply --check "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+          git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+      - name: Type-check and build production frontend
+        run: npm run build
+      - name: Install Chromium and Chinese fonts
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Complete novel suite and four-viewport layout regression
+        run: npx playwright test tests/e2e/novel.spec.ts tests/e2e/ui-layout.spec.ts --workers=1 --reporter=line --trace=retain-on-failure
+      - name: Preserve screenshots and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: novel-e2e-qa
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            outputs/novel-*.png
+            outputs/ui-layout-qa/
+            test-results/
