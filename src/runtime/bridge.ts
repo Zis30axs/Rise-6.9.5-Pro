@@ -5,7 +5,7 @@ import { weeklyMemoryContext } from './weekly-memory';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
-import { getSceneContext } from './scene-context';
+import { getSceneContext, hiddenProtagonistPersons } from './scene-context';
 import { parseGeneratedStory, STORY_ACTION_LIMITS } from './story-protocol';
 import { loadStoryApiSettings, requestStoryFromCustomApi } from './story-api';
 import { getAirTrafficContext } from './air-traffic';
@@ -58,7 +58,7 @@ type HostWindow = Window & { SillyTavern?: { getContext(): TavernContext } };
 // and player text out of this system injection; inherited worldbook formats may
 // describe other frontends, but must not replace the card's own protocol.
 const STORY_PROTOCOL = [
-  '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下人物和地点是原型示例，尚非正式设定。',
+  '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   '本轮优先输出关键标签块：<story>小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。每类标签最多一次，手机消息只含 npcId 和 text。额外思考或解释必须放在标签外，禁止任意状态补丁。旧版完整 JSON 仍兼容：必填 story 和 phone_messages，可选 world_events 和 world_actions。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
@@ -216,7 +216,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText) throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
       const snapshot = parseState(state);
       const storyApi = loadStoryApiSettings();
-      if (storyApi.mode === 'tavern' && context().mainApi !== 'openai') throw new Error('原型叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型，或在状态页配置独立叙事 API。');
+      if (storyApi.mode === 'tavern' && context().mainApi !== 'openai') throw new Error('叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型，或在状态页配置独立叙事 API。');
       cancel();
       const requestEpoch = epoch;
       const generationId = `unread-city:${instanceId}:${++requestSequence}`;
@@ -285,7 +285,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         }),
         locationDetails: locations.find(location => location.id === snapshot.locationId),
         contactProposal: contactProposalContext(snapshot),
-        scene: getSceneContext(snapshot.scene, snapshot.interior, snapshot.contacts, snapshot.clock),
+        scene: getSceneContext(snapshot.scene, snapshot.interior, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)),
         airTraffic,
         transit: getTransitContext(snapshot.transit, snapshot.scene, snapshot.interior),
         contacts: snapshot.contacts.map(({ id, name, status, affinity, portraitId, isMain }) => ({ id, name, status: status.slice(0, 120), affinity, portraitId, isMain })),
@@ -308,9 +308,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
           '玩家本次行动：', input.trim(),
         ].join('\n');
-      const perspective = `全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世和祥子双方已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。素世和祥子各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把另一人的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartInScene 非空时由本轮叙事统筹双方现场交流；为空时不得凭空让另一人到场或替其编造离屏事实。竖线对白仅表示本轮现场实际说出口的话，回忆、想象、内心、旧话引用和手机内容不得伪装成现场对白。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
+      const perspective = `全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子和艾玛三位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。三位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把另外两人的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。竖线对白仅表示本轮现场实际说出口的话，回忆、想象、内心、旧话引用和手机内容不得伪装成现场对白。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
       const weekly = weeklyMemoryContext(snapshot);
-      const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括两位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
+      const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括三位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
       const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
       const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。';
       const combinedSystemPrompt = options?.kind === 'contact_introduction' || phoneTask ? systemPrompt : `${calendarInstruction}\n${systemPrompt}`;

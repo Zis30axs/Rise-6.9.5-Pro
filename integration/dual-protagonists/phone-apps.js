@@ -54,9 +54,11 @@ function worldApp(ctx,id) {
   let data=null,section=id,peek=false,pending=null,recipient='protagonist';
   const drafts=new Map();
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
+  const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice(11):data.other.id;
+  const protagonistName=()=>(data.others||[]).find(x=>x.id===protagonistTarget())?.name||data.other.name;
   async function readSelectedContact() {
     if(reading||v.disposed||peek||id!=='worldmessages'||ctx.doc.hidden||ctx.visible?.(id)===false||!data||!ctx.api.listThreads)return;
-    const contactId=recipient.startsWith('npc:')?data.npcPhone?.contacts.find(c=>c.id===recipient.slice(4))?.contactId:recipient==='protagonist'?'protagonist-'+data.other.id:null;
+    const contactId=recipient.startsWith('npc:')?data.npcPhone?.contacts.find(c=>c.id===recipient.slice(4))?.contactId:recipient.startsWith('protagonist')?'protagonist-'+protagonistTarget():null;
     if(!contactId)return;
     const binding=data.binding,selected=recipient;
     reading=true;
@@ -107,13 +109,14 @@ function worldApp(ctx,id) {
       if(id==='twiitch') html+=twiitchView(data);
       if(section==='worldmessages'||section==='messages') {
         const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
-        const recipients=[['protagonist',data.other.name],...social.contacts.map(c=>['npc:'+c.id,c.name]),...social.groups.map(g=>['group:'+g.id,`${g.name}（${g.memberCount}人）`])];
+        const protagonistRows=(data.others||[]).map(other=>['protagonist:'+other.id,other.name]);
+        const recipients=[...protagonistRows,['protagonist',data.other.name],...social.contacts.map(c=>['npc:'+c.id,c.name]),...social.groups.map(g=>['group:'+g.id,`${g.name}（${g.memberCount}人）`])];
         if(!recipients.some(r=>r[0]===recipient))recipient='protagonist';
         const isNpc=recipient.startsWith('npc:'),isGroup=recipient.startsWith('group:');
         const targetId=isNpc?recipient.slice(4):isGroup?recipient.slice(6):null;
         const thread=targetId?social.messages.filter(m=>m.channel===(isNpc?'npc':'group')&&m.targetId===targetId):(data.conversation||[]);
         const canonicalIds=new Set(thread.map(row=>row.id));
-        const contactId=isNpc?social.contacts.find(c=>c.id===targetId)?.contactId:'protagonist-'+data.other.id;
+        const contactId=isNpc?social.contacts.find(c=>c.id===targetId)?.contactId:'protagonist-'+protagonistTarget();
         const legacy=isGroup?'':data.messages.filter(m=>m.npcId===contactId&&!canonicalIds.has(m.id))
           .map(m=>`<article class="sms-bubble incoming"><time>${esc(historicalTime(m.at))}</time><p>${esc(m.text)}</p></article>`).join('');
         const shown=legacy+thread.map(m=>{
@@ -121,7 +124,7 @@ function worldApp(ctx,id) {
           const waiting=outgoing&&(targetId?m.status==='pending':m.expectsReply&&!m.answered);
           const sent=outgoing?'<span class="sms-state" aria-label="已送达，对方已获知"><span class="sms-read-animation"><i>未读</i><b>已读 ✓</b></span></span>':'';
           const silent=outgoing&&m.status==='silent'?'<span class="sms-state">暂未回复</span>':'';
-          return `<article class="sms-bubble ${outgoing?'outgoing':'incoming'}" data-message-id="${esc(m.id)}"><time>${esc(time(m.at))} · ${outgoing?'我':esc(m.speakerName||data.other.name)}</time><p>${esc(m.text)}</p>${sent}${silent}${waiting?btn('retry-reply','重新请求对方回复','text-button',`data-id="${esc(m.id)}"`):''}</article>`;
+          return `<article class="sms-bubble ${outgoing?'outgoing':'incoming'}" data-message-id="${esc(m.id)}"><time>${esc(time(m.at))} · ${outgoing?'我':esc(m.speakerName||protagonistName())}</time><p>${esc(m.text)}</p>${sent}${silent}${waiting?btn('retry-reply','重新请求对方回复','text-button',`data-id="${esc(m.id)}"`):''}</article>`;
         }).join('');
         const requests=peek?'':social.requests.filter(q=>q.status==='pending').map(q=>`<article class="world-event"><strong>${esc(q.name)}${q.kind==='group'?'邀请你加入群聊':'希望添加联系方式'}</strong><p>${esc(q.quote)}</p><div class="world-tabs">${btn('accept-contact','接受','primary',`data-id="${esc(q.id)}"`)}${btn('decline-contact','婉拒','secondary',`data-id="${esc(q.id)}"`)}</div></article>`).join('');
         if(requests)html+=`<section class="group" aria-label="联系申请">${requests}</section>`;
@@ -146,14 +149,14 @@ function worldApp(ctx,id) {
       case 'transfer':await act({type:'transfer',from:formValue('from'),to:formValue('to'),cents:Math.round(Number(formValue('amount'))*100)});break;
       case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
-      case 'send':{const message=formValue('message'),command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
+      case 'send':{const message=formValue('message'),command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
       case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
       case 'retry-reply':try{data=await api().retryReply(el.dataset.id);render();ctx.notify('对方已回复');}catch(e){ctx.notify(e.message,{error:true});}break;
       case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
       case 'read':await act({type:'read_notifications'});break;
     }
   });
-  v.openContact=contactId=>{data=base();peek=false;section=id;const contact=data.npcPhone?.contacts.find(c=>c.contactId===contactId);recipient=contact?'npc:'+contact.id:'protagonist';render();};
+  v.openContact=contactId=>{data=base();peek=false;section=id;const contact=data.npcPhone?.contacts.find(c=>c.contactId===contactId);recipient=contact?'npc:'+contact.id:contactId.startsWith('protagonist-')?'protagonist:'+contactId.slice(12):'protagonist';render();};
   v.on('change','[data-world-field="recipient"]',el=>{recipient=el.value;render();});
   v.on('input','[data-world-field="message"]',el=>{drafts.set(recipient,el.value);});
   v.refresh=()=>{try{refresh();}catch(e){v.draw(heading(labels[id])+`<p>${esc(e.message)}</p>`);}};

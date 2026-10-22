@@ -1,6 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
 import { residentCast, residentPresence } from './npc-cast';
 import { housingForPerson, residentOutfit } from './majo-housing';
+import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
 import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
 import { sceneAreas, sceneBounds, sceneLandmarks } from '../frontend/scene-layout';
@@ -134,7 +135,14 @@ export function sampleScenePerson(seed: string, anchor: ScenePersonAnchor): Scen
   };
 }
 
-export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}): ScenePerson[] {
+/** The controlled protagonist's resident identity is never projected as a background NPC. */
+export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { active?: string } } }): readonly string[] => {
+  const active = state.protagonists?.accounts?.active;
+  const person = active ? (PROTAGONIST_PERSON_IDS as Record<string, string | undefined>)[active] : undefined;
+  return person ? [person] : [];
+};
+export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+  const hidden = new Set(hiddenPersonIds);
   const names = new Set<string>();
   const people = scenePersonAnchors.map(anchor => {
     const person = sampleScenePerson(scene.seed, anchor);
@@ -150,6 +158,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
   // Resident identity is independent of the pedestrian seed. Without a clock,
   // expose authored meeting anchors for save validation, not live presence.
   for (const resident of residentCast) {
+    if (hidden.has(resident.id)) continue;
     const presence = clock ? residentPresence(resident.id, clock) : null;
     if (clock && !presence?.anchorId) continue;
     const anchor = scenePersonAnchors.find(a => a.id === (presence?.anchorId ?? resident.anchor));
@@ -172,7 +181,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}) {
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
@@ -189,7 +198,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   if (!scene) return null;
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
-  const people = getScenePeople(scene, contacts, clock);
+  const people = getScenePeople(scene, contacts, clock, hiddenPersonIds);
   const nearby = people
     .map(person => ({ person, distance: Math.hypot(person.x - scene.x, person.z - scene.z) }))
     .filter(item => item.distance <= 18)

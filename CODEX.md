@@ -31,6 +31,16 @@
 
 实现、协议、稳定 ID、第三主角接管注意事项和验证边界见 integration/dual-protagonists/NPC-CONTACTS.md。本地内嵌手机构建与类型检查通过，138 项定向回归及四视口真实手机受控测试通过；未调用真实模型或部署/覆盖用户存档。完整前端生产构建另由 PR CI 验证。
 
+## 最新增量：樱羽艾玛第三主角（2026-10-22，独立 PR，基于 #18）
+
+按用户选择 B，在 PR #18 视觉接入分支上新建独立分支，PR base 为 `feat/lite-majo-visual-integration`；不改 #18 的素材提交，不合并到 `lite` 或 `main`。`PROTAGONISTS = ['soyo','sakiko','emma']`，`majo-emma` 是唯一接管的常驻人物 ID；三人共享世界时钟与历史，前台状态、账户、设备、位置、背包、学业、手机、联系人、日程、日记和故事分开保存。
+
+存档升级到 `1.13.0`：1.12 双主角存档保留 `inactive` 原样，新增 `third`（艾玛）及第三个 Appie Pay 账户/设备/后台生活；旧 NPC 联系人、短信和艾玛已有关系不重放。艾玛当前主角时从场景 NPC 投影、逐字联系证据、NPC 短信和群聊自动抽样中排除；另两人后台生活分别结算。主角短信增加显式 `to`，手机“世界消息”可分别联系素世/祥子/艾玛。
+
+切换后小说视图立即显示目标主角立绘：素世 Live2D，祥子和艾玛 sprite；其余玩家状态在切换时保存。住宅与室内描述里的“游戏原型/不作为官方住宅设定”等实机注释已全部删除，边界只保留在开发文档。艾玛专属手机壁纸/图标、住宅参考图仍缺，未虚报完成。
+
+验证：`vue-tsc --noEmit`、59 个 Vitest 文件 635 项（含新增 7 项第三主角迁移/切换/短信/NPC 排除/后台生活/文案）、四视口 Emma 切换 E2E、既有 majo/phone 视觉回归。详见 `integration/third-protagonist/README.md`；未做 iPhone/TauriTavern 真机导入验收。
+
 ## 最新维护：祥子与市中心正式素材（2026-10-20，PR #6）
 
 从 `recovery/downtown-sakiko-20261020@4159b0a` 独立 worktree 继续，保留 `6e8d114` 运行时和其他工作流；未切换/覆盖原 main 工作区。用户明确授权 imagegen CLI/API 备用方式并指定 image2.5sun（`gpt-image-2.5-sunburst`）。18 张独立原始 PNG 与运行 WebP、哈希、完整提示词和逐项视觉审核均已保存，manifest 由 pending 变为 approved。常服/室内服各六表情、丰川家昼昏夜/会客厅及市中心昼夜齐全，运行图合计5,881,250字节。

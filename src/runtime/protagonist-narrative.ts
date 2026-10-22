@@ -2,7 +2,7 @@ import type { GeneratedStory, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { backgroundLifeSummary } from './background-life';
-import { activeProtagonist, otherProtagonist, personState, protagonistNames, protagonistsNearby } from './protagonist-world';
+import { activeProtagonist, otherProtagonists, personState, protagonistNames, protagonistNearby } from './protagonist-world';
 
 const JOURNAL_LIMIT = 100;
 const RECAP_LIMIT = 12;
@@ -48,16 +48,18 @@ export function protagonistRecap(state: WorldState): ProtagonistRecapEntry[] {
 /** Never include the other protagonist's private position, diary, wallet or device. */
 export function narrativeContext(state: WorldState) {
   const owner = activeProtagonist(state);
-  const other = otherProtagonist(owner);
-  const nearby = !!state.protagonists && protagonistsNearby(state);
+  const others = otherProtagonists(owner);
+  const nearby = state.protagonists ? others.filter(id => protagonistNearby(state, id)) : [];
   const recentLife = backgroundLifeSummary(state, owner).slice(-6).map(entry => ({ ...entry, text: entry.text.slice(0, 240) }));
   const recentSources = new Set(recentLife.map(entry => sourceId(entry.id)));
+  const counterparts = nearby.map(id => ({ id, name: protagonistNames[id], locationId: state.locationId }));
   return {
     owner,
     recentLife,
     knownExchanges: state.journal.filter(entry => /^(shared:|sent:|peek:)/.test(entry.id) && !recentSources.has(sourceId(entry.id))).slice(-3)
       .map(entry => ({ id: entry.id, at: entry.at, text: entry.text.slice(0, 240) })),
-    counterpartInScene: nearby ? { id: other, name: protagonistNames[other], locationId: state.locationId } : null,
+    counterpartInScene: counterparts[0] ?? null,
+    counterpartsInScene: counterparts,
     continuation: '这些是已经发生并保存的本人经历和交流记录。承接其结果，不重新执行、扣款、发消息或重复演出；记录中的说法不等于已验证的世界事实。',
   };
 }
@@ -83,6 +85,7 @@ function appendJournal(state: WorldState, owner: ProtagonistId, entry: Protagoni
 function speakerId(name: string | null): ProtagonistId | null {
   if (name === '长崎素世' || name === '素世') return 'soyo';
   if (name === '丰川祥子' || name === '祥子') return 'sakiko';
+  if (name === '樱羽艾玛' || name === '樱羽エマ' || name === '艾玛') return 'emma';
   return null;
 }
 
@@ -93,22 +96,25 @@ function speakerId(name: string | null): ProtagonistId | null {
 export function recordProtagonistNarrative(before: WorldState, after: WorldState, reply: GeneratedStory, turnId: string): WorldState {
   if (!after.protagonists || before.story.some(entry => entry.id === turnId)) return after;
   const next: WorldState = JSON.parse(JSON.stringify(after));
-  const owner = activeProtagonist(next), other = otherProtagonist(owner);
+  const owner = activeProtagonist(next), others = otherProtagonists(owner);
   const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
 
   // The receiver's saved event is canonical; a remote message does not require co-location.
   for (const [index] of reply.phoneMessages.entries()) {
     const messageId = `${turnId}:phone:${index}`;
-    const message = next.phone.find(row => row.id === messageId && row.npcId === `protagonist-${other}`);
+    const message = next.phone.find(row => row.id === messageId);
     if (!message) continue;
-    appendJournal(next, other, { id: `sent:${messageId}`, at: message.at,
+    const recipient = others.find(id => message.npcId === `protagonist-${id}`);
+    if (!recipient) continue;
+    appendJournal(next, recipient, { id: `sent:${messageId}`, at: message.at,
       text: `已向${protagonistNames[owner]}发送手机消息：“${message.text.slice(0, 880)}”；发送不代表对方已读。` });
   }
 
   // There is no per-line timeline. A turn with movement or other activities cannot
   // prove who heard which line, even if its endpoints happen to be the same place.
   const stableScene = !reply.worldActions?.some(action => action.type !== 'rest' || action.kind !== 'wait');
-  if (!before.protagonists || !stableScene || !protagonistsNearby(before) || !protagonistsNearby(next)) return next;
+  const listeners = next.protagonists ? others.filter(id => protagonistNearby(before, id) && protagonistNearby(next, id)) : [];
+  if (!before.protagonists || !stableScene || !listeners.length) return next;
   const savedText = next.story.find(entry => entry.id === turnId && entry.role === 'assistant')?.text;
   if (!savedText) return next;
   const dialogue = parseNovelDialogue(savedText).flatMap(segment => {
@@ -117,6 +123,6 @@ export function recordProtagonistNarrative(before: WorldState, after: WorldState
   }).slice(0, 6);
   if (!dialogue.length) return next;
   const text = `在场听到的对话（仅记录说法）：${dialogue.join('；')}`.slice(0, 1000);
-  for (const listener of [owner, other]) appendJournal(next, listener, { id: `shared:${turnId}`, at, text });
+  for (const listener of [owner, ...listeners]) appendJournal(next, listener, { id: `shared:${turnId}`, at, text });
   return next;
 }

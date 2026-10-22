@@ -17,7 +17,7 @@ export function phoneReplyContext(state: WorldState, messageId: string) {
   const p = state.protagonists;
   const source = p?.conversations?.find(row => row.id === messageId);
   const sender = activeProtagonist(state);
-  if (!source || !source.expectsReply || source.replyTo !== null || source.from !== sender || source.to !== otherProtagonist(sender)) {
+  if (!source || !source.expectsReply || source.replyTo !== null || source.from !== sender || source.to === source.from) {
     throw new Error('短信回复请求与当前主角或原消息不一致。');
   }
   if (p!.conversations!.some(row => row.replyTo === source.id)) throw new Error('这条短信已经回复。');

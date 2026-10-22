@@ -4,7 +4,7 @@ import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settl
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
-import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
+import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
@@ -220,14 +220,14 @@ export function createInitialState(): WorldState {
     ],
     contacts: [
       { id: 'lin', name: '林同学', tag: '演示 NPC · 同学', summary: '用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。', affinity: 12, status: '正在图书馆整理笔记', ...legacyCharacterProfile('lin') },
-      { id: 'zhou', name: '周同学', tag: '演示 NPC · 社团成员', summary: '用于验证社交入口与日程的示例人物。原型不会让一次行动自动改变所有关系。', affinity: 5, status: '准备晚间的社团活动', ...legacyCharacterProfile('zhou') },
+      { id: 'zhou', name: '周同学', tag: '演示 NPC · 社团成员', summary: '用于验证社交入口与日程的示例人物。一次行动不会自动改变所有关系。', affinity: 5, status: '准备晚间的社团活动', ...legacyCharacterProfile('zhou') },
     ],
     schedule: [
       { id: 'library-notes', title: '【演示】去图书馆整理笔记', locationId: 'library', time: '17:30', done: false },
       { id: 'club-meet', title: '【演示】社团见面', locationId: 'cafe', time: '18:00', done: false },
     ],
-    journal: [{ id: 'entry-1', text: '开始原型体验。人物、地点及安排均为演示内容，可在源码中替换。', at: '第 1 天 17:20' }],
-    story: [{ id: 'opening', role: 'assistant', text: '【原型示例】傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。' }],
+    journal: [{ id: 'entry-1', text: '开始新的日常。', at: '第 1 天 17:20' }],
+    story: [{ id: 'opening', role: 'assistant', text: '傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。' }],
   };
 }
 
@@ -448,10 +448,10 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
 
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
 export function parseState(value: unknown): WorldState {
-  if (value && typeof value === 'object' && !Array.isArray(value) && (value as Record<string, unknown>).schema_version === '1.12.0') {
+  if (value && typeof value === 'object' && !Array.isArray(value) && ['1.12.0', '1.13.0'].includes(String((value as Record<string, unknown>).schema_version))) {
     const { protagonists, ...rest } = value as Record<string, unknown>;
     const base = parseState({ ...rest, schema_version: '1.11.0' });
-    return { ...base, schema_version: '1.12.0', protagonists: parseProtagonists(protagonists, base, parseState) };
+    return { ...base, schema_version: '1.13.0', protagonists: parseProtagonists(protagonists, base, parseState) };
   }
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
@@ -725,7 +725,7 @@ function commitLegacyStoryTurn(
   const participants = new Set<string>();
   for (const snapshot of [state, next]) {
     if (snapshot.scene?.encounterId && !snapshot.interior) participants.add(snapshot.scene.encounterId);
-    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock) : [];
+    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)) : [];
     for (const segment of parseNovelDialogue(reply.text)) {
       if (!segment.speaker) continue;
       const matches = [
@@ -760,7 +760,7 @@ function advance(state: WorldState, minutes: number) {
   state.player = advancePlayerNutrition(state.player, state.clock, minutes);
   const next = state.clock.hour * 60 + state.clock.minute + minutes;
   state.clock = { day: state.clock.day + Math.floor(next / 1440), hour: Math.floor(next / 60) % 24, minute: next % 60 };
-  if (state.clock.day > 365000) throw new Error('原型已到达最大天数，无法继续推进。');
+  if (state.clock.day > 365000) throw new Error('已到达最大天数，无法继续推进。');
 }
 function note(state: WorldState, message: string, stableId?: string) {
   const prefix = `entry-${state.clock.day}-${state.clock.hour}-${state.clock.minute}-`;
@@ -817,7 +817,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const sourcePersonId = profile.sourcePersonId === undefined ? existing?.sourcePersonId ?? null : profile.sourcePersonId;
       if (existing?.sourcePersonId && sourcePersonId !== existing.sourcePersonId) throw new Error('已确认人物的来源身份不能更换。');
       if (sourcePersonId && sourcePersonId !== existing?.sourcePersonId) {
-        const person = next.scene && getScenePeople(next.scene, next.contacts, next.clock).find(person => person.id === sourcePersonId);
+        const person = next.scene && getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === sourcePersonId);
         if (!person) throw new Error('这位陌生人不属于当前场景。');
         if (!existing && profile.id !== sourcePersonId) throw new Error('请沿用陌生人的稳定人物 ID。');
       }
@@ -931,7 +931,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const seed = sceneSeed(action.seed);
       const coordinates = sceneCoordinates(action.x, action.z, action.yaw);
       const scene: ScenePresence = { ...coordinates, seed: next.scene?.seed ?? seed, encounterId: next.scene?.encounterId ?? null };
-      const person = scene.encounterId ? getScenePeople(scene, next.contacts, next.clock).find(person => person.id === scene.encounterId) : null;
+      const person = scene.encounterId ? getScenePeople(scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === scene.encounterId) : null;
       if (scene.encounterId && (!person || Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE)) scene.encounterId = null;
       next.scene = scene;
       next.locationId = sceneLocationId(scene.areaId);
@@ -940,7 +940,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     case 'encounter': {
       if (next.interior) throw new Error('当前室内没有可搭话的已设定人物。');
       if (!next.scene) throw new Error('请先进入自由行走，再走到行人附近搭话。');
-      const person = getScenePeople(next.scene, next.contacts, next.clock).find(person => person.id === action.personId);
+      const person = getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === action.personId);
       if (!person) throw new Error('这位行人不属于当前场景。');
       if (Math.hypot(person.x - next.scene.x, person.z - next.scene.z) > SCENE_ENCOUNTER_DISTANCE) throw new Error('请走到这位行人附近再搭话。');
       next.scene.encounterId = person.id;

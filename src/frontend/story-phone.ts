@@ -1,7 +1,7 @@
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import type { CharacterPortraitId, ContactProfileDraft, WorldState } from './types';
 import { validateContactProfileDraft } from '../runtime/characters';
-import { getScenePeople, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import { characterForPerson } from './character-appearance';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
@@ -43,7 +43,7 @@ function candidatesOf(state: WorldState): StoryPhoneContact[] {
   if (!state.scene || state.interior) return [];
   const scene = state.scene;
   const met = new Set(state.story.flatMap(entry => entry.participantIds ?? []));
-  return getScenePeople(scene, state.contacts, state.clock).filter(person => !state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id)
+  return getScenePeople(scene, state.contacts, state.clock, hiddenProtagonistPersons(state)).filter(person => !state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id)
     && (person.id === scene.encounterId || met.has(person.id) || Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE))
     .map(person => ({ id: person.id, sourcePersonId: person.id, name: person.name, description: person.description,
       summary: '', portraitId: characterForPerson(person.id), isMain: false }));

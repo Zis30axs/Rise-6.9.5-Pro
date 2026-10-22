@@ -16,8 +16,10 @@ import t84Asset from '../../assets/models/ground-t84.glb?inline';
 import { recoverScenePresencePosition } from './scene-presence';
 import type { ScenePerson, ScenePresence } from '../runtime/scene-context';
 import type { AirTrafficState } from './types';
+import type { ProtagonistId } from '../runtime/dual-protagonists';
+import { protagonistNames } from '../runtime/protagonist-world';
 
-const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; protagonist?: 'soyo' | 'sakiko'; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
+const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
 const emit = defineEmits<{ hotspot: [action: SceneAction]; presence: [point: { x: number; z: number; yaw: number }]; encounter: [personId: string] }>();
 const root = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
@@ -124,7 +126,7 @@ function canSeePerson(person: ScenePerson): boolean {
 function updateCamera() {
   position.value = `${eye.x.toFixed(3)},${eye.y.toFixed(3)},${eye.z.toFixed(3)}`;
   if (!camera) return;
-  const showPlayer = props.protagonist !== 'sakiko' && (props.phoneActive || cameraMode.value === 'third-person');
+  const showPlayer = props.protagonist === 'soyo' && (props.phoneActive || cameraMode.value === 'third-person');
   playerCharacter?.setPhoneActive(props.phoneActive);
   const displayYaw = campus ? applyCharacterCamera(camera, eye, yaw, pitch, campus.movementWorld, cameraMode.value, props.phoneActive, width, height) : yaw;
   playerCharacter?.update(eye, displayYaw, showPlayer);
@@ -503,7 +505,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'sakiko' ? 'none' : 'soyo'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
+  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'soyo' ? 'soyo' : 'none'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
     <svg class="campus-fallback" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="uc-scene-sky" x2="0" y2="1"><stop stop-color="#a5b5b1"/><stop offset=".58" stop-color="#f0d8b5"/><stop offset="1" stop-color="#d4c6a7"/></linearGradient>
@@ -535,7 +537,7 @@ onBeforeUnmount(() => {
     <p v-if="activeAircraft && !paused && !phoneActive && (!freeWalk || !guideOpen)" class="campus-air-traffic" role="status"><span aria-hidden="true">✈</span><span>客机正从高空经过<small>{{ aircraftSource }}{{ mode === 'fallback' ? ' · 静态场景不显示飞行模型' : aircraftStatus === 'error' ? ' · 飞行画面暂不可用' : '' }}</small></span></p>
     <div class="campus-tools" v-show="!paused && !phoneActive">
       <span id="uc-scene-help">{{ mode === 'webgl' ? freeWalk ? 'WASD 移动 · 拖动或方向键环视' : '拖动环视 · 自由行走探索校园' : '静态场景 · 仍可点击探索' }}</span>
-      <button v-if="mode === 'webgl'" type="button" class="character-camera-toggle" :aria-label="cameraMode === 'third-person' ? '切换为第一人称视角' : '切换为第三人称视角'" :disabled="busy" @click="toggleCamera">{{ cameraMode === 'third-person' ? '素世 · 第三人称' : '第一人称' }}</button>
+      <button v-if="mode === 'webgl'" type="button" class="character-camera-toggle" :aria-label="cameraMode === 'third-person' ? '切换为第一人称视角' : '切换为第三人称视角'" :disabled="busy" @click="toggleCamera">{{ cameraMode === 'third-person' ? `${protagonistNames[protagonist]} · 第三人称` : '第一人称' }}</button>
       <button v-if="mode === 'webgl'" type="button" aria-label="重置场景视角" :disabled="busy" @click="resetView(true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1.7 7.1M4 4v6h6"/></svg><span>复位</span></button>
       <button v-else type="button" aria-label="重试三维场景" @click="initialize">重试 3D</button>
     </div>

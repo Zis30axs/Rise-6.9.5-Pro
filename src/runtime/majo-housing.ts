@@ -39,7 +39,7 @@ export interface MajoHousing {
 export const majoHousings: readonly MajoHousing[] = Object.freeze([
   {
     id: 'emma-yuki-home', type: 'modern-open-plan', label: '艾玛与月代雪的家',
-    description: '两人共同居住的现代公寓客餐厅；料理台、沙发与阅读角在同一空间。陈设只是可调整的游戏原型。',
+    description: '两人共同居住的现代公寓客餐厅；料理台、沙发与阅读角在同一空间。',
     interiorId: 'emma-yuki-home', district: 'riverfront-highrise-district', parentLocationId: 'home', districtArt: false,
   },
   {
@@ -49,7 +49,7 @@ export const majoHousings: readonly MajoHousing[] = Object.freeze([
   },
   {
     id: 'nikaido-house', type: 'traditional-courtyard', label: '二阶堂家',
-    description: '市中心的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。住宅布局是游戏原型，不作为官方住宅设定声明。',
+    description: '市中心的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。',
     interiorId: 'nikaido-house', district: 'traditional-downtown', parentLocationId: 'downtown', districtArt: false,
   },
   {
@@ -59,12 +59,12 @@ export const majoHousings: readonly MajoHousing[] = Object.freeze([
   },
   {
     id: 'sherry-hanna-home', type: 'riverfront-highrise', label: '雪莉与汉娜的住处',
-    description: '滨水高层住宅的客餐厅，落地窗外是河岸步道；房间归属只采用人物既有住处标记的游戏原型。',
+    description: '滨水高层住宅的客餐厅，落地窗外是河岸步道。',
     interiorId: 'majo-highrise-home', district: 'riverfront-highrise-district', parentLocationId: 'commercial', districtArt: true,
   },
   {
-    id: 'residential-prototype', type: 'studio-apartment', label: '单身公寓原型',
-    description: '供其他常驻人物使用的单身公寓室内原型：床、厨房与一张小桌，未分配给某一位具体人物。',
+    id: 'residential-prototype', type: 'studio-apartment', label: '单身公寓',
+    description: '床、厨房与一张小桌组成的单身公寓室内。',
     interiorId: 'majo-studio', district: 'lakeside-apartment', parentLocationId: 'city-park', districtArt: false,
   },
 ]);

@@ -121,7 +121,7 @@ export interface ContactProfileInput {
 export type ContactProfileDraft = Omit<ContactProfileInput, 'id'> & { id?: string };
 
 export interface WorldState {
-  schema_version: '1.11.0' | '1.12.0';
+  schema_version: '1.11.0' | '1.12.0' | '1.13.0';
   /** Added lazily when a dual-protagonist feature is first used. */
   protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };

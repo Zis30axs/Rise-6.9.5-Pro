@@ -1,5 +1,5 @@
 import type { WorldState } from '../frontend/types';
-import type { ProtagonistId } from './dual-protagonists';
+import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { pruneVariableEcho } from './prompt-pruning';
 
 /**
@@ -35,7 +35,7 @@ const weekAt = (at: number) => Math.floor(at / WEEK_MINUTES) + 1;
 const dayAt = (at: number) => Math.floor(at / 1440) + 1;
 const nowMinute = (clock: WorldState['clock']) => (clock.day - 1) * 1440 + clock.hour * 60 + clock.minute;
 const idPattern = /^[A-Za-z0-9][\w:.-]{0,127}$/;
-const sourcePattern = /^(?:soyo|sakiko):[A-Za-z0-9][\w:.-]{0,127}$/;
+const sourcePattern = /^(?:soyo|sakiko|emma):[A-Za-z0-9][\w:.-]{0,127}$/;
 const timePattern = /^第 (\d+) 天 (\d{2}):(\d{2})$/;
 
 export function createWeeklyMemory(at: number): WeeklyMemory {
@@ -54,7 +54,7 @@ function safeText(x: unknown, max: number): string {
   return typeof x === 'string' && !!x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x : error();
 }
 function identity(x: unknown): string { return typeof x === 'string' && idPattern.test(x) ? x : error(); }
-function ownerId(x: unknown): ProtagonistId { return x === 'soyo' || x === 'sakiko' ? x : error(); }
+function ownerId(x: unknown): ProtagonistId { return PROTAGONISTS.includes(x as ProtagonistId) ? x as ProtagonistId : error(); }
 function list<T>(x: unknown, max: number, parse: (item: unknown) => T): T[] {
   return Array.isArray(x) && x.length <= max ? x.map(parse) : error();
 }
@@ -124,7 +124,7 @@ function close(memory: WeeklyMemory): void {
   for (const e of memory.entries) group.set(dayAt(e.at), [...(group.get(dayAt(e.at)) ?? []), e]);
   const selected: WeeklyEvidence[] = [];
   for (const day of group.values()) {
-    for (const owner of ['soyo', 'sakiko'] as const) {
+    for (const owner of PROTAGONISTS) {
       const chosen = day.filter(e => e.owner === owner).sort((a, b) => importance(b) - importance(a) || b.at - a.at)[0];
       if (chosen) selected.push(chosen);
     }
@@ -177,10 +177,14 @@ export function recordWeeklyStory(state: WorldState, owner: ProtagonistId, turnI
 /** Detect newly saved, source-identified journal entries for each protagonist. */
 export function captureNewJournalEvidence(before: WorldState, after: WorldState): void {
   if (!after.protagonists) return;
-  for (const owner of ['soyo', 'sakiko'] as const) {
-    const personJournal = (s: WorldState) => s.protagonists
-      ? (s.protagonists.accounts.active === owner ? s.journal : s.protagonists.inactive.journal)
-      : (owner === 'soyo' ? s.journal : []);
+  for (const owner of PROTAGONISTS) {
+    const personJournal = (s: WorldState) => {
+      const p = s.protagonists;
+      if (!p) return owner === 'soyo' ? s.journal : [];
+      if (p.accounts.active === owner) return s.journal;
+      const others = PROTAGONISTS.filter(id => id !== p.accounts.active);
+      return owner === others[0] ? p.inactive.journal : p.third.journal;
+    };
     const old = new Set(personJournal(before).map(row => row.id));
     for (const row of personJournal(after)) {
       if (old.has(row.id)) continue;

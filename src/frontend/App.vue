@@ -28,8 +28,9 @@ import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { getAdjacentLocations } from '../runtime/location-links';
-import { getScenePeople, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import type { PlayerState, ShellActions, ShellModel } from './types';
+import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, studyDurationOptions, isStudyInteraction, getStudyEnergyCost } from '../runtime/campus-interiors';
 import { streetRoutes } from './scene-world';
 import { getNearbyTransitStop, transitStops, transitVehicles } from '../runtime/transit';
@@ -38,10 +39,10 @@ const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 const currentProtagonist = computed(() => activeProtagonist(props.model.state));
 function selectProtagonist(event: Event) {
   scene.value?.flushPresence();
-  const target = (event.target as HTMLSelectElement).value as 'soyo' | 'sakiko';
+  const target = (event.target as HTMLSelectElement).value as ProtagonistId;
   props.actions.dispatch({ type: 'switch_protagonist', target });
 }
-watch(currentProtagonist, () => { closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: '', emotion: '平静', text: '' }; });
+watch(currentProtagonist, protagonist => { closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'transit' | 'store' | 'location';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -83,7 +84,7 @@ const walkSeed = props.model.state.scene?.seed ?? (globalThis.crypto?.randomUUID
 // Keep the complete saved population available when reading an earlier scene indoors.
 const portraitPeople = computed(() => {
   const seed = props.model.state.scene?.seed ?? walkSeed;
-  return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock);
+  return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state));
 });
 const scenePeople = computed(() => props.model.state.interior ? [] : portraitPeople.value);
 const encounterPerson = computed(() => {
@@ -693,7 +694,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus">
+  <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
     <div :inert="!model.state.academics || !!model.interaction" :aria-hidden="!model.state.academics || !!model.interaction || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />

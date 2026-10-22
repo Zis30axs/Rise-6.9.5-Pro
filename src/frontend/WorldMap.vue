@@ -4,8 +4,8 @@ import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
-import { getScenePeople } from '../runtime/scene-context';
-import { activeProtagonist, otherProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
+import { getScenePeople, hiddenProtagonistPersons } from '../runtime/scene-context';
+import { activeProtagonist, otherProtagonists, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { campusMapBounds, mapLocationPoint } from './campus-map-layout';
 import type { ShellActions, ShellModel } from './types';
@@ -116,14 +116,17 @@ const visiblePeople = computed(() => {
   const state = props.model.state;
   const position = state.scene;
   const scenePeople = position && !state.interior
-    ? getScenePeople(position, state.contacts, state.clock)
+    ? getScenePeople(position, state.contacts, state.clock, hiddenProtagonistPersons(state))
       .filter(person => Math.hypot(person.x - position.x, person.z - position.z) <= 35)
       .map(person => ({contactId:person.contactId??person.id,name:person.name,position:{x:person.x,z:person.z},source:'scene' as const}))
     : [];
-  const otherId=otherProtagonist(activeProtagonist(state));
-  const other=state.protagonists ? personState(state,otherId) : null;
-  const otherPeople=position && !state.interior && other && !other.interior && other.scene && other.locationId===state.locationId
-    ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
+  const otherPeople=position && !state.interior && state.protagonists
+    ? otherProtagonists(activeProtagonist(state)).flatMap(otherId => {
+      const other=personState(state,otherId);
+      return other && !other.interior && other.scene && other.locationId===state.locationId
+        ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
+        : [];
+    })
     : [];
   return [...scenePeople,...otherPeople,...demoPeople.value];
 });

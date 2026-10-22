@@ -7,6 +7,9 @@ const profiles = {
   sakiko: {name:'丰川祥子', title:'夜曲与秩序', ink:'#edf2fa', accent:'#abc2e5', base:'#17283f', fallback:'linear-gradient(145deg,#0c172d,#30486e)', theme:'dark', skin:'sky',
     daily:['worldcalendar','notes','twiitch','music','appie','worldmessages','worlddelivery','worldshop','worldstyle'],
     focus:['music','notes','twiitch','worldcalendar','listen','appie','worldmessages','gallery','worldstyle'], dock:['chat','listen','peek','settings']},
+  emma: {name:'樱羽艾玛', title:'樱花与日常', ink:'#4a3438', accent:'#c27f92', base:'#fdf3f4', fallback:'linear-gradient(145deg,#fdf3f4,#e7b7c2)', theme:'light', skin:'sky',
+    daily:['worldmessages','worldcalendar','twiitch','gallery','notes','worldshop','appie','worlddelivery','worldstyle'],
+    focus:['worldcalendar','notes','worldmessages','twiitch','music','appie','gallery','worldshop','worldstyle'], dock:['chat','music','peek','settings']},
 };
 export function worldPhoneState(screen) {
   try {

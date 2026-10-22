@@ -1,15 +1,15 @@
 import type { ContactProfileDraft, WorldState } from '../frontend/types';
-import { getScenePeople } from './scene-context';
+import { getScenePeople, hiddenProtagonistPersons } from './scene-context';
 
 export const CHARACTER_CONTEXT_LIMITS = { turns: 6, totalCharacters: 2400, perTurn: 600 } as const;
 
 /** A compact, character-specific evidence window; never sends unrelated full history. */
 export function buildCharacterIntroductionContext(state: WorldState, draft: ContactProfileDraft) {
   const saved = state.contacts.find(contact => contact.id === draft.id || (!!draft.sourcePersonId && (contact.id === draft.sourcePersonId || contact.sourcePersonId === draft.sourcePersonId)));
-  const people = state.scene ? getScenePeople(state.scene, state.contacts, state.clock) : [];
+  const people = state.scene ? getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state)) : [];
   const person = people.find(person => person.id === draft.sourcePersonId || person.id === draft.id);
   // The seed's original name remains useful for pre-confirmation dialogue.
-  const originalPerson = state.scene ? getScenePeople(state.scene).find(person => person.id === draft.sourcePersonId || person.id === draft.id) : undefined;
+  const originalPerson = state.scene ? getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state)).find(person => person.id === draft.sourcePersonId || person.id === draft.id) : undefined;
   const ids = new Set([draft.id, draft.sourcePersonId, saved?.id, saved?.sourcePersonId, person?.id].filter((value): value is string => !!value));
   const names = [...new Set([draft.name, saved?.name, person?.name, originalPerson?.name].filter((value): value is string => !!value))];
   const matching = state.story.map((entry, index) => ({ entry, index })).filter(({ entry }) =>

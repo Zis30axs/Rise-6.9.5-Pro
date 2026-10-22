@@ -140,7 +140,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
     blockedReason = `精力不足，这项活动需要 ${-service.effects.energy} 点精力。`;
   }
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
-  if (!blockedReason && endDay > 365000) blockedReason = '原型已到达最大天数，无法继续推进。';
+  if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
   const playerAfter = blockedReason ? { ...state.player } : advancePlayerNutrition(state.player, state.clock, minutes);
   if (service && !blockedReason) {
     playerAfter.balance -= price;

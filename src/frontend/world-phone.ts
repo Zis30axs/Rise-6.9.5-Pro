@@ -1,6 +1,6 @@
 import { npcPhoneView } from '../runtime/npc-phone';
 import type { WorldState } from './types';
-import { activeProtagonist, defaultPhoneAppearance, enableProtagonists, gameMinute, otherProtagonist, personState, phoneAccess, protagonistNames, type PhoneCommand } from '../runtime/protagonist-world';
+import { activeProtagonist, defaultPhoneAppearance, enableProtagonists, gameMinute, otherProtagonist, otherProtagonists, personState, phoneAccess, protagonistNames, type PhoneCommand } from '../runtime/protagonist-world';
 import { locations } from '../runtime/model';
 import { gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import { storeCatalog } from '../runtime/convenience-store';
@@ -35,6 +35,7 @@ export function createWorldPhoneApi(options: {
       catalog: storeCatalog.map(({id,name,price,category,purchaseUnit})=>({id,name,price,category,purchaseUnit})),
       destinations: locations.map(({id,name})=>({id,name})),
       other: {id:otherProtagonist(active),name:protagonistNames[otherProtagonist(active)],...phoneAccess(enabled,otherProtagonist(active))},
+      others: otherProtagonists(active).map(id => ({id, name: protagonistNames[id], ...phoneAccess(enabled, id)})),
     }));
   };
   const listeners=new Set<() => void>();

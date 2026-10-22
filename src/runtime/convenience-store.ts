@@ -107,7 +107,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。' : null;
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
-  if (!blockedReason && endDay > 365000) blockedReason = '原型已到达最大天数，无法继续推进。';
+  if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
   const playerAfter = blockedReason ? { ...state.player } : advancePlayerNutrition(state.player, state.clock, minutes);
   if (item && !blockedReason) {
     playerAfter.energy = adjustEnergy(playerAfter.energy, item.effects.energy);

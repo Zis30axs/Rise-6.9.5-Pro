@@ -111,7 +111,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'toyokawa-house', label: '丰川家会客厅', parentLocationId: 'downtown',
-    description: '【本卡后日谈场景】丰川家位于市中心。这里是入门后的会客与钢琴区域，不代表其他房间可以任意进入。祥子与家族正尝试修复关系，但此刻是否有人在场、是否接受来访由实际剧情决定。',
+    description: '丰川家位于市中心。这里是入门后的会客与钢琴区域。祥子与家族正尝试修复关系。',
     entrance: { x: 50, z: 222, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'toyokawa-piano', kind: 'piano', minX: -5.2, maxX: -2.2, minZ: -3.8, maxZ: -2.1 },
@@ -126,7 +126,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'emma-yuki-home', label: '艾玛与月代雪的家', parentLocationId: 'home',
-    description: '【住宅原型】两人共同居住的现代公寓客餐厅。料理台、沙发与阅读角在同一空间；目前使用恢复的场景原图，不代表官方住宅布局。',
+    description: '两人共同居住的现代公寓客餐厅。料理台、沙发与阅读角在同一空间。',
     entrance: { x: -190, z: 130, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'emma-home-sofa', kind: 'bed', minX: -4.6, maxX: -2.2, minZ: -3.4, maxZ: -1.8 },
@@ -144,7 +144,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'koko-old-house', label: '泽渡家老宅', parentLocationId: 'home',
-    description: '【住宅原型】远离校园的老式住宅客厅。旧家具与直播设备共处一室；房间归属与同住情况以人物既有住处标记为准，不据此新增剧情。',
+    description: '远离校园的老式住宅客厅。旧家具与直播设备共处一室。',
     entrance: { x: -180, z: 150, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'koko-sofa', kind: 'bed', minX: -4.8, maxX: -2.4, minZ: -3.2, maxZ: -1.6 },
@@ -160,7 +160,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'nikaido-house', label: '二阶堂家', parentLocationId: 'downtown',
-    description: '【住宅原型】市中心的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。住宅布局是游戏原型，不作为官方住宅设定声明。',
+    description: '市中心的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。',
     entrance: { x: 20, z: 208, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'nikaido-katana-rack', kind: 'shelf', minX: 4.2, maxX: 5.6, minZ: -4.2, maxZ: -2.4 },
@@ -180,7 +180,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'anan-noa-milia-home', label: '安安、诺亚与米莉亚的住处', parentLocationId: 'junction',
-    description: '【住宅原型】三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。共用空间不代表三人同时在场。',
+    description: '三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。',
     entrance: { x: 0, z: 48, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'anan-table', kind: 'desk', minX: -2.4, maxX: 1.6, minZ: -1.2, maxZ: 1.2 },
@@ -196,7 +196,7 @@ export const campusInteriors: readonly CampusInterior[] = [
   },
   {
     id: 'majo-highrise-home', label: '雪莉与汉娜的住处', parentLocationId: 'commercial',
-    description: '【住宅原型】滨水高层住宅的客餐厅，落地窗外是河岸步道。房间归属采用人物既有住处标记的游戏原型，不代表官方住宅设定。',
+    description: '滨水高层住宅的客餐厅，落地窗外是河岸步道。',
     entrance: { x: 196, z: 127, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'highrise-sofa', kind: 'bed', minX: -4.8, maxX: -2.2, minZ: -3.4, maxZ: -1.6 },
@@ -211,8 +211,8 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
   },
   {
-    id: 'majo-studio', label: '单身公寓原型', parentLocationId: 'city-park',
-    description: '【通用住宅原型】床、厨房与一张小桌组成的单身公寓室内，供尚未有专属住宅素材的常驻人物使用；未分配给某一位具体人物。',
+    id: 'majo-studio', label: '单身公寓', parentLocationId: 'city-park',
+    description: '床、厨房与一张小桌组成的单身公寓室内。',
     entrance: { x: 207, z: -174, yaw: 0 }, bounds, spawn,
     obstacles: [
       { id: 'studio-bed', kind: 'bed', minX: -5, maxX: -2.8, minZ: -3.8, maxZ: -1.2 },

@@ -7,7 +7,7 @@ import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, type Protagonis
 import { getAcademicTimetable } from './academics';
 import { gameWeekday, hasStartedAcademicWeek } from './game-calendar';
 import { applyStoryActions, getNovelTravelQuote, reduceState } from './model';
-import { activeProtagonist, gameMinute, legacyView, otherProtagonist, personalState, personState, protagonistNames, protagonistsNearby, reduceProtagonistAction, settlePhoneTime, type PersonalState, type PhoneCommand } from './protagonist-world';
+import { activeProtagonist, gameMinute, legacyView, otherProtagonist, otherProtagonists, personalState, personState, protagonistNearby, protagonistNames, protagonistsNearby, reduceProtagonistAction, settlePhoneTime, type PersonalState, type PhoneCommand } from './protagonist-world';
 export { protagonistsNearby } from './protagonist-world';
 
 export type BackgroundEventKind = 'routine' | 'rest' | 'meal' | 'travel' | 'study' | 'calendar' | 'order' | 'message' | 'decision';
@@ -49,13 +49,13 @@ const stamp = (text: string) => { let hash = 2166136261; for (let i = 0; i < tex
 
 export function createBackgroundLife(at: number): BackgroundLife {
   const person = (): BackgroundPerson => ({ nextDecisionAt: nextQuarter(at), pending: null, calendarSeen: [], lastMessageDay: 0, events: [] });
-  return { version: 1, cursor: at, people: { soyo: person(), sakiko: person() } };
+  return { version: 1, cursor: at, people: { soyo: person(), sakiko: person(), emma: person() } };
 }
 
-/** The save parser accepts the old six-field 1.12 shape, then starts here at its current clock. */
+/** The save parser accepts the old 1.12 two-person shape, then starts here at its current clock. */
 export function initializeBackgroundLife(state: WorldState): BackgroundLife {
   const life = createBackgroundLife(gameMinute(state));
-  for (const owner of ['soyo', 'sakiko'] as const) {
+  for (const owner of ['soyo', 'sakiko', 'emma'] as const) {
     // Do not replay already-past one-off appointments on migration.
     life.people[owner].calendarSeen = appointments(state, owner, life.cursor)
       .filter(event => event.start < life.cursor && event.source !== 'academic').map(event => event.key).slice(-200);
@@ -63,8 +63,8 @@ export function initializeBackgroundLife(state: WorldState): BackgroundLife {
   return life;
 }
 
-export function parseBackgroundLife(value: unknown, base: WorldState, parseLegacy: (value: unknown) => WorldState): BackgroundLife {
-  const fail = (): never => { throw new Error('双主角状态：后台生活记录无效'); };
+export function parseBackgroundLife(value: unknown, base: WorldState, parseLegacy: (value: unknown) => WorldState, allowMissingEmma = false): BackgroundLife {
+  const fail = (): never => { throw new Error('三主角状态：后台生活记录无效'); };
   const object = (value: unknown, keys: string[]) => {
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length || Object.keys(value).some(key => !keys.includes(key))) return fail();
     return value as Record<string, unknown>;
@@ -75,7 +75,7 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
   if (row.version !== 1) return fail();
   const cursor = integer(row.cursor);
   if (cursor !== gameMinute(base)) return fail();
-  const people = object(row.people, ['soyo', 'sakiko']);
+  const people = object(row.people, allowMissingEmma ? ['soyo', 'sakiko'] : ['soyo', 'sakiko', 'emma']);
   const parsePerson = (raw: unknown, owner: ProtagonistId): BackgroundPerson => {
     const p = object(raw, ['nextDecisionAt', 'pending', 'calendarSeen', 'lastMessageDay', 'events']);
     const nextDecisionAt = integer(p.nextDecisionAt);
@@ -117,7 +117,8 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
     }
     return { nextDecisionAt, pending, calendarSeen, lastMessageDay: integer(p.lastMessageDay, clockAt(cursor).day), events };
   };
-  return { version: 1, cursor, people: { soyo: parsePerson(people.soyo, 'soyo'), sakiko: parsePerson(people.sakiko, 'sakiko') } };
+  const result: BackgroundLife = { version: 1, cursor, people: { soyo: parsePerson(people.soyo, 'soyo'), sakiko: parsePerson(people.sakiko, 'sakiko'), emma: allowMissingEmma ? { nextDecisionAt: nextQuarter(cursor), pending: null, calendarSeen: [], lastMessageDay: 0, events: [] } : parsePerson(people.emma, 'emma') } };
+  return result;
 }
 
 /** Only the requested owner's events are exposed; callers must not serialize the whole background state into a prompt. */
@@ -151,15 +152,16 @@ export function suspendBackgroundActivity(state: WorldState, owner: ProtagonistI
 interface Appointment { key: string; title: string; locationId: string; start: number; duration: number; source: 'calendar' | 'schedule' | 'academic'; subjectId?: string; shared: boolean }
 function appointments(state: WorldState, owner: ProtagonistId, at: number): Appointment[] {
   const p = state.protagonists!;
-  const personal = personState(state, owner), day = Math.floor(at / 1440), other = otherProtagonist(owner);
+  const personal = personState(state, owner), day = Math.floor(at / 1440), others = otherProtagonists(owner);
   const toMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
-  const otherName = other === 'soyo' ? /素世|soyo/i : /祥子|sakiko/i;
+  const sharedName = (title: string) => others.some(other => ({ soyo: /素世|soyo/i, sakiko: /祥子|sakiko/i, emma: /艾玛|emma/i })[other].test(title));
+  const sharedCalendar = (event: { locationId: string; start: number; duration: number }) => others.some(other => p.devices[other].calendar.some(otherEvent => otherEvent.locationId === event.locationId && otherEvent.start < event.start + event.duration && event.start < otherEvent.start + otherEvent.duration));
   const calendar: Appointment[] = p.devices[owner].calendar.map(event => ({ ...event,
     key: `calendar:${event.id}:${event.start}:${stamp(JSON.stringify([event.title, event.locationId, event.duration]))}`, source: 'calendar',
-    shared: otherName.test(event.title) || p.devices[other].calendar.some(otherEvent => otherEvent.locationId === event.locationId && otherEvent.start < event.start + event.duration && event.start < otherEvent.start + otherEvent.duration),
+    shared: sharedName(event.title) || sharedCalendar(event),
   }));
   const schedule: Appointment[] = personal.schedule.filter(event => !event.done).map(event => ({
-    key: `schedule:${stamp(JSON.stringify(event))}`, title: event.title, locationId: event.locationId, start: day * 1440 + toMinutes(event.time), duration: 30, source: 'schedule', shared: otherName.test(event.title),
+    key: `schedule:${stamp(JSON.stringify(event))}`, title: event.title, locationId: event.locationId, start: day * 1440 + toMinutes(event.time), duration: 30, source: 'schedule', shared: sharedName(event.title),
   }));
   const academic: Appointment[] = getAcademicTimetable(personal.academics).filter(slot => hasStartedAcademicWeek(day + 1) && slot.weekday === gameWeekday(day + 1)).map(slot => ({
     key: `academic:${slot.id}:${day}`, title: slot.subjectName, locationId: slot.locationId, start: day * 1440 + toMinutes(slot.start), duration: toMinutes(slot.end) - toMinutes(slot.start), source: 'academic', subjectId: slot.subjectId, shared: false,
@@ -169,17 +171,31 @@ function appointments(state: WorldState, owner: ProtagonistId, at: number): Appo
 
 /** Use the existing authoritative phone command reducer as the actual owner, then restore the foreground projection. */
 function ownPhone(state: WorldState, owner: ProtagonistId, at: number, id: string, command: PhoneCommand) {
-  const active = activeProtagonist(state), p = state.protagonists!, life = p.backgroundLife;
+  const activeId = activeProtagonist(state), p = state.protagonists!, life = p.backgroundLife;
+  const ownerOthers = otherProtagonists(owner);
   const view = copy(state);
   Object.assign(view, personalState(personState(state, owner)));
   view.clock = clockAt(at);
-  view.protagonists!.inactive = personalState(personState(state, otherProtagonist(owner)));
+  view.protagonists!.inactive = personalState(personState(state, ownerOthers[0]));
+  view.protagonists!.third = personalState(personState(state, ownerOthers[1]));
   view.protagonists!.accounts.active = owner;
   const result = reduceProtagonistAction(view, { type: 'phone_app', requestId: id, owner, command });
-  const ownerState = personalState(result), foreground = personalState(result.protagonists!.inactive);
-  Object.assign(p, result.protagonists, { backgroundLife: life, inactive: ownerState });
-  p.accounts.active = active;
-  Object.assign(state, foreground);
+  const ownerState = personalState(result);
+  const updatedOthers: Record<string, PersonalState> = {
+    [ownerOthers[0]]: personalState(result.protagonists!.inactive),
+    [ownerOthers[1]]: personalState(result.protagonists!.third),
+  };
+  const restoredActive = updatedOthers[activeId]!;
+  const thirdParty = ownerOthers.find(person => person !== activeId)!;
+  const nonActive = otherProtagonists(activeId);
+  const states: Record<string, PersonalState> = { [owner]: ownerState, [thirdParty]: updatedOthers[thirdParty]! };
+  Object.assign(p, result.protagonists, {
+    backgroundLife: life,
+    inactive: states[nonActive[0]]!,
+    third: states[nonActive[1]]!,
+  });
+  p.accounts.active = activeId;
+  Object.assign(state, restoredActive);
 }
 
 function ownedView(state: WorldState, owner: ProtagonistId, at: number): WorldState {
@@ -297,7 +313,8 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
 
   // A factual, modest daily message. Sending it is a shared event; both sides retain the same source ID.
   const day = Math.floor(at / 1440) + 1;
-  if (at % 1440 >= 1080 && at % 1440 < 1260 && life.lastMessageDay !== day && !protagonistsNearby(state)) {
+  if (at % 1440 >= 1080 && at % 1440 < 1260 && life.lastMessageDay !== day && !protagonistsNearby(state)
+    && owner !== otherProtagonists(activeProtagonist(state))[1]) {
     const recipient = personState(state, otherProtagonist(owner));
     if (recipient.phone.length < 200 && recipient.contacts.length < 50 && p.devices[otherProtagonist(owner)].notifications.length < 200 && p.operations.length < 2000) {
       const text = owner === 'soyo' ? '我这边先照顾一下自己的安排。你忙完后，方便的话给我留个消息。' : '我会先处理自己的安排。若有需要协调的事，请给我留言。';
@@ -358,38 +375,49 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
   }
 }
 
-/** Advance a single background person on the one committed game timeline. No timers, network, or model calls. */
+/** Advance each background person on the one committed game timeline. No timers, network, or model calls. */
 export function settleBackgroundLife(before: WorldState, state: WorldState) {
   const p = state.protagonists!;
-  const start = gameMinute(before), end = gameMinute(state), owner = otherProtagonist(activeProtagonist(state));
+  const start = gameMinute(before), end = gameMinute(state), activeId = activeProtagonist(state);
   const life = p.backgroundLife ?? (p.backgroundLife = initializeBackgroundLife(before));
-  if (end < start || life.cursor !== start) throw new Error('双主角状态：后台时钟与世界时钟不一致');
+  if (end < start || life.cursor !== start) throw new Error('三主角状态：后台时钟与世界时钟不一致');
   if (end === start) return;
-  const active = life.people[activeProtagonist(state)], background = life.people[owner];
-  active.pending = null; active.nextDecisionAt = nextQuarter(end);
+  const foreground = life.people[activeId];
+  foreground.pending = null; foreground.nextDecisionAt = nextQuarter(end);
+  for (const owner of otherProtagonists(activeId)) settleBackgroundPerson(before, state, owner, start, end);
+  life.cursor = end;
+}
+
+function advanceBackgroundPlayer(state: WorldState, owner: ProtagonistId, from: number, minutes: number) {
+  if (minutes <= 0) return;
+  const personal = personState(state, owner);
+  personal.player = advancePlayerNutrition(personal.player, clockAt(from), minutes);
+}
+
+function settleBackgroundPerson(before: WorldState, state: WorldState, owner: ProtagonistId, start: number, end: number) {
+  const p = state.protagonists!, life = p.backgroundLife!, background = life.people[owner];
   // A shared physical scene belongs to the foreground narrator, including arrivals during this action.
-  if (protagonistsNearby(before) || protagonistsNearby(state)) {
+  if (protagonistNearby(before, owner) || protagonistNearby(state, owner)) {
     if (background.pending) suspendBackgroundActivity(state, owner);
-    p.inactive.player = advancePlayerNutrition(p.inactive.player, clockAt(start), end - start);
-    background.nextDecisionAt = nextQuarter(end); life.cursor = end; return;
+    advanceBackgroundPlayer(state, owner, start, end - start);
+    background.nextDecisionAt = nextQuarter(end); return;
   }
   let cursor = start;
   while (cursor < end) {
     const dueOrder = p.orders.filter(order => order.owner === owner && order.status === 'paid' && order.due > cursor).reduce((nearest, order) => Math.min(nearest, order.due), end);
     const boundary = Math.min(end, dueOrder, background.pending?.due ?? Math.max(cursor, background.nextDecisionAt));
-    if (boundary > cursor) p.inactive.player = advancePlayerNutrition(p.inactive.player, clockAt(cursor), boundary - cursor);
+    if (boundary > cursor) advanceBackgroundPlayer(state, owner, cursor, boundary - cursor);
     cursor = boundary; life.cursor = cursor;
     settlePhoneTime({ ...state, clock: clockAt(cursor) });
     if (background.pending && background.pending.due === cursor) complete(state, owner, background.pending);
-    if (protagonistsNearby(state)) {
+    if (protagonistNearby(state, owner)) {
       // A completed trip can join the foreground in the middle of one long wait.
       // Do not continue private automation through the remainder of that shared scene.
-      p.inactive.player = advancePlayerNutrition(p.inactive.player, clockAt(cursor), end - cursor);
-      background.pending = null; background.nextDecisionAt = nextQuarter(end); life.cursor = end;
+      advanceBackgroundPlayer(state, owner, cursor, end - cursor);
+      background.pending = null; background.nextDecisionAt = nextQuarter(end);
       return;
     }
     if (!background.pending && background.nextDecisionAt <= cursor) choose(state, owner, cursor);
     if (background.nextDecisionAt <= cursor && !background.pending) background.nextDecisionAt = nextQuarter(cursor);
   }
-  life.cursor = end;
 }

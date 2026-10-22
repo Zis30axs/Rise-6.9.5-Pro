@@ -1,7 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, GeneratedStory, WorldState } from '../frontend/types';
-import type { ProtagonistId } from './dual-protagonists';
+import { isProtagonistPerson, PROTAGONIST_PERSON_IDS, PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
-import { getSceneArea, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
+import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentPresence } from './npc-cast';
@@ -52,6 +52,7 @@ export type NpcPhoneCommand =
   | { type: 'send_group_message'; groupId: string; text: string };
 
 const empty = (): NpcPhoneState => ({ version: 1, meetings: [], evidence: [], requests: [], turns: [], relationships: [], groups: [], messages: [] });
+const controlledPerson = (s: WorldState): string | undefined => PROTAGONIST_PERSON_IDS[activeProtagonist(s)];
 function fail(detail: string): never { throw new Error('联系人与短信：' + detail); }
 function object(raw: unknown, fields: string[]) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).length !== fields.length || fields.some(k => !Object.hasOwn(raw, k))) return fail('字段无效');
@@ -59,7 +60,7 @@ function object(raw: unknown, fields: string[]) {
 }
 const text = (raw: unknown, max = 1000): string => typeof raw === 'string' && !!raw.trim() && raw.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(raw) ? raw : fail('文本无效');
 const id = (raw: unknown): string => typeof raw === 'string' && /^[A-Za-z0-9][\w:.-]{0,127}$/.test(raw) ? raw : fail('人物或事件 ID 无效');
-const owner = (raw: unknown): ProtagonistId => raw === 'soyo' || raw === 'sakiko' ? raw : fail('手机主人无效');
+const owner = (raw: unknown): ProtagonistId => PROTAGONISTS.includes(raw as ProtagonistId) ? raw as ProtagonistId : fail('手机主人无效');
 const minute = (raw: unknown): number => typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0 && raw <= 525600000 ? raw : fail('时间无效');
 const flag = (raw: unknown): boolean => typeof raw === 'boolean' ? raw : fail('确认状态无效');
 function list<T>(raw: unknown, max: number, parse: (row: unknown) => T): T[] {
@@ -101,7 +102,7 @@ export function validateContactProposals(raw: unknown): ContactProposal[] {
 }
 
 /** New optional 1.12 field: old saves keep all existing profiles/history intact. */
-export function parseNpcPhone(raw: unknown, s: WorldState): NpcPhoneState {
+export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireControlled?: boolean } = {}): NpcPhoneState {
   const root = object(raw, ['version', 'meetings', 'evidence', 'requests', 'turns', 'relationships', 'groups', 'messages']);
   if (root.version !== 1) return fail('不支持的联系人版本');
   const meetings = unique(list(root.meetings, 500, item => {
@@ -132,7 +133,7 @@ export function parseNpcPhone(raw: unknown, s: WorldState): NpcPhoneState {
     const r = object(item, ['owner', 'npcId', 'contactId', 'requestId']);
     return { owner: owner(r.owner), npcId: id(r.npcId), contactId: id(r.contactId), requestId: id(r.requestId) };
   }), r => r.owner + ':' + r.npcId);
-  const groups = unique(list(root.groups, 2, item => {
+  const groups = unique(list(root.groups, 3, item => {
     const r = object(item, ['id', 'owner', 'name', 'memberIds', 'requestId', 'joinedAt', 'joinedAfter']);
     const memberIds = unique(list(r.memberIds, 14, id), r => r);
     if (r.id !== MAJO_GROUP_ID || memberIds.length !== residentCast.length || memberIds.some(i => !residentById(i))) return fail('群成员无效');
@@ -180,13 +181,36 @@ export function parseNpcPhone(raw: unknown, s: WorldState): NpcPhoneState {
       (parent.responsePlan ? parent.responsePlan.some(p => p.id === m.speakerId && p.status === 'answered') && m.id === parent.id + ':reply:' + m.speakerId : parent.responderId === m.speakerId))) fail('回复来源无效');
   }
   if ([...meetings, ...evidence, ...requests, ...messages].some(row => row.at > gameMinute(s))) fail('记录时间在未来');
-  return { version: 1, meetings, evidence, requests, turns, relationships, groups, messages };
+  const result: NpcPhoneState = { version: 1, meetings, evidence, requests, turns, relationships, groups, messages };
+  if (options.retireControlled) retireControlledNpcThreads(result);
+  return result;
+}
+
+/** Called when an existing resident becomes a controllable protagonist. */
+function retireControlledNpcThreads(social: NpcPhoneState): void {
+  for (const request of social.requests) {
+    if (request.status === 'pending' && isProtagonistPerson(request.npcId)) request.status = 'declined';
+  }
+  for (const message of social.messages) {
+    if (message.direction !== 'outgoing') continue;
+    if (message.channel === 'npc' && isProtagonistPerson(message.targetId)) {
+      message.responderId = null; message.status = 'silent'; delete message.responsePlan;
+      continue;
+    }
+    if (message.channel === 'group' && message.responsePlan) {
+      message.responsePlan = message.responsePlan.filter(row => !isProtagonistPerson(row.id));
+      const pending = message.responsePlan.find(row => row.status === 'pending');
+      message.responderId = pending?.id ?? null;
+      message.status = pending ? 'pending' : 'silent';
+      if (!message.responsePlan.length) delete message.responsePlan;
+    }
+  }
 }
 
 /** Called only after the controlled, distance-checked encounter action. */
 export function recordNpcEncounter(state: WorldState, npcId: string): WorldState {
   if (!state.scene || state.interior) return state;
-  const person = getScenePeople(state.scene, state.contacts, state.clock).find(p => p.id === npcId);
+  const person = getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state)).find(p => p.id === npcId);
   if (!person || state.scene.encounterId !== npcId || Math.hypot(person.x - state.scene.x, person.z - state.scene.z) > SCENE_ENCOUNTER_DISTANCE) return fail('没有发生有效的相遇');
   const s = enableProtagonists(state), who = activeProtagonist(s), social = ensure(s);
   if (!social.meetings.some(m => m.owner === who && m.npcId === npcId)) {
@@ -209,7 +233,7 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     return after;
   }
   if (!meeting || before.interior || after.interior || before.locationId !== after.locationId ||
-      !getScenePeople(before.scene!, before.contacts, before.clock).some(p => p.id === metId &&
+      !getScenePeople(before.scene!, before.contacts, before.clock, hiddenProtagonistPersons(before)).some(p => p.id === metId &&
         Math.hypot(p.x - before.scene!.x, p.z - before.scene!.z) <= SCENE_ENCOUNTER_DISTANCE)) {
     if (proposals.length) return fail('申请必须基于当面相遇及真实对白');
     return after;
@@ -263,6 +287,7 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
   if (command.type === 'resolve_contact_request') {
     const request = social.requests.find(q => q.id === command.id && q.owner === who);
     if (!request) return fail('申请不存在或不属于这台手机');
+    if (command.accept && request.npcId === controlledPerson(s)) return fail('该人物现在由玩家控制，不能再作为 NPC 联系人加入');
     const status = command.accept ? 'accepted' : 'declined';
     if (request.status !== 'pending') { if (request.status !== status) return fail('申请已经处理'); return; }
     if (command.accept) {
@@ -291,13 +316,14 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
   let responderId: string | null;
   let responsePlan: NpcTextMessage['responsePlan'];
   if (channel === 'npc') {
+    if (targetId === controlledPerson(s)) return fail('该人物现在由玩家控制，请切换到她的手机或使用主角之间的短信');
     if (!contactFor(s, who, targetId)) return fail('请先认识此人并保存联系人');
     responderId = targetId;
   } else {
     const group = social.groups.find(g => g.id === targetId && g.owner === who);
     if (!group) return fail('尚未接受这个群的邀请');
-    // UUID request IDs provide independent draws; retries reuse the saved choice.
-    const candidates = group.memberIds.filter(i => residentPresence(i, s.clock)?.available);
+    // Residents who are controllable protagonists are not sampled as background NPCs.
+    const candidates = group.memberIds.filter(i => i !== controlledPerson(s) && residentPresence(i, s.clock)?.available);
     const count = candidates.length ? 1 + hash(requestId + ':count') % Math.min(3, candidates.length) : 0;
     const selected = [...candidates].sort((a, b) => hash(requestId + ':' + a) - hash(requestId + ':' + b) || a.localeCompare(b)).slice(0, count);
     responsePlan = selected.map(id => ({id, status: 'pending'}));
@@ -311,6 +337,7 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
 export function npcReplySource(s: WorldState, messageId: string): NpcTextMessage {
   const source = s.protagonists?.npcPhone?.messages.find(m => m.id === messageId);
   if (!source || source.owner !== activeProtagonist(s) || source.direction !== 'outgoing' || source.replyTo !== null || !source.responderId && !source.responsePlan?.length) return fail('短信回复来源无效');
+  if (source.responderId && source.responderId === controlledPerson(s)) return fail('该人物现在由玩家控制，不再自动回复');
   return source;
 }
 export function npcPhoneReplyContext(s: WorldState, messageId: string) {
@@ -324,7 +351,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   let promptBudget = 24000;
   const thread = social.messages.filter(m => m.channel === source.channel && m.targetId === source.targetId && (source.channel === 'group' || m.owner === source.owner)).slice(-60).reverse().filter(m => { promptBudget -= m.text.length + 150; return promptBudget >= 0; }).reverse();
   const anchor = meeting ? scenePersonAnchors.find(a => {
-    const person = s.scene && getScenePeople(s.scene).find(p => p.id === actorId);
+    const person = s.scene && getScenePeople(s.scene, s.contacts, s.clock, hiddenProtagonistPersons(s)).find(p => p.id === actorId);
     return person && person.x === a.x && person.z === a.z;
   }) : undefined;
   return {

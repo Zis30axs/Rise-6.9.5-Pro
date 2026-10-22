@@ -25,9 +25,12 @@ watch(() => props.entries.at(-1)?.id, () => {
   cursor.value = Math.max(0, start);
   dialogueExpanded.value = false;
 }, { immediate: true });
+let emittedSegment = '';
 watch([current, dialogueExpanded, latestRows], () => {
   const row = dialogueExpanded.value ? current.value : [...latestRows.value].reverse().find(row => !!row.speaker) ?? current.value;
-  if (row) emit('segment', row);
+  if (!row || row.id === emittedSegment) return;
+  emittedSegment = row.id;
+  emit('segment', row);
 }, { immediate: true });
 function advance() { if (canAdvance.value) cursor.value++; }
 </script>
