@@ -143,6 +143,14 @@ def assemble_card(root: Path = ROOT, frontend_path: Path | None = None) -> dict:
         book = json.loads(path.read_text(encoding="utf-8"))
         for entry in book.get("entries", []):
             row = {**entry}
+            # Character Card V2 / SillyTavern uses 'comment' for the visible
+            # world-info entry title. Source 'name' is retained as metadata.
+            comment = row.get("comment")
+            if not isinstance(comment, str) or not comment.strip():
+                fallback = row.get("name")
+                if not isinstance(fallback, str) or not fallback.strip():
+                    raise CardError(f"世界书条目缺少标题 comment/name：{path.name}")
+                row["comment"] = fallback.strip()
             row.setdefault("extensions", {})
             row.setdefault("enabled", True)
             row.setdefault("keys", [])
