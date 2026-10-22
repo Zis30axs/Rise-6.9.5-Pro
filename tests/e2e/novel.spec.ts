@@ -1,5 +1,5 @@
 ﻿import { createSelectedInitialState } from './academics-fixture';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { getNovelTravelQuote, reduceState } from '../../src/runtime/model';
 import type { WorldState } from '../../src/frontend/types';
@@ -12,8 +12,13 @@ const portrait = (page: Page) => page.locator('[data-live2d-status]');
 const reply = '风轻轻吹过。\n|charac|emot|says|\n|素世|开心|今天天气真好。|\n|素世|生气|说好的事情可不能忘了。|\n|素世|安心|那就一起走吧。|';
 
 async function host(page: Page, initial?: WorldState, mode: 'scene' | 'novel' = 'novel') {
+  // Start the production Helper bundle on a native host without booting the
+  // separate Vite demo shell. Reloads retain the fixture's saved state/preferences.
+  await page.route('http://127.0.0.1:5178/', route => route.fulfill({
+    contentType: 'text/html',
+    body: '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><label>原生输入<input id="native-input"></label></body></html>',
+  }));
   await page.goto('/');
-  if (await root(page).count()) await page.locator('[data-unread-city-rescue]').click();
   await page.evaluate(({ initial, storageKey, mode }) => {
     const win = window as unknown as Record<string, unknown>;
     win.SillyTavern = { getContext: () => ({ characterId: 0, groupId: null, chatId: 'novel-test', mainApi: 'openai', characters: [{ avatar: 'novel-test.png' }] }) };
@@ -44,8 +49,10 @@ async function host(page: Page, initial?: WorldState, mode: 'scene' | 'novel' = 
     };
     win.stopGenerationById = () => true;
   }, { storageKey, reply });
+  await page.locator('#native-input').focus();
   await frame!.addScriptTag({ content: bundle });
   await expect(root(page)).toBeVisible();
+  await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
 }
 const saved = async (page: Page): Promise<WorldState> => JSON.parse((await page.locator('body').getAttribute('data-novel-state'))!);
 function initialState() {
@@ -53,9 +60,53 @@ function initialState() {
   state.airTraffic.nextAmbientAt = Date.now() + 3600000;
   return state;
 }
+async function finishInteraction(page: Page, saveFails = false) {
+  const overlay = page.locator('[data-interaction-overlay]');
+  await expect(overlay).toBeVisible();
+  await expect.poll(() => overlay.evaluateAll(nodes => nodes[0]?.getAttribute('data-interaction-phase') ?? 'idle')).not.toBe('progress');
+  // Exercise the current normal-completion path without requesting event prose.
+  const decline = page.locator('[data-interaction-phase="choice"] [data-interaction-reject]');
+  if (await decline.count()) await decline.click();
+  if (saveFails) await expect(overlay).toHaveAttribute('data-interaction-phase', 'error');
+  else await expect(overlay).toHaveCount(0);
+}
+async function boundsOf(control: Locator) {
+  await expect(control).toBeVisible();
+  const bounds = await control.boundingBox();
+  expect(bounds).not.toBeNull();
+  return bounds!;
+}
+async function expectNovelControlsClear(page: Page, viewport: { width: number; height: number }) {
+  const switchChat = page.getByRole('button', { name: '切换聊天并恢复原生界面', exact: true });
+  const chat = await boundsOf(switchChat), dock = await boundsOf(page.locator('.tool-dock'));
+  for (const control of [switchChat, page.getByRole('textbox', { name: '接下来，你想做什么？' }), page.getByRole('button', { name: '继续故事', exact: true })]) {
+    const bounds = await boundsOf(control);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height + 1);
+    // A hit test also detects overlays that geometry comparisons alone miss.
+    expect(await control.evaluate(node => {
+      const box = node.getBoundingClientRect(), surface = node.getRootNode() as ShadowRoot;
+      return node.contains(surface.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+    })).toBe(true);
+    if (control === switchChat) continue;
+    for (const obstacle of [chat, dock]) {
+      const overlaps = bounds.x < obstacle.x + obstacle.width && bounds.x + bounds.width > obstacle.x
+        && bounds.y < obstacle.y + obstacle.height && bounds.y + bounds.height > obstacle.y;
+      expect(overlaps).toBe(false);
+    }
+  }
+  if (viewport.width <= 760) {
+    const reading = await boundsOf(page.locator('[data-reading-layer]'));
+    expect(reading.y + reading.height).toBeLessThanOrEqual(dock.y - 4);
+  }
+  expect(await shell(page).evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+}
 async function localTravel(page: Page, name: string) {
   await page.getByRole('button', { name: '地图', exact: true }).click();
   await page.locator('.wm-destination').filter({ has: page.locator('b', { hasText: new RegExp(`^${name}$`) }) }).click();
+  await finishInteraction(page);
   await expect(page.locator('[data-window=map]')).toHaveCount(0);
 }
 
@@ -92,9 +143,11 @@ test('纯小说与3D切换保留剧情草稿，偏好和地点背景刷新恢复
   await page.getByRole('button', { name: '纯小说', exact: true }).click();
   await localTravel(page, '普通教室');
   await expect(page.locator('[data-novel-background]')).toHaveAttribute('data-novel-background', 'classroom');
+  await page.getByRole('button', { name: '地点', exact: true }).click();
   await page.locator('[data-place-actions] [data-place-activity="classroom-notes"]').click();
   await page.locator('[data-study-subject]').selectOption('cs-programming');
   await page.getByRole('button', { name: /短时学习/ }).click();
+  await finishInteraction(page);
   const complete = await saved(page);
   expect(complete.interior?.lastStudy?.interactionId).toBe('classroom-notes');
   expect(complete.story).toEqual(before.story);
@@ -141,11 +194,13 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   expect(errors).toEqual([]);
 });
 
-for (const width of [390, 320]) {
-  test(`${width}px小说地图只保留沙盘，跨区付费、背景切换与失败回滚`, async ({ page }) => {
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  const { width, height } = viewport;
+  test(`${width}x${height}小说地图只保留沙盘，跨区付费、背景切换与失败回滚`, async ({ page }) => {
     test.setTimeout(90000);
-    await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
+    await page.setViewportSize(viewport);
     await host(page, initialState());
+    await expectNovelControlsClear(page, viewport);
     await page.getByRole('button', { name: '打开地图切换地点', exact: true }).click();
     await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-layer', 'sandtable');
     await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-rise', '1.000');
@@ -155,6 +210,7 @@ for (const width of [390, 320]) {
     await page.locator('.wm-district-list').getByRole('button', { name: '商业区', exact: true }).click();
     const before = await saved(page), quote = getNovelTravelQuote(before, 'commercial');
     await page.getByRole('button', { name: '前往商业区', exact: true }).click();
+    await finishInteraction(page);
     const after = await saved(page);
     expect(after.player.balance).toBe(before.player.balance - quote.fare);
     expect(after.transit.sequence).toBe(before.transit.sequence + quote.rides.length);
@@ -162,20 +218,29 @@ for (const width of [390, 320]) {
     await expect(page.locator('[data-novel-background] img')).toBeVisible();
     await expect(portrait(page)).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30000 });
     await expect(portrait(page)).toHaveCSS('opacity', '1');
-    const rescue = (await page.locator('[data-unread-city-rescue]').boundingBox())!;
-    for (const control of [page.getByRole('textbox', { name: '接下来，你想做什么？' }), page.getByRole('button', { name: '继续故事', exact: true })]) {
-      const bounds = (await control.boundingBox())!;
-      const overlaps = bounds.x < rescue.x + rescue.width && bounds.x + bounds.width > rescue.x
-        && bounds.y < rescue.y + rescue.height && bounds.y + bounds.height > rescue.y;
-      expect(overlaps).toBe(false);
-    }
+    await expectNovelControlsClear(page, viewport);
     await page.waitForTimeout(700);
     await page.screenshot({ path: `outputs/novel-mode-${width}.png` });
     await page.evaluate(() => { document.body.dataset.failNovelSave = 'true'; });
     await page.getByRole('button', { name: '地图', exact: true }).click();
     await page.locator('.wm-destination').filter({ has: page.locator('b', { hasText: /^校园南门$/ }) }).click();
+    await finishInteraction(page, true);
     await expect(page.locator('.notice')).toContainText('模拟保存失败');
     expect(await saved(page)).toEqual(after);
     await expect(page.locator('[data-novel-background]')).toHaveAttribute('data-novel-background', 'commercial');
+    await page.getByRole('button', { name: '取消本次交互', exact: true }).click();
+    await expect(page.locator('[data-interaction-overlay]')).toHaveCount(0);
+    await page.getByRole('button', { name: '地图', exact: true }).click();
+    await expectNovelControlsClear(page, viewport);
+    await expect(page.locator('body')).not.toHaveAttribute('data-novel-generations');
+    await page.getByRole('button', { name: '切换聊天并恢复原生界面', exact: true }).click();
+    await expect(root(page)).toHaveCount(0);
+    await expect(page.locator('#native-input')).toBeFocused();
+    expect(await saved(page)).toEqual(after);
+    await host(page);
+    expect(await saved(page)).toEqual(after);
+    await expect(page.locator('[data-novel-background]')).toHaveAttribute('data-novel-background', 'commercial');
+    await expectNovelControlsClear(page, viewport);
   });
 }
+
