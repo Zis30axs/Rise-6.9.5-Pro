@@ -72,6 +72,39 @@ class CardBuildTests(unittest.TestCase):
         self.assertEqual(len(set(identities)), 14)
         self.assertIn("majo-emma", identities)
 
+    def test_character_identity_clothing_voice_and_relationships(self):
+        fields = ["身份：", "外观与着装：", "性格：", "说话方式：", "人物关系："]
+        sources = {
+            "majo-residents.json": 14,
+            "bang-dream-canon.json": 10,
+        }
+        for filename, expected in sources.items():
+            with self.subTest(file=filename):
+                book = json.loads((ROOT / "src/worldbook" / filename).read_text(encoding="utf-8"))
+                entries = [e for e in book["entries"] if (
+                    bool(e.get("extensions", {}).get("personId"))
+                    if filename == "majo-residents.json" else True
+                )]
+                self.assertEqual(len(entries), expected)
+                for entry in entries:
+                    with self.subTest(character=entry["name"]):
+                        content = entry["content"]
+                        for label in fields:
+                            self.assertIn(label, content)
+                        self.assertTrue(entry["comment"].strip())
+                        self.assertTrue(entry["keys"])
+                        self.assertGreater(len(content), 280)
+                        for phrase in ["不代表官方", "非原作", "本卡作者设定", "游戏原型"]:
+                            self.assertNotIn(phrase, content)
+                        if filename == "bang-dream-canon.json":
+                            self.assertFalse(entry.get("extensions", {}).get("personId"))
+        majo = json.loads((ROOT / "src/worldbook/majo-residents.json").read_text(encoding="utf-8"))
+        emma = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-emma")
+        anan = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-anan")
+        self.assertIn("ボク", emma["content"])
+        self.assertIn("わがはい", anan["content"])
+        self.assertEqual(emma["extensions"]["home"], "emma-yuki-home")
+
     def test_missing_comment_uses_name(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
