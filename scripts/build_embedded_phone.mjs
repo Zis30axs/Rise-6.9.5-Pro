@@ -91,7 +91,8 @@ function plugin(stage) {
           worlddelivery: {name:'外卖',eyebrow:'Delivery',colors:['#ffdd83','#e59f3e','#fff4c6']},
           worldcalendar: {name:'日历',eyebrow:'Calendar',colors:['#a6c8e8','#577998','#f2d9bd']},
           worldmessages: {name:'消息',eyebrow:'World Messages',colors:['#b8dfcc','#4a9174','#f5c8dc']},
-          worldpeek: {name:'查手机',eyebrow:'Peek',colors:['#ffc6e0','#c85a9a','#9fe0ff']},`, '游戏应用目录');
+          worldpeek: {name:'查手机',eyebrow:'Peek',colors:['#ffc6e0','#c85a9a','#9fe0ff']},
+          twiitch: {name:'Twiitch',eyebrow:'Stream',colors:['#f2d8ff','#a05ce0','#ffd36a']},`, '游戏应用目录');
         code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages',SLOT,SLOT,SLOT],", '游戏应用首页');
       }
       if (relative === 'ui/chat.js') {

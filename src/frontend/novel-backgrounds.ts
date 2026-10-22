@@ -11,6 +11,7 @@ import classroomDay from '../../assets/backgrounds/classroom-day.webp?inline';
 import classroomDusk from '../../assets/backgrounds/classroom-dusk.webp?inline';
 import classroomNight from '../../assets/backgrounds/classroom-night.webp?inline';
 import bedroomDay from '../../assets/backgrounds/bedroom-day.webp?inline';
+import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
 type BackgroundFamily = 'street' | 'park' | 'commercial' | 'classroom' | 'bedroom';
@@ -19,6 +20,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
+  source: 'legacy' | 'majo-art';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -47,10 +49,28 @@ export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
   return safeHour < 6 || safeHour >= 19 ? 'night' : safeHour >= 17 ? 'dusk' : 'day';
 }
 
+/**
+ * Recovered PR #16 art. Interior pictures are fixed-time derivatives, so they
+ * report their actual image phase instead of pretending to be day/night variants.
+ */
+const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelBackgroundPhase }>> = Object.freeze({
+  'emma-yuki-home': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
+  'koko-old-house': { src: majoInteriorArt['koko-old-house'], imagePhase: 'day' },
+  'nikaido-house': { src: majoInteriorArt['nikaido-house'], imagePhase: 'day' },
+  'anan-noa-milia-home': { src: majoInteriorArt['anan-noa-milia-home'], imagePhase: 'day' },
+  'majo-highrise-home': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
+  'majo-studio': { src: majoInteriorArt['majo-studio'], imagePhase: 'day' },
+  home: { src: majoDistrictArt['old-town-lowrise'], imagePhase: 'day' },
+  commercial: { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
+  neighborhood: { src: majoDistrictArt['older-apartment-courtyard'], imagePhase: 'day' },
+});
+
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
+  if (authored) return { id: `majo-${locationId}`, src: authored.src, phase: novelBackgroundPhase(hour), imagePhase: authored.imagePhase, source: 'majo-art' };
   const family = Object.hasOwn(novelBackgroundLocations, locationId) ? novelBackgroundLocations[locationId] : 'street';
   const variants = backgrounds[family], phase = novelBackgroundPhase(hour);
   const imagePhase = variants[phase] ? phase : 'day';
-  return { id: `${family}-${imagePhase}`, src: variants[imagePhase]!, phase, imagePhase };
+  return { id: `${family}-${imagePhase}`, src: variants[imagePhase]!, phase, imagePhase, source: 'legacy' };
 }

@@ -48,7 +48,10 @@ describe('always-available adjacent locations', () => {
 
   it('labels distant district returns as paid transit, not an immediate neighboring door', () => {
     const state = reduceState(createInitialState(), { type: 'novel_travel', locationId: 'commercial' });
-    expect(getAdjacentLocations(state)).toEqual([{ id: 'bus-stop', label: '南门公交站', kind: 'transit' }]);
+    expect(getAdjacentLocations(state)).toEqual([
+      { id: 'majo-highrise-home', label: '雪莉与汉娜的住处', kind: 'enter' },
+      { id: 'bus-stop', label: '南门公交站', kind: 'transit' },
+    ]);
     const quote = getNovelTravelQuote(state, 'bus-stop');
     expect(quote.fare).toBeGreaterThan(0);
     expect(quote.minutes).toBeGreaterThan(0);

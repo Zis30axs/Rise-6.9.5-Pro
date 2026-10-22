@@ -1,5 +1,6 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
 import { residentCast, residentPresence } from './npc-cast';
+import { housingForPerson, residentOutfit } from './majo-housing';
 import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
 import { sceneAreas, sceneBounds, sceneLandmarks } from '../frontend/scene-layout';
@@ -194,7 +195,8 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     .filter(item => item.distance <= 18)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 8);
-  const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain });
+  const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain,
+    outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null });
   const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
   return {
     areaId: area.id, label: area.label, outdoors: true, skyVisible: true,

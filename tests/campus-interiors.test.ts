@@ -24,7 +24,7 @@ describe('campus interiors and deterministic facilities', () => {
   it('uses reachable exterior entrances, free spawns and reachable facility approaches', () => {
     const world = createCampusWorld(new THREE.Scene());
     try {
-      expect(new Set(campusInteriors.map(room => room.id)).size).toBe(4);
+      expect(new Set(campusInteriors.map(room => room.id)).size).toBe(10);
       for (const room of campusInteriors) {
         expect(isScenePositionWalkable(room.entrance.x, room.entrance.z, world.movementWorld), room.id).toBe(true);
         const movement = getInteriorMovementWorld(room);

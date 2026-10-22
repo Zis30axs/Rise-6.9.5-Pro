@@ -1,0 +1,57 @@
+name: Majo visual integration
+
+on:
+  push:
+    branches: [feat/lite-majo-visual-integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  majo-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: python -m pip install Pillow
+      - name: Restore the pinned phone source and existing private patch
+        run: |
+          git init ../ST-iPhonie
+          git -C ../ST-iPhonie remote add origin https://github.com/Zis30axs/ST-iPhonie.git
+          git -C ../ST-iPhonie fetch --depth 1 origin 24295193aa1adff606edcd4e63c8b07923533f2b
+          git -C ../ST-iPhonie checkout --detach FETCH_HEAD
+          git -C ../ST-iPhonie apply --check "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+          git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+      - name: Verify the committed runtime derivatives
+        run: python scripts/prepare_majo_visual_assets.py --check
+      - name: Type-check and build the production frontend with the real embedded phone
+        run: npm run build
+      - name: Runtime art, interiors, Nikaido house and save compatibility
+        run: npx vitest run tests/majo-visual.test.ts tests/novel-backgrounds.test.ts tests/campus-interiors.test.ts tests/novel-navigation.test.ts --maxWorkers=1
+      - name: Phone art and Twiitch static asset policy
+        run: node --test tests/phone-visuals.node.mjs
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Emma expressions, Nikaido scene and Twiitch app at four viewports
+        run: npx playwright test tests/e2e/majo-visual.spec.ts --workers=1 --max-failures=1 --reporter=line
+      - name: Preserve screenshots, evidence and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: majo-visual-qa
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            outputs/majo-visual-qa/
+            test-results/

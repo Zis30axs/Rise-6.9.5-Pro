@@ -14,8 +14,15 @@ function screen(owner='soyo',appearance) {
   return {state,style,dataset:{},ownerDocument:{documentElement:{dataset:{}},defaultView:{parent:{__unreadCityWorldPhone:{read:()=>state}},matchMedia:()=>({matches:true})}},querySelector:()=>({replaceChildren(){}}),set styleValue(v){},getStyle:()=>style};
 }
 test('all art is static, deterministic and device-specific',()=>{
-  assert.equal(Object.keys(art).length,54);
+  assert.equal(Object.keys(art).length,67);
   for(const file of Object.keys(art).filter(x=>x.startsWith('soyo/')))assert.notEqual(art[file],art[file.replace('soyo/','sakiko/')]);
+  for(const file of Object.keys(art).filter(x=>x.startsWith('twiitch/')))assert.match(art[file],/^<svg /);
+  assert.equal(Object.keys(art).filter(x=>x.startsWith('twiitch/')).length,13);
+});
+test('twiitch app icon uses the recovered per-device SVG',()=>{
+  const soyo=visual.worldPhoneIcon(screen('soyo'),'twiitch',art), sakiko=visual.worldPhoneIcon(screen('sakiko'),'twiitch',art);
+  assert.match(soyo,/^<svg /);assert.match(sakiko,/^<svg /);assert.notEqual(soyo,sakiko);
+  assert.equal(visual.worldPhoneIcon(screen('soyo'),'twiitch',{}),null);
 });
 test('missing runtime wallpaper/card/icon uses usable fallbacks',()=>{
   const s=screen();s.style={setProperty:(k,v)=>s.getStyle().set(k,v)};

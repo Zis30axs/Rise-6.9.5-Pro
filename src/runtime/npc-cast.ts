@@ -1,4 +1,5 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
+import { housingForPerson, residentOutfit } from './majo-housing';
 
 /** Person IDs outlive phone ownership and playable-character assignments. */
 export const residentCast = lore.entries.filter(entry => entry.extensions.personId).map(entry => ({
@@ -19,10 +20,16 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   const streaming = id === 'majo-koko' && minute >= 20 * 60;
   const working = minute >= 9 * 60 && minute < 12 * 60;
   const outside = minute >= 14 * 60 && minute < 20 * 60;
+  const housing = housingForPerson(id);
   return {
     anchorId: outside ? person.anchor : null,
-    locationId: outside ? person.anchor : person.home,
+    // At home the authored housing interior is a real map location; the older
+    // home marker string remains authoritative only when no interior exists.
+    locationId: outside ? person.anchor : housing?.interiorId ?? person.home,
     activity: sleeping ? '休息' : streaming ? '直播中' : working ? '处理自己的日常事务' : outside ? '外出与休闲' : '在住处休息',
     available: !sleeping && !streaming && !working,
+    housing: housing?.id ?? null,
+    district: housing?.district ?? null,
+    outfit: residentOutfit(id),
   };
 }

@@ -704,8 +704,8 @@ describe('chat-owned Tavern-Helper bridge', () => {
     expect(prompt).toContain('nearbyPeople');
     const system = (config.injects as { content: string }[])[0].content;
     expect(system).toContain('覆盖旧正文中的地点');
-    expect(system).toContain('不自动交换联系方式');
-    expect(system).toContain('当面对话');
+    expect(system).toContain('不要自动相识、默认加好友、默认入群');
+    expect(system).toContain('当面交流');
     mock.api.generate.mockResolvedValue(JSON.stringify({ story: `${person.name}向你点头。`, phone_messages: [{ npcId: person.id, text: '你好。' }] }));
     await expect(bridge.generate('继续交谈', state)).rejects.toThrow(/联系人/);
     expect(mock.api.replaceVariables).not.toHaveBeenCalled();

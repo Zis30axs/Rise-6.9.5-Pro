@@ -28,3 +28,12 @@
 - 五张角色原始三姿态图集已恢复并打包至 `assets/majo-cast/packs/unread-city-majo-five-character-source-sheets-20261022.zip`，SHA-256 与身份记录见 `assets/majo-cast/character-source-sheets-20261022.json`。每张为 1536×1024 三联图，现阶段按原图保存，不代表九种独立表情差分齐全，也未接入运行时。此前登记的十张场景／参考图现已补交至 `assets/majo-cast/packs/unread-city-majo-recovered-10-part-01-of-04.zip` 至 `part-04-of-04.zip` 四个完整本地 ZIP 分包（6 张住宅室内、3 张街区、1 张角色三姿态参考图）；清单见 `assets/majo-cast/recovered-10-source-images-20261022.json`，两批共 15 张原图汇总于 `assets/majo-cast/recovery-intake-20261022.json`。所有补交原图均为 JPEG，未恢复原始 PNG／透明通道，不能记为九表情齐全。其他指定住宅及街区素材仍需继续恢复或补交。
 - 希罗常服为和服；二阶堂家为日式宅邸，包含庭院、和室、入鞘武士刀刀架及练剑空间。住宅图像不作为官方住宅设定声明。
 - 不修改游戏逻辑，不合并 PR，不混入 PR #15。
+
+## 2026-10-22 运行时接入（lite，独立 PR）
+
+PR #16 的静态交接已在 `feat/lite-majo-visual-integration` 中按素材实际状态接入，不改变本文件的原始交接记录。
+
+- 已接入：艾玛九表情（`assets/majo-emma` 三包逐项校验后生成 `assets/majo-runtime/emma/`）；六间通用住宅室内与三张住宅街区原图（JPEG 派生为运行时 WebP，源图保留）；13 张 Twiitch SVG 进入真实内嵌手机。
+- 已接入但属于游戏原型、不是官方设定：六类住宅与三个有原图的住宅街区到既有地图人物的对应；二阶堂家使用“传统木构庭院室内”通用图作为宅邸原型，室内新增和室/庭院/刀架/练剑交互；希罗常服标记为和服。
+- 仍缺失、未接入：其余人物确认身份的 9/3 表情差分；五张未确认三姿态角色图；希罗和服立绘；二阶堂专属宅邸与分镜；传统市中心/湖畔公寓/学生合住三类专属街景；艾玛 3D 模型、练剑动画、直播互动。
+- 实现、缺失清单、体积与验证边界见 [integration/majo-visual/README.md](../integration/majo-visual/README.md)。

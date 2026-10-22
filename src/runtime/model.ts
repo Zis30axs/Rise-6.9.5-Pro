@@ -78,6 +78,12 @@ export interface NovelTravelQuote {
   blockedReason: string | null;
 }
 
+function travelVehicle(locationId: string, destinationId: string, requested?: string): string {
+  const origin = getCampusInterior(locationId)?.parentLocationId ?? locationId;
+  const destination = getCampusInterior(destinationId)?.parentLocationId ?? destinationId;
+  return selectTravelVehicle(origin, destination, requested);
+}
+
 /** Both preview and commit execute the same deterministic plan on a private clone. */
 function planNovelTravel(state: WorldState, locationId: string, vehicleId: string) {
   let next = parseState(state);
@@ -169,7 +175,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
 export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
-  return planNovelTravel(legacyView(state), locationId, selectTravelVehicle(state.locationId, locationId, vehicleId)).quote;
+  return planNovelTravel(legacyView(state), locationId, travelVehicle(state.locationId, locationId, vehicleId)).quote;
 }
 
 export interface RouteOutlook {
@@ -904,7 +910,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       break;
     }
     case 'novel_travel': {
-      const planned = planNovelTravel(next, action.locationId, selectTravelVehicle(next.locationId, action.locationId, action.vehicleId));
+      const planned = planNovelTravel(next, action.locationId, travelVehicle(next.locationId, action.locationId, action.vehicleId));
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
       return parseState(planned.next);
     }
@@ -1013,6 +1019,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       next.player.energy = adjustEnergy(next.player.energy, interaction.energyDelta);
       if (interaction.id === 'dorm-desk') applyActivityEffects(next, 'desk', interaction.minutes);
       if (interaction.id === 'study-shelf') applyActivityEffects(next, 'bookshelf', interaction.minutes);
+      if (interaction.id === 'nikaido-kendo-practice') applyActivityEffects(next, 'practice', interaction.minutes);
       next.interior.activityId = interaction.id;
       next.interior.lastRest = null;
       next.interior.lastStudy = null;

@@ -1,8 +1,9 @@
 // Private card-specific apps. Loaded through the existing ST-iPhonie app registry.
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
+import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
-const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息'};
+const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息',twiitch:'Twiitch'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
 // The same UTC day-1 anchor as src/runtime/game-calendar.ts. Host clock stays authoritative.
@@ -28,6 +29,26 @@ const gameDayForDate = iso => {
 };
 const requestId = win => win.crypto.randomUUID();
 const total = data => Object.values(data.cards).reduce((a,b)=>a+b,0);
+const twiitchImage = key => {const svg=phoneArt[key];return svg?`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`:'';};
+/** Fully local, read-only Twiitch channel. It never starts a stream, calls a model or changes world state. */
+function twiitchView(data) {
+  const hour = Number.isFinite(data.clock?.hour) ? data.clock.hour : 12;
+  const live = hour >= 20 && hour < 23;
+  const cover = twiitchImage('twiitch/coco-channel-cover.svg');
+  const avatar = twiitchImage('twiitch/coco-avatar.svg');
+  const wordmark = twiitchImage('twiitch/wordmark.svg');
+  const offline = twiitchImage('twiitch/offline-card.svg');
+  const overlay = twiitchImage('twiitch/stream-overlay.svg');
+  const reaction = key => twiitchImage(`twiitch/reaction-${key}.svg`);
+  return `<style>.tp-channel{display:grid;gap:12px;padding:0 4px 14px}.tp-cover{position:relative;border-radius:14px;overflow:hidden;background:#1b1722;min-height:96px}.tp-cover img{display:block;width:100%;height:auto}.tp-wm{position:absolute;left:10px;top:8px;width:74px;max-height:22px;opacity:.95}.tp-head{display:flex;align-items:center;gap:10px;padding:0 2px}.tp-head img.tp-avatar{width:52px;height:52px;border-radius:50%;background:#fff2;padding:3px}.tp-head strong{display:block;font-size:15px}.tp-head small{display:block;opacity:.75}.tp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#b23b4e;color:#fff;font-size:12px}.tp-live.off{background:#6668}.tp-card{position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6}.tp-card img{display:block;width:100%;height:auto}.tp-overlay{position:absolute;right:6px;bottom:6px;width:42%}.tp-reactions{display:flex;gap:8px;flex-wrap:wrap}.tp-reactions figure{display:flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid #8884;border-radius:999px;background:#8881}.tp-reactions img{width:22px;height:22px}.tp-post{padding:12px;border:1px solid #8883;border-radius:14px;background:#8881}.tp-post p{margin:6px 0 0}.tp-note{font-size:12px;opacity:.75;line-height:1.5}</style>
+  <section class="tp-channel" aria-label="Twiitch 频道">
+    <div class="tp-cover">${cover?`<img src="${cover}" alt="可可频道封面">`:''}${wordmark?`<img class="tp-wm" src="${wordmark}" alt="Twiitch">`:''}</div>
+    <div class="tp-head">${avatar?`<img class="tp-avatar" src="${avatar}" alt="可可频道头像">`:''}<div><strong>泽渡可可 · 夜间频道</strong><small>${live?'直播时段：20:00–23:00':'当前不在直播时段'}</small></div><span class="tp-live ${live?'':'off'}">${live?'直播中':'离线'}</span></div>
+    ${live&&overlay?`<div class="tp-card"><img src="${offline||overlay}" alt="Twiitch 直播画面"><img class="tp-overlay" src="${overlay}" alt="直播边框"></div>`:`<div class="tp-card">${offline?`<img src="${offline}" alt="Twiitch 离线卡片">`:''}</div>`}
+    <div class="tp-reactions" aria-label="频道反应">${['heart','star','wave','cat'].map(key=>{const src=reaction(key);return src?`<figure><img src="${src}" alt=""><span>${({heart:'喜欢',star:'收藏',wave:'打招呼',cat:'猫咪'})[key]}</span></figure>`:'';}).join('')}</div>
+    <article class="tp-post"><strong>最近的频道动态</strong><p>${live?'「今晚继续闲聊，镜头前营业，镜头后照旧。」':'「直播已结束。下次开播时间由可可以自己的日程决定。」'}</p><p class="tp-note">这是本地静态频道展示，只读取游戏时钟；不会开播、发消息或调用模型。</p></article>
+  </section>`;
+}
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
   let data=null,section=id,peek=false,pending=null,recipient='protagonist';
@@ -83,6 +104,7 @@ function worldApp(ctx,id) {
       }
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
       if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
+      if(id==='twiitch') html+=twiitchView(data);
       if(section==='worldmessages'||section==='messages') {
         const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
         const recipients=[['protagonist',data.other.name],...social.contacts.map(c=>['npc:'+c.id,c.name]),...social.groups.map(g=>['group:'+g.id,`${g.name}（${g.memberCount}人）`])];

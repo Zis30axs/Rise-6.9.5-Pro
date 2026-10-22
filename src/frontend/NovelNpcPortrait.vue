@@ -6,6 +6,7 @@ import type { NovelNpcPortraitId } from './novel-npc-portraits';
 import { downtownArtPack } from './generated/downtown-art';
 import { getSakikoArt, type DowntownArtPack } from './downtown-art-runtime';
 import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
+import { resolveMajoExpressionPortrait } from './majo-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean;
@@ -14,6 +15,7 @@ const props = withDefaults(defineProps<{
 const clipId = useId();
 const emotion = computed(() => resolveNovelNpcEmotion(props.emotion));
 const isSakiko = computed(() => isSakikoSpeaker(props.speaker));
+const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value));
 const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
 }));
@@ -34,7 +36,13 @@ function imageFailed(event: Event) {
 </script>
 
 <template>
-  <div v-if="sakiko" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
+  <div v-if="majoPortrait" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
+    data-npc-portrait="majo" :data-npc-speaker="speaker" :data-npc-emotion="emotion"
+    :data-majo-portrait="majoPortrait.personId" aria-hidden="true">
+    <img :key="majoPortrait.src" class="novel-npc-portrait__sprite" :src="majoPortrait.src"
+      width="1024" height="1536" alt="" draggable="false">
+  </div>
+  <div v-else-if="sakiko" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
     data-npc-portrait="sakiko" :data-npc-speaker="speaker" :data-npc-emotion="sakiko.expression"
     :data-sakiko-outfit="sakiko.outfit" :data-sakiko-sprite="sakiko.id" aria-hidden="true">
     <img :key="sakiko.id" class="novel-npc-portrait__sprite" :src="sakiko.src"

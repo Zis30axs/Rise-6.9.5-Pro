@@ -1,0 +1,71 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "bundleSha256": "57a070d9e99020b02a3c86e2d834474645f10b6664d0b5293916460eb400e558",
+  "scene": {
+    "hash": "fcb456cecd94b9ca34f94193838b4432208c2ad330448ddd560169ca9f5ff595",
+    "width": 1536,
+    "height": 864,
+    "inline": true
+  },
+  "images": {
+    "neutral": {
+      "hash": "38e0d7ae69503cc4bfafc12845fc688865577684108fb94272af660506324fba",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "happy": {
+      "hash": "59b7cc9c989dbfb80e2ca1d4c7ef5d31fbfc581ae217b6682578b6d4a66d1039",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "sad": {
+      "hash": "4b4a091ad9534b424bab80631a3983d570d604200a14d4ed177d04e62950f32f",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "angry": {
+      "hash": "00aa950a1b0bbd7ad91ff55e5aff93f818cf3e42d4635f4cfe482a831fe187d2",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "surprised": {
+      "hash": "a451b837de700d9187e226b808ff163e0b45c71554c7001d941efec9bd962ea8",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "shy": {
+      "hash": "cfedc6fe1fe191a3849878c688b05e7419996d5d0e0b52e337179b19f9821c15",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "thinking": {
+      "hash": "98858f092fb2565b097be5a0051c1ef0337f8af49a68b7d99aa13a3618af26b9",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "serious": {
+      "hash": "d4f39f6a9ec59412325d516137c05cdd196642e87cc37b7ee6656956ce837781",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    },
+    "relieved": {
+      "hash": "36a9188a1e33c54b063127e010c5a37271cbd3e5c3ca3635c7fef8e280b09a12",
+      "width": 1024,
+      "height": 1536,
+      "inline": true
+    }
+  },
+  "stage": "passed",
+  "physicalTauriDevice": "not tested"
+}

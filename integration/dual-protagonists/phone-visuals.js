@@ -2,11 +2,11 @@ import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
 
 const profiles = {
   soyo: {name:'长崎素世', title:'花叶与日常', ink:'#344f43', accent:'#52735f', base:'#f2eedf', fallback:'linear-gradient(145deg,#f2eedf,#adc1a4)', theme:'light', skin:'sky',
-    daily:['worldmessages','worldcalendar','gallery','notes','worldshop','worlddelivery','appie','worldstyle'],
-    focus:['worldcalendar','notes','music','appie','worldmessages','gallery','worldshop','worldstyle'], dock:['chat','music','peek','settings']},
+    daily:['worldmessages','worldcalendar','twiitch','gallery','notes','worldshop','worlddelivery','appie','worldstyle'],
+    focus:['worldcalendar','notes','twiitch','music','appie','worldmessages','gallery','worldshop','worldstyle'], dock:['chat','music','peek','settings']},
   sakiko: {name:'丰川祥子', title:'夜曲与秩序', ink:'#edf2fa', accent:'#abc2e5', base:'#17283f', fallback:'linear-gradient(145deg,#0c172d,#30486e)', theme:'dark', skin:'sky',
-    daily:['worldcalendar','notes','music','appie','worldmessages','worlddelivery','worldshop','worldstyle'],
-    focus:['music','notes','worldcalendar','listen','appie','worldmessages','gallery','worldstyle'], dock:['chat','listen','peek','settings']},
+    daily:['worldcalendar','notes','twiitch','music','appie','worldmessages','worlddelivery','worldshop','worldstyle'],
+    focus:['music','notes','twiitch','worldcalendar','listen','appie','worldmessages','gallery','worldstyle'], dock:['chat','listen','peek','settings']},
 };
 export function worldPhoneState(screen) {
   try {
@@ -27,7 +27,9 @@ export function worldPhoneHome(screen, original) {
 }
 export function worldPhoneIcon(screen,id,art=phoneArt) {
   const s=worldPhoneState(screen), key=id==='worldpeek'?'peek':id;
-  return s ? art[`${s.active}/icons/${key}.svg`] || null : null;
+  if(!s)return null;
+  if(id==='twiitch')return art[`twiitch/icon-${s.active}.svg`] || art['twiitch/icon-default.svg'] || null;
+  return art[`${s.active}/icons/${key}.svg`] || null;
 }
 export function worldCardArt(owner,key,art=phoneArt) {
   const svg=art[`${owner}/cards/${key}.svg`];
