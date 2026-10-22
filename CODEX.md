@@ -8,11 +8,11 @@
 
 ## 最新维护：魔裁视觉素材运行时接入（2026-10-22，lite）
 
-从 `origin/lite@6c303a2` 新建 `feat/lite-majo-visual-integration`。已接入：艾玛九表情（`majo-emma`，身份优先解析，小说模式透明立绘）；六张角色三姿态图经用户确认身份（希罗/诺亚/米莉亚/安安/橘雪莉/远野汉娜）后各裁三格，作为带框参考卡按 `neutral/happy/shy` 初版映射；六类住宅原型与六间通用室内（现代开放式、老式住宅、二阶堂日式宅邸、合住公寓、滨水高层、单身公寓）；二阶堂和室/庭院/入鞘武士刀刀架/练剑空间；希罗常服和服标识；六个室内与三个既有街区的小说背景；Twiitch 13 张 SVG 作为内嵌手机只读应用。
+从 `origin/lite@6c303a2` 新建 `feat/lite-majo-visual-integration`。已接入：艾玛九表情（`majo-emma`，身份优先解析，小说模式透明立绘）；六张角色三姿态图经用户确认身份（希罗/诺亚/米莉亚/安安/橘雪莉/远野汉娜）后各裁三格，用 `skytnt/anime-seg` 抠图并预乘 alpha 放大 2× 成 1024×2048 透明立绘，按 `neutral/happy/shy` 初版映射；缺失情绪回退同一人物的平常立绘而非通用脸；六类住宅原型与六间通用室内（现代开放式、老式住宅、二阶堂日式宅邸、合住公寓、滨水高层、单身公寓）；二阶堂和室/庭院/入鞘武士刀刀架/练剑空间；希罗常服和服标识；六个室内与三个既有街区的小说背景；Twiitch 13 张 SVG 作为内嵌手机只读应用。
 
-实现边界：素材管线 `scripts/prepare_majo_visual_assets.py` 从原 ZIP 校验 SHA-256 后生成 `assets/majo-runtime/`；身份确认记录在 `assets/majo-runtime/character-sheet-assignments.json`；三格第三姿态的“害羞”是画面判定而非官方命名；参考卡不是透明九表情，缺该情绪时回退同一人物的平静卡；`src/runtime/majo-housing.ts` 的住宅/街区归属是游戏原型，不是官方设定；室内复用既有 `enter_interior/interior_interact`，不新增状态或支付规则；手机应用沿既有虚拟素材模块与构建补丁，不改手机源码仓库。
+实现边界：身份确认记录在 `assets/majo-runtime/character-sheet-assignments.json`；抠图脚本 `scripts/prepare_majo_character_cutouts.py` 需要 Apache-2.0 的 `skytnt/anime-seg` 模型（不提交），普通构建只跑 `prepare_majo_visual_assets.py --check`；三格第三姿态的“害羞”是画面判定而非官方命名；`src/runtime/majo-housing.ts` 的住宅/街区归属是游戏原型，不是官方设定；室内复用既有 `enter_interior/interior_interact`，不新增状态或支付规则；手机应用沿既有虚拟素材模块与构建补丁，不改手机源码仓库。
 
-验证：`vue-tsc --noEmit`、生产构建（IIFE 66,551,590 字节）、628 项 Vitest、5 项 Node 手机素材检查、四视口受控浏览器场景通过；Lite 提取 95 个资源、ZIP 37,631,286 字节。未生成最终 PNG/ZIP、未做 iPhone/TauriTavern 真机验收；Tauri 50 MB 门禁未验证。详见 `integration/majo-visual/README.md`。
+验证：`vue-tsc --noEmit`、生产构建（IIFE 70,798,955 字节）、629 项 Vitest、5 项 Node 手机素材检查、四视口受控浏览器场景通过；Lite 提取 95 个资源、ZIP 40,818,334 字节。未生成最终 PNG/ZIP、未做 iPhone/TauriTavern 真机验收；Tauri 50 MB 门禁未验证。详见 `integration/majo-visual/README.md`。
 
 ## 历史决定：半主要角色视觉范围（2026-10-22，已被上条取代）
 

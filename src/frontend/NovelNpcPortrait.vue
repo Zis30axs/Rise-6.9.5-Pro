@@ -35,19 +35,11 @@ function imageFailed(event: Event) {
 </script>
 
 <template>
-  <div v-if="majoPortrait?.presentation === 'reference-card'" class="novel-npc-portrait majo-reference-card"
-    :class="{ 'is-muted': !active }" data-npc-portrait="majo" :data-npc-speaker="speaker" :data-npc-emotion="emotion"
-    :data-majo-portrait="majoPortrait.personId" data-majo-presentation="reference-card"
-    :data-majo-exact="majoPortrait.exact" aria-hidden="true">
-    <img :key="majoPortrait.src" class="majo-reference-card__image" :src="majoPortrait.src"
-      alt="" draggable="false">
-  </div>
-  <div v-else-if="majoPortrait" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
+  <div v-if="majoPortrait" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
     data-npc-portrait="majo" :data-npc-speaker="speaker" :data-npc-emotion="emotion"
-    :data-majo-portrait="majoPortrait.personId" data-majo-presentation="sprite"
-    :data-majo-exact="majoPortrait.exact" aria-hidden="true">
+    :data-majo-portrait="majoPortrait.personId" :data-majo-exact="majoPortrait.exact" aria-hidden="true">
     <img :key="majoPortrait.src" class="novel-npc-portrait__sprite" :src="majoPortrait.src"
-      width="1024" height="1536" alt="" draggable="false">
+      :width="majoPortrait.width" :height="majoPortrait.height" alt="" draggable="false">
   </div>
   <div v-else-if="sakiko" class="novel-npc-portrait" :class="{ 'is-muted': !active }"
     data-npc-portrait="sakiko" :data-npc-speaker="speaker" :data-npc-emotion="sakiko.expression"

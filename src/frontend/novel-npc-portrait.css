@@ -16,47 +16,18 @@
 .novel-npc-portrait.is-muted { opacity: 0; }
 /* The transparent full-body artwork continues behind the reading panel. */
 .novel-npc-portrait[data-sakiko-sprite] { bottom: 24px; }
-/* Emma's full-body sprites use the same generous stage as Sakiko's art. */
+/* Emma's and the semi-main transparent sprites use the same generous stage. */
 .novel-npc-portrait[data-majo-portrait] { bottom: 24px; }
-/* Semi-main sheets are JPEG reference cards, not transparent sprites: present
-   them as a deliberate framed portrait instead of pretending they are cut out. */
-.novel-npc-portrait.majo-reference-card {
-  inset: auto;
-  left: 18px;
-  top: 148px;
-  bottom: auto;
-  width: 208px;
-  height: 278px;
-  padding: 5px;
-  border: 1px solid rgba(226, 196, 141, .55);
-  border-radius: 16px;
-  background: #fffdf7;
-  box-shadow: 0 10px 28px rgba(12, 24, 20, .35);
-}
-.majo-reference-card__image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 11px;
-  object-fit: cover;
-  object-position: center top;
-  pointer-events: none;
-  user-select: none;
-}
 
 @media (max-width: 760px) {
   .novel-npc-portrait { inset: 133px 55px 436px 55px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 133px 12px 84px; }
   .novel-npc-portrait[data-majo-portrait] { inset: 133px 12px 84px; }
-  .novel-npc-portrait.majo-reference-card { inset: auto; left: 10px; top: 146px; width: 118px; height: 157px; padding: 4px; border-radius: 13px; }
-  .novel-npc-portrait.majo-reference-card .majo-reference-card__image { border-radius: 9px; }
 }
 @media (max-height: 670px) and (max-width: 760px) {
   .novel-npc-portrait { inset: 72px 12px 316px 172px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 72px 12px 24px; }
   .novel-npc-portrait[data-majo-portrait] { inset: 72px 12px 24px; }
-  .novel-npc-portrait.majo-reference-card { inset: auto; left: 8px; top: 110px; width: 104px; height: 138px; padding: 3px; border-radius: 11px; }
-  .novel-npc-portrait.majo-reference-card .majo-reference-card__image { border-radius: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .novel-npc-portrait { transition: none; }

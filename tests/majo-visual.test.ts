@@ -20,7 +20,7 @@ import { isScenePositionWalkable } from '../src/frontend/scene-movement';
 import { createCampusWorld, streetRoutes } from '../src/frontend/scene-world';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const manifestRows = manifest.assets as { id: string; file: string; bytes: number; sha256: string; encoding: string; personId?: string; category?: string; emotion?: string; tier?: string; presentation?: string; width?: number; height?: number }[];
+const manifestRows = manifest.assets as { id: string; file: string; bytes: number; sha256: string; encoding: string; personId?: string; category?: string; emotion?: string; tier?: string; presentation?: string; alpha?: boolean; width?: number; height?: number }[];
 const semiMain = ['majo-hiro', 'majo-noa', 'majo-milia', 'majo-anan', 'majo-sherry', 'majo-hanna'];
 
 describe('PR #16 runtime art registry', () => {
@@ -28,11 +28,11 @@ describe('PR #16 runtime art registry', () => {
     expect(Object.keys(majoEmmaExpressions)).toEqual([...majoEmotions]);
     expect(new Set(Object.values(majoEmmaExpressions)).size).toBe(9);
     for (const src of Object.values(majoEmmaExpressions)) expect(src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, presentation: 'sprite' });
+    expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, width: 1024, height: 1536 });
     expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-milia', 'majo-noa', 'majo-sherry']);
     for (const person of semiMain) {
       const set = majoExpressionSets[person]!;
-      expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, presentation: 'reference-card' });
+      expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, width: 1024, height: 2048 });
       expect(Object.keys(set.expressions).sort()).toEqual(['happy', 'neutral', 'shy']);
       expect(new Set(Object.values(set.expressions)).size).toBe(3);
     }
@@ -54,15 +54,28 @@ describe('PR #16 runtime art registry', () => {
     expect(resolveMajoSpeaker('艾玛同学')).toBeNull();
     for (const emotion of majoEmotions) {
       expect(resolveMajoExpressionPortrait('艾玛', emotion)).toEqual({
-        personId: 'majo-emma', src: majoEmmaExpressions[emotion], presentation: 'sprite', exact: true,
+        personId: 'majo-emma', src: majoEmmaExpressions[emotion], width: 1024, height: 1536, exact: true,
       });
     }
-    expect(resolveMajoExpressionPortrait('希罗', 'happy')).toMatchObject({ personId: 'majo-hiro', presentation: 'reference-card', exact: true });
+    expect(resolveMajoExpressionPortrait('希罗', 'happy')).toMatchObject({ personId: 'majo-hiro', width: 1024, height: 2048, exact: true });
     // Missing semi-main emotions reuse the same person's neutral panel, never another identity.
     const fallback = resolveMajoExpressionPortrait('希罗', 'sad')!;
-    expect(fallback).toMatchObject({ personId: 'majo-hiro', presentation: 'reference-card', exact: false });
+    expect(fallback).toMatchObject({ personId: 'majo-hiro', width: 1024, height: 2048, exact: false });
     expect(fallback.src).toBe(majoExpressionSets['majo-hiro']!.expressions.neutral);
     expect(resolveMajoExpressionPortrait('陌生的立绘名', 'happy')).toBeNull();
+  });
+
+  it('never falls back to a generic face for a registered semi-main character', () => {
+    const missing = majoEmotions.filter(emotion => !['neutral', 'happy', 'shy'].includes(emotion));
+    expect(missing).toEqual(['sad', 'angry', 'surprised', 'thinking', 'serious', 'relieved']);
+    for (const person of semiMain) {
+      const set = majoExpressionSets[person]!;
+      for (const emotion of missing) {
+        const portrait = resolveMajoExpressionPortrait(residentById(person)!.name, emotion)!;
+        expect(portrait).toMatchObject({ personId: person, exact: false, width: 1024, height: 2048 });
+        expect(portrait.src).toBe(set.expressions.neutral);
+      }
+    }
   });
 
   it('reports completed and missing art honestly', () => {
@@ -87,10 +100,18 @@ describe('PR #16 runtime art registry', () => {
     expect(manifestRows.filter(row => row.category === 'interior')).toHaveLength(6);
     expect(manifestRows.filter(row => row.category === 'district')).toHaveLength(3);
     for (const row of manifestRows.filter(row => row.category === 'character-sheet')) {
-      expect(row).toMatchObject({ tier: 'semi-main', presentation: 'reference-card', width: 512, height: 1024 });
+      expect(row).toMatchObject({ tier: 'semi-main', presentation: 'sprite', alpha: true, width: 1024, height: 2048 });
+      expect(row.encoding).toContain('anime-seg-alpha-upscale-2x');
       expect(semiMain).toContain(row.personId);
       expect(['neutral', 'happy', 'shy']).toContain(row.emotion);
     }
+    const cutouts = JSON.parse(readFileSync(path.join(ROOT, 'assets/majo-runtime/character-cutouts.json'), 'utf8')) as {
+      schema: string; upscale: number; model: { name: string; sha256: string; license: string }; assets: unknown[];
+    };
+    expect(cutouts.schema).toBe('unread-city-majo-character-cutouts-v1');
+    expect(cutouts.upscale).toBe(2);
+    expect(cutouts.model).toMatchObject({ name: 'skytnt/anime-seg', license: 'Apache-2.0', sha256: 'f15622d853e8260172812b657053460e20806f04b9e05147d49af7bed31a6e99' });
+    expect(cutouts.assets).toHaveLength(18);
     for (const row of manifestRows) {
       const bytes = readFileSync(path.join(ROOT, 'assets/majo-runtime', row.file));
       expect(bytes.length, row.file).toBe(row.bytes);

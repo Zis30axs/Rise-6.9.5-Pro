@@ -66,47 +66,35 @@ export interface MajoExpressionSet {
   readonly complete: boolean;
   /** Authored expression count; not inferred from the number of files. */
   readonly completedExpressions: number;
-  /** Transparent sprite art vs. a framed reference-card portrait. */
-  readonly presentation: 'sprite' | 'reference-card';
+  /** Intrinsic size of the transparent sprite assets. */
+  readonly width: number;
+  readonly height: number;
   readonly expressions: Readonly<Partial<Record<NovelNpcEmotion, string>>>;
 }
 
 const semiMainExpressions = (neutral: string, happy: string, shy: string): Readonly<Partial<Record<NovelNpcEmotion, string>>> => Object.freeze({ neutral, happy, shy });
 
+const semiMainSet = (personId: string, expressions: Readonly<Partial<Record<NovelNpcEmotion, string>>>): MajoExpressionSet => Object.freeze({
+  personId, tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
+  width: 1024, height: 2048, expressions,
+});
+
 /**
  * Registered expression sets. Six sheets were assigned by the user on
- * 2026-10-22; their three panels are reference-card portraits, not transparent
- * sprites. Other residents keep the generic portrait atlas.
+ * 2026-10-22; their panels were cut out with the anime-seg model and upscaled
+ * 2x into transparent sprites. Other residents keep the generic portrait atlas.
  */
 export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = Object.freeze({
   'majo-emma': Object.freeze({
     personId: 'majo-emma', tier: 'main', targetExpressions: 9, complete: true, completedExpressions: 9,
-    presentation: 'sprite', expressions: majoEmmaExpressions,
+    width: 1024, height: 1536, expressions: majoEmmaExpressions,
   }),
-  'majo-hiro': Object.freeze({
-    personId: 'majo-hiro', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(hiroNeutral, hiroHappy, hiroShy),
-  }),
-  'majo-noa': Object.freeze({
-    personId: 'majo-noa', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(noaNeutral, noaHappy, noaShy),
-  }),
-  'majo-milia': Object.freeze({
-    personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(miliaNeutral, miliaHappy, miliaShy),
-  }),
-  'majo-anan': Object.freeze({
-    personId: 'majo-anan', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(ananNeutral, ananHappy, ananShy),
-  }),
-  'majo-sherry': Object.freeze({
-    personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(sherryNeutral, sherryHappy, sherryShy),
-  }),
-  'majo-hanna': Object.freeze({
-    personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
-    presentation: 'reference-card', expressions: semiMainExpressions(hannaNeutral, hannaHappy, hannaShy),
-  }),
+  'majo-hiro': semiMainSet('majo-hiro', semiMainExpressions(hiroNeutral, hiroHappy, hiroShy)),
+  'majo-noa': semiMainSet('majo-noa', semiMainExpressions(noaNeutral, noaHappy, noaShy)),
+  'majo-milia': semiMainSet('majo-milia', semiMainExpressions(miliaNeutral, miliaHappy, miliaShy)),
+  'majo-anan': semiMainSet('majo-anan', semiMainExpressions(ananNeutral, ananHappy, ananShy)),
+  'majo-sherry': semiMainSet('majo-sherry', semiMainExpressions(sherryNeutral, sherryHappy, sherryShy)),
+  'majo-hanna': semiMainSet('majo-hanna', semiMainExpressions(hannaNeutral, hannaHappy, hannaShy)),
 });
 
 const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
@@ -133,7 +121,8 @@ export function majoExpressionFor(personId: string, emotion: NovelNpcEmotion): s
 export interface MajoExpressionPortrait {
   personId: string;
   src: string;
-  presentation: MajoExpressionSet['presentation'];
+  width: number;
+  height: number;
   /** False when the requested emotion is not authored and neutral is used. */
   exact: boolean;
 }
@@ -144,7 +133,7 @@ export function resolveMajoExpressionPortrait(speaker: string, emotion: NovelNpc
   const set = personId ? majoExpressionSets[personId] : undefined;
   const src = personId ? majoExpressionFor(personId, emotion) : null;
   if (!personId || !set || !src) return null;
-  return { personId, src, presentation: set.presentation, exact: !!set.expressions[emotion] };
+  return { personId, src, width: set.width, height: set.height, exact: !!set.expressions[emotion] };
 }
 
 /** Verified interior art used by novel-mode backdrops. */
@@ -183,12 +172,12 @@ export const majoExpressionPolicy = Object.freeze({ main: 9, semiMain: 3 } as co
  */
 export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-emma', tier: 'main', targetExpressions: 9, outfit: '便服（浅粉针织开衫）', expressions: 9, complete: true, note: '已接入九种表情。' },
-  { personId: 'majo-hiro', tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 3, complete: true, note: '用户确认身份；三姿态参考图已接入（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-anan', tier: 'semi-main', targetExpressions: 3, outfit: '银蓝发哥特长裙', expressions: 3, complete: true, note: '用户确认身份；三姿态参考图已接入（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-noa', tier: 'semi-main', targetExpressions: 3, outfit: '彩发双马尾波点外套', expressions: 3, complete: true, note: '用户确认身份；三姿态参考图已接入（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '金发黑色蕾丝开衫', expressions: 3, complete: true, note: '用户确认身份；三姿态参考图已接入（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '蓝发贝雷帽格裙', expressions: 3, complete: true, note: '用户确认身份（消息写作“橘雪梨”，稳定 ID 仍为 majo-sherry）；三姿态参考图已接入。' },
-  { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；三姿态参考图已接入（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-hiro', tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-anan', tier: 'semi-main', targetExpressions: 3, outfit: '银蓝发哥特长裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-noa', tier: 'semi-main', targetExpressions: 3, outfit: '彩发双马尾波点外套', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '金发黑色蕾丝开衫', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '蓝发贝雷帽格裙', expressions: 3, complete: true, note: '用户确认身份（消息写作“橘雪梨”，稳定 ID 仍为 majo-sherry）；已抠图并 2× 放大。' },
+  { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },

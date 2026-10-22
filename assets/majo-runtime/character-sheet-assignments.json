@@ -4,7 +4,7 @@
   "confirmedAt": "2026-10-22",
   "userMessage": "1希罗2诺亚3米莉亚4安安5橘雪梨6远野汉娜",
   "panelExpressions": ["neutral", "happy", "shy"],
-  "panelNote": "每张 1536x1024 原图含三个并排姿态。第一姿态按平静处理，第二姿态按开心处理，第三姿态按害羞处理；这是用户确认身份后的初版映射，不是原画师的正式表情命名。",
+  "panelNote": "每张 1536x1024 原图含三个并排姿态。第一姿态按平静处理，第二姿态按开心处理，第三姿态按害羞处理；这是用户确认身份后的初版映射，不是原画师的正式表情命名。运行时用 anime-seg 抠图并放大 2×；缺失的其余情绪回退同一人物的平静立绘。",
   "assignments": [
     {
       "sourceId": "characters/source-sheets/01-black-red-kimono",

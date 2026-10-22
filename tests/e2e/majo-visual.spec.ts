@@ -74,13 +74,12 @@ for (const viewport of viewports) {
     const sceneBytes = await inlineImage(backdrop.locator('img'), scene);
 
     // The collapsed reader previews the last spoken line: the semi-main Hiro
-    // reference card. Expanding rewinds to the first line of the entry (Emma).
+    // transparent sprite. Expanding rewinds to the first line of the entry (Emma).
     const portrait = page.locator('[data-majo-portrait]');
     await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
-    await expect(portrait).toHaveAttribute('data-majo-presentation', 'reference-card');
     await expect(portrait).toHaveAttribute('data-npc-emotion', 'neutral');
     const hiroBytes = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
-    await page.screenshot({ path: `${prefix}-hiro-card.png` });
+    await page.screenshot({ path: `${prefix}-hiro-sprite.png` });
     await page.locator('[data-toggle-dialogue]').click();
     const images: Record<string, unknown> = {};
     for (const [index, expression] of expressions.entries()) {
@@ -93,8 +92,8 @@ for (const viewport of viewports) {
     }
     await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
     await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
-    await expect(portrait).toHaveAttribute('data-majo-presentation', 'reference-card');
     await expect(portrait).toHaveAttribute('data-npc-speaker', '希罗');
+    await expect(portrait).toHaveAttribute('data-npc-emotion', 'neutral');
     await noOverflow(page);
 
     // The real embedded phone must expose the recovered Twiitch artwork as a local app.

@@ -3,7 +3,7 @@
     "width": 1280,
     "height": 800
   },
-  "bundleSha256": "a5a765d310c5c87d3f2e033b743d20c4bd252b1ab70230e00e882bad301eb5bc",
+  "bundleSha256": "a53fba4a59a146efca0d2ecb8b24a18f3e52b2ae8d65cb6b81c4d54323cc8a98",
   "scene": {
     "hash": "fcb456cecd94b9ca34f94193838b4432208c2ad330448ddd560169ca9f5ff595",
     "width": 1536,
@@ -67,9 +67,9 @@
     }
   },
   "hiroCard": {
-    "hash": "59603a36c78ccba6687bc1ddc0279175e26f50172cc6b6b952c052dbad81d31a",
-    "width": 512,
-    "height": 1024,
+    "hash": "17d2a65f22bbc2dc6d0cfea611db320b1535e72d185417c8f77e0b2f384941b6",
+    "width": 1024,
+    "height": 2048,
     "inline": true
   },
   "stage": "passed",
