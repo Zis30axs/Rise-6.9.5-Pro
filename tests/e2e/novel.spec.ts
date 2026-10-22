@@ -53,6 +53,7 @@ async function host(page: Page, initial?: WorldState, mode: 'scene' | 'novel' = 
   await frame!.addScriptTag({ content: bundle });
   await expect(root(page)).toBeVisible();
   await expect(page.locator('[data-unread-city-rescue]')).toHaveCount(0);
+  if (initial) await expect(shell(page)).toHaveAttribute('data-presentation-mode', mode);
 }
 const saved = async (page: Page): Promise<WorldState> => JSON.parse((await page.locator('body').getAttribute('data-novel-state'))!);
 function initialState() {
@@ -164,6 +165,9 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   await host(page, initialState());
   await page.getByRole('textbox', { name: '接下来，你想做什么？' }).fill('看看今天的天气。');
   await page.getByRole('button', { name: '继续故事', exact: true }).click();
+  await expect(page.locator('[data-event-reading]')).toContainText('风轻轻吹过。');
+  await expect(page.locator('.novel-speech')).toHaveCount(0);
+  await page.locator('[data-novel-dialogue] [data-toggle-dialogue]').click();
   await expect(page.locator('.novel-speech')).toHaveText('风轻轻吹过。');
   await expect(page.locator('body')).toHaveAttribute('data-novel-protocol', /\|charac\|emot\|says\|/);
   await expect(portrait(page)).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30000 });
@@ -187,7 +191,10 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   await expect(page.locator('body')).toHaveAttribute('data-novel-generations', '1');
   expect((await saved(page)).story.at(-1)?.text).toBe(reply);
   await page.getByRole('button', { name: '全文回看', exact: true }).click();
-  await expect(page.locator('.story-list')).toContainText('素世：今天天气真好。');
+  const dialogue = page.locator('.story-list .story-entry').last().locator('[data-story-dialogue]');
+  await dialogue.locator('summary').click();
+  await expect(dialogue.locator('.story-speaker').first()).toHaveText('素世');
+  await expect(dialogue.locator('p').first()).toHaveText(/素世\s*今天天气真好。/);
   await expect(page.locator('.story-list')).not.toContainText('|charac|');
   await page.getByRole('button', { name: '逐句阅读', exact: true }).click();
   await expect(page.locator('.novel-speech')).toHaveText('那就一起走吧。');
@@ -201,7 +208,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800
     await page.setViewportSize(viewport);
     await host(page, initialState());
     await expectNovelControlsClear(page, viewport);
-    await page.getByRole('button', { name: '打开地图切换地点', exact: true }).click();
+    await page.getByRole('button', { name: '地图', exact: true }).click();
     await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-layer', 'sandtable');
     await expect(page.locator('[data-world-map-viewport]')).toHaveAttribute('data-map-rise', '1.000');
     await expect(page.getByRole('button', { name: '校园', exact: true })).toHaveCount(0);
