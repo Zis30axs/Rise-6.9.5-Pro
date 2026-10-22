@@ -8,13 +8,18 @@
     "scenario": "【占位】初始地点、学期、学校与人物网络尚未最终确定。",
     "first_mes": "【开发占位开场】欢迎来到《未读之城》。这里还没有写入正式的初始剧情。",
     "mes_example": "",
-    "creator_notes": "v2026.10.16.1：私有开发中的架构起步模板。当前包含基础卡片和 2 条世界书约定，剧情及开场仍为占位；尚未实现确定性运行时、自定义前端或存档系统。",
+    "creator_notes": "v2026.10.22.2：私有开发中的架构起步模板。当前包含基础卡片和 2 条世界书约定，剧情及开场仍为占位；尚未实现确定性运行时、自定义前端或存档系统。",
     "system_prompt": "",
     "post_history_instructions": "",
     "alternate_greetings": [],
-    "tags": ["人生模拟", "现代都市", "校园", "群像"],
+    "tags": [
+      "人生模拟",
+      "现代都市",
+      "校园",
+      "群像"
+    ],
     "creator": "Zis30axs",
-    "character_version": "2026.10.16.1",
+    "character_version": "2026.10.22.2",
     "extensions": {
       "unread_city": {
         "format_version": "0.1.0",

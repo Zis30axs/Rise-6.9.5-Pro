@@ -11,7 +11,7 @@ from card_codec import CardError, assert_card, encode_card
 
 ROOT = Path(__file__).resolve().parents[1]
 IMMERSIVE_SCRIPT_ID = "9d9bc6da-0c08-4d1f-8d18-451c4de6e295"
-IMMERSIVE_VERSION = "0.2.0-p0p1"
+IMMERSIVE_VERSION = "0.3.0-emma"
 BUNDLE_MARKER = "UNREAD_CITY_IMMERSIVE_BUNDLE"
 NOTES_START = "[未读之城 Immersive P0/P1]"
 NOTES_END = "[/未读之城 Immersive P0/P1]"
