@@ -78,4 +78,5 @@
 - 浏览器：`tests/e2e/majo-visual.spec.ts` 在 1440×900、1280×800、390×844、320×568 检查艾玛九表情切换、希罗透明立绘、二阶堂背景真实字节、手机 Twiitch 页面、无横向溢出与存档不变；使用受控 Helper 宿主、真实生产 IIFE 和真实内嵌手机，模型请求为 0。截图与证据写入 `outputs/majo-visual-qa/`。
 - `.github/workflows/majo-visual.yml` 在分支复跑类型检查、构建、定向 Vitest、Node 手机素材检查、Lite ZIP 提取与四视口浏览器场景（Chromium headless）。
 - 本地额外回归：`tests/e2e/npc-phone.spec.ts` 4/4 通过，确认新增 Twiitch 应用与住宅/作息改动未破坏现有真实内嵌手机联系人与 NPC 短信路径。
+- PR #19（修复小说模式 E2E 过期选择器与宿主流程）已合入 `lite`，本分支已同步该合并；修复后的 `tests/e2e/novel.spec.ts` 6/6 通过。
 - 这不是原生酒馆页面或手机真机验收；证据范围以实际运行结果为准。
