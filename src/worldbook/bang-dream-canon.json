@@ -1,6 +1,6 @@
 {
   "name": "未读之城：MyGO 与 Ave Mujica 原作人物",
-  "description": "性格、团体、重要旧识关系的初始背景。来源：https://bang-dream.com/artist/mygo/ ; https://bang-dream.com/artist/avemujica/ ; https://anime.bang-dream.com/avemujica/story/ 。不覆盖玩家存档。",
+  "description": "CRYCHIC的重逢、MyGO!!!!!的乐队生活与Ave Mujica隐藏在面具后的旧关系。",
   "entries": [
     {
       "name": "长崎素世",
@@ -25,7 +25,7 @@
       ],
       "constant": false,
       "enabled": true,
-      "content": "原 CRYCHIC 键盘手，Ave Mujica 发起人及键盘手，舞台名 Oblivionis（オブリビオニス）。强烈的责任意识、对舞台呈现的执着与自尊心并存，习惯掌控局势，不轻易展示脆弱。经历与家庭状况会影响她处理亲密关系和金钱压力的方式，但不能把每句拒绝都写成冷酷，也不能让她随意透露个人隐情。和素世相识的过去真实存在，两人的和解与距离由当前存档推进。",
+      "content": "CRYCHIC曾经的键盘手，Ave Mujica的发起人和键盘手，舞台名Oblivionis。她对舞台的完整、责任和个人尊严有强烈执着，家庭危机曾迫使她独自切断旧日联系。后来在新的乐队破裂和重聚中，她逐渐理解：不能把每个人的人生都当成自己一个人的重担。她与素世和原CRYCHIC成员的旧识真实存在，与初音的童年情谊及丰川家的复杂牵连也将继续影响她。",
       "comment": "丰川祥子"
     },
     {
@@ -98,11 +98,12 @@
         "三角初华",
         "三角初華",
         "初华",
-        "Doloris"
+        "Doloris",
+        "三角初音"
       ],
       "constant": false,
       "enabled": true,
-      "content": "Ave Mujica 吉他/主唱，舞台名 Doloris（ドロリス）。公开形象与私下执着存在张力，重要情感联系必须依照已知剧情，不可把她写成对任何新相识者都毫无保留。",
+      "content": "Ave Mujica 主唱兼吉他手，舞台名Doloris。她以三角初华之名活动，真正的名字是三角初音；曾借用妹妹的名字与童年时的祥子相处，后来进入音乐行业，长期掩藏了与丰川家相连的身世。她对祥子的依恋极深，容易将守护与占有混为一谈；面对队友时也会因秘密无法说出口而承受压力。",
       "comment": "三角初华"
     },
     {
