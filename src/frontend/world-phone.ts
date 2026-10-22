@@ -9,6 +9,8 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 export function createWorldPhoneApi(options: {
   session: string; current(): boolean; busy(): boolean; state(): WorldState;
   commit(action: {type:'phone_app';requestId:string;owner:ProtagonistId;command:PhoneCommand}): WorldState;
+  onOutgoingMessage?(messageId: string): void;
+  requestReply?(messageId: string): Promise<void>;
 }) {
   const view = (s: WorldState, owner = activeProtagonist(s)) => {
     const enabled = enableProtagonists(s), p = enabled.protagonists!, active = activeProtagonist(enabled);
@@ -23,13 +25,20 @@ export function createWorldPhoneApi(options: {
       calendar: d.calendar, dailyPlans: person.schedule, notifications: d.notifications,
       locked: d.locked, share: d.share,
       orders: p.orders.filter(o=>o.owner===owner), messages: person.phone,
+      conversation: (p.conversations ?? []).filter(m=>m.from===owner||m.to===owner).map(m=>({
+        ...m, direction: m.from===owner?'outgoing':'incoming',
+        answered: m.expectsReply && (p.conversations??[]).some(reply=>reply.replyTo===m.id),
+      })),
       audit: p.accounts.phoneAccess.filter(e=>e.owner===owner).slice(-30),
       catalog: storeCatalog.map(({id,name,price,category,purchaseUnit})=>({id,name,price,category,purchaseUnit})),
       destinations: locations.map(({id,name})=>({id,name})),
       other: {id:otherProtagonist(active),name:protagonistNames[otherProtagonist(active)],...phoneAccess(enabled,otherProtagonist(active))},
     }));
   };
+  const listeners=new Set<() => void>();
   return Object.freeze({
+    subscribe(callback: () => void) { listeners.add(callback); return () => { listeners.delete(callback); }; },
+    notify() { for(const listener of [...listeners]) { try { listener(); } catch { /* A detached phone view cannot stop world state saves. */ } } },
     read() { if(!options.current()) throw Error('剧情手机连接已结束');return view(options.state()); },
     async act(raw: {binding:string;revision:number;requestId:string;owner:ProtagonistId;command:PhoneCommand}) {
       if(!options.current()||options.busy()) throw Error('请等待当前行动结束后再操作手机');
@@ -37,7 +46,15 @@ export function createWorldPhoneApi(options: {
       if(!raw||raw.binding!==JSON.stringify([options.session,activeProtagonist(s)])) throw Error('主角或聊天已经切换，请重新打开应用');
       if(raw.revision!==(s.protagonists?.revision??0)&&!s.protagonists?.operations.some(o=>o.id===raw.requestId)) throw Error('手机状态已更新，请刷新后重试');
       const next=options.commit({type:'phone_app',requestId:raw.requestId,owner:raw.owner,command:raw.command});
-      return view(next,raw.owner);
+      const response=view(next,raw.owner);
+      if(raw.command.type==='send_message' && raw.owner===activeProtagonist(next)) options.onOutgoingMessage?.(`dual:${raw.requestId}`);
+      return response;
+    },
+    async retryReply(messageId: string) {
+      if(!options.current()||options.busy()) throw Error('请等待当前行动结束后重试回复');
+      if(!options.requestReply) throw Error('自动短信回复暂不可用');
+      await options.requestReply(messageId);
+      return view(options.state());
     },
   });
 }

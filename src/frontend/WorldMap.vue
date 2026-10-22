@@ -4,6 +4,8 @@ import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
+import { getScenePeople } from '../runtime/scene-context';
+import { activeProtagonist, otherProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { campusMapBounds, mapLocationPoint } from './campus-map-layout';
 import type { ShellActions, ShellModel } from './types';
@@ -101,11 +103,30 @@ const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360
 // Explicit prototype records only; never infer a location from a contact's status text.
 const personWorldLocationRefs = [{ contactId: 'lin', locationId: 'library', record: '演示记录：在图书馆整理笔记' }];
 const affinityThreshold = 10;
-const visiblePeople = computed(() => showDemoPeople.value ? personWorldLocationRefs.flatMap(record => {
+const demoPeople = computed(() => showDemoPeople.value ? personWorldLocationRefs.flatMap(record => {
   const contact = props.model.state.contacts.find(item => item.id === record.contactId);
   const place = locations.find(item => item.id === record.locationId);
-  return contact && place && contact.affinity >= affinityThreshold ? [{ ...record, name: contact.name, affinity: contact.affinity, place }] : [];
+  return contact && place && contact.affinity >= affinityThreshold
+    ? [{ ...record, name: contact.name, affinity: contact.affinity, place, source: 'demo' as const }] : [];
 }) : []);
+/** The scene's seeded characters and actual second protagonist share the
+ * canonical positions used by walking/encounter and background-life. No fake
+ * map tracking of absent or undisclosed characters in other districts. */
+const visiblePeople = computed(() => {
+  const state = props.model.state;
+  const position = state.scene;
+  const scenePeople = position && !state.interior
+    ? getScenePeople(position, state.contacts)
+      .filter(person => Math.hypot(person.x - position.x, person.z - position.z) <= 35)
+      .map(person => ({contactId:person.contactId??person.id,name:person.name,position:{x:person.x,z:person.z},source:'scene' as const}))
+    : [];
+  const otherId=otherProtagonist(activeProtagonist(state));
+  const other=state.protagonists ? personState(state,otherId) : null;
+  const otherPeople=position && !state.interior && other && !other.interior && other.scene && other.locationId===state.locationId
+    ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
+    : [];
+  return [...scenePeople,...otherPeople,...demoPeople.value];
+});
 const routeOutlooks = computed(() => new Map(locations.map(place => [place.id, getRouteOutlook(props.model.state, place.id)])));
 const travelMinutes = (locationId: string) => 15 + (routeOutlooks.value.get(locationId)?.extraMinutes ?? 0);
 const roadEvents = computed(() => locations.flatMap(place => {
@@ -379,7 +400,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点后按预告结算，再继续阅读；跨区使用现有公交路线。</p>
           <p v-if="!novelMode" class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p><p v-if="needsTransitReturn && !novelMode" class="wm-detail-note">当前在校园外，请在附近公交站乘车返回校园。</p>
           <p v-if="!novelMode && !roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
-          <div v-if="showDemoPeople" class="wm-people-summary"><h3>演示定位</h3><p v-for="person in visiblePeople" :key="person.contactId">{{ person.name }} · {{ person.place.name }}<small>{{ person.record }}</small></p><p v-if="!visiblePeople.length">暂无满足条件的演示定位。</p></div>
+          <div v-if="visiblePeople.length" class="wm-people-summary"><h3>附近人物</h3><p v-for="person in visiblePeople" :key="person.contactId">{{ person.name }}<small>{{ person.source === 'demo' ? '演示定位' : person.source === 'protagonist' ? '另一主角的实际场景位置' : '现场人物（场景存档）' }}</small></p></div>
         </template>
         <template v-else-if="layer === 'city'">
           <small class="wm-kicker">现有城市片区</small><h3>{{ cityDetail.name }}</h3><p class="wm-detail-note">{{ cityDetail.description }}</p>

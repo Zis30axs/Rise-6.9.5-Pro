@@ -6,7 +6,7 @@ import { transitStops } from '../runtime/transit';
 import { createCampusMapProjection, mapAreas, mapBounds, mapDistrictLabels, mapLocationPoint, mapPaths, visibleMapBuildings, type CampusMapScope, type MapPoint } from './campus-map-layout';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
-type MapPerson = { contactId: string; name: string; place: { id: string } };
+type MapPerson = { contactId: string; name: string; place?: { id: string }; position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo' };
 const props = withDefaults(defineProps<{
   width: number; height: number; locationId: string; busy: boolean;
   roadEvents: MapEvent[]; people: MapPerson[]; bearing?: number; viewScale?: number;
@@ -89,8 +89,9 @@ const player = computed(() => {
   return project(point.x, point.z, 1);
 });
 const peoplePositions = computed(() => props.people.flatMap(person => {
-  const point = mapLocationPoint(person.place.id);
-  return point ? [{ ...person, anchor: project(point.x, point.z, 13) }] : [];
+  const point = person.position ?? (person.place ? mapLocationPoint(person.place.id) : null);
+  if (!point || point.x < bounds.value.minX || point.x > bounds.value.maxX || point.z < bounds.value.minZ || point.z > bounds.value.maxZ) return [];
+  return [{ ...person, anchor: project(point.x, point.z, 13) }];
 }));
 const stops = computed(() => transitStops.filter(stop => props.scope === 'city' || stop.id === 'campus').map(stop => ({ ...stop, anchor: project(stop.x, stop.z) })));
 const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.y}px` });
@@ -131,7 +132,7 @@ const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.
     <template v-if="scope === 'campus'">
       <button v-for="place in markers" :key="place.id" type="button" class="cms-place-pin" :class="{ current: place.id === currentOutdoorId }" :style="{ ...markerStyle(place.label), width: markerWidth + 'px' }" :data-map-target="place.id" :disabled="busy || place.id === locationId" :aria-label="place.id === locationId ? place.name + '，当前地点' : '前往' + place.name" @click="emit('travel', place.id)"><span class="cms-pin-index">{{ place.index + 1 }}</span><span>{{ place.name }}<small v-if="place.id === currentOutdoorId">{{ locationId === currentOutdoorId ? '你在这里' : '正在室内' }}</small></span></button>
       <button v-for="place in extraMarkers" :key="place.id" type="button" class="cms-place-dot" :class="{ current: place.id === currentOutdoorId }" :style="markerStyle(place.point)" :data-map-target="place.id" :disabled="busy || place.id === locationId" :aria-label="place.id === locationId ? place.name + '，当前地点' : '前往' + place.name" :title="place.name" @click="emit('travel', place.id)"><span>{{ place.index + 1 }}</span></button>
-      <span v-for="person in peoplePositions" :key="person.contactId" class="wm-person-pin cms-person-pin" :style="markerStyle(person.anchor)">{{ person.name }}<small>演示定位</small></span>
+      <span v-for="person in peoplePositions" :key="person.contactId" class="wm-person-pin cms-person-pin" :style="markerStyle(person.anchor)">{{ person.name }}<small>{{ person.source === 'protagonist' ? '另一主角' : person.source === 'scene' ? '现场人物' : '演示定位' }}</small></span>
     </template>
     <button v-for="district in scope === 'city' ? districts : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="markerStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.name }}</button>
   </div>

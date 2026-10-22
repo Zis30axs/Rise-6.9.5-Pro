@@ -21,6 +21,16 @@ export function parsePhoneAppearance(raw: unknown): PhoneAppearance {
   return {wallpaper:a.wallpaper as PhoneAppearance['wallpaper'],theme:a.theme as PhoneAppearance['theme'],layout:a.layout as PhoneAppearance['layout']};
 }
 export interface DeviceState { appearance?: PhoneAppearance; locked: boolean; share: 'none' | 'read' | 'write'; calendar: CalendarEvent[]; notifications: PhoneNotification[] }
+export interface ProtagonistTextMessage {
+  id: string;
+  from: ProtagonistId;
+  to: ProtagonistId;
+  at: number;
+  text: string;
+  replyTo: string | null;
+  /** Only player-originated messages require a model response. */
+  expectsReply: boolean;
+}
 export interface PhoneOrder { id: string; owner: ProtagonistId; actor: ProtagonistId; kind: 'shop' | 'delivery'; itemId: string; quantity: number; card: FictionalCardId; totalCents: number; address: string; due: number; status: 'paid' | 'delivered' | 'received' | 'cancelled' }
 export interface ProtagonistWorld {
   revision: number;
@@ -29,6 +39,8 @@ export interface ProtagonistWorld {
   devices: Record<ProtagonistId, DeviceState>;
   orders: PhoneOrder[];
   operations: { id: string; actor: ProtagonistId; owner: ProtagonistId; command: string }[];
+  /** Shared canonical chat; both phones project the same thread. Absent in old 1.12 saves. */
+  conversations?: ProtagonistTextMessage[];
   /** Older 1.12 saves receive this lazily at their current world clock. */
   backgroundLife?: BackgroundLife;
   /** Seven-game-day extractive memories, never a replacement for live state. */
@@ -89,14 +101,14 @@ export function enableProtagonists(s: WorldState): WorldState {
   };
   const next: WorldState = { ...clone(s), schema_version: '1.12.0', protagonists: { revision: 0, inactive,
     accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS),
-    devices: { soyo: {locked: false, share: 'none', calendar: [], notifications: []}, sakiko: {locked: false, share: 'none', calendar: [], notifications: []} }, orders: [], operations: [] } };
+    devices: { soyo: {locked: false, share: 'none', calendar: [], notifications: []}, sakiko: {locked: false, share: 'none', calendar: [], notifications: []} }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
   return next;
 }
 
 export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState): ProtagonistWorld {
-  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'weeklyMemory') ? ['weeklyMemory'] : [])]);
+  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'weeklyMemory') ? ['weeklyMemory'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'conversations') ? ['conversations'] : [])]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), people = exact(a.people, ['soyo','sakiko']);
   const accounts = makeDualLedger(0, 0); accounts.active = who;
@@ -140,7 +152,18 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const operations = distinct(array(p.operations,2000,raw => {
     const r=exact(raw,['id','actor','owner','command']); return {id:identifier(r.id),actor:actor(r.actor),owner:actor(r.owner),command:string(r.command,2000)};
   }));
-  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations};
+  const conversations: ProtagonistTextMessage[] = Object.hasOwn(p,'conversations') ? distinct(array(p.conversations,10000,raw => {
+    const item=exact(raw,['id','from','to','at','text','replyTo','expectsReply']);
+    const from=actor(item.from),to=actor(item.to);
+    if(from===to) fail('短信双方不能是同一主角');
+    const replyTo=item.replyTo===null?null:identifier(item.replyTo);
+    const expectsReply=boolean(item.expectsReply);
+    if(replyTo!==null&&expectsReply) fail('自动回复不能再触发自动回复');
+    return {id:identifier(item.id),from,to,at:integer(item.at,525600000),text:string(item.text,1000),replyTo,expectsReply};
+  })) : [];
+  if(conversations.some(row => row.replyTo!==null && !conversations.some(parent =>
+    parent.id===row.replyTo && parent.from===row.to && parent.to===row.from && parent.expectsReply))) fail('短信回复来源无效');
+  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations,conversations};
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy) : initializeBackgroundLife({...base,schema_version:'1.12.0',protagonists:result});
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   return result;
@@ -276,14 +299,22 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     case 'calendar_delete':if(!device.calendar.some(x=>x.id===command.id)) fail('日程不存在');device.calendar=device.calendar.filter(x=>x.id!==command.id);break;
     case 'send_message': {
       const recipient=otherProtagonist(owner),receiver=personState(s,recipient),npcId=`protagonist-${owner}`;
+      p.conversations ??= [];
+      if(p.conversations.length>=10000) fail('短信历史达到存档上限，请先导出历史');
       if(receiver.phone.length>=200) fail('对方消息已满');
       if(!receiver.contacts.some(c=>c.id===npcId)) receiver.contacts.push({id:npcId,name:protagonistNames[owner],tag:'另一位主角',summary:'在同一世界中生活的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
+      const senderContactId=`protagonist-${recipient}`;
+      if(!target.contacts.some(c=>c.id===senderContactId)){
+        if(target.contacts.length>=50) fail('发送方联系人已满');
+        target.contacts.push({id:senderContactId,name:protagonistNames[recipient],tag:'另一位主角',summary:'在同一世界中生活的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
+      }
       receiver.phone.push({id:`dual:${requestId}`,npcId,text:command.text,read:false,at:`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`});
       const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;
       const sentText=who===owner?`向${protagonistNames[recipient]}发消息：${command.text}`:`${protagonistNames[who]}使用你的手机向${protagonistNames[recipient]}发消息：${command.text}（设备操作记录，不代表你本人发言。）`;
       target.journal.push({id:`sent:dual:${requestId}`,text:sentText.slice(0,1000),at});
       const storyIds=new Set(target.story.filter(entry=>entry.role==='assistant').map(entry=>entry.id));
       while(target.journal.length>100){const index=target.journal.findIndex(entry=>{const match=/^(.*):wa:[0-9a-f]{24}$/.exec(entry.id);return !match||!storyIds.has(match[1]);});target.journal.splice(index<0?0:index,1);}
+      p.conversations.push({id:`dual:${requestId}`,from:owner,to:recipient,at:gameMinute(s),text:command.text,replyTo:null,expectsReply:who===owner});
       notify(s,recipient,`message:${requestId}`,`${protagonistNames[owner]}发来新消息。`);break;
     }
     case 'read_notifications':device.notifications.forEach(n=>{n.read=true;});break;
@@ -298,3 +329,44 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
 }
 
 
+
+/**
+ * Save exactly one model-generated reply to a user-originated SMS. The reply
+ * is committed by the card, not by a tool call or a fabricated story action.
+ * No protagonist switch, world time advance, refund, or location mutation.
+ */
+export function applyPhoneReply(state: WorldState, messageId: string, replyText: string): WorldState {
+  const s=enableProtagonists(state),p=s.protagonists!,rows=p.conversations??[];
+  const source=rows.find(row=>row.id===messageId);
+  if(!source||!source.expectsReply||source.replyTo!==null||source.from!==activeProtagonist(s)||source.to!==otherProtagonist(source.from)) {
+    fail('短信回复来源与当前主角不一致');
+  }
+  const replyId=`${source.id}:reply`;
+  const existing=rows.find(row=>row.replyTo===source.id||row.id===replyId);
+  if(existing){
+    if(existing.id!==replyId||existing.text!==replyText||existing.replyTo!==source.id) fail('重复短信回复内容不一致');
+    return s;
+  }
+  if(typeof replyText!=='string'||!replyText.trim()||replyText.length>1000||/[\u0000-\u001f]/.test(replyText)) fail('短信回复正文无效');
+  if(rows.length>=10000) fail('短信历史达到存档上限');
+  const recipient=personState(s,source.from),responder=personState(s,source.to);
+  if(recipient.phone.length>=200) fail('当前手机收件箱已满');
+  if(p.devices[source.from].notifications.length>=200 && p.devices[source.from].notifications.every(row=>!row.read)) fail('当前手机通知已满');
+  const npcId=`protagonist-${source.to}`;
+  if(!recipient.contacts.some(row=>row.id===npcId)){
+    if(recipient.contacts.length>=50) fail('联系人已满');
+    recipient.contacts.push({id:npcId,name:protagonistNames[source.to],tag:'另一位主角',summary:'与当前人物共享同一个世界的另一位主角。',affinity:0,status:'手机联系',portraitId:'deepseek',sourcePersonId:null,isMain:true});
+  }
+  const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;
+  recipient.phone.push({id:replyId,npcId,text:replyText,read:false,at});
+  const sentId=`sent:${replyId}`;
+  if(!responder.journal.some(row=>row.id===sentId)){
+    responder.journal.push({id:sentId,text:`回复${protagonistNames[source.from]}：${replyText}`.slice(0,1000),at});
+    responder.journal=responder.journal.slice(-100);
+  }
+  rows.push({id:replyId,from:source.to,to:source.from,at:gameMinute(s),text:replyText,replyTo:source.id,expectsReply:false});
+  p.conversations=rows;
+  notify(s,source.from,`message:${replyId}`,`${protagonistNames[source.to]}发来回复。`);
+  p.revision++;
+  return s;
+}
