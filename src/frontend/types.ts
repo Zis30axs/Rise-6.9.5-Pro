@@ -201,11 +201,13 @@ export interface GeneratedStory {
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];
   worldActions?: StoryAction[];
+  contactRequests?: import('../runtime/npc-phone').ContactProposal[];
+  phoneDecision?: 'silence';
   weeklySummary?: { week: number; text: string };
 }
 
 export type StoryGenerationOptions = {
-  kind: 'phone_reply';
+  kind: 'phone_reply' | 'npc_phone_reply';
   messageId: string;
 } | {
   kind: 'interaction_event';
@@ -267,3 +269,4 @@ export interface ShellActions {
   retryPhoneSync(): void;
   setDismissHandler?(handler: (() => boolean) | undefined): void;
 }
+

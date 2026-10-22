@@ -1,0 +1,58 @@
+name: NPC contacts and private SMS
+
+on:
+  push:
+    branches: [feat/lite-npc-contacts-20261022]
+  pull_request:
+    branches: [feat/lite-llm-phone-replies-20261021, lite]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contacts-and-sms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: python -m pip install Pillow
+      - name: Reconstruct the pinned, existing phone
+        run: |
+          git init ../ST-iPhonie
+          git -C ../ST-iPhonie remote add origin https://github.com/Zis30axs/ST-iPhonie.git
+          git -C ../ST-iPhonie fetch --depth 1 origin 24295193aa1adff606edcd4e63c8b07923533f2b
+          git -C ../ST-iPhonie checkout --detach FETCH_HEAD
+          git -C ../ST-iPhonie apply --check "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+          git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
+      - name: Build and type-check phone and frontend
+        run: npm run build
+      - name: Contact, privacy, replay and existing protagonist regressions
+        run: >
+          npx vitest run tests/npc-phone.test.ts tests/npc-phone-lifecycle.test.ts
+          tests/phone-reply.test.ts tests/scene-context.test.ts tests/characters.test.ts
+          tests/background-life.test.ts tests/weekly-memory.test.ts tests/prompt-pruning.test.ts
+          tests/story-actions.test.ts tests/story-output-compat.test.ts tests/character-context.test.ts
+          tests/story-api.test.ts tests/dual-protagonists.test.ts tests/game-calendar.test.ts
+          --maxWorkers=1
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y fonts-noto-cjk
+      - name: Real embedded phone at desktop and mobile sizes
+        run: npx playwright test --config playwright.npc.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npc-phone-validation
+          path: |
+            outputs/npc-phone-qa/
+            test-results/

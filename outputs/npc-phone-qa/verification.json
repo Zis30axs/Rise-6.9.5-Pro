@@ -1,0 +1,111 @@
+{
+  "recordedOn": "2026-10-22",
+  "basePr": 15,
+  "baseCommit": "f84f5778106d918e6eb88b27e08e9e1343a1bda4",
+  "branch": "feat/lite-npc-contacts-20261022",
+  "phoneBaseline": "24295193aa1adff606edcd4e63c8b07923533f2b",
+  "phoneRuntimeBytes": 6268747,
+  "phoneRuntimeSha256": "65c9910a4b7007be32430a61279f93d83626397bf6a7653e07893a66d84c846d",
+  "phoneUiBytes": 879113,
+  "browser": "Chromium 153.0.8010.0, headless",
+  "typecheck": "passed: npx vue-tsc --noEmit",
+  "unitRegression": {
+    "files": 14,
+    "uniqueTests": 138,
+    "passed": 138
+  },
+  "browserRegression": {
+    "tests": 4,
+    "passed": 4,
+    "screenshots": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "file": "outputs/npc-phone-qa/1440x900.png",
+        "capture": "actual embedded phone iframe",
+        "imageSize": [
+          414,
+          892
+        ],
+        "bytes": 63608,
+        "sha256": "af90a2d0d3d9dd52d2d8e2b7c48167b5e726e07936508fe14953a78ea9cf452e",
+        "passed": true
+      },
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "file": "outputs/npc-phone-qa/1280x800.png",
+        "capture": "actual embedded phone iframe",
+        "imageSize": [
+          366,
+          792
+        ],
+        "bytes": 54977,
+        "sha256": "a4505b03e9b1ef93697a97aacda3f188a328f3b9c5b9bcbb9d2985a0f9908e78",
+        "passed": true
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "file": "outputs/npc-phone-qa/390x844.png",
+        "capture": "actual embedded phone iframe",
+        "imageSize": [
+          382,
+          828
+        ],
+        "bytes": 57595,
+        "sha256": "48609ffb1a16f1d171468afa682ecc9a62a62d89b1aca5cf2481e16c409120ec",
+        "passed": true
+      },
+      {
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "file": "outputs/npc-phone-qa/320x568.png",
+        "capture": "actual embedded phone iframe",
+        "imageSize": [
+          260,
+          560
+        ],
+        "bytes": 34234,
+        "sha256": "7c78183c1a23caa193bf9cfe2ed3adcf76df3d479021790c87a95e43db87e665",
+        "passed": true
+      }
+    ],
+    "checked": [
+      "application accept with save failure and retry",
+      "NPC DM and private prompt projection",
+      "original contact entry redirects to controlled thread",
+      "group invitation and three sequential member responses",
+      "read animation",
+      "reload without duplicates",
+      "single-line title",
+      "scroll and send button",
+      "no horizontal overflow",
+      "no unsafe legacy model calls",
+      "no external model network requests"
+    ]
+  },
+  "limitations": {
+    "fullFrontendProductionBuild": "pending CI; local binary art inputs unavailable through text connector",
+    "realModelCalls": 0,
+    "physicalTauriTavern": "not tested",
+    "userSaveDeployment": "none",
+    "releaseCardBuilt": false,
+    "prMerged": false,
+    "pr16AssetsModified": false
+  },
+  "groupTurn": {
+    "selectedMembers": "1–3 distinct available residents",
+    "orderPersisted": true,
+    "partialRetry": "unfinished members only",
+    "perViewportBrowserMembers": 3
+  }
+}

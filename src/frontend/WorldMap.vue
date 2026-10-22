@@ -116,7 +116,7 @@ const visiblePeople = computed(() => {
   const state = props.model.state;
   const position = state.scene;
   const scenePeople = position && !state.interior
-    ? getScenePeople(position, state.contacts)
+    ? getScenePeople(position, state.contacts, state.clock)
       .filter(person => Math.hypot(person.x - position.x, person.z - position.z) <= 35)
       .map(person => ({contactId:person.contactId??person.id,name:person.name,position:{x:person.x,z:person.z},source:'scene' as const}))
     : [];
@@ -433,3 +433,4 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
     </div>
   </div>
 </template>
+

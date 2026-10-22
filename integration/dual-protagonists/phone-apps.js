@@ -2,7 +2,7 @@
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
-const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'主角消息'};
+const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
 // The same UTC day-1 anchor as src/runtime/game-calendar.ts. Host clock stays authoritative.
@@ -30,8 +30,22 @@ const requestId = win => win.crypto.randomUUID();
 const total = data => Object.values(data.cards).reduce((a,b)=>a+b,0);
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
-  let data=null,section=id,peek=false,pending=null;
-  let stopUpdates=()=>{};
+  let data=null,section=id,peek=false,pending=null,recipient='protagonist';
+  const drafts=new Map();
+  let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
+  async function readSelectedContact() {
+    if(reading||v.disposed||peek||id!=='worldmessages'||ctx.doc.hidden||ctx.visible?.(id)===false||!data||!ctx.api.listThreads)return;
+    const contactId=recipient.startsWith('npc:')?data.npcPhone?.contacts.find(c=>c.id===recipient.slice(4))?.contactId:recipient==='protagonist'?'protagonist-'+data.other.id:null;
+    if(!contactId)return;
+    const binding=data.binding,selected=recipient;
+    reading=true;
+    try {
+      const threads=await ctx.api.listThreads();
+      if(v.disposed||ctx.doc.hidden||ctx.visible?.(id)===false||recipient!==selected||api()?.read().binding!==binding)return;
+      for(const thread of threads)if(thread.storyLink?.npcId===contactId&&thread.unread)await ctx.api.markThreadRead(thread.id);
+    } catch { /* Reading can retry after phone synchronization. */ }
+    finally {reading=false;}
+  }
   const options=(rows,current)=>rows.map(([value,label])=>`<option value="${esc(value)}" ${value===current?'selected':''}>${esc(label)}</option>`).join('');
   const destinations=()=>options(data.destinations.map(x=>[x.id,x.name]),data.locationId);
   const cards=()=>options(Object.entries(cardNames),'gpt');
@@ -42,16 +56,16 @@ function worldApp(ctx,id) {
   }
   async function act(command,owner=data.owner) {
     pending??={binding:data.binding,revision:data.revision,requestId:requestId(ctx.win),owner,command};
-    try {data=await api().act(pending);pending=null;render();ctx.notify('已保存');return true;}
+    try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();ctx.notify('已保存');return true;}
     catch(e){render();ctx.notify(e.message,{error:true});return false;}
   }
   function refresh() {data=base();section=id;peek=false;pending=null;render();}
   const formValue=name=>v.root.querySelector(`[data-world-field="${name}"]`)?.value;
   function render() {
     if(v.disposed)return;
-    let html=heading(labels[id],`${data.name} · ${time(data.now)}`,'Unread City');
+    let html=heading(labels[id],'','Unread City')+`<p class="world-time">${esc(data.name)} · ${esc(time(data.now))}</p>`;
     if(data.reporting && (id==='worldcalendar' || id==='worldmessages')) html+=`<p class="hint">${esc(data.reporting)}</p>`;
-    html+='<style>.sms-thread{display:grid;gap:8px;padding:12px}.sms-bubble{max-width:90%;padding:10px 13px;border-radius:14px;border:1px solid #8883;background:#8881;overflow-wrap:anywhere}.sms-bubble.outgoing{justify-self:end;background:#8aae8740}.sms-bubble.incoming{justify-self:start}.sms-bubble time{display:block;font-size:11px;opacity:.75}.sms-bubble p{margin:7px 0}.sms-bubble .sms-state{font-size:11px;opacity:.75;display:block;text-align:right}.sms-read-animation{position:relative;display:inline-grid}.sms-read-animation>i,.sms-read-animation>b{grid-area:1/1;font-style:normal}.sms-read-animation>i{animation:sms-unread-out .8s step-end forwards}.sms-read-animation>b{visibility:hidden;animation:sms-read-in .8s step-end forwards}@keyframes sms-unread-out{0%,75%{visibility:visible}76%,100%{visibility:hidden}}@keyframes sms-read-in{0%,75%{visibility:hidden}76%,100%{visibility:visible}}.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}</style>';
+    html+='<style>.world-time{margin:0 4px 14px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.sms-thread{display:grid;gap:8px;padding:12px}.sms-bubble{max-width:90%;padding:10px 13px;border-radius:14px;border:1px solid #8883;background:#8881;overflow-wrap:anywhere}.sms-bubble.outgoing{justify-self:end;background:#8aae8740}.sms-bubble.incoming{justify-self:start}.sms-bubble time{display:block;font-size:11px;opacity:.75}.sms-bubble p{margin:7px 0}.sms-bubble .sms-state{font-size:11px;opacity:.75;display:block;text-align:right}.sms-read-animation{position:relative;display:inline-grid}.sms-read-animation>i,.sms-read-animation>b{grid-area:1/1;font-style:normal}.sms-read-animation>i{animation:sms-unread-out .8s step-end forwards}.sms-read-animation>b{visibility:hidden;animation:sms-read-in .8s step-end forwards}@keyframes sms-unread-out{0%,75%{visibility:visible}76%,100%{visibility:hidden}}@keyframes sms-read-in{0%,75%{visibility:hidden}76%,100%{visibility:visible}}.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}</style>';
     const identity=worldDeviceHeading(data), appearance=worldAppearance(data);
     html+=`<div class="world-device-header"><div><strong>${esc(identity.device)}</strong><small>${esc(identity.title)}</small></div></div>`;
     if(id==='worldstyle')html+=`<div class="group pad world-appearance"><p class="hint">外观保存在这台手机的剧情存档中。</p>${field('壁纸',`<select data-world-field="wallpaper">${options([['signature',identity.title],['plain','纯色']],appearance.wallpaper)}</select>`)}${field('界面主题',`<select data-world-field="theme">${options([['light','日间'],['dark','夜间'],['system','跟随系统']],appearance.theme)}</select>`)}${field('应用排列',`<select data-world-field="layout">${options([['daily','日常'],['focus','专注']],appearance.layout)}</select>`)}${btn('appearance','保存外观','primary')}</div>`;
@@ -70,24 +84,31 @@ function worldApp(ctx,id) {
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
       if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
       if(section==='worldmessages'||section==='messages') {
-        const thread=(data.conversation||[]);
+        const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
+        const recipients=[['protagonist',data.other.name],...social.contacts.map(c=>['npc:'+c.id,c.name]),...social.groups.map(g=>['group:'+g.id,`${g.name}（${g.memberCount}人）`])];
+        if(!recipients.some(r=>r[0]===recipient))recipient='protagonist';
+        const isNpc=recipient.startsWith('npc:'),isGroup=recipient.startsWith('group:');
+        const targetId=isNpc?recipient.slice(4):isGroup?recipient.slice(6):null;
+        const thread=targetId?social.messages.filter(m=>m.channel===(isNpc?'npc':'group')&&m.targetId===targetId):(data.conversation||[]);
         const canonicalIds=new Set(thread.map(row=>row.id));
-        // Preserve all pre-upgrade incoming messages, including earlier
-        // ST-iPhonie deliveries; canonical reply rows are not duplicated.
-        const legacy=data.messages.filter(m=>!canonicalIds.has(m.id))
+        const contactId=isNpc?social.contacts.find(c=>c.id===targetId)?.contactId:'protagonist-'+data.other.id;
+        const legacy=isGroup?'':data.messages.filter(m=>m.npcId===contactId&&!canonicalIds.has(m.id))
           .map(m=>`<article class="sms-bubble incoming"><time>${esc(historicalTime(m.at))}</time><p>${esc(m.text)}</p></article>`).join('');
         const shown=legacy+thread.map(m=>{
           const outgoing=m.direction==='outgoing';
-          const waiting=outgoing&&m.expectsReply&&!m.answered;
+          const waiting=outgoing&&(targetId?m.status==='pending':m.expectsReply&&!m.answered);
           const sent=outgoing?'<span class="sms-state" aria-label="已送达，对方已获知"><span class="sms-read-animation"><i>未读</i><b>已读 ✓</b></span></span>':'';
-          return `<article class="sms-bubble ${outgoing?'outgoing':'incoming'}" data-message-id="${esc(m.id)}"><time>${esc(time(m.at))} · ${outgoing?'我':esc(data.other.name)}</time><p>${esc(m.text)}</p>${sent}${waiting?btn('retry-reply','重新请求对方回复','text-button',`data-id="${esc(m.id)}"`):''}</article>`;
+          const silent=outgoing&&m.status==='silent'?'<span class="sms-state">暂未回复</span>':'';
+          return `<article class="sms-bubble ${outgoing?'outgoing':'incoming'}" data-message-id="${esc(m.id)}"><time>${esc(time(m.at))} · ${outgoing?'我':esc(m.speakerName||data.other.name)}</time><p>${esc(m.text)}</p>${sent}${silent}${waiting?btn('retry-reply','重新请求对方回复','text-button',`data-id="${esc(m.id)}"`):''}</article>`;
         }).join('');
-        html+=`<div class="sms-thread" aria-label="真实双向短信记录">${shown||'<p class="hint">暂无消息</p>'}</div>${!peek?`<div class="group world-form">${field('发给另一位主角','<textarea data-world-field="message" maxlength="1000" rows="3"></textarea>')}${btn('send','发送消息','primary')}</div>`:''}`;
+        const requests=peek?'':social.requests.filter(q=>q.status==='pending').map(q=>`<article class="world-event"><strong>${esc(q.name)}${q.kind==='group'?'邀请你加入群聊':'希望添加联系方式'}</strong><p>${esc(q.quote)}</p><div class="world-tabs">${btn('accept-contact','接受','primary',`data-id="${esc(q.id)}"`)}${btn('decline-contact','婉拒','secondary',`data-id="${esc(q.id)}"`)}</div></article>`).join('');
+        if(requests)html+=`<section class="group" aria-label="联系申请">${requests}</section>`;
+        html+=`<div class="world-form">${field('会话',`<select data-world-field="recipient">${options(recipients,recipient)}</select>`)}</div><div class="sms-thread" aria-label="真实双向短信记录">${shown||'<p class="hint">暂无消息</p>'}</div>${!peek?`<div class="group world-form">${field('发送消息',`<textarea data-world-field="message" maxlength="1000" rows="3">${esc(drafts.get(recipient)||'')}</textarea>`)}${btn('send','发送消息','primary')}</div>`:''}`;
       }
     }
     if(!peek)html+=`<details class="group pad"><summary>锁屏与共享许可</summary><div class="world-form">${field('锁屏',`<select data-world-field="locked">${options([['false','解锁'],['true','锁定']],String(data.locked))}</select>`)}${field('借用许可',`<select data-world-field="share">${options([['none','未授权'],['read','允许查看'],['write','允许代操作']],data.share)}</select>`)}${btn('device','保存手机设置','secondary')}</div></details>`;
     html+=`<details class="group pad"><summary>通知 ${data.notifications.filter(x=>!x.read).length}</summary>${[...data.notifications].reverse().map(n=>`<p>${esc(n.text)}<small>${time(n.at)}</small></p>`).join('')}${btn('read','全部标为已读','text-button')}</details><details class="group pad"><summary>手机操作记录</summary>${[...data.audit].reverse().map(e=>`<p>${esc(e.at)} · ${esc(e.actor)} · ${esc(e.detail)} · ${e.authorized?'已授权':'未授权'}</p>`).join('')||'<p>暂无他人访问</p>'}</details>`;
-    v.root.dataset.worldOwner=data.owner;v.draw(html);
+    v.root.dataset.worldOwner=data.owner;v.draw(html);void readSelectedContact();
   }
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
@@ -103,12 +124,16 @@ function worldApp(ctx,id) {
       case 'transfer':await act({type:'transfer',from:formValue('from'),to:formValue('to'),cents:Math.round(Number(formValue('amount'))*100)});break;
       case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
-      case 'send':await act({type:'send_message',text:formValue('message')});break;
+      case 'send':{const message=formValue('message'),command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
+      case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
       case 'retry-reply':try{data=await api().retryReply(el.dataset.id);render();ctx.notify('对方已回复');}catch(e){ctx.notify(e.message,{error:true});}break;
       case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
       case 'read':await act({type:'read_notifications'});break;
     }
   });
+  v.openContact=contactId=>{data=base();peek=false;section=id;const contact=data.npcPhone?.contacts.find(c=>c.contactId===contactId);recipient=contact?'npc:'+contact.id:'protagonist';render();};
+  v.on('change','[data-world-field="recipient"]',el=>{recipient=el.value;render();});
+  v.on('input','[data-world-field="message"]',el=>{drafts.set(recipient,el.value);});
   v.refresh=()=>{try{refresh();}catch(e){v.draw(heading(labels[id])+`<p>${esc(e.message)}</p>`);}};
   v.refresh();
   // Use the host's short-lived data subscription instead of a background poll.
@@ -119,6 +144,9 @@ function worldApp(ctx,id) {
     try{const next=base();if(next.revision!==data.revision){data=next;render();}}
     catch(e){ctx.notify(e.message,{error:true});}
   })||(()=>{});
+  stopPhoneUpdates=ctx.api.subscribe?.(event=>{if(event.type==='chat'||event.type==='space')void readSelectedContact();})||(()=>{});
+  const dispose=v.dispose.bind(v);v.dispose=()=>{stopUpdates();stopPhoneUpdates();dispose();};
   return v;
 }
 export const worldPhoneFactories=Object.fromEntries(Object.keys(labels).map(id=>[id,ctx=>worldApp(ctx,id)]));
+
