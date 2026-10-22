@@ -1,4 +1,5 @@
 import type { GeneratedStory, WorldState } from '../frontend/types';
+import { validateContactProposals } from './npc-phone';
 import { validateStoryActions } from './story-actions';
 export { STORY_ACTION_LIMITS } from './story-actions';
 
@@ -31,7 +32,7 @@ function text(value: unknown, max: number, path: string): string {
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -41,6 +42,7 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
     return { npcId: item.npcId, text: text(item.text, STORY_OUTPUT_LIMITS.messageText, `手机消息 ${index + 1} 的正文`) };
   });
   const parsed: GeneratedStory = { text: story, phoneMessages };
+  if (Object.hasOwn(result, 'contactRequests')) parsed.contactRequests = validateContactProposals(result.contactRequests);
   if (Object.prototype.hasOwnProperty.call(result, 'worldActions')) parsed.worldActions = validateStoryActions(result.worldActions, state);
   if (Object.prototype.hasOwnProperty.call(result, 'worldEvents')) {
     if (!Array.isArray(result.worldEvents) || result.worldEvents.length > STORY_OUTPUT_LIMITS.worldEvents) return invalid('世界事件数量');
@@ -67,9 +69,9 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
  * The model's actions still pass the exact same whitelist validator as JSON.
  */
 function parseTaggedStory(source: string): Record<string, unknown> | null {
-  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary)>([\s\S]*?)<\/\1>/gi)];
+  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary|contact_requests)>([\s\S]*?)<\/\1>/gi)];
   if (!matches.length) return null;
-  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary)>/gi)];
+  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary|contact_requests)>/gi)];
   if (tokens.length !== matches.length * 2) return invalid('关键标签重复或未闭合');
   const blocks = new Map<string, string>();
   let end = 0;
@@ -92,6 +94,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
   return {
     story: blocks.get('story'),
     phone_messages: jsonArray('phone_messages'),
+    ...(blocks.has('contact_requests') ? { contact_requests: jsonArray('contact_requests') } : {}),
     ...(blocks.has('world_actions') ? { world_actions: jsonArray('world_actions') } : {}),
     ...(blocks.has('world_events') ? { world_events: jsonArray('world_events') } : {}),
     ...(blocks.has('weekly_summary') ? { weekly_summary: (() => { try { return JSON.parse(blocks.get('weekly_summary')!); } catch { return invalid('weekly_summary 必须为 JSON 对象'); } })() } : {}),
@@ -110,10 +113,12 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
   if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
-  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary']);
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'contact_requests') ? { contactRequests: envelope.contact_requests } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'weekly_summary') ? { weeklySummary: envelope.weekly_summary } : {}),
   }, state);
 }
+

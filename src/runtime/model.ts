@@ -1,3 +1,4 @@
+import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
@@ -718,7 +719,7 @@ function commitLegacyStoryTurn(
   const participants = new Set<string>();
   for (const snapshot of [state, next]) {
     if (snapshot.scene?.encounterId && !snapshot.interior) participants.add(snapshot.scene.encounterId);
-    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts) : [];
+    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock) : [];
     for (const segment of parseNovelDialogue(reply.text)) {
       if (!segment.speaker) continue;
       const matches = [
@@ -810,7 +811,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const sourcePersonId = profile.sourcePersonId === undefined ? existing?.sourcePersonId ?? null : profile.sourcePersonId;
       if (existing?.sourcePersonId && sourcePersonId !== existing.sourcePersonId) throw new Error('已确认人物的来源身份不能更换。');
       if (sourcePersonId && sourcePersonId !== existing?.sourcePersonId) {
-        const person = next.scene && getScenePeople(next.scene).find(person => person.id === sourcePersonId);
+        const person = next.scene && getScenePeople(next.scene, next.contacts, next.clock).find(person => person.id === sourcePersonId);
         if (!person) throw new Error('这位陌生人不属于当前场景。');
         if (!existing && profile.id !== sourcePersonId) throw new Error('请沿用陌生人的稳定人物 ID。');
       }
@@ -924,8 +925,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const seed = sceneSeed(action.seed);
       const coordinates = sceneCoordinates(action.x, action.z, action.yaw);
       const scene: ScenePresence = { ...coordinates, seed: next.scene?.seed ?? seed, encounterId: next.scene?.encounterId ?? null };
-      const person = scene.encounterId ? getScenePeople(scene).find(person => person.id === scene.encounterId) : null;
-      if (person && Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE) scene.encounterId = null;
+      const person = scene.encounterId ? getScenePeople(scene, next.contacts, next.clock).find(person => person.id === scene.encounterId) : null;
+      if (scene.encounterId && (!person || Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE)) scene.encounterId = null;
       next.scene = scene;
       next.locationId = sceneLocationId(scene.areaId);
       break;
@@ -933,7 +934,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     case 'encounter': {
       if (next.interior) throw new Error('当前室内没有可搭话的已设定人物。');
       if (!next.scene) throw new Error('请先进入自由行走，再走到行人附近搭话。');
-      const person = getScenePeople(next.scene).find(person => person.id === action.personId);
+      const person = getScenePeople(next.scene, next.contacts, next.clock).find(person => person.id === action.personId);
       if (!person) throw new Error('这位行人不属于当前场景。');
       if (Math.hypot(person.x - next.scene.x, person.z - next.scene.z) > SCENE_ENCOUNTER_DISTANCE) throw new Error('请走到这位行人附近再搭话。');
       next.scene.encounterId = person.id;
@@ -1118,7 +1119,8 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     return parseState(next);
   }
   const next = reduceLegacyState(legacyView(before), action);
-  return parseState(finishPersonalChange(before, next, `世界行动：${action.type}`));
+  const candidate = finishPersonalChange(before, next, `世界行动：${action.type}`);
+  return parseState(action.type === 'encounter' ? recordNpcEncounter(candidate, action.personId) : candidate);
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
@@ -1129,12 +1131,13 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
-  const { weeklySummary, ...legacyResult } = result;
+  const { weeklySummary, contactRequests, phoneDecision, ...legacyResult } = result;
   const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now), '剧情结算');
-  const next = recordProtagonistNarrative(before, after, result, ids.assistantId);
+  const next = commitNpcDialogue(before, recordProtagonistNarrative(before, after, result, ids.assistantId), input, result, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
   captureNewJournalEvidence(after, next);
   applyWeeklySummary(next, result.weeklySummary);
   return parseState(next);
 }
+
 

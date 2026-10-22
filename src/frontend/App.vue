@@ -83,7 +83,7 @@ const walkSeed = props.model.state.scene?.seed ?? (globalThis.crypto?.randomUUID
 // Keep the complete saved population available when reading an earlier scene indoors.
 const portraitPeople = computed(() => {
   const seed = props.model.state.scene?.seed ?? walkSeed;
-  return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts);
+  return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock);
 });
 const scenePeople = computed(() => props.model.state.interior ? [] : portraitPeople.value);
 const encounterPerson = computed(() => {
@@ -762,3 +762,4 @@ onBeforeUnmount(() => {
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
   </div>
 </template>
+

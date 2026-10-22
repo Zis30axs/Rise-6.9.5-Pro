@@ -1,3 +1,4 @@
+import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, makeDualLedger, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
@@ -34,6 +35,7 @@ export interface ProtagonistTextMessage {
 export interface PhoneOrder { id: string; owner: ProtagonistId; actor: ProtagonistId; kind: 'shop' | 'delivery'; itemId: string; quantity: number; card: FictionalCardId; totalCents: number; address: string; due: number; status: 'paid' | 'delivered' | 'received' | 'cancelled' }
 export interface ProtagonistWorld {
   revision: number;
+  npcPhone?: NpcPhoneState;
   inactive: PersonalState;
   accounts: DualProtagonistLedger;
   devices: Record<ProtagonistId, DeviceState>;
@@ -46,7 +48,7 @@ export interface ProtagonistWorld {
   /** Seven-game-day extractive memories, never a replacement for live state. */
   weeklyMemory?: WeeklyMemory;
 }
-export type PhoneCommand =
+export type PhoneCommand = NpcPhoneCommand
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
   | { type: 'appearance'; appearance: PhoneAppearance }
   | { type: 'device'; locked: boolean; share: DeviceState['share'] }
@@ -108,7 +110,7 @@ export function enableProtagonists(s: WorldState): WorldState {
 }
 
 export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState): ProtagonistWorld {
-  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'weeklyMemory') ? ['weeklyMemory'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'conversations') ? ['conversations'] : [])]);
+  const p = exact(value, ['revision','inactive','accounts','devices','orders','operations',...(value && typeof value === 'object' && Object.hasOwn(value,'npcPhone') ? ['npcPhone'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'backgroundLife') ? ['backgroundLife'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'weeklyMemory') ? ['weeklyMemory'] : []),...(value && typeof value === 'object' && Object.hasOwn(value,'conversations') ? ['conversations'] : [])]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), people = exact(a.people, ['soyo','sakiko']);
   const accounts = makeDualLedger(0, 0); accounts.active = who;
@@ -164,6 +166,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   if(conversations.some(row => row.replyTo!==null && !conversations.some(parent =>
     parent.id===row.replyTo && parent.from===row.to && parent.to===row.from && parent.expectsReply))) fail('短信回复来源无效');
   const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,accounts,devices,orders,operations,conversations};
+  if (Object.hasOwn(p, 'npcPhone')) result.npcPhone = parseNpcPhone(p.npcPhone, {...base, schema_version:'1.12.0', protagonists:result});
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy) : initializeBackgroundLife({...base,schema_version:'1.12.0',protagonists:result});
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   return result;
@@ -224,7 +227,8 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
 }
 function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
-  const fields: Record<PhoneCommand['type'],string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],send_message:['text'],read_notifications:[]};
+  if (type === 'send_npc_message' || type === 'send_group_message' || type === 'resolve_contact_request') return parseNpcPhoneCommand(raw);
+  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type']>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],send_message:['text'],read_notifications:[]};
   if(!Object.hasOwn(fields,type)) return fail('手机操作无效');
   const c=exact(raw,['type',...fields[type]]);
   switch(type){
@@ -254,11 +258,16 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
   if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
+  if (['send_npc_message','send_group_message','resolve_contact_request'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
+    case 'send_npc_message':
+    case 'send_group_message':
+    case 'resolve_contact_request':
+      applyNpcPhoneCommand(s, owner, command, requestId); break;
     case 'inspect': {
       const content=command.section==='messages'?target.phone.slice(-8).map(m=>m.text).join('；'):command.section==='calendar'?[...target.schedule.map(e=>`${e.time} ${e.title}`),...device.calendar.map(e=>`${e.start} ${e.title}`)].join('；'):command.section==='orders'?p.orders.filter(o=>o.owner===owner).map(o=>`${o.itemId}：${o.status}`).join('；'):`Appie Pay 余额 ${appiePayBalance(p.accounts,owner)/100} 元`;
       if(owner!==who){const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;s.journal.push({id:`peek:${requestId}`,text:`查看${protagonistNames[owner]}的手机：${content||'暂无记录'}`.slice(0,1000),at});s.journal=s.journal.slice(-100);}
@@ -370,3 +379,4 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
   p.revision++;
   return s;
 }
+

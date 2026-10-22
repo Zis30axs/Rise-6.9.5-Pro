@@ -92,7 +92,8 @@ describe('persistent outdoor scene and weighted encounters', () => {
     for (const role of sceneIdentities) expect((commercial.get(role) ?? 0) / samples).toBeLessThan(0.135);
     const pose: ScenePresence = { x: 0, z: 18, yaw: 0, areaId: 'promenade', seed: 'stable-people', encounterId: null };
     const first = getScenePeople(pose);
-    expect(first).toHaveLength(23);
+    expect(first.filter(person => person.id.startsWith('ped-'))).toHaveLength(23);
+    expect(first.filter(person => person.id.startsWith('majo-'))).toHaveLength(14);
     expect(getScenePeople({ ...pose, x: -22, z: 56.5, areaId: 'bookshop' })).toEqual(first);
     expect(getScenePeople({ ...pose, seed: 'new-session' })).not.toEqual(first);
     expect(new Set(first.map(person => person.id)).size).toBe(first.length);

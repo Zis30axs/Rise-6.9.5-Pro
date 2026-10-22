@@ -1,5 +1,6 @@
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { createWorldPhoneApi } from './world-phone';
+import { applyNpcPhoneReply, npcReplySource } from '../runtime/npc-phone';
 import { applyPhoneReply } from '../runtime/protagonist-world';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
@@ -160,6 +161,7 @@ export function mountShell(
     pendingInteraction = undefined;
     model.interaction = null; model.busy = false; model.notice = '';
     pending.resolve(true);
+    worldPhone.notify();
     if (storyPhone) void storyPhone.sync().catch(() => {});
   }
   async function resolveInteraction(accept: boolean) {
@@ -318,7 +320,7 @@ export function mountShell(
             const reply = await bridge.generate('请根据此人的既有出场记录生成简短人物介绍。', snapshot(), { kind: 'contact_introduction',
               contact: { ...draft, sourcePersonId: draft.sourcePersonId ?? null } });
             if (!stillCurrent(request) || sequence !== phoneSequence || !model.externalPhoneOpen) throw new Error('人物编辑已关闭，简介未写入。');
-            if (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length) throw new Error('人物简介包含无效内容，请重试。');
+            if (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('人物简介包含无效内容，请重试。');
             return reply.text;
           } finally {
             if (profileRequest === request) profileRequest = undefined;
@@ -343,27 +345,39 @@ export function mountShell(
     }
   }
 
-  /** A single one-shot model call; never a permanently running NPC agent. */
+  /** A bounded turn: one DM reply or at most three saved group decisions. */
   let activePhoneReply: string | null = null;
   async function requestPhoneReply(messageId: string): Promise<void> {
     if (dead || doc.hidden || bridge.session() !== session) throw new Error('请在当前游戏聊天中重试短信回复');
     if (model.busy || activePhoneReply) throw new Error('上一项剧情或短信回复仍在处理');
     const saved = snapshot();
-    const source = saved.protagonists?.conversations?.find(row=>row.id===messageId);
-    if (!source || !source.expectsReply || source.from !== activeProtagonist(saved)) throw new Error('短信回复来源与当前主角不一致');
-    if (saved.protagonists?.conversations?.some(row=>row.replyTo===messageId)) return;
+    const npc = messageId.startsWith('npc:');
+    if (npc) {
+      if (npcReplySource(saved, messageId).status !== 'pending') return;
+    } else {
+      const source = saved.protagonists?.conversations?.find(row=>row.id===messageId);
+      if (!source || !source.expectsReply || source.from !== activeProtagonist(saved)) throw new Error('短信回复来源与当前主角不一致');
+      if (saved.protagonists?.conversations?.some(row=>row.replyTo===messageId)) return;
+    }
     const request=++epoch;
     activePhoneReply=messageId; model.busy=true; model.notice='';
     try {
-      const reply=await bridge.generate('请根据收到的短信和当前人物资料回复对方。',saved,{kind:'phone_reply',messageId});
-      if (!stillCurrent(request)) return;
-      // Always validate and apply to the latest chat snapshot: only a canonical
-      // reply is added. All read receipts, player moves and world facts survive.
-      const next=applyPhoneReply(snapshot(),messageId,reply.text);
-      bridge.save(next);
-      model.state=next;
-      worldPhone.notify();
-      if (storyPhone) void storyPhone.sync().catch(()=>{});
+      for (let step=0;step<(npc?3:1);step++) {
+        if (!stillCurrent(request)) return;
+        const current=snapshot(), source=npc?npcReplySource(current,messageId):null;
+        if(source && source.status!=='pending') break;
+        const actorId=source?.responderId ?? undefined;
+        const reply=await bridge.generate('请根据收到的短信和当前人物资料回复对方。',current,{kind:npc?'npc_phone_reply':'phone_reply',messageId});
+        if (!stillCurrent(request)) return;
+        // Commit every decision before asking the next group member, so a
+        // partial failure resumes without replaying any completed messages.
+        if (reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('短信回复包含了额外行动');
+        const next=npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        bridge.save(next);
+        model.state=next;
+        worldPhone.notify();
+        if (storyPhone) void storyPhone.sync().catch(()=>{});
+      }
     } catch(error) {
       if(stillCurrent(request)) model.notice=`自动短信回复失败，原短信已保存；可在手机中重试：${message(error)}`;
       throw error;
@@ -398,7 +412,7 @@ export function mountShell(
         const next = reduceState(snapshot(), action);
         bridge.save(next);
         if (action.type === 'switch_protagonist') {
-          epoch++; bridge.cancel(); cancelInteraction(); closePhone(); storyPhone?.dispose();
+          epoch++; bridge.cancel(); activePhoneReply = null; cancelInteraction(); closePhone(); storyPhone?.dispose();
           model.busy = false;
         }
         model.state = next;
@@ -423,6 +437,7 @@ export function mountShell(
         const next = commitStoryTurn(snapshot(), trimmed, reply, { userId: storyId(), assistantId: storyId() });
         bridge.save(next);
         model.state = next;
+        worldPhone.notify();
         if (storyPhone) void storyPhone.sync().catch(() => {});
       } catch (error) {
         if (stillCurrent(request)) model.notice = message(error);
@@ -569,4 +584,5 @@ function message(error: unknown): string {
   } catch { /* A rejected value may expose a throwing message getter. */ }
   return '操作未完成，请退出并重新进入。';
 }
+
 

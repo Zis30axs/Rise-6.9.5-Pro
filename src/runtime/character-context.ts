@@ -6,7 +6,7 @@ export const CHARACTER_CONTEXT_LIMITS = { turns: 6, totalCharacters: 2400, perTu
 /** A compact, character-specific evidence window; never sends unrelated full history. */
 export function buildCharacterIntroductionContext(state: WorldState, draft: ContactProfileDraft) {
   const saved = state.contacts.find(contact => contact.id === draft.id || (!!draft.sourcePersonId && (contact.id === draft.sourcePersonId || contact.sourcePersonId === draft.sourcePersonId)));
-  const people = state.scene ? getScenePeople(state.scene, state.contacts) : [];
+  const people = state.scene ? getScenePeople(state.scene, state.contacts, state.clock) : [];
   const person = people.find(person => person.id === draft.sourcePersonId || person.id === draft.id);
   // The seed's original name remains useful for pre-confirmation dialogue.
   const originalPerson = state.scene ? getScenePeople(state.scene).find(person => person.id === draft.sourcePersonId || person.id === draft.id) : undefined;
@@ -40,3 +40,4 @@ export function buildCharacterIntroductionContext(state: WorldState, draft: Cont
     evidence: relatedTurns.length ? '仅使用这些既有出场记录与玩家填写内容，缺失事实保持未定。' : '没有找到此人此前的出场记录；不要虚构已经发生的关系、对话或经历。',
   };
 }
+

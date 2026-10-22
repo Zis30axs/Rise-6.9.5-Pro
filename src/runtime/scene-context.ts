@@ -1,4 +1,5 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
+import { residentCast, residentPresence } from './npc-cast';
 import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
 import { sceneAreas, sceneBounds, sceneLandmarks } from '../frontend/scene-layout';
@@ -132,7 +133,7 @@ export function sampleScenePerson(seed: string, anchor: ScenePersonAnchor): Scen
   };
 }
 
-export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = []): ScenePerson[] {
+export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}): ScenePerson[] {
   const names = new Set<string>();
   const people = scenePersonAnchors.map(anchor => {
     const person = sampleScenePerson(scene.seed, anchor);
@@ -145,11 +146,22 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
     person.candidateName = person.name;
     return person;
   });
+  // Resident identity is independent of the pedestrian seed. Without a clock,
+  // expose authored meeting anchors for save validation, not live presence.
+  for (const resident of residentCast) {
+    const presence = clock ? residentPresence(resident.id, clock) : null;
+    if (clock && !presence?.anchorId) continue;
+    const anchor = scenePersonAnchors.find(a => a.id === (presence?.anchorId ?? resident.anchor));
+    if (!anchor) continue;
+    people.push({id:resident.id,name:resident.name,candidateName:resident.name,identity:'常驻居民',tags:['常驻人物'],
+      description:resident.publicProfile,x:anchor.x+.6,z:anchor.z+.6,color:0x859c6d,
+      portraitId:characterForPerson(resident.id),contactId:null,isMain:false});
+  }
   const occupied = new Set(contacts.map(contact => contact.name));
   return people.map(person => {
     const contact = contacts.find(contact => contact.sourcePersonId === person.id || contact.id === person.id);
     const start = hashString(`confirmed-name|${scene.seed}|${person.id}`) % (surnames.length * givenNames.length);
-    for (let offset = 0; !contact && occupied.has(person.name); offset++) {
+    for (let offset = 0; !contact && !residentCast.some(r => r.id === person.id) && occupied.has(person.name); offset++) {
       const index = (start + offset) % (surnames.length * givenNames.length);
       person.name = surnames[Math.floor(index / givenNames.length)]! + givenNames[index % givenNames.length]!;
     }
@@ -159,7 +171,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = []) {
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
@@ -176,7 +188,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   if (!scene) return null;
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
-  const people = getScenePeople(scene, contacts);
+  const people = getScenePeople(scene, contacts, clock);
   const nearby = people
     .map(person => ({ person, distance: Math.hypot(person.x - scene.x, person.z - scene.z) }))
     .filter(item => item.distance <= 18)
@@ -195,3 +207,4 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     encounter: encounter ? personContext(encounter) : null,
   };
 }
+
