@@ -127,13 +127,13 @@ class CardBuildTests(unittest.TestCase):
         for entry in [*residents, *musicians]:
             with self.subTest(character=entry["name"]):
                 content = entry["content"]
-                self.assertIn("\\n相处细节：", content)
-                section = content.split("\\n相处细节：", 1)[1].split("\\n", 1)[0]
+                self.assertIn("\n相处细节：", content)
+                section = content.split("\n相处细节：", 1)[1].split("\n", 1)[0]
                 self.assertGreater(len(section), 60)
                 self.assertNotIn("不代表官方", content)
                 self.assertNotIn("社区印象：", content)
-                self.assertIn("\\n人物关系：", content)
-                self.assertIn("\\n说话方式：", content)
+                self.assertIn("\n人物关系：", content)
+                self.assertIn("\n说话方式：", content)
         emma = next(e for e in residents if e.get("extensions", {}).get("personId") == "majo-emma")
         anon = next(e for e in musicians if e["name"] == "千早爱音")
         self.assertIn("小狗", emma["content"])
