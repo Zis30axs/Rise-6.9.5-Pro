@@ -6,12 +6,13 @@
 
 ### 人物立绘与情绪
 
-- **樱羽艾玛（`majo-emma`）**：九种表情 `neutral / happy / sad / angry / surprised / shy / thinking / serious / relieved` 已从 `assets/majo-emma/packs/` 解出并接入小说模式立绘（`src/frontend/NovelNpcPortrait.vue`）。选择顺序是**先人物身份、再情绪**：只有说话人稳定匹配 `艾玛 / 樱羽艾玛 / 桜羽エマ` 时才使用这套立绘，未知姓名不会借用。
+- **樱羽艾玛（`majo-emma`）**：九种表情 `neutral / happy / sad / angry / surprised / shy / thinking / serious / relieved` 已从 `assets/majo-emma/packs/` 解出并接入小说模式透明立绘（`src/frontend/NovelNpcPortrait.vue`）。选择顺序是**先人物身份、再情绪**：只有说话人稳定匹配 `艾玛 / 樱羽艾玛 / 桜羽エマ` 时才使用这套立绘，未知姓名不会借用。
+- **六名半主要角色**：用户于 2026-10-22 确认「1 希罗、2 诺亚、3 米莉亚、4 安安、5 橘雪莉（消息写作橘雪梨）、6 远野汉娜」。六张三姿态图集现按稳定人物 ID 登记为 `majo-hiro / majo-noa / majo-milia / majo-anan / majo-sherry / majo-hanna`，每人三格按 `neutral / happy / shy` 初版映射，以**带框的参考卡**显示；第三姿态的「害羞」是画面判定，不是原画师正式命名。
+- 参考卡不是透明全身立绘，因此没有伪装成和艾玛相同的素材类型；切换人物时按人物身份优先，缺该情绪时回退到**同一人物的平静卡**，不会借用别人的脸。
 - 情绪仍来自既有 `|角色名|情绪|台词|` 对白协议，经 `src/frontend/novel-npc-emotions.ts` 白名单映射；没有新增协议字段或模型权限。
 - 素世继续使用既有 Live2D；祥子继续使用既有差分立绘。本轮没有重绘或替换她们。
-- 运行时只登记了艾玛这一套**已完成**的 9 表情。五张 1536×1024 三姿态角色原图身份未确认（`character-source-sheets-20261022.json` 记录为 candidate/unconfirmed），因此**没有**被分配给任何常驻人物，也没有被当作九表情差分。
 
-素材管线：`python scripts/prepare_majo_visual_assets.py` 从两个本地 ZIP 源包逐项校验 SHA-256/字节数，解出 `assets/majo-runtime/emma/*.webp`（无损原样）与 `assets/majo-runtime/interiors|districts/*.webp`（JPEG 源图的运行时 WebP 压缩派生，质量 82，保留源图）。`--check` 可验证已提交派生文件与清单一致。源包仍是权威交接物。
+素材管线：`python scripts/prepare_majo_visual_assets.py` 从本地 ZIP 源包逐项校验 SHA-256/字节数，解出 `assets/majo-runtime/emma/*.webp`（无损原样）、`assets/majo-runtime/characters/<personId>/*.webp`（512×1024 三格裁切，JPEG 派生，质量 92）与 `assets/majo-runtime/interiors|districts/*.webp`（场景派生，质量 82）。`--check` 可验证已提交派生文件与清单一致。源包仍是权威交接物；身份映射记录在 `assets/majo-runtime/character-sheet-assignments.json`。
 
 ### 住宅、街区与室内
 
@@ -39,7 +40,7 @@
 - 入鞘武士刀刀架观察（0 分钟，明确不拔出、不挥舞、不改动物品）；
 - 练剑空间基础练习（45 分钟，精力 −8，精神/压力小幅改善，**不使用真刃**）。
 
-希罗的常服设定为**和服**：`residentOutfit('majo-hiro') === '和服'`，会随 `residentPresence` 进入主叙事与 NPC 短信上下文。**和服立绘与三/九表情差分尚未交付**，因此没有新立绘，黑红和服参考图仍按未确认身份保存。
+希罗的常服设定为**和服**：`residentOutfit('majo-hiro') === '和服'`，会随 `residentPresence` 进入主叙事与 NPC 短信上下文；确认后的黑红和服三姿态参考卡也已接入。但它仍是参考卡，没有透明九表情/多服装差分。
 
 ### Twiitch 手机素材
 
@@ -50,28 +51,28 @@
 
 ## 仍未完成 / 缺失素材
 
-- 其余十三名常驻人物（含希罗）**没有确认身份的九表情或三表情差分**；运行时继续使用既有通用立绘。运行时已登记 `majoExpressionPolicy = { main: 9, semiMain: 3 }` 与每个人的目标数量，但未把未确认素材强行分配。
+- 六名半主要角色只有用户确认的三姿态参考卡（平静/开心/害羞初版映射），**没有**透明九表情差分，也没有多服装/Live2D/3D。
+- 其余七名常驻人物（可可、玛格、奈叶香、亚里沙、梅露露、蕾雅、月代雪）仍没有确认身份的参考图或表情差分，继续使用既有通用立绘。运行时已登记 `majoExpressionPolicy = { main: 9, semiMain: 3 }` 与每个人的目标数量。
 - 祥子现有素材是每套服装 6 表情（平静/微笑/困扰/惊讶/不悦/难过），没有补齐主要角色的 9 表情；素世继续使用 Live2D 的九情绪映射。未用近似表情冒充补齐。
-- 五张角色三姿态原图仍是参考图；金发绿裙参考图身份未确认。
 - 二阶堂家除通用木构室内图外的专属宅邸图、和室/庭院/刀架/练剑空间的分镜或场景美术未交付；当前是可玩原型，不是完成品美术。
 - 六类街区中传统市中心、湖畔公寓、学生合住三类没有恢复的专属街景图。
-- 希罗和服立绘、艾玛 3D 模型、练剑动画、Live2D/Twiitch 互动直播均未实现。
+- 艾玛 3D 模型、练剑动画、Live2D/Twiitch 互动直播均未实现。
 - 没有进行 iPhone/TauriTavern 物理设备验收，也没有生成最终发行 PNG/ZIP；本轮只验证源码、生产 IIFE 与受控浏览器场景。
 
 ## 离线体积与旧存档
 
-- 素材以 `?inline` 进入生产 IIFE；Lite 构建沿用既有 `build_lite_release.py` 提取为 STORE ZIP + IndexedDB/Blob URL。本轮 Lite 提取后为 **77 个资源、36,336,474 字节 ZIP**（新增 18 张运行时图），IIFE 由约 57 MB 增至约 64.8 MB；最终 Tauri 专用 PNG 的 50 MB 门禁**未在本轮验证**，打包前必须重新检查。
+- 素材以 `?inline` 进入生产 IIFE；Lite 构建沿用既有 `build_lite_release.py` 提取为 STORE ZIP + IndexedDB/Blob URL。本轮 Lite 提取后为 **95 个资源、37,631,286 字节 ZIP**（36 张运行时图：9 艾玛表情 + 18 半主要面板 + 9 场景），完整 IIFE 为 **66,551,590 字节**；最终 Tauri 专用 PNG 的 50 MB 门禁**未在本轮验证**，打包前必须重新检查。
 - 存档 schema **没有变化**：没有新增持久化字段。新室内只是既有 `novel_travel/enter_interior` 的目的地；旧存档只有在玩家实际前往时才会写入室内位置，读取不会自动迁移或补算。
 - 既有短信、群聊、联系人、手机空间、地图偶遇与人物作息逻辑未改。
 
 ## 验证
 
-- `npm run check`（`vue-tsc --noEmit`）通过，`npm run build` 通过（491 模块，IIFE 64,830.31 KB）。
-- `npx vitest run`：58 个文件、628 项测试全部通过；含新增 `tests/majo-visual.test.ts` 11 项（素材清单/身份解析/室内几何/二阶堂交互/住宅映射/旧存档）。
+- `npm run check`（`vue-tsc --noEmit`）通过，`npm run build` 通过（491 模块，生产 IIFE 66,551,590 字节）。
+- `npx vitest run`：58 个文件、628 项测试全部通过；含新增 `tests/majo-visual.test.ts` 11 项（素材清单/身份解析/半主要回退/室内几何/二阶堂交互/住宅映射/旧存档）。
 - `node --test tests/phone-visuals.node.mjs`：5 项通过（含 67 件手机美术、Twiitch 图标与静态校验）。
-- `python scripts/prepare_majo_visual_assets.py --check` 通过，确认 9 张艾玛表情与 9 张场景派生图逐字节匹配清单。
-- `python scripts/build_lite_release.py` 通过：77 个外置资源、ZIP 36,336,474 字节。
-- 浏览器：`tests/e2e/majo-visual.spec.ts` 在 1440×900、1280×800、390×844、320×568 检查艾玛九表情切换、二阶堂背景真实字节、手机 Twiitch 页面、无横向溢出与存档不变；使用受控 Helper 宿主、真实生产 IIFE 和真实内嵌手机，模型请求为 0。截图与证据写入 `outputs/majo-visual-qa/`。
-- `.github/workflows/majo-visual.yml` 在本分支复跑类型检查、构建、定向 Vitest、Node 手机素材检查、Lite ZIP 提取与四视口浏览器场景（Chromium headless）；该工作流在 PR #18 上通过。
+- `python scripts/prepare_majo_visual_assets.py --check` 通过，确认 9 张艾玛表情、18 张半主要面板与 9 张场景派生图逐字节匹配清单。
+- `python scripts/build_lite_release.py` 通过：95 个外置资源、ZIP 37,631,286 字节。
+- 浏览器：`tests/e2e/majo-visual.spec.ts` 在 1440×900、1280×800、390×844、320×568 检查艾玛九表情切换、希罗三姿态参考卡、二阶堂背景真实字节、手机 Twiitch 页面、无横向溢出与存档不变；使用受控 Helper 宿主、真实生产 IIFE 和真实内嵌手机，模型请求为 0。截图与证据写入 `outputs/majo-visual-qa/`。
+- `.github/workflows/majo-visual.yml` 在本分支复跑类型检查、构建、定向 Vitest、Node 手机素材检查、Lite ZIP 提取与四视口浏览器场景（Chromium headless）；该工作流在 PR #18 上通过（本次身份确认前的版本；新提交会再跑一次）。
 - 本地额外回归：`tests/e2e/npc-phone.spec.ts` 4/4 通过，确认新增 Twiitch 应用与住宅/作息改动未破坏现有真实内嵌手机联系人与 NPC 短信路径。
 - 这不是原生酒馆页面或手机真机验收；证据范围以实际运行结果为准。

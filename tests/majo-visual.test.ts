@@ -20,27 +20,48 @@ import { isScenePositionWalkable } from '../src/frontend/scene-movement';
 import { createCampusWorld, streetRoutes } from '../src/frontend/scene-world';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const manifestRows = manifest.assets as { id: string; file: string; bytes: number; sha256: string; encoding: string; personId?: string; category?: string }[];
+const manifestRows = manifest.assets as { id: string; file: string; bytes: number; sha256: string; encoding: string; personId?: string; category?: string; emotion?: string; tier?: string; presentation?: string; width?: number; height?: number }[];
+const semiMain = ['majo-hiro', 'majo-noa', 'majo-milia', 'majo-anan', 'majo-sherry', 'majo-hanna'];
 
 describe('PR #16 runtime art registry', () => {
-  it('registers exactly the nine completed Emma expressions and leaves unconfirmed sheets unassigned', () => {
+  it('registers Emma nine expressions plus six user-confirmed three-panel semi-main sets', () => {
     expect(Object.keys(majoEmmaExpressions)).toEqual([...majoEmotions]);
     expect(new Set(Object.values(majoEmmaExpressions)).size).toBe(9);
     for (const src of Object.values(majoEmmaExpressions)) expect(src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(majoExpressionSets['majo-emma']).toMatchObject({ complete: true, completedExpressions: 9 });
-    expect(Object.keys(majoExpressionSets)).toEqual(['majo-emma']);
-    for (const person of ['majo-hiro', 'majo-anan', 'majo-yuki']) expect(majoExpressionSets[person]).toBeUndefined();
+    expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, presentation: 'sprite' });
+    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-milia', 'majo-noa', 'majo-sherry']);
+    for (const person of semiMain) {
+      const set = majoExpressionSets[person]!;
+      expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, presentation: 'reference-card' });
+      expect(Object.keys(set.expressions).sort()).toEqual(['happy', 'neutral', 'shy']);
+      expect(new Set(Object.values(set.expressions)).size).toBe(3);
+    }
+    expect(majoExpressionSets['majo-yuki']).toBeUndefined();
   });
 
   it('resolves portraits by person identity first and emotion second', () => {
     expect(resolveMajoSpeaker('樱羽艾玛')).toBe('majo-emma');
     expect(resolveMajoSpeaker(' 艾玛 ')).toBe('majo-emma');
+    expect(resolveMajoSpeaker('二阶堂希罗')).toBe('majo-hiro');
+    expect(resolveMajoSpeaker('希罗')).toBe('majo-hiro');
+    expect(resolveMajoSpeaker('城崎诺亚')).toBe('majo-noa');
+    expect(resolveMajoSpeaker('佐伯米莉亚')).toBe('majo-milia');
+    expect(resolveMajoSpeaker('夏目安安')).toBe('majo-anan');
+    expect(resolveMajoSpeaker('橘雪莉')).toBe('majo-sherry');
+    expect(resolveMajoSpeaker('橘雪梨')).toBe('majo-sherry');
+    expect(resolveMajoSpeaker('远野汉娜')).toBe('majo-hanna');
     expect(resolveMajoSpeaker('素世')).toBeNull();
     expect(resolveMajoSpeaker('艾玛同学')).toBeNull();
     for (const emotion of majoEmotions) {
-      expect(resolveMajoExpressionPortrait('艾玛', emotion)).toEqual({ personId: 'majo-emma', src: majoEmmaExpressions[emotion] });
+      expect(resolveMajoExpressionPortrait('艾玛', emotion)).toEqual({
+        personId: 'majo-emma', src: majoEmmaExpressions[emotion], presentation: 'sprite', exact: true,
+      });
     }
-    expect(resolveMajoExpressionPortrait('樱羽艾玛', 'happy')?.src).toBe(majoEmmaExpressions.happy);
+    expect(resolveMajoExpressionPortrait('希罗', 'happy')).toMatchObject({ personId: 'majo-hiro', presentation: 'reference-card', exact: true });
+    // Missing semi-main emotions reuse the same person's neutral panel, never another identity.
+    const fallback = resolveMajoExpressionPortrait('希罗', 'sad')!;
+    expect(fallback).toMatchObject({ personId: 'majo-hiro', presentation: 'reference-card', exact: false });
+    expect(fallback.src).toBe(majoExpressionSets['majo-hiro']!.expressions.neutral);
     expect(resolveMajoExpressionPortrait('陌生的立绘名', 'happy')).toBeNull();
   });
 
@@ -50,17 +71,26 @@ describe('PR #16 runtime art registry', () => {
     expect(new Set(majoArtStatus.map(row => row.personId))).toEqual(new Set(residentCast.map(row => row.id)));
     const emma = majoArtStatus.find(row => row.personId === 'majo-emma')!;
     expect(emma).toMatchObject({ tier: 'main', targetExpressions: 9, expressions: 9, complete: true });
-    const hiro = majoArtStatus.find(row => row.personId === 'majo-hiro')!;
-    expect(hiro).toMatchObject({ tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 0, complete: false });
+    for (const person of semiMain) {
+      expect(majoArtStatus.find(row => row.personId === person)).toMatchObject({ tier: 'semi-main', targetExpressions: 3, expressions: 3, complete: true });
+    }
+    expect(majoArtStatus.find(row => row.personId === 'majo-hiro')).toMatchObject({ outfit: '和服' });
     for (const row of majoArtStatus.filter(row => row.tier === 'semi-main')) expect(row.targetExpressions).toBe(3);
-    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId)).toEqual(['majo-emma']);
+    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', ...semiMain].sort());
+    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-margo', 'majo-meruru', 'majo-nanoka', 'majo-yuki']);
   });
 
   it('keeps every registered runtime file byte-identical to its verified manifest entry', () => {
-    expect(manifestRows).toHaveLength(18);
+    expect(manifestRows).toHaveLength(36);
     expect(manifestRows.filter(row => row.personId === 'majo-emma')).toHaveLength(9);
+    expect(manifestRows.filter(row => row.category === 'character-sheet')).toHaveLength(18);
     expect(manifestRows.filter(row => row.category === 'interior')).toHaveLength(6);
     expect(manifestRows.filter(row => row.category === 'district')).toHaveLength(3);
+    for (const row of manifestRows.filter(row => row.category === 'character-sheet')) {
+      expect(row).toMatchObject({ tier: 'semi-main', presentation: 'reference-card', width: 512, height: 1024 });
+      expect(semiMain).toContain(row.personId);
+      expect(['neutral', 'happy', 'shy']).toContain(row.emotion);
+    }
     for (const row of manifestRows) {
       const bytes = readFileSync(path.join(ROOT, 'assets/majo-runtime', row.file));
       expect(bytes.length, row.file).toBe(row.bytes);

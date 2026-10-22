@@ -3,7 +3,7 @@
     "width": 320,
     "height": 568
   },
-  "bundleSha256": "57a070d9e99020b02a3c86e2d834474645f10b6664d0b5293916460eb400e558",
+  "bundleSha256": "a5a765d310c5c87d3f2e033b743d20c4bd252b1ab70230e00e882bad301eb5bc",
   "scene": {
     "hash": "fcb456cecd94b9ca34f94193838b4432208c2ad330448ddd560169ca9f5ff595",
     "width": 1536,
@@ -65,6 +65,12 @@
       "height": 1536,
       "inline": true
     }
+  },
+  "hiroCard": {
+    "hash": "59603a36c78ccba6687bc1ddc0279175e26f50172cc6b6b952c052dbad81d31a",
+    "width": 512,
+    "height": 1024,
+    "inline": true
   },
   "stage": "passed",
   "physicalTauriDevice": "not tested"

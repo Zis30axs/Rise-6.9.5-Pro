@@ -9,7 +9,7 @@ import { resolveNovelNpcEmotion } from '../../src/frontend/novel-npc-emotions';
 
 const bundle = readFileSync(new URL('../../dist/immersive-shell.js', import.meta.url));
 const art = JSON.parse(readFileSync(new URL('../../assets/majo-runtime/manifest.json', import.meta.url), 'utf8')) as {
-  assets: { id: string; file: string; sha256: string; bytes: number; width: number; height: number; emotion?: string }[];
+  assets: { id: string; file: string; sha256: string; bytes: number; width: number; height: number; emotion?: string; personId?: string }[];
 };
 const viewports = [
   { width: 1440, height: 900 }, { width: 1280, height: 800 },
@@ -28,7 +28,10 @@ function initial(): WorldState {
   state.airTraffic.nextAmbientAt = Date.now() + 3_600_000;
   state.story = [{
     id: 'majo-visual-dialogue', role: 'assistant',
-    text: expressions.map((expression, index) => `|艾玛|${labels[index]}|这是${labels[index]}表情的受控验收对白，庭院的光落在缘侧。|`).join('\n'),
+    text: [
+      ...expressions.map((expression, index) => `|艾玛|${labels[index]}|这是${labels[index]}表情的受控验收对白，庭院的光落在缘侧。|`),
+      '|希罗|平静|三姿态参考图也已经按人物身份登记，这是平静姿态的受控验收对白。|',
+    ].join('\n'),
   }];
   return state;
 }
@@ -70,19 +73,28 @@ for (const viewport of viewports) {
     await expect(backdrop).toHaveAttribute('data-background-source', 'majo-art');
     const sceneBytes = await inlineImage(backdrop.locator('img'), scene);
 
-    // The collapsed reader previews the last spoken line; expanding rewinds to
-    // the first line of the current assistant entry.
-    const portrait = page.locator('[data-majo-portrait="majo-emma"]');
-    await expect(portrait).toHaveAttribute('data-npc-emotion', 'relieved');
+    // The collapsed reader previews the last spoken line: the semi-main Hiro
+    // reference card. Expanding rewinds to the first line of the entry (Emma).
+    const portrait = page.locator('[data-majo-portrait]');
+    await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
+    await expect(portrait).toHaveAttribute('data-majo-presentation', 'reference-card');
+    await expect(portrait).toHaveAttribute('data-npc-emotion', 'neutral');
+    const hiroBytes = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
+    await page.screenshot({ path: `${prefix}-hiro-card.png` });
     await page.locator('[data-toggle-dialogue]').click();
     const images: Record<string, unknown> = {};
     for (const [index, expression] of expressions.entries()) {
       if (index) await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+      await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-emma');
       await expect(portrait).toHaveAttribute('data-npc-emotion', resolveNovelNpcEmotion(labels[index]!));
       await expect(portrait).toHaveAttribute('data-npc-speaker', '艾玛');
-      images[expression] = await inlineImage(portrait.locator('img'), art.assets.find(row => row.emotion === expression)!);
+      images[expression] = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-emma' && row.emotion === expression)!);
       if (index === 0 || index === 4 || index === 8) await page.screenshot({ path: `${prefix}-${expression}.png` });
     }
+    await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+    await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
+    await expect(portrait).toHaveAttribute('data-majo-presentation', 'reference-card');
+    await expect(portrait).toHaveAttribute('data-npc-speaker', '希罗');
     await noOverflow(page);
 
     // The real embedded phone must expose the recovered Twiitch artwork as a local app.
@@ -115,7 +127,7 @@ for (const viewport of viewports) {
     expect(fixture.extensionResources).toEqual([]);
     writeFileSync(`${prefix}.json`, JSON.stringify({
       viewport, bundleSha256: createHash('sha256').update(bundle).digest('hex'),
-      scene: sceneBytes, images, stage: 'passed', physicalTauriDevice: 'not tested',
+      scene: sceneBytes, images, hiroCard: hiroBytes, stage: 'passed', physicalTauriDevice: 'not tested',
     }, null, 2) + '\n');
   });
 }
