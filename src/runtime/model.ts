@@ -10,6 +10,7 @@ import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, trigger
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
+import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
@@ -207,8 +208,9 @@ export function getRouteOutlook(state: WorldState, targetId: string): RouteOutlo
 }
 
 export function createInitialState(): WorldState {
+  const clock = { day: 1, hour: 17, minute: 20 };
   return {
-    schema_version: '1.11.0', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
+    schema_version: '1.11.0', clock, locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
     player: { energy: 80, balance: 328, ...initialPlayerNeeds },
@@ -226,8 +228,8 @@ export function createInitialState(): WorldState {
       { id: 'library-notes', title: '【演示】去图书馆整理笔记', locationId: 'library', time: '17:30', done: false },
       { id: 'club-meet', title: '【演示】社团见面', locationId: 'cafe', time: '18:00', done: false },
     ],
-    journal: [{ id: 'entry-1', text: '开始新的日常。', at: '第 1 天 17:20' }],
-    story: [{ id: 'opening', role: 'assistant', text: '傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。' }],
+    journal: [protagonistOpeningJournal('soyo', clock)],
+    story: [{ id: 'opening', role: 'assistant', text: protagonistOpening('soyo', clock) }],
   };
 }
 
