@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { majoExpressionFor } from '../src/frontend/majo-art';
-import { mapAvatarInitials, resolveMapCharacterAvatar } from '../src/frontend/map-character-avatar';
+import { mapAvatarInitials, resolveMapCharacterAvatar, SOYO_HEADSHOT_URL } from '../src/frontend/map-character-avatar';
 import { novelNpcAtlases } from '../src/frontend/novel-npc-atlases';
 
 describe('地图头像按保存身份选择', () => {
@@ -13,9 +13,9 @@ describe('地图头像按保存身份选择', () => {
     });
   });
 
-  it('未确认的魔裁人物不拿随机 NPC 立绘冒充身份；素世无头像时可识别', () => {
+  it('未确认的魔裁人物不拿随机 NPC 立绘冒充身份；素世使用外部头图', () => {
     expect(resolveMapCharacterAvatar({ name: '月代雪', personId: 'majo-yuki', portraitId: 'deepseek' })).toBeNull();
-    expect(resolveMapCharacterAvatar({ name: '长崎素世', protagonistId: 'soyo', portraitId: 'claude' })).toBeNull();
+    expect(resolveMapCharacterAvatar({ name: '长崎素世', protagonistId: 'soyo', portraitId: 'claude' })).toEqual({ kind: 'sprite', src: SOYO_HEADSHOT_URL });
     expect(mapAvatarInitials('长崎素世')).toBe('素世');
     expect(mapAvatarInitials(' ')).toBe('?');
   });
