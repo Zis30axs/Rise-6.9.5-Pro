@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import MapCharacterAvatar from './MapCharacterAvatar.vue';
+import type { CharacterPortraitId } from './types';
+import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { mapLocations } from '../runtime/model';
 import { campusInteriors } from '../runtime/campus-interiors';
 import { transitStops } from '../runtime/transit';
 import { createCampusMapProjection, mapAreas, mapBounds, mapDistrictLabels, mapLocationPoint, mapPaths, visibleMapBuildings, type CampusMapScope, type MapPoint } from './campus-map-layout';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
-type MapPerson = { contactId: string; name: string; place?: { id: string }; position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo' };
+type MapPerson = { contactId: string; name: string; personId?: string; portraitId?: CharacterPortraitId; protagonistId?: ProtagonistId; place?: { id: string }; position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo' };
 const props = withDefaults(defineProps<{
   width: number; height: number; locationId: string; busy: boolean;
   roadEvents: MapEvent[]; people: MapPerson[]; bearing?: number; viewScale?: number;
-  scope?: CampusMapScope; position?: { x: number; z: number } | null; selectedId?: string;
+  scope?: CampusMapScope; position?: { x: number; z: number } | null; selectedId?: string; playerName?: string; playerId?: ProtagonistId;
 }>(), { bearing: 0, viewScale: 1, scope: 'campus', selectedId: '' });
 const emit = defineEmits<{ travel: [locationId: string]; select: [districtId: string]; event: [eventId: string]; scale: [scale: { metersPerPixel: number }] }>();
+const selectedPersonId = ref('');
 const projection = computed(() => createCampusMapProjection(props.width, props.height, props.bearing, props.scope));
 const bounds = computed(() => mapBounds(props.scope));
 const metersPerPixel = computed(() => projection.value.metersPerPixel / Math.max(.01, props.viewScale));
@@ -93,6 +97,7 @@ const peoplePositions = computed(() => props.people.flatMap(person => {
   if (!point || point.x < bounds.value.minX || point.x > bounds.value.maxX || point.z < bounds.value.minZ || point.z > bounds.value.maxZ) return [];
   return [{ ...person, anchor: project(point.x, point.z, 13) }];
 }));
+const selectedPerson = computed(() => props.people.find(person => person.contactId === selectedPersonId.value));
 const stops = computed(() => transitStops.filter(stop => props.scope === 'city' || stop.id === 'campus').map(stop => ({ ...stop, anchor: project(stop.x, stop.z) })));
 const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.y}px` });
 </script>
@@ -127,12 +132,14 @@ const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.
       <g v-for="stop in stops" :key="stop.id" :data-transit-stop="stop.id"><circle :cx="stop.anchor.x" :cy="stop.anchor.y" r="4" fill="#e5bc6a" stroke="#fff7d9"/><text :x="stop.anchor.x + 6" :y="stop.anchor.y + 3" class="cms-stop-label">站</text></g>
       <g v-if="scope === 'campus'" class="cms-label-leaders"><polyline v-for="marker in markers" :key="marker.id" :points="marker.leader" fill="none" stroke="#7c8c70" stroke-width="1" opacity=".75"/><polyline v-for="place in extraMarkers.filter(item => item.leader)" :key="'extra-' + place.id" :points="place.leader" fill="none" stroke="#7c8c70" stroke-width=".8" stroke-dasharray="2 2" opacity=".7"/></g>
       <g v-else class="cms-label-leaders"><polyline v-for="district in districts" :key="district.id" :points="points([district.anchor, district.label])" fill="none" stroke="#7c8c70" stroke-width="1"/></g>
-      <g v-if="player" class="cms-player-position" :data-player-world-x="position?.x" :data-player-world-z="position?.z"><circle :cx="player.x" :cy="player.y" r="7" fill="#b45845" stroke="#fff0c3" stroke-width="2"/><circle :cx="player.x" :cy="player.y" r="2" fill="#fff5d8"/></g>
+      
     </svg>
     <template v-if="scope === 'campus'">
       <button v-for="place in markers" :key="place.id" type="button" class="cms-place-pin" :class="{ current: place.id === currentOutdoorId }" :style="{ ...markerStyle(place.label), width: markerWidth + 'px' }" :data-map-target="place.id" :disabled="busy || place.id === locationId" :aria-label="place.id === locationId ? place.name + '，当前地点' : '前往' + place.name" @click="emit('travel', place.id)"><span class="cms-pin-index">{{ place.index + 1 }}</span><span>{{ place.name }}<small v-if="place.id === currentOutdoorId">{{ locationId === currentOutdoorId ? '你在这里' : '正在室内' }}</small></span></button>
       <button v-for="place in extraMarkers" :key="place.id" type="button" class="cms-place-dot" :class="{ current: place.id === currentOutdoorId }" :style="markerStyle(place.point)" :data-map-target="place.id" :disabled="busy || place.id === locationId" :aria-label="place.id === locationId ? place.name + '，当前地点' : '前往' + place.name" :title="place.name" @click="emit('travel', place.id)"><span>{{ place.index + 1 }}</span></button>
-      <span v-for="person in peoplePositions" :key="person.contactId" class="wm-person-pin cms-person-pin" :style="markerStyle(person.anchor)">{{ person.name }}<small>{{ person.source === 'protagonist' ? '另一主角' : person.source === 'scene' ? '现场人物' : '演示定位' }}</small></span>
+      <button v-if="player" type="button" class="cms-avatar-pin cms-avatar-player" :style="markerStyle(player)" :title="playerName || '当前位置'" :aria-label="'当前位置：' + (playerName || '主角')" data-map-player @click="selectedPersonId = ''"><MapCharacterAvatar :name="playerName || '主角'" :protagonist-id="playerId" /></button>
+      <button v-for="person in peoplePositions" :key="person.contactId" type="button" class="cms-avatar-pin cms-avatar-person" :class="{ selected: selectedPersonId === person.contactId }" :style="markerStyle(person.anchor)" :data-map-person-id="person.contactId" :title="person.name" :aria-label="'查看人物：' + person.name" :aria-pressed="selectedPersonId === person.contactId" @click="selectedPersonId = selectedPersonId === person.contactId ? '' : person.contactId"><MapCharacterAvatar :name="person.name" :person-id="person.personId" :portrait-id="person.portraitId" :protagonist-id="person.protagonistId" /></button>
+      <div v-if="selectedPerson" class="cms-person-detail" role="status"><strong>{{ selectedPerson.name }}</strong><small>{{ selectedPerson.source === 'protagonist' ? '另一主角 · 当前位置' : selectedPerson.source === 'scene' ? '现场人物' : '演示定位' }}</small><button type="button" aria-label="关闭人物信息" @click="selectedPersonId = ''">×</button></div>
     </template>
     <button v-for="district in scope === 'city' ? districts : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="markerStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.name }}</button>
   </div>
