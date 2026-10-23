@@ -2,6 +2,7 @@ import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireContro
 import type { WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
+import { emmaInitialFriendContacts, knownProtagonistContact } from './initial-contacts';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
@@ -104,7 +105,7 @@ function emmaPersonalState(s: Pick<WorldState, 'scene'>): PersonalState {
     locationId: 'home', scene: { x: -190, z: 130, yaw: 0, areaId: 'home', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
     player: { energy: 80, balance: EMMA_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
-    contacts: [], phone: [], schedule: [], journal: [],
+    contacts: emmaInitialFriendContacts(), phone: [], schedule: [], journal: [],
     story: [{ id: 'emma-opening', role: 'assistant', text: '住宅区的午后很安静。此刻，你以樱羽艾玛的视角继续同一段日常。' }],
   };
 }
@@ -129,7 +130,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     locationId: 'downtown', scene: { x: point?.x ?? x, z: point?.z ?? z, yaw: 0, areaId: 'downtown', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
     player: { energy: 80, balance: SAKIKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
-    contacts: [], phone: [], schedule: [], journal: [],
+    contacts: [knownProtagonistContact('soyo', protagonistNames.soyo)], phone: [], schedule: [], journal: [],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: '目白台的街灯渐次亮起。此刻，你以丰川祥子的视角继续同一段日常。' }],
   };
   const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s),

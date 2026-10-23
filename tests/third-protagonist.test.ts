@@ -4,7 +4,8 @@ import { activeProtagonist, enableProtagonists, otherProtagonist, otherProtagoni
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 import { getScenePeople, hiddenProtagonistPersons } from '../src/runtime/scene-context';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
-import { applyNpcPhoneCommand } from '../src/runtime/npc-phone';
+import { applyNpcPhoneCommand, npcPhoneView } from '../src/runtime/npc-phone';
+import { residentCast } from '../src/runtime/npc-cast';
 import { applyPhoneReply } from '../src/runtime/protagonist-world';
 
 function world() {
@@ -16,6 +17,38 @@ function atGate() {
 }
 
 describe('third protagonist accounts and timeline', () => {
+  it('seeds only the intended contacts and leaves all demo messages and schedules out of a new game', () => {
+    const initial = createInitialState();
+    expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko']);
+    expect(initial.phone).toEqual([]);
+    expect(initial.schedule).toEqual([]);
+    expect(initial.story[0].text).not.toContain('手机轻震了两下');
+
+    const state = world();
+    expect(personState(state, 'soyo').contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko']);
+    expect(personState(state, 'sakiko').contacts.map(contact => contact.id)).toEqual(['protagonist-soyo']);
+    expect(personState(state, 'soyo').phone).toEqual([]);
+    expect(personState(state, 'sakiko').phone).toEqual([]);
+
+    const emma = personState(state, 'emma');
+    const expected = residentCast.filter(person => person.id !== 'majo-emma').map(person => person.id).sort();
+    expect(expected).toHaveLength(13);
+    expect(emma.contacts.map(contact => contact.id).sort()).toEqual(expected);
+    expect(emma.contacts.every(contact => contact.sourcePersonId === contact.id && contact.isMain)).toBe(true);
+    expect(emma.contacts.find(contact => contact.id === 'majo-yuki')?.name).toBe('月代雪');
+    expect(emma.phone).toEqual([]);
+    expect(emma.schedule).toEqual([]);
+
+    const switched = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
+    expect(npcPhoneView(switched, 'emma').contacts).toHaveLength(13);
+    const sent = reduceState(switched, { type: 'phone_app', owner: 'emma', requestId: 'seeded-yuki-friend',
+      command: { type: 'send_npc_message', npcId: 'majo-yuki', text: '雪酱，晚上一起回家吗？' } });
+    expect(sent.protagonists!.npcPhone!.messages).toEqual([expect.objectContaining({
+      owner: 'emma', targetId: 'majo-yuki', channel: 'npc', direction: 'outgoing',
+    })]);
+    expect(parseState(sent)).toEqual(sent);
+  });
+
   it('registers three accounts, devices and separate personal states', () => {
     const state = world();
     expect(state.schema_version).toBe('1.13.0');
