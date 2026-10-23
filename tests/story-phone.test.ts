@@ -1,6 +1,6 @@
 import { webcrypto } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createInitialState } from '../src/runtime/model';
+import { createInitialState } from './fixtures/phone-state';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { MARGO_CAFE_ROOM_ID } from '../src/runtime/margo-cafe-venue';
 import { createStoryPhoneLink, type StoryPhoneHost, type StoryPhoneSnapshot } from '../src/frontend/story-phone';

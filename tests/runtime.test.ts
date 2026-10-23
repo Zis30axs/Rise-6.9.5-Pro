@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { acknowledgePhoneRead, commitStoryTurn, createInitialState, getRouteOutlook, parseState, reduceState, STATE_LIMITS } from '../src/runtime/model';
+import { acknowledgePhoneRead, commitStoryTurn, getRouteOutlook, parseState, reduceState, STATE_LIMITS } from '../src/runtime/model';
+import { createInitialState } from './fixtures/phone-state';
 import { createTavernBridge } from '../src/runtime/bridge';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import { saveStoryApiSettings, saveStoryApiKey } from '../src/runtime/story-api';
@@ -672,6 +673,7 @@ describe('chat-owned Tavern-Helper bridge', () => {
 
   it('includes NPC IDs and recent read receipts in generation context without assuming a message every turn', async () => {
     const mock = mockHost();
+    mock.storage.set(mock.key(), { unread_city: createInitialState() });
     const bridge = createTavernBridge(mock.window)!;
     const state = acknowledgePhoneRead(bridge.load(), ['phone-lin']);
     mock.api.generate.mockResolvedValue(JSON.stringify({ story: '林同学发来消息。', phone_messages: [{ npcId: 'lin', text: '图书馆见。' }] }));

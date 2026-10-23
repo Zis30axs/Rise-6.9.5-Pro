@@ -1,5 +1,6 @@
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { knownProtagonistContact } from './initial-contacts';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState, InteractionEventRateState } from '../frontend/types';
@@ -218,20 +219,11 @@ export function createInitialState(): WorldState {
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [],
     academics: null,
-    phone: [
-      { id: 'phone-lin', npcId: 'lin', text: '【示例剧情消息】我在图书馆整理笔记。你经过的话，可以来坐一会儿。', read: false, at: '第 1 天 17:12' },
-      { id: 'phone-zhou', npcId: 'zhou', text: '【示例剧情消息】社团活动的时间暂定今晚六点，在街角咖啡店。', read: false, at: '第 1 天 17:16' },
-    ],
-    contacts: [
-      { id: 'lin', name: '林同学', tag: '演示 NPC · 同学', summary: '用于验证人物档案、消息与关系展示的示例。正式身份和经历尚待作者确认。', affinity: 12, status: '正在图书馆整理笔记', ...legacyCharacterProfile('lin') },
-      { id: 'zhou', name: '周同学', tag: '演示 NPC · 社团成员', summary: '用于验证社交入口与日程的示例人物。一次行动不会自动改变所有关系。', affinity: 5, status: '准备晚间的社团活动', ...legacyCharacterProfile('zhou') },
-    ],
-    schedule: [
-      { id: 'library-notes', title: '【演示】去图书馆整理笔记', locationId: 'library', time: '17:30', done: false },
-      { id: 'club-meet', title: '【演示】社团见面', locationId: 'cafe', time: '18:00', done: false },
-    ],
+    phone: [],
+    contacts: [knownProtagonistContact('sakiko', protagonistNames.sakiko)],
+    schedule: [],
     journal: [{ id: 'entry-1', text: '开始新的日常。', at: '第 1 天 17:20' }],
-    story: [{ id: 'opening', role: 'assistant', text: '傍晚的风穿过校园南门。手机轻震了两下。你可以先读消息、去一个地方，或留在这里说出自己的行动。' }],
+    story: [{ id: 'opening', role: 'assistant', text: '傍晚的风穿过校园南门。你可以去一个地方，或留在这里说出自己的行动。' }],
   };
 }
 

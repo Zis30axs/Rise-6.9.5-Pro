@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Bridge, ContactProfileDraft, GeneratedStory, WorldState } from '../src/frontend/types';
 import type { PhonePanelHost, PhoneRuntime } from '../src/frontend/phone-runtime';
 import type { StoryPhoneHost, StoryPhoneSnapshot } from '../src/frontend/story-phone';
-import { createInitialState, parseState } from '../src/runtime/model';
+import { parseState } from '../src/runtime/model';
+import { createInitialState } from './fixtures/phone-state';
 
 vi.mock('../src/frontend/App.vue', async () => {
   const { defineComponent, h } = await import('vue');

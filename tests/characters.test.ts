@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { commitStoryTurn, createInitialState, parseState, reduceState, STATE_LIMITS } from '../src/runtime/model';
+import { commitStoryTurn, parseState, reduceState, STATE_LIMITS } from '../src/runtime/model';
+import { createInitialState } from './fixtures/phone-state';
 import { characterForPerson } from '../src/frontend/character-appearance';
 import { EMPTY_CHARACTER_SUMMARY, validateContactProfileDraft } from '../src/runtime/characters';
 import { getSceneContext, getScenePeople } from '../src/runtime/scene-context';
