@@ -120,6 +120,18 @@ export interface ContactProfileInput {
 }
 export type ContactProfileDraft = Omit<ContactProfileInput, 'id'> & { id?: string };
 
+export interface InteractionEventRateState {
+  version: 1;
+  /** Hidden, bounded per-protagonist random-event checks; not story or journal entries. */
+  checks: {
+    owner: import('../runtime/dual-protagonists').ProtagonistId;
+    at: number;
+    locationId: string;
+    arrival: boolean;
+    offered: boolean;
+  }[];
+}
+
 export interface WorldState {
   schema_version: '1.11.0' | '1.12.0' | '1.13.0';
   /** Added lazily when a dual-protagonist feature is first used. */
@@ -130,6 +142,8 @@ export interface WorldState {
   interior: InteriorPresence | null;
   airTraffic: AirTrafficState;
   transit: TransitState;
+  /** Absent in old saves; populated after the first eligible event check. */
+  interactionEventRate?: InteractionEventRateState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
