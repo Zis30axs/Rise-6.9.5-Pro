@@ -26,39 +26,45 @@ class CardBuildTests(unittest.TestCase):
         self.assertEqual(card["spec"], "chara_card_v2")
         # Core, Sakiko, Majo, MyGO / Ave Mujica and story arcs.
         entries = card["data"]["character_book"]["entries"]
-        self.assertEqual(len(entries), 39)
+        self.assertEqual(len(entries), 47)
         for entry in entries:
             self.assertIsInstance(entry.get("comment"), str)
             self.assertTrue(entry["comment"].strip(), entry.get("name"))
         titles = {entry["comment"] for entry in entries}
         self.assertIn("樱羽艾玛", titles)
-        self.assertIn("丰川祥子 · 独立人物", titles)
+        self.assertIn("丰川祥子", titles)
         self.assertIn("长崎素世", titles)
 
     def test_story_arcs_are_compact_and_have_character_relationships(self):
         entries = assemble_card()["data"]["character_book"]["entries"]
         by_title = {entry["comment"]: entry for entry in entries}
         synopses = [
-            "魔法少女ノ魔女裁判 · 旧日审判全貌",
-            "It's MyGO!!!!! · 成团与破裂",
-            "Ave Mujica · 假面落幕与重生",
+            "邦邦前史 · CRYCHIC 的盛夏与猝死",
+            "邦邦前史 · MyGO!!!!! 的迷途与重生",
+            "邦邦前史 · Ave Mujica 的假面与救赎",
+            "魔裁前史 · 孤岛囚笼与残酷规则",
+            "魔裁前史 · 三轮回溯与大魔女真相",
         ]
         for title in synopses:
             with self.subTest(title=title):
                 self.assertIn(title, by_title)
-                self.assertGreaterEqual(len(by_title[title]["content"]), 500)
-                self.assertLessEqual(len(by_title[title]["content"]), 600)
+                self.assertGreaterEqual(len(by_title[title]["content"]), 70)
+                self.assertLessEqual(len(by_title[title]["content"]), 500)
                 self.assertTrue(by_title[title]["keys"])
         for title in [
-            "魔裁 · 十四人旧关系",
-            "MyGO · 旧团新团关系",
-            "Ave Mujica · 与旧团的关系",
-            "爱音等人的后续登场",
-            "三条人生的共同时间线",
+            "魔裁旧关系 · 牢屋敷同室组合",
+            "魔裁旧关系 · 艾玛、希罗与月代雪",
+            "魔裁旧关系 · 亚里沙、雪莉、汉娜与可可",
+            "乐队人物关系 · 高松灯",
+            "乐队人物关系 · 千早爱音",
+            "世界基调与时间线坐标",
+            "视角边界与叙事铁律（Anti-Omniscience）",
+            "魔裁群像的共同生活",
         ]:
             self.assertIn(title, by_title)
-        self.assertTrue(by_title["三条人生的共同时间线"]["constant"])
-        self.assertIn("十三名囚人和月代雪都活了下来", by_title["三条人生的共同时间线"]["content"])
+        self.assertTrue(by_title["世界基调与时间线坐标"]["constant"])
+        self.assertTrue(by_title["视角边界与叙事铁律（Anti-Omniscience）"]["constant"])
+        self.assertIn("连同月代雪都活了下来", by_title["魔裁群像的共同生活"]["content"])
         for entry in entries:
             for phrase in ["不代表官方", "非原作已证实", "本卡作者设定", "游戏原型"]:
                 self.assertNotIn(phrase, entry["content"], entry["comment"])
@@ -73,7 +79,13 @@ class CardBuildTests(unittest.TestCase):
         self.assertIn("majo-emma", identities)
 
     def test_character_identity_clothing_voice_and_relationships(self):
-        fields = ["身份：", "外观与着装：", "性格：", "说话方式：", "人物关系："]
+        fields = [
+            ("身份：", "【基础信息】"),
+            ("外观与着装：", "【外貌与穿搭细节】"),
+            ("性格：", "【核心心理与性格肌理】"),
+            ("说话方式：", "【语言风格与微表情】"),
+            ("人物关系：", "【人际锚点】"),
+        ]
         sources = {
             "majo-residents.json": 14,
             "bang-dream-canon.json": 10,
@@ -89,8 +101,8 @@ class CardBuildTests(unittest.TestCase):
                 for entry in entries:
                     with self.subTest(character=entry["name"]):
                         content = entry["content"]
-                        for label in fields:
-                            self.assertIn(label, content)
+                        for alternatives in fields:
+                            self.assertTrue(any(label in content for label in alternatives), entry["name"])
                         self.assertTrue(entry["comment"].strip())
                         self.assertTrue(entry["keys"])
                         self.assertGreater(len(content), 280)
@@ -101,11 +113,11 @@ class CardBuildTests(unittest.TestCase):
         majo = json.loads((ROOT / "src/worldbook/majo-residents.json").read_text(encoding="utf-8"))
         emma = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-emma")
         anan = next(e for e in majo["entries"] if e.get("extensions", {}).get("personId") == "majo-anan")
-        self.assertIn("中文自称通常是「我」", emma["content"])
+        self.assertIn("中文语境下固定自称「我」", emma["content"])
         self.assertIn("希罗酱", emma["content"])
         self.assertIn("小狗", emma["content"])
-        self.assertIn("受到指责会明显沮丧", emma["content"])
-        self.assertIn("粉色宽松针织开衫", emma["content"])
+        self.assertIn("垂头丧气", emma["content"])
+        self.assertIn("浅粉色樱花扣宽松针织开衫", emma["content"])
         self.assertIn("自称「吾辈」", anan["content"])
         self.assertNotIn("わがはい", anan["content"])
         residents = {e.get("extensions", {}).get("personId"): e for e in majo["entries"]}
