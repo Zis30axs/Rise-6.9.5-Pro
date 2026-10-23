@@ -1,0 +1,128 @@
+name: Publish Lite RC1 verified cover
+on:
+  push:
+    branches:
+      - release/lite-v0.2.0-rc1-publish
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-unread-city-lite-rc1
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download successful earlier compilation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 40037461144 -R "$GITHUB_REPOSITORY" -n unread-city-lite-offline-prerelease -D ci-out
+          test -s ci-out/unread-city-lite-tauri.png
+          test -s ci-out/unread-city-lite-assets.zip
+          test -s ci-out/lite-assets-report.json
+      - name: Preserve exact cover and verify offline package
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, sys, zipfile
+          sys.path.insert(0,'scripts')
+          from card_codec import encode_card, read_chunks
+          from build_tauri_import_card import compress_card_metadata
+          from verify_downtown_art import extract_v2
+          
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          
+          src=Path('ci-out')
+          out=Path('release-out')
+          out.mkdir(exist_ok=True)
+          cover=Path('assets/cover.png').read_bytes()
+          old=(src/'unread-city-lite-tauri.png').read_bytes()
+          resources=(src/'unread-city-lite-assets.zip').read_bytes()
+          assert sha(cover)=='b450c240c7b7b01489f59b525542a017b3f5c2799c05cb2285cb9edc88708561', 'Wrong cover'
+          assert sha(old)=='cfbf16fa1073a3e0201d0facba68890c7bcc6e3d47933273ca21cabc98bb34b6', 'Wrong compiled card'
+          assert sha(resources)=='e1b732a0b36271d232b2ddd2947bfccd567eba2e57d08a54a7d2ecfde957cc72', 'Wrong offline resources'
+          parsed=extract_v2(old)
+          assert parsed['spec']=='chara_card_v2' and len(parsed['data']['character_book']['entries'])==47
+          new_card,conversion=compress_card_metadata(encode_card(cover,parsed))
+          assert sha(new_card)=='29b9c1735cde68c1229f73f7907daf644632732f94f6c50096e3a63ca9f941c1', 'Exact-cover PNG differs'
+          assert len(new_card)<25_000_000 and extract_v2(new_card)==parsed
+          not_character=lambda k,p: not(k in (b'tEXt',b'zTXt',b'iTXt') and p.split(b'\0',1)[0] in (b'chara',b'ccv3'))
+          assert list(read_chunks(cover))==[(k,p) for k,p in read_chunks(new_card) if not_character(k,p)], 'Cover image altered'
+          report=json.loads((src/'lite-assets-report.json').read_text('utf-8'))
+          with zipfile.ZipFile(src/'unread-city-lite-assets.zip') as f:
+              manifest_bytes=f.read('manifest.json')
+              assert sha(manifest_bytes)==report['manifestSha256']
+              manifest=json.loads(manifest_bytes)
+              assert len(manifest['assets'])==report['assets']==98
+              assert set(f.namelist())=={'manifest.json',*(row['path'] for row in manifest['assets'])}
+              for row in manifest['assets']:
+                  info=f.getinfo(row['path'])
+                  data=f.read(row['path'])
+                  assert info.compress_type==zipfile.ZIP_STORED
+                  assert sha(data)==row['sha256'] and len(data)==row['bytes']
+          
+          tag='lite-v0.2.0-rc1'
+          card='unread-city-lite-v0.2.0-rc1-tauri.png'
+          assets='unread-city-lite-v0.2.0-rc1-assets.zip'
+          bundle='unread-city-lite-v0.2.0-rc1-offline-release.zip'
+          verification='unread-city-lite-v0.2.0-rc1-verification.json'
+          (out/card).write_bytes(new_card)
+          (out/assets).write_bytes(resources)
+          audit={'version':tag,'status':'release-bytes-verified','sourceCommit':'cee4e6a6b295658a370b2bb62706921dbee57eca','sourceCI':'https://github.com/Zis30axs/Rise-6.9.5-Pro/actions/runs/40037461144','artifactId':12537473180,'releaseCommit':os.environ['GITHUB_SHA'],'originalCoverSha256':sha(cover),'originalCoverSize':[1024,1536],'imageChunksUnchanged':True,'metadataUnchanged':True,'cardSha256':sha(new_card),'cardBytes':len(new_card),'assetsSha256':sha(resources),'assetsBytes':len(resources),'offlineAssets':98,'zipManifestSha256':sha(manifest_bytes),'fullVitestSuitePassed':False,'focusedContactAndPhoneTestsPassed':True,'testedOnPhysicalDevice':False,'offline':True}
+          (out/verification).write_text(json.dumps(audit,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          readme='''未读之城 Lite v0.2.0-rc1
+          1. 将 PNG 导入 TauriTavern 角色卡。
+          2. 在角色聊天中点“安装 Lite 素材 ZIP”，选择配套资源 ZIP，安装后刷新。
+          3. 建议新建聊天验证素世与祥子互为联系人、艾玛已有其余 13 位好友。
+          素材 ZIP 是离线数据包，不是角色卡。未完成真机测试，完整 Vitest 套件另有失败记录。
+          '''
+          (out/'README.txt').write_text(readme,encoding='utf-8')
+          with zipfile.ZipFile(out/bundle,'w',compression=zipfile.ZIP_STORED) as release_zip:
+              for name in (card,assets,verification,'README.txt'):
+                  release_zip.write(out/name,arcname=name)
+          (out/'SHA256SUMS.txt').write_text(''.join(sha((out/n).read_bytes())+'  '+n+'\n' for n in (card,assets,bundle,verification)),encoding='utf-8')
+          notes='''# 未读之城 Lite v0.2.0-rc1 · 三主角手机联系人版
+          
+          本次发布提供 TauriTavern 角色卡 PNG、98 项离线素材 ZIP 和完整组合下载包。
+          
+          - 封面沿用用户指定的 1024×1536 原图，图像 PNG 数据块逐字节保留。
+          - 素世和祥子互为初始联系人；移除了林同学、周同学及演示短信与日程。
+          - 艾玛开局已添加其余 13 位魔裁好友，包括月代雪。
+          - 包含当前 Lite 已合并的东京舞台、日元经济与魔裁人物素材。
+          
+          ## 安装
+          先导入 PNG，再在角色聊天中通过安装按钮导入同版本离线素材 ZIP，完成后刷新页面。建议新建聊天。
+          
+          ## 构建验证
+          前端代码来自 cee4e6a6，成功的 GitHub Actions 构建为 40037461144；此次只重建封面元数据并复核原脚本、98 项素材和 SHA-256，没有重跑编译。相关手机与联系人测试通过，完整 Vitest 套件之前仍有失败记录；尚未进行真机验收。
+          '''
+          (out/'RELEASE_NOTES.md').write_text(notes,encoding='utf-8')
+          print(json.dumps({'result':'checked','card':sha(new_card),'assets':sha(resources),'fullZip':sha((out/bundle).read_bytes()),'releaseSource':os.environ['GITHUB_SHA']},ensure_ascii=False))
+          
+          PY
+      - name: Publish immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view lite-v0.2.0-rc1 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release already exists"; exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/lite-v0.2.0-rc1" >/dev/null 2>&1; then
+            echo "::error::Tag already exists"; exit 1
+          fi
+          gh release create lite-v0.2.0-rc1 \
+            release-out/unread-city-lite-v0.2.0-rc1-tauri.png \
+            release-out/unread-city-lite-v0.2.0-rc1-assets.zip \
+            release-out/unread-city-lite-v0.2.0-rc1-offline-release.zip \
+            release-out/unread-city-lite-v0.2.0-rc1-verification.json \
+            release-out/SHA256SUMS.txt \
+            release-out/README.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "未读之城 Lite v0.2.0-rc1 · 三主角手机联系人版" \
+            --notes-file release-out/RELEASE_NOTES.md
