@@ -19,7 +19,7 @@ export function canCheckInteractionEvent(state: WorldState, action: WorldAction)
   const now = gameMinute(state);
   const actor = owner(state);
   const checks = state.interactionEventRate?.checks ?? [];
-  const latest = checks.findLast(check => check.owner === actor);
+  const latest = [...checks].reverse().find(check => check.owner === actor);
   if (latest && now - latest.at < INTERACTION_EVENT_COOLDOWN_MINUTES) return false;
   const day = Math.floor(now / 1440);
   const today = checks.filter(check => check.owner === actor && Math.floor(check.at / 1440) === day);
