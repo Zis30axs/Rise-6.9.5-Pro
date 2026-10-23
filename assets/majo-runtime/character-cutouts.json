@@ -1,4 +1,13 @@
 {
+  "additionalMethod": {
+    "description": "Source white connected flood fill (RGB >= 244; chroma < 12); retain largest 8-connected foreground region per crop to remove fragments from adjacent poses; light 1px edge feather/dematte. No manual painting or anime-seg model used for Yuki.",
+    "inputResolution": [
+      512,
+      1024
+    ],
+    "name": "white-backdrop-connected-flood-matte",
+    "personId": "majo-yuki"
+  },
   "assets": [
     {
       "alpha": true,
@@ -341,6 +350,66 @@
       "sourceSha256": "54842a8897acc5032e756b6a11187188a3e2d906d9581718696bd20fcbed659d",
       "userConfirmed": true,
       "width": 1024
+    },
+    {
+      "alpha": true,
+      "bytes": 594992,
+      "category": "character-sheet",
+      "emotion": "neutral",
+      "encoding": "white-backdrop-connected-flood-matte-native-png",
+      "file": "characters/majo-yuki/neutral.png",
+      "height": 1024,
+      "id": "characters/majo-yuki/neutral",
+      "mime": "image/png",
+      "panelIndex": 0,
+      "personId": "majo-yuki",
+      "sha256": "9eed0b50bba31e3f61166938752d405527242945a060ed353d57d9a7f56a0098",
+      "sourceBytes": 420605,
+      "sourceId": "characters/source-sheets/majo-yuki",
+      "sourcePack": "assets/majo-cast/packs/unread-city-majo-yuki-source-20261023.zip",
+      "sourceSha256": "2b6c2bded4fb75d1b06b3380291463925de8535bbe35dce0544f3113304ad82f",
+      "userConfirmed": true,
+      "width": 512
+    },
+    {
+      "alpha": true,
+      "bytes": 617406,
+      "category": "character-sheet",
+      "emotion": "happy",
+      "encoding": "white-backdrop-connected-flood-matte-native-png",
+      "file": "characters/majo-yuki/happy.png",
+      "height": 1024,
+      "id": "characters/majo-yuki/happy",
+      "mime": "image/png",
+      "panelIndex": 1,
+      "personId": "majo-yuki",
+      "sha256": "596ce45198068d3ae7d871572d654272c4769bd1a351b211dd8e4a8f4a9e038d",
+      "sourceBytes": 420605,
+      "sourceId": "characters/source-sheets/majo-yuki",
+      "sourcePack": "assets/majo-cast/packs/unread-city-majo-yuki-source-20261023.zip",
+      "sourceSha256": "2b6c2bded4fb75d1b06b3380291463925de8535bbe35dce0544f3113304ad82f",
+      "userConfirmed": true,
+      "width": 512
+    },
+    {
+      "alpha": true,
+      "bytes": 567660,
+      "category": "character-sheet",
+      "emotion": "thinking",
+      "encoding": "white-backdrop-connected-flood-matte-native-png",
+      "file": "characters/majo-yuki/thinking.png",
+      "height": 1024,
+      "id": "characters/majo-yuki/thinking",
+      "mime": "image/png",
+      "panelIndex": 2,
+      "personId": "majo-yuki",
+      "sha256": "6a24b5cff9067453ad20e0b267ee2c072b60fa195ad777bf0ec8a128379631fd",
+      "sourceBytes": 420605,
+      "sourceId": "characters/source-sheets/majo-yuki",
+      "sourcePack": "assets/majo-cast/packs/unread-city-majo-yuki-source-20261023.zip",
+      "sourceSha256": "2b6c2bded4fb75d1b06b3380291463925de8535bbe35dce0544f3113304ad82f",
+      "userConfirmed": true,
+      "width": 512
     }
   ],
   "generatedBy": "scripts/prepare_majo_character_cutouts.py",
@@ -353,9 +422,9 @@
     "url": "https://huggingface.co/skytnt/anime-seg/resolve/main/isnetis.onnx"
   },
   "notes": [
-    "Background removed with the anime-seg ONNX model; no manual painting.",
-    "Premultiplied-alpha LANCZOS upscale 2x with a light unsharp mask.",
-    "Expression names are the user-confirmed three-panel mapping, not official names."
+    "The original six 2026-10-22 three-panel character sheets (18 WebPs) were segmented using anime-seg ONNX and upscaled 2x.",
+    "Yuki's three 2026-10-23 cutouts use a white-backdrop connected-component matte at original 512x1024 crop resolution, not anime-seg.",
+    "Yuki third pose maps to thinking; earlier six sheets' third pose maps to shy. Provisional emotion labels."
   ],
   "schema": "unread-city-majo-character-cutouts-v1",
   "upscale": 2,

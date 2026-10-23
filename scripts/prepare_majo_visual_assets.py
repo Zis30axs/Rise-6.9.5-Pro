@@ -92,7 +92,7 @@ def prepare(check_only: bool = False) -> dict:
         rows.append({
             'id': asset['id'], 'category': 'character-sheet', 'personId': asset['personId'],
             'tier': 'semi-main', 'targetExpressions': 3, 'emotion': asset['emotion'],
-            'file': asset['file'], 'mime': 'image/webp', 'bytes': asset['bytes'],
+            'file': asset['file'], 'mime': asset['mime'], 'bytes': asset['bytes'],
             'sha256': asset['sha256'], 'width': asset['width'], 'height': asset['height'],
             'alpha': True, 'encoding': asset['encoding'], 'presentation': 'sprite',
             'panelIndex': asset['panelIndex'], 'sourceId': asset['sourceId'],
@@ -145,12 +145,14 @@ def prepare(check_only: bool = False) -> dict:
             'scenes': 'assets/majo-cast/recovered-10-source-images-20261022.json',
             'characterAssignments': 'assets/majo-runtime/character-sheet-assignments.json',
             'characterCutouts': 'assets/majo-runtime/character-cutouts.json',
+            'yukiSource': 'assets/majo-cast/character-source-sheets-20261023-yuki.json',
         },
         'notes': [
             'Runtime derivatives only; original ZIP packs remain the authoritative handoff.',
             'Scene JPEG sources have no alpha channel and are not listed as completed character art.',
-            'Six user-confirmed three-panel character sheets were cut out with skytnt/anime-seg and upscaled 2x.',
-            'The third panel of each sheet is provisionally mapped to shy; this is not an official expression name.',
+            'Six user-confirmed 2026-10-22 three-panel sheets use skytnt/anime-seg and 2x upscaled transparent WebPs.',
+            'Third panel of the first six sheets is mapped to shy; Yuki\'s third panel to thinking; these labels are provisional.',
+            'Yuki\'s 2026-10-23 white-backdrop native-resolution 512x1024 transparent PNGs use connected foreground matte, not anime-seg.',
         ],
         'assets': rows,
     }

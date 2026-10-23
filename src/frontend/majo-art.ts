@@ -35,6 +35,9 @@ import hannaShy from '../../assets/majo-runtime/characters/majo-hanna/shy.webp?i
 import margoNeutral from '../../assets/majo-runtime/characters/majo-margo/neutral.avif?inline';
 import margoHappy from '../../assets/majo-runtime/characters/majo-margo/happy.avif?inline';
 import margoShy from '../../assets/majo-runtime/characters/majo-margo/shy.avif?inline';
+import yukiNeutral from '../../assets/majo-runtime/characters/majo-yuki/neutral.png?inline';
+import yukiHappy from '../../assets/majo-runtime/characters/majo-yuki/happy.png?inline';
+import yukiThinking from '../../assets/majo-runtime/characters/majo-yuki/thinking.png?inline';
 import highrise from '../../assets/majo-runtime/interiors/highrise-river-view-living-room-dusk.webp?inline';
 import timber from '../../assets/majo-runtime/interiors/timber-courtyard-house-interior-day.webp?inline';
 import olderFamily from '../../assets/majo-runtime/interiors/older-family-house-living-room-day.webp?inline';
@@ -98,6 +101,11 @@ export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = O
   'majo-anan': semiMainSet('majo-anan', semiMainExpressions(ananNeutral, ananHappy, ananShy)),
   'majo-sherry': semiMainSet('majo-sherry', semiMainExpressions(sherryNeutral, sherryHappy, sherryShy)),
   'majo-hanna': semiMainSet('majo-hanna', semiMainExpressions(hannaNeutral, hannaHappy, hannaShy)),
+  'majo-yuki': Object.freeze({
+    personId: 'majo-yuki', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 3,
+    width: 512, height: 1024,
+    expressions: Object.freeze({ neutral: yukiNeutral, happy: yukiHappy, thinking: yukiThinking }),
+  }),
   'majo-margo': Object.freeze({
     personId: 'majo-margo', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 3,
     width: 768, height: 1024, expressions: semiMainExpressions(margoNeutral, margoHappy, margoShy),
@@ -113,6 +121,7 @@ const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
   '橘雪莉': 'majo-sherry', '橘雪梨': 'majo-sherry', '橘シェリー': 'majo-sherry', '雪莉': 'majo-sherry', '雪梨': 'majo-sherry',
   '远野汉娜': 'majo-hanna', '遠野ハンナ': 'majo-hanna', '汉娜': 'majo-hanna',
   '宝生玛格': 'majo-margo', '宝生マーゴ': 'majo-margo', '玛格': 'majo-margo', 'マーゴ': 'majo-margo',
+  '月代雪': 'majo-yuki', '月代ユキ': 'majo-yuki',
 });
 
 export function resolveMajoSpeaker(speaker: string): string | null {
@@ -192,5 +201,5 @@ export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-leia', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-yuki', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-yuki', tier: 'semi-main', targetExpressions: 3, outfit: '浅蓝开衫、深蓝长裙、花饰帽', expressions: 3, complete: true, note: '已接入三姿态透明立绘（平静/开心/思考），缺失情绪回退同一人物的平静立绘。' },
 ]);
