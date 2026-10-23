@@ -1,0 +1,45 @@
+{
+  "schema": "unread-city-majo-character-source-sheet-v1",
+  "source": "user-uploaded chat attachment 2026-10-23",
+  "stage": "draft-source-for-review",
+  "personId": "majo-yuki",
+  "displayName": "月代雪",
+  "identityConfirmedBy": "user",
+  "id": "characters/source-sheets/majo-yuki",
+  "sourceMime": "image/jpeg",
+  "sourceUploadedFilename": "CC97043D-2003-4D98-9943-424D0E9BFDB7(2).jpeg",
+  "sourceIsCompositedSheet": true,
+  "width": 1536,
+  "height": 1024,
+  "bytes": 420605,
+  "sha256": "2b6c2bded4fb75d1b06b3380291463925de8535bbe35dce0544f3113304ad82f",
+  "archivePath": "assets/2b6c2bded4fb75d1b06b3380291463925de8535bbe35dce0544f3113304ad82f",
+  "pack": {
+    "file": "packs/unread-city-majo-yuki-source-20261023.zip",
+    "bytes": 422140,
+    "sha256": "f611c816cc8e9e02d168a6f9f546bd69e871bf94aea06c8b39bdb30bc4872acc",
+    "storage": "ZIP_STORED",
+    "manifest": "manifest.json"
+  },
+  "panels": [
+    {
+      "index": 1,
+      "expression": "neutral",
+      "note": "暂按平静姿态识别"
+    },
+    {
+      "index": 2,
+      "expression": "happy",
+      "note": "暂按开心姿态识别"
+    },
+    {
+      "index": 3,
+      "expression": "thinking",
+      "note": "暂按思考/沉吟姿态识别"
+    }
+  ],
+  "nineExpressionStandardComplete": false,
+  "transparentCutoutComplete": false,
+  "runtimeWired": false,
+  "notes": "用户确认角色为月代雪。三个姿态在同一张原始白底 JPEG 内，尚未抠图与接入运行时；不把它记为九表情完成。"
+}
