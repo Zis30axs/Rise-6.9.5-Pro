@@ -1,0 +1,50 @@
+{
+  "schema": "unread-city-majo-meruru-casual-handoff-v1",
+  "personId": "majo-meruru",
+  "displayName": "冰上梅露露",
+  "status": "metadata-only; binary art package not uploaded to GitHub",
+  "targetBranch": "lite",
+  "archive": {
+    "file": "unread-city-majo-meruru-casual-3-expressions-20261023.zip",
+    "bytes": 6483461,
+    "sha256": "4c43df10b499e720a911855ac32d01ea2358560e9fa0a428ea364cbc6e9f06f3",
+    "contains": [
+      "original black-background PNGs",
+      "transparent PNG derivatives",
+      "manifest.json",
+      "local apply helper"
+    ],
+    "inRepository": false
+  },
+  "expressions": [
+    {
+      "emotion": "neutral",
+      "width": 941,
+      "height": 1672,
+      "transparentPng": "assets/majo-meruru/neutral.png",
+      "bytes": 1055056,
+      "sha256": "674b89d96007f77b46d1572aeb18fd4fae6cb1f7dfb732924e9b3bd4adf62721",
+      "note": "approved scarf casual outfit"
+    },
+    {
+      "emotion": "thinking",
+      "width": 941,
+      "height": 1672,
+      "transparentPng": "assets/majo-meruru/thinking.png",
+      "bytes": 1055561,
+      "sha256": "8e5ed297874cf09c91d3e1ae3e8358406ece126edb28b9bf25bcfd0a93fd8007",
+      "note": "puzzled expression, local edit based on neutral"
+    },
+    {
+      "emotion": "sad",
+      "width": 941,
+      "height": 1672,
+      "transparentPng": "assets/majo-meruru/sad.png",
+      "bytes": 1182937,
+      "sha256": "986fe85b52202bb9ecce9c8d24906caf9067feb3bb64b5efb656ae08be384ba7",
+      "note": "earlier sad version, pre-scarf outfit retained as requested"
+    }
+  ],
+  "integrity": "ZIP STORE CRC validated locally; hashes from prepared package; no assets referenced at runtime until binaries uploaded",
+  "ciPolicy": "Never trigger GitHub Actions/CI; this documentation commit uses [skip ci]"
+}
