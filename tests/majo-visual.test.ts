@@ -29,7 +29,7 @@ describe('PR #16 runtime art registry', () => {
     expect(new Set(Object.values(majoEmmaExpressions)).size).toBe(9);
     for (const src of Object.values(majoEmmaExpressions)) expect(src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, width: 1024, height: 1536 });
-    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-milia', 'majo-noa', 'majo-sherry']);
+    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-margo', 'majo-milia', 'majo-noa', 'majo-sherry'].sort());
     for (const person of semiMain) {
       const set = majoExpressionSets[person]!;
       expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, width: 1024, height: 2048 });
@@ -50,6 +50,9 @@ describe('PR #16 runtime art registry', () => {
     expect(resolveMajoSpeaker('橘雪莉')).toBe('majo-sherry');
     expect(resolveMajoSpeaker('橘雪梨')).toBe('majo-sherry');
     expect(resolveMajoSpeaker('远野汉娜')).toBe('majo-hanna');
+    expect(resolveMajoSpeaker('宝生玛格')).toBe('majo-margo');
+    expect(resolveMajoSpeaker('宝生マーゴ')).toBe('majo-margo');
+    expect(resolveMajoSpeaker('玛格')).toBe('majo-margo');
     expect(resolveMajoSpeaker('素世')).toBeNull();
     expect(resolveMajoSpeaker('艾玛同学')).toBeNull();
     for (const emotion of majoEmotions) {
@@ -78,6 +81,33 @@ describe('PR #16 runtime art registry', () => {
     }
   });
 
+  it('selects Margo by stable identity and retains two additional transparent sprites', () => {
+    const set = majoExpressionSets['majo-margo']!;
+    expect(set).toMatchObject({ personId: 'majo-margo', tier: 'semi-main',
+      targetExpressions: 3, completedExpressions: 3, complete: true, width: 768, height: 1024 });
+    expect(Object.keys(set.expressions).sort()).toEqual(['happy', 'neutral', 'shy']);
+    for (const [emotion, hash] of [
+      ['neutral', '06784579bed462cd52e4d34f1b04da954f08de1847d21691ecab98e7899579cb'],
+      ['happy', '7b99e566d31f20602a0b983232c6a1bca8afd7deb048fb2877e53a16e7351c18'],
+      ['shy', '5fd04d84b6a1a55f25b72288bd5b9bfa40037ac06fcdd85779b5df0c646994ab'],
+      ['extras/angry', 'ac0bbb4c6f9203f8cd1d2fa06069034ab6d5ef54d8f507b8bbfcfaaa318cb3cf'],
+      ['extras/surprised', 'd05ca8a21f5d3fa2b7a9f1d80a89d8baf655a21a2f1da7721c4a179f757d8523'],
+    ] as const) {
+      const bytes = readFileSync(path.join(ROOT, 'assets/majo-runtime/characters/majo-margo', emotion + '.avif'));
+      expect(createHash('sha256').update(bytes).digest('hex'), emotion).toBe(hash);
+      expect(bytes.subarray(4, 12).toString('ascii'), emotion).toBe('ftypavif');
+    }
+    expect(new Set(Object.values(set.expressions)).size).toBe(3);
+    for (const src of Object.values(set.expressions)) expect(src?.startsWith('data:image/avif;base64,')).toBe(true);
+    expect(resolveMajoExpressionPortrait('宝生マーゴ', 'happy')).toMatchObject({
+      personId: 'majo-margo', src: set.expressions.happy, width: 768, height: 1024, exact: true,
+    });
+    expect(resolveMajoExpressionPortrait('玛格', 'sad')).toMatchObject({
+      personId: 'majo-margo', src: set.expressions.neutral, exact: false,
+    });
+    expect(resolveMajoExpressionPortrait('奈叶香', 'happy')?.personId).not.toBe('majo-margo');
+  });
+
   it('reports completed and missing art honestly', () => {
     expect(majoArtStatus).toHaveLength(14);
     expect(majoExpressionPolicy).toEqual({ main: 9, semiMain: 3 });
@@ -89,8 +119,8 @@ describe('PR #16 runtime art registry', () => {
     }
     expect(majoArtStatus.find(row => row.personId === 'majo-hiro')).toMatchObject({ outfit: '和服' });
     for (const row of majoArtStatus.filter(row => row.tier === 'semi-main')) expect(row.targetExpressions).toBe(3);
-    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', ...semiMain].sort());
-    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-margo', 'majo-meruru', 'majo-nanoka', 'majo-yuki']);
+    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', 'majo-margo', ...semiMain].sort());
+    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-meruru', 'majo-nanoka', 'majo-yuki']);
   });
 
   it('keeps every registered runtime file byte-identical to its verified manifest entry', () => {
