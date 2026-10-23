@@ -1,0 +1,8 @@
+{
+  "request": "one-time GitHub Actions build of latest lite",
+  "sourceBeforeRequest": "b3f8b019aebe72258ad216d6dc7e3c74aa924ab8",
+  "intendedRelease": "lite-v0.2.0-rc1",
+  "userCoverSha256": "b450c240c7b7b01489f59b525542a017b3f5c2799c05cb2285cb9edc88708561",
+  "userCoverSize": "1024x1536",
+  "notes": "CI compiles game and offline resources; user-selected cover pixels are preserved when repackaging the artifact. This request intentionally authorizes one CI run."
+}
