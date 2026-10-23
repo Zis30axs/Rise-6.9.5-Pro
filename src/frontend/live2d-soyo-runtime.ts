@@ -3,6 +3,7 @@ import { Application } from 'pixi.js';
 import { Cubism2ModelSettings, Live2DModel, MotionPreloadStrategy, MotionPriority, config } from 'pixi-live2d-display/cubism2';
 import { createSoyoAssetLease, getSoyoDefinition } from './live2d-soyo-assets';
 import { createSoyoExpressionController } from './live2d-soyo-expression';
+import { fitSoyoPortrait } from './live2d-soyo-fit';
 
 config.sound = false;
 
@@ -29,7 +30,7 @@ export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: Abo
     model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
       idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
     if (disposed) { model.destroy({ children: true, texture: true, baseTexture: true }); throw new Error('立绘已关闭。'); }
-    model.anchor.set(0.5, 0);
+    model.anchor.set(0.5, 1);
     app.stage.addChild(model);
     app.ticker.maxFPS = 30;
     app.ticker.add(() => { if (model && !disposed) model.update(Math.min(app.ticker.deltaMS, 50)); });
@@ -46,13 +47,11 @@ export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: Abo
     return {
       resize(width: number, height: number) {
         if (disposed || width <= 0 || height <= 0) return;
+        const fit = fitSoyoPortrait(width, height, portrait.internalModel.width, portrait.internalModel.height);
+        if (!fit) return;
         app.renderer.resize(width, height);
-        // Short phone screens need a bust crop so expressions remain legible.
-        const compact = height < 240 && width < 240;
-        const scale = Math.min(width * (compact ? 1.4 : 0.88) / portrait.internalModel.width,
-          height * (compact ? 2.1 : 1.45) / portrait.internalModel.height);
-        portrait.scale.set(scale);
-        portrait.position.set(width / 2, 0);
+        portrait.scale.set(fit.scale);
+        portrait.position.set(fit.x, fit.y);
         app.render();
       },
       setActive(active: boolean) {
