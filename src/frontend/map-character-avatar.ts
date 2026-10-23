@@ -5,9 +5,6 @@ import { getSakikoArt } from './downtown-art-runtime';
 import { majoExpressionFor } from './majo-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
-/** Standalone Soyo headshot selected from an external public image, not a project asset. */
-export const SOYO_HEADSHOT_URL = 'https://pbs.twimg.com/profile_images/1684804317172428801/CesRDRKD.jpg';
-
 export interface MapAvatarIdentity {
   name: string;
   personId?: string | null;
@@ -29,7 +26,7 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
     const src = majoExpressionFor('majo-emma', 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
-  if (person.protagonistId === 'soyo') return { kind: 'sprite', src: SOYO_HEADSHOT_URL };
+  if (person.protagonistId === 'soyo') return null;
 
   if (person.personId?.startsWith('majo-')) {
     const src = majoExpressionFor(person.personId, 'neutral');
