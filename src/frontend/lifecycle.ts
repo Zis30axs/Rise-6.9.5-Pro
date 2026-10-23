@@ -11,6 +11,7 @@ import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
 import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
+import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
 
 export interface ShellHandle {
   dispose(reason?: string): void;
@@ -201,12 +202,16 @@ export function mountShell(
     if (dead || model.busy || doc.hidden || bridge.session() !== session) return false;
     if (!isGameplayInteraction(action)) return false;
     let original: WorldState; let prepared: WorldState;
+    let hasEvent = false;
     try {
       original = snapshot();
       // All duration and study rolls happen once, before any visible progress.
       prepared = reduceState(original, action);
+      if (canCheckInteractionEvent(prepared, action)) {
+        hasEvent = Math.random() < INTERACTION_EVENT_PROBABILITY;
+        prepared = recordInteractionEventCheck(prepared, action, hasEvent);
+      }
     } catch (error) { model.notice = message(error); return false; }
-    const hasEvent = Math.random() < INTERACTION_EVENT_PROBABILITY;
     model.busy = true; model.notice = '';
     const label = interactionLabel(action);
     model.interaction = { phase: 'progress', label, progress: 0 };

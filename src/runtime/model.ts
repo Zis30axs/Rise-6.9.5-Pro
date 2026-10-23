@@ -2,7 +2,8 @@ import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, reduceProtagonistAction } from './protagonist-world';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
-import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
+import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState, InteractionEventRateState } from '../frontend/types';
+import { INTERACTION_EVENT_HISTORY_LIMIT } from './interaction-event-rate';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
@@ -465,6 +466,28 @@ function migrateHistoricalMoney(state: WorldState): void {
 }
 
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
+function parseInteractionEventRateState(value: unknown, clock: WorldState['clock']): InteractionEventRateState {
+  const rate = object(value, ['version', 'checks'], 'interactionEventRate');
+  if (rate.version !== 1 || !Array.isArray(rate.checks) || rate.checks.length > INTERACTION_EVENT_HISTORY_LIMIT)
+    return invalid('interactionEventRate');
+  const now = (clock.day - 1) * 1440 + clock.hour * 60 + clock.minute;
+  const checks: InteractionEventRateState['checks'] = [];
+  for (const [index, raw] of rate.checks.entries()) {
+    const path = `interactionEventRate.checks[${index}]`;
+    const row = object(raw, ['owner', 'at', 'locationId', 'arrival', 'offered'], path);
+    if (!['soyo', 'sakiko', 'emma'].includes(String(row.owner))) return invalid(`${path}.owner`);
+    const at = number(row.at, `${path}.at`, 0, now);
+    if (checks.length && at < checks[checks.length - 1]!.at) return invalid(`${path}.at 顺序`);
+    checks.push({
+      owner: row.owner as InteractionEventRateState['checks'][number]['owner'],
+      at, locationId: place(row.locationId, `${path}.locationId`),
+      arrival: boolean(row.arrival, `${path}.arrival`),
+      offered: boolean(row.offered, `${path}.offered`),
+    });
+  }
+  return { version: 1, checks };
+}
+
 export function parseState(value: unknown): WorldState {
   if (value && typeof value === 'object' && !Array.isArray(value) && ['1.12.0', '1.13.0'].includes(String((value as Record<string, unknown>).schema_version))) {
     const source = value as Record<string, unknown>;
@@ -501,13 +524,14 @@ export function parseState(value: unknown): WorldState {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
   if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
+  const hasInteractionEventRate = version === '1.11.0' && Object.hasOwn(value, 'interactionEventRate');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -531,6 +555,7 @@ export function parseState(value: unknown): WorldState {
     interior: hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
+    ...(hasInteractionEventRate ? { interactionEventRate: parseInteractionEventRateState(state.interactionEventRate, parsedClock) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },

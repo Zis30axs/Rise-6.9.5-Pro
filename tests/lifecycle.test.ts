@@ -210,6 +210,32 @@ describe('interaction progress and event choices', () => {
     expect(f.bridge.save).not.toHaveBeenCalled();
   });
 
+  it('does not reroll another location immediately and persists the cooldown through a remount', async () => {
+    const f = mountInteraction();
+    const first = f.handle.actions.interact!({ type: 'travel', locationId: 'cafe' });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'choice' });
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await first).toBe(true);
+    expect(f.handle.model.state.interactionEventRate?.checks).toHaveLength(1);
+
+    const second = f.handle.actions.interact!({ type: 'travel', locationId: 'library' });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await second).toBe(true);
+    expect(f.handle.model.interaction).toBeNull();
+    expect(f.random).toHaveBeenCalledTimes(1);
+
+    const saved = structuredClone(JSON.parse(JSON.stringify(f.handle.model.state)));
+    f.handle.dispose();
+    f.bridge.load = () => saved;
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const third = handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await third).toBe(true);
+    expect(f.random).toHaveBeenCalledTimes(1);
+    expect(handle.model.state.interactionEventRate?.checks).toHaveLength(1);
+  });
+
   it('invalid actions do not roll; duplicate clicks, background ticks and ordinary dialogue cannot start an extra event', async () => {
     const f = mountInteraction();
     expect(await f.handle.actions.interact!({ type: 'location_service', serviceId: 'drink-coffee' })).toBe(false);
