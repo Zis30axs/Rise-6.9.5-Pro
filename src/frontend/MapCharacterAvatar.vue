@@ -13,7 +13,7 @@ const atlasBox = computed(() => active.value?.kind === 'atlas'
 
 <template>
   <span class="cms-avatar-face" :data-map-avatar-kind="active?.kind ?? 'initials'" aria-hidden="true">
-    <img v-if="active?.kind === 'sprite'" :src="active.src" alt="" draggable="false" @error="failedSrc = active.src" />
+    <img v-if="active?.kind === 'sprite'" :src="active.src" :class="{ 'cms-avatar-headshot': protagonistId === 'soyo' }" alt="" draggable="false" referrerpolicy="no-referrer" @error="failedSrc = active.src" />
     <svg v-else-if="active?.kind === 'atlas'" :viewBox="atlasBox" preserveAspectRatio="xMidYMin meet">
       <image :href="active.src" :width="active.atlasWidth" :height="active.atlasHeight" />
     </svg>
