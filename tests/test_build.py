@@ -118,6 +118,27 @@ class CardBuildTests(unittest.TestCase):
         self.assertIn("第一人称自然使用「我」", residents["majo-yuki"]["content"])
         self.assertEqual(emma["extensions"]["home"], "emma-yuki-home")
 
+    def test_all_cast_members_have_individual_social_nuances(self):
+        majo = json.loads((ROOT / "src/worldbook/majo-residents.json").read_text(encoding="utf-8"))
+        band = json.loads((ROOT / "src/worldbook/bang-dream-canon.json").read_text(encoding="utf-8"))
+        residents = [entry for entry in majo["entries"] if entry.get("extensions", {}).get("personId")]
+        musicians = band["entries"]
+        self.assertEqual((len(residents), len(musicians)), (14, 10))
+        for entry in [*residents, *musicians]:
+            with self.subTest(character=entry["name"]):
+                content = entry["content"]
+                self.assertIn("\n相处细节：", content)
+                section = content.split("\n相处细节：", 1)[1].split("\n", 1)[0]
+                self.assertGreater(len(section), 60)
+                self.assertNotIn("不代表官方", content)
+                self.assertNotIn("社区印象：", content)
+                self.assertTrue("\n人物关系：" in content or "\n【人际锚点】" in content)
+                self.assertTrue("\n说话方式：" in content or "\n【语言风格与微表情】" in content)
+        emma = next(e for e in residents if e.get("extensions", {}).get("personId") == "majo-emma")
+        anon = next(e for e in musicians if e["name"] == "千早爱音")
+        self.assertIn("小狗", emma["content"])
+        self.assertIn("爱音酱", anon["content"])
+
     def test_missing_comment_uses_name(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
