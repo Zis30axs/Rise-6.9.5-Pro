@@ -29,14 +29,14 @@ describe('PR #16 runtime art registry', () => {
     expect(new Set(Object.values(majoEmmaExpressions)).size).toBe(9);
     for (const src of Object.values(majoEmmaExpressions)) expect(src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, width: 1024, height: 1536 });
-    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-margo', 'majo-milia', 'majo-noa', 'majo-sherry'].sort());
+    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-margo', 'majo-milia', 'majo-noa', 'majo-sherry', 'majo-yuki'].sort());
     for (const person of semiMain) {
       const set = majoExpressionSets[person]!;
       expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, width: 1024, height: 2048 });
       expect(Object.keys(set.expressions).sort()).toEqual(['happy', 'neutral', 'shy']);
       expect(new Set(Object.values(set.expressions)).size).toBe(3);
     }
-    expect(majoExpressionSets['majo-yuki']).toBeUndefined();
+    expect(majoExpressionSets['majo-yuki']).toMatchObject({ tier: 'semi-main', targetExpressions: 3, completedExpressions: 3, width: 512, height: 1024 });
   });
 
   it('resolves portraits by person identity first and emotion second', () => {
@@ -53,6 +53,8 @@ describe('PR #16 runtime art registry', () => {
     expect(resolveMajoSpeaker('宝生玛格')).toBe('majo-margo');
     expect(resolveMajoSpeaker('宝生マーゴ')).toBe('majo-margo');
     expect(resolveMajoSpeaker('玛格')).toBe('majo-margo');
+    expect(resolveMajoSpeaker('月代雪')).toBe('majo-yuki');
+    expect(resolveMajoSpeaker('月代ユキ')).toBe('majo-yuki');
     expect(resolveMajoSpeaker('素世')).toBeNull();
     expect(resolveMajoSpeaker('艾玛同学')).toBeNull();
     for (const emotion of majoEmotions) {
@@ -65,6 +67,11 @@ describe('PR #16 runtime art registry', () => {
     const fallback = resolveMajoExpressionPortrait('希罗', 'sad')!;
     expect(fallback).toMatchObject({ personId: 'majo-hiro', width: 1024, height: 2048, exact: false });
     expect(fallback.src).toBe(majoExpressionSets['majo-hiro']!.expressions.neutral);
+    const yuki = majoExpressionSets['majo-yuki']!;
+    expect(Object.keys(yuki.expressions).sort()).toEqual(['happy', 'neutral', 'thinking']);
+    for (const src of Object.values(yuki.expressions)) expect(src?.startsWith('data:image/png;base64,')).toBe(true);
+    expect(resolveMajoExpressionPortrait('月代雪', 'thinking')).toMatchObject({ personId: 'majo-yuki', width: 512, height: 1024, exact: true });
+    expect(resolveMajoExpressionPortrait('月代雪', 'shy')).toMatchObject({ personId: 'majo-yuki', src: yuki.expressions.neutral, exact: false });
     expect(resolveMajoExpressionPortrait('陌生的立绘名', 'happy')).toBeNull();
   });
 
@@ -119,21 +126,28 @@ describe('PR #16 runtime art registry', () => {
     }
     expect(majoArtStatus.find(row => row.personId === 'majo-hiro')).toMatchObject({ outfit: '和服' });
     for (const row of majoArtStatus.filter(row => row.tier === 'semi-main')) expect(row.targetExpressions).toBe(3);
-    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', 'majo-margo', ...semiMain].sort());
-    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-meruru', 'majo-nanoka', 'majo-yuki']);
+    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', 'majo-margo', 'majo-yuki', ...semiMain].sort());
+    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-meruru', 'majo-nanoka']);
   });
 
   it('keeps every registered runtime file byte-identical to its verified manifest entry', () => {
-    expect(manifestRows).toHaveLength(36);
+    expect(manifestRows).toHaveLength(39);
     expect(manifestRows.filter(row => row.personId === 'majo-emma')).toHaveLength(9);
-    expect(manifestRows.filter(row => row.category === 'character-sheet')).toHaveLength(18);
+    expect(manifestRows.filter(row => row.category === 'character-sheet')).toHaveLength(21);
     expect(manifestRows.filter(row => row.category === 'interior')).toHaveLength(6);
     expect(manifestRows.filter(row => row.category === 'district')).toHaveLength(3);
     for (const row of manifestRows.filter(row => row.category === 'character-sheet')) {
-      expect(row).toMatchObject({ tier: 'semi-main', presentation: 'sprite', alpha: true, width: 1024, height: 2048 });
-      expect(row.encoding).toContain('anime-seg-alpha-upscale-2x');
-      expect(semiMain).toContain(row.personId);
-      expect(['neutral', 'happy', 'shy']).toContain(row.emotion);
+      expect(row).toMatchObject({ tier: 'semi-main', presentation: 'sprite', alpha: true });
+      if (row.personId === 'majo-yuki') {
+        expect(row).toMatchObject({ width: 512, height: 1024, mime: 'image/png' });
+        expect(row.encoding).toContain('flood-matte');
+        expect(['neutral', 'happy', 'thinking']).toContain(row.emotion);
+      } else {
+        expect(row).toMatchObject({ width: 1024, height: 2048, mime: 'image/webp' });
+        expect(row.encoding).toContain('anime-seg-alpha-upscale-2x');
+        expect(semiMain).toContain(row.personId);
+        expect(['neutral', 'happy', 'shy']).toContain(row.emotion);
+      }
     }
     const cutouts = JSON.parse(readFileSync(path.join(ROOT, 'assets/majo-runtime/character-cutouts.json'), 'utf8')) as {
       schema: string; upscale: number; model: { name: string; sha256: string; license: string }; assets: unknown[];
@@ -141,7 +155,7 @@ describe('PR #16 runtime art registry', () => {
     expect(cutouts.schema).toBe('unread-city-majo-character-cutouts-v1');
     expect(cutouts.upscale).toBe(2);
     expect(cutouts.model).toMatchObject({ name: 'skytnt/anime-seg', license: 'Apache-2.0', sha256: 'f15622d853e8260172812b657053460e20806f04b9e05147d49af7bed31a6e99' });
-    expect(cutouts.assets).toHaveLength(18);
+    expect(cutouts.assets).toHaveLength(21);
     for (const row of manifestRows) {
       const bytes = readFileSync(path.join(ROOT, 'assets/majo-runtime', row.file));
       expect(bytes.length, row.file).toBe(row.bytes);

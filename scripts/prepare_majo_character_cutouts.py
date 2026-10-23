@@ -145,6 +145,23 @@ def main() -> None:
                 'userConfirmed': True,
             })
             print(relative.as_posix(), len(encoded))
+    # Preserve Yuki's separately authored white-background PNGs when the six
+    # anime-seg sheets are regenerated. The Yuki cutouts do not use this model.
+    prior_path = OUT / 'character-cutouts.json'
+    prior = json.loads(prior_path.read_text(encoding='utf-8')) if prior_path.is_file() else {}
+    preserved = [item for item in prior.get('assets', []) if item.get('personId') == 'majo-yuki']
+    if preserved:
+        if len(preserved) != 3 or {row['emotion'] for row in preserved} != {'neutral', 'happy', 'thinking'}:
+            raise SystemExit('Yuki cutout registry must contain three distinct expressions')
+        for asset in preserved:
+            relative = asset['file']
+            if not relative.startswith('characters/majo-yuki/') or asset['mime'] != 'image/png':
+                raise SystemExit('Invalid Yuki sprite path or encoding')
+            file_bytes = (OUT / relative).read_bytes()
+            if len(file_bytes) != asset['bytes'] or sha256(file_bytes) != asset['sha256']:
+                raise SystemExit('Existing Yuki cutout hash mismatch: ' + relative)
+        rows.extend(preserved)
+
     manifest = {
         'schema': 'unread-city-majo-character-cutouts-v1',
         'generatedBy': 'scripts/prepare_majo_character_cutouts.py',
@@ -159,6 +176,10 @@ def main() -> None:
         ],
         'assets': rows,
     }
+    if preserved:
+        manifest['notes'] = prior.get('notes', manifest['notes'])
+        if 'additionalMethod' in prior:
+            manifest['additionalMethod'] = prior['additionalMethod']
     (OUT / 'character-cutouts.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps({'cutouts': len(rows), 'assetBytes': sum(row['bytes'] for row in rows), 'manifestSha256': sha256((OUT / 'character-cutouts.json').read_bytes())}, ensure_ascii=False))
 

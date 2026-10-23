@@ -1,7 +1,7 @@
 {
   "schema": "unread-city-majo-character-source-sheet-v1",
   "source": "user-uploaded chat attachment 2026-10-23",
-  "stage": "draft-source-for-review",
+  "stage": "runtime-three-expression-sprites",
   "personId": "majo-yuki",
   "displayName": "月代雪",
   "identityConfirmedBy": "user",
@@ -39,7 +39,36 @@
     }
   ],
   "nineExpressionStandardComplete": false,
-  "transparentCutoutComplete": false,
-  "runtimeWired": false,
-  "notes": "用户确认角色为月代雪。三个姿态在同一张原始白底 JPEG 内，尚未抠图与接入运行时；不把它记为九表情完成。"
+  "transparentCutoutComplete": true,
+  "runtimeWired": true,
+  "notes": "月代雪原始三联 JPEG 字节保持不变；已抠图生成三张 512×1024 原生分辨率的透明 PNG，按平静/开心/思考接入小说模式。其余情绪回退本人平静，不意味着九情绪齐全。",
+  "runtimeAssets": [
+    {
+      "file": "assets/majo-runtime/characters/majo-yuki/neutral.png",
+      "emotion": "neutral",
+      "width": 512,
+      "height": 1024,
+      "bytes": 594992,
+      "sha256": "9eed0b50bba31e3f61166938752d405527242945a060ed353d57d9a7f56a0098",
+      "mime": "image/png"
+    },
+    {
+      "file": "assets/majo-runtime/characters/majo-yuki/happy.png",
+      "emotion": "happy",
+      "width": 512,
+      "height": 1024,
+      "bytes": 617406,
+      "sha256": "596ce45198068d3ae7d871572d654272c4769bd1a351b211dd8e4a8f4a9e038d",
+      "mime": "image/png"
+    },
+    {
+      "file": "assets/majo-runtime/characters/majo-yuki/thinking.png",
+      "emotion": "thinking",
+      "width": 512,
+      "height": 1024,
+      "bytes": 567660,
+      "sha256": "6a24b5cff9067453ad20e0b267ee2c072b60fa195ad777bf0ec8a128379631fd",
+      "mime": "image/png"
+    }
+  ]
 }
