@@ -5,7 +5,7 @@ import CampusMapScene from '../src/frontend/CampusMapScene.vue';
 let app: App | undefined;
 afterEach(() => { app?.unmount(); app = undefined; document.body.innerHTML = ''; });
 
-async function mount(people: Array<Record<string, unknown>>, width = 620, height = 420) {
+async function mount(people: Array<{ contactId: string; name: string; personId?: string; position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo' }>, width = 620, height = 420) {
   const host = document.createElement('div');
   document.body.append(host);
   app = createApp({ render: () => h(CampusMapScene, {

@@ -14,6 +14,7 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { protagonistRecap } from '../runtime/protagonist-narrative';
 import { formatGameDate, formatGameStamp, gameCalendar, registrationNotice } from '../runtime/game-calendar';
+import { gameCalendarOccasions, upcomingGameCalendarOccasions } from '../runtime/japan-calendar-events';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
@@ -28,6 +29,8 @@ const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, 
 const civilDay = computed(() => gameCalendar(props.model.state.clock.day));
 const calendarLabel = computed(() => formatGameDate(props.model.state.clock.day));
 const registration = computed(() => registrationNotice(props.model.state.clock.day));
+const todayOccasions = computed(() => gameCalendarOccasions(props.model.state.clock.day));
+const upcomingOccasions = computed(() => upcomingGameCalendarOccasions(props.model.state.clock.day, 30).slice(0, 8));
 const unread = computed(() => props.model.state.phone.filter(item => !item.read).length);
 const activeContact = computed(() => props.model.state.contacts.find(item => item.id === selectedContactId.value) ?? props.model.state.contacts[0]);
 const contactMessages = computed(() => props.model.state.phone.filter(item => item.npcId === activeContact.value?.id));
@@ -119,6 +122,20 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <AcademicTimetable v-if="model.state.academics" :major-id="model.state.academics.majorId" :day="model.state.clock.day" :hour="model.state.clock.hour" :minute="model.state.clock.minute" :busy="model.busy" :current-location-id="model.state.locationId" :travel-label="novelMode ? '前往课程地点' : '前往建筑入口'" :blocked-reason="courseTravelBlocked" @travel="travelToPlan" />
       <div class="wp-day-summary"><div><h2>{{ calendarLabel }} · {{ civilDay.weekdayLabel }}</h2><p>第 {{ model.state.clock.day }} 天 · {{ time }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
       <p v-if="registration && !model.state.academics" class="wp-footnote">{{ registration }}</p>
+      <section data-calendar-observances aria-label="游戏节假日与人物生日">
+        <div class="wp-heading"><h2>节假日与生日</h2></div>
+        <div class="wp-plans">
+          <article v-for="occasion in todayOccasions" :key="occasion.id" class="wp-plan" :data-calendar-event="occasion.id">
+            <div class="wp-plan-time">今天<small>{{ occasion.kind === 'birthday' ? '人物生日' : occasion.dayOff ? '放假' : '节庆' }}</small></div>
+            <div class="wp-plan-body"><h2>{{ occasion.name }}</h2><p>{{ occasion.projected ? '未来日期推算，非正式公告' : occasion.kind === 'birthday' ? '仅为已登记生日，庆祝需要实际发生' : occasion.dayOff ? '日本国定假日，常规课程暂停' : '民俗节庆，不属于法定假日' }}</p></div>
+          </article>
+          <p v-if="!todayOccasions.length" class="wp-footnote">今天没有登记的节假日或人物生日。</p>
+          <article v-for="occasion in upcomingOccasions" :key="occasion.id" class="wp-plan" :data-upcoming-calendar-event="occasion.id">
+            <div class="wp-plan-time">{{ occasion.iso.slice(5) }}<small>{{ occasion.kind === 'birthday' ? '生日' : occasion.dayOff ? '假日' : '节庆' }}</small></div>
+            <div class="wp-plan-body"><h2>{{ occasion.name }}</h2><p>{{ occasion.projected ? '未来推算日期' : '游戏日历预告' }}</p></div>
+          </article>
+        </div>
+      </section>
       <div class="wp-day-progress"><span :style="{ width: (model.state.schedule.length ? completedPlans / model.state.schedule.length * 100 : 0) + '%' }"></span></div>
       <div class="wp-plans">
         <article v-for="plan in model.state.schedule" :key="plan.id" class="wp-plan" :class="{ done: plan.done }">
