@@ -260,7 +260,7 @@ function beginGesture() {
   gesture = { center, lastCenter: center, distance: Math.hypot(a.x - b.x, a.y - b.y), angle: Math.atan2(b.y - a.y, b.x - a.x), depth: depth.value, focus: focusZoom.value, atlasSpan: geographicLayer.value ? atlasScene.value?.getCameraSpan() : undefined, pan: { ...pan.value } };
 }
 function pointerDown(event: PointerEvent) {
-  if (event.button !== 0 || !viewport.value || (event.target as Element).closest('[data-map-controls], input, label')) return;
+  if (event.button !== 0 || !viewport.value || (event.target as Element).closest('[data-map-controls], [data-map-person-id], [data-map-player], input, label')) return;
   event.preventDefault(); event.stopPropagation(); stopAnimation(); viewport.value.focus({ preventScroll: true });
   if (!pointers.size) {
     const target = event.target as Element;
