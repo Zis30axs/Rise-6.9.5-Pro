@@ -225,6 +225,11 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800
     await expect(page.locator('[data-novel-background] img')).toBeVisible();
     await expect(portrait(page)).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30000 });
     await expect(portrait(page)).toHaveCSS('opacity', '1');
+    const modelStage = await portrait(page).boundingBox();
+    const dialoguePanel = await page.locator('[data-reading-layer]').boundingBox();
+    expect(modelStage).not.toBeNull();
+    expect(dialoguePanel).not.toBeNull();
+    expect(modelStage!.y + modelStage!.height).toBeLessThanOrEqual(dialoguePanel!.y + 1);
     await expectNovelControlsClear(page, viewport);
     await page.waitForTimeout(700);
     await page.screenshot({ path: `outputs/novel-mode-${width}.png` });
