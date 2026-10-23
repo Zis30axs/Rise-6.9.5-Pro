@@ -24,3 +24,16 @@
   .world-map .cms-pin-index { min-width:18px; height:18px; font-size:9px; }
   .world-map .cms-place-pin small { font-size:8px; }
 }
+
+/* Portrait pins remain a 44px touch target, while the visible portrait stays compact. */
+.world-map .cms-avatar-pin { position:absolute; display:grid; place-items:center; width:44px; height:44px; min-height:44px; padding:4px; transform:translate(-50%,-50%); border:0; background:transparent; z-index:6; cursor:pointer; touch-action:none; }
+.world-map .cms-avatar-face { display:grid; place-items:center; position:relative; width:34px; height:34px; border-radius:50%; overflow:hidden; background:#e7d9c7; color:#3a5361; border:2px solid #fff3d4; box-shadow:0 2px 8px #182a2f88; }
+.world-map .cms-avatar-face > img { width:100%; height:100%; object-fit:cover; object-position:center 11%; transform:scale(1.75); transform-origin:center 16%; }
+.world-map .cms-avatar-face > svg { width:100%; height:100%; overflow:hidden; background:#eff0e7; }
+.world-map .cms-avatar-initials { font-weight:700; font-size:11px; letter-spacing:-.5px; }
+.world-map .cms-avatar-player { z-index:7; }
+.world-map .cms-avatar-player .cms-avatar-face { border-color:#e5a76b; box-shadow:0 0 0 2px #984e36,0 3px 10px #182a2f88; }
+.world-map .cms-avatar-person.selected .cms-avatar-face { border-color:#bda1ed; box-shadow:0 0 0 2px #684a97,0 3px 10px #182a2f88; }
+.world-map .cms-person-detail { position:absolute; z-index:9; bottom:10px; left:10px; display:flex; flex-direction:column; gap:2px; min-width:128px; max-width:calc(100% - 20px); padding:9px 30px 9px 10px; border:1px solid #8ea68d; border-radius:8px; background:#f9f4e4; box-shadow:0 4px 12px #253e3e55; color:#2f5040; font-size:12px; }
+.world-map .cms-person-detail small { color:#53705d; }
+.world-map .cms-person-detail button { position:absolute; right:0; top:0; width:30px; min-height:36px; font-size:20px; color:#496353; }
