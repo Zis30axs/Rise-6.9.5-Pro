@@ -1,3 +1,4 @@
+import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
@@ -26,7 +27,7 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
     const src = majoExpressionFor('majo-emma', 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
-  if (person.protagonistId === 'soyo') return null;
+  if (person.protagonistId === 'soyo') return { kind: 'sprite', src: soyoHeadshot };
 
   if (person.personId?.startsWith('majo-')) {
     const src = majoExpressionFor(person.personId, 'neutral');
