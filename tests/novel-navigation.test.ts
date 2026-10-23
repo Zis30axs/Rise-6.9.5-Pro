@@ -117,9 +117,9 @@ describe('novel navigation uses the same world and transit rules', () => {
 
   it('refuses the whole transfer when only one leg is affordable, and rejects forged targets or prices', () => {
     const state = atStop('home');
-    state.player.balance = 6;
+    state.player.balance = 180;
     const snapshot = JSON.stringify(state);
-    expect(getNovelTravelQuote(state, 'commercial')).toMatchObject({ fare: 9, minutes: 70, blockedReason: expect.stringContaining('余额') });
+    expect(getNovelTravelQuote(state, 'commercial')).toMatchObject({ fare: 390, minutes: 30, blockedReason: expect.stringContaining('余额') });
     expect(() => travel(state, 'commercial')).toThrow(/余额/);
     expect(JSON.stringify(state)).toBe(snapshot);
     for (const id of ['__proto__', 'constructor', 'campus', 'imaginary-home']) {
@@ -130,19 +130,19 @@ describe('novel navigation uses the same world and transit rules', () => {
     const poor = createInitialState(); poor.player.energy = 0.1;
     expect(travel(poor, 'dorm-room').player.energy).toBe(0);
     const forged = { type: 'novel_travel', locationId: 'home', fare: 0, minutes: 0, x: 0, z: 0 } as WorldAction;
-    expect(reduceState(atStop('campus'), forged).player.balance).toBe(322);
+    expect(reduceState(atStop('campus'), forged).player.balance).toBe(6380);
   });
 
   it('preflights transit sequence exhaustion and uses the nearest existing stop for a road save', () => {
     const state = atStop('home');
-    state.transit = { sequence: TRANSIT_SEQUENCE_LIMIT - 1, lastRide: { id: `transit-ride-${TRANSIT_SEQUENCE_LIMIT - 1}`, vehicleId: 'btr82a', fromStopId: 'campus', toStopId: 'home', minutes: 45, fare: 6, at: '第 1 天 17:20' } };
+    state.transit = { sequence: TRANSIT_SEQUENCE_LIMIT - 1, lastRide: { id: `transit-ride-${TRANSIT_SEQUENCE_LIMIT - 1}`, vehicleId: 'btr82a', fromStopId: 'campus', toStopId: 'home', minutes: 12, fare: 180, at: '第 1 天 17:20' } };
     const snapshot = JSON.stringify(state);
     expect(() => travel(state, 'commercial')).toThrow(/上限/);
     expect(JSON.stringify(state)).toBe(snapshot);
     const road = reduceState(createInitialState(), { type: 'walk', x: -180, z: 110, yaw: 0, seed: 'road-seed' });
     expect(road.locationId).toBe('city-roads');
     const arrived = travel(road, 'library');
-    expect(arrived.transit.lastRide).toMatchObject({ fromStopId: 'home', toStopId: 'campus', fare: 6, minutes: 45 });
+    expect(arrived.transit.lastRide).toMatchObject({ fromStopId: 'home', toStopId: 'campus', fare: 180, minutes: 12 });
     expect(arrived.scene?.seed).toBe('road-seed');
   });
 

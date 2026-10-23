@@ -1,7 +1,7 @@
 import { residentById } from './npc-cast';
 
 /**
- * Prototype residential mapping for the PR #16 art handoff.
+ * Existing housing art now belongs to Tokyo neighborhood residences.
  *
  * These are game-authored living arrangements, not claims about canonical
  * layouts. Only the six recovered generic interiors are registered; residents
@@ -39,32 +39,32 @@ export interface MajoHousing {
 export const majoHousings: readonly MajoHousing[] = Object.freeze([
   {
     id: 'emma-yuki-home', type: 'modern-open-plan', label: '艾玛与月代雪的家',
-    description: '两人共同居住的现代公寓客餐厅；料理台、沙发与阅读角在同一空间。',
+    description: '杂司谷住宅街中两人共同居住的现代公寓客餐厅；料理台、沙发与阅读角在同一空间。',
     interiorId: 'emma-yuki-home', district: 'riverfront-highrise-district', parentLocationId: 'home', districtArt: false,
   },
   {
     id: 'koko-old-house', type: 'old-family-house', label: '泽渡家老宅',
-    description: '远离校园的老式住宅客厅，保留着旧家具与直播设备旁的生活痕迹；是否与爷爷同住由实际剧情决定。',
+    description: '杂司谷旧街区的老式住宅客厅，保留着旧家具与直播设备旁的生活痕迹；是否与爷爷同住由实际剧情决定。',
     interiorId: 'koko-old-house', district: 'old-town-lowrise', parentLocationId: 'home', districtArt: true,
   },
   {
     id: 'nikaido-house', type: 'traditional-courtyard', label: '二阶堂家',
-    description: '市中心的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。',
+    description: '目白台的传统日式宅邸：榻榻米和室、可望见庭院的缘侧、入鞘武士刀刀架与练剑空间。',
     interiorId: 'nikaido-house', district: 'traditional-downtown', parentLocationId: 'downtown', districtArt: false,
   },
   {
     id: 'anan-noa-milia-home', type: 'shared-apartment', label: '安安、诺亚与米莉亚的住处',
-    description: '三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。',
+    description: '高田／西早稻田一带三人合住的普通客餐厅，留有画笔、画纸与可以各自安静待着的角落。',
     interiorId: 'anan-noa-milia-home', district: 'older-apartment-courtyard', parentLocationId: 'junction', districtArt: true,
   },
   {
     id: 'sherry-hanna-home', type: 'riverfront-highrise', label: '雪莉与汉娜的住处',
-    description: '滨水高层住宅的客餐厅，落地窗外是河岸步道。',
+    description: '神田川沿岸高层住宅的客餐厅，落地窗外是河岸步道。',
     interiorId: 'majo-highrise-home', district: 'riverfront-highrise-district', parentLocationId: 'commercial', districtArt: true,
   },
   {
     id: 'residential-prototype', type: 'studio-apartment', label: '单身公寓',
-    description: '床、厨房与一张小桌组成的单身公寓室内。',
+    description: '目白台一带床、厨房与一张小桌组成的单身公寓室内。',
     interiorId: 'majo-studio', district: 'lakeside-apartment', parentLocationId: 'city-park', districtArt: false,
   },
 ]);

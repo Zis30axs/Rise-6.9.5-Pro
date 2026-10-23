@@ -2,6 +2,7 @@ import type { PlayerState, WorldState } from '../frontend/types';
 import { recordWeeklyEvidence } from './weekly-memory';
 import { adjustEnergy } from './energy';
 import { getActivityEffects } from './activity-effects';
+import { TOKYO_DELIVERY_FEE } from './tokyo-world';
 import { advancePlayerNutrition, getInventoryCatalog, getStoreItem, storeCatalog } from './convenience-store';
 import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, type ProtagonistId } from './dual-protagonists';
 import { getAcademicTimetable } from './academics';
@@ -107,7 +108,7 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
         const a = object(q.arrival, ['locationId', 'scene', 'interior', 'transit', 'fareCents', 'energyCost']);
         const restored = parseLegacy({ ...base, schema_version: '1.11.0', clock: clockAt(due), locationId: a.locationId, scene: a.scene, interior: a.interior, transit: a.transit });
         const energyCost = typeof a.energyCost === 'number' && a.energyCost >= 0 && a.energyCost <= 100 && Math.abs(Math.round(a.energyCost * 100) / 100 - a.energyCost) < 1e-7 ? a.energyCost : fail();
-        arrival = { locationId: restored.locationId, scene: restored.scene, interior: restored.interior, transit: restored.transit, fareCents: integer(a.fareCents, 100000000), energyCost };
+        arrival = { locationId: restored.locationId, scene: restored.scene, interior: restored.interior, transit: restored.transit, fareCents: integer(a.fareCents, 2000000000), energyCost };
         if (q.target !== arrival.locationId) return fail();
         const context = object(q.routeContext, ['player', 'journalLength']);
         routeContext = { player: parseLegacy({ ...base, schema_version: '1.11.0', player: context.player }).player, journalLength: integer(context.journalLength, 100) };
@@ -290,12 +291,12 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
     const outstanding = p.orders.some(order => order.owner === owner && (order.status === 'paid' || order.status === 'delivered') && storeCatalog.some(item => item.id === order.itemId && item.category !== 'cigarette'));
     if (!outstanding && p.devices[owner].notifications.length < 198 && p.orders.length < 500 && p.operations.length < 1998) {
       const preference = owner === 'soyo' ? ['meal-standard', 'meal-basic'] : ['meal-basic', 'meal-standard'];
-      const item = preference.map(itemId => storeCatalog.find(item => item.id === itemId)!).find(item => FICTIONAL_CARDS.some(card => p.accounts.people[owner].cards[card] >= Math.round((item.price + 3) * 100)));
+      const item = preference.map(itemId => storeCatalog.find(item => item.id === itemId)!).find(item => FICTIONAL_CARDS.some(card => p.accounts.people[owner].cards[card] >= Math.round((item.price + TOKYO_DELIVERY_FEE) * 100)));
       if (item) {
-        const card = FICTIONAL_CARDS.find(card => p.accounts.people[owner].cards[card] >= Math.round((item.price + 3) * 100))!;
+        const card = FICTIONAL_CARDS.find(card => p.accounts.people[owner].cards[card] >= Math.round((item.price + TOKYO_DELIVERY_FEE) * 100))!;
         try {
           ownPhone(state, owner, at, id('order'), { type: 'order', kind: 'delivery', itemId: item.id, quantity: 1, card, address: current.locationId });
-          record(state, owner, { id: id('order'), at, kind: 'order', text: `用自己的 Appie Pay 订了${item.name}，支付 ${item.price + 3} 元（含配送费），送到自己当前的地点。` });
+          record(state, owner, { id: id('order'), at, kind: 'order', text: `用自己的 Appie Pay 订了${item.name}，支付 ${item.price + TOKYO_DELIVERY_FEE} 日元（含配送费），送到自己当前的地点。` });
           return true;
         } catch { /* An unavailable address or balance remains a local pending choice. */ }
       }

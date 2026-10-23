@@ -18,15 +18,15 @@ export const sceneAreas: SceneArea[] = [
   { id: 'bookshop', label: '街角书店', minX: -34, maxX: -10, minZ: 55, maxZ: 73 },
   { id: 'convenience', label: '便利店门前', minX: 11, maxX: 31, minZ: 55, maxZ: 73 },
   { id: 'street-cafe', label: '街边咖啡馆', minX: 36, maxX: 61, minZ: 55, maxZ: 73 },
-  { id: 'bus-stop', label: '南门公交站', minX: 37, maxX: 58, minZ: 32, maxZ: 42 },
+  { id: 'bus-stop', label: '高田接驳站', minX: 37, maxX: 58, minZ: 32, maxZ: 42 },
   { id: 'pocket-park', label: '口袋公园', minX: 22, maxX: 65, minZ: 74, maxZ: 89 },
   { id: 'junction', label: '南门十字路口', minX: -10, maxX: 10, minZ: 39, maxZ: 59 },
-  { id: 'home', label: '家与住宅区', minX: -250, maxX: -150, minZ: 120, maxZ: 210 },
-  { id: 'commercial', label: '城市商业区', minX: 130, maxX: 250, minZ: 110, maxZ: 210 },
-  { id: 'downtown', label: '市中心区', minX: -115, maxX: 110, minZ: 145, maxZ: 255 },
-  { id: 'city-park', label: '城市公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
-  { id: 'campus', label: '校园步行区', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
-  { id: 'neighborhood', label: '南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
+  { id: 'home', label: '杂司谷住宅区', minX: -250, maxX: -150, minZ: 120, maxZ: 210 },
+  { id: 'commercial', label: '池袋·东池袋商业区', minX: 130, maxX: 250, minZ: 110, maxZ: 210 },
+  { id: 'downtown', label: '目白·目白台住宅区', minX: -115, maxX: 110, minZ: 145, maxZ: 255 },
+  { id: 'city-park', label: '神田川沿岸公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
+  { id: 'campus', label: '高田·西早稻田校园', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
+  { id: 'neighborhood', label: '高田校园南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
   { id: 'city-roads', label: '城市连接道路', ...sceneBounds },
 ];
 
@@ -44,10 +44,10 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'street-cafe', label: '街边咖啡', x: 48, z: 56.5 },
   { id: 'bus-stop', label: '公交站', x: 47, z: 39.5 },
   { id: 'pocket-park', label: '口袋公园', x: 37, z: 80 },
-  { id: 'home', label: '住宅区公交站', x: -180, z: 150 },
-  { id: 'commercial', label: '商业区公交站', x: 180, z: 150 },
-  { id: 'downtown', label: '市中心公交站', x: -20, z: 185 },
-  { id: 'city-park', label: '公园公交站', x: 180, z: -150 },
+  { id: 'home', label: '杂司谷接驳站', x: -180, z: 150 },
+  { id: 'commercial', label: '池袋接驳站', x: 180, z: 150 },
+  { id: 'downtown', label: '目白台接驳站', x: -20, z: 185 },
+  { id: 'city-park', label: '神田川绿道站', x: 180, z: -150 },
 ];
 
 export const scenePaths: ScenePath[] = [

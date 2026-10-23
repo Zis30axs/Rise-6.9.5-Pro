@@ -46,7 +46,7 @@ describe('local convenience store transactions', () => {
     expect(Object.isFrozen(storeCatalog)).toBe(true);
     for (const category of ['meal', 'snack', 'drink', 'cigarette']) expect(storeCatalog.filter(item => item.category === category).map(item => item.tier)).toEqual(['basic', 'standard', 'premium']);
     for (const item of storeCatalog) { expect(Object.isFrozen(item)).toBe(true); expect(Object.isFrozen(item.effects)).toBe(true); }
-    expect(getStoreItem('cigarette-standard')).toMatchObject({ price: 50, packSize: 20, kcal: 0, useMinutes: 5, effects: { energy: 35, stress: -30, satiety: 0, health: -6 } });
+    expect(getStoreItem('cigarette-standard')).toMatchObject({ price: 1000, packSize: 20, kcal: 0, useMinutes: 5, effects: { energy: 35, stress: -30, satiety: 0, health: -6 } });
     expect(getStoreItem('cigarette-premium')!.effects.health).toBeLessThanOrEqual(-6);
     for (const id of ['__proto__', 'constructor', 'https://invalid', 'unknown']) expect(getStoreItem(id)).toBeNull();
   });
@@ -54,10 +54,10 @@ describe('local convenience store transactions', () => {
   it('buys package quantities without spending time and keeps independent state snapshots', () => {
     const before = shop(); const saved = JSON.stringify(before);
     const quote = getPurchaseQuote(before, 'cigarette-standard', 3);
-    expect(quote).toMatchObject({ totalPrice: 150, unitsAdded: 60, owned: 0, blockedReason: null });
+    expect(quote).toMatchObject({ totalPrice: 3000, unitsAdded: 60, owned: 0, blockedReason: null });
     const after = buy(before, 'cigarette-standard', 3);
     expect(after.inventory).toEqual([{ itemId: 'cigarette-standard', quantity: 60 }]);
-    expect(after.player).toEqual({ ...before.player, balance: 178 });
+    expect(after.player).toEqual({ ...before.player, balance: 3560 });
     expect(after.clock).toEqual(before.clock);
     for (const key of ['story', 'phone', 'contacts', 'schedule', 'scene', 'interior', 'transit', 'airTraffic'] as const) expect(after[key]).toEqual(before[key]);
     expect(after.journal.at(-1)?.text).toContain('60 支');
@@ -75,11 +75,11 @@ describe('local convenience store transactions', () => {
     const inside = reduceState(createInitialState(), { type: 'novel_travel', locationId: 'dorm-room' });
     expect(getStoreAvailability({ ...inside, locationId: 'convenience' }).available).toBe(false);
     expect(() => buy(inside)).toThrow(/便利店/);
-    const poor = { ...original, player: { ...original.player, balance: 49.99 } };
-    expect(() => buy(poor)).toThrow(/余额/); expect(poor.player.balance).toBe(49.99);
+    const poor = { ...original, player: { ...original.player, balance: 999.99 } };
+    expect(() => buy(poor)).toThrow(/余额/); expect(poor.player.balance).toBe(999.99);
     const full = { ...original, inventory: [{ itemId: 'cigarette-standard', quantity: 980 }] };
     expect(() => buy(full)).toThrow(/999/); expect(full.inventory[0].quantity).toBe(980);
-    const exact = { ...original, player: { ...original.player, balance: 50 } };
+    const exact = { ...original, player: { ...original.player, balance: 1000 } };
     expect(buy(exact).player.balance).toBe(0);
     expect(JSON.stringify(original)).toBe(saved);
   });
@@ -134,7 +134,7 @@ describe('local convenience store transactions', () => {
   it('never allows action payload fields to override the authored item effects, price or time', () => {
     const state = shop();
     const purchased = reduceState(state, { type: 'buy_item', itemId: 'cigarette-standard', quantity: 1, price: 0, unitsAdded: 999 } as WorldAction);
-    expect(purchased.player.balance).toBe(278); expect(purchased.inventory[0].quantity).toBe(20);
+    expect(purchased.player.balance).toBe(5560); expect(purchased.inventory[0].quantity).toBe(20);
     const used = reduceState(purchased, { type: 'use_item', itemId: 'cigarette-standard', quantity: 20, minutes: 0, health: 100 } as WorldAction);
     expect(used.inventory[0].quantity).toBe(19); expect(used.player.health).toBe(84);
     expect(used.clock.minute).toBe(25);
@@ -159,7 +159,7 @@ describe('elapsed needs across existing world actions', () => {
     initial = reduceState(initial, { type: 'novel_travel', locationId: 'home' });
     initial.player.health = 47; initial.player.stress = 33;
     const before = JSON.stringify(initial); const quote = getNovelTravelQuote(initial, 'commercial');
-    expect(quote).toMatchObject({ minutes: 70, fare: 9, foodEnergyCost: 140 });
+    expect(quote).toMatchObject({ minutes: 30, fare: 390, foodEnergyCost: 60 });
     const after = reduceState(initial, { type: 'novel_travel', locationId: 'commercial' });
     expect(initial.player.foodEnergy - after.player.foodEnergy).toBe(quote.foodEnergyCost);
     expect(initial.player.satiety - after.player.satiety).toBe(quote.satietyCost);

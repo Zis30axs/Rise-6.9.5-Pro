@@ -43,7 +43,7 @@ export const protagonistPhoneThemes: Readonly<Record<ProtagonistId, ProtagonistP
 });
 
 /** Game configuration, not a claim about the original work. Awarded only once. */
-export const EMMA_START_CENTS = 60_000;
+export const EMMA_START_CENTS = 1_200_000;
 
 export interface LedgerEntry {
   id: string;
@@ -76,7 +76,7 @@ export interface ProtagonistLedger {
 }
 /** Historical name retained for modules that predate the third viewpoint. */
 export type DualProtagonistLedger = ProtagonistLedger;
-const limits = { balance: 100_000_000, entries: 10_000, detail: 240 };
+const limits = { balance: 2_000_000_000, entries: 10_000, detail: 240 };
 export function isProtagonistId(value: unknown): value is ProtagonistId {
   return typeof value === 'string' && (PROTAGONISTS as readonly string[]).includes(value);
 }

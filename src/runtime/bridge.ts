@@ -59,15 +59,16 @@ type HostWindow = Window & { SillyTavern?: { getContext(): TavernContext } };
 // and player text out of this system injection; inherited worldbook formats may
 // describe other frontends, but must not replace the card's own protocol.
 const STORY_PROTOCOL = [
+  '世界舞台为日本东京丰岛区及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业与乐队活动圈，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   '本轮优先输出关键标签块：<story>小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。每类标签最多一次，手机消息只含 npcId 和 text。额外思考或解释必须放在标签外，禁止任意状态补丁。旧版完整 JSON 仍兼容：必填 story 和 phone_messages，可选 world_events 和 world_actions。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
-  '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及公交联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
+  '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包；{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
-  '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加2元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
+  '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
   '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；不自行设定。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
@@ -82,7 +83,7 @@ const STORY_PROTOCOL = [
   '玩家要求点咖啡、吃饭或运动时，直接选择当前地点相符的service；不要把咖啡馆需求统一赶到便利店。当前已打烊或服务不可用则说明原因和可行去处，除非玩家表达出行意图，不自动带去另一家店。服务描述为门前窗口或露台取用时，不写成已进入未实现的店内。',
   'store.available仅表示便利店货架可购买，不能据此否认其他地点的locationServices。inventory是实际持有物品，持有食物可从常驻背包使用；service不生成库存，takeaway才打包入背包。商品品牌、品质、菜单与价格以目录为准，不自行增加商品、折扣、赠品或库存。书店阅读须遵守venue营业时间和本轮学习时长。',
   'player.energy是行动精力，foodEnergy是游戏中的食物能量储备（kcal），satiety是饱腹，stress越高压力越大，health越低健康状况越差。食物能量与饱腹随游戏中已结算的时间消耗；普通对话不推进。香烟的短时提神和减压伴随健康下降，不把高价品牌写成无害，也不把游戏数值解释为现实疗效。',
-  'BTR-82A 与 ZBD-04A 是玩家指定的代用公交车辆，玩家仅作为乘客；T-84 只会作为街道路过的环境车辆。不要据此外观添加战争、驾驶、射击或战斗行为。',
+  '城市交通包括都营巴士与东京Metro联程，玩家作为乘客出行；街道上是普通的民用车辆。',
   '乘车可由travel执行，程序结算车程与车费。transit.lastRide 是已经到站下车的历史结果，使用保存的车辆、起终点、实际耗时和车费，不重复扣费、推进时间或移动玩家。',
   'story 字符串用于点击推进的视觉小说。旁白按短段落写；人物当面对话每句独占一行，格式为 |charac|emot|says|，三个字段分别替换为实际角色名、情绪和一句台词。例如 |素世|开心|今天天气真好|。示例只说明格式，不强制素世说话或改写玩家身份。不得替玩家决定新台词。',
   '已有 NPC 的 charac 必须使用下方联系人、附近人物或当前搭话对象中的完整姓名，使立绘与原人物对应；不得把人物改名为外观模型或素材文件名。',
@@ -315,7 +316,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const weekly = weeklyMemoryContext(snapshot);
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括三位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
       const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
-      const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。';
+      const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       const combinedSystemPrompt = options?.kind === 'contact_introduction' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${systemPrompt}`;
       try {

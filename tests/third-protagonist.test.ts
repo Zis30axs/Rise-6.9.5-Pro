@@ -29,7 +29,7 @@ describe('third protagonist accounts and timeline', () => {
     expect(otherProtagonist('emma')).toBe('soyo');
     expect(personState(state, 'emma').locationId).toBe('home');
     expect(protagonistNames.emma).toBe('樱羽艾玛');
-    expect(appiePayBalance(state.protagonists!.accounts, 'emma')).toBe(60000);
+    expect(appiePayBalance(state.protagonists!.accounts, 'emma')).toBe(1200000);
   });
 
   it('switches to Emma and back without losing position, wallet, phone, schedule or story', () => {
@@ -42,7 +42,7 @@ describe('third protagonist accounts and timeline', () => {
     state = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
     expect(activeProtagonist(state)).toBe('emma');
     expect(state.locationId).toBe('home');
-    expect(state.player.balance).toBe(600);
+    expect(state.player.balance).toBe(12000);
     state.player.balance = 777;
     state.protagonists!.accounts.people.emma.cards.gpt = 77700;
     state.journal.push({ id: 'emma-only', at: '第 1 天 17:20', text: 'EMMA_PRIVATE' });
@@ -79,7 +79,7 @@ describe('third protagonist accounts and timeline', () => {
     expect(migrated.schema_version).toBe('1.13.0');
     expect(migrated.protagonists!.inactive).toEqual(beforeInactive);
     expect(migrated.protagonists!.third.locationId).toBe('home');
-    expect(migrated.protagonists!.accounts.people.emma.cards.gpt).toBe(60000);
+    expect(migrated.protagonists!.accounts.people.emma.cards.gpt).toBe(1200000);
     expect(migrated.protagonists!.accounts.people.emma.deviceId).toBe('unread-city-phone-emma');
     expect(Object.keys(migrated.protagonists!.backgroundLife!.people)).toEqual(['soyo', 'sakiko', 'emma']);
     expect(parseState(migrated)).toEqual(migrated);

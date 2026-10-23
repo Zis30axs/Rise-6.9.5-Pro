@@ -4,12 +4,13 @@ import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARD
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
-export const SAKIKO_START_CENTS = 120000;
+export const SAKIKO_START_CENTS = 2_400_000;
 export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'player', 'inventory', 'academics', 'phone', 'contacts', 'schedule', 'journal', 'story'] as const;
 export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
 export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean }
@@ -86,7 +87,7 @@ const exact = (x: unknown, fields: string[]): Record<string, unknown> => {
   if (!x || typeof x !== 'object' || Array.isArray(x) || Object.keys(x).length !== fields.length || Object.keys(x).some(k => !fields.includes(k))) return fail('字段无效');
   return x as Record<string, unknown>;
 };
-const integer = (x: unknown, max = 100000000, min = 0): number => typeof x === 'number' && Number.isSafeInteger(x) && x >= min && x <= max ? x : fail('数值无效');
+const integer = (x: unknown, max = 2000000000, min = 0): number => typeof x === 'number' && Number.isSafeInteger(x) && x >= min && x <= max ? x : fail('数值无效');
 const string = (x: unknown, max = 240): string => typeof x === 'string' && x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x : fail('文本无效');
 const identifier = (x: unknown): string => typeof x === 'string' && /^[A-Za-z0-9][\w:.-]{0,79}$/.test(x) ? x : fail('ID 无效');
 const actor = (x: unknown): ProtagonistId => PROTAGONISTS.includes(x as ProtagonistId) ? x as ProtagonistId : fail('主角无效');
@@ -129,7 +130,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     interior: null, transit: { sequence: 0, lastRide: null },
     player: { energy: 80, balance: SAKIKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
     contacts: [], phone: [], schedule: [], journal: [],
-    story: [{ id: 'sakiko-opening', role: 'assistant', text: '市中心的街灯渐次亮起。此刻，你以丰川祥子的视角继续同一段日常。' }],
+    story: [{ id: 'sakiko-opening', role: 'assistant', text: '目白台的街灯渐次亮起。此刻，你以丰川祥子的视角继续同一段日常。' }],
   };
   const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s),
     accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS, EMMA_START_CENTS),
@@ -143,7 +144,7 @@ export function enableProtagonists(s: WorldState): WorldState {
   return next;
 }
 
-export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState): ProtagonistWorld {
+export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState, legacyMoney = false): ProtagonistWorld {
   const source = value as Record<string, unknown>;
   const hasThird = !!source && typeof source === 'object' && !Array.isArray(source) && Object.hasOwn(source, 'third');
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
@@ -158,11 +159,11 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     const row = exact(rawPeople[owner], ['id','deviceId','theme','cards']), cards = exact(row.cards, ['gpt','claude','gemini']);
     if (row.id !== owner || row.deviceId !== accounts.people[owner].deviceId || row.theme !== accounts.people[owner].theme) fail('设备身份无效');
     for (const name of FICTIONAL_CARDS) accounts.people[owner].cards[name] = integer(cards[name]);
-    if (appiePayBalance(accounts, owner) > 100000000) fail('余额超过上限');
+    if (appiePayBalance(accounts, owner) > 2000000000) fail('余额超过上限');
   }
   accounts.ledger = distinct(array(a.ledger, 10000, raw => {
     const e = exact(raw, ['id','actor','card','deltaCents','note']);
-    return {id: string(e.id,120), actor: actor(e.actor), card: card(e.card), deltaCents: integer(e.deltaCents,100000000,-100000000), note: string(e.note)};
+    return {id: string(e.id,120), actor: actor(e.actor), card: card(e.card), deltaCents: integer(e.deltaCents,2000000000,-2000000000), note: string(e.note)};
   }));
   accounts.phoneAccess = distinct(array(a.phoneAccess, 10000, raw => {
     const e = exact(raw, ['id','actor','owner','operation','authorized','detail','at']);
@@ -179,10 +180,11 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     // 1.12 dual saves keep their exact `inactive` state and receive one
     // deterministic third protagonist at the current world seed/clock.
     third = personalState(emmaPersonalState(base));
+    if (legacyMoney) third.player.balance /= TOKYO_MONEY_FACTOR;
   }
   if (!accountKeys.includes('emma')) {
     accounts.people.emma.cards.gpt = money(third.player.balance);
-    if (appiePayBalance(accounts, 'emma') > 100000000) fail('余额超过上限');
+    if (appiePayBalance(accounts, 'emma') > 2000000000) fail('余额超过上限');
   }
   if (money(base.player.balance) !== appiePayBalance(accounts, who)
     || money(inactive.player.balance) !== appiePayBalance(accounts, others[0])
@@ -205,7 +207,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     const o = exact(raw,['id','owner','actor','kind','itemId','quantity','card','totalCents','address','due','status']);
     const item = storeCatalog.find(x => x.id === o.itemId); if (!item || !['shop','delivery'].includes(String(o.kind)) || !['paid','delivered','received','cancelled'].includes(String(o.status))) return fail('订单无效');
     const quantity = integer(o.quantity,20,1), totalCents = integer(o.totalCents);
-    if (totalCents !== money(item.price * quantity + (o.kind === 'delivery' ? 3 : 0))) fail('订单金额无效');
+    if (totalCents !== money((legacyMoney ? item.price / TOKYO_MONEY_FACTOR : item.price) * quantity + (o.kind === 'delivery' ? (legacyMoney ? TOKYO_DELIVERY_FEE / TOKYO_MONEY_FACTOR : TOKYO_DELIVERY_FEE) : 0))) fail('订单金额无效');
     return {id:identifier(o.id),owner:actor(o.owner),actor:actor(o.actor),kind:o.kind as PhoneOrder['kind'],itemId:item.id,quantity,card:card(o.card),totalCents,address:string(o.address,80),due:integer(o.due,525600000),status:o.status as PhoneOrder['status']};
   }));
   const operations = distinct(array(p.operations,2000,raw => {
@@ -303,7 +305,7 @@ function parseCommand(raw: unknown): PhoneCommand {
     case 'inspect': if(!['messages','calendar','orders','wallet'].includes(String(c.section))) return fail('读取范围无效');return {type,section:c.section as 'messages'};
     case 'appearance': return {type,appearance:parsePhoneAppearance(c.appearance)};
     case 'device': return {type,locked:boolean(c.locked),share:share(c.share)};
-    case 'transfer': return {type,from:card(c.from),to:card(c.to),cents:integer(c.cents,100000000,1)};
+    case 'transfer': return {type,from:card(c.from),to:card(c.to),cents:integer(c.cents,2000000000,1)};
     case 'order': if(c.kind!=='shop'&&c.kind!=='delivery') return fail('订单类型无效');return {type,kind:c.kind,itemId:identifier(c.itemId),quantity:integer(c.quantity,20,1),card:card(c.card),address:identifier(c.address)};
     case 'calendar_save': return {type,id:identifier(c.id),title:string(c.title,100),locationId:identifier(c.locationId),start:integer(c.start,525600000),duration:integer(c.duration,1440,1)};
     case 'read_notifications':return {type};
@@ -345,7 +347,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     case 'resolve_contact_request':
       applyNpcPhoneCommand(s, owner, command, requestId); break;
     case 'inspect': {
-      const content=command.section==='messages'?target.phone.slice(-8).map(m=>m.text).join('；'):command.section==='calendar'?[...target.schedule.map(e=>`${e.time} ${e.title}`),...device.calendar.map(e=>`${e.start} ${e.title}`)].join('；'):command.section==='orders'?p.orders.filter(o=>o.owner===owner).map(o=>`${o.itemId}：${o.status}`).join('；'):`Appie Pay 余额 ${appiePayBalance(p.accounts,owner)/100} 元`;
+      const content=command.section==='messages'?target.phone.slice(-8).map(m=>m.text).join('；'):command.section==='calendar'?[...target.schedule.map(e=>`${e.time} ${e.title}`),...device.calendar.map(e=>`${e.start} ${e.title}`)].join('；'):command.section==='orders'?p.orders.filter(o=>o.owner===owner).map(o=>`${o.itemId}：${o.status}`).join('；'):`Appie Pay 余额 ${appiePayBalance(p.accounts,owner)/100} 日元`;
       if(owner!==who){const at=`第 ${s.clock.day} 天 ${String(s.clock.hour).padStart(2,'0')}:${String(s.clock.minute).padStart(2,'0')}`;s.journal.push({id:`peek:${requestId}`,text:`查看${protagonistNames[owner]}的手机：${content||'暂无记录'}`.slice(0,1000),at});s.journal=s.journal.slice(-100);}
       break;
     }
@@ -356,10 +358,10 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       const item=storeCatalog.find(x=>x.id===command.itemId);if(!item||command.kind==='delivery'&&item.category==='cigarette') fail('商品不可配送');
       if(!isKnownLocation(command.address)) fail('收货地点无效');
       if(p.orders.length>=500) fail('订单数量已满');
-      const totalCents=money(item.price*command.quantity+(command.kind==='delivery'?3:0));
+      const totalCents=money(item.price*command.quantity+(command.kind==='delivery'?TOKYO_DELIVERY_FEE:0));
       tx(command.card,-totalCents,'pay',`${command.kind==='delivery'?'外卖':'购物'}：${item.name}`);
       p.orders.push({id:requestId,owner,actor:who,kind:command.kind,itemId:item.id,quantity:command.quantity,card:command.card,totalCents,address:command.address,due:gameMinute(s)+(command.kind==='delivery'?30:60),status:'paid'});
-      notify(s,owner,`order:${requestId}:paid`,`已支付 ${(totalCents/100).toFixed(2)} 元，等待配送。`);break;
+      notify(s,owner,`order:${requestId}:paid`,`已支付 ${(totalCents/100).toFixed(2)} 日元，等待配送。`);break;
     }
     case 'cancel_order': {
       const order=p.orders.find(x=>x.id===command.id&&x.owner===owner);if(!order) fail('订单不存在');if(order.status==='cancelled') break;

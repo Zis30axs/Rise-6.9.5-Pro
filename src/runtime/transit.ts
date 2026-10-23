@@ -14,27 +14,27 @@ export interface TransitStop {
   yaw: number;
 }
 
-/** The campus stop already existed; the other stops belong to the farther city districts. */
+/** Historical stop IDs/coordinates are save-compatible; labels describe Tokyo neighborhoods. */
 export const transitStops: readonly TransitStop[] = [
-  { id: 'campus', label: '校园南门站', locationId: 'bus-stop', x: 46, z: 38, yaw: 3.141 },
-  { id: 'home', label: '家园站', locationId: 'home', x: -180, z: 150, yaw: 0 },
-  { id: 'commercial', label: '商业区站', locationId: 'commercial', x: 180, z: 150, yaw: 0 },
-  { id: 'downtown', label: '市中心站', locationId: 'downtown', x: -20, z: 185, yaw: 0 },
-  { id: 'city-park', label: '城市公园站', locationId: 'city-park', x: 180, z: -150, yaw: 0 },
+  { id: 'campus', label: '高田校园接驳站', locationId: 'bus-stop', x: 46, z: 38, yaw: 3.141 },
+  { id: 'home', label: '杂司谷住宅区站', locationId: 'home', x: -180, z: 150, yaw: 0 },
+  { id: 'commercial', label: '池袋／东池袋站', locationId: 'commercial', x: 180, z: 150, yaw: 0 },
+  { id: 'downtown', label: '目白／目白台站', locationId: 'downtown', x: -20, z: 185, yaw: 0 },
+  { id: 'city-park', label: '神田川绿道站', locationId: 'city-park', x: 180, z: -150, yaw: 0 },
 ];
 
 export const transitVehicles = [
-  { id: 'btr82a', label: 'BTR-82A' },
-  { id: 'zbd04a', label: 'ZBD-04A' },
+  { id: 'btr82a', label: '都营巴士·地区接驳' },
+  { id: 'zbd04a', label: '东京Metro·副都心线联程' },
 ] as const;
 
 export interface TransitRoute { stop: TransitStop; minutes: number; fare: number }
 const cityRoutes = [
-  { stopId: 'home', minutes: 45, fare: 6 },
-  { stopId: 'commercial', minutes: 25, fare: 3 },
-  { stopId: 'city-park', minutes: 35, fare: 4 },
-  // Only the ZBD-04A express serves downtown. Its 12-yuan fare exceeds every ordinary route.
-  { stopId: 'downtown', minutes: 55, fare: 12 },
+  { stopId: 'home', minutes: 12, fare: 180 },
+  { stopId: 'commercial', minutes: 18, fare: 210 },
+  { stopId: 'city-park', minutes: 16, fare: 180 },
+  // Only the Metro-linked journey serves Mejiro/Mejirodai; fares are game balancing values.
+  { stopId: 'downtown', minutes: 22, fare: 240 },
 ] as const;
 
 export function createTransitState(): TransitState { return { sequence: 0, lastRide: null }; }
@@ -53,7 +53,7 @@ export function getTransitRoutes(stopId: string, vehicleId: TransitVehicleId = '
   return route ? [{ stop: transitStops[0]!, minutes: route.minutes, fare: route.fare }] : [];
 }
 
-/** Novel-mode route planning chooses the express only when downtown is involved. */
+/** Novel-mode route planning chooses the rail-linked journey for Mejiro. */
 export function selectTravelVehicle(originLocationId: string, destinationLocationId: string, requested?: string): string {
   if (requested) return requested;
   const downtown = (id: string) => id === 'downtown' || id === 'toyokawa-house';

@@ -64,8 +64,8 @@ describe('atomic service settlement', () => {
     state.inventory = [{ itemId: 'drink-basic', quantity: 2 }];
     const original = JSON.stringify(state);
     const quote = getLocationServiceQuote(state, 'drink-coffee');
-    expect(quote).toMatchObject({ minutes: 10, price: 16, blockedReason: null, changes: { energy: 18, balance: -16, morale: 3, satiety: -1, foodEnergy: -10 } });
-    expect(quote.playerAfter).toMatchObject({ energy: 68.05, balance: 312, foodEnergy: 1190 });
+    expect(quote).toMatchObject({ minutes: 10, price: 320, blockedReason: null, changes: { energy: 18, balance: -320, morale: 3, satiety: -1, foodEnergy: -10 } });
+    expect(quote.playerAfter).toMatchObject({ energy: 68.05, balance: 6240, foodEnergy: 1190 });
     expect(JSON.stringify(state)).toBe(original);
     const after = use(state);
     expect(after.player).toEqual(quote.playerAfter);
@@ -75,7 +75,7 @@ describe('atomic service settlement', () => {
     expect(after.inventory).toEqual(state.inventory);
     expect(after.story).toEqual(state.story);
     expect(after.journal).toHaveLength(state.journal.length + 1);
-    expect(after.journal.at(-1)?.text).toMatch(/街角咖啡店.*咖啡.*支付 16 元.*10 分钟.*精力\+18/);
+    expect(after.journal.at(-1)?.text).toMatch(/街角咖啡店.*咖啡.*支付 320 日元.*10 分钟.*精力\+18/);
     expect(parseState(JSON.parse(JSON.stringify(after)))).toEqual(after);
     expect(JSON.stringify(state)).toBe(original);
   });
@@ -145,7 +145,7 @@ describe('atomic service settlement', () => {
   it('does not allow forged price, effects or duration in an action to override the catalog', () => {
     const state = at();
     const after = reduceState(state, { type: 'location_service', serviceId: 'drink-coffee', price: 0, minutes: 0, effects: { balance: 1000000 } } as WorldAction);
-    expect(after.player.balance).toBe(state.player.balance - 16);
+    expect(after.player.balance).toBe(state.player.balance - 320);
     expect(after.clock.minute).toBe(10);
     expect(after.inventory).toEqual([]);
   });

@@ -78,12 +78,12 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
 export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
-  { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '在外带窗口点一杯美式，在室外座位喝完。', minutes: 10, price: 16, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
-  { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '在外带窗口点一杯拿铁，在室外座位慢慢喝完。', minutes: 15, price: 22, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
-  { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '在外带窗口点一杯热茶，在室外座位歇一会儿。', minutes: 10, price: 12, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
-  { id: 'eat-dessert', locationIds: ['cafe', 'street-cafe'], label: '吃一份甜点', description: '在外带窗口取一份当日甜点，在室外座位吃完。', minutes: 15, price: 18, effects: effects({ energy: 10, morale: 6, stress: -4, satiety: 12, foodEnergy: 260 }) },
-  { id: 'eat-meal', locationIds: ['commercial'], label: '吃简餐', description: '从沿街餐点窗口取一份饭菜，在街边用餐区吃完。', minutes: 20, price: 18, effects: effects({ energy: 22, morale: 4, health: 1, stress: -4, satiety: 40, foodEnergy: 600 }) },
-  { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 15, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
+  { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '在外带窗口点一杯美式，在室外座位喝完。', minutes: 10, price: 320, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
+  { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '在外带窗口点一杯拿铁，在室外座位慢慢喝完。', minutes: 15, price: 440, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
+  { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '在外带窗口点一杯热茶，在室外座位歇一会儿。', minutes: 10, price: 240, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
+  { id: 'eat-dessert', locationIds: ['cafe', 'street-cafe'], label: '吃一份甜点', description: '在外带窗口取一份当日甜点，在室外座位吃完。', minutes: 15, price: 360, effects: effects({ energy: 10, morale: 6, stress: -4, satiety: 12, foodEnergy: 260 }) },
+  { id: 'eat-meal', locationIds: ['commercial'], label: '吃简餐', description: '从沿街餐点窗口取一份饭菜，在街边用餐区吃完。', minutes: 20, price: 360, effects: effects({ energy: 22, morale: 4, health: 1, stress: -4, satiety: 40, foodEnergy: 600 }) },
+  { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
   { id: 'stretch', locationIds: ['sports'], label: '拉伸', description: '在运动场边做一组轻量拉伸。', minutes: 10, price: 0, effects: effects({ energy: -2, morale: 4, health: 1, stress: -4 }) },
   { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
@@ -109,7 +109,7 @@ export function getTakeawayQuote(state: WorldState, serviceId: string, quantity 
       : state.interior || !service.locationIds.includes(state.locationId) ? '当前地点不提供这份餐点，请先到达对应地点。'
         : !status || !status.isOpen ? '当前店铺已打烊，无法打包。' : null;
   if (!blockedReason && owned + unitsAdded > INVENTORY_ITEM_LIMIT) blockedReason = `每种商品最多保存 ${INVENTORY_ITEM_LIMIT} 个使用单位。`;
-  if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 元。`;
+  if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 日元。`;
   return { service, item, quantity, packagingFee, totalPrice, unitsAdded, owned, blockedReason };
 }
 
@@ -135,7 +135,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
   if (!blockedReason && status?.minutesUntilClose != null && minutes > status.minutesUntilClose) {
     blockedReason = `距打烊只剩 ${status.minutesUntilClose} 分钟，这项活动需要 ${minutes} 分钟，请下次营业时再来。`;
   }
-  if (!blockedReason && state.player.balance < price) blockedReason = `余额不足，这项活动需要 ${price} 元。`;
+  if (!blockedReason && state.player.balance < price) blockedReason = `余额不足，这项活动需要 ${price} 日元。`;
   if (!blockedReason && service && energyUnits(state.player.energy) < energyUnits(-service.effects.energy)) {
     blockedReason = `精力不足，这项活动需要 ${-service.effects.energy} 点精力。`;
   }

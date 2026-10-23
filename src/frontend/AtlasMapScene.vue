@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { geoEquirectangular, geoPath } from 'd3-geo';
 import type { FeatureCollection, Geometry } from 'geojson';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
+import { TOKYO_CENTER, TOKYO_COUNTRY_ID, TOKYO_REGION_NAME } from '../runtime/tokyo-world';
 import { borderGeometry, createLandmark, featureBounds, landGeometry, LAT_STRETCH, polygons, terrainHeight, type AtlasBounds, type AtlasFeature, type AtlasProperties } from './atlas-geometry';
 
 const props = withDefaults(defineProps<{
@@ -12,7 +13,7 @@ const props = withDefaults(defineProps<{
   chinaMaritimeLines?: FeatureCollection<Geometry, AtlasProperties>;
   depth: number; countryId?: string; regionId?: string; selectedId?: string;
   width: number; height: number; bearing?: number; active?: boolean; zoom?: number;
-}>(), { countryId: 'CHN', regionId: '330000', selectedId: '', bearing: 0, active: true, zoom: 1 });
+}>(), { countryId: 'JPN', regionId: '', selectedId: '', bearing: 0, active: true, zoom: 1 });
 const emit = defineEmits<{ 'view-change': [view: { countryId: string; regionId: string }]; select: [target: string] }>();
 const root = ref<HTMLElement>(); const canvas = ref<HTMLCanvasElement>();
 const mode = ref<'webgl' | 'fallback'>('fallback');
@@ -26,7 +27,7 @@ const projectedHome = ref({ x: 0, y: 0, visible: false });
 const focusedCountry = computed(() => props.countries.features.find(feature => feature.properties.id === props.countryId));
 const focusedRegion = computed(() => props.subdivisions.features.find(feature => feature.properties.id === props.regionId && feature.properties.countryId === props.countryId));
 const divisions = computed(() => props.subdivisions.features.filter(feature => feature.properties.countryId === props.countryId));
-const homeRegion = computed(() => props.subdivisions.features.find(feature => feature.properties.id === '330000'));
+const homeRegion = computed(() => props.subdivisions.features.find(feature => feature.properties.countryId === TOKYO_COUNTRY_ID && TOKYO_REGION_NAME.test(feature.properties.name)));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const selected = computed(() => props.selectedId.replace(/^(country|division):/, ''));
 
@@ -42,7 +43,7 @@ const landmarkObjects = new Map<string, THREE.Group>();
 const countryMaterials = new Map<string, THREE.MeshStandardMaterial>();
 const ownedGeometries = new Set<THREE.BufferGeometry>(); const ownedMaterials = new Set<THREE.Material>();
 const raycaster = new THREE.Raycaster(); const projectedPoint = new THREE.Vector3();
-const HOME = { lon: 120.2, lat: 29.2 }; // Province-level illustration only; no fictional campus coordinate is asserted.
+const HOME = TOKYO_CENTER; // Ikebukuro/Toshima vicinity, not a surveyed fictional campus coordinate.
 const smooth = (value: number) => { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
 const divisionRecords = computed(() => props.subdivisions.features.map(feature => ({ feature, bounds: featureBounds(feature) })));
 
@@ -60,7 +61,7 @@ function fitFeatureBounds(feature?: AtlasFeature) {
   return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, width: maxX - minX, height: maxZ - minZ };
 }
 const homeStops = computed(() => {
-  const world = featureBounds(); const country = fitFeatureBounds(props.countries.features.find(feature => feature.properties.id === 'CHN')); const region = featureBounds(homeRegion.value);
+  const world = featureBounds(); const country = fitFeatureBounds(props.countries.features.find(feature => feature.properties.id === TOKYO_COUNTRY_ID)); const region = featureBounds(homeRegion.value ?? props.countries.features.find(feature => feature.properties.id === TOKYO_COUNTRY_ID));
   return { world: { ...world, span: fitSpan(world) }, country: { ...country, span: fitSpan(country) }, region: { ...region, span: fitSpan(region) } };
 });
 function homeTarget(depth: number) {
@@ -87,7 +88,7 @@ const fallbackPaths = computed(() => {
   const nearby = target.span < 145 ? divisionRecords.value.filter(({ bounds }) => Math.abs(bounds.x - target.x) < target.span && Math.abs(bounds.z - target.z) < target.span).slice(0, 260).map(record => record.feature) : [];
   return [...props.countries.features, ...nearby].map(feature => ({
     id: feature.properties.id, name: feature.properties.name, division: Boolean(feature.properties.countryId),
-    path: path(feature) ?? '', home: feature.properties.id === 'CHN' || feature.properties.id === '330000',
+    path: path(feature) ?? '', home: feature.properties.id === TOKYO_COUNTRY_ID || feature.properties.id === homeRegion.value?.properties.id,
   }));
 });
 const fallbackMaritimePaths = computed(() => {
@@ -149,7 +150,7 @@ function updateHighlights() {
   lastSelection = `${selected.value}|${loadedCountry}`; releaseGroup(highlightGroup);
   for (const [id, material] of countryMaterials) material.color.set(id === selected.value || (props.depth < 4.7 && id === props.countryId) ? '#e1cda3' : '#ffffff');
   const feature = [...props.countries.features, ...divisions.value].find(item => item.properties.id === selected.value);
-  if (feature && feature.properties.id !== 'CHN' && feature.properties.id !== '330000') highlightGroup.add(lineFor(feature, '#e9c675', .12));
+  if (feature && feature.properties.id !== TOKYO_COUNTRY_ID && feature.properties.id !== homeRegion.value?.properties.id) highlightGroup.add(lineFor(feature, '#e9c675', .12));
 }
 function initialize() {
   if (!canvas.value || dead || renderer) return;
@@ -177,8 +178,11 @@ function initialize() {
       mesh.userData.target = `country:${feature.properties.id}`; mesh.renderOrder = isChina ? 5 : 0; countryGroup.add(mesh); countryPickables.push(mesh);
       countryGroup.add(lineFor(feature, '#637c70', .055, .85));
     }
+    // Preserve the existing red Chinese sovereign outline independently of the game's home marker.
     const china = props.countries.features.find(feature => feature.properties.id === 'CHN');
     if (china) { const outline = lineFor(china, '#f33d53', .13); outline.material.toneMapped = false; outline.renderOrder = 100; homeGroup.add(outline); }
+    const japan = props.countries.features.find(feature => feature.properties.id === TOKYO_COUNTRY_ID);
+    if (japan) { const outline = lineFor(japan, '#ff4059', .12); outline.material.toneMapped = false; outline.renderOrder = 100; homeGroup.add(outline); }
     if (homeRegion.value) { const outline = lineFor(homeRegion.value, '#ff4059', .14); outline.material.toneMapped = false; outline.renderOrder = 101; homeGroup.add(outline); }
     for (const feature of props.chinaMaritimeLines?.features ?? []) {
       // DataV's narrow polygon strips are auxiliary cartography, never countries or destinations.
@@ -431,10 +435,10 @@ onBeforeUnmount(() => {
       <path v-for="feature in fallbackPaths" :key="`${feature.division}:${feature.id}`" :d="feature.path" :class="{ home: feature.home, selected: feature.id === selected, division: feature.division }" :data-map-target="`${feature.division ? 'division' : 'country'}:${feature.id}`" tabindex="0" role="button" :aria-label="`查看${feature.name}`" @keydown.enter="emit('select', `${feature.division ? 'division' : 'country'}:${feature.id}`)"><title>{{ feature.name }}</title></path>
       <path v-for="feature in fallbackPaths.filter(item => item.home)" :key="`home-outline:${feature.id}`" :d="feature.path" class="atlas-home-outline" aria-hidden="true" />
       <path v-for="(path, index) in fallbackMaritimePaths" :key="`maritime-${index}`" :d="path" class="atlas-maritime" aria-hidden="true" />
-      <g v-if="fallbackHome?.visible" :transform="`translate(${fallbackHome.x},${fallbackHome.y})`" class="atlas-fallback-home" data-atlas-home-marker aria-label="主角所在浙江省域示意标记"><circle r="5" /><text y="18" text-anchor="middle">浙江</text></g>
+      <g v-if="fallbackHome?.visible" :transform="`translate(${fallbackHome.x},${fallbackHome.y})`" class="atlas-fallback-home" data-atlas-home-marker aria-label="主角所在东京区域示意标记"><circle r="5" /><text y="18" text-anchor="middle">东京</text></g>
     </svg>
-    <div class="atlas-corner-note"><span class="atlas-red-dot" />所在区域：中国 · 浙江<small>省域示意 · 城市未命名</small></div>
-    <span v-if="projectedHome.visible && mode === 'webgl'" class="atlas-home-pin" :style="{ left: `${projectedHome.x}px`, top: `${projectedHome.y}px` }" aria-label="主角所在浙江省域示意标记" data-atlas-home-marker><i />浙江</span>
+    <div class="atlas-corner-note"><span class="atlas-red-dot" />所在区域：日本 · 东京<small>丰岛区附近 · 示意位置</small></div>
+    <span v-if="projectedHome.visible && mode === 'webgl'" class="atlas-home-pin" :style="{ left: `${projectedHome.x}px`, top: `${projectedHome.y}px` }" aria-label="主角所在东京区域示意标记" data-atlas-home-marker><i />东京</span>
     <button v-for="landmark in projectedLandmarks" :key="landmark.id" class="atlas-landmark-label" :data-map-target="`landmark:${landmark.id}`" :style="{ left: `${landmark.x}px`, top: `${landmark.y}px` }" :aria-label="`查看地标：${landmark.name}`" @click="emit('select', `landmark:${landmark.id}`)">{{ landmark.name }}</button>
     <div class="atlas-scale" aria-label="地图中心附近的近似比例尺"><span>{{ scaleBar.label }}</span><i :style="{ width: `${scaleBar.width}px` }" /></div>
     <span class="atlas-relief-note">{{ mode === 'fallback' ? '3D 暂不可用 · 可继续浏览平面地图' : '浅起伏为艺术化示意 · 地标非等比例' }}</span>

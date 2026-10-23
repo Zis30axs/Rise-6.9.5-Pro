@@ -15,6 +15,7 @@ import AtlasMapScene from './AtlasMapScene.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
+import { TOKYO_COUNTRY_ID, TOKYO_REGION_NAME } from '../runtime/tokyo-world';
 import openAiMark from '../../assets/openai-mark.svg?inline';
 
 const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean }>(), { novelMode: false });
@@ -51,9 +52,10 @@ const smooth = (value: number) => { const t = Math.min(1, Math.max(0, value)); r
 const rise = computed(() => 1);
 const localOpacity = computed(() => 1 - smooth(depth.value - 1));
 const pan = ref({ x: 0, y: 0 });
-const countryId = ref('CHN');
-const regionId = ref('330000');
-const selectedId = ref('330000');
+const TOKYO_REGION_ID = mapData.subdivisions.features.find(item => item.properties.countryId === TOKYO_COUNTRY_ID && TOKYO_REGION_NAME.test(item.properties.name))?.properties.id ?? '';
+const countryId = ref(TOKYO_COUNTRY_ID);
+const regionId = ref(TOKYO_REGION_ID);
+const selectedId = ref(TOKYO_REGION_ID || TOKYO_COUNTRY_ID);
 const selectedKind = ref<'country' | 'division' | 'landmark'>('division');
 const search = ref('');
 const showDemoPeople = ref(false);
@@ -96,8 +98,8 @@ const regionCities = computed(() => mapData.chinaCities?.features.filter(item =>
 const featureName = (item: Region) => item.properties.name;
 const isUnion = (item: Region) => item.properties.id === 'SUN';
 const layerTitle = computed(() => localLayer.value ? '沙盘' : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
-const layerNote = computed(() => localLayer.value ? '校园、南门街区与周边现有地点 · 编号对应地点列表' : layer.value === 'city' ? '校园、家园、商业区与城市公园 · 与漫游场景同坐标' : '浅立体示意地形 · 红线与红点为主角所在区域');
-const homePath = computed(() => countryId.value === 'CHN' && regionId.value === '330000');
+const layerNote = computed(() => localLayer.value ? '校园、南门街区与周边现有地点 · 编号对应地点列表' : layer.value === 'city' ? '高田校园、杂司谷、池袋、目白台与神田川 · 本地空间为示意坐标' : '浅立体示意地形 · 红线与红点为主角所在区域');
+const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
 
@@ -146,11 +148,11 @@ const roadEvents = computed(() => locations.flatMap(place => {
 }));
 const activeEvent = computed(() => roadEvents.value.find(event => event.id === activeEventId.value));
 const cityPlaces = [
-  { id: 'campus', name: '校园与南门', description: '校园位于中心偏北，南门连接十字街、书店、便利店、咖啡馆、公交站与口袋公园。' },
-  { id: 'home', name: '家与住宅区', description: '位于校园西南侧，三栋住宅围着庭院，家园站连接校园南门。' },
-  { id: 'commercial', name: '商业区', description: '位于校园东南侧，沿街商店、步行广场与商业区站相连。' },
-  { id: 'downtown', name: '市中心区', description: '更繁华、车费更高的市中心，有市中心站、商业街和丰川家。ZBD-04A 专线往返。' },
-  { id: 'city-park', name: '城市公园', description: '位于校园东北侧，湖泊、湖畔绿道与公园公交站共同组成现有户外区域。' },
+  { id: 'campus', name: '高田／西早稻田校园', description: '架空秋季入学校园，南门连接书店、便利店、咖啡馆、接驳站与口袋公园。' },
+  { id: 'home', name: '杂司谷住宅区', description: '艾玛、月代雪等人居住的住宅街，保留原步行与住宅入口。' },
+  { id: 'commercial', name: '池袋／东池袋', description: '商业与乐队活动所在的繁华城区，设有商店、咖啡馆与换乘点。' },
+  { id: 'downtown', name: '目白／目白台', description: '丰川家和二阶堂家所在的住宅及传统宅邸街区，乘坐东京Metro联程抵达。' },
+  { id: 'city-park', name: '神田川沿岸绿道', description: '河岸绿地、步道与安静公园组成的东京居民日常空间。' },
 ];
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
@@ -220,12 +222,12 @@ function moveDepth(next: number, duration = 0) {
 function clearCameraOffset() { cancelGestures(); focusZoom.value = 1; pan.value = { x: 0, y: 0 }; }
 function goToLayer(id: Layer) {
   clearCameraOffset(); search.value = '';
-  if (id === 'province' || id === 'sandtable' || id === 'city') { countryId.value = 'CHN'; regionId.value = '330000'; }
+  if (id === 'province' || id === 'sandtable' || id === 'city') { countryId.value = TOKYO_COUNTRY_ID; regionId.value = TOKYO_REGION_ID; }
   atlasScene.value?.resetView();
   moveDepth(id === 'country' ? 4 : layers.find(item => item.id === id)!.depth, 360);
 }
-function goHome() { selectedId.value = '330000'; selectedKind.value = 'division'; goToLayer('province'); }
-function resetView() { focusZoom.value = 1; pan.value = { x: 0, y: 0 }; bearing.value = 0; atlasScene.value?.resetView(); countryId.value = 'CHN'; regionId.value = '330000'; moveDepth(localLayer.value ? 0 : layerIndex.value, 220); }
+function goHome() { selectedId.value = TOKYO_REGION_ID || TOKYO_COUNTRY_ID; selectedKind.value = TOKYO_REGION_ID ? 'division' : 'country'; goToLayer('province'); }
+function resetView() { focusZoom.value = 1; pan.value = { x: 0, y: 0 }; bearing.value = 0; atlasScene.value?.resetView(); countryId.value = TOKYO_COUNTRY_ID; regionId.value = TOKYO_REGION_ID; moveDepth(localLayer.value ? 0 : layerIndex.value, 220); }
 function rotateBy(degrees: number) { bearing.value += degrees; }
 function applyZoomDepth(next: number, duration = 0) {
   const floor = geographicLayer.value && !atlasScene.value?.isHomeRegion() ? 3 : -2;
@@ -296,7 +298,7 @@ function pointerMove(event: PointerEvent) {
 function onAtlasView(view: AtlasView) { if (view.countryId) { countryId.value = view.countryId; regionId.value = view.regionId; } }
 function selectCountry(id: string) {
   if (!mapData.countries.features.some(item => item.properties.id === id)) return;
-  countryId.value = id; regionId.value = id === 'CHN' ? '330000' : '';
+  countryId.value = id; regionId.value = id === TOKYO_COUNTRY_ID ? TOKYO_REGION_ID : '';
   selectedKind.value = 'country'; selectedId.value = id; itineraryDraft.value = ''; search.value = '';
   clearCameraOffset(); const view = atlasScene.value?.focusFeature('country:' + id); focusZoom.value = view?.zoom ?? 1; moveDepth(view?.depth ?? 4, 360);
 }
@@ -415,13 +417,13 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <p v-if="novelMode" class="wm-detail-note" data-novel-energy-quote>{{ energyCalculationNote(selectedCity) }}</p>
             <p v-if="novelMode" class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p>
             <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }}</button>
-            <template v-else><p v-if="cityRoute" class="wm-detail-note">校园南门站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? 'ZBD-04A 专线' : 'BTR-82A / ZBD-04A' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
+            <template v-else><p v-if="cityRoute" class="wm-detail-note">高田接驳站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? '东京Metro联程' : '都营巴士 / 东京Metro' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
           </template>
           <button type="button" class="wm-outline-button" @click="goToLayer('sandtable')">查看沙盘</button>
         </template>
         <template v-else>
           <nav class="wm-atlas-breadcrumb" aria-label="地理路径"><button @click="goToLayer('world')">世界</button><span>/</span><button @click="selectCountry(countryId)">{{ currentCountry?.properties.name ?? '国家' }}</button><template v-if="currentRegion"><span>/</span><button @click="selectDivision(regionId)">{{ currentRegion.properties.name }}</button></template></nav>
-          <button type="button" class="wm-home-region" @click="goHome"><i aria-hidden="true"/> 主角所在区域 · 浙江</button>
+          <button type="button" class="wm-home-region" @click="goHome"><i aria-hidden="true"/> 主角所在区域 · 日本东京·丰岛</button>
           <label class="wm-search"><span>{{ layer === 'world' ? '查找国家 / 地区' : '查找省 / 州 / 一级区域' }}</span><input v-model="search" type="search" placeholder="输入名称" :aria-label="layer === 'world' ? '查找国家或地区' : '查找地图地区'"/></label>
           <p class="wm-coverage">{{ layer === 'world' ? `${mapData.countries.features.length} 个国家与地区` : `${countryDivisions.length} 个一级行政区域` }}</p>
           <div class="wm-region-list" :aria-label="layer === 'world' ? '国家与地区列表' : '地区列表'"><button v-for="feature in filteredFeatures" :key="feature.properties.id" type="button" :data-atlas-feature-id="feature.properties.id" :class="{ active: selectedId === feature.properties.id }" :aria-pressed="selectedId === feature.properties.id" @click="selectFeature(feature)">{{ featureName(feature) }}<small v-if="isUnion(feature)">苏联 · 架空世界</small></button><p v-if="!filteredFeatures.length" class="wm-detail-note">{{ search ? '未找到对应名称。' : '此地区在当前底图中没有一级区划，保留国家整体浏览。' }}</p></div>

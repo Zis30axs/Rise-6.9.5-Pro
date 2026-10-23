@@ -25,7 +25,7 @@ describe('program-owned public transit', () => {
     expect(arrived.scene).toBeNull();
     expect(arrived.player.energy).toBe(75);
     expect(absoluteMinutes(arrived) - absoluteMinutes(initial)).toBeGreaterThanOrEqual(15);
-    expect(getTransitRoutes('campus').map(route => [route.stop.id, route.minutes, route.fare])).toEqual([['home', 45, 6], ['commercial', 25, 3], ['city-park', 35, 4]]);
+    expect(getTransitRoutes('campus').map(route => [route.stop.id, route.minutes, route.fare])).toEqual([['home', 12, 180], ['commercial', 18, 210], ['city-park', 16, 180]]);
     expect(getTransitRoutes('unknown')).toEqual([]);
     expect(getTransitRoutes('__proto__')).toEqual([]);
     const snapshot = JSON.stringify(arrived);
@@ -78,7 +78,7 @@ describe('program-owned public transit', () => {
     const returned = reduceState(arrived, { type: 'ride_transit', vehicleId: 'zbd04a', stopId: 'campus' });
     expect(returned.locationId).toBe('bus-stop');
     expect(returned.scene).toMatchObject({ x: 46, z: 38, yaw: 3.141, areaId: 'bus-stop' });
-    expect(returned.player.balance).toBe(328 - 2 * outward.fare);
+    expect(returned.player.balance).toBe(6560 - 2 * outward.fare);
     expect(absoluteMinutes(returned) - absoluteMinutes(arrived)).toBe(outward.minutes);
     expect(returned.transit.sequence).toBe(2);
     expect(returned.transit.lastRide).toMatchObject({ id: 'transit-ride-2', fromStopId: stopId, toStopId: 'campus', vehicleId: 'zbd04a' });
@@ -96,7 +96,7 @@ describe('program-owned public transit', () => {
       { type: 'ride_transit', vehicleId: 'btr82a', stopId: 'unknown' },
     ] as WorldAction[]) expect(() => reduceState(current, action)).toThrow();
     const ride = { type: 'ride_transit' as const, vehicleId: 'btr82a', stopId: 'home' };
-    for (const state of [createInitialState(), reduceState(current, { type: 'walk', x: 53, z: 38, yaw: 0, seed: 'ignored' })]) expect(() => reduceState(state, ride)).toThrow(/公交站/);
+    for (const state of [createInitialState(), reduceState(current, { type: 'walk', x: 53, z: 38, yaw: 0, seed: 'ignored' })]) expect(() => reduceState(state, ride)).toThrow(/交通站/);
     const room = getCampusInterior('dorm-room')!;
     const inside = reduceState(reduceState(createInitialState(), { type: 'walk', ...room.entrance, seed: 'indoor-transit' }), { type: 'enter_interior', roomId: room.id });
     expect(() => reduceState(inside, ride)).toThrow(/室外/);
@@ -112,7 +112,7 @@ describe('program-owned public transit', () => {
     const road = reduceState(atStop('home'), { type: 'walk', x: 120, z: 100, yaw: 0, seed: 'ignored' });
     expect(road.locationId).toBe('city-roads');
     expect(isOutsideCampus(road.scene)).toBe(true);
-    for (const target of ['gate', 'bus-stop', 'library']) expect(() => reduceState(road, { type: 'travel', locationId: target })).toThrow(/公交站乘车返回/);
+    for (const target of ['gate', 'bus-stop', 'library']) expect(() => reduceState(road, { type: 'travel', locationId: target })).toThrow(/交通站乘车返回/);
     const backInside = reduceState(road, { type: 'walk', x: 60, z: 39, yaw: 0, seed: 'ignored' });
     expect(isOutsideCampus(backInside.scene)).toBe(false);
     expect(reduceState(backInside, { type: 'travel', locationId: 'gate' }).locationId).toBe('gate');
@@ -121,11 +121,11 @@ describe('program-owned public transit', () => {
   it('handles midnight, exact fares, exhausted sequence and the maximum day without partial changes', () => {
     const current = atStop();
     current.clock = { day: 8, hour: 23, minute: 50 };
-    current.player.balance = 6;
+    current.player.balance = 180;
     const arrived = reduceState(current, { type: 'ride_transit', vehicleId: 'zbd04a', stopId: 'home' });
-    expect(arrived.clock).toEqual({ day: 9, hour: 0, minute: 35 });
+    expect(arrived.clock).toEqual({ day: 9, hour: 0, minute: 2 });
     expect(arrived.player.balance).toBe(0);
-    expect(arrived.transit.lastRide?.at).toBe('第 9 天 00:35');
+    expect(arrived.transit.lastRide?.at).toBe('第 9 天 00:02');
     const limit = { ...current, clock: { day: 365000, hour: 23, minute: 50 } };
     const limitSnapshot = JSON.stringify(limit);
     expect(() => reduceState(limit, { type: 'ride_transit', vehicleId: 'btr82a', stopId: 'home' })).toThrow(/最大天数/);
@@ -190,7 +190,7 @@ describe('program-owned public transit', () => {
     const summary = JSON.parse(request!.user_input.split('\n')[1]);
     expect(summary.location).toBe('commercial');
     expect(summary.scene).toMatchObject({ areaId: 'commercial', outdoors: true });
-    expect(summary.transit.lastRide).toMatchObject({ vehicleId: 'zbd04a', fromStopId: 'campus', toStopId: 'commercial', minutes: 25, fare: 3, alreadyCommitted: true });
+    expect(summary.transit.lastRide).toMatchObject({ vehicleId: 'zbd04a', fromStopId: 'campus', toStopId: 'commercial', minutes: 18, fare: 210, alreadyCommitted: true });
     expect(request!.injects[0].content).toContain('乘车可由travel执行');
     const committed = commitStoryTurn(state, '看看周围', reply, { userId: 'transit-prose-user', assistantId: 'transit-prose-assistant' });
     for (const key of ['clock', 'player', 'scene', 'transit', 'journal'] as const) expect(committed[key]).toEqual(state[key]);

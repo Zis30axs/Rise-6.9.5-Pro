@@ -19,23 +19,23 @@ export interface StoreItem {
 
 /** Fictional products and game effects, per single use. Prices are per package. */
 export const storeCatalog: readonly StoreItem[] = Object.freeze([
-  { id: 'meal-basic', name: '家常饭团', brand: '晨巷', tier: 'basic', category: 'meal', price: 8, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 350, useMinutes: 10, effects: { energy: 18, satiety: 25, stress: -3, health: 0 } },
-  { id: 'meal-standard', name: '鸡肉便当', brand: '晴盒', tier: 'standard', category: 'meal', price: 18, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 650, useMinutes: 15, effects: { energy: 30, satiety: 45, stress: -6, health: 2 } },
-  { id: 'meal-premium', name: '鲜蔬双拼饭', brand: '禾序', tier: 'premium', category: 'meal', price: 32, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 720, useMinutes: 20, effects: { energy: 38, satiety: 55, stress: -10, health: 4 } },
-  { id: 'snack-basic', name: '脆盐饼干', brand: '小咔', tier: 'basic', category: 'snack', price: 4, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 180, useMinutes: 3, effects: { energy: 8, satiety: 10, stress: -3, health: -1 } },
-  { id: 'snack-standard', name: '可可夹心棒', brand: '可谷', tier: 'standard', category: 'snack', price: 9, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 240, useMinutes: 4, effects: { energy: 14, satiety: 15, stress: -7, health: 0 } },
-  { id: 'snack-premium', name: '混合坚果', brand: '林拾', tier: 'premium', category: 'snack', price: 16, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 300, useMinutes: 5, effects: { energy: 20, satiety: 20, stress: -8, health: 2 } },
-  { id: 'drink-basic', name: '柠檬汽水', brand: '泡晴', tier: 'basic', category: 'drink', price: 3, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 120, useMinutes: 2, effects: { energy: 8, satiety: 2, stress: -4, health: -1 } },
-  { id: 'drink-standard', name: '原味酸奶', brand: '白牧', tier: 'standard', category: 'drink', price: 8, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 180, useMinutes: 3, effects: { energy: 15, satiety: 8, stress: -5, health: 1 } },
-  { id: 'drink-premium', name: '谷物鲜乳', brand: '禾沐', tier: 'premium', category: 'drink', price: 14, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 240, useMinutes: 4, effects: { energy: 22, satiety: 12, stress: -7, health: 2 } },
-  { id: 'cigarette-basic', name: '灰桥香烟', brand: '灰桥', tier: 'basic', category: 'cigarette', price: 25, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 25, satiety: 0, stress: -20, health: -8 } },
-  { id: 'cigarette-standard', name: '夜渡香烟', brand: '夜渡', tier: 'standard', category: 'cigarette', price: 50, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 35, satiety: 0, stress: -30, health: -6 } },
-  { id: 'cigarette-premium', name: '青屿香烟', brand: '青屿', tier: 'premium', category: 'cigarette', price: 90, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 40, satiety: 0, stress: -35, health: -8 } },
+  { id: 'meal-basic', name: '家常饭团', brand: '晨巷', tier: 'basic', category: 'meal', price: 160, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 350, useMinutes: 10, effects: { energy: 18, satiety: 25, stress: -3, health: 0 } },
+  { id: 'meal-standard', name: '鸡肉便当', brand: '晴盒', tier: 'standard', category: 'meal', price: 360, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 650, useMinutes: 15, effects: { energy: 30, satiety: 45, stress: -6, health: 2 } },
+  { id: 'meal-premium', name: '鲜蔬双拼饭', brand: '禾序', tier: 'premium', category: 'meal', price: 640, packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 720, useMinutes: 20, effects: { energy: 38, satiety: 55, stress: -10, health: 4 } },
+  { id: 'snack-basic', name: '脆盐饼干', brand: '小咔', tier: 'basic', category: 'snack', price: 80, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 180, useMinutes: 3, effects: { energy: 8, satiety: 10, stress: -3, health: -1 } },
+  { id: 'snack-standard', name: '可可夹心棒', brand: '可谷', tier: 'standard', category: 'snack', price: 180, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 240, useMinutes: 4, effects: { energy: 14, satiety: 15, stress: -7, health: 0 } },
+  { id: 'snack-premium', name: '混合坚果', brand: '林拾', tier: 'premium', category: 'snack', price: 320, packSize: 1, purchaseUnit: '包', useUnit: '包', kcal: 300, useMinutes: 5, effects: { energy: 20, satiety: 20, stress: -8, health: 2 } },
+  { id: 'drink-basic', name: '柠檬汽水', brand: '泡晴', tier: 'basic', category: 'drink', price: 60, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 120, useMinutes: 2, effects: { energy: 8, satiety: 2, stress: -4, health: -1 } },
+  { id: 'drink-standard', name: '原味酸奶', brand: '白牧', tier: 'standard', category: 'drink', price: 160, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 180, useMinutes: 3, effects: { energy: 15, satiety: 8, stress: -5, health: 1 } },
+  { id: 'drink-premium', name: '谷物鲜乳', brand: '禾沐', tier: 'premium', category: 'drink', price: 280, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 240, useMinutes: 4, effects: { energy: 22, satiety: 12, stress: -7, health: 2 } },
+  { id: 'cigarette-basic', name: '灰桥香烟', brand: '灰桥', tier: 'basic', category: 'cigarette', price: 500, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 25, satiety: 0, stress: -20, health: -8 } },
+  { id: 'cigarette-standard', name: '夜渡香烟', brand: '夜渡', tier: 'standard', category: 'cigarette', price: 1000, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 35, satiety: 0, stress: -30, health: -6 } },
+  { id: 'cigarette-premium', name: '青屿香烟', brand: '青屿', tier: 'premium', category: 'cigarette', price: 1800, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 40, satiety: 0, stress: -35, health: -8 } },
 ].map(item => Object.freeze({ ...item, effects: Object.freeze(item.effects) })) as StoreItem[]);
 
 export const MAX_PURCHASE_QUANTITY = 20;
 export const INVENTORY_ITEM_LIMIT = 999;
-export const PACKAGING_FEE = 2;
+export const PACKAGING_FEE = 40;
 export const initialPlayerNeeds = Object.freeze({ health: 90, stress: 25, satiety: 70, foodEnergy: 1200, morale: 70 });
 
 export function getStoreItem(itemId: string): StoreItem | null {

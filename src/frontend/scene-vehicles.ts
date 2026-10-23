@@ -53,6 +53,39 @@ export async function loadGroundVehicleModel(dataUrl: string): Promise<THREE.Gro
   return (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
 }
 
+/** Lightweight civilian Tokyo vehicles. Historical IDs are kept for saves but military GLBs are unused. */
+export function createTokyoRoadVehicle(id: GroundVehicleId): THREE.Group {
+  const isBus = id === 'btr82a', isTaxi = id === 'zbd04a';
+  const length = isBus ? 7.1 : isTaxi ? 4.3 : 4.1;
+  const width = isBus ? 2.15 : 1.82;
+  const group = new THREE.Group();
+  const paint = new THREE.MeshStandardMaterial({ color: isBus ? '#f2f0db' : isTaxi ? '#253a46' : '#c8dad9', roughness: .72 });
+  const glass = new THREE.MeshStandardMaterial({ color: '#557986', roughness: .28, metalness: .15 });
+  const tire = new THREE.MeshStandardMaterial({ color: '#292e36', roughness: .94 });
+  const trim = new THREE.MeshStandardMaterial({ color: '#fff2cb', roughness: .5 });
+  const add = (geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number) => {
+    const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); group.add(mesh); return mesh;
+  };
+  const bodyH = isBus ? 2.4 : .9;
+  add(new THREE.BoxGeometry(length, bodyH, width), paint, 0, .52 + bodyH / 2, 0);
+  if (isBus) {
+    add(new THREE.BoxGeometry(length * .85, .74, width + .009), glass, 0, 1.95, 0);
+    const stripe = new THREE.MeshStandardMaterial({ color: '#2b846d', roughness: .75 });
+    add(new THREE.BoxGeometry(length + .012, .1, width + .018), stripe, 0, 1.15, 0);
+  } else {
+    add(new THREE.BoxGeometry(length * .54, .52, width * .86), paint, 0, 1.48, 0);
+    add(new THREE.BoxGeometry(length * .45, .38, width * .88), glass, 0, 1.47, 0);
+    if (isTaxi) add(new THREE.BoxGeometry(.78, .13, .38), trim, 0, 1.87, 0);
+  }
+  for (const x of [-length * .33, length * .33]) for (const z of [-width * .52, width * .52]) {
+    const wheel = add(new THREE.CylinderGeometry(.33, .33, .19, 12), tire, x, .34, z);
+    wheel.rotation.x = Math.PI / 2;
+  }
+  for (const z of [-width * .3, width * .3]) add(new THREE.BoxGeometry(.06, .22, .26), trim, length / 2 + .04, 1.02, z);
+  group.name = isBus ? 'tokyo-civilian-bus' : isTaxi ? 'tokyo-civilian-taxi' : 'tokyo-civilian-car';
+  return group;
+}
+
 export interface GroundVehicleSnapshot { status: GroundVehicleStatus; count: number; activeIds: GroundVehicleId[]; stopId: string }
 
 export function createSceneVehicles(scene: THREE.Scene, options: {

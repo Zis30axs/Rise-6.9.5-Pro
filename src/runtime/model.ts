@@ -4,6 +4,7 @@ import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settl
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState } from '../frontend/types';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
+import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
@@ -36,7 +37,7 @@ export const mapLocations: Location[] = [
   { id: 'convenience', name: '便利店', subtitle: '便利店门前', description: `【示例场景】${sceneEnvironments.convenience}`, x: 21, y: 56.5 },
   { id: 'street-cafe', name: '街边咖啡馆', subtitle: '街边露台', description: `【示例场景】${sceneEnvironments['street-cafe']}`, x: 48, y: 56.5 },
   { id: 'pocket-park', name: '口袋公园', subtitle: '步道、长椅与小喷泉', description: `【示例场景】${sceneEnvironments['pocket-park']}`, x: 37, y: 80 },
-  { id: 'bus-stop', name: '南门公交站', subtitle: '候车棚与公交线路入口', description: `【示例场景】${sceneEnvironments['bus-stop']}`, x: 47, y: 39.5 },
+  { id: 'bus-stop', name: '南门交通站', subtitle: '候车棚与公交线路入口', description: `【示例场景】${sceneEnvironments['bus-stop']}`, x: 47, y: 39.5 },
 ];
 export const locations: Location[] = [
   ...mapLocations,
@@ -99,7 +100,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   }
   try {
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
-    if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
+    if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择都营巴士或东京Metro接驳线路。');
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
     // Quote the complete trip even when the real player cannot afford it. This
     // private planning budget is replaced with the real balance before commit.
@@ -165,7 +166,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     quote.foodEnergyCost = state.player.foodEnergy - next.player.foodEnergy;
     quote.satietyCost = state.player.satiety - next.player.satiety;
     quote.fare = 1_000_000 - next.player.balance;
-    if (departure.balance < quote.fare) quote.blockedReason = `余额不足，本次出行需要 ${quote.fare} 元。`;
+    if (departure.balance < quote.fare) quote.blockedReason = `余额不足，本次出行需要 ${quote.fare} 日元。`;
     next.player = { ...next.player, energy: adjustEnergy(departure.energy, -quote.energyCost), balance: departure.balance - quote.fare };
   } catch (error) {
     quote.blockedReason = error instanceof Error ? error.message : '无法规划本次出行。';
@@ -208,10 +209,10 @@ export function getRouteOutlook(state: WorldState, targetId: string): RouteOutlo
 
 export function createInitialState(): WorldState {
   return {
-    schema_version: '1.11.0', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
+    schema_version: '1.11.0', currency: 'JPY', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
-    player: { energy: 80, balance: 328, ...initialPlayerNeeds },
+    player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [],
     academics: null,
     phone: [
@@ -366,13 +367,24 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   const fromStopId = id(ride.fromStopId, 'transit.lastRide.fromStopId');
   const toStopId = id(ride.toStopId, 'transit.lastRide.toStopId');
   const route = vehicle && getTransitRoutes(fromStopId, vehicle.id).find(route => route.stop.id === toStopId);
-  if (!vehicle || rideId !== `transit-ride-${sequence}` || !route || ride.minutes !== route.minutes || ride.fare !== route.fare) return invalid('transit.lastRide 车辆、路线或结算不一致');
+  const minutes = number(ride.minutes, 'transit.lastRide.minutes', 1, 10080);
+  const fare = number(ride.fare, 'transit.lastRide.fare', 0, 20_000_000);
+  // Historical RMB tickets retain their settled time/fare, even after conversion.
+  const oldRoutes: Record<string, { minutes: number; fare: number }> = {
+    home: { minutes: 45, fare: 6 }, commercial: { minutes: 25, fare: 3 },
+    'city-park': { minutes: 35, fare: 4 }, downtown: { minutes: 55, fare: 12 },
+  };
+  const oldDestination = fromStopId === 'campus' ? toStopId : toStopId === 'campus' ? fromStopId : '';
+  const old = oldRoutes[oldDestination];
+  const currentTicket = !!route && minutes === route.minutes && fare === route.fare;
+  const historicalTicket = !!route && !!old && minutes === old.minutes && (fare === old.fare || fare === old.fare * TOKYO_MONEY_FACTOR);
+  if (!vehicle || rideId !== `transit-ride-${sequence}` || !route || (!currentTicket && !historicalTicket)) return invalid('transit.lastRide 车辆、路线或结算不一致');
   const at = text(ride.at, 'transit.lastRide.at', 40);
   const stamp = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(at);
   const day = stamp ? Number(stamp[1]) : 0;
   const total = stamp ? day * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]) : 0;
   if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('transit.lastRide.at');
-  return { sequence, lastRide: { id: rideId, vehicleId: vehicle.id, fromStopId, toStopId, minutes: route.minutes, fare: route.fare, at } };
+  return { sequence, lastRide: { id: rideId, vehicleId: vehicle.id, fromStopId, toStopId, minutes, fare, at } };
 }
 
 function academicPoints(value: unknown, path: string): number {
@@ -446,12 +458,45 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange } };
 }
 
+/** Convert historical money once; a persisted currency tag stops repeat conversions. */
+function migrateHistoricalMoney(state: WorldState): void {
+  state.player.balance = historicalToYen(state.player.balance);
+  if (state.transit.lastRide) state.transit.lastRide.fare *= TOKYO_MONEY_FACTOR;
+}
+
 /** Reconstruct known fields; never merge untrusted save objects into live state. */
 export function parseState(value: unknown): WorldState {
   if (value && typeof value === 'object' && !Array.isArray(value) && ['1.12.0', '1.13.0'].includes(String((value as Record<string, unknown>).schema_version))) {
-    const { protagonists, ...rest } = value as Record<string, unknown>;
-    const base = parseState({ ...rest, schema_version: '1.11.0' });
-    return { ...base, schema_version: '1.13.0', protagonists: parseProtagonists(protagonists, base, parseState) };
+    const source = value as Record<string, unknown>;
+    const hasYen = Object.hasOwn(source, 'currency');
+    if (hasYen && source.currency !== 'JPY') return invalid('currency');
+    const { protagonists, currency: _currency, ...rest } = source;
+    // Parse all existing ledgers in their previous units before converting once.
+    const base = parseState({ ...rest, currency: 'JPY', schema_version: '1.11.0' });
+    const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
+      protagonists: parseProtagonists(protagonists, base, parseState, !hasYen) };
+    if (!hasYen) {
+      migrateHistoricalMoney(state);
+      const p = state.protagonists!;
+      for (const personal of [p.inactive, p.third]) {
+        personal.player.balance = historicalToYen(personal.player.balance);
+        if (personal.transit.lastRide) personal.transit.lastRide.fare *= TOKYO_MONEY_FACTOR;
+      }
+      for (const owner of Object.values(p.accounts.people)) for (const key of ['gpt', 'claude', 'gemini'] as const)
+        owner.cards[key] *= TOKYO_MONEY_FACTOR;
+      for (const transaction of p.accounts.ledger) transaction.deltaCents *= TOKYO_MONEY_FACTOR;
+      for (const order of p.orders) order.totalCents *= TOKYO_MONEY_FACTOR;
+      for (const person of Object.values(p.backgroundLife?.people ?? {})) {
+        const pending = person.pending;
+        if (!pending) continue;
+        if (pending.routeContext) pending.routeContext.player.balance = historicalToYen(pending.routeContext.player.balance);
+        if (pending.arrival) {
+          pending.arrival.fareCents *= TOKYO_MONEY_FACTOR;
+          if (pending.arrival.transit.lastRide) pending.arrival.transit.lastRide.fare *= TOKYO_MONEY_FACTOR;
+        }
+      }
+    }
+    return state;
   }
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return invalid('state');
   const version = (value as Record<string, unknown>).schema_version;
@@ -461,7 +506,9 @@ export function parseState(value: unknown): WorldState {
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
-  const state = object(value, ['schema_version', 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : [])], 'state');
+  const hasYen = Object.hasOwn(value, 'currency');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : [])], 'state');
+  if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
   const inventory: WorldState['inventory'] = [];
@@ -477,14 +524,14 @@ export function parseState(value: unknown): WorldState {
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
   const result: WorldState = {
-    schema_version: '1.11.0',
+    schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene),
     interior: hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
-    player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 1_000_000, false),
+    player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
     inventory,
@@ -545,6 +592,7 @@ export function parseState(value: unknown): WorldState {
     if (isFarTransitLocation(result.locationId) && !result.scene) return invalid('远地 locationId 缺少 scene');
     if (result.scene && sceneLocationId(result.scene.areaId) !== result.locationId) return invalid('scene 与 locationId 不一致');
   }
+  if (!hasYen) migrateHistoricalMoney(result);
   return result;
 }
 
@@ -639,8 +687,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       }
       case 'activity': {
         const before = { ...next.player };
-        if (action.effects.balance < 0 && next.player.balance < -action.effects.balance) throw new Error(`余额不足，${action.label}需要 ${-action.effects.balance} 元。`);
-        if (next.player.balance + action.effects.balance > 1_000_000) throw new Error('余额超过存档上限，本轮未结算。');
+        if (action.effects.balance < 0 && next.player.balance < -action.effects.balance) throw new Error(`余额不足，${action.label}需要 ${-action.effects.balance} 日元。`);
+        if (next.player.balance + action.effects.balance > 20_000_000) throw new Error('余额超过存档上限，本轮未结算。');
         if (action.effects.energy < 0 && energyUnits(next.player.energy) < -energyUnits(action.effects.energy)) throw new Error(`精力不足，无法完成${action.label}，请先休息。`);
         advance(next, action.minutes);
         next.player.energy = adjustEnergy(next.player.energy, action.effects.energy);
@@ -648,7 +696,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         next.player.foodEnergy = Math.max(0, Math.min(3000, next.player.foodEnergy + action.effects.foodEnergy));
         next.player.balance += action.effects.balance;
         clearInteriorActivity();
-        note(next, `${action.label}，耗时 ${action.minutes} 分钟。${action.effects.balance ? `余额${action.effects.balance > 0 ? '+' : ''}${action.effects.balance} 元。` : ''}${activityChangeNote(before, next.player)}`);
+        note(next, `${action.label}，耗时 ${action.minutes} 分钟。${action.effects.balance ? `余额${action.effects.balance > 0 ? '+' : ''}${action.effects.balance} 日元。` : ''}${activityChangeNote(before, next.player)}`);
         break;
       }
     }
@@ -858,7 +906,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const owned = next.inventory.find(entry => entry.itemId === action.itemId);
       if (owned) owned.quantity += quote.unitsAdded;
       else next.inventory.push({ itemId: quote.item.id, quantity: quote.unitsAdded });
-      note(next, `购买${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 元；背包增加 ${quote.unitsAdded} ${quote.item.useUnit}。`);
+      note(next, `购买${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 日元；背包增加 ${quote.unitsAdded} ${quote.item.useUnit}。`);
       break;
     }
     case 'pack_item':
@@ -869,7 +917,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const owned = next.inventory.find(entry => entry.itemId === quote.item!.id);
       if (owned) owned.quantity += quote.unitsAdded;
       else next.inventory.push({ itemId: quote.item.id, quantity: quote.unitsAdded });
-      note(next, `打包${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 元（含打包费 ${quote.packagingFee} 元），已放入背包；尚未食用。`);
+      note(next, `打包${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 日元（含打包费 ${quote.packagingFee} 日元），已放入背包；尚未食用。`);
       break;
     }
     case 'gift_item': {
@@ -906,7 +954,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       advance(next, quote.minutes);
       // The quote already includes elapsed nutrition; replace, never apply twice.
       next.player = quote.playerAfter;
-      note(next, `在${status.label}${quote.service.label}，${quote.price ? `支付 ${quote.price} 元` : '免费'}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
+      note(next, `在${status.label}${quote.service.label}，${quote.price ? `支付 ${quote.price} 日元` : '免费'}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
       break;
     }
     case 'novel_travel': {
@@ -948,7 +996,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     }
     case 'travel': {
       if (next.interior) throw new Error('请先离开房间，再选择前往其他地点。');
-      if (requiresTransitReturn(next.locationId, next.scene)) throw new Error('当前在远郊，请到公交站乘车返回校园后再步行前往。');
+      if (requiresTransitReturn(next.locationId, next.scene)) throw new Error('当前在远郊，请到交通站乘车返回校园后再步行前往。');
       if (action.locationId !== 'bus-stop' && !mapLocations.some(location => location.id === action.locationId)) throw new Error('不存在的地点。');
       if (next.locationId === action.locationId) { next.scene = null; return next; }
       if (next.player.energy < 5) throw new Error('精力不足，请先等待休息。');
@@ -961,12 +1009,12 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     }
     case 'ride_transit': {
       const currentStop = getNearbyTransitStop(next.scene, next.interior);
-      if (!currentStop) throw new Error('请先走到室外公交站候车区，再选择乘车。');
+      if (!currentStop) throw new Error('请先走到室外交通站候车区，再选择乘车。');
       const vehicle = transitVehicles.find(vehicle => vehicle.id === action.vehicleId);
-      if (!vehicle) throw new Error('请选择 BTR-82A 或 ZBD-04A 乘车。');
+      if (!vehicle) throw new Error('请选择都营巴士或东京Metro接驳线路。');
       const route = getTransitRoutes(currentStop.id, vehicle.id).find(route => route.stop.id === action.stopId);
       if (!route) throw new Error('当前站点没有这条路线；远地之间请返回校园站换乘。');
-      if (next.player.balance < route.fare) throw new Error(`余额不足，本程需要 ${route.fare} 元。`);
+      if (next.player.balance < route.fare) throw new Error(`余额不足，本程需要 ${route.fare} 日元。`);
       if (next.transit.sequence >= TRANSIT_SEQUENCE_LIMIT) throw new Error('乘车记录已达到上限，本次未扣费。');
       const sequence = next.transit.sequence + 1;
       const rideId = `transit-ride-${sequence}`;
@@ -978,7 +1026,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       next.locationId = route.stop.locationId;
       const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
       next.transit = { sequence, lastRide: { id: rideId, vehicleId: vehicle.id, fromStopId: currentStop.id, toStopId: route.stop.id, minutes: route.minutes, fare: route.fare, at } };
-      note(next, `搭乘 ${vehicle.label} 从${currentStop.label}前往${route.stop.label}，耗时 ${route.minutes} 分钟，车费 ${route.fare} 元；已下车到达。`, rideId);
+      note(next, `搭乘 ${vehicle.label} 从${currentStop.label}前往${route.stop.label}，耗时 ${route.minutes} 分钟，车费 ${route.fare} 日元；已下车到达。`, rideId);
       break;
     }
     case 'enter_interior': {

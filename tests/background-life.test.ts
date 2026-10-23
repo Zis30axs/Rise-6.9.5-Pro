@@ -139,7 +139,7 @@ describe('both protagonists continue their own daily lives', () => {
     const other = activeProtagonist(initial);
     personState(initial, owner).schedule = [];
     personState(initial, owner).player.satiety = 30;
-    setMoney(initial, owner, 5000);
+    setMoney(initial, owner, 50000);
     const activeMoney = appiePayBalance(initial.protagonists!.accounts, other);
     const activeInventory = structuredClone(initial.inventory);
     const address = personState(initial, owner).locationId;
@@ -148,8 +148,8 @@ describe('both protagonists continue their own daily lives', () => {
     expect(orders).toHaveLength(1);
     expect(orders[0]).toMatchObject({ actor: owner, owner, kind: 'delivery', address, status: 'received' });
     const item = getStoreItem(orders[0].itemId)!;
-    expect(orders[0].totalCents).toBe((item.price + 3) * 100);
-    expect(appiePayBalance(after.protagonists!.accounts, owner)).toBe(5000 - orders[0].totalCents);
+    expect(orders[0].totalCents).toBe((item.price + 60) * 100);
+    expect(appiePayBalance(after.protagonists!.accounts, owner)).toBe(50000 - orders[0].totalCents);
     expect(appiePayBalance(after.protagonists!.accounts, other)).toBe(activeMoney);
     expect(after.inventory).toEqual(activeInventory);
     expect(personState(after, owner).player.satiety).toBeGreaterThan(30);

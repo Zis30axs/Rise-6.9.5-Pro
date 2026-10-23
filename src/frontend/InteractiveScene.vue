@@ -9,10 +9,7 @@ import { applyCharacterCamera, createCharacterAssetPool, createScenePlayerCharac
 import { loadBundledCharacter } from './scene-character-bundle';
 import { aircraftPose, createSceneAircraft, loadAircraftModel, type AircraftModelStatus } from './scene-aircraft';
 import aircraftAsset from '../../assets/models/ambient-aircraft.glb?inline';
-import { createSceneVehicles, loadGroundVehicleModel, type GroundVehicleId, type GroundVehicleStatus } from './scene-vehicles';
-import btrAsset from '../../assets/models/ground-btr82a.glb?inline';
-import zbdAsset from '../../assets/models/ground-zbd04a.glb?inline';
-import t84Asset from '../../assets/models/ground-t84.glb?inline';
+import { createSceneVehicles, createTokyoRoadVehicle, type GroundVehicleId, type GroundVehicleStatus } from './scene-vehicles';
 import { recoverScenePresencePosition } from './scene-presence';
 import type { ScenePerson, ScenePresence } from '../runtime/scene-context';
 import type { AirTrafficState } from './types';
@@ -310,9 +307,8 @@ function initialize() {
       loadModel: () => loadAircraftModel(aircraftAsset),
       changed(status) { aircraftStatus.value = status; requestRender(); },
     });
-    const vehicleAssets = { btr82a: btrAsset, zbd04a: zbdAsset, t84: t84Asset };
     groundVehicles = createSceneVehicles(scene, {
-      loadModel: id => loadGroundVehicleModel(vehicleAssets[id]),
+      loadModel: async id => createTokyoRoadVehicle(id),
       changed(snapshot) {
         groundVehicleStatus.value = snapshot.status; activeVehicleIds.value = snapshot.activeIds;
         vehicleStopId.value = snapshot.stopId; requestRender();
