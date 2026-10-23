@@ -7,6 +7,12 @@ export const residentCast = lore.entries.filter(entry => entry.extensions.person
   profile: entry.content, publicProfile: entry.extensions.publicProfile!,
   anchor: entry.extensions.anchor!, home: entry.extensions.home!,
 }));
+/** Original thirteen prisoners plus Yuki; Honoka is a resident, not a group member. */
+export const MAJO_GROUP_MEMBER_IDS: readonly string[] = Object.freeze([
+  'majo-emma', 'majo-hiro', 'majo-anan', 'majo-noa', 'majo-leia',
+  'majo-milia', 'majo-margo', 'majo-nanoka', 'majo-arisa',
+  'majo-sherry', 'majo-hanna', 'majo-koko', 'majo-meruru', 'majo-yuki',
+]);
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
 export const residentById = (id: string) => residentCast.find(row => row.id === id);

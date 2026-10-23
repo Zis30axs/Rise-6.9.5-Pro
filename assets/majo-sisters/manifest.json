@@ -1,0 +1,69 @@
+{
+  "schema": "unread-city-kurobe-sisters-v1",
+  "sourceArt": {
+    "majo-nanoka": {
+      "sheet": "三种情绪的制服少女角色设定稿.png",
+      "sha256": "d2da117ab4bd7ffa9f7e447fc2fd98b6e41f07be66a4fcff315b8d822e069249"
+    },
+    "majo-honoka": {
+      "sheet": "银灰发校园少女三姿势表情设定图.png",
+      "sha256": "2ceafebf7b0e1bc51ecf1b58609057fb2d0ff8ebcb591681e3ef880088bd66a8"
+    }
+  },
+  "assets": [
+    {
+      "file": "majo-nanoka-neutral.webp",
+      "personId": "majo-nanoka",
+      "emotion": "neutral",
+      "width": 483,
+      "height": 1086,
+      "bytes": 37606,
+      "sha256": "3f474423df25cbb467574a5a151db3b2c78c0d8b7b266e4e323f2902394fd3bf"
+    },
+    {
+      "file": "majo-nanoka-happy.webp",
+      "personId": "majo-nanoka",
+      "emotion": "happy",
+      "width": 482,
+      "height": 1086,
+      "bytes": 37946,
+      "sha256": "d8a468ce7728ddc83cfb012f28a10461a9482138d176261f254a6648d86c6cba"
+    },
+    {
+      "file": "majo-nanoka-shy.webp",
+      "personId": "majo-nanoka",
+      "emotion": "shy",
+      "width": 483,
+      "height": 1086,
+      "bytes": 36640,
+      "sha256": "c0dea28c761fcfb013c449f859c6672b039fe0601056b55dd4f9dd290f1830eb"
+    },
+    {
+      "file": "majo-honoka-neutral.webp",
+      "personId": "majo-honoka",
+      "emotion": "neutral",
+      "width": 483,
+      "height": 1086,
+      "bytes": 35960,
+      "sha256": "c82dacf1240bf5dcf46b4e01dbd03c375192e3439e2c35fa0b2b4ba3a96ea88f"
+    },
+    {
+      "file": "majo-honoka-happy.webp",
+      "personId": "majo-honoka",
+      "emotion": "happy",
+      "width": 482,
+      "height": 1086,
+      "bytes": 35768,
+      "sha256": "d73504516f9e46adbd34c7bb7e8dd522ac5e7aff76b3b41da39ea055559b5bc9"
+    },
+    {
+      "file": "majo-honoka-worried.webp",
+      "personId": "majo-honoka",
+      "emotion": "worried",
+      "width": 483,
+      "height": 1086,
+      "bytes": 34612,
+      "sha256": "5fadb88161130566fb763c72bff8935ee2357316a7c09d369a32c8273ee77d64"
+    }
+  ]
+}

@@ -38,6 +38,12 @@ import margoShy from '../../assets/majo-runtime/characters/majo-margo/shy.avif?i
 import yukiNeutral from '../../assets/majo-runtime/characters/majo-yuki/neutral.png?inline';
 import yukiHappy from '../../assets/majo-runtime/characters/majo-yuki/happy.png?inline';
 import yukiThinking from '../../assets/majo-runtime/characters/majo-yuki/thinking.png?inline';
+import nanokaNeutral from '../../assets/majo-sisters/majo-nanoka-neutral.webp?inline';
+import nanokaHappy from '../../assets/majo-sisters/majo-nanoka-happy.webp?inline';
+import nanokaShy from '../../assets/majo-sisters/majo-nanoka-shy.webp?inline';
+import honokaNeutral from '../../assets/majo-sisters/majo-honoka-neutral.webp?inline';
+import honokaHappy from '../../assets/majo-sisters/majo-honoka-happy.webp?inline';
+import honokaWorried from '../../assets/majo-sisters/majo-honoka-worried.webp?inline';
 import highrise from '../../assets/majo-runtime/interiors/highrise-river-view-living-room-dusk.webp?inline';
 import timber from '../../assets/majo-runtime/interiors/timber-courtyard-house-interior-day.webp?inline';
 import olderFamily from '../../assets/majo-runtime/interiors/older-family-house-living-room-day.webp?inline';
@@ -85,6 +91,12 @@ const semiMainSet = (personId: string, expressions: Readonly<Partial<Record<Nove
   width: 1024, height: 2048, expressions,
 });
 
+/** The sisters' authored 483×1086 portraits use independent neutral fallback. */
+const sisterSet = (personId: string, expressions: Readonly<Partial<Record<NovelNpcEmotion, string>>>): MajoExpressionSet => Object.freeze({
+  personId, tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
+  width: 483, height: 1086, expressions,
+});
+
 /**
  * Registered expression sets. Six sheets were assigned by the user on
  * 2026-10-22; their panels were cut out with the anime-seg model and upscaled
@@ -110,6 +122,8 @@ export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = O
     personId: 'majo-margo', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 3,
     width: 768, height: 1024, expressions: semiMainExpressions(margoNeutral, margoHappy, margoShy),
   }),
+  'majo-nanoka': sisterSet('majo-nanoka', semiMainExpressions(nanokaNeutral, nanokaHappy, nanokaShy)),
+  'majo-honoka': sisterSet('majo-honoka', Object.freeze({ neutral: honokaNeutral, happy: honokaHappy, sad: honokaWorried })),
 });
 
 const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
@@ -122,6 +136,8 @@ const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
   '远野汉娜': 'majo-hanna', '遠野ハンナ': 'majo-hanna', '汉娜': 'majo-hanna',
   '宝生玛格': 'majo-margo', '宝生マーゴ': 'majo-margo', '玛格': 'majo-margo', 'マーゴ': 'majo-margo',
   '月代雪': 'majo-yuki', '月代ユキ': 'majo-yuki',
+  '黑部奈叶香': 'majo-nanoka', '黒部ナノカ': 'majo-nanoka', '奈叶香': 'majo-nanoka', 'ナノカ': 'majo-nanoka',
+  '黑部穗乃香': 'majo-honoka', '黒部ホノカ': 'majo-honoka', '穗乃香': 'majo-honoka', '奈穗香': 'majo-honoka', 'ホノカ': 'majo-honoka',
 });
 
 export function resolveMajoSpeaker(speaker: string): string | null {
@@ -196,7 +212,8 @@ export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '蓝发贝雷帽格裙', expressions: 3, complete: true, note: '用户确认身份（消息写作“橘雪梨”，稳定 ID 仍为 majo-sherry）；已抠图并 2× 放大。' },
   { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '紫黑哥特和风', expressions: 3, complete: true, note: '已接入三表情。' },
-  { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '深色制服、红色领结、小圈形发饰', expressions: 3, complete: true, note: '姐姐归来后的平静/开心/害羞三表情透明立绘。' },
+  { personId: 'majo-honoka', tier: 'semi-main', targetExpressions: 3, outfit: '深色制服、蓝色领结、腕表', expressions: 3, complete: true, note: '姐姐归来；平静/开心/担忧三表情透明立绘。' },
   { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },

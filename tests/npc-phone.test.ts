@@ -5,7 +5,7 @@ import { getSceneArea, getScenePeople, sceneLocationId } from '../src/runtime/sc
 import { applyNpcPhoneReply, npcPhoneReplyContext, npcPhoneView, validateContactProposals } from '../src/runtime/npc-phone';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import { parseNpcPhoneReply } from '../src/runtime/phone-reply';
-import { residentCast, residentPresence } from '../src/runtime/npc-cast';
+import { MAJO_GROUP_MEMBER_IDS, residentCast, residentPresence } from '../src/runtime/npc-cast';
 import { createWorldPhoneApi } from '../src/frontend/world-phone';
 import type { GeneratedStory, WorldState } from '../src/frontend/types';
 
@@ -184,8 +184,13 @@ describe('real NPC SMS routing with private context', () => {
 });
 
 describe('the resident fourteen-person group', () => {
-  it('has fourteen stable worldbook identities and no third playable-state refactor', () => {
-    expect(residentCast).toHaveLength(14); expect(new Set(residentCast.map(p => p.id)).size).toBe(14);
+  it('preserves the original fourteen group members alongside a fifteenth independent NPC', () => {
+    expect(residentCast).toHaveLength(15); expect(new Set(residentCast.map(p => p.id)).size).toBe(15);
+    expect(MAJO_GROUP_MEMBER_IDS).toHaveLength(14);
+    expect(new Set(MAJO_GROUP_MEMBER_IDS).size).toBe(14);
+    expect(MAJO_GROUP_MEMBER_IDS).not.toContain('majo-honoka');
+    expect(residentCast.find(p => p.id === 'majo-honoka')?.name).toBe('黑部穗乃香');
+    expect(residentPresence('majo-honoka', { hour: 16, minute: 0 })?.anchorId).toBe('avenue-east');
     expect(residentCast.some(p => p.id === 'majo-yuki')).toBe(true);
     expect(residentCast.some(p => p.id === 'majo-emma')).toBe(true);
     expect(residentPresence('majo-koko', { hour: 21, minute: 0 })?.available).toBe(false);
@@ -200,7 +205,7 @@ describe('the resident fourteen-person group', () => {
     const request = { type: 'phone_app' as const, owner: 'soyo' as const, requestId: 'group-sms',
       command: { type: 'send_group_message' as const, groupId: 'majo-circle', text: '大家周末有空吗？' } };
     const sent = reduceState(joined, request), selected = sent.protagonists!.npcPhone!.messages[0]!.responderId!;
-    expect(residentCast.map(p => p.id)).toContain(selected);
+    expect(MAJO_GROUP_MEMBER_IDS).toContain(selected);
     expect(reduceState(sent, request).protagonists!.npcPhone!.messages).toEqual(sent.protagonists!.npcPhone!.messages);
     expect(npcPhoneReplyContext(sent, 'npc:group-sms').actor.id).toBe(selected);
     let answered = sent;

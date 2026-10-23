@@ -4,7 +4,7 @@ import { activeProtagonist, enableProtagonists, gameMinute, personState, protago
 import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { isCharacterPortraitId } from './characters';
-import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentPresence } from './npc-cast';
+import { MAJO_GROUP_ID, MAJO_GROUP_NAME, MAJO_GROUP_MEMBER_IDS, residentById, residentPresence } from './npc-cast';
 
 export interface ContactProposal {
   kind: 'contact' | 'group';
@@ -136,7 +136,7 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
   const groups = unique(list(root.groups, 3, item => {
     const r = object(item, ['id', 'owner', 'name', 'memberIds', 'requestId', 'joinedAt', 'joinedAfter']);
     const memberIds = unique(list(r.memberIds, 14, id), r => r);
-    if (r.id !== MAJO_GROUP_ID || memberIds.length !== residentCast.length || memberIds.some(i => !residentById(i))) return fail('群成员无效');
+    if (r.id !== MAJO_GROUP_ID || memberIds.length !== MAJO_GROUP_MEMBER_IDS.length || memberIds.some(i => !MAJO_GROUP_MEMBER_IDS.includes(i))) return fail('群成员无效');
     return { id: id(r.id), owner: owner(r.owner), name: text(r.name, 40), memberIds, requestId: id(r.requestId), joinedAt: minute(r.joinedAt), joinedAfter: minute(r.joinedAfter) };
   }), r => r.owner + ':' + r.id);
   const messages = unique(list(root.messages, 10000, item => {
@@ -145,7 +145,7 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
     if (r.channel !== 'npc' && r.channel !== 'group' || r.direction !== 'outgoing' && r.direction !== 'incoming' || !['pending', 'answered', 'silent'].includes(String(r.status))) return fail('会话字段无效');
     const responsePlan = hasPlan ? unique(list(r.responsePlan, 3, item => {
       const p = object(item, ['id', 'status']);
-      if (!residentById(id(p.id)) || !['pending', 'answered', 'silent'].includes(String(p.status))) return fail('群聊发言计划无效');
+      if (!MAJO_GROUP_MEMBER_IDS.includes(id(p.id)) || !['pending', 'answered', 'silent'].includes(String(p.status))) return fail('群聊发言计划无效');
       return { id: id(p.id), status: p.status as NpcTextMessage['status'] };
     }), p => p.id) : undefined;
     if (responsePlan && (r.channel !== 'group' || r.direction !== 'outgoing')) return fail('群聊发言计划来源无效');
@@ -258,7 +258,7 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     if (!social.evidence.some(e => e.owner === who && e.npcId === proposal.npcId && e.turnId === evidenceId && e.speaker === 'npc' && e.text === proposal.quote)) return fail('申请引用的对白不存在');
     if (proposal.kind === 'contact' ? !/(联系|手机|号码|好友|短信|账号|連絡|電話|contact|phone)/i.test(proposal.quote)
       : !/(群聊|群里|入群|进群|加群|グループ|group)/i.test(proposal.quote)) return fail('对白没有提出相应联系请求');
-    if (proposal.kind === 'group' && (!residentById(proposal.npcId) || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁联系人');
+    if (proposal.kind === 'group' && (!MAJO_GROUP_MEMBER_IDS.includes(proposal.npcId) || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁联系人');
     const requestId = turnId + ':contact:' + index;
     const duplicate = social.requests.find(q => q.id === requestId);
     if (duplicate) {
@@ -305,7 +305,7 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
         if (!social.relationships.some(r => r.owner === who && r.npcId === request.npcId)) social.relationships.push({ owner: who, npcId: request.npcId, contactId: contact.id, requestId: request.id });
       } else if (!social.groups.some(g => g.owner === who && g.id === MAJO_GROUP_ID)) {
         if (!contactFor(s, who, request.npcId)) return fail('群邀请人不再是联系人');
-        social.groups.push({ id: MAJO_GROUP_ID, owner: who, name: MAJO_GROUP_NAME, memberIds: residentCast.map(r => r.id), requestId: request.id, joinedAt: gameMinute(s), joinedAfter: social.messages.length });
+        social.groups.push({ id: MAJO_GROUP_ID, owner: who, name: MAJO_GROUP_NAME, memberIds: [...MAJO_GROUP_MEMBER_IDS], requestId: request.id, joinedAt: gameMinute(s), joinedAfter: social.messages.length });
       }
     }
     request.status = status;
@@ -372,7 +372,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
       : [],
     messages: thread,
     group: source.channel === 'group' ? { id: source.targetId, name: MAJO_GROUP_NAME,
-      members: [...residentCast.map(r => ({ id: r.id, name: r.name })),
+      members: [...MAJO_GROUP_MEMBER_IDS.map(id => ({ id, name: residentById(id)!.name })),
         ...social.groups.filter(g => g.id === source.targetId).map(g => ({id:g.owner,name:protagonistNames[g.owner]}))],
       rule: '你只扮演当前指定的这一位成员，其他被选成员会依次单独回复；可以回应本轮前面的群发言，不得冒充他人。群聊内容对成员可见，私聊与其他人物的经历不可见。' } : null,
     instruction: '根据本人设定、实际已知对白、此会话和日程决定回复；可以用 text:null 表示暂不回复。不得读取玩家内心、替玩家同意邀请、捏造已经执行的移动或日程。缺少证据的行程保持未知。',
@@ -427,6 +427,6 @@ export function contactProposalContext(s: WorldState) {
   const who = activeProtagonist(s), social = s.protagonists?.npcPhone;
   const meeting = social?.meetings.find(m => m.owner === who && m.npcId === s.scene?.encounterId);
   return meeting ? { npcId: meeting.npcId, name: meeting.name, worldbook: residentById(meeting.npcId)?.profile ?? meeting.summary,
-    hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: !!residentById(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
+    hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: MAJO_GROUP_MEMBER_IDS.includes(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
     evidence: social!.evidence.filter(e => e.owner === who && e.npcId === meeting.npcId && e.speaker === 'npc').slice(-4).map(e => ({ evidenceId: e.turnId, quote: e.text })) } : null;
 }

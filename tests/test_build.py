@@ -68,14 +68,15 @@ class CardBuildTests(unittest.TestCase):
         source = json.loads((ROOT / "src/worldbook/majo-residents.json").read_text(encoding="utf-8"))
         identities = [entry["extensions"]["personId"] for entry in source["entries"]
                       if entry["extensions"].get("personId")]
-        self.assertEqual(len(identities), 14)
-        self.assertEqual(len(set(identities)), 14)
+        self.assertEqual(len(identities), 15)
+        self.assertEqual(len(set(identities)), 15)
         self.assertIn("majo-emma", identities)
+        self.assertIn("majo-honoka", identities)
 
     def test_character_identity_clothing_voice_and_relationships(self):
         fields = ["身份：", "外观与着装：", "性格：", "说话方式：", "人物关系："]
         sources = {
-            "majo-residents.json": 14,
+            "majo-residents.json": 15,
             "bang-dream-canon.json": 10,
         }
         for filename, expected in sources.items():

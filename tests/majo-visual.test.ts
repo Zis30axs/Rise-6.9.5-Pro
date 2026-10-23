@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import manifest from '../assets/majo-runtime/manifest.json';
+import sistersManifest from '../assets/majo-sisters/manifest.json';
 import {
   majoArtStatus, majoDistrictArt, majoEmotions, majoEmmaExpressions, majoExpressionPolicy,
   majoExpressionSets, majoInteriorArt, resolveMajoExpressionPortrait, resolveMajoSpeaker,
@@ -29,7 +30,7 @@ describe('PR #16 runtime art registry', () => {
     expect(new Set(Object.values(majoEmmaExpressions)).size).toBe(9);
     for (const src of Object.values(majoEmmaExpressions)) expect(src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(majoExpressionSets['majo-emma']).toMatchObject({ tier: 'main', complete: true, completedExpressions: 9, width: 1024, height: 1536 });
-    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-margo', 'majo-milia', 'majo-noa', 'majo-sherry', 'majo-yuki'].sort());
+    expect(Object.keys(majoExpressionSets).sort()).toEqual(['majo-anan', 'majo-emma', 'majo-hanna', 'majo-hiro', 'majo-margo', 'majo-milia', 'majo-noa', 'majo-sherry', 'majo-yuki', 'majo-nanoka', 'majo-honoka'].sort());
     for (const person of semiMain) {
       const set = majoExpressionSets[person]!;
       expect(set).toMatchObject({ tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3, width: 1024, height: 2048 });
@@ -55,6 +56,13 @@ describe('PR #16 runtime art registry', () => {
     expect(resolveMajoSpeaker('玛格')).toBe('majo-margo');
     expect(resolveMajoSpeaker('月代雪')).toBe('majo-yuki');
     expect(resolveMajoSpeaker('月代ユキ')).toBe('majo-yuki');
+    expect(resolveMajoSpeaker('黑部奈叶香')).toBe('majo-nanoka');
+    expect(resolveMajoSpeaker('黒部ホノカ')).toBe('majo-honoka');
+    expect(resolveMajoSpeaker('奈穗香')).toBe('majo-honoka');
+    expect(resolveMajoExpressionPortrait('奈叶香', 'happy')).toMatchObject({ personId: 'majo-nanoka', width: 483, height: 1086, exact: true });
+    expect(resolveMajoExpressionPortrait('穗乃香', 'sad')).toMatchObject({ personId: 'majo-honoka', width: 483, height: 1086, exact: true });
+    expect(resolveMajoExpressionPortrait('穗乃香', 'angry')).toMatchObject({ personId: 'majo-honoka', exact: false });
+    expect(resolveMajoExpressionPortrait('素世', 'happy')).toBeNull();
     expect(resolveMajoSpeaker('素世')).toBeNull();
     expect(resolveMajoSpeaker('艾玛同学')).toBeNull();
     for (const emotion of majoEmotions) {
@@ -116,7 +124,7 @@ describe('PR #16 runtime art registry', () => {
   });
 
   it('reports completed and missing art honestly', () => {
-    expect(majoArtStatus).toHaveLength(14);
+    expect(majoArtStatus).toHaveLength(15);
     expect(majoExpressionPolicy).toEqual({ main: 9, semiMain: 3 });
     expect(new Set(majoArtStatus.map(row => row.personId))).toEqual(new Set(residentCast.map(row => row.id)));
     const emma = majoArtStatus.find(row => row.personId === 'majo-emma')!;
@@ -126,8 +134,26 @@ describe('PR #16 runtime art registry', () => {
     }
     expect(majoArtStatus.find(row => row.personId === 'majo-hiro')).toMatchObject({ outfit: '和服' });
     for (const row of majoArtStatus.filter(row => row.tier === 'semi-main')) expect(row.targetExpressions).toBe(3);
-    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', 'majo-margo', 'majo-yuki', ...semiMain].sort());
-    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-meruru', 'majo-nanoka']);
+    expect(majoArtStatus.filter(row => row.complete).map(row => row.personId).sort()).toEqual(['majo-emma', 'majo-margo', 'majo-yuki', 'majo-nanoka', 'majo-honoka', ...semiMain].sort());
+    expect(majoArtStatus.filter(row => !row.complete).map(row => row.personId).sort()).toEqual(['majo-arisa', 'majo-koko', 'majo-leia', 'majo-meruru']);
+  });
+
+  it('ships six independent transparent sister sprites matching the static manifest', () => {
+    const rows = sistersManifest.assets;
+    expect(rows).toHaveLength(6);
+    for (const row of rows) {
+      const bytes = readFileSync(path.join(ROOT, 'assets/majo-sisters', row.file));
+      expect(bytes.length).toBe(row.bytes);
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(row.sha256);
+      expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
+      expect(bytes.subarray(8, 12).toString('ascii')).toBe('WEBP');
+      expect(row.width).toBeGreaterThanOrEqual(482);
+      expect(row.height).toBe(1086);
+      expect(resolveMajoExpressionPortrait(
+        row.personId === 'majo-honoka' ? '穗乃香' : '奈叶香',
+        row.emotion === 'worried' ? 'sad' : row.emotion as 'neutral' | 'happy' | 'shy',
+      )).toMatchObject({ personId: row.personId, exact: true });
+    }
   });
 
   it('keeps every registered runtime file byte-identical to its verified manifest entry', () => {
