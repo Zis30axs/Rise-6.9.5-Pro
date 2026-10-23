@@ -13,9 +13,9 @@ describe('地图头像按保存身份选择', () => {
     });
   });
 
-  it('未确认的魔裁人物不拿随机 NPC 立绘冒充身份；素世暂用身份文字头像', () => {
+  it('未确认的魔裁人物不拿随机 NPC 立绘冒充身份；素世使用打包头图', () => {
     expect(resolveMapCharacterAvatar({ name: '月代雪', personId: 'majo-yuki', portraitId: 'deepseek' })).toBeNull();
-    expect(resolveMapCharacterAvatar({ name: '长崎素世', protagonistId: 'soyo', portraitId: 'claude' })).toBeNull();
+    expect(resolveMapCharacterAvatar({ name: '长崎素世', protagonistId: 'soyo', portraitId: 'claude' })).toMatchObject({ kind: 'sprite' });
     expect(mapAvatarInitials('长崎素世')).toBe('素世');
     expect(mapAvatarInitials(' ')).toBe('?');
   });
