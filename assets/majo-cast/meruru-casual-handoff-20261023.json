@@ -2,12 +2,12 @@
   "schema": "unread-city-majo-meruru-casual-handoff-v1",
   "personId": "majo-meruru",
   "displayName": "冰上梅露露",
-  "status": "metadata-only; binary art package not uploaded to GitHub",
+  "status": "complete offline bundle prepared; GitHub branch contains metadata only; runtime binaries not pushed",
   "targetBranch": "lite",
   "archive": {
     "file": "unread-city-majo-meruru-casual-3-expressions-20261023.zip",
-    "bytes": 6483461,
-    "sha256": "4c43df10b499e720a911855ac32d01ea2358560e9fa0a428ea364cbc6e9f06f3",
+    "bytes": 6471448,
+    "sha256": "b490e466d7dbaff45ef059a7ee0f7896873ece01d04638c58cb69821a48f387e",
     "contains": [
       "original black-background PNGs",
       "transparent PNG derivatives",
@@ -46,5 +46,10 @@
     }
   ],
   "integrity": "ZIP STORE CRC validated locally; hashes from prepared package; no assets referenced at runtime until binaries uploaded",
-  "ciPolicy": "Never trigger GitHub Actions/CI; this documentation commit uses [skip ci]"
+  "ciPolicy": "No CI or Actions run. Commits use [skip ci].",
+  "install": {
+    "bundle": "meruru_casual_install_ready_20261023.zip",
+    "operation": "Extract bundle in repository checkout and run python scripts/install_majo_meruru.py unread-city-majo-meruru-casual-3-expressions-20261023.zip",
+    "runtimeInstalled": false
+  }
 }
