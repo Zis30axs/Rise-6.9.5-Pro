@@ -1,6 +1,6 @@
 # 玛格咖啡馆专属日常
 
-本分支基于 `lite@e32f17b513c9411210c357a1549dad49c54bc9aa`（完整基线以 Git 父提交为准），独立整合 Draft PR #26 的限流补丁（`a8650e41a9216ef20ce27c935ad0367201a05c97`），未移动、修改或合并 PR #25/#26。最新 lite 已含地图测试夹具类型修正，因此未重复移植该改动。
+本分支基于 `lite@e2fb8dafde2c674138c61f4cea277c1d560006a0`（完整基线以 Git 父提交为准），独立整合 Draft PR #26 的限流补丁（`a8650e41a9216ef20ce27c935ad0367201a05c97`），未移动、修改或合并 PR #25/#26。最新 lite 已含地图测试夹具类型修正，因此未重复移植该改动。
 
 ## 运行行为
 
@@ -42,7 +42,7 @@ npx vitest run --maxWorkers=1
 npx playwright test --config playwright.margo.config.ts --workers=1
 ```
 
-浏览器测试加载完整App/lifecycle源码模块，使用受控Bridge和localStorage保存；与生产IIFE构建验证分开。测试不调用真实模型、手机服务或用户存档，不构成iPhone/TauriTavern真机验收。四视口截图与状态在 `outputs/margo-cafe-qa/`。结果在该目录的验收说明记录。
+浏览器测试加载完整App/lifecycle源码模块，使用受控Bridge和localStorage保存；与生产IIFE构建验证分开。测试不调用真实模型、手机服务或用户存档，不构成iPhone/TauriTavern真机验收。四视口截图与状态在 `outputs/margo-cafe-qa/`。最终本地类型检查与生产构建通过，67文件698项Vitest通过；四视口结果在该目录的验收说明记录。生产构建字节与SHA-256见 `outputs/margo-cafe-qa/verification.json`。
 
 ## 提交与Actions
 

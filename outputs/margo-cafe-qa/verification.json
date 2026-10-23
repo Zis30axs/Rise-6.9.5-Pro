@@ -1,0 +1,23 @@
+{
+  "baseCommit": "e2fb8dafde2c674138c61f4cea277c1d560006a0",
+  "runtimeCommit": "3bd33182b44f2fc86bc5f747f10301f338d0b886",
+  "importedPr26Commit": "a8650e41a9216ef20ce27c935ad0367201a05c97",
+  "localValidation": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "vitestFiles": 67,
+    "vitestTests": 698,
+    "vitestFailures": 0
+  },
+  "productionBundle": {
+    "bytes": 71106433,
+    "sha256": "775ccc47948c231c13d925a1b4e9d18b1cb3369133ddaa7fcece5e190d10bb6c"
+  },
+  "browserEvidence": "Four viewports; full App/lifecycle source modules with a controlled local save bridge. See README.md and viewport reports.",
+  "realModelCalls": 0,
+  "physicalTauriTavern": false,
+  "githubCiDispatched": false,
+  "workflowFilesChanged": false,
+  "releasePackagesChanged": false,
+  "actionsPrevention": "New branch outside push allowlists; all new commits use [skip ci] for pull_request skips. Remote verification is recorded in the PR conversation/final response."
+}

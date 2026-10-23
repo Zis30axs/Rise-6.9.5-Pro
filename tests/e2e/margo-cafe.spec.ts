@@ -105,6 +105,8 @@ for (const viewport of viewports) {
     await page.screenshot({ path: `${prefix}-gift-choice.png` });
     await page.locator('[data-interaction-accept]').click();
     await expect(overlay(page)).toHaveCount(0);
+    await expect(page.locator('[data-novel-background="margo-cafe-room"]')).toHaveAttribute('data-background-id', 'majo-margo-cafe-room');
+    await expect(page.locator('[data-novel-background="margo-cafe-room"]')).toHaveAttribute('data-background-source', 'majo-art');
     const gifted = await saved(page);
     expect(gifted.locationId).toBe('margo-cafe-room');
     expect(gifted.inventory.reduce((sum, item) => sum + item.quantity, 0)).toBe(1);
@@ -120,6 +122,12 @@ for (const viewport of viewports) {
     await page.screenshot({ path: `${prefix}-inside-people.png` });
     await location(page).locator('[data-talk-person="majo-margo"]').click();
     await expect(page.locator('[data-current-encounter][data-person-id="majo-margo"]')).toBeVisible();
+    const margoPortrait = page.locator('[data-majo-portrait="majo-margo"]');
+    await expect(margoPortrait).toBeVisible();
+    await margoPortrait.locator('img').evaluate(async node => { await (node as HTMLImageElement).decode(); });
+    expect(await margoPortrait.locator('img').evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await expect(margoPortrait).toHaveCSS('opacity', '1');
+    await page.screenshot({ path: `${prefix}-margo-portrait.png` });
 
     // Services use the existing catalog inside the shop, without another offer during cooldown.
     await page.getByRole('button', { name: '地点', exact: true }).click();
