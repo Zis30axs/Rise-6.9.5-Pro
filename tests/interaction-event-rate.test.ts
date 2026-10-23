@@ -29,7 +29,7 @@ describe('persisted interaction-event rate limit', () => {
     const first = recordInteractionEventCheck(createInitialState(), cafe, true);
     const secondReady = reduceState(first, { type: 'wait', minutes: 180 });
     const second = recordInteractionEventCheck(secondReady, library, true);
-    const later = reduceState(second, { type: 'wait', minutes: 360 });
+    const later = reduceState(second, { type: 'wait', minutes: 180 });
     expect(canCheckInteractionEvent(later, { type: 'wait', minutes: 15 })).toBe(false);
     const tomorrow = reduceState(later, { type: 'wait', minutes: 1440 });
     expect(canCheckInteractionEvent(tomorrow, cafe)).toBe(true);
