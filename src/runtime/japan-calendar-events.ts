@@ -4,6 +4,7 @@
  * https://eco.mtk.nao.ac.jp/koyomi/yoko/2027/rekiyou271.html
  * Later years are game-only projections, not published government dates. */
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
+import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
 import { gameCalendar, GAME_DAY_LIMIT } from './game-calendar';
 
 export type OccasionKind = 'national-holiday' | 'substitute-holiday' | 'citizens-holiday' | 'festival' | 'birthday';
@@ -22,6 +23,32 @@ export const residentBirthdays: readonly ResidentBirthday[] = Object.freeze(lore
   if (checked.getUTCMonth() !== month - 1 || checked.getUTCDate() !== date) return [];
   return [{ personId, name: entry.name, month, date }];
 }));
+/** Calendar identities; playable characters reuse their existing protagonist IDs. */
+const BANG_DREAM_BIRTHDAY_IDS = {
+  "长崎素世": "soyo",
+  "丰川祥子": "sakiko",
+  "高松灯": "bang-tomori",
+  "千早爱音": "bang-anon",
+  "椎名立希": "bang-taki",
+  "要乐奈": "bang-rana",
+  "若叶睦": "bang-mutsumi",
+  "三角初华": "bang-uika",
+  "八幡海铃": "bang-umiri",
+  "祐天寺若麦": "bang-nyamu"
+} as const;
+/** MyGO!!!!! and Ave Mujica dates are read from the character worldbook, not duplicated here. */
+export const bangDreamBirthdays: readonly ResidentBirthday[] = Object.freeze(bandLore.entries.flatMap(entry => {
+  const personId = BANG_DREAM_BIRTHDAY_IDS[entry.name as keyof typeof BANG_DREAM_BIRTHDAY_IDS];
+  if (!personId) return [];
+  const match = /生日\s*(\d{1,2})月(\d{1,2})日/.exec(entry.content);
+  if (!match) return [];
+  const month = Number(match[1]), date = Number(match[2]);
+  const checked = new Date(Date.UTC(2024, month - 1, date));
+  if (checked.getUTCMonth() !== month - 1 || checked.getUTCDate() !== date) return [];
+  return [{ personId, name: entry.name, month, date }];
+}));
+/** All known character birthdays, without altering the 13 existing Majo identities. */
+export const characterBirthdays: readonly ResidentBirthday[] = Object.freeze([...residentBirthdays, ...bangDreamBirthdays]);
 const pad = (n: number) => String(n).padStart(2, '0');
 const isoDate = (y: number, m: number, d: number) => String(y) + '-' + pad(m) + '-' + pad(d);
 const weekday = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d)).getUTCDay();
@@ -108,7 +135,7 @@ export function gameCalendarOccasions(day: number): CalendarOccasion[] {
     events.push({ id: 'jp-festival:' + date.year + ':' + e.id, iso: date.iso, name: e.name,
       kind: 'festival', dayOff: false, projected: false });
   }
-  for (const e of residentBirthdays) if (date.month === e.month && date.date === e.date) {
+  for (const e of characterBirthdays) if (date.month === e.month && date.date === e.date) {
     events.push({ id: 'birthday:' + date.year + ':' + e.personId, iso: date.iso, name: e.name + '的生日',
       personId: e.personId, kind: 'birthday', dayOff: false, projected: false });
   }
