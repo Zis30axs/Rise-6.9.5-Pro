@@ -1,7 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, GeneratedStory, WorldState } from '../frontend/types';
 import { isProtagonistPerson, PROTAGONIST_PERSON_IDS, PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
-import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
+import { getInteriorPeople, getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentPresence } from './npc-cast';
@@ -207,11 +207,20 @@ export function retireControlledNpcThreads(social: NpcPhoneState): void {
   }
 }
 
+function nearbyEncounterPerson(state: WorldState, npcId: string) {
+  if (!state.scene || state.scene.encounterId !== npcId) return null;
+  const point = state.interior ?? state.scene;
+  const people = state.interior
+    ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hiddenProtagonistPersons(state))
+    : getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state));
+  return people.find(person => person.id === npcId && Math.hypot(person.x - point.x, person.z - point.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
+}
+
 /** Called only after the controlled, distance-checked encounter action. */
 export function recordNpcEncounter(state: WorldState, npcId: string): WorldState {
-  if (!state.scene || state.interior) return state;
-  const person = getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state)).find(p => p.id === npcId);
-  if (!person || state.scene.encounterId !== npcId || Math.hypot(person.x - state.scene.x, person.z - state.scene.z) > SCENE_ENCOUNTER_DISTANCE) return fail('没有发生有效的相遇');
+  if (!state.scene) return state;
+  const person = nearbyEncounterPerson(state, npcId);
+  if (!person) return fail('没有发生有效的相遇');
   const s = enableProtagonists(state), who = activeProtagonist(s), social = ensure(s);
   if (!social.meetings.some(m => m.owner === who && m.npcId === npcId)) {
     if (social.meetings.length >= 500) return fail('相遇记录已满');
@@ -232,9 +241,8 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     if (receipt ? receipt.proposals !== JSON.stringify(proposals) : proposals.length > 0) return fail('重复剧情的联系申请不一致');
     return after;
   }
-  if (!meeting || before.interior || after.interior || before.locationId !== after.locationId ||
-      !getScenePeople(before.scene!, before.contacts, before.clock, hiddenProtagonistPersons(before)).some(p => p.id === metId &&
-        Math.hypot(p.x - before.scene!.x, p.z - before.scene!.z) <= SCENE_ENCOUNTER_DISTANCE)) {
+  if (!meeting || before.locationId !== after.locationId || before.interior?.roomId !== after.interior?.roomId ||
+      !nearbyEncounterPerson(before, meeting.npcId) || !nearbyEncounterPerson(after, meeting.npcId)) {
     if (proposals.length) return fail('申请必须基于当面相遇及真实对白');
     return after;
   }
@@ -425,7 +433,7 @@ export function npcPhoneView(s: WorldState, who: ProtagonistId) {
 
 export function contactProposalContext(s: WorldState) {
   const who = activeProtagonist(s), social = s.protagonists?.npcPhone;
-  const meeting = social?.meetings.find(m => m.owner === who && m.npcId === s.scene?.encounterId);
+  const meeting = social?.meetings.find(m => m.owner === who && m.npcId === s.scene?.encounterId && nearbyEncounterPerson(s, m.npcId));
   return meeting ? { npcId: meeting.npcId, name: meeting.name, worldbook: residentById(meeting.npcId)?.profile ?? meeting.summary,
     hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: !!residentById(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
     evidence: social!.evidence.filter(e => e.owner === who && e.npcId === meeting.npcId && e.speaker === 'npc').slice(-4).map(e => ({ evidenceId: e.turnId, quote: e.text })) } : null;

@@ -60,6 +60,9 @@ const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelB
   'anan-noa-milia-home': { src: majoInteriorArt['anan-noa-milia-home'], imagePhase: 'day' },
   'majo-highrise-home': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
   'majo-studio': { src: majoInteriorArt['majo-studio'], imagePhase: 'day' },
+  // Reuse the recovered open-plan room as an indoor illustration until the
+  // cafe has dedicated art; no additional or falsely attributed image asset.
+  'margo-cafe-room': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
   home: { src: majoDistrictArt['old-town-lowrise'], imagePhase: 'day' },
   commercial: { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
   neighborhood: { src: majoDistrictArt['older-apartment-courtyard'], imagePhase: 'day' },

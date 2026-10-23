@@ -1,5 +1,6 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
+import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
 /** Person IDs outlive phone ownership and playable-character assignments. */
 export const residentCast = lore.entries.filter(entry => entry.extensions.personId).map(entry => ({
@@ -16,11 +17,26 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   const person = residentById(id);
   if (!person) return null;
   const minute = clock.hour * 60 + clock.minute;
+  const housing = housingForPerson(id);
+  const cafeVisit = cafeVisitForPerson(id, clock);
+  if (id === MARGO_CAFE_OWNER_ID || cafeVisit) {
+    const atCafe = isMargoCafeOpen(clock) && (id === MARGO_CAFE_OWNER_ID || !!cafeVisit);
+    return {
+      anchorId: null,
+      locationId: atCafe ? MARGO_CAFE_ROOM_ID : housing?.interiorId ?? person.home,
+      activity: atCafe ? cafeVisit?.activity ?? (minute < 2 * 60 || minute >= 22 * 60
+        ? '经营咖啡馆，收拾杯盘并照看晚间客人'
+        : minute < 14 * 60 ? '经营咖啡馆，准备咖啡与当日甜点' : '经营咖啡馆，接待来客并照看柜台') : '闭店后在住处休息',
+      available: atCafe,
+      housing: housing?.id ?? null,
+      district: housing?.district ?? null,
+      outfit: residentOutfit(id),
+    };
+  }
   const sleeping = minute < 8 * 60 || minute >= 23 * 60;
   const streaming = id === 'majo-koko' && minute >= 20 * 60;
   const working = minute >= 9 * 60 && minute < 12 * 60;
   const outside = minute >= 14 * 60 && minute < 20 * 60;
-  const housing = housingForPerson(id);
   return {
     anchorId: outside ? person.anchor : null,
     // At home the authored housing interior is a real map location; the older

@@ -1,7 +1,7 @@
 import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Bridge, GeneratedStory } from '../src/frontend/types';
-import { acknowledgePhoneRead, applyStoryActions, createInitialState } from '../src/runtime/model';
+import { acknowledgePhoneRead, applyStoryActions, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { recordWeeklyStory, weeklyMemoryContext } from '../src/runtime/weekly-memory';
 
@@ -210,6 +210,34 @@ describe('interaction progress and event choices', () => {
     expect(f.bridge.save).not.toHaveBeenCalled();
   });
 
+  it('does not reroll another location immediately and persists the cooldown through a remount', async () => {
+    const f = mountInteraction();
+    const first = f.handle.actions.interact!({ type: 'travel', locationId: 'cafe' });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(f.handle.model.interaction).toMatchObject({ phase: 'choice' });
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await first).toBe(true);
+    expect(f.handle.model.state.interactionEventRate?.checks).toHaveLength(1);
+
+    const second = f.handle.actions.interact!({ type: 'travel', locationId: 'library' });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await second).toBe(true);
+    expect(f.handle.model.interaction).toBeNull();
+    expect(f.random).toHaveBeenCalledTimes(1);
+
+    const saved = structuredClone(JSON.parse(JSON.stringify(f.handle.model.state)));
+    f.handle.dispose();
+    f.bridge.load = () => saved;
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    // Mount allocates a fallback story ID; only subsequent draws are event rolls.
+    f.random.mockClear();
+    const third = handle.actions.interact!({ type: 'wait', minutes: 15 });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await third).toBe(true);
+    expect(f.random).not.toHaveBeenCalled();
+    expect(handle.model.state.interactionEventRate?.checks).toHaveLength(1);
+  });
+
   it('invalid actions do not roll; duplicate clicks, background ticks and ordinary dialogue cannot start an extra event', async () => {
     const f = mountInteraction();
     expect(await f.handle.actions.interact!({ type: 'location_service', serviceId: 'drink-coffee' })).toBe(false);
@@ -227,6 +255,81 @@ describe('interaction progress and event choices', () => {
     f.finish('只是普通对话。'); await ordinary;
     expect(f.random).toHaveBeenCalledTimes(1);
     expect(f.handle.model.interaction).toBeNull();
+  });
+});
+
+describe('authored cafe gifts use the held interaction transaction', () => {
+  function mountCafe() {
+    vi.useFakeTimers();
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const f = fixture();
+    const initial = createInitialState();
+    initial.clock = { day: 1, hour: 16, minute: 0 };
+    const state = reduceState(initial, { type: 'novel_travel', locationId: 'margo-cafe-room' });
+    f.bridge.load = () => state;
+    f.bridge.generate = vi.fn();
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    const random = vi.spyOn(Math, 'random').mockReturnValue(.2);
+    return { ...f, random, handle: handle! };
+  }
+
+  it('saves a gift once through write failure and retry, then reloads without another roll', async () => {
+    const f = mountCafe();
+    const before = JSON.stringify(f.handle.model.state);
+    const held = f.handle.actions.interact!({ type: 'wait', minutes: 1 });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(f.handle.model.interaction?.detail).toContain('要接受吗');
+    vi.mocked(f.bridge.save).mockImplementationOnce(() => { throw new Error('赠礼保存失败'); });
+    await f.handle.actions.resolveInteraction!(true);
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.handle.model.interaction?.phase).toBe('error');
+    await f.handle.actions.resolveInteraction!(true);
+    expect(await held).toBe(true);
+    const saved = parseState(JSON.parse(JSON.stringify(f.handle.model.state)));
+    expect(saved.margoCafeDaily?.receipts).toHaveLength(1);
+    expect(saved.margoCafeDaily?.pending).toBeUndefined();
+    expect(saved.inventory.reduce((sum, item) => sum + item.quantity, 0)).toBe(1);
+    expect(saved.interactionEventRate?.checks).toHaveLength(1);
+    expect(f.bridge.generate).not.toHaveBeenCalled();
+    expect(f.bridge.save).toHaveBeenCalledTimes(2);
+    f.handle.dispose();
+    f.bridge.load = () => saved;
+    handle = mountShell(window, window, f.bridge, vi.fn());
+    f.random.mockClear();
+    const next = handle.actions.interact!({ type: 'wait', minutes: 1 });
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(await next).toBe(true);
+    expect(handle.model.state.inventory).toEqual(saved.inventory);
+    expect(handle.model.state.margoCafeDaily).toEqual(saved.margoCafeDaily);
+    expect(f.random).not.toHaveBeenCalled();
+  });
+
+  it('declines without inventory, story or claim token while saving the shared cooldown', async () => {
+    const f = mountCafe();
+    const story = JSON.parse(JSON.stringify(f.handle.model.state.story));
+    const held = f.handle.actions.interact!({ type: 'wait', minutes: 1 });
+    await vi.advanceTimersByTimeAsync(1200);
+    await f.handle.actions.resolveInteraction!(false);
+    expect(await held).toBe(true);
+    expect(f.handle.model.state.inventory).toEqual([]);
+    expect(f.handle.model.state.story).toEqual(story);
+    expect(f.handle.model.state.margoCafeDaily?.pending).toBeUndefined();
+    expect(f.handle.model.state.margoCafeDaily?.receipts).toEqual([]);
+    expect(f.handle.model.state.interactionEventRate?.checks[0]?.offered).toBe(true);
+    expect(f.bridge.generate).not.toHaveBeenCalled();
+  });
+
+  it('discards an uncommitted gift when the chat changes', async () => {
+    const f = mountCafe();
+    const before = JSON.stringify(f.handle.model.state);
+    const held = f.handle.actions.interact!({ type: 'wait', minutes: 1 });
+    await vi.advanceTimersByTimeAsync(1200);
+    f.change();
+    await f.handle.actions.resolveInteraction!(true);
+    expect(await held).toBe(false);
+    expect(JSON.stringify(f.handle.model.state)).toBe(before);
+    expect(f.bridge.save).not.toHaveBeenCalled();
+    expect(f.bridge.generate).not.toHaveBeenCalled();
   });
 });
 

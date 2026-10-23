@@ -18,11 +18,11 @@ const atStop = (id: string) => {
 };
 
 describe('novel navigation uses the same world and transit rules', () => {
-  it('offers the established 15 local landmarks, a downtown landmark and ten rooms', () => {
-    expect(novelDestinations).toHaveLength(26);
-    expect(new Set(novelDestinations.map(item => item.id)).size).toBe(26);
+  it('offers the established 15 local landmarks, a downtown landmark and eleven rooms', () => {
+    expect(novelDestinations).toHaveLength(27);
+    expect(new Set(novelDestinations.map(item => item.id)).size).toBe(27);
     expect(novelDestinations.filter(item => item.kind === 'interior').map(item => item.id)).toEqual([
-      'dorm-room', 'classroom', 'study-room', 'toyokawa-house',
+      'margo-cafe-room', 'dorm-room', 'classroom', 'study-room', 'toyokawa-house',
       'emma-yuki-home', 'koko-old-house', 'nikaido-house', 'anan-noa-milia-home', 'majo-highrise-home', 'majo-studio',
     ]);
     expect(novelDestinations.some(item => ['campus', 'neighborhood', 'city-roads'].includes(item.id))).toBe(false);

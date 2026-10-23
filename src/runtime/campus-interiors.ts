@@ -1,5 +1,6 @@
 import type { SceneMovementWorld } from '../frontend/scene-movement';
 import type { InteriorRestRecord, InteriorStudyRecord } from '../frontend/types';
+import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
 export const INTERIOR_ENTRANCE_RANGE = 5;
 export const INTERIOR_INTERACTION_RANGE = 3;
@@ -58,6 +59,24 @@ export function getStudyEnergyCost(minutes: number): number {
 
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
 export const campusInteriors: readonly CampusInterior[] = [
+  {
+    id: MARGO_CAFE_ROOM_ID, label: '玛格咖啡馆', parentLocationId: MARGO_CAFE_LOCATION_ID,
+    description: '宝生玛格经营的街边咖啡馆。柜台旁摆着咖啡器具与当日甜点，窗边有可坐下喝茶、阅读或画画的小桌；南侧店门通向露台。',
+    entrance: { x: 48, z: 55.5, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'margo-cafe-counter', kind: 'desk', minX: -2.2, maxX: 2.2, minZ: -4, maxZ: -2.8 },
+      { id: 'margo-cafe-window-table', kind: 'desk', minX: -5.4, maxX: -4, minZ: -1, maxZ: 1.4 },
+      { id: 'margo-cafe-cup-shelf', kind: 'shelf', minX: 4.4, maxX: 5.4, minZ: -4.2, maxZ: -2.2 },
+    ],
+    interactions: [
+      { id: 'margo-cafe-menu', label: '看看今日菜单', description: '看看玛格写下的饮品与甜点菜单，不自动点单或领取物品。',
+        x: 0, z: -1.8, minutes: 0, energyDelta: 0, result: '看了看柜台上的今日菜单，没有点单或取走物品。', prompt: '你已看过玛格咖啡馆的菜单，没有消费或领取物品；饮品与甜点仍须按地点服务结算。' },
+      { id: 'margo-cafe-window-seat', label: '在窗边坐一会儿', description: '安静坐 15 分钟，恢复至多 3 点精力；不会自动获得餐点。',
+        x: -3.2, z: 1, minutes: 15, energyDelta: 3, result: '在玛格咖啡馆窗边坐了一会儿，看着露台与街道。', prompt: '你已在玛格咖啡馆窗边坐了十五分钟，程序已推进时间并恢复至多三点精力；没有自动消费、领取餐点或改变人际关系。' },
+      { id: 'margo-cafe-cup-display', label: '看看杯具陈列', description: '观察柜台旁的杯具与咖啡器具，不进入工作区或取用店内物品。',
+        x: 3.3, z: -1.6, minutes: 0, energyDelta: 0, result: '看过杯具陈列，没有取用店内物品或进入工作区。', prompt: '你已观察玛格咖啡馆的杯具与咖啡器具，没有取用物品；玛格及来客只知道自己当面看到或听到的内容。' },
+    ],
+  },
   {
     id: 'dorm-room', label: '学生宿舍', parentLocationId: 'dorm',
     description: '【示例室内】学生公寓中的一间宿舍，床铺、书桌与衣柜围着中央通道摆放；南侧房门通向原来的宿舍院落。室友身份和床位归属尚未设定。',

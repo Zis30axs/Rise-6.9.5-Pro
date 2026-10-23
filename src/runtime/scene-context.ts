@@ -6,6 +6,7 @@ import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
 import { sceneAreas, sceneBounds, sceneLandmarks } from '../frontend/scene-layout';
 import { getCampusInterior, getInteriorActivity } from './campus-interiors';
+import { cafeVisitorSchedule, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
 /** Local scene coordinates are illustrative outdoor metres, not geographical coordinates. */
 export function getSceneArea(x: number, z: number) {
@@ -141,6 +142,36 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   const person = active ? (PROTAGONIST_PERSON_IDS as Record<string, string | undefined>)[active] : undefined;
   return person ? [person] : [];
 };
+
+/** Static identity/position authority for stored encounters; never a live population. */
+export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
+  if (roomId !== MARGO_CAFE_ROOM_ID) return [];
+  return residentCast.flatMap(resident => {
+    const visit = cafeVisitorSchedule.find(visit => visit.id === resident.id);
+    const owner = resident.id === MARGO_CAFE_OWNER_ID;
+    if (!owner && !visit) return [];
+    const person: ScenePerson = {
+      id: resident.id, name: resident.name, candidateName: resident.name,
+      identity: owner ? '咖啡馆店主' : '咖啡馆来客', tags: owner ? ['常驻人物', '店主'] : ['常驻人物', '来客'],
+      description: resident.publicProfile, x: visit?.x ?? 0, z: visit?.z ?? -2.2,
+      color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
+    };
+    return [person];
+  });
+}
+
+/** Authored indoor people are separate from outdoor anchors and random pedestrians. */
+export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+  if (!clock) return [];
+  return getInteriorPeopleForValidation(roomId).flatMap(person => {
+    if (hiddenPersonIds.includes(person.id)) return [];
+    const presence = residentPresence(person.id, clock);
+    if (!presence?.available || presence.locationId !== roomId) return [];
+    const contact = contacts.find(contact => contact.sourcePersonId === person.id || contact.id === person.id);
+    return [{ ...person, description: `${person.description}${presence.activity}。`, ...(contact ? { name: contact.name, description: contact.summary, portraitId: contact.portraitId, contactId: contact.id, isMain: contact.isMain } : {}) }];
+  });
+}
+
 export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   const hidden = new Set(hiddenPersonIds);
   const names = new Set<string>();
@@ -161,7 +192,11 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
     if (hidden.has(resident.id)) continue;
     const presence = clock ? residentPresence(resident.id, clock) : null;
     if (clock && !presence?.anchorId) continue;
-    const anchor = scenePersonAnchors.find(a => a.id === (presence?.anchorId ?? resident.anchor));
+    // Old saves may retain an encounter from before Margo opened her shop.
+    // She no longer appears outdoors at runtime; only static save validation
+    // retains her historical junction position.
+    const anchorId = !clock && resident.id === MARGO_CAFE_OWNER_ID ? 'junction-west' : presence?.anchorId ?? resident.anchor;
+    const anchor = scenePersonAnchors.find(a => a.id === anchorId);
     if (!anchor) continue;
     people.push({id:resident.id,name:resident.name,candidateName:resident.name,identity:'常驻居民',tags:['常驻人物'],
       description:resident.publicProfile,x:anchor.x+.6,z:anchor.z+.6,color:0x859c6d,
@@ -186,11 +221,15 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
+    const nearbyPeople = getInteriorPeople(room.id, contacts, clock, hiddenPersonIds)
+      .map(person => ({ ...person, distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
+      .filter(person => person.distanceMetres <= 18);
+    const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.distanceMetres <= SCENE_ENCOUNTER_DISTANCE) ?? null;
     return {
       areaId: room.id, label: room.label, outdoors: false, skyVisible: false,
       position: { x: interior.x, z: interior.z, yaw: interior.yaw, unit: '示意米' },
       environment: room.description,
-      nearbyLandmarks: [], nearbyPeople: [], encounter: null,
+      nearbyLandmarks: [], nearbyPeople, encounter,
       exit: { parentLocationId: room.parentLocationId, description: '南侧房门返回进入前的室外位置；尚未执行离开。' },
       lastInteraction: last ? { id: last.id, label: last.label, result: last.result, alreadyCommitted: true, minutes: last.minutes, energyDelta: last.energyDelta } : null,
     };

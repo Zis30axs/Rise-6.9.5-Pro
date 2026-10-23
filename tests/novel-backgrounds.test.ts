@@ -13,6 +13,8 @@ describe('bundled novel backgrounds', () => {
     expect(getNovelBackground('classroom', 12).id).toBe('classroom-day');
     expect(getNovelBackground('teaching', 12).id).toBe('park-day');
     expect(getNovelBackground('bus-stop', 12).id).toBe('street-day');
+    expect(getNovelBackground('margo-cafe-room', 12)).toMatchObject({ src: majoInteriorArt['emma-yuki-home'], source: 'majo-art' });
+    expect(getNovelBackground('margo-cafe-room', 12).src).not.toBe(getNovelBackground('street-cafe', 12).src);
   });
 
   it('selects the supplied daylight, sunset and night variants from the saved world hour', () => {

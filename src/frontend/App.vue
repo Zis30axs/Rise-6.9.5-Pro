@@ -29,7 +29,7 @@ import { activeProtagonist, protagonistNames } from '../runtime/protagonist-worl
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
-import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import type { PlayerState, ShellActions, ShellModel } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, studyDurationOptions, isStudyInteraction, getStudyEnergyCost } from '../runtime/campus-interiors';
@@ -87,19 +87,20 @@ const portraitPeople = computed(() => {
   const seed = props.model.state.scene?.seed ?? walkSeed;
   return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state));
 });
-const scenePeople = computed(() => props.model.state.interior ? [] : portraitPeople.value);
+const scenePeople = computed(() => props.model.state.interior
+  ? getInteriorPeople(props.model.state.interior.roomId, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state)) : portraitPeople.value);
 const encounterPerson = computed(() => {
-  const position = props.model.state.scene;
-  if (!position || props.model.state.interior) return null;
-  return scenePeople.value.find(person => person.id === position.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
+  const position = props.model.state.interior ?? props.model.state.scene;
+  if (!position) return null;
+  return scenePeople.value.find(person => person.id === props.model.state.scene?.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
 });
 const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : novelSegment.value.speaker);
 const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
   contacts: props.model.state.contacts,
-  scenePeople: portraitPeople.value,
+  scenePeople: [...portraitPeople.value, ...scenePeople.value],
   encounterId: props.model.state.scene?.encounterId,
 }));
-function personLabel(person: typeof portraitPeople.value[number]) { return person.contactId ? person.name : `陌生${person.identity}`; }
+function personLabel(person: typeof portraitPeople.value[number]) { return person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
 const portraitLabel = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? personLabel(encounterPerson.value) : novelSegment.value.speaker);
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
@@ -139,8 +140,8 @@ const nearbyTransitStop = computed(() => {
   return point ? transitStops.find(stop => Math.hypot(stop.x - point.x, stop.z - point.z) <= 6) ?? null : null;
 });
 const nearbyPeople = computed(() => {
-  const position = props.model.state.scene ?? outdoorArrival();
-  if (!position || props.model.state.interior) return [];
+  const position = props.model.state.interior ?? props.model.state.scene ?? outdoorArrival();
+  if (!position) return [];
   return scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
     .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance);
 });

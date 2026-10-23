@@ -9,7 +9,7 @@ export const INTERACTION_EVENT_PROBABILITY = .8;
 
 /** Pose updates and read receipts never start a gameplay interaction. */
 export function isGameplayInteraction(action: WorldAction): boolean {
-  return !['choose_academics', 'walk', 'interior_walk', 'novel_approach', 'encounter', 'air_traffic_tick', 'read_phone'].includes(action.type);
+  return !['receive_cafe_gift', 'choose_academics', 'walk', 'interior_walk', 'novel_approach', 'encounter', 'air_traffic_tick', 'read_phone'].includes(action.type);
 }
 
 export function interactionLabel(action: WorldAction): string {
