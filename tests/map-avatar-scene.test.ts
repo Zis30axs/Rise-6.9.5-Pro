@@ -27,6 +27,7 @@ describe('地图人物头像标记', () => {
     const player = host.querySelector<HTMLElement>('[data-map-player]')!;
     expect(player.getAttribute('aria-label')).toContain('樱羽艾玛');
     expect(player.querySelector('[data-map-avatar-kind="sprite"]')).not.toBeNull();
+    expect(player.querySelector('img.cms-avatar-headshot')?.getAttribute('src')).toContain('pbs.twimg.com/profile_images/');
     const npc = host.querySelector<HTMLButtonElement>('[data-map-person-id="majo-hiro"]')!;
     expect(npc.querySelector('[data-map-avatar-kind="sprite"]')).not.toBeNull();
     npc.click(); await nextTick();
