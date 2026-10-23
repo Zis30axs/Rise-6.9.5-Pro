@@ -5,6 +5,7 @@ import rawAtlasData from './atlas-data.json';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
 import { getScenePeople, hiddenProtagonistPersons } from '../runtime/scene-context';
+import { PROTAGONIST_PERSON_IDS } from '../runtime/dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { campusMapBounds, mapLocationPoint } from './campus-map-layout';
@@ -107,7 +108,7 @@ const demoPeople = computed(() => showDemoPeople.value ? personWorldLocationRefs
   const contact = props.model.state.contacts.find(item => item.id === record.contactId);
   const place = locations.find(item => item.id === record.locationId);
   return contact && place && contact.affinity >= affinityThreshold
-    ? [{ ...record, name: contact.name, affinity: contact.affinity, place, source: 'demo' as const }] : [];
+    ? [{ ...record, name: contact.name, personId: contact.sourcePersonId ?? contact.id, portraitId: contact.portraitId, affinity: contact.affinity, place, source: 'demo' as const }] : [];
 }) : []);
 /** The scene's seeded characters and actual second protagonist share the
  * canonical positions used by walking/encounter and background-life. No fake
@@ -118,13 +119,13 @@ const visiblePeople = computed(() => {
   const scenePeople = position && !state.interior
     ? getScenePeople(position, state.contacts, state.clock, hiddenProtagonistPersons(state))
       .filter(person => Math.hypot(person.x - position.x, person.z - position.z) <= 35)
-      .map(person => ({contactId:person.contactId??person.id,name:person.name,position:{x:person.x,z:person.z},source:'scene' as const}))
+      .map(person => ({contactId:person.contactId??person.id,name:person.name,personId:person.id,portraitId:person.portraitId,position:{x:person.x,z:person.z},source:'scene' as const}))
     : [];
   const otherPeople=position && !state.interior && state.protagonists
     ? otherProtagonists(activeProtagonist(state)).flatMap(otherId => {
       const other=personState(state,otherId);
       return other && !other.interior && other.scene && other.locationId===state.locationId
-        ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
+        ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],personId:PROTAGONIST_PERSON_IDS[otherId] ?? otherId,protagonistId:otherId,position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
         : [];
     })
     : [];
@@ -371,7 +372,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage" :style="transform">
             <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="campus" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
-              <CampusMapScene :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="model.state.scene" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
+              <CampusMapScene :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="model.state.scene" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
             </div>
             <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
               <CampusMapScene scope="city" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="model.state.scene" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="selectedCity = $event" @scale="cityMetersPerPixel = $event.metersPerPixel" />
