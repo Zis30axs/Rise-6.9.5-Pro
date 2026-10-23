@@ -27,6 +27,7 @@ import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
+import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
 import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import type { PlayerState, ShellActions, ShellModel } from './types';
@@ -174,7 +175,12 @@ function studyOutcome(outcome: string | null) {
 }
 const lastWasTimedActivity = computed(() => (lastRoomActivity.value?.minutes ?? 0) > 0);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
-const civilDateLabel = computed(() => `${formatGameDate(props.model.state.clock.day)} · ${gameCalendar(props.model.state.clock.day).weekdayLabel}`);
+const civilDateLabel = computed(() => {
+  const day = props.model.state.clock.day;
+  const occasions = gameCalendarOccasions(day);
+  const occasion = occasions.find(item => item.dayOff) ?? occasions[0];
+  return `${formatGameDate(day)} · ${gameCalendar(day).weekdayLabel}${occasion ? ' · ' + occasion.name : ''}`;
+});
 const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
