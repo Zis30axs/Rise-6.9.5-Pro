@@ -213,15 +213,29 @@ describe('the resident fourteen-person group', () => {
 
   it('does not wake sleeping members or reveal unjoined groups to the other protagonist', () => {
     let s = groupMember();
-    s = reduceState(s, { type: 'wait', minutes: 120 });
-    s = reduceState(s, { type: 'wait', minutes: 120 });
-    s = reduceState(s, { type: 'wait', minutes: 120 });
+    // Margo remains at work until 02:00; the entire group rests only after closing.
+    for (const minutes of [120, 120, 120, 120, 40]) s = reduceState(s, { type: 'wait', minutes });
     const sent = reduceState(s, { type: 'phone_app', owner: 'soyo', requestId: 'night-sms',
       command: { type: 'send_group_message', groupId: 'majo-circle', text: '睡了吗？' } });
     expect(sent.protagonists!.npcPhone!.messages[0]).toMatchObject({ status: 'silent', responderId: null });
     const switched = reduceState(sent, { type: 'switch_protagonist', target: 'sakiko' });
     expect(npcPhoneView(switched, 'sakiko').messages).toEqual([]);
     expect(npcPhoneView(switched, 'sakiko').groups).toEqual([]);
+  });
+
+  it('allows the cafe owner to answer late group messages while open and stops at closing', () => {
+    let s = groupMember();
+    for (let index = 0; index < 3; index++) s = reduceState(s, { type: 'wait', minutes: 120 });
+    expect(s.clock).toMatchObject({ hour: 23, minute: 20 });
+    const night = reduceState(s, { type: 'phone_app', owner: 'soyo', requestId: 'cafe-night',
+      command: { type: 'send_group_message', groupId: 'majo-circle', text: '还有人在忙吗？' } });
+    expect(night.protagonists!.npcPhone!.messages[0]).toMatchObject({ status: 'pending', responderId: 'majo-margo',
+      responsePlan: [{ id: 'majo-margo', status: 'pending' }] });
+    for (const minutes of [120, 40]) s = reduceState(s, { type: 'wait', minutes });
+    expect(s.clock).toMatchObject({ hour: 2, minute: 0 });
+    const closed = reduceState(s, { type: 'phone_app', owner: 'soyo', requestId: 'cafe-closed',
+      command: { type: 'send_group_message', groupId: 'majo-circle', text: '明天再聊吧。' } });
+    expect(closed.protagonists!.npcPhone!.messages[0]).toMatchObject({ status: 'silent', responderId: null });
   });
 
   it('shares later group posts between joined protagonists, without revealing earlier posts from the same minute', () => {

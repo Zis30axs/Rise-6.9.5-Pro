@@ -2,6 +2,8 @@ import type { PlayerState, WorldState } from '../frontend/types';
 import { advancePlayerNutrition, getServiceTakeawayItem, INVENTORY_ITEM_LIMIT, MAX_PURCHASE_QUANTITY, PACKAGING_FEE } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 
+import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+
 export interface LocationStatus {
   locationId: string;
   label: string;
@@ -27,7 +29,7 @@ interface Venue {
 /** Authored prototype hours describe services at an existing outdoor location. */
 const venues: readonly Venue[] = [
   { locationId: 'cafe', label: '街角咖啡店', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '露台旁设有外带窗口，可点饮品或甜点，在露台享用。' },
-  { locationId: 'street-cafe', label: '街边咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '沿街外带窗口营业到次日凌晨两点，可点饮品或甜点，在门前座位享用。' },
+  { locationId: 'street-cafe', label: '玛格咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '宝生玛格经营的街边咖啡馆营业到次日凌晨两点，提供咖啡、茶与当日甜点；可在露台享用，也可从店门进入馆内。' },
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },
   { locationId: 'pocket-park', label: '口袋公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在长椅上小憩，或沿着公园步道散步。' },
@@ -38,7 +40,7 @@ const venues: readonly Venue[] = [
 ];
 
 export function getLocationStatus(locationId: string, clock: WorldState['clock']): LocationStatus | null {
-  const venue = venues.find(item => item.locationId === locationId);
+  const venue = venues.find(item => item.locationId === cafeServiceLocation(locationId));
   if (!venue) return null;
   const minute = clock.hour * 60 + clock.minute;
   const alwaysOpen = venue.opens === null || venue.closes === null;
@@ -78,10 +80,10 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
 export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
-  { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '在外带窗口点一杯美式，在室外座位喝完。', minutes: 10, price: 320, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
-  { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '在外带窗口点一杯拿铁，在室外座位慢慢喝完。', minutes: 15, price: 440, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
-  { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '在外带窗口点一杯热茶，在室外座位歇一会儿。', minutes: 10, price: 240, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
-  { id: 'eat-dessert', locationIds: ['cafe', 'street-cafe'], label: '吃一份甜点', description: '在外带窗口取一份当日甜点，在室外座位吃完。', minutes: 15, price: 360, effects: effects({ energy: 10, morale: 6, stress: -4, satiety: 12, foodEnergy: 260 }) },
+  { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '点一杯美式咖啡，坐下喝完。', minutes: 10, price: 320, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
+  { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '点一杯拿铁，坐下慢慢喝完。', minutes: 15, price: 440, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
+  { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '点一杯热茶，坐下歇一会儿。', minutes: 10, price: 240, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
+  { id: 'eat-dessert', locationIds: ['cafe', 'street-cafe'], label: '吃一份甜点', description: '点一份当日甜点，坐下吃完。', minutes: 15, price: 360, effects: effects({ energy: 10, morale: 6, stress: -4, satiety: 12, foodEnergy: 260 }) },
   { id: 'eat-meal', locationIds: ['commercial'], label: '吃简餐', description: '从沿街餐点窗口取一份饭菜，在街边用餐区吃完。', minutes: 20, price: 360, effects: effects({ energy: 22, morale: 4, health: 1, stress: -4, satiety: 40, foodEnergy: 600 }) },
   { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
@@ -91,7 +93,8 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'>): readonly LocationService[] {
-  return state.interior ? [] : locationServiceCatalog.filter(service => service.locationIds.includes(state.locationId));
+  return state.interior && state.interior.roomId !== MARGO_CAFE_ROOM_ID ? []
+    : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId)));
 }
 
 /** Pay for the portion plus packaging now; nutrition is settled only on later use. */
@@ -106,7 +109,7 @@ export function getTakeawayQuote(state: WorldState, serviceId: string, quantity 
   const status = getLocationStatus(state.locationId, state.clock);
   let blockedReason = !service || !item ? '这项活动不提供食物打包。'
     : !validQuantity ? `打包数量必须是 1–${MAX_PURCHASE_QUANTITY} 的整数。`
-      : state.interior || !service.locationIds.includes(state.locationId) ? '当前地点不提供这份餐点，请先到达对应地点。'
+      : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这份餐点，请先到达对应地点。'
         : !status || !status.isOpen ? '当前店铺已打烊，无法打包。' : null;
   if (!blockedReason && owned + unitsAdded > INVENTORY_ITEM_LIMIT) blockedReason = `每种商品最多保存 ${INVENTORY_ITEM_LIMIT} 个使用单位。`;
   if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 日元。`;
@@ -129,7 +132,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
   const price = service?.price ?? 0;
   const status = getLocationStatus(state.locationId, state.clock);
   let blockedReason: string | null = !service ? '不存在的地点活动。'
-    : state.interior || !service.locationIds.includes(state.locationId) ? '当前地点不提供这项活动，请先到达对应地点。'
+    : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
       : !status ? '当前地点没有已设定的开放安排。' : null;
   if (!blockedReason && status && !status.isOpen) blockedReason = `当前${status.label}${status.statusLabel}，开放时间 ${status.hoursLabel}。`;
   if (!blockedReason && status?.minutesUntilClose != null && minutes > status.minutesUntilClose) {

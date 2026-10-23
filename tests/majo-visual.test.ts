@@ -167,7 +167,7 @@ describe('PR #16 runtime art registry', () => {
 describe('residential prototypes and Nikaido house', () => {
   it('connects all six housing prototypes to distinct reachable interiors and existing parents', () => {
     expect(majoHousings).toHaveLength(6);
-    expect(new Set(campusInteriors.map(room => room.id)).size).toBe(10);
+    expect(new Set(campusInteriors.map(room => room.id)).size).toBe(11);
     for (const housing of majoHousings) {
       const room = getCampusInterior(housing.interiorId);
       expect(room, housing.id).toBeDefined();

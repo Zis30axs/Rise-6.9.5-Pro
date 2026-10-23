@@ -146,6 +146,8 @@ export interface WorldState {
   transit: TransitState;
   /** Absent in old saves; populated after the first eligible event check. */
   interactionEventRate?: InteractionEventRateState;
+  /** Authored cafe offers and per-protagonist daily gift receipts. */
+  margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
@@ -158,6 +160,7 @@ export interface WorldState {
 }
 
 export type WorldAction =
+  | { type: 'receive_cafe_gift'; offerId: string }
   | { type: 'switch_protagonist'; target: import('../runtime/dual-protagonists').ProtagonistId }
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
@@ -238,6 +241,7 @@ export interface InteractionPresentation {
   label: string;
   progress: number;
   error?: string;
+  detail?: string;
 }
 
 export interface Bridge {

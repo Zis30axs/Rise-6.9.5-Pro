@@ -19,7 +19,8 @@ const storeAvailable = computed(() => getStoreAvailability(props.model.state).av
 const atBookshop = computed(() => !props.model.state.interior && props.model.state.locationId === 'bookshop');
 const activityDisabled = (id: string) => {
   const item = room.value?.interactions.find(activity => activity.id === id);
-  return props.model.busy || !!(item && !isStudyInteraction(id) && item.energyDelta < 0 && props.model.state.player.energy < -item.energyDelta);
+  const closed = status.value && (!status.value.isOpen || status.value.minutesUntilClose !== null && !!item && item.minutes > status.value.minutesUntilClose);
+  return props.model.busy || !!closed || !!(item && !isStudyInteraction(id) && item.energyDelta < 0 && props.model.state.player.energy < -item.energyDelta);
 };
 </script>
 

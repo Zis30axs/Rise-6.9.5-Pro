@@ -7,6 +7,7 @@ import { locations } from '../runtime/model';
 import { formatGameNumber } from './format-game-number';
 import { completeLocationService, packageLocationService, serviceEffects as effects, signedServiceEffect as signed } from './location-service-action';
 import type { ShellActions, ShellModel } from './types';
+import { MARGO_CAFE_ROOM_ID } from '../runtime/margo-cafe-venue';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
 const emit = defineEmits<{ map: []; store: []; books: []; activities: [] }>();
@@ -20,6 +21,7 @@ const receipt = ref('');
 const attempted = ref(false);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
+  if (room.value?.id === MARGO_CAFE_ROOM_ID) return '可以向在场的店主与来客打招呼，点一杯饮品，或在窗边坐一会儿。';
   if (room.value) return '上方可直接选择房间里的学习、整理与休息，也可在 3D 中靠近桌椅、书架或床铺探索。';
   if (storeAvailable.value) return '在店门前打开货架选购，购买的商品放入背包，使用时才结算效果。';
   if (atBookshop.value) return '可选择本专业学科巩固，也可探索其他专业；选科后查看耗时与学习代价。';

@@ -12,6 +12,7 @@ import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
+import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
   dispose(reason?: string): void;
@@ -85,6 +86,7 @@ export function mountShell(
     prepared: WorldState;
     eventState?: WorldState;
     eventIds?: { userId: string; assistantId: string };
+    cafeOffer?: MargoCafeOffer;
     timer?: number;
     working: boolean;
     resolve(result: boolean): void;
@@ -151,7 +153,7 @@ export function mountShell(
     clearInteractionTimer(pending);
     pending.working = false;
     const errorText = message(error);
-    model.interaction = { phase: 'error', label: pending.label, progress: 75, error: errorText };
+    model.interaction = { phase: 'error', label: pending.label, progress: 75, error: errorText, detail: pending.cafeOffer?.preview };
     model.notice = errorText;
   }
   function publishInteraction(pending: PendingInteraction, next: WorldState) {
@@ -171,8 +173,13 @@ export function mountShell(
     pending.working = true; model.notice = '';
     try {
       if (!accept) {
-        const next = mergeInteractionReceipts(pending.prepared, pending.original, snapshot());
+        const next = dismissMargoCafeOffer(mergeInteractionReceipts(pending.prepared, pending.original, snapshot()));
         publishInteraction(pending, next);
+        return;
+      }
+      if (pending.cafeOffer) {
+        pending.eventState ??= reduceState(mergeInteractionReceipts(pending.prepared, pending.original, snapshot()), { type: 'receive_cafe_gift', offerId: pending.cafeOffer.id });
+        publishInteraction(pending, mergeInteractionReceipts(pending.eventState, pending.original, snapshot()));
         return;
       }
       model.interaction = { phase: 'generating', label: pending.label, progress: 80 };
@@ -203,6 +210,7 @@ export function mountShell(
     if (!isGameplayInteraction(action)) return false;
     let original: WorldState; let prepared: WorldState;
     let hasEvent = false;
+    let cafeOffer: MargoCafeOffer | undefined;
     try {
       original = snapshot();
       // All duration and study rolls happen once, before any visible progress.
@@ -210,13 +218,17 @@ export function mountShell(
       if (canCheckInteractionEvent(prepared, action)) {
         hasEvent = Math.random() < INTERACTION_EVENT_PROBABILITY;
         prepared = recordInteractionEventCheck(prepared, action, hasEvent);
+        if (hasEvent) {
+          cafeOffer = getMargoCafeOffer(prepared, action) ?? undefined;
+          if (cafeOffer) prepared = stageMargoCafeOffer(prepared, cafeOffer);
+        }
       }
     } catch (error) { model.notice = message(error); return false; }
     model.busy = true; model.notice = '';
     const label = interactionLabel(action);
     model.interaction = { phase: 'progress', label, progress: 0 };
     return new Promise<boolean>(resolve => {
-      const pending: PendingInteraction = { request: ++epoch, action: { ...action }, label, original, prepared, working: true, resolve };
+      const pending: PendingInteraction = { request: ++epoch, action: { ...action }, label, original, prepared, cafeOffer, working: true, resolve };
       pendingInteraction = pending;
       const startedAt = Date.now();
       pending.timer = hostWindow.setInterval(() => {
@@ -226,7 +238,7 @@ export function mountShell(
         if (elapsed < 1) return;
         clearInteractionTimer(pending);
         pending.working = false;
-        if (hasEvent) model.interaction = { phase: 'choice', label, progress: 75 };
+        if (hasEvent) model.interaction = { phase: 'choice', label, progress: 75, detail: cafeOffer?.preview };
         else void resolveInteraction(false);
       }, 40);
     });

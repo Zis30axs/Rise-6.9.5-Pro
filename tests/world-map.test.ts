@@ -47,9 +47,9 @@ describe('沙盘与小说出行界面', () => {
     expect(viewport.getAttribute('data-map-layer')).toBe('world'); expect(dispatch).not.toHaveBeenCalled();
   });
 
-  it('小说模式列出 16 处校园及室内地点，去室内按真实报价结算并通知关闭地图', async () => {
+  it('小说模式列出 17 处校园及室内地点，去室内按真实报价结算并通知关闭地图', async () => {
     const { host, model, dispatch, travelled } = await mountMap(true);
-    expect(host.querySelectorAll('.wm-destination')).toHaveLength(16);
+    expect(host.querySelectorAll('.wm-destination')).toHaveLength(17);
     const room = novelDestinations.find(item => item.id === 'study-room')!;
     const target = [...host.querySelectorAll<HTMLButtonElement>('.wm-destination')].find(item => item.querySelector('b')?.textContent === room.name)!;
     const quote = getNovelTravelQuote(model.state, room.id), energy = model.state.player.energy;

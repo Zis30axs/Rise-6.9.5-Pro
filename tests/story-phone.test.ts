@@ -1,6 +1,8 @@
 import { webcrypto } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../src/runtime/model';
+import { getCampusInterior } from '../src/runtime/campus-interiors';
+import { MARGO_CAFE_ROOM_ID } from '../src/runtime/margo-cafe-venue';
 import { createStoryPhoneLink, type StoryPhoneHost, type StoryPhoneSnapshot } from '../src/frontend/story-phone';
 
 afterEach(() => {
@@ -31,6 +33,29 @@ function fixture() {
 }
 
 describe('剧情手机投递与回执边界', () => {
+  it('prefills only actual nearby cafe people without creating contacts or exposing departed visitors', async () => {
+    const f = fixture(), state = createInitialState();
+    state.clock = { day: 1, hour: 16, minute: 0 };
+    state.locationId = MARGO_CAFE_ROOM_ID;
+    state.scene = { x: 48, z: 55.5, yaw: 0, areaId: 'street-cafe', seed: 'phone-cafe', encounterId: null };
+    state.interior = { roomId: MARGO_CAFE_ROOM_ID, ...getCampusInterior(MARGO_CAFE_ROOM_ID)!.spawn, activityId: null, lastRest: null, lastStudy: null };
+    f.replace(state);
+    const link = createStoryPhoneLink(f.options);
+    await link.sync();
+    const binding = vi.mocked(f.api.bind).mock.calls[0][0];
+    expect(binding.candidates?.map(person => person.id)).toEqual(['majo-emma', 'majo-hiro', 'majo-anan', 'majo-margo']);
+    expect(f.options.state().contacts).toEqual(createInitialState().contacts);
+    state.clock.hour = 18;
+    f.replace(state);
+    await link.sync();
+    expect(f.lease.sync).toHaveBeenLastCalledWith(expect.objectContaining({ candidates: expect.arrayContaining([
+      expect.objectContaining({ id: 'majo-noa' }), expect.objectContaining({ id: 'majo-margo' }),
+    ]) }));
+    const last = f.lease.sync.mock.calls[f.lease.sync.mock.calls.length - 1] as unknown as [{ candidates: { id: string }[] }];
+    expect(last[0].candidates.some(person => person.id === 'majo-emma')).toBe(false);
+    link.dispose();
+  });
+
   it('retains a full legacy introduction in the world while adapting the phone editor to 500 characters', async () => {
     const f = fixture(); const state = createInitialState();
     state.contacts[0].summary = '旧介绍'.repeat(600);

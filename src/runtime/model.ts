@@ -4,9 +4,11 @@ import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settl
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState, InteractionEventRateState } from '../frontend/types';
 import { INTERACTION_EVENT_HISTORY_LIMIT } from './interaction-event-rate';
+import { applyMargoCafeGift, parseMargoCafeState } from './margo-cafe';
+import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
-import { getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
+import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
@@ -293,14 +295,17 @@ function sceneCoordinates(x: unknown, z: unknown, yaw: unknown) {
   const wrappedYaw = ((yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
   return { ...point, yaw: Math.max(-3.141, Math.min(3.141, Math.round(wrappedYaw * 1000) / 1000)), areaId: area.id };
 }
-function parseScenePresence(value: unknown): ScenePresence {
+function parseScenePresence(value: unknown, interior: InteriorPresence | null): ScenePresence {
   const item = object(value, ['x', 'z', 'yaw', 'areaId', 'seed', 'encounterId'], 'scene');
   const coordinates = sceneCoordinates(item.x, item.z, item.yaw);
   if (item.areaId !== coordinates.areaId) return invalid('scene.areaId 与坐标不一致');
   const scene: ScenePresence = { ...coordinates, seed: sceneSeed(item.seed), encounterId: item.encounterId === null ? null : id(item.encounterId, 'scene.encounterId') };
   if (scene.encounterId) {
-    const person = getScenePeople(scene).find(person => person.id === scene.encounterId);
-    if (!person || Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE) return invalid('scene.encounterId 当前不在附近');
+    const cafeInterior = interior?.roomId === MARGO_CAFE_ROOM_ID ? interior : null;
+    const position = cafeInterior ?? scene;
+    const people = cafeInterior ? getInteriorPeopleForValidation(cafeInterior.roomId) : getScenePeople(scene);
+    const person = people.find(person => person.id === scene.encounterId);
+    if (!person || Math.hypot(person.x - position.x, person.z - position.z) > SCENE_ENCOUNTER_DISTANCE) return invalid('scene.encounterId 当前不在附近');
   }
   return scene;
 }
@@ -525,13 +530,14 @@ export function parseState(value: unknown): WorldState {
   const version = (value as Record<string, unknown>).schema_version;
   if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
   const hasInteractionEventRate = version === '1.11.0' && Object.hasOwn(value, 'interactionEventRate');
+  const hasMargoCafeDaily = version === '1.11.0' && Object.hasOwn(value, 'margoCafeDaily');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -547,15 +553,17 @@ export function parseState(value: unknown): WorldState {
     }
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
+  const parsedInterior = hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null;
   const result: WorldState = {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     locationId: place(state.locationId, 'locationId'),
-    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene),
-    interior: hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null,
+    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior),
+    interior: parsedInterior,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
     ...(hasInteractionEventRate ? { interactionEventRate: parseInteractionEventRateState(state.interactionEventRate, parsedClock) } : {}),
+    ...(hasMargoCafeDaily ? { margoCafeDaily: parseMargoCafeState(state.margoCafeDaily, parsedClock) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
@@ -797,8 +805,11 @@ function commitLegacyStoryTurn(
   next.phone.push(...messages);
   const participants = new Set<string>();
   for (const snapshot of [state, next]) {
-    if (snapshot.scene?.encounterId && !snapshot.interior) participants.add(snapshot.scene.encounterId);
-    const people = snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)) : [];
+    const people = snapshot.interior ? getInteriorPeople(snapshot.interior.roomId, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot))
+      : snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)) : [];
+    const position = snapshot.interior ?? snapshot.scene;
+    if (position && people.some(person => person.id === snapshot.scene?.encounterId &&
+      Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE)) participants.add(snapshot.scene!.encounterId!);
     for (const segment of parseNovelDialogue(reply.text)) {
       if (!segment.speaker) continue;
       const matches = [
@@ -829,11 +840,17 @@ export function acknowledgePhoneRead(state: WorldState, ids: readonly string[]):
   return next;
 }
 
+function clearIndoorEncounter(state: WorldState) {
+  if (state.interior && state.scene?.encounterId && !getInteriorPeople(state.interior.roomId, state.contacts, state.clock).some(person =>
+    person.id === state.scene!.encounterId && Math.hypot(person.x - state.interior!.x, person.z - state.interior!.z) <= SCENE_ENCOUNTER_DISTANCE)) state.scene.encounterId = null;
+}
+
 function advance(state: WorldState, minutes: number) {
   state.player = advancePlayerNutrition(state.player, state.clock, minutes);
   const next = state.clock.hour * 60 + state.clock.minute + minutes;
   state.clock = { day: state.clock.day + Math.floor(next / 1440), hour: Math.floor(next / 60) % 24, minute: next % 60 };
   if (state.clock.day > 365000) throw new Error('已到达最大天数，无法继续推进。');
+  clearIndoorEncounter(state);
 }
 function note(state: WorldState, message: string, stableId?: string) {
   const prefix = `entry-${state.clock.day}-${state.clock.hour}-${state.clock.minute}-`;
@@ -890,7 +907,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const sourcePersonId = profile.sourcePersonId === undefined ? existing?.sourcePersonId ?? null : profile.sourcePersonId;
       if (existing?.sourcePersonId && sourcePersonId !== existing.sourcePersonId) throw new Error('已确认人物的来源身份不能更换。');
       if (sourcePersonId && sourcePersonId !== existing?.sourcePersonId) {
-        const person = next.scene && getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === sourcePersonId);
+        const people = next.interior ? getInteriorPeople(next.interior.roomId, next.contacts, next.clock, hiddenProtagonistPersons(next))
+          : next.scene ? getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)) : [];
+        const person = people.find(person => person.id === sourcePersonId);
         if (!person) throw new Error('这位陌生人不属于当前场景。');
         if (!existing && profile.id !== sourcePersonId) throw new Error('请沿用陌生人的稳定人物 ID。');
       }
@@ -993,6 +1012,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const interaction = room.interactions.find(item => item.id === action.interactionId);
       if (!interaction) throw new Error('这项设施不属于当前房间。');
       next.interior = { ...next.interior, ...interiorCoordinates(room.id, interaction.x, interaction.z, next.interior.yaw) };
+      clearIndoorEncounter(next);
       break;
     }
     case 'air_traffic_tick':
@@ -1011,11 +1031,13 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       break;
     }
     case 'encounter': {
-      if (next.interior) throw new Error('当前室内没有可搭话的已设定人物。');
       if (!next.scene) throw new Error('请先进入自由行走，再走到行人附近搭话。');
-      const person = getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === action.personId);
+      const people = next.interior ? getInteriorPeople(next.interior.roomId, next.contacts, next.clock, hiddenProtagonistPersons(next))
+        : getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next));
+      const position = next.interior ?? next.scene;
+      const person = people.find(person => person.id === action.personId);
       if (!person) throw new Error('这位行人不属于当前场景。');
-      if (Math.hypot(person.x - next.scene.x, person.z - next.scene.z) > SCENE_ENCOUNTER_DISTANCE) throw new Error('请走到这位行人附近再搭话。');
+      if (Math.hypot(person.x - position.x, person.z - position.z) > SCENE_ENCOUNTER_DISTANCE) throw new Error('请走到这位行人附近再搭话。');
       next.scene.encounterId = person.id;
       break;
     }
@@ -1058,9 +1080,11 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       if (next.interior) throw new Error('请先离开当前房间。');
       const room = getCampusInterior(action.roomId);
       if (!room) throw new Error('不存在的室内地点。');
+      if (room.id === MARGO_CAFE_ROOM_ID && !getLocationStatus(MARGO_CAFE_LOCATION_ID, next.clock)?.isOpen) throw new Error('玛格的咖啡馆已打烊，营业时间 10:00–次日 02:00。');
       if (!next.scene || next.locationId !== room.parentLocationId || Math.hypot(next.scene.x - room.entrance.x, next.scene.z - room.entrance.z) > INTERIOR_ENTRANCE_RANGE) throw new Error('请先走到建筑入口附近，再进入室内。');
       next.interior = { roomId: room.id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
       next.locationId = room.id;
+      next.scene.encounterId = null;
       note(next, `进入${room.label}。`);
       break;
     }
@@ -1068,6 +1092,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       if (!next.interior) return next;
       const room = getCampusInterior(next.interior.roomId)!;
       next.interior = null;
+      next.scene!.encounterId = null;
       next.locationId = sceneLocationId(next.scene!.areaId);
       note(next, `离开${room.label}，回到原来的室外入口位置。`);
       break;
@@ -1075,6 +1100,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     case 'interior_walk': {
       if (!next.interior) throw new Error('请先进入室内。');
       next.interior = { ...next.interior, ...interiorCoordinates(next.interior.roomId, action.x, action.z, action.yaw) };
+      clearIndoorEncounter(next);
       break;
     }
     case 'interior_interact': {
@@ -1082,6 +1108,10 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const room = getCampusInterior(next.interior.roomId)!;
       const interaction = room.interactions.find(item => item.id === action.interactionId);
       if (!interaction) throw new Error('这项交互不属于当前房间。');
+      if (room.id === MARGO_CAFE_ROOM_ID) {
+        const venue = getLocationStatus(MARGO_CAFE_LOCATION_ID, next.clock)!;
+        if (!venue.isOpen || (venue.minutesUntilClose !== null && interaction.minutes > venue.minutesUntilClose)) throw new Error('这项活动无法在咖啡馆打烊前完成。');
+      }
       if (Math.hypot(next.interior.x - interaction.x, next.interior.z - interaction.z) > INTERIOR_INTERACTION_RANGE) throw new Error('请先走到对应设施附近再交互。');
       if (interaction.id === 'dorm-rest') throw new Error('请选择休息时长。');
       if (isStudyInteraction(interaction.id)) throw new Error('请选择学习时长。');
@@ -1192,6 +1222,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
 /** Public reducers keep the active legacy view as a compatibility projection only. */
 export function reduceState(state: WorldState, action: WorldAction): WorldState {
   const before = parseState(state);
+  if (action?.type === 'receive_cafe_gift') return parseState(finishPersonalChange(before, applyMargoCafeGift(before, action.offerId), '咖啡馆赠礼'));
   if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') {
     const next = reduceProtagonistAction(before, action);
     captureNewJournalEvidence(before, next);

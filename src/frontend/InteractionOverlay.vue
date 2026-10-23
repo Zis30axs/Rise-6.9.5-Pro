@@ -45,7 +45,7 @@ onBeforeUnmount(() => { previousFocus = null; });
       <h2 id="uc-interaction-heading">{{ interaction.label }}</h2>
       <div class="interaction-progress" :class="{ 'is-generating': interaction.phase === 'generating' }" role="progressbar" aria-label="交互进度" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="progress" data-interaction-progress><span :style="{ width: progress + '%' }"></span></div>
       <template v-if="interaction.phase === 'choice'">
-        <p class="interaction-question">似乎出现了不同寻常的事……<br>需要继续吗？</p>
+        <p class="interaction-question">{{ interaction.detail ?? '似乎出现了不同寻常的事……' }}<br>需要继续吗？</p>
         <div class="interaction-choices"><button type="button" class="interaction-secondary" data-interaction-reject @click="actions.resolveInteraction?.(false)">否，正常进行</button><button type="button" class="interaction-primary" data-interaction-accept @click="actions.resolveInteraction?.(true)">是，继续看看</button></div>
       </template>
       <template v-else-if="interaction.phase === 'error'">
