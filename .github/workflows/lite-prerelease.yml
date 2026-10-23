@@ -44,7 +44,7 @@ jobs:
       - name: Build existing phone, artwork and frontend
         run: |
           npm run build
-          npx vitest run tests/third-protagonist.test.ts tests/characters.test.ts tests/story-phone.test.ts tests/contact-lifecycle.test.ts tests/phone-runtime.test.ts tests/npc-phone-lifecycle.test.ts tests/phone-appearance.test.ts --maxWorkers=1
+          npx vitest run --maxWorkers=1
       - name: Construct and audit Lite card and offline ZIP
         run: |
           python scripts/build_lite_release.py
