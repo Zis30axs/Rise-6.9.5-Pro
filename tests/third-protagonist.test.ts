@@ -6,6 +6,8 @@ import { getScenePeople, hiddenProtagonistPersons } from '../src/runtime/scene-c
 import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { applyNpcPhoneCommand, npcPhoneView } from '../src/runtime/npc-phone';
 import { residentCast } from '../src/runtime/npc-cast';
+import { protagonistOpening } from '../src/runtime/viewpoint-openings';
+import card from '../src/card.json';
 import { applyPhoneReply } from '../src/runtime/protagonist-world';
 
 function world() {
@@ -17,6 +19,50 @@ function atGate() {
 }
 
 describe('third protagonist accounts and timeline', () => {
+  it('starts all three viewpoints with their own novel opening, calendar and journal', () => {
+    const state = world();
+    const soyo = personState(state, 'soyo');
+    const sakiko = personState(state, 'sakiko');
+    const emma = personState(state, 'emma');
+    const openings = [soyo.story[0].text, sakiko.story[0].text, emma.story[0].text];
+    expect(new Set(openings).size).toBe(3);
+    expect(card.data.first_mes).toBe(protagonistOpening('soyo', state.clock));
+    expect(card.data.first_mes).not.toContain('开发占位');
+    expect(card.data.scenario).toContain('东京');
+    expect(openings[0]).toContain('长崎素世');
+    expect(openings[1]).toContain('丰川祥子');
+    expect(openings[2]).toContain('樱羽艾玛');
+    expect(openings[0]).toContain('高田校园的南门');
+    expect(openings[1]).toContain('目白台');
+    expect(openings[2]).toContain('杂司谷住宅区');
+    expect(openings[0]).not.toMatch(/月代雪|牢屋敷/);
+    expect(openings[1]).not.toMatch(/月代雪|魔女裁判/);
+    expect(openings[2]).not.toMatch(/CRYCHIC|Ave Mujica/);
+    for (const personal of [soyo, sakiko, emma]) {
+      expect(personal.journal[0].at).toBe('第 1 天 17:20');
+      expect(personal.story[0].role).toBe('assistant');
+      expect(personal.story[0].text).toContain('2025年8月28日，周四，17:20');
+    }
+    const switched = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
+    expect(switched.story[0].text).toBe(emma.story[0].text);
+    expect(switched.journal[0]).toEqual(emma.journal[0]);
+    expect(personState(switched, 'soyo').story[0].text).toBe(soyo.story[0].text);
+    expect(switched.contacts.map(contact => contact.id).sort()).toEqual(
+      residentCast.filter(person => person.id !== 'majo-emma').map(person => person.id).sort()
+    );
+  });
+
+  it('uses the shared clock for subsequent viewpoint initialization', () => {
+    const initial = createInitialState();
+    initial.clock = { day: 9, hour: 10, minute: 5 };
+    const state = enableProtagonists(initial);
+    for (const owner of ['sakiko', 'emma'] as const) {
+      const personal = personState(state, owner);
+      expect(personal.story[0].text).toContain('2025年9月5日，周五，10:05');
+      expect(personal.journal[0].at).toBe('第 9 天 10:05');
+    }
+  });
+
   it('seeds only the intended contacts and leaves all demo messages and schedules out of a new game', () => {
     const initial = createInitialState();
     expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko']);
