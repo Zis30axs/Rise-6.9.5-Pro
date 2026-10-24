@@ -10,6 +10,7 @@ describe('device-owned phone appearance',()=>{
     expect(parsed).toEqual(copy);
     expect(defaultPhoneAppearance('soyo').theme).toBe('light');
     expect(defaultPhoneAppearance('sakiko').theme).toBe('dark');
+    expect(defaultPhoneAppearance('emma').theme).toBe('dark');
   });
   it('persists each device after switching, serializing and reloading',()=>{
     let s=enableProtagonists(createInitialState());
@@ -18,10 +19,14 @@ describe('device-owned phone appearance',()=>{
     s=reduceState(s,{type:'phone_app',owner:'soyo',requestId:'visual-soyo',command:{type:'appearance',appearance:soyo}});
     s=reduceState(s,{type:'switch_protagonist',target:'sakiko'});
     s=reduceState(s,{type:'phone_app',owner:'sakiko',requestId:'visual-sakiko',command:{type:'appearance',appearance:sakiko}});
+    s=reduceState(s,{type:'switch_protagonist',target:'emma'});
+    const emma={wallpaper:'signature',theme:'light',layout:'focus'} as const;
+    s=reduceState(s,{type:'phone_app',owner:'emma',requestId:'visual-emma',command:{type:'appearance',appearance:emma}});
     s=parseState(JSON.parse(JSON.stringify(s)));
     s=reduceState(s,{type:'switch_protagonist',target:'soyo'});
     expect(s.protagonists!.devices.soyo.appearance).toEqual(soyo);
     expect(s.protagonists!.devices.sakiko.appearance).toEqual(sakiko);
+    expect(s.protagonists!.devices.emma.appearance).toEqual(emma);
   });
   it('rejects invalid resource choices and changing another device',()=>{
     expect(()=>parsePhoneAppearance({wallpaper:['plain'],theme:'dark',layout:'daily'})).toThrow();

@@ -2,6 +2,118 @@
   "schema": "unread-city-phone-art-v1",
   "source": "Original SVG; scripts/build_phone_art.py",
   "assets": {
+    "emma/cards/claude.svg": {
+      "bytes": 1170,
+      "sha256": "6e09c666e31d3a05086d6611c85f2f54b8304d369fcc4df35ea9df5ad27fa1ce"
+    },
+    "emma/cards/gemini.svg": {
+      "bytes": 1170,
+      "sha256": "0b55bbedba8e1ea514975676d06e1404f88ebb02d2541baa968b74b839f304a3"
+    },
+    "emma/cards/gpt.svg": {
+      "bytes": 1170,
+      "sha256": "d75915c3cc72cb243b881689b39a82aab00416214917180bc986748adf2718d5"
+    },
+    "emma/icons/appie.svg": {
+      "bytes": 533,
+      "sha256": "0d91fd2e1c0f8e07ad6e99e3ed725f8d163982153cb1da8767f8b4d431d14cec"
+    },
+    "emma/icons/assistant.svg": {
+      "bytes": 578,
+      "sha256": "46588e1221019452b2a7e280912faf5ac6a3832925c7d3823fe33b5dbb676c5e"
+    },
+    "emma/icons/chat.svg": {
+      "bytes": 510,
+      "sha256": "163c1fbfbffa17568c3ab903377b001003be11402d73b6d25fbee5055b0fe811"
+    },
+    "emma/icons/draw.svg": {
+      "bytes": 529,
+      "sha256": "c76adae8dde4ea914a53343b459a79b37e7554a8044688e6d5c897bdd2df3b7e"
+    },
+    "emma/icons/engines.svg": {
+      "bytes": 630,
+      "sha256": "e22f8bef855ba0c3b2b8eb035af43aeeff9cfe62ac9f9c5438a300de9f233aac"
+    },
+    "emma/icons/forum.svg": {
+      "bytes": 525,
+      "sha256": "9431ea904555a0b9af972cdf62d210c40d715cace88962e04348964a5ccf1337"
+    },
+    "emma/icons/gallery.svg": {
+      "bytes": 575,
+      "sha256": "2f6aec222bfe9749eacd656069dc388fe04a73236859bb65baa21b53ec6afed0"
+    },
+    "emma/icons/games.svg": {
+      "bytes": 573,
+      "sha256": "140ee504bd400f2fa9044d34b28709a3666545f6b04692906648bb33174f519a"
+    },
+    "emma/icons/library.svg": {
+      "bytes": 518,
+      "sha256": "b7e086e43b7082127d0e8b327778e4ae437ffc35ed49fc1057a24f66f737ce32"
+    },
+    "emma/icons/listen.svg": {
+      "bytes": 522,
+      "sha256": "702a874dad99d8984f25c1f51425f885a1c997e6ea06287e78fb3e5f3b99ef73"
+    },
+    "emma/icons/music.svg": {
+      "bytes": 572,
+      "sha256": "570df136c04b99333c0330b6e9b239abf50ad0a4b18ee457eecbc5b820212732"
+    },
+    "emma/icons/notes.svg": {
+      "bytes": 525,
+      "sha256": "8de7e0114ea06eec9b66b575e183cd83997c83b97e5fa516e8075c71861d755b"
+    },
+    "emma/icons/paint.svg": {
+      "bytes": 645,
+      "sha256": "251cfa945904fbc0800052275bf014d51435f1c5838e4276b91e7d873b02f811"
+    },
+    "emma/icons/peek.svg": {
+      "bytes": 619,
+      "sha256": "f7d144d884f635991c73e2c18b2384a7dbb8f9578cf173f030715908cfe71b16"
+    },
+    "emma/icons/presets.svg": {
+      "bytes": 584,
+      "sha256": "73322dcc42ea25d6f4f5669c2fb18715d972730daa450152e5eefb7f7d492a06"
+    },
+    "emma/icons/roles.svg": {
+      "bytes": 525,
+      "sha256": "4a843ceb1f31b6c46611c445ed5a5ba56631735292d2453b78364dddbbe39cdb"
+    },
+    "emma/icons/settings.svg": {
+      "bytes": 586,
+      "sha256": "223c708cc9e188f42092bd901061e1319c7ff45fbe13dc0e4f0c9b1b575464c6"
+    },
+    "emma/icons/sounds.svg": {
+      "bytes": 538,
+      "sha256": "3e1ca279baa694a656b86b60f9c31cac56a53b8cf3994da8f8771782a70b4bf7"
+    },
+    "emma/icons/twiitch.svg": {
+      "bytes": 515,
+      "sha256": "0afa5074783a64bafae768cf7ada5257f79e7e476a3c92133191f8af678e3174"
+    },
+    "emma/icons/worldcalendar.svg": {
+      "bytes": 566,
+      "sha256": "0b1a13d342ba13b43d1b05b9f011d38bcace04c5446976623b84a2a71ef0e01a"
+    },
+    "emma/icons/worlddelivery.svg": {
+      "bytes": 579,
+      "sha256": "c44050b364b11e3905ab9e99bcc24304ec6b804d714fb3a409fdfd7ca31ab832"
+    },
+    "emma/icons/worldmessages.svg": {
+      "bytes": 532,
+      "sha256": "63bb6c8499346ac0c04ec150f18e5f2e5a768d6c1b25984430ee634a7e7a2790"
+    },
+    "emma/icons/worldshop.svg": {
+      "bytes": 510,
+      "sha256": "6f6cc1da61ebe3b9e850996dd3526505a0c12c0a00a930833abedde5cf30d4da"
+    },
+    "emma/icons/worldstyle.svg": {
+      "bytes": 522,
+      "sha256": "2eece695fc9bdd926a7327ff654ec61bd6df96ee2f0bc3a8fefe3b1407a9040c"
+    },
+    "emma/wallpaper.svg": {
+      "bytes": 2282,
+      "sha256": "57906beb9ed96c66d8fdeb61e043e768f79a9a7354a4b1d945fef2cee1cf5875"
+    },
     "sakiko/cards/claude.svg": {
       "bytes": 749,
       "sha256": "f7a316d5d8ffb108cdac442621f02bc36bca8b39426f2c7c3eb8967b32f136a4"

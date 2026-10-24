@@ -8,6 +8,7 @@ import css from './shell.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
+import { spatialPhoneLease } from './phone-spatial';
 import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
@@ -294,6 +295,7 @@ export function mountShell(
       if (!acquired || typeof acquired.release !== 'function' || typeof acquired.sync !== 'function' || typeof acquired.focus !== 'function') {
         throw new Error('手机连接未完成，请重试。');
       }
+      acquired = spatialPhoneLease(acquired, hostWindow, anchor, activeProtagonist(model.state));
       loadingPhoneAnchor = undefined;
       phoneLease = acquired; phoneAnchor = anchor; mountedPhoneApi = api;
       model.externalPhoneAvailable = true; model.externalPhoneOpen = true;

@@ -2,6 +2,18 @@
   "schemaVersion": 1,
   "checkedOn": "2026-10-17",
   "purpose": "本机安装维护快照与联调边界；版本只作记录，不构成项目最低要求或已通过行为验收的声明。",
+  "phoneSpatialPresentation": {
+    "recordedOn": "2026-10-24",
+    "request": "3D 手机、打开时放大、长按旋转、双指缩放、人物专属机型与手机壳",
+    "implementation": "CSS 3D presentation lease; original live iframe retained",
+    "owners": ["soyo", "sakiko", "emma"],
+    "authoredModels": ["Petal 6", "Nocturne Pro", "Sakura Mini"],
+    "implementationReference": "integration/phone-3d/README.md",
+    "verificationReference": "outputs/phone-3d-verification.json",
+    "controlledBrowserViewports": ["1440x900", "1280x800", "390x844", "320x568"],
+    "physicalTauriTavernTested": false,
+    "deployedToLocalInstallation": false
+  },
   "phoneSourcePublicationDecision": {
     "recordedOn": "2026-10-17",
     "source": "用户明确回复：允许推送到现有公开手机仓库",

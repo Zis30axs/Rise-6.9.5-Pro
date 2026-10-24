@@ -1,0 +1,206 @@
+{
+  "date": "2026-10-24",
+  "status": "passed-local-build-browser-and-packaging",
+  "theme": {
+    "name": "?????",
+    "primary": "#0c0d12",
+    "sakuraPink": "#f3b7ce",
+    "blueStripe": "#79b8ef",
+    "default": "dark",
+    "savedPreferencesPreserved": true
+  },
+  "assets": {
+    "newEmmaSvgCount": 28,
+    "newEmmaSvgBytes": 19103,
+    "totalDeviceSvgCount": 82,
+    "phoneArtCountIncludingTwiitch": 95,
+    "originalOtherOwnerAssetsChanged": false
+  },
+  "validation": {
+    "productionBuild": "passed",
+    "typecheck": "passed",
+    "reproducibleSvgCheck": "passed",
+    "vitest": {
+      "files": 2,
+      "tests": 14,
+      "passed": 14
+    },
+    "node": {
+      "tests": 8,
+      "passed": 8
+    },
+    "playwright": {
+      "scenarios": 4,
+      "passed": 4,
+      "browser": "headless Playwright Chromium",
+      "usesRealEmbeddedPhone": true,
+      "host": "controlled Tavern/Helper fixture",
+      "bundle": "dist/immersive-shell.js"
+    },
+    "packagingAudit": "outputs/emma-phone-20261024/packaging-audit.json"
+  },
+  "viewports": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": "passed",
+      "screenshots": [
+        "outputs/emma-phone-qa/1440x900-soyo-home.png",
+        "outputs/emma-phone-qa/1440x900-soyo-wallet.png",
+        "outputs/emma-phone-qa/1440x900-sakiko-home.png",
+        "outputs/emma-phone-qa/1440x900-sakiko-wallet.png",
+        "outputs/emma-phone-qa/1440x900-emma-home.png",
+        "outputs/emma-phone-qa/1440x900-emma-wallet-top.png",
+        "outputs/emma-phone-qa/1440x900-emma-wallet-scrolled.png",
+        "outputs/emma-phone-qa/1440x900-emma-messages.png",
+        "outputs/emma-phone-qa/1440x900-emma-appearance.png",
+        "outputs/emma-phone-qa/1440x900-emma-appearance-light.png",
+        "outputs/emma-phone-qa/1440x900-emma-plain.png",
+        "outputs/emma-phone-qa/1440x900-soyo-restored.png",
+        "outputs/emma-phone-qa/1440x900-emma-restored.png"
+      ],
+      "checks": [
+        "home-and-icons",
+        "wallet-scroll",
+        "message-page",
+        "click-and-save",
+        "no-horizontal-overflow",
+        "three-owner-switching",
+        "saved-appearance-restored"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "status": "passed",
+      "screenshots": [
+        "outputs/emma-phone-qa/1280x800-soyo-home.png",
+        "outputs/emma-phone-qa/1280x800-soyo-wallet.png",
+        "outputs/emma-phone-qa/1280x800-sakiko-home.png",
+        "outputs/emma-phone-qa/1280x800-sakiko-wallet.png",
+        "outputs/emma-phone-qa/1280x800-emma-home.png",
+        "outputs/emma-phone-qa/1280x800-emma-wallet-top.png",
+        "outputs/emma-phone-qa/1280x800-emma-wallet-scrolled.png",
+        "outputs/emma-phone-qa/1280x800-emma-messages.png",
+        "outputs/emma-phone-qa/1280x800-emma-appearance.png",
+        "outputs/emma-phone-qa/1280x800-emma-appearance-light.png",
+        "outputs/emma-phone-qa/1280x800-emma-plain.png",
+        "outputs/emma-phone-qa/1280x800-soyo-restored.png",
+        "outputs/emma-phone-qa/1280x800-emma-restored.png"
+      ],
+      "checks": [
+        "home-and-icons",
+        "wallet-scroll",
+        "message-page",
+        "click-and-save",
+        "no-horizontal-overflow",
+        "three-owner-switching",
+        "saved-appearance-restored"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "status": "passed",
+      "screenshots": [
+        "outputs/emma-phone-qa/390x844-soyo-home.png",
+        "outputs/emma-phone-qa/390x844-soyo-wallet.png",
+        "outputs/emma-phone-qa/390x844-sakiko-home.png",
+        "outputs/emma-phone-qa/390x844-sakiko-wallet.png",
+        "outputs/emma-phone-qa/390x844-emma-home.png",
+        "outputs/emma-phone-qa/390x844-emma-wallet-top.png",
+        "outputs/emma-phone-qa/390x844-emma-wallet-scrolled.png",
+        "outputs/emma-phone-qa/390x844-emma-messages.png",
+        "outputs/emma-phone-qa/390x844-emma-appearance.png",
+        "outputs/emma-phone-qa/390x844-emma-appearance-light.png",
+        "outputs/emma-phone-qa/390x844-emma-plain.png",
+        "outputs/emma-phone-qa/390x844-soyo-restored.png",
+        "outputs/emma-phone-qa/390x844-emma-restored.png"
+      ],
+      "checks": [
+        "home-and-icons",
+        "wallet-scroll",
+        "message-page",
+        "click-and-save",
+        "no-horizontal-overflow",
+        "three-owner-switching",
+        "saved-appearance-restored"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "status": "passed",
+      "screenshots": [
+        "outputs/emma-phone-qa/320x568-soyo-home.png",
+        "outputs/emma-phone-qa/320x568-soyo-wallet.png",
+        "outputs/emma-phone-qa/320x568-sakiko-home.png",
+        "outputs/emma-phone-qa/320x568-sakiko-wallet.png",
+        "outputs/emma-phone-qa/320x568-emma-home.png",
+        "outputs/emma-phone-qa/320x568-emma-wallet-top.png",
+        "outputs/emma-phone-qa/320x568-emma-wallet-scrolled.png",
+        "outputs/emma-phone-qa/320x568-emma-messages.png",
+        "outputs/emma-phone-qa/320x568-emma-appearance.png",
+        "outputs/emma-phone-qa/320x568-emma-appearance-light.png",
+        "outputs/emma-phone-qa/320x568-emma-plain.png",
+        "outputs/emma-phone-qa/320x568-soyo-restored.png",
+        "outputs/emma-phone-qa/320x568-emma-restored.png"
+      ],
+      "checks": [
+        "home-and-icons",
+        "wallet-scroll",
+        "message-page",
+        "click-and-save",
+        "no-horizontal-overflow",
+        "three-owner-switching",
+        "saved-appearance-restored"
+      ]
+    }
+  ],
+  "artifacts": {
+    "dist/immersive-shell.js": {
+      "bytes": 71703426,
+      "sha256": "d2d1908249ac42bcf2ad2e717a2ada21625d3f999d5c8f97dfaa63c63b2a0cd6"
+    },
+    "dist/immersive-shell-lite.js": {
+      "bytes": 16825806,
+      "sha256": "35a2bb3edc069e32e2d19c9062f094100cc9f22cd833eb80636e65e40bddec85"
+    },
+    "outputs/emma-phone-20261024/unread-city-emma-lite.png": {
+      "bytes": 25683528,
+      "sha256": "ff82bedfe4db00be0802c26dd0f72909f7d7d25603e037d7f3f0f90ff27610b4"
+    },
+    "outputs/emma-phone-20261024/unread-city-emma-lite-tauri.png": {
+      "bytes": 9823298,
+      "sha256": "9e4751ae7790ec3940804130d1647fe97ea838b5df365ec8cd71b5bb58f24626"
+    },
+    "outputs/emma-phone-20261024/unread-city-lite-assets.zip": {
+      "bytes": 41416452,
+      "sha256": "7f72bbbf05b40e77ce9ab4ae3a0afe1c4a24c8398bc4c3b93701c743d37cd409"
+    }
+  },
+  "limitations": {
+    "dshToolsAvailable": false,
+    "physicalIPhoneTauriTested": false,
+    "nativeSillyTavernTested": false,
+    "liteImportBrowserTestedThisRun": false,
+    "deployedToInstalledCard": false,
+    "realModelCalls": 0,
+    "realUserSavesModified": false,
+    "adjacentPhoneRepositoryModified": false,
+    "githubCiRun": false
+  },
+  "notes": [
+    "Screenshots reviewed at all four viewports; layout follows existing 390x844 proportional phone presentation.",
+    "Early locator ambiguity and animation-in-progress checks were corrected; only the final four successful scenarios are counted.",
+    "Lite artifacts were byte/hash audited separately; browser scenarios used the full production IIFE."
+  ]
+}

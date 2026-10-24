@@ -36,8 +36,32 @@ GLYPHS = {
 def svg(body, w=96, h=96):
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">{body}</svg>\n'
 
-def generate():
+def sakura(x, y, scale=1, opacity=1):
+    petals = ''.join(f'<path transform="rotate({angle})" d="M0 0C-15-8-19-24-8-29L0-23 8-29C19-24 15-8 0 0Z"/>' for angle in range(0, 360, 72))
+    return f'<g transform="translate({x} {y}) scale({scale})" opacity="{opacity}" fill="#f3b7ce">{petals}<circle r="3" fill="#111218"/></g>'
+
+def emma_art():
+    """Black first; restrained sakura pink and paired blue ribbon stripes."""
     files = {}
+    glyphs = {**GLYPHS, 'twiitch': '<path d="M24 25h48v34L56 73H43l-9 7V65H24zM38 37v15M56 37v15"/>'}
+    for app, glyph in glyphs.items():
+        body = '<rect x="2" y="2" width="92" height="92" rx="24" fill="#15161c"/><rect x="6" y="6" width="84" height="84" rx="20" fill="none" stroke="#f3b7ce" stroke-opacity=".3"/><path d="m59 11 25 17m-30-9 29 20" fill="none" stroke="#79b8ef" stroke-width="3" opacity=".65"/>'
+        body += f'<g fill="none" stroke="#f3b7ce" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">{glyph}</g>'
+        files[f'emma/icons/{app}.svg'] = svg(body)
+    body = '<rect width="390" height="844" fill="#0c0d12"/><path d="M0 535Q170 465 390 560V844H0Z" fill="#111218"/><g fill="none" stroke="#79b8ef"><path d="m270-25 157 145m-180-145 180 166" stroke-width="6" opacity=".7"/><path d="M-45 777 435 532M-45 793 435 548" stroke-width="5" opacity=".48"/><path d="M-45 813 435 568" stroke-width="1" opacity=".35"/></g><path d="M390 824Q282 692 326 556M315 674Q270 638 252 589M323 619Q356 598 371 567" fill="none" stroke="#f3b7ce" stroke-width="1.5" opacity=".3"/>'
+    body += sakura(327, 568, 1.2, .8) + sakura(260, 611, .6, .6) + sakura(362, 650, .7, .45)
+    body += '<g fill="#f3b7ce" opacity=".55"><path d="M42 173q17-9 17 8-14 10-17-8M318 311q14-10 15 5-10 12-15-5M93 648q17-11 17 6-13 11-17-6"/></g>'
+    files['emma/wallpaper.svg'] = svg(body, 390, 844)
+    for i, card in enumerate(('gpt', 'claude', 'gemini')):
+        base = ('#111218', '#1b151c', '#121a23')[i]
+        body = f'<rect width="360" height="210" rx="23" fill="{base}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="#f3b7ce" opacity=".35"/>'
+        body += '<g stroke="#79b8ef" fill="none"><path d="m248 0 112 93m-132-93 132 110" stroke-width="5" opacity=".7"/><path d="m210 0 150 125" opacity=".4"/></g>' + sakura(301, 98, .9, .65)
+        body += '<rect x="25" y="50" width="30" height="18" rx="5" fill="#d7c1c9"/><path d="M35 50v18M45 50v18M25 59h30" stroke="#79616a" fill="none"/><circle cx="315" cy="176" r="14" fill="#f3b7ce" opacity=".65"/><circle cx="331" cy="176" r="14" fill="#79b8ef" opacity=".65"/>'
+        files[f'emma/cards/{card}.svg'] = svg(body, 360, 210)
+    return files
+
+def generate():
+    files = emma_art()
     for owner in ('soyo', 'sakiko'):
         soft = owner == 'soyo'
         bg, ink, accent = ('#e8ecdc', '#46665d', '#c2a880') if soft else ('#1c2d49', '#e2e8f4', '#9eb7dd')
@@ -65,11 +89,11 @@ def main():
     for relative, source in generate().items():
         target = OUT / relative
         if args.check:
-            if not target.exists() or target.read_text() != source:
+            if not target.exists() or target.read_text(encoding='utf-8') != source:
                 raise SystemExit(f'Artwork differs: {target}')
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(source)
+            target.write_text(source, encoding='utf-8', newline='\n')
     print(f'{len(generate()) - 1} original SVG assets verified' if args.check else f'{len(generate()) - 1} SVG assets generated')
 
 if __name__ == '__main__':

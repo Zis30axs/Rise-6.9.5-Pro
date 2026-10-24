@@ -14,6 +14,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--card',required=True,type=Path)
     parser.add_argument('--lite',action='store_true')
+    parser.add_argument('--report',type=Path,help='Write this run separately from historical audits')
     args=parser.parse_args()
     card=extract_v2(args.card.read_bytes())
     scripts=[s for s in card['data']['extensions']['tavern_helper']['scripts'] if s.get('id')==IMMERSIVE_SCRIPT_ID]
@@ -23,13 +24,13 @@ def main():
     assert runtime.count('UNREAD_CITY_EMBEDDED_PHONE')==1
     assert bundle.count('UNREAD_CITY_EMBEDDED_PHONE')==1, 'Duplicated phone runtime'
     manifest=json.loads((ROOT/'assets/phone-visuals/manifest.json').read_text())
-    assert len(manifest['assets'])==54
+    assert len(manifest['assets'])==82
     for relative,entry in manifest['assets'].items():
         data=(ROOT/'assets/phone-visuals'/relative).read_bytes()
         assert sha(data)==entry['sha256'] and len(data)==entry['bytes']
         assert runtime.count(relative)==1 and bundle.count(relative)==1, f'Phone art not included once: {relative}'
         assert b'http' not in data.replace(b'http://www.w3.org/2000/svg',b''), 'Remote phone asset'
-    report={'status':'passed-build-and-byte-audit','lite':args.lite,'phoneRuntimeCopies':1,'originalPhoneSvgAssets':54,
+    report={'status':'passed-build-and-byte-audit','lite':args.lite,'phoneRuntimeCopies':1,'originalPhoneSvgAssets':len(manifest['assets']),
             'phoneArtBytes':sum(x['bytes'] for x in manifest['assets'].values()),'inlinePhoneArt':True,
             'cardBytes':args.card.stat().st_size,'cardSha256':sha(args.card.read_bytes()),'physicalIPhoneTested':False}
     if args.lite:
@@ -42,6 +43,8 @@ def main():
                 assert z.getinfo(x['path']).compress_type==0
         report.update(zipBytes=archive.stat().st_size,zipSha256=sha(archive.read_bytes()),externalAssets=len(m['assets']))
     (ROOT/'outputs').mkdir(exist_ok=True)
-    (ROOT/f'outputs/phone-visuals-audit{"-lite" if args.lite else ""}.json').write_text(json.dumps(report,indent=2)+'\n')
+    report_path=args.report or ROOT/f'outputs/phone-visuals-audit{"-lite" if args.lite else ""}.json'
+    report_path.parent.mkdir(parents=True,exist_ok=True)
+    report_path.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(report))
 if __name__=='__main__': main()

@@ -18,7 +18,7 @@ export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
 export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean }
 export interface PhoneNotification { id: string; text: string; at: number; read: boolean }
 export interface PhoneAppearance { wallpaper: 'signature' | 'plain'; theme: 'light' | 'dark' | 'system'; layout: 'daily' | 'focus' }
-export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='sakiko'?'dark':'light',layout:'daily'});
+export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='soyo'?'light':'dark',layout:'daily'});
 export function parsePhoneAppearance(raw: unknown): PhoneAppearance {
   const a=exact(raw,['wallpaper','theme','layout']);
   if(!['signature','plain'].includes(a.wallpaper as string)||!['light','dark','system'].includes(a.theme as string)||!['daily','focus'].includes(a.layout as string))return fail('手机外观无效');

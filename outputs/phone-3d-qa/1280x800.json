@@ -1,0 +1,23 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "status": "passed",
+  "screenshots": [
+    "outputs/phone-3d-qa/1280x800-soyo-front.png",
+    "outputs/phone-3d-qa/1280x800-soyo-back.png",
+    "outputs/phone-3d-qa/1280x800-sakiko-front.png",
+    "outputs/phone-3d-qa/1280x800-sakiko-back.png",
+    "outputs/phone-3d-qa/1280x800-emma-front.png",
+    "outputs/phone-3d-qa/1280x800-emma-back.png",
+    "outputs/phone-3d-qa/1280x800-emma-rotated.png",
+    "outputs/phone-3d-qa/1280x800-emma-pinched.png",
+    "outputs/phone-3d-qa/1280x800-emma-wallet-scroll.png"
+  ],
+  "realMultiTouch": true,
+  "touchScroll": true,
+  "iframePreserved": true,
+  "errors": [],
+  "physicalIPhoneTested": false
+}

@@ -1,5 +1,23 @@
 # 未读之城 / Unread City
 
+## 三人 3D 手机（2026-10-24）
+
+手机打开时放大，长按后拖动旋转，双指张开/捏合缩放；上方按钮可查看背面或回正。素世使用奶油花叶双摄机，祥子使用深蓝银纹三摄机，艾玛使用黑色、樱花粉与蓝色条纹的紧凑双摄机。机型为本项目原创设计，手机应用与草稿沿用原实例。
+
+[三人正反面预览](outputs/phone-3d-qa/three-phones-preview.png) · [艾玛旋转效果](outputs/phone-3d-qa/390x844-emma-rotated.png) · [操作与实现说明](integration/phone-3d/README.md)
+
+下载：[Tauri 专用 Lite 卡（9.83 MB）](outputs/phone-3d-20261024/unread-city-phone-3d-lite-tauri.png) · [普通 SillyTavern Lite 卡（25.71 MB）](outputs/phone-3d-20261024/unread-city-phone-3d-lite.png) · [配套本地素材 ZIP（41.42 MB）](outputs/phone-3d-20261024/unread-city-lite-assets.zip)。使用本轮卡片和配套 ZIP；仍需安装并授权酒馆助手。
+
+构建、类型检查、20 项手机单元测试及 1440×900、1280×800、390×844、320×568 的受控浏览器检查通过，含实际触摸事件、滚动、草稿、动画和背面操作。额外的剧情生命周期回归有 4 项既有失败，关闭 3D 适配后同样复现，详见[验收记录](outputs/phone-3d-verification.json)。尚未做 iPhone/TauriTavern 真机验收。
+
+## 艾玛手机：夜樱与蓝调（2026-10-24）
+
+按黑色主调、樱花粉与蓝色条纹补齐艾玛的手机：专属壁纸、24 个应用图标、底栏、三张钱包卡面和应用内配色。默认夜间，已保存的外观选择继续有效。[手机预览](outputs/emma-phone-qa/390x844-emma-home.png) · [钱包预览](outputs/emma-phone-qa/390x844-emma-wallet-top.png)
+
+交付：[Tauri 专用 Lite 卡（9.82 MB）](outputs/emma-phone-20261024/unread-city-emma-lite-tauri.png)、[普通 SillyTavern Lite 卡（25.68 MB）](outputs/emma-phone-20261024/unread-city-emma-lite.png)、[配套本地素材 ZIP（41.42 MB）](outputs/emma-phone-20261024/unread-city-lite-assets.zip)。导入对应客户端的卡，按卡内提示安装 ZIP；仍需酒馆助手安装与授权。手机主题随卡内嵌。
+
+生产构建、类型检查、14 项状态测试、8 项素材/离线回退测试及四视口真实内嵌手机受控检查通过（1440×900、1280×800、390×844、320×568），包含首屏、钱包滚动、点击、无横向溢出、外观保存及三人切换。[完整记录](outputs/emma-phone-verification.json) · [构建核验](outputs/emma-phone-20261024/packaging-audit.json)。使用无窗口 Chromium，未做手机 TauriTavern 真机导入验收。
+
 ## 玛格咖啡馆专属日常（2026-10-23，独立增量）
 
 `street-cafe` 现在由宝生玛格经营，10:00–次日02:00可进店、点咖啡/茶/甜点、在窗边休憩，并遇见按时来店的艾玛、希罗、安安和诺亚。事件选择可能出现符合各自性格的赠礼，接受后由程序将固定目录物品放入当前主角背包，与正文和存档一次保存。
