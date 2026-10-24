@@ -7,7 +7,7 @@ import NovelDialogue from './NovelDialogue.vue';
 import StoryEntryContent from './StoryEntryContent.vue';
 import NovelNpcPortrait from './NovelNpcPortrait.vue';
 import SoyoLive2D from './SoyoLive2D.vue';
-import { resolveNovelNpcPortrait } from './novel-npc-portraits';
+import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
 import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
@@ -62,6 +62,7 @@ const presentationMode = ref<PresentationMode>(readPresentationMode());
 const novelMode = computed(() => presentationMode.value === 'novel');
 const novelHistory = ref(false);
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
+const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
 const historyPortrait = ref(false);
 let sceneReadingMode: ReadingMode = 'compact';
 let sceneReadingPosition = { scroll: 0, follows: true, unread: false, storyId: '' };
@@ -94,14 +95,14 @@ const encounterPerson = computed(() => {
   if (!position) return null;
   return scenePeople.value.find(person => person.id === props.model.state.scene?.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
 });
-const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : novelSegment.value.speaker);
+const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : segmentSpeaker.value);
 const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
   contacts: props.model.state.contacts,
   scenePeople: [...portraitPeople.value, ...scenePeople.value],
   encounterId: props.model.state.scene?.encounterId,
 }));
 function personLabel(person: typeof portraitPeople.value[number]) { return person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
-const portraitLabel = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? personLabel(encounterPerson.value) : novelSegment.value.speaker);
+const portraitLabel = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
@@ -708,7 +709,7 @@ onBeforeUnmount(() => {
     <div :inert="!model.state.academics || !!model.interaction" :aria-hidden="!model.state.academics || !!model.interaction || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="novelSegment.speaker" :active="!activeWindow && readingMode !== 'expanded'" />
+    <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="segmentSpeaker" :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>

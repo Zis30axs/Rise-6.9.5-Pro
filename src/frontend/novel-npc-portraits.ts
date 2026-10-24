@@ -1,5 +1,14 @@
 import { characterForPerson } from './character-appearance';
 
+/**
+ * Narration and pre-dialogue rows carry no speaker. The standing portrait in
+ * the novel view is then the current protagonist — not always Soyo's Live2D.
+ */
+export function standingSpeaker(speaker: string, protagonistName: string): string {
+  const raw = speaker.trim();
+  return !raw || raw === '旁白' ? protagonistName : speaker;
+}
+
 export type NovelNpcPortraitId = ReturnType<typeof characterForPerson>;
 export interface NovelPortraitPerson {
   readonly id: string;

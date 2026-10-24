@@ -1,5 +1,11 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 最新修复：切聊天重进后主角立绘固定为素世（2026-10-24）
+
+用户报告：切换聊天再进入未读之城时，无论当前主角是谁，小说视图站立立绘都变成素世 Live2D。根因是旁白/纯叙述 segment 与初始状态的 speaker 为空字符串，`isSoyoSpeaker('')` 为 true，素世 Live2D 把空说话人当作素世可见；而 `currentProtagonist` 的 watch 无 `immediate`，重进时主角不变化、不触发纠正。
+
+修复：`novel-npc-portraits.ts` 新增 `standingSpeaker`，把空/旁白说话人归一为当前主角显示名；App.vue 三处立绘消费点（Live2D speaker、portraitSpeaker、portraitLabel）改用归一结果。说话人语义不变：素世行仍显示 Live2D，祥子/艾玛行仍显示各自 sprite，NPC 与相遇显示不受影响。验证：3 项新单元测试、类型检查、生产构建，以及 1440×900/1280×800/390×844/320×568 四视口受控浏览器复现“切聊天→退出→重进”场景（含反向验证：还原修复前代码可复现 bug）。记录见 `outputs/standing-portrait-verification.json` 与 `outputs/standing-portrait-qa/`。受控浏览器验证，不代表 TauriTavern 真机验收；未调用模型、未跑远程 CI。
+
 ## 最新决定与实现：三人 3D 手机（2026-10-24）
 
 用户要求打开时放大、长按旋转、双指缩放，以及随人物变化的机型和手机壳。已在既有手机展示租约外增加 CSS 3D 机身：素世 Petal 6 圆润双摄与奶油花叶壳，祥子 Nocturne Pro 方正三摄与深蓝银纹壳，艾玛 Sakura Mini 紧凑横列双摄与黑樱蓝纹壳。这些是原创游戏机型，不宣称官方硬件设定；覆盖当前三位可操作主角，其他 NPC 没有新增可操作手机。
