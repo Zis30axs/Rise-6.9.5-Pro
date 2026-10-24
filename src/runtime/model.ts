@@ -1,6 +1,7 @@
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { knownProtagonistContact } from './initial-contacts';
+import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState, InteractionEventRateState } from '../frontend/types';
@@ -212,8 +213,9 @@ export function getRouteOutlook(state: WorldState, targetId: string): RouteOutlo
 }
 
 export function createInitialState(): WorldState {
+  const clock = { day: 1, hour: 17, minute: 20 };
   return {
-    schema_version: '1.11.0', currency: 'JPY', clock: { day: 1, hour: 17, minute: 20 }, locationId: 'gate', scene: null, interior: null,
+    schema_version: '1.11.0', currency: 'JPY', clock, locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
@@ -222,8 +224,8 @@ export function createInitialState(): WorldState {
     phone: [],
     contacts: [knownProtagonistContact('sakiko', protagonistNames.sakiko)],
     schedule: [],
-    journal: [{ id: 'entry-1', text: '开始新的日常。', at: '第 1 天 17:20' }],
-    story: [{ id: 'opening', role: 'assistant', text: '傍晚的风穿过校园南门。你可以去一个地方，或留在这里说出自己的行动。' }],
+    journal: [protagonistOpeningJournal('soyo', clock)],
+    story: [{ id: 'opening', role: 'assistant', text: protagonistOpening('soyo', clock) }],
   };
 }
 
