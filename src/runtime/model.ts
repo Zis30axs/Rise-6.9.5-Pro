@@ -939,6 +939,25 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       note(next, `确认专业：${major.name}。本专业三门课程分别积累进度，周课表已生成；旧学习记录不补算。`);
       break;
     }
+    case 'correct_academics': {
+      const major = getAcademicMajor(action.majorId);
+      if (!major || !next.academics || typeof action.keepProgress !== 'boolean') throw new Error('请选择有效的专业修复选项。');
+      const previous = next.academics;
+      if (previous.majorId === major.id && action.keepProgress) return next;
+      // Retain only earned points. Zero-point courses from the old major must not
+      // survive as invalid cross-major rows, and lastGain may reference a
+      // classroom action that would be illegal for the newly chosen major.
+      const retained = action.keepProgress ? previous.subjects.filter(item => item.points > 0) : [];
+      const subjects = major.subjects.map(subject => ({
+        subjectId: subject.id, points: retained.find(item => item.subjectId === subject.id)?.points ?? 0,
+      }));
+      for (const entry of retained) {
+        if (!subjects.some(subject => subject.subjectId === entry.subjectId)) subjects.push({ ...entry });
+      }
+      next.academics = { majorId: major.id, subjects, lastGain: null };
+      note(next, `更正本角色专业：${getAcademicMajor(previous.majorId)?.name ?? '原专业'} → ${major.name}。${action.keepProgress ? '保留已积累学习点' : '按确认清零原有学业进度'}；最近一次学习结果已清除。`);
+      break;
+    }
     case 'buy_item': {
       if (!Number.isInteger(action.quantity) || action.quantity < 1) throw new Error('购买数量必须是 1–20 的整数。');
       const quote = getPurchaseQuote(next, action.itemId, action.quantity);
