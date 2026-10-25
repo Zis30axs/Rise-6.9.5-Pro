@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';
@@ -7,6 +7,10 @@ import NovelDialogue from './NovelDialogue.vue';
 import StoryEntryContent from './StoryEntryContent.vue';
 import NovelNpcPortrait from './NovelNpcPortrait.vue';
 import SoyoLive2D from './SoyoLive2D.vue';
+import ProtagonistPhonePose from './ProtagonistPhonePose.vue';
+import ProtagonistSwitchOverlay from './ProtagonistSwitchOverlay.vue';
+import type { ProtagonistSwitchLease } from './protagonist-switch';
+import type { SwitchSceneHandle } from './switch-camera';
 import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
@@ -38,11 +42,21 @@ import { getNearbyTransitStop, transitStops, transitVehicles } from '../runtime/
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 const currentProtagonist = computed(() => activeProtagonist(props.model.state));
+const switchingLease = shallowRef<ProtagonistSwitchLease | null>(null);
+const switchOverlay = ref<{ skip(): Promise<void> }>();
 function selectProtagonist(event: Event) {
+  if (switchingLease.value || props.model.interaction) return;
   scene.value?.flushPresence();
-  const target = (event.target as HTMLSelectElement).value as ProtagonistId;
-  props.actions.dispatch({ type: 'switch_protagonist', target });
+  const input = event.target as HTMLSelectElement;
+  const target = input.value as ProtagonistId;
+  input.value = currentProtagonist.value;
+  if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
+  if (!props.actions.beginProtagonistSwitch) { props.actions.dispatch({ type: 'switch_protagonist', target }); return; }
+  switchingLease.value = props.actions.beginProtagonistSwitch(target);
 }
+watch(() => props.model.switchingProtagonist, pending => {
+  if (pending === false && switchingLease.value) switchingLease.value = null;
+});
 watch(currentProtagonist, protagonist => { closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'transit' | 'store' | 'location';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
@@ -67,7 +81,7 @@ const historyPortrait = ref(false);
 let sceneReadingMode: ReadingMode = 'compact';
 let sceneReadingPosition = { scroll: 0, follows: true, unread: false, storyId: '' };
 const shell = ref<HTMLElement>();
-const scene = ref<{ focus(): void; flushPresence(): void }>();
+const scene = ref<SwitchSceneHandle>();
 const storyList = ref<HTMLElement>();
 const composer = ref<HTMLTextAreaElement>();
 const phoneSlot = ref<HTMLElement>();
@@ -187,7 +201,7 @@ const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' 
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
 // Phone presentation renders a static front view while all walking remains disabled.
-const scenePaused = computed(() => !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
+const scenePaused = computed(() => switchingLease.value ? false : !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
 const storyEntries = computed(() => props.model.state.story);
 
@@ -509,7 +523,7 @@ function activityImpact(kind: 'study' | 'rest' | 'desk' | 'bookshelf', minMinute
   }).join(' · ');
 }
 function scenePresence(position: { x: number; z: number; yaw: number }) {
-  if (props.model.busy) return;
+  if (props.model.busy || props.model.switchingProtagonist) return;
   if (props.model.state.interior) {
     props.actions.dispatch({ type: 'interior_walk', ...position });
     const saved = props.model.state.interior;
@@ -653,6 +667,7 @@ function sceneEncounter(personId: string) {
   void prepareAction(`我向${personLabel(person)}打招呼，想和对方聊几句。请根据我们眼下所在的地方继续当面的对话，不要替我决定下一句话。`);
 }
 function dismissOverlay() {
+  if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
   if (studyPickerOpen.value) { closeStudyPicker(); return true; }
   if (bedRestPicker.value) { closeBedRestPicker(); return true; }
@@ -697,6 +712,7 @@ onMounted(async () => {
   await nextTick(); jumpToLatest();
 });
 onBeforeUnmount(() => {
+  switchingLease.value?.release();
   unmounting = true; phoneMountRevision++;
   props.actions.setDismissHandler?.(undefined);
   layoutLease?.dispose(); layoutLease = undefined;
@@ -706,16 +722,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
-    <div :inert="!model.state.academics || !!model.interaction" :aria-hidden="!model.state.academics || !!model.interaction || undefined" style="display: contents">
+    <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />
     <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="segmentSpeaker" :active="!activeWindow && readingMode !== 'expanded'" />
-    <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
-    <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
+    <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
+    <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
+    <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
     <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
-    <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
+    <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
     <button v-if="!novelMode && readingMode === 'compact' && !activeWindow" class="walk-launcher" aria-label="自由行走" @click="startWalking"><span aria-hidden="true">↟</span> 自由行走</button>
     <button v-if="!novelMode && nearbyEntrance && !activeWindow && readingMode === 'hidden'" class="campus-entrance" :disabled="model.busy" :aria-label="`进入${nearbyEntrance.label}`" @click="enterInterior(nearbyEntrance.id)"><span aria-hidden="true">⌂</span><span>进入{{ nearbyEntrance.label }}<small>室内探索 · 可随时返回</small></span><span aria-hidden="true">↗</span></button>
@@ -770,6 +787,7 @@ onBeforeUnmount(() => {
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>
+    <ProtagonistSwitchOverlay v-if="switchingLease" ref="switchOverlay" :lease="switchingLease" :novel-mode="novelMode" :hour="model.state.clock.hour" :scene="scene" @finished="switchingLease = null; nextTick(() => shell?.querySelector<HTMLElement>('[data-protagonist-select]')?.focus({ preventScroll: true }))" @exit="actions.exit()" />
     <InteractionOverlay :model="model" :actions="actions" />
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
   </div>

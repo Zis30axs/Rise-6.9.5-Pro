@@ -1,12 +1,13 @@
-import { sceneAreas, sceneBounds, sceneLandmarks, scenePaths } from './scene-layout';
+import { sceneAreas, sceneLandmarks, scenePaths } from './scene-layout';
 import { campusInteriors } from '../runtime/campus-interiors';
+import { districtBounds, campusDetailBounds, type LocalMapScope } from './map-districts';
 
-export type CampusMapScope = 'campus' | 'city';
+export type CampusMapScope = LocalMapScope;
 export interface MapPoint { x: number; y: number }
 export interface MapBuilding { id: string; x: number; z: number; width: number; depth: number; height: number; color: string }
 
-export const campusMapBounds = { minX: -74, maxX: 74, minZ: -64, maxZ: 94 };
-export const mapBounds = (scope: CampusMapScope) => scope === 'city' ? sceneBounds : campusMapBounds;
+export const campusMapBounds = campusDetailBounds;
+export const mapBounds = districtBounds;
 export const mapPaths = scenePaths;
 export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown'].includes(area.id));
 export const mapLandmarks = sceneLandmarks;
@@ -46,10 +47,10 @@ export function mapLocationPoint(locationId: string): { x: number; z: number } |
 
 export function visibleMapBuildings(scope: CampusMapScope): readonly MapBuilding[] {
   const bounds = mapBounds(scope);
-  return mapBuildings.filter(item => item.x >= bounds.minX && item.x <= bounds.maxX && item.z >= bounds.minZ && item.z <= bounds.maxZ);
+  return mapBuildings.filter(item => item.x + item.width / 2 >= bounds.minX && item.x - item.width / 2 <= bounds.maxX && item.z + item.depth / 2 >= bounds.minZ && item.z - item.depth / 2 <= bounds.maxZ);
 }
 
-/** Four separate touch targets; choose the shortest leaders as the map rotates. */
+/** Keep touch targets apart and choose short leaders as the map rotates. */
 export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonly T[], width: number, height: number): (T & { label: MapPoint })[] {
   // On 240px-wide city maps, five 104px labels need two columns and three rows.
   const lastRow = height - 48;
@@ -68,10 +69,13 @@ export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonl
 }
 
 /** One fixed oblique projection for the slab, roads, buildings and live pins. */
-export function createCampusMapProjection(width: number, height: number, bearing: number, scope: CampusMapScope) {
+export interface MapCameraView { center?: { x: number; z: number }; zoom?: number; overhead?: number }
+export function createCampusMapProjection(width: number, height: number, bearing: number, scope: CampusMapScope, view: MapCameraView = {}) {
   const bounds = mapBounds(scope);
   const angle = (Number.isFinite(bearing) ? bearing : 0) * Math.PI / 180;
-  const cos = Math.cos(angle), sin = Math.sin(angle), compression = .62;
+  const overhead = Math.min(1, Math.max(0, view.overhead ?? 0));
+  const cos = Math.cos(angle), sin = Math.sin(angle), compression = .62 + .38 * overhead;
+  const elevationScale = 1 - overhead * .94;
   const raw = (x: number, z: number, elevation = 0): MapPoint => ({ x: cos * x - sin * z, y: (sin * x + cos * z) * compression - elevation });
   const corners = [bounds.minX, bounds.maxX].flatMap(x => [bounds.minZ, bounds.maxZ].flatMap(z => [raw(x, z), raw(x, z, -4)]));
   for (const building of visibleMapBuildings(scope)) for (const x of [building.x - building.width / 2, building.x + building.width / 2]) {
@@ -79,9 +83,10 @@ export function createCampusMapProjection(width: number, height: number, bearing
   }
   const minX = Math.min(...corners.map(point => point.x)), maxX = Math.max(...corners.map(point => point.x));
   const minY = Math.min(...corners.map(point => point.y)), maxY = Math.max(...corners.map(point => point.y));
-  const unit = Math.max(.001, Math.min(Math.max(1, width - 24) / (maxX - minX), Math.max(1, height - 24) / (maxY - minY)));
+  const unit = Math.max(.001, Math.min(Math.max(1, width - 24) / (maxX - minX), Math.max(1, height - 24) / (maxY - minY))) * Math.max(.1, Math.min(32, view.zoom ?? 1));
   const a = cos * unit, b = sin * unit * compression, c = -sin * unit, d = cos * unit * compression;
-  const e = width / 2 - (minX + maxX) * unit / 2, f = height / 2 - (minY + maxY) * unit / 2;
+  const e = view.center ? width / 2 - a * view.center.x - c * view.center.z : width / 2 - (minX + maxX) * unit / 2;
+  const f = view.center ? height / 2 - b * view.center.x - d * view.center.z : height / 2 - (minY + maxY) * unit / 2;
   return { unit, a, b, c, d, e, f, metersPerPixel: Math.hypot(d, b) / Math.abs(a * d - b * c),
-    project: (x: number, z: number, elevation = 0): MapPoint => ({ x: a * x + c * z + e, y: b * x + d * z + f - elevation * unit }) };
+    project: (x: number, z: number, elevation = 0): MapPoint => ({ x: a * x + c * z + e, y: b * x + d * z + f - elevation * unit * elevationScale }) };
 }

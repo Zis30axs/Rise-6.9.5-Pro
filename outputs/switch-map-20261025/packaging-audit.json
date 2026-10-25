@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "cardScriptEqualsProductionLite": true,
+  "scriptCount": 1,
+  "zipAssetsVerified": 102,
+  "phonePosesInZip": true,
+  "fixedCoverImageChunksIdentical": true,
+  "tauriMetadataRestoresExactly": true,
+  "physicalTauriTavernTested": false,
+  "artifacts": [
+    {
+      "file": "unread-city-switch-map-lite.png",
+      "bytes": 25424659,
+      "sha256": "70717336c44fce27114b1bffe2397e22279c44e2b8f672637636a38af824add2"
+    },
+    {
+      "file": "unread-city-switch-map-lite-tauri.png",
+      "bytes": 9536468,
+      "sha256": "84b98c8e303fba780b41c7d62f0f0b453c819d89d6e4e002a31afaaac6647963"
+    },
+    {
+      "file": "unread-city-lite-assets.zip",
+      "bytes": 44395404,
+      "sha256": "ca6ad9d5cc99344ad064008872826199c00e8ad4f4d5a95f744c128a4e862cd8"
+    },
+    {
+      "file": "immersive-shell-lite.js",
+      "bytes": 16858856,
+      "sha256": "647abe96b453c97c91d4c2f135d6ef3a4a3ac5ca5eff2f2228c1717a550deb11"
+    }
+  ]
+}

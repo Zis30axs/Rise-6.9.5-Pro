@@ -1,5 +1,19 @@
 # 未读之城 / Unread City
 
+## 联系人转账与剧情转账指令（2026-10-25）
+
+Appie Pay 支持向另一位主角或已保存的联系人转账：手机钱包新增「联系人转账」（附 SVG 示意图），剧情 LLM 可通过新的 `transfer` 行动显式转账。两条路径都双边同时入账与扣款、总金额守恒，付款方余额不足即整笔拒绝；剧情重放与重复请求幂等，旧存档无需迁移。此前“剧情单边加钱、对方账户不动”的铸币缺口由此补上，协议同时禁止用日常活动的余额影响冒充他人转账。协议详情见 [NPC 联系人说明](integration/dual-protagonists/NPC-CONTACTS.md)。
+
+本地验证：新增 11 项转账单元测试（当前全部 28 项 Vitest）、类型检查与内嵌手机构建通过；尚未做四视口浏览器回归与 TauriTavern 真机验收。
+
+## 渐进切换与城市沙盘（2026-10-25）
+
+切换主角现在会升空、沿城市移动、再落到目标角色，标准动画约 4 秒，支持跳过与 Esc。地图默认城市总览，点击五个城区进入各自详细沙盘，左上角返回城市并恢复原视图。
+
+交付：[Tauri Lite 卡（9.54 MB）](outputs/switch-map-20261025/unread-city-switch-map-lite-tauri.png) · [普通 Lite 卡（25.42 MB）](outputs/switch-map-20261025/unread-city-switch-map-lite.png) · [配套素材 ZIP（44.40 MB）](outputs/switch-map-20261025/unread-city-lite-assets.zip)。仍需安装并授权酒馆助手，首次安装 ZIP 后刷新页面。
+
+类型检查、构建、17 项单元测试与 23 项定向浏览器场景通过，覆盖 1440×900、1280×800、390×844、320×568。详见[实现与验收](integration/protagonist-switch/README.md)；尚未做 TauriTavern 真机验收。
+
 ## 切聊天重进后立绘修复（2026-10-24）
 
 修复了切换聊天再进入未读之城时，无论当前主角是谁、小说视图站立立绘都变成素世 Live2D 的问题。现在旁白与纯叙述段落显示的是当前主角：素世 Live2D、祥子或艾玛 sprite；具体台词仍按说话人切换立绘。四尺寸受控浏览器复现与反向验证见 [验收记录](outputs/standing-portrait-verification.json)。

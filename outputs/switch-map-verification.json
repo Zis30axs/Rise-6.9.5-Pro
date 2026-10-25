@@ -1,0 +1,53 @@
+{
+  "recordedOn": "2026-10-25",
+  "status": "controlled-browser-and-packaging-passed",
+  "implementationReference": "integration/protagonist-switch/README.md",
+  "build": { "status": "passed", "fullIifeBytes": 75705142, "typeCheck": "passed" },
+  "unitTests": { "status": "passed", "files": 4, "tests": 17, "newSwitchAndMapTests": 10 },
+  "browser": {
+    "engine": "headless Playwright Chromium 1248",
+    "host": "controlled Tavern and Helper iframe with production IIFE",
+    "dshToolsAvailable": false,
+    "uniqueCasesPassedAcrossTargetedRuns": 23,
+    "switchAndMap": { "passed": 14, "initialRun": "13 passed; fallback fixture patched in the Helper canvas realm and the remaining case passed separately" },
+    "portraitAndPhonePoseRegressions": { "passed": 8, "note": "passed before the final map pin text wrapping CSS change; switching implementation identical" },
+    "packagedLite": { "passed": 1, "viewport": "320x568", "actualMatchingZipInstalled": true, "portraitBlobLoaded": true },
+    "viewports": ["1440x900", "1280x800", "390x844", "320x568"],
+    "nominalTimingMs": { "ascent": 1200, "traverse": 1600, "descent": 1200, "readinessLimit": 1500, "reducedMotionFade": 150 },
+    "measuredNovelSwitchMs": { "1440x900": 4072.8, "1280x800": 4054.2, "390x844": 4048.8, "320x568": 4051.0 },
+    "districtIds": ["campus", "home", "commercial", "downtown", "city-park"],
+    "verified": [
+      "three switch phases and destination portrait",
+      "single protagonist commit and unchanged world clock and source resources",
+      "five district-specific maps with reachable back button",
+      "city zoom, rotation and pan restored after district visit",
+      "destination list scrolling and no horizontal overflow",
+      "city, region and world navigation",
+      "skip, Escape and reduced motion",
+      "save failure restores original protagonist and input",
+      "cancel on exit, chat change and hidden page",
+      "cancel old generation at ascent and reject its late result",
+      "WebGL camera elevation and indoor return across four viewports",
+      "WebGL failure falls back to a working map transition",
+      "existing phone pose and current protagonist standing portrait"
+    ],
+    "screenshots": "outputs/switch-map-qa/"
+  },
+  "packaging": {
+    "directory": "outputs/switch-map-20261025/",
+    "audit": "outputs/switch-map-20261025/packaging-audit.json",
+    "canonicalPngBytes": 25424659,
+    "tauriPngBytes": 9536468,
+    "zipBytes": 44395404,
+    "zipAssets": 102,
+    "oneHelperScript": true,
+    "fixedCoverPreserved": true,
+    "phonePoseAssetsPreserved": true,
+    "compressedMetadataByteIdentical": true
+  },
+  "physicalTauriTavernTested": false,
+  "realModelCalled": false,
+  "remoteCiTriggered": false,
+  "deployedToLocalInstallation": false,
+  "historicalDeletedTestsRestoredOrRerun": false
+}

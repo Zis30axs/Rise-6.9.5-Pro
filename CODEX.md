@@ -1,5 +1,33 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 最新增量：联系人转账与剧情转账指令（2026-10-25）
+
+实现用户确认的「联系人之间转账 + LLM 显式转账指令」，填补此前“剧情可单边加钱、对方账户不动”的铸币缺口。两条路径都双边同时入账与扣款、总金额守恒：
+
+- 手机路径：Appie Pay 钱包新增「联系人转账」表单（含原创 SVG 示意图，跟随明暗主题），命令 `send_transfer` 仅限当前主角本人手机，复用 operations 的 requestId 幂等；转账写入双方流水、当前主角日记并向双方设备发通知。
+- 剧情路径：`world_actions` 新增 `transfer` 行动（from/to/cents/reason，单笔上限 100,000 日元），在 `finishPersonalChange` 之后由 `applyStoryTransferLegs` 直接记入权威账本，账目 ID 按轮次稳定、剧情重放幂等；bridge 提示词明确“他人给玩家的钱必须走 transfer，不得用 activity 的 balance 冒充”。
+- 联系人钱包：`ProtagonistWorld.npcWallets`（可选字段，人物 ID→整数分），旧存档无需迁移；主角入账仍走三卡账本并同步 `player.balance` 投影，解析校验不变。付款方（含 NPC）余额不足时整轮/整笔拒绝，先查后扣。
+
+实现位于 `src/runtime/protagonist-world.ts`（钱包、当事人解析、`applyPartyTransfer`）、`src/runtime/story-actions.ts`、`src/runtime/model.ts`（接线）、`src/runtime/bridge.ts`（协议）、`integration/dual-protagonists/phone-apps.js`（UI）；协议记录见 `integration/dual-protagonists/NPC-CONTACTS.md`。验证：新增 `tests/protagonist-transfer.test.ts` 11 项（双边守恒、余额不足、投影同步、requestId 重放幂等、剧情重放幂等、本人手机限制、旧档兼容），当前全部 5 文件 28 项 Vitest 通过，`vue-tsc --noEmit` 与内嵌手机构建（`phone:build`，132 源文件）通过。属本地桌面验证：未做四视口浏览器回归、未调用真实模型、未做 TauriTavern 真机验收、未跑远程 CI。
+
+## 最新决定：3D 场景无限期延后，默认只维护纯小说（2026-10-25，用户新指令）
+
+用户指示：3D 场景无限期延后；以后没有明确要求默认不做，只维护纯小说。后续功能、修复与素材接入默认只覆盖纯小说模式，不为 3D 场景做适配或新特性，也不主动删除既有 3D 代码与入口；用户当次点名要求的 3D 工作仍按该次指示执行。此条约束后续工作方向，已验收功能维持现状。
+
+## 最新增量：渐进主角切换与城市沙盘（2026-10-25）
+
+已实施用户确认方案：标准切换升空1200ms、城市横移1600ms、下降1200ms，3D/小说共用城市几何；室内通过建筑入口衔接。跳过/Esc完成切换，减少动态效果150ms淡出；切换开始取消旧生成并临时锁定输入，横移末尾保存主角一次，手机绑定复用已保存状态。失败、隐藏页面、退出、切聊天和卸载均释放资源，迟到回复不得提交。
+
+地图默认城市，五城区点击进入各自详细沙盘，左上角返回恢复进入前缩放/旋转/平移；顶部仅城市、所在区域、世界。此决定更新历史“校园沙盘作为并列顶层”“城市内缩放自动跨层”的呈现规则。地图浏览不结算世界状态，各地点沿用既有步行、房间、公交和小说出行规则。
+
+类型检查/生产构建、17项当前单元、23项不同的定向浏览器场景通过，四尺寸覆盖1440×900/1280×800/390×844/320×568。新交付在 `outputs/switch-map-20261025/`：普通Lite卡25,424,659字节、Tauri卡9,536,468字节、素材ZIP44,395,404字节，102件资源哈希与压缩元数据已核验；既有看手机CG和固定红黄封面保留。详见 `integration/protagonist-switch/README.md`、`outputs/switch-map-verification.json`。无窗口Chromium、受控Tavern/Helper；DSH工具不可用，未做TauriTavern真机验收、真实模型调用、远程CI或本机酒馆部署。用户删除的历史测试没有恢复，不宣称历史完整套件通过。
+
+## 最新增量：主角看手机 CG（2026-10-24）
+
+用户不能容忍小说视图里打开手机后站立立绘整体消失（`is-muted` 空舞台），并提供四张"看手机"CG。现已接入：手机窗口打开时，舞台改为显示当前主角的看手机姿势——素世校服双手持机、祥子按既有服装规则选图（丰川家室内用居家单指轻点图，其余用校服低头回复图）、艾玛浅粉开衫单指轻点。关闭手机后恢复原有立绘。素材在 `assets/protagonist-phone/`（`素材/` 是用户投放区，不参与构建；source PNG 复制保存，无损 WebP 派生经逐像素往返校验，SHA 记录在 manifest.json）；选择逻辑 `src/frontend/protagonist-phone-art.ts`，组件 `ProtagonistPhonePose.vue`，接线在 `App.vue`（仅 `novelMode && activeWindow === 'phone'` 时渲染；3D 漫游模式无站立立绘，不叠加 2D CG）。
+
+验证：`vue-tsc`、生产构建（IIFE 75,692,170 字节，4 张 WebP 共 2,977,304 字节内嵌）、新增 4 项 Vitest、四视口受控浏览器 e2e（开手机出 CG、关手机恢复、无横向溢出、无页面错误）与既有立绘 e2e 回归通过；Lite 提取 102 件资源 44,353,043 字节，新 CG 全部入 ZIP。交付 `dist/unread-city-lite.png` 25,407,311 字节（SHA-256 `d7959e73b7671e24…` 见 `outputs/phone-pose-verification.json`）、Tauri 导入版 9,537,837 字节、素材 ZIP 44,395,404 字节；截图在 `outputs/phone-pose-qa/`。窄屏 390×844 上手机窗口占据主视野，CG 大半在机身后、露出腿脚；320×568 短屏头部露在手机上方。受控浏览器验证不代表 TauriTavern 真机验收；未调用模型、未跑远程 CI、未部署本机酒馆。
+
 ## 最新修复：切聊天重进后主角立绘固定为素世（2026-10-24）
 
 用户报告：切换聊天再进入未读之城时，无论当前主角是谁，小说视图站立立绘都变成素世 Live2D。根因是旁白/纯叙述 segment 与初始状态的 speaker 为空字符串，`isSoyoSpeaker('')` 为 true，素世 Live2D 把空说话人当作素世可见；而 `currentProtagonist` 的 watch 无 `immediate`，重进时主角不变化、不触发纠正。

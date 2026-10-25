@@ -1,0 +1,11 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "soyo": "pose replaces muted Live2D",
+  "sakiko": "pose outfit casual",
+  "emma": "pose replaces muted sprite",
+  "closeRestores": true,
+  "stage": "passed"
+}

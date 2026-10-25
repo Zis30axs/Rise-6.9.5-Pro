@@ -1,5 +1,5 @@
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, finishPersonalChange, legacyView, parseProtagonists, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, applyStoryTransferLegs, finishPersonalChange, legacyView, parseProtagonists, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { knownProtagonistContact } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
@@ -705,6 +705,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         break;
       }
       case 'complete_schedule': next = reduceState(next, action); break;
+      // Transfer legs are booked by applyStoryTransferLegs on the authoritative
+      // ledger after finishPersonalChange; mirroring them here would double-count.
+      case 'transfer': break;
       case 'relationship': {
         const contact = next.contacts.find(contact => contact.id === action.npcId)!;
         const before = contact.affinity;
@@ -1229,7 +1232,8 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
-  return parseState(finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动'));
+  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动');
+  return parseState(applyStoryTransferLegs(after, actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
@@ -1238,7 +1242,8 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // validated omniscient report to the dual-protagonist candidate snapshot.
   const { weeklySummary, contactRequests, phoneDecision, ...legacyResult } = result;
   const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now), '剧情结算');
-  const next = commitNpcDialogue(before, recordProtagonistNarrative(before, after, result, ids.assistantId), input, result, ids.assistantId);
+  const settled = applyStoryTransferLegs(after, legacyResult.worldActions ?? [], ids.assistantId);
+  const next = commitNpcDialogue(before, recordProtagonistNarrative(before, settled, result, ids.assistantId), input, result, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
   captureNewJournalEvidence(after, next);
   applyWeeklySummary(next, result.weeklySummary);
