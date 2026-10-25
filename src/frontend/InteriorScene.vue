@@ -118,7 +118,16 @@ function initialize() {
   } catch { useFallback(); }
 }
 function focus() { canvas.value?.focus({ preventScroll: true }); }
-defineExpose({ focus, flushPresence });
+// Indoor camera bridges use the outdoor entrance on the city board, avoiding
+// a camera path through an opaque ceiling. Draw a stable room frame beneath it.
+function setSwitchCamera(_lift: number) {
+  if (dead || !renderer || !scene || !camera) return false;
+  resize(); updateCamera();
+  try { renderer.render(scene, camera); return true; } catch { useFallback(); return false; }
+}
+function clearSwitchCamera() { if (!dead) { updateCamera(); requestRender(); } }
+function presentationReady() { return mode.value === 'fallback' || !!renderer && width > 0 && height > 0; }
+defineExpose({ focus, flushPresence, setSwitchCamera, clearSwitchCamera, presentationReady });
 function rotate(dx: number, dy: number) {
   if (props.phoneActive || props.paused || props.busy || mode.value !== 'webgl') return;
   yaw = THREE.MathUtils.euclideanModulo(yaw + dx + Math.PI, Math.PI * 2) - Math.PI; pitch = THREE.MathUtils.clamp(pitch + dy, -0.6, 0.5); presenceDirty = true; updateCamera(); requestRender();

@@ -18,17 +18,21 @@
 .novel-npc-portrait[data-sakiko-sprite] { bottom: 24px; }
 /* Emma's and the semi-main transparent sprites use the same generous stage. */
 .novel-npc-portrait[data-majo-portrait] { bottom: 24px; }
+/* Phone pose replaces the muted standing portrait while the phone window is open. */
+.novel-npc-portrait.protagonist-phone-pose { bottom: 24px; }
 
 @media (max-width: 760px) {
   .novel-npc-portrait { inset: 133px 55px 436px 55px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 133px 12px 84px; }
   /* Keep the head below the presentation switcher on narrow screens. */
   .novel-npc-portrait[data-majo-portrait] { inset: 146px 12px 84px; }
+  .novel-npc-portrait.protagonist-phone-pose { inset: 133px 12px 84px; }
 }
 @media (max-height: 670px) and (max-width: 760px) {
   .novel-npc-portrait { inset: 72px 12px 316px 172px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 72px 12px 24px; }
   .novel-npc-portrait[data-majo-portrait] { inset: 118px 12px 24px; }
+  .novel-npc-portrait.protagonist-phone-pose { inset: 72px 12px 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .novel-npc-portrait { transition: none; }

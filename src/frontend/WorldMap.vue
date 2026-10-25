@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
@@ -8,7 +8,8 @@ import { getScenePeople, hiddenProtagonistPersons } from '../runtime/scene-conte
 import { PROTAGONIST_PERSON_IDS } from '../runtime/dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
-import { campusMapBounds, mapLocationPoint } from './campus-map-layout';
+import { mapLocationPoint } from './campus-map-layout';
+import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CampusMapScene from './CampusMapScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
@@ -21,20 +22,19 @@ import openAiMark from '../../assets/openai-mark.svg?inline';
 const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean }>(), { novelMode: false });
 const emit = defineEmits<{ travelled: [] }>();
 const locations = mapLocations;
-type Layer = 'sandtable' | 'city' | 'province' | 'country' | 'world';
+type Layer = 'district' | 'city' | 'province' | 'country' | 'world';
 type Properties = { name: string; id: string; countryId?: string; parentId?: string; sourceCountryId?: string };
 type Region = Feature<Geometry, Properties>;
 const mapData = rawAtlasData as unknown as { countries: FeatureCollection<Geometry, Properties>; subdivisions: FeatureCollection<Geometry, Properties>; chinaCities?: FeatureCollection<Geometry, Properties>; chinaMaritimeLines?: FeatureCollection<Geometry, Properties> };
 const layers: { id: Layer; name: string; depth: number }[] = [
-  { id: 'sandtable', name: '沙盘', depth: 0 },
   { id: 'city', name: '城市', depth: 2 }, { id: 'province', name: '所在区域', depth: 3 },
   { id: 'world', name: '世界', depth: 5 },
 ];
-const depth = ref(0);
+const depth = ref(2);
 const focusZoom = ref(1);
 const bearing = ref(0);
 const layerIndex = computed(() => Math.min(5, Math.max(0, Math.round(depth.value))));
-const layer = computed<Layer>(() => (['sandtable', 'sandtable', 'city', 'province', 'country', 'world'] as const)[layerIndex.value]);
+const layer = computed<Layer>(() => (['district', 'district', 'city', 'province', 'country', 'world'] as const)[layerIndex.value]);
 const viewport = ref<HTMLElement>();
 type AtlasView = { countryId: string; regionId: string };
 const atlasScene = ref<{
@@ -60,11 +60,15 @@ const selectedKind = ref<'country' | 'division' | 'landmark'>('division');
 const search = ref('');
 const showDemoPeople = ref(false);
 const activeEventId = ref('');
-const selectedCity = ref('campus');
+const selectedCity = ref<MapDistrictId>('campus');
+const detailDistrict = ref<MapDistrictId | null>(null);
+let cityView: { zoom: number; bearing: number; pan: { x: number; y: number } } | undefined;
 const itineraryDraft = ref('');
-const localLayer = computed(() => layer.value === 'sandtable');
+const localLayer = computed(() => layer.value === 'district');
 const geographicLayer = computed(() => layerIndex.value >= 3);
 const currentLocation = computed(() => allLocations.find(place => place.id === props.model.state.locationId));
+const currentMapPosition = computed(() => props.model.state.interior
+  ? mapLocationPoint(props.model.state.interior.roomId) : props.model.state.scene);
 const needsTransitReturn = computed(() => requiresTransitReturn(props.model.state.locationId, props.model.state.scene));
 const transform = computed(() => ({ transform: depth.value > 2 ? 'none' : `translate(${pan.value.x}px, ${pan.value.y}px) scale(${focusZoom.value})` }));
 const localZoomScale = computed(() => depth.value < 0 ? 2 ** -depth.value : 1 - .46 * smooth(depth.value / 2));
@@ -97,8 +101,8 @@ const nearbyLandmarks = computed(() => ATLAS_LANDMARKS.filter(item => item.count
 const regionCities = computed(() => mapData.chinaCities?.features.filter(item => item.properties.parentId === regionId.value) ?? []);
 const featureName = (item: Region) => item.properties.name;
 const isUnion = (item: Region) => item.properties.id === 'SUN';
-const layerTitle = computed(() => localLayer.value ? '沙盘' : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
-const layerNote = computed(() => localLayer.value ? '校园、南门街区与周边现有地点 · 编号对应地点列表' : layer.value === 'city' ? '高田校园、杂司谷、池袋、目白台与神田川 · 本地空间为示意坐标' : '浅立体示意地形 · 红线与红点为主角所在区域');
+const layerTitle = computed(() => localLayer.value ? `${cityDetail.value.name} · 详细沙盘` : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
+const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '点击城区，进入对应的详细沙盘' : '浅立体示意地形 · 红线与红点为主角所在区域');
 const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
@@ -147,13 +151,7 @@ const roadEvents = computed(() => locations.flatMap(place => {
   }];
 }));
 const activeEvent = computed(() => roadEvents.value.find(event => event.id === activeEventId.value));
-const cityPlaces = [
-  { id: 'campus', name: '高田／西早稻田校园', description: '架空秋季入学校园，南门连接书店、便利店、咖啡馆、接驳站与口袋公园。' },
-  { id: 'home', name: '杂司谷住宅区', description: '艾玛、月代雪等人居住的住宅街，保留原步行与住宅入口。' },
-  { id: 'commercial', name: '池袋／东池袋', description: '商业与乐队活动所在的繁华城区，设有商店、咖啡馆与换乘点。' },
-  { id: 'downtown', name: '目白／目白台', description: '丰川家和二阶堂家所在的住宅及传统宅邸街区，乘坐东京Metro联程抵达。' },
-  { id: 'city-park', name: '神田川沿岸绿道', description: '河岸绿地、步道与安静公园组成的东京居民日常空间。' },
-];
+const cityPlaces = mapDistricts;
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
 const novelQuotes = computed(() => new Map(novelDestinations.map(place => [place.id, getNovelTravelQuote(props.model.state, place.id)])));
@@ -161,10 +159,7 @@ function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
   return status ? `此刻${status.statusLabel} · ${status.hoursLabel}` : '';
 }
-const localDestinations = computed(() => props.novelMode ? novelDestinations.filter(place => {
-  const point = mapLocationPoint(place.id);
-  return point && point.x >= campusMapBounds.minX && point.x <= campusMapBounds.maxX && point.z >= campusMapBounds.minZ && point.z <= campusMapBounds.maxZ;
-}).map(place => ({ ...place, subtitle: place.kind === 'interior' ? '室内地点' : '室外地点' })) : locations);
+const localDestinations = computed(() => districtMapPlaces(detailDistrict.value ?? 'campus').map(place => ({ ...place, subtitle: place.kind === 'interior' ? '室内入口' : '室外地点' })));
 function destinationDisabled(id: string) {
   if (props.model.busy) return true;
   if (props.novelMode) { const quote = novelQuotes.value.get(id); return !quote || quote.alreadyThere || !!quote.blockedReason; }
@@ -193,7 +188,7 @@ async function travelTo(id: string) {
 let observer: ResizeObserver | undefined;
 let owner: (Window & typeof globalThis) | null = null;
 let frame = 0;
-let targetDepth = 0;
+let targetDepth = 2;
 let ignoreClickUntil = 0;
 let tapTarget: string | undefined;
 let gestureMoved = false;
@@ -221,15 +216,38 @@ function moveDepth(next: number, duration = 0) {
 }
 function clearCameraOffset() { cancelGestures(); focusZoom.value = 1; pan.value = { x: 0, y: 0 }; }
 function goToLayer(id: Layer) {
+  if (id === 'city' && detailDistrict.value) { returnCity(); return; }
+  detailDistrict.value = null;
   clearCameraOffset(); search.value = '';
-  if (id === 'province' || id === 'sandtable' || id === 'city') { countryId.value = TOKYO_COUNTRY_ID; regionId.value = TOKYO_REGION_ID; }
+  if (id === 'province' || id === 'district' || id === 'city') { countryId.value = TOKYO_COUNTRY_ID; regionId.value = TOKYO_REGION_ID; }
   atlasScene.value?.resetView();
-  moveDepth(id === 'country' ? 4 : layers.find(item => item.id === id)!.depth, 360);
+  moveDepth(id === 'country' ? 4 : id === 'district' ? 0 : layers.find(item => item.id === id)!.depth, 360);
+}
+function enterDistrict(id: string) {
+  if (!isMapDistrict(id)) return;
+  if (!detailDistrict.value) cityView = { zoom: focusZoom.value, bearing: bearing.value, pan: { ...pan.value } };
+  clearCameraOffset();
+  selectedCity.value = id; detailDistrict.value = id;
+  moveDepth(0, 360);
+  void nextTick(() => viewport.value?.focus({ preventScroll: true }));
+}
+function returnCity() {
+  cancelGestures(); stopAnimation();
+  detailDistrict.value = null;
+  focusZoom.value = cityView?.zoom ?? 1; bearing.value = cityView?.bearing ?? bearing.value;
+  moveDepth(2);
+  pan.value = cityView ? clampPan(cityView.pan.x, cityView.pan.y) : { x: 0, y: 0 };
+  void nextTick(() => viewport.value?.focus({ preventScroll: true }));
 }
 function goHome() { selectedId.value = TOKYO_REGION_ID || TOKYO_COUNTRY_ID; selectedKind.value = TOKYO_REGION_ID ? 'division' : 'country'; goToLayer('province'); }
 function resetView() { focusZoom.value = 1; pan.value = { x: 0, y: 0 }; bearing.value = 0; atlasScene.value?.resetView(); countryId.value = TOKYO_COUNTRY_ID; regionId.value = TOKYO_REGION_ID; moveDepth(localLayer.value ? 0 : layerIndex.value, 220); }
 function rotateBy(degrees: number) { bearing.value += degrees; }
 function applyZoomDepth(next: number, duration = 0) {
+  if (!geographicLayer.value) {
+    const base = localLayer.value ? 0 : 2;
+    focusZoom.value = Math.min(12, Math.max(.65, 2 ** (base - next)));
+    return;
+  }
   const floor = geographicLayer.value && !atlasScene.value?.isHomeRegion() ? 3 : -2;
   focusZoom.value = next < floor ? Math.min(200, 2 ** (floor - next)) : 1;
   moveDepth(Math.max(floor, next), duration);
@@ -314,8 +332,8 @@ function activateTarget(target: string) {
   else if (target.startsWith('division:')) selectDivision(target.slice(9));
   else if (target.startsWith('landmark:')) { if (ATLAS_LANDMARKS.some(item => item.id === target.slice(9))) { selectedKind.value = 'landmark'; selectedId.value = target.slice(9); } }
   else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) activeEventId.value = activeEventId.value === id ? '' : id; }
-  else if (target.startsWith('city:')) { const id = target.slice(5); if (cityPlaces.some(item => item.id === id)) selectedCity.value = id; }
-  else if (localLayer.value && locations.some(item => item.id === target)) travelTo(target);
+  else if (target.startsWith('city:')) enterDistrict(target.slice(5));
+  else if (localLayer.value && localDestinations.value.some(item => item.id === target)) travelTo(target);
 }
 function pointerUp(event: PointerEvent) {
   if (!pointers.has(event.pointerId)) return;
@@ -366,18 +384,19 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
 </script>
 
 <template>
-  <div class="world-map" :data-map-layer="layer">
-    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id" :class="{ active: layer === item.id }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
+  <div class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
+    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
+    <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
     <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
     <div class="wm-layout">
       <div class="wm-map-column">
         <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage" :style="transform">
-            <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="campus" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
-              <CampusMapScene :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="model.state.scene" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
+            <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="district" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
+              <CampusMapScene :scope="detailDistrict ?? 'campus'" :disabled-ids="localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id)" :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="currentMapPosition" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
             </div>
             <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
-              <CampusMapScene scope="city" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="model.state.scene" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="selectedCity = $event" @scale="cityMetersPerPixel = $event.metersPerPixel" />
+              <CampusMapScene scope="city" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
@@ -389,7 +408,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         </div>
         <div class="wm-map-actions">
           <p id="uc-map-help" class="wm-help">双指旋转 / 缩放 · 单指拖动<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
-          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="depth <= -2 || (focusZoom >= 200 && minimumDepth >= 3)" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="depth >= 5 && focusZoom <= 1" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
+          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转"><button type="button" aria-label="向左旋转地图" @click="rotateBy(-30)">↶</button><button type="button" aria-label="向右旋转地图" @click="rotateBy(30)">↷</button></div>
         </div>
         <div v-if="roadEvents.length && localLayer && !novelMode" class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="activeEventId = activeEventId === event.id ? '' : event.id">{{ event.icon }} {{ event.title }}</button></div>
@@ -411,7 +430,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         <template v-else-if="layer === 'city'">
           <small class="wm-kicker">现有城市片区</small><h3>{{ cityDetail.name }}</h3><p class="wm-detail-note">{{ cityDetail.description }}</p>
           <p v-if="venueStatusText(selectedCity)" class="wm-detail-note" :data-destination-hours="selectedCity">{{ venueStatusText(selectedCity) }}</p>
-          <nav class="wm-district-list" aria-label="城市片区"><button v-for="place in cityPlaces" :key="place.id" type="button" :aria-pressed="selectedCity === place.id" @click="selectedCity = place.id">{{ place.name }}</button></nav>
+          <nav class="wm-district-list" aria-label="城市片区"><button v-for="place in cityPlaces" :key="place.id" type="button" :aria-pressed="selectedCity === place.id" @click="enterDistrict(place.id)">{{ place.name }}</button></nav>
           <template v-if="selectedCity !== 'campus'">
             <p v-if="novelMode" class="wm-detail-note">{{ destinationNote(selectedCity) }}</p>
             <p v-if="novelMode" class="wm-detail-note" data-novel-energy-quote>{{ energyCalculationNote(selectedCity) }}</p>
@@ -419,7 +438,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }}</button>
             <template v-else><p v-if="cityRoute" class="wm-detail-note">高田接驳站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? '东京Metro联程' : '都营巴士 / 东京Metro' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
           </template>
-          <button type="button" class="wm-outline-button" @click="goToLayer('sandtable')">查看沙盘</button>
+          <p class="wm-detail-note">点击地图上的城区，或选择上方片区，进入详细沙盘。</p>
         </template>
         <template v-else>
           <nav class="wm-atlas-breadcrumb" aria-label="地理路径"><button @click="goToLayer('world')">世界</button><span>/</span><button @click="selectCountry(countryId)">{{ currentCountry?.properties.name ?? '国家' }}</button><template v-if="currentRegion"><span>/</span><button @click="selectDivision(regionId)">{{ currentRegion.properties.name }}</button></template></nav>

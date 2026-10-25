@@ -1,5 +1,13 @@
 # 未读之城 / Unread City
 
+## 渐进切换与城市沙盘（2026-10-25）
+
+切换主角现在会升空、沿城市移动、再落到目标角色，标准动画约 4 秒，支持跳过与 Esc。地图默认城市总览，点击五个城区进入各自详细沙盘，左上角返回城市并恢复原视图。
+
+交付：[Tauri Lite 卡（9.54 MB）](outputs/switch-map-20261025/unread-city-switch-map-lite-tauri.png) · [普通 Lite 卡（25.42 MB）](outputs/switch-map-20261025/unread-city-switch-map-lite.png) · [配套素材 ZIP（44.40 MB）](outputs/switch-map-20261025/unread-city-lite-assets.zip)。仍需安装并授权酒馆助手，首次安装 ZIP 后刷新页面。
+
+类型检查、构建、17 项单元测试与 23 项定向浏览器场景通过，覆盖 1440×900、1280×800、390×844、320×568。详见[实现与验收](integration/protagonist-switch/README.md)；尚未做 TauriTavern 真机验收。
+
 ## 切聊天重进后立绘修复（2026-10-24）
 
 修复了切换聊天再进入未读之城时，无论当前主角是谁、小说视图站立立绘都变成素世 Live2D 的问题。现在旁白与纯叙述段落显示的是当前主角：素世 Live2D、祥子或艾玛 sprite；具体台词仍按说话人切换立绘。四尺寸受控浏览器复现与反向验证见 [验收记录](outputs/standing-portrait-verification.json)。

@@ -260,6 +260,8 @@ export interface ShellModel {
   mode: Bridge['kind'];
   state: WorldState;
   busy: boolean;
+  /** Temporary presentation lock; never serialized into WorldState. */
+  switchingProtagonist?: boolean;
   interaction?: InteractionPresentation | null;
   notice: string;
   connection: string;
@@ -275,6 +277,7 @@ export interface ShellModel {
 }
 
 export interface ShellActions {
+  beginProtagonistSwitch?(target: import('../runtime/dual-protagonists').ProtagonistId): import('./protagonist-switch').ProtagonistSwitchLease | null;
   dispatch(action: WorldAction): void;
   interact?(action: WorldAction): Promise<boolean>;
   resolveInteraction?(accept: boolean): Promise<void>;
