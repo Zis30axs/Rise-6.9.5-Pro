@@ -2,12 +2,14 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 import soyoCase from '../../assets/phone-visuals/soyo/wallpaper.svg?raw';
 import sakikoCase from '../../assets/phone-visuals/sakiko/wallpaper.svg?raw';
 import emmaCase from '../../assets/phone-visuals/emma/wallpaper.svg?raw';
+import renakoCase from '../../assets/phone-visuals/renako/wallpaper.svg?raw';
 
 /** Authored game devices, not claims about the characters' canonical hardware. */
 export const phoneModels = {
   soyo: { name: 'Petal 6', caseName: '花叶软壳', width: 418, height: 880, depth: 24, radius: 52, color: '#d7ddc7', metal: '#c4c8ba', ink: '#40584a', art: soyoCase, cameras: [[38, 38], [91, 96]], cameraWidth: 132, cameraHeight: 140 },
   sakiko: { name: 'Nocturne Pro', caseName: '深蓝银纹壳', width: 432, height: 896, depth: 27, radius: 30, color: '#18283e', metal: '#8191a9', ink: '#d1ddf0', art: sakikoCase, cameras: [[36, 36], [96, 70], [36, 104]], cameraWidth: 136, cameraHeight: 144 },
   emma: { name: 'Sakura Mini', caseName: '黑樱蓝纹壳', width: 408, height: 866, depth: 23, radius: 42, color: '#16151c', metal: '#738aa5', ink: '#f3b7ce', art: emmaCase, cameras: [[38, 38], [99, 38]], cameraWidth: 138, cameraHeight: 78 },
+  renako: { name: 'Peach Flip', caseName: '甘织粉紫壳', width: 398, height: 856, depth: 22, radius: 48, color: '#f7d8e6', metal: '#c9aedb', ink: '#6d466b', art: renakoCase, cameras: [[36, 36], [36, 94]], cameraWidth: 82, cameraHeight: 138 },
 } as const;
 
 export interface PhonePose { yaw: number; pitch: number; zoom: number }

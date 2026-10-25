@@ -63,6 +63,11 @@ const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelB
   // Reuse the recovered open-plan room as an indoor illustration until the
   // cafe has dedicated art; no additional or falsely attributed image asset.
   'margo-cafe-room': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
+  'amaori-family-home': { src: majoInteriorArt['koko-old-house'], imagePhase: 'day' },
+  'ouzuka-residence': { src: majoInteriorArt['nikaido-house'], imagePhase: 'day' },
+  'sena-family-home': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
+  'koto-apartment': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
+  'koyanagi-home': { src: majoInteriorArt['anan-noa-milia-home'], imagePhase: 'day' },
   home: { src: majoDistrictArt['old-town-lowrise'], imagePhase: 'day' },
   commercial: { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
   neighborhood: { src: majoDistrictArt['older-apartment-courtyard'], imagePhase: 'day' },

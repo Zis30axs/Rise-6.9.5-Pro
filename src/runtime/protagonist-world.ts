@@ -1,8 +1,8 @@
 import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
-import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, recordPhoneAccess, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
+import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
-import { emmaInitialFriendContacts, knownProtagonistContact } from './initial-contacts';
+import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
@@ -10,7 +10,7 @@ import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 
-export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛' } as const;
+export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
 export const SAKIKO_START_CENTS = 2_400_000;
 export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'player', 'inventory', 'academics', 'phone', 'contacts', 'schedule', 'journal', 'story'] as const;
@@ -18,7 +18,7 @@ export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
 export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean }
 export interface PhoneNotification { id: string; text: string; at: number; read: boolean }
 export interface PhoneAppearance { wallpaper: 'signature' | 'plain'; theme: 'light' | 'dark' | 'system'; layout: 'daily' | 'focus' }
-export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='soyo'?'light':'dark',layout:'daily'});
+export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='soyo'||owner==='renako'?'light':'dark',layout:'daily'});
 export function parsePhoneAppearance(raw: unknown): PhoneAppearance {
   const a=exact(raw,['wallpaper','theme','layout']);
   if(!['signature','plain'].includes(a.wallpaper as string)||!['light','dark','system'].includes(a.theme as string)||!['daily','focus'].includes(a.layout as string))return fail('手机外观无效');
@@ -42,6 +42,8 @@ export interface ProtagonistWorld {
   inactive: PersonalState;
   /** The second non-active protagonist; `inactive` remains the primary one. */
   third: PersonalState;
+  /** The third non-active protagonist. */
+  fourth: PersonalState;
   accounts: DualProtagonistLedger;
   devices: Record<ProtagonistId, DeviceState>;
   orders: PhoneOrder[];
@@ -85,6 +87,7 @@ export function personState(s: WorldState, owner: ProtagonistId): PersonalState 
   const others = otherProtagonists(p.accounts.active);
   if (owner === others[0]) return p.inactive;
   if (owner === others[1]) return p.third;
+  if (owner === others[2]) return p.fourth;
   return fail('主角状态缺失');
 }
 function fail(message: string): never { throw new Error(`三主角状态：${message}`); }
@@ -113,6 +116,15 @@ function emmaPersonalState(s: Pick<WorldState, 'scene' | 'clock'>): PersonalStat
     story: [{ id: 'emma-opening', role: 'assistant', text: protagonistOpening('emma', s.clock) }],
   };
 }
+function renakoPersonalState(s: Pick<WorldState, 'scene' | 'clock'>): PersonalState {
+  return {
+    locationId: 'home', scene: { x: -176, z: 130, yaw: 0, areaId: 'home', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
+    interior: null, transit: { sequence: 0, lastRide: null },
+    player: { energy: 80, balance: RENAKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
+    contacts: renakoInitialFriendContacts(), phone: [], schedule: [], journal: [protagonistOpeningJournal('renako', s.clock)],
+    story: [{ id: 'renako-opening', role: 'assistant', text: protagonistOpening('renako', s.clock) }],
+  };
+}
 export function enableProtagonists(s: WorldState): WorldState {
   if (s.protagonists) {
     const next = clone(s);
@@ -121,7 +133,14 @@ export function enableProtagonists(s: WorldState): WorldState {
       p.third = personalState(emmaPersonalState(next));
       p.accounts.people.emma ??= { id: 'emma', deviceId: 'unread-city-phone-emma', theme: 'emma-soft', cards: { gpt: EMMA_START_CENTS, claude: 0, gemini: 0 } };
       p.devices.emma ??= defaultDevice();
-      if (p.backgroundLife && !Object.hasOwn(p.backgroundLife.people, 'emma')) p.backgroundLife = initializeBackgroundLife(next);
+    }
+    if (!p.fourth) {
+      p.fourth = personalState(renakoPersonalState(next));
+      p.accounts.people.renako ??= { id: 'renako', deviceId: 'unread-city-phone-renako', theme: 'renako-soft', cards: { gpt: RENAKO_START_CENTS, claude: 0, gemini: 0 } };
+      p.devices.renako ??= defaultDevice();
+    }
+    if (p.backgroundLife && (!Object.hasOwn(p.backgroundLife.people, 'emma') || !Object.hasOwn(p.backgroundLife.people, 'renako'))) {
+      p.backgroundLife = initializeBackgroundLife(next);
     }
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
@@ -137,14 +156,15 @@ export function enableProtagonists(s: WorldState): WorldState {
     contacts: [knownProtagonistContact('soyo', protagonistNames.soyo)], phone: [], schedule: [], journal: [protagonistOpeningJournal('sakiko', s.clock)],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: protagonistOpening('sakiko', s.clock) }],
   };
-  const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s),
-    accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS, EMMA_START_CENTS),
-    devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice() }, orders: [], operations: [], conversations: [] } };
+  const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s), fourth: renakoPersonalState(s),
+    accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS, EMMA_START_CENTS, RENAKO_START_CENTS),
+    devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
   if (s.academics) {
     next.protagonists!.inactive.academics = structuredClone(s.academics);
     next.protagonists!.third.academics = structuredClone(s.academics);
+    next.protagonists!.fourth.academics = structuredClone(s.academics);
   }
   return next;
 }
@@ -152,14 +172,15 @@ export function enableProtagonists(s: WorldState): WorldState {
 export function parseProtagonists(value: unknown, base: WorldState, parseLegacy: (x: unknown) => WorldState, legacyMoney = false): ProtagonistWorld {
   const source = value as Record<string, unknown>;
   const hasThird = !!source && typeof source === 'object' && !Array.isArray(source) && Object.hasOwn(source, 'third');
+  const hasFourth = !!source && typeof source === 'object' && !Array.isArray(source) && Object.hasOwn(source, 'fourth');
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
-  const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),'accounts','devices','orders','operations',
+  const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
-  const accountKeys = hasThird ? [...PROTAGONISTS] : ['soyo','sakiko'];
+  const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
   const rawPeople = exact(a.people, accountKeys);
-  const accounts = makeDualLedger(0, 0, 0); accounts.active = who;
+  const accounts = makeDualLedger(0, 0, 0, 0); accounts.active = who;
   for (const owner of accountKeys as ProtagonistId[]) {
     const row = exact(rawPeople[owner], ['id','deviceId','theme','cards']), cards = exact(row.cards, ['gpt','claude','gemini']);
     if (row.id !== owner || row.deviceId !== accounts.people[owner].deviceId || row.theme !== accounts.people[owner].theme) fail('设备身份无效');
@@ -191,10 +212,23 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     accounts.people.emma.cards.gpt = money(third.player.balance);
     if (appiePayBalance(accounts, 'emma') > 2000000000) fail('余额超过上限');
   }
+  let fourth: PersonalState;
+  if (hasFourth) {
+    const rawFourth = exact(p.fourth, [...personalKeys]);
+    fourth = personalState(parseLegacy({ ...base, ...rawFourth, schema_version: '1.11.0' }));
+  } else {
+    fourth = personalState(renakoPersonalState(base));
+    if (legacyMoney) fourth.player.balance /= TOKYO_MONEY_FACTOR;
+  }
+  if (!accountKeys.includes('renako')) {
+    accounts.people.renako.cards.gpt = money(fourth.player.balance);
+    if (appiePayBalance(accounts, 'renako') > 2000000000) fail('余额超过上限');
+  }
   if (money(base.player.balance) !== appiePayBalance(accounts, who)
     || money(inactive.player.balance) !== appiePayBalance(accounts, others[0])
-    || money(third.player.balance) !== appiePayBalance(accounts, others[1])) fail('余额投影与 Appie Pay 不一致');
-  const deviceKeys = hasThird ? [...PROTAGONISTS] : ['soyo','sakiko'];
+    || money(third.player.balance) !== appiePayBalance(accounts, others[1])
+    || money(fourth.player.balance) !== appiePayBalance(accounts, others[2])) fail('余额投影与 Appie Pay 不一致');
+  const deviceKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
   const rawDevices = exact(p.devices, deviceKeys);
   const parseDevice = (x: unknown): DeviceState => {
     const d = exact(x, ['locked','share','calendar','notifications',...(x && typeof x==='object' && Object.hasOwn(x,'appearance')?['appearance']:[])]);
@@ -206,7 +240,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
       const n = exact(raw, ['id','text','at','read']); return {id:string(n.id,128),text:string(n.text),at:integer(n.at,525600000),read:boolean(n.read)};
     })) };
   };
-  const devices: Record<ProtagonistId, DeviceState> = { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice() };
+  const devices: Record<ProtagonistId, DeviceState> = { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() };
   for (const owner of deviceKeys as ProtagonistId[]) devices[owner] = parseDevice(rawDevices[owner]);
   const orders = distinct(array(p.orders,500,raw => {
     const o = exact(raw,['id','owner','actor','kind','itemId','quantity','card','totalCents','address','due','status']);
@@ -229,10 +263,10 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   })) : [];
   if(conversations.some(row => row.replyTo!==null && !conversations.some(parent =>
     parent.id===row.replyTo && parent.from===row.to && parent.to===row.from && parent.expectsReply))) fail('短信回复来源无效');
-  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,third,accounts,devices,orders,operations,conversations};
+  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,third,fourth,accounts,devices,orders,operations,conversations};
   if (Object.hasOwn(p,'npcWallets')) result.npcWallets = parseNpcWallets(p.npcWallets);
   if (Object.hasOwn(p, 'npcPhone')) result.npcPhone = parseNpcPhone(p.npcPhone, {...base, schema_version:'1.13.0', protagonists:result});
-  result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy,!hasThird) : initializeBackgroundLife({...base,schema_version:'1.13.0',protagonists:result});
+  result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy,!hasThird||!hasFourth) : initializeBackgroundLife({...base,schema_version:'1.13.0',protagonists:result});
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   return result;
 }
@@ -424,11 +458,11 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     const leaving=personalState(s);
     const remaining=otherProtagonists(target);
     const stateOf=(id:ProtagonistId)=>id===who?leaving:personalState(personState(s,id));
-    const nextInactive=stateOf(remaining[0]), nextThird=stateOf(remaining[1]);
+    const nextInactive=stateOf(remaining[0]), nextThird=stateOf(remaining[1]), nextFourth=stateOf(remaining[2]);
     const arriving=personalState(personState(s,target));
     if (!arriving.academics && s.academics) arriving.academics = structuredClone(s.academics);
     Object.assign(s, arriving);
-    p.inactive=nextInactive; p.third=nextThird; p.accounts.active=target; p.revision++;
+    p.inactive=nextInactive; p.third=nextThird; p.fourth=nextFourth; p.accounts.active=target; p.revision++;
     return s;
   }
   exact(action,['type','requestId','owner','command']);
@@ -532,8 +566,6 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   return s;
 }
 
-
-
 /**
  * Save exactly one model-generated reply to a user-originated SMS. The reply
  * is committed by the card, not by a tool call or a fabricated story action.
@@ -574,4 +606,3 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
   p.revision++;
   return s;
 }
-

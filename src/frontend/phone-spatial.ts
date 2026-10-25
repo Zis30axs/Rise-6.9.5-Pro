@@ -15,7 +15,8 @@ html[data-uc-spatial-screen] .island{transition:none}
 html[data-uc-spatial-screen=soyo] .island{min-width:132px;height:27px;top:0;border-radius:0 0 18px 18px}
 html[data-uc-spatial-screen=sakiko] .island:not([data-active]){min-width:13px;width:13px;height:13px;top:15px;padding:0}
 html[data-uc-spatial-screen=sakiko] .island:not([data-active]) .camera{width:8px;height:8px;margin:auto}
-html[data-uc-spatial-screen=emma] .island:not([data-active]){min-width:84px;height:27px;top:11px}`;
+html[data-uc-spatial-screen=emma] .island:not([data-active]){min-width:84px;height:27px;top:11px}
+html[data-uc-spatial-screen=renako] .island:not([data-active]){min-width:96px;height:25px;top:12px;border-radius:14px}`;
 
 interface Point { id: number; x: number; y: number }
 type Command = 'front' | 'back' | 'zoom-in' | 'zoom-out';

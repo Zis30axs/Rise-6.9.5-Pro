@@ -14,9 +14,19 @@ Object.freeze(novelNpcEmotions);
 
 export type NovelNpcEmotion = (typeof novelNpcEmotions)[keyof typeof novelNpcEmotions];
 
+const emotionAliases: Readonly<Record<string, NovelNpcEmotion>> = Object.freeze({
+  常态: 'neutral',
+  慌张: 'relieved',
+  疑惑: 'thinking',
+  无语: 'serious',
+});
+
 export function resolveNovelNpcEmotion(input: string): NovelNpcEmotion {
   const emotion = input.trim();
-  return Object.prototype.hasOwnProperty.call(novelNpcEmotions, emotion)
-    ? novelNpcEmotions[emotion as keyof typeof novelNpcEmotions]
+  if (Object.prototype.hasOwnProperty.call(novelNpcEmotions, emotion)) {
+    return novelNpcEmotions[emotion as keyof typeof novelNpcEmotions];
+  }
+  return Object.prototype.hasOwnProperty.call(emotionAliases, emotion)
+    ? emotionAliases[emotion]!
     : 'neutral';
 }

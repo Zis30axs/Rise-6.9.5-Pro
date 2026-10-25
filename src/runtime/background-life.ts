@@ -4,7 +4,7 @@ import { adjustEnergy } from './energy';
 import { getActivityEffects } from './activity-effects';
 import { TOKYO_DELIVERY_FEE } from './tokyo-world';
 import { advancePlayerNutrition, getInventoryCatalog, getStoreItem, storeCatalog } from './convenience-store';
-import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, type ProtagonistId } from './dual-protagonists';
+import { appiePayBalance, applyCardTransaction, FICTIONAL_CARDS, PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { getAcademicTimetable } from './academics';
 import { gameWeekday, hasStartedAcademicWeek } from './game-calendar';
 import { isJapanesePublicHoliday } from './japan-calendar-events';
@@ -51,13 +51,13 @@ const stamp = (text: string) => { let hash = 2166136261; for (let i = 0; i < tex
 
 export function createBackgroundLife(at: number): BackgroundLife {
   const person = (): BackgroundPerson => ({ nextDecisionAt: nextQuarter(at), pending: null, calendarSeen: [], lastMessageDay: 0, events: [] });
-  return { version: 1, cursor: at, people: { soyo: person(), sakiko: person(), emma: person() } };
+  return { version: 1, cursor: at, people: { soyo: person(), sakiko: person(), emma: person(), renako: person() } };
 }
 
 /** The save parser accepts the old 1.12 two-person shape, then starts here at its current clock. */
 export function initializeBackgroundLife(state: WorldState): BackgroundLife {
   const life = createBackgroundLife(gameMinute(state));
-  for (const owner of ['soyo', 'sakiko', 'emma'] as const) {
+  for (const owner of PROTAGONISTS) {
     // Do not replay already-past one-off appointments on migration.
     life.people[owner].calendarSeen = appointments(state, owner, life.cursor)
       .filter(event => event.start < life.cursor && event.source !== 'academic').map(event => event.key).slice(-200);
@@ -65,7 +65,7 @@ export function initializeBackgroundLife(state: WorldState): BackgroundLife {
   return life;
 }
 
-export function parseBackgroundLife(value: unknown, base: WorldState, parseLegacy: (value: unknown) => WorldState, allowMissingEmma = false): BackgroundLife {
+export function parseBackgroundLife(value: unknown, base: WorldState, parseLegacy: (value: unknown) => WorldState, allowMissingOptional = false): BackgroundLife {
   const fail = (): never => { throw new Error('三主角状态：后台生活记录无效'); };
   const object = (value: unknown, keys: string[]) => {
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length || Object.keys(value).some(key => !keys.includes(key))) return fail();
@@ -77,7 +77,12 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
   if (row.version !== 1) return fail();
   const cursor = integer(row.cursor);
   if (cursor !== gameMinute(base)) return fail();
-  const people = object(row.people, allowMissingEmma ? ['soyo', 'sakiko'] : ['soyo', 'sakiko', 'emma']);
+  const hasEmma = !!row.people && typeof row.people === 'object' && !Array.isArray(row.people) && Object.hasOwn(row.people, 'emma');
+  const hasRenako = !!row.people && typeof row.people === 'object' && !Array.isArray(row.people) && Object.hasOwn(row.people, 'renako');
+  const expectedKeys = allowMissingOptional
+    ? ['soyo', 'sakiko', ...(hasEmma ? ['emma'] : []), ...(hasRenako ? ['renako'] : [])]
+    : ['soyo', 'sakiko', 'emma', 'renako'];
+  const people = object(row.people, expectedKeys);
   const parsePerson = (raw: unknown, owner: ProtagonistId): BackgroundPerson => {
     const p = object(raw, ['nextDecisionAt', 'pending', 'calendarSeen', 'lastMessageDay', 'events']);
     const nextDecisionAt = integer(p.nextDecisionAt);
@@ -119,7 +124,17 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
     }
     return { nextDecisionAt, pending, calendarSeen, lastMessageDay: integer(p.lastMessageDay, clockAt(cursor).day), events };
   };
-  const result: BackgroundLife = { version: 1, cursor, people: { soyo: parsePerson(people.soyo, 'soyo'), sakiko: parsePerson(people.sakiko, 'sakiko'), emma: allowMissingEmma ? { nextDecisionAt: nextQuarter(cursor), pending: null, calendarSeen: [], lastMessageDay: 0, events: [] } : parsePerson(people.emma, 'emma') } };
+  const emptyPerson = (): BackgroundPerson => ({ nextDecisionAt: nextQuarter(cursor), pending: null, calendarSeen: [], lastMessageDay: 0, events: [] });
+  const result: BackgroundLife = {
+    version: 1,
+    cursor,
+    people: {
+      soyo: parsePerson(people.soyo, 'soyo'),
+      sakiko: parsePerson(people.sakiko, 'sakiko'),
+      emma: hasEmma ? parsePerson(people.emma, 'emma') : emptyPerson(),
+      renako: hasRenako ? parsePerson(people.renako, 'renako') : emptyPerson(),
+    },
+  };
   return result;
 }
 
@@ -156,7 +171,7 @@ function appointments(state: WorldState, owner: ProtagonistId, at: number): Appo
   const p = state.protagonists!;
   const personal = personState(state, owner), day = Math.floor(at / 1440), others = otherProtagonists(owner);
   const toMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
-  const sharedName = (title: string) => others.some(other => ({ soyo: /素世|soyo/i, sakiko: /祥子|sakiko/i, emma: /艾玛|emma/i })[other].test(title));
+  const sharedName = (title: string) => others.some(other => ({ soyo: /素世|soyo/i, sakiko: /祥子|sakiko/i, emma: /艾玛|emma/i, renako: /玲奈子|甘织|renako/i })[other].test(title));
   const sharedCalendar = (event: { locationId: string; start: number; duration: number }) => others.some(other => p.devices[other].calendar.some(otherEvent => otherEvent.locationId === event.locationId && otherEvent.start < event.start + event.duration && event.start < otherEvent.start + otherEvent.duration));
   const calendar: Appointment[] = p.devices[owner].calendar.map(event => ({ ...event,
     key: `calendar:${event.id}:${event.start}:${stamp(JSON.stringify([event.title, event.locationId, event.duration]))}`, source: 'calendar',
@@ -180,21 +195,23 @@ function ownPhone(state: WorldState, owner: ProtagonistId, at: number, id: strin
   view.clock = clockAt(at);
   view.protagonists!.inactive = personalState(personState(state, ownerOthers[0]));
   view.protagonists!.third = personalState(personState(state, ownerOthers[1]));
+  view.protagonists!.fourth = personalState(personState(state, ownerOthers[2]));
   view.protagonists!.accounts.active = owner;
   const result = reduceProtagonistAction(view, { type: 'phone_app', requestId: id, owner, command });
   const ownerState = personalState(result);
   const updatedOthers: Record<string, PersonalState> = {
     [ownerOthers[0]]: personalState(result.protagonists!.inactive),
     [ownerOthers[1]]: personalState(result.protagonists!.third),
+    [ownerOthers[2]]: personalState(result.protagonists!.fourth),
   };
   const restoredActive = updatedOthers[activeId]!;
-  const thirdParty = ownerOthers.find(person => person !== activeId)!;
   const nonActive = otherProtagonists(activeId);
-  const states: Record<string, PersonalState> = { [owner]: ownerState, [thirdParty]: updatedOthers[thirdParty]! };
+  const states: Record<string, PersonalState> = { ...updatedOthers, [owner]: ownerState };
   Object.assign(p, result.protagonists, {
     backgroundLife: life,
     inactive: states[nonActive[0]]!,
     third: states[nonActive[1]]!,
+    fourth: states[nonActive[2]]!,
   });
   p.accounts.active = activeId;
   Object.assign(state, restoredActive);
@@ -316,7 +333,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
   // A factual, modest daily message. Sending it is a shared event; both sides retain the same source ID.
   const day = Math.floor(at / 1440) + 1;
   if (at % 1440 >= 1080 && at % 1440 < 1260 && life.lastMessageDay !== day && !protagonistsNearby(state)
-    && owner !== otherProtagonists(activeProtagonist(state))[1]) {
+    && owner === otherProtagonists(activeProtagonist(state))[0]) {
     const recipient = personState(state, otherProtagonist(owner));
     if (recipient.phone.length < 200 && recipient.contacts.length < 50 && p.devices[otherProtagonist(owner)].notifications.length < 200 && p.operations.length < 2000) {
       const text = owner === 'soyo' ? '我这边先照顾一下自己的安排。你忙完后，方便的话给我留个消息。' : '我会先处理自己的安排。若有需要协调的事，请给我留言。';
@@ -373,7 +390,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
   if (current.player.energy <= 35 || at % 1440 >= 1380 || at % 1440 < 360) {
     plan('rest', 30, '在当前地点安静休息');
   } else {
-    plan('routine', 30, owner === 'soyo' ? '独自读了会儿随身文字，整理自己的日常安排' : '独自梳理了练习内容与下一段日程');
+    plan('routine', 30, owner === 'soyo' ? '独自读了会儿随身文字，整理自己的日常安排' : owner === 'renako' ? '独自玩了会儿掌机游戏，缓和紧绷的社交神经' : '独自梳理了练习内容与下一段日程');
   }
 }
 

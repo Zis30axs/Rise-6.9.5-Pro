@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="kg-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#140f28"/>
+      <stop offset="100%" stop-color="#24143e"/>
+    </linearGradient>
+    <linearGradient id="kg-hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fae3b4"/>
+      <stop offset="50%" stop-color="#f0cb8e"/>
+      <stop offset="100%" stop-color="#d9a765"/>
+    </linearGradient>
+    <linearGradient id="kg-moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffdc82"/>
+      <stop offset="100%" stop-color="#f59a47"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="url(#kg-bg)"/>
+  <circle cx="128" cy="120" r="92" fill="#ffd56b" opacity=".18"/>
+  <circle cx="128" cy="120" r="82" fill="#1b1232"/>
+  <path d="M156 42a72 72 0 1 1-56 136 70 70 0 1 0 56-136z" fill="#ffeaa7" opacity=".35"/>
+  <g transform="translate(128, 142)">
+    <path d="M-52 68c0-38 22-54 52-54s52 16 52 54z" fill="#b82725"/>
+    <path d="M-38 68c0-28 16-40 38-40s38 12 38 40z" fill="#fff5ea"/>
+    <path d="M-24 16c0 18 10 32 24 32s24-14 24-32c0-18-10-28-24-28s-24 10-24 28z" fill="#ffefe3"/>
+    <ellipse cx="-13" cy="22" rx="4" ry="2" fill="#ffb4a2" opacity=".7"/>
+    <ellipse cx="13" cy="22" rx="4" ry="2" fill="#ffb4a2" opacity=".7"/>
+    <ellipse cx="-11" cy="14" rx="6" ry="8" fill="#f0702d"/>
+    <ellipse cx="11" cy="14" rx="6" ry="8" fill="#f0702d"/>
+    <circle cx="-11" cy="13" r="3.5" fill="#301810"/>
+    <circle cx="11" cy="13" r="3.5" fill="#301810"/>
+    <circle cx="-9" cy="11" r="2" fill="#ffffff"/>
+    <circle cx="13" cy="11" r="2" fill="#ffffff"/>
+    <ellipse cx="-11" cy="19" rx="3" ry="1.5" fill="#a4e8d0"/>
+    <ellipse cx="11" cy="19" rx="3" ry="1.5" fill="#a4e8d0"/>
+    <path d="M-18 8c2-3 8-4 14-1m1 0c2-3 8-4 14-1" fill="none" stroke="#ba2b1e" stroke-width="2" stroke-linecap="round"/>
+    <path d="M-5 28q5 4 10 0" fill="none" stroke="#ba2b1e" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M-38-8c-8 32-6 58 6 78-4-24-2-48 6-68 8-16 20-26 26-26s18 10 26 26c8 20 10 44 6 68 12-20 14-46 6-78-8-38-26-56-32-56s-24 18-32 56z" fill="url(#kg-hair)"/>
+    <path d="M-30-22c4 24 6 42 8 52m12-56c2 28 3 46 4 58m12-58c-1 26-2 44-3 58m12-54c-3 22-5 38-7 50" fill="none" stroke="#e0b06b" stroke-width="2.2" stroke-linecap="round"/>
+    <g transform="translate(24, -38)">
+      <path d="M12-18A24 24 0 1 1-12 18 22 22 0 1 0 12-18z" fill="url(#kg-moon)"/>
+      <path d="M-1-1l6-18m-18 6l18-6" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" opacity=".85"/>
+      <circle cx="2" cy="-4" r="2" fill="#fff"/>
+    </g>
+  </g>
+  <circle cx="44" cy="56" r="2" fill="#7df9ff" opacity=".8"/>
+  <circle cx="212" cy="74" r="2.5" fill="#ffd043" opacity=".9"/>
+  <circle cx="218" cy="192" r="2" fill="#ff9ecb" opacity=".8"/>
+</svg>

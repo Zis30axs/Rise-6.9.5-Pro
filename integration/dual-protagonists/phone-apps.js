@@ -31,27 +31,76 @@ const requestId = win => win.crypto.randomUUID();
 const total = data => Object.values(data.cards).reduce((a,b)=>a+b,0);
 const twiitchImage = key => {const svg=phoneArt[key];return svg?`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`:'';};
 /** Fully local, read-only Twiitch channel. It never starts a stream, calls a model or changes world state. */
-function twiitchView(data) {
+function twiitchView(data, activeChannel = 'kaguya') {
   const hour = Number.isFinite(data.clock?.hour) ? data.clock.hour : 12;
-  const live = hour >= 20 && hour < 23;
-  const cover = twiitchImage('twiitch/coco-channel-cover.svg');
-  const avatar = twiitchImage('twiitch/coco-avatar.svg');
   const wordmark = twiitchImage('twiitch/wordmark.svg');
-  const offline = twiitchImage('twiitch/offline-card.svg');
   const overlay = twiitchImage('twiitch/stream-overlay.svg');
   const reaction = key => twiitchImage(`twiitch/reaction-${key}.svg`);
-  return `<style>.tp-channel{display:grid;gap:12px;padding:0 4px 14px}.tp-cover{position:relative;border-radius:14px;overflow:hidden;background:#1b1722;min-height:96px}.tp-cover img{display:block;width:100%;height:auto}.tp-wm{position:absolute;left:10px;top:8px;width:74px;max-height:22px;opacity:.95}.tp-head{display:flex;align-items:center;gap:10px;padding:0 2px}.tp-head img.tp-avatar{width:52px;height:52px;border-radius:50%;background:#fff2;padding:3px}.tp-head strong{display:block;font-size:15px}.tp-head small{display:block;opacity:.75}.tp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#b23b4e;color:#fff;font-size:12px}.tp-live.off{background:#6668}.tp-card{position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6}.tp-card img{display:block;width:100%;height:auto}.tp-overlay{position:absolute;right:6px;bottom:6px;width:42%}.tp-reactions{display:flex;gap:8px;flex-wrap:wrap}.tp-reactions figure{display:flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid #8884;border-radius:999px;background:#8881}.tp-reactions img{width:22px;height:22px}.tp-post{padding:12px;border:1px solid #8883;border-radius:14px;background:#8881}.tp-post p{margin:6px 0 0}.tp-note{font-size:12px;opacity:.75;line-height:1.5}</style>
+
+  const channels = {
+    kaguya: {
+      id: 'kaguya',
+      tabLabel: '✨ 辉夜姬 · 月读空间',
+      name: '辉夜姬 · 月读空间（Tsukuyomi Live）',
+      tag: '虚拟歌姬 · 音乐创作与月读舞台（Model: 水色の描）',
+      hoursLabel: '直播时段：18:00–21:00',
+      isLive: hour >= 18 && hour < 21,
+      cover: twiitchImage('twiitch/kaguya-channel-cover.svg'),
+      avatar: twiitchImage('twiitch/kaguya-avatar.svg'),
+      streamCard: twiitchImage('twiitch/kaguya-stream-card.svg'),
+      offlineCard: twiitchImage('twiitch/kaguya-offline-card.svg'),
+      livePost: '「月读空间已接入！今晚是新曲创作与即兴弹唱Live，来和我一起把歌声传回月亮吧♪」',
+      offlinePost: '「今天在彩叶的房间写新曲～下次月读舞台Live时间已预约，记得准时入场哦✨」',
+      badgeColor: '#7b42f6',
+      reactions: [
+        { key: 'star', label: '星光' },
+        { key: 'heart', label: '打call' },
+        { key: 'wave', label: '挥手' },
+        { key: 'cat', label: '月兔' }
+      ]
+    },
+    coco: {
+      id: 'coco',
+      tabLabel: '🌙 泽渡可可 · 夜间频道',
+      name: '泽渡可可 · 夜间频道',
+      tag: '日常杂谈 · 镜头前营业',
+      hoursLabel: '直播时段：20:00–23:00',
+      isLive: hour >= 20 && hour < 23,
+      cover: twiitchImage('twiitch/coco-channel-cover.svg'),
+      avatar: twiitchImage('twiitch/coco-avatar.svg'),
+      streamCard: twiitchImage('twiitch/stream-overlay.svg'),
+      offlineCard: twiitchImage('twiitch/offline-card.svg'),
+      livePost: '「今晚继续闲聊，镜头前营业，镜头后照旧。」',
+      offlinePost: '「直播已结束。下次开播时间由可可以自己的日程决定。」',
+      badgeColor: '#b23b4e',
+      reactions: [
+        { key: 'heart', label: '喜欢' },
+        { key: 'star', label: '收藏' },
+        { key: 'wave', label: '打招呼' },
+        { key: 'cat', label: '猫咪' }
+      ]
+    }
+  };
+
+  const ch = channels[activeChannel] || channels.kaguya;
+  const live = ch.isLive;
+  const cardImg = live ? (ch.streamCard || ch.offlineCard) : ch.offlineCard;
+
+  return `<style>.tp-channel{display:grid;gap:12px;padding:0 4px 14px}.tp-channel-switch{display:flex;gap:8px;padding:2px 2px 6px;overflow-x:auto}.tp-channel-switch button{font-size:12px;padding:6px 14px;border-radius:999px;border:1px solid #8884;background:#8881;color:inherit;cursor:pointer;white-space:nowrap;min-height:36px;transition:all .15s}.tp-channel-switch button.active{background:${ch.badgeColor};color:#fff;border-color:transparent;font-weight:600}.tp-cover{position:relative;border-radius:14px;overflow:hidden;background:#1b1722;min-height:96px}.tp-cover img{display:block;width:100%;height:auto}.tp-wm{position:absolute;left:10px;top:8px;width:74px;max-height:22px;opacity:.95}.tp-head{display:flex;align-items:center;gap:10px;padding:0 2px}.tp-head img.tp-avatar{width:52px;height:52px;border-radius:50%;background:#fff2;padding:3px}.tp-head strong{display:block;font-size:15px}.tp-head small{display:block;opacity:.75}.tp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:${ch.badgeColor};color:#fff;font-size:12px}.tp-live.off{background:#6668}.tp-card{position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6}.tp-card img{display:block;width:100%;height:auto}.tp-overlay{position:absolute;right:6px;bottom:6px;width:42%}.tp-reactions{display:flex;gap:8px;flex-wrap:wrap}.tp-reactions figure{display:flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid #8884;border-radius:999px;background:#8881}.tp-reactions img{width:22px;height:22px}.tp-post{padding:12px;border:1px solid #8883;border-radius:14px;background:#8881}.tp-post p{margin:6px 0 0}.tp-note{font-size:12px;opacity:.75;line-height:1.5}</style>
   <section class="tp-channel" aria-label="Twiitch 频道">
-    <div class="tp-cover">${cover?`<img src="${cover}" alt="可可频道封面">`:''}${wordmark?`<img class="tp-wm" src="${wordmark}" alt="Twiitch">`:''}</div>
-    <div class="tp-head">${avatar?`<img class="tp-avatar" src="${avatar}" alt="可可频道头像">`:''}<div><strong>泽渡可可 · 夜间频道</strong><small>${live?'直播时段：20:00–23:00':'当前不在直播时段'}</small></div><span class="tp-live ${live?'':'off'}">${live?'直播中':'离线'}</span></div>
-    ${live&&overlay?`<div class="tp-card"><img src="${offline||overlay}" alt="Twiitch 直播画面"><img class="tp-overlay" src="${overlay}" alt="直播边框"></div>`:`<div class="tp-card">${offline?`<img src="${offline}" alt="Twiitch 离线卡片">`:''}</div>`}
-    <div class="tp-reactions" aria-label="频道反应">${['heart','star','wave','cat'].map(key=>{const src=reaction(key);return src?`<figure><img src="${src}" alt=""><span>${({heart:'喜欢',star:'收藏',wave:'打招呼',cat:'猫咪'})[key]}</span></figure>`:'';}).join('')}</div>
-    <article class="tp-post"><strong>最近的频道动态</strong><p>${live?'「今晚继续闲聊，镜头前营业，镜头后照旧。」':'「直播已结束。下次开播时间由可可以自己的日程决定。」'}</p><p class="tp-note">这是本地静态频道展示，只读取游戏时钟；不会开播、发消息或调用模型。</p></article>
+    <div class="tp-channel-switch" role="tablist" aria-label="频道切换">
+      ${Object.values(channels).map(c=>`<button type="button" class="${c.id===ch.id?'active':''}" data-action="switch-twiitch" data-channel="${c.id}" role="tab" aria-selected="${c.id===ch.id}">${esc(c.tabLabel)}</button>`).join('')}
+    </div>
+    <div class="tp-cover">${ch.cover?`<img src="${ch.cover}" alt="${esc(ch.name)}封面">`:''}${wordmark?`<img class="tp-wm" src="${wordmark}" alt="Twiitch">`:''}</div>
+    <div class="tp-head">${ch.avatar?`<img class="tp-avatar" src="${ch.avatar}" alt="${esc(ch.name)}头像">`:''}<div><strong>${esc(ch.name)}</strong><small>${live?ch.hoursLabel:'当前不在直播时段'}</small></div><span class="tp-live ${live?'':'off'}">${live?'直播中':'离线'}</span></div>
+    <div class="tp-card">${cardImg?`<img src="${cardImg}" alt="Twiitch 直播画面">`:''}${live&&overlay&&ch.id==='coco'?`<img class="tp-overlay" src="${overlay}" alt="直播边框">`:''}</div>
+    <div class="tp-reactions" aria-label="频道反应">${ch.reactions.map(r=>{const src=reaction(r.key);return src?`<figure><img src="${src}" alt=""><span>${esc(r.label)}</span></figure>`:'';}).join('')}</div>
+    <article class="tp-post"><strong>最近的频道动态</strong><p>${esc(live?ch.livePost:ch.offlinePost)}</p><p class="tp-note">这是本地静态频道展示，只读取游戏时钟；不会开播、发消息或调用模型。</p></article>
   </section>`;
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
-  let data=null,section=id,peek=false,pending=null,recipient='protagonist';
+  let data=null,section=id,peek=false,pending=null,recipient='protagonist',twiitchChannel='kaguya';
   const drafts=new Map();
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
   const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice(11):data.other.id;
@@ -101,7 +150,7 @@ function worldApp(ctx,id) {
     } else {
       if(id==='worldpeek')html+=`<p class="world-notice">正在查看${esc(data.name)}的真实手机记录。${btn('own','返回自己的手机','text-button')}</p><div class="world-tabs">${['wallet','calendar','orders','messages'].map(x=>btn('inspect',({wallet:'Appie Pay',calendar:'日历',orders:'订单',messages:'消息'})[x],'secondary',`data-section="${x}"`)).join('')}</div>`;
       if(section==='appie'||section==='wallet') {
-        html+=`<div class="wallet-card"><small>Appie Pay · 游戏账户</small><strong>${money(total(data))}</strong></div><div class="world-cards">${Object.entries(cardNames).map(([key,label])=>`<article class="world-card ${key}" data-card-owner="${data.owner}" aria-label="${esc(data.name)}的${label}"><span class="world-card-art" style='background-image:${worldCardArt(data.owner,key)}' aria-hidden="true"></span><div class="world-card-brand"><span>${label}</span><small>APPIE PAY</small></div><strong class="world-card-balance">${money(data.cards[key])}</strong><div class="world-card-holder"><span>${esc(data.name)}<small> · 游戏账户</small></span><span>•• ${{soyo:'0101',sakiko:'0202',emma:'0303'}[data.owner]} · ${key.toUpperCase()}</span></div></article>`).join('')}</div><details class="group pad"><summary>卡间转账</summary><div class="world-form">${field('转出卡',`<select data-world-field="from">${cards()}</select>`)}${field('转入卡',`<select data-world-field="to">${options(Object.entries(cardNames),'claude')}</select>`)}${field('金额（元）','<input data-world-field="amount" type="number" min="0.01" step="0.01">')}${btn('transfer','确认转账','primary')}</div></details>${!peek?`<details class="group pad"><summary>联系人转账</summary>${transferArt}<div class="world-form">${field('收款人',`<select data-world-field="payee">${payees()}</select>`)}${field('转出卡',`<select data-world-field="payFrom">${cards()}</select>`)}${field('金额（元）','<input data-world-field="payAmount" type="number" min="0.01" step="0.01">')}${btn('send-transfer','确认转账','primary')}</div><p class="hint">转给另一位主角或已保存的联系人，双边同时入账与扣款，对方会收到通知。</p></details>`:''}<div class="group">${[...data.ledger].reverse().map(e=>`<article class="world-event"><b>${esc(e.note)}</b><p>${money(e.deltaCents)} · ${cardNames[e.card]}</p></article>`).join('')||'<p class="hint">暂无流水</p>'}</div>`;
+        html+=`<div class="wallet-card"><small>Appie Pay · 游戏账户</small><strong>${money(total(data))}</strong></div><div class="world-cards">${Object.entries(cardNames).map(([key,label])=>`<article class="world-card ${key}" data-card-owner="${data.owner}" aria-label="${esc(data.name)}的${label}"><span class="world-card-art" style='background-image:${worldCardArt(data.owner,key)}' aria-hidden="true"></span><div class="world-card-brand"><span>${label}</span><small>APPIE PAY</small></div><strong class="world-card-balance">${money(data.cards[key])}</strong><div class="world-card-holder"><span>${esc(data.name)}<small> · 游戏账户</small></span><span>•• ${{soyo:'0101',sakiko:'0202',emma:'0303',renako:'0404'}[data.owner]} · ${key.toUpperCase()}</span></div></article>`).join('')}</div><details class="group pad"><summary>卡间转账</summary><div class="world-form">${field('转出卡',`<select data-world-field="from">${cards()}</select>`)}${field('转入卡',`<select data-world-field="to">${options(Object.entries(cardNames),'claude')}</select>`)}${field('金额（元）','<input data-world-field="amount" type="number" min="0.01" step="0.01">')}${btn('transfer','确认转账','primary')}</div></details>${!peek?`<details class="group pad"><summary>联系人转账</summary>${transferArt}<div class="world-form">${field('收款人',`<select data-world-field="payee">${payees()}</select>`)}${field('转出卡',`<select data-world-field="payFrom">${cards()}</select>`)}${field('金额（元）','<input data-world-field="payAmount" type="number" min="0.01" step="0.01">')}${btn('send-transfer','确认转账','primary')}</div><p class="hint">转给另一位主角或已保存的联系人，双边同时入账与扣款，对方会收到通知。</p></details>`:''}<div class="group">${[...data.ledger].reverse().map(e=>`<article class="world-event"><b>${esc(e.note)}</b><p>${money(e.deltaCents)} · ${cardNames[e.card]}</p></article>`).join('')||'<p class="hint">暂无流水</p>'}</div>`;
       }
       if(section==='worldshop'||section==='worlddelivery') {
         const delivery=section==='worlddelivery';
@@ -109,7 +158,7 @@ function worldApp(ctx,id) {
       }
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
       if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
-      if(id==='twiitch') html+=twiitchView(data);
+      if(id==='twiitch') html+=twiitchView(data,twiitchChannel);
       if(section==='worldmessages'||section==='messages') {
         const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
         const protagonistRows=(data.others||[]).map(other=>['protagonist:'+other.id,other.name]);
@@ -145,6 +194,7 @@ function worldApp(ctx,id) {
       case 'retry': await act(pending.command,pending.owner);break;
       case 'discard':pending=null;data=base();peek=false;section=id;render();break;
       case 'own':refresh();break;
+      case 'switch-twiitch':twiitchChannel=el.dataset.channel||'kaguya';render();break;
       case 'inspect':{const own=base(),owner=own.other.id;data=own;if(await act({type:'inspect',section:el.dataset.section},owner)){peek=true;section=el.dataset.section;render();}break;}
       case 'buy':{const item=data.catalog.find(x=>x.id===el.dataset.item),kind=section==='worlddelivery'?'delivery':'shop',address=formValue('address'),card=formValue('card');if(await ctx.confirm(`确认购买${item.name}？`,`共 ${money(item.price*100+(kind==='delivery'?300:0))}，从 ${cardNames[card]} 支付。`))await act({type:'order',kind,itemId:item.id,quantity:1,card,address});break;}
       case 'cancel':await act({type:'cancel_order',id:el.dataset.id});break;

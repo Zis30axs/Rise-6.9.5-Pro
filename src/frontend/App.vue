@@ -12,6 +12,7 @@ import ProtagonistSwitchOverlay from './ProtagonistSwitchOverlay.vue';
 import type { ProtagonistSwitchLease } from './protagonist-switch';
 import type { SwitchSceneHandle } from './switch-camera';
 import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
+import { hasProtagonistPhonePose } from './protagonist-phone-art';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
 import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
@@ -110,6 +111,9 @@ const encounterPerson = computed(() => {
   return scenePeople.value.find(person => person.id === props.model.state.scene?.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
 });
 const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : segmentSpeaker.value);
+// Protagonists without an authored phone pose keep their standing portrait while the phone is open.
+const portraitActive = computed(() => !activeWindow.value
+  || (activeWindow.value === 'phone' && !hasProtagonistPhonePose(currentProtagonist.value)));
 const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
   contacts: props.model.state.contacts,
   scenePeople: [...portraitPeople.value, ...scenePeople.value],
@@ -724,7 +728,7 @@ onBeforeUnmount(() => {
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
-    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />
+    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="portraitActive" :location-id="model.state.locationId" />
     <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="segmentSpeaker" :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />

@@ -7,6 +7,7 @@ import { downtownArtPack } from './generated/downtown-art';
 import { getSakikoArt, type DowntownArtPack } from './downtown-art-runtime';
 import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
 import { resolveMajoExpressionPortrait } from './majo-art';
+import { resolveWatanareExpressionPortrait } from './watanare-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean;
@@ -15,7 +16,8 @@ const props = withDefaults(defineProps<{
 const clipId = useId();
 const emotion = computed(() => resolveNovelNpcEmotion(props.emotion));
 const isSakiko = computed(() => isSakikoSpeaker(props.speaker));
-const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value));const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
+const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value));
+const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
 }));
 const failedId = ref('');

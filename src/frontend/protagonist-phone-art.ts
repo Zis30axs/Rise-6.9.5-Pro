@@ -22,7 +22,7 @@ export interface ProtagonistPhonePose {
 const soyo: ProtagonistPhonePose = Object.freeze({ protagonist: 'soyo', outfit: null, src: soyoPhone, width: 1023, height: 1537 });
 const emma: ProtagonistPhonePose = Object.freeze({ protagonist: 'emma', outfit: null, src: emmaPhone, width: 1024, height: 1536 });
 
-const poses: Readonly<Record<ProtagonistId, (outfit: SakikoOutfit) => ProtagonistPhonePose>> = Object.freeze({
+const poses: Partial<Record<ProtagonistId, (outfit: SakikoOutfit) => ProtagonistPhonePose>> = Object.freeze({
   soyo: () => soyo,
   sakiko: outfit => outfit === 'home'
     ? { protagonist: 'sakiko', outfit, src: sakikoHomePhone, width: 1024, height: 1536 }
@@ -38,4 +38,9 @@ export function resolveProtagonistPhonePose(protagonist: ProtagonistId, options:
   if (!pose) return null;
   if (protagonist === 'sakiko') return pose(resolveSakikoOutfit(options.outfit, options.locationId));
   return pose('casual');
+}
+
+/** Protagonists without an authored pose keep their standing portrait when the phone opens. */
+export function hasProtagonistPhonePose(protagonist: ProtagonistId): boolean {
+  return !!poses[protagonist];
 }

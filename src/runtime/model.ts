@@ -474,7 +474,7 @@ function parseInteractionEventRateState(value: unknown, clock: WorldState['clock
   for (const [index, raw] of rate.checks.entries()) {
     const path = `interactionEventRate.checks[${index}]`;
     const row = object(raw, ['owner', 'at', 'locationId', 'arrival', 'offered'], path);
-    if (!['soyo', 'sakiko', 'emma'].includes(String(row.owner))) return invalid(`${path}.owner`);
+    if (!['soyo', 'sakiko', 'emma', 'renako'].includes(String(row.owner))) return invalid(`${path}.owner`);
     const at = number(row.at, `${path}.at`, 0, now);
     if (checks.length && at < checks[checks.length - 1]!.at) return invalid(`${path}.at 顺序`);
     checks.push({
@@ -500,7 +500,7 @@ export function parseState(value: unknown): WorldState {
     if (!hasYen) {
       migrateHistoricalMoney(state);
       const p = state.protagonists!;
-      for (const personal of [p.inactive, p.third]) {
+      for (const personal of [p.inactive, p.third, p.fourth]) {
         personal.player.balance = historicalToYen(personal.player.balance);
         if (personal.transit.lastRide) personal.transit.lastRide.fare *= TOKYO_MONEY_FACTOR;
       }
