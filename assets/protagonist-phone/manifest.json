@@ -5,9 +5,10 @@
     "soyo-phone": "长崎素世（校服水手服，双手持机）",
     "sakiko-casual-phone": "丰川祥子（校服深蓝开衫，低头双手回复）— 对应 sakiko_casual",
     "sakiko-home-phone": "丰川祥子（居家奶油开衫，单指轻点）— 对应 sakiko_home",
-    "emma-phone": "樱羽艾玛（浅粉针织开衫，单指轻点）— 对应 majo-emma 便服"
+    "emma-phone": "樱羽艾玛（浅粉针织开衫，单指轻点）— 对应 majo-emma 便服",
+    "renako-phone": "甘织玲奈子（校服红领结，右手持粉色手机，左手轻触脸颊）— 对应 watanare-renako 校服"
   },
-  "date": "2026-10-24",
+  "date": "2026-10-25",
   "assets": [
     {
       "id": "soyo-phone",
@@ -85,6 +86,28 @@
       "sourceSha256": "bceb5f7d4608191a19ca38f09a345f99df26e68b29d91d7ec32b1f816cdd30e2",
       "webpSha256": "c6e6643ee9c2ffd4d047fc2a455b83a4e5936b8714a9b2abc256453deead842d",
       "webpBytes": 830170,
+      "conversion": {
+        "format": "WEBP",
+        "lossless": true,
+        "quality": 100,
+        "method": 6,
+        "exact": true
+      }
+    },
+    {
+      "id": "renako-phone",
+      "source": "素材/甘织玲奈子看手机.png",
+      "sourcePng": "assets/protagonist-phone/source/renako-phone.png",
+      "derivedWebp": "assets/protagonist-phone/renako-phone.webp",
+      "size": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "sourceSha256": "cee3d3421dcf56a0604681a851ffbeeb7a0302b892b6bc2757ee60fa86ddfd5a",
+      "webpSha256": "9ab6582179f1b73f320b96e5761ab54980142185e4615c6ee1e94d576a7edbf8",
+      "webpBytes": 441302,
+      "date": "2026-10-25",
       "conversion": {
         "format": "WEBP",
         "lossless": true,

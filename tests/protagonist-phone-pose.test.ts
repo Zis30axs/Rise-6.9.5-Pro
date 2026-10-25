@@ -6,10 +6,11 @@ describe('resolveProtagonistPhonePose', () => {
     expect(resolveProtagonistPhonePose('soyo')?.protagonist).toBe('soyo');
     expect(resolveProtagonistPhonePose('emma')?.protagonist).toBe('emma');
     expect(resolveProtagonistPhonePose('sakiko')?.protagonist).toBe('sakiko');
+    expect(resolveProtagonistPhonePose('renako')?.protagonist).toBe('renako');
   });
 
-  it('gives Soyo and Emma the fixed pose regardless of location', () => {
-    for (const protagonist of ['soyo', 'emma'] as const) {
+  it('gives Soyo, Emma and Renako the fixed pose regardless of location', () => {
+    for (const protagonist of ['soyo', 'emma', 'renako'] as const) {
       const pose = resolveProtagonistPhonePose(protagonist, { locationId: 'toyokawa-house' });
       expect(pose?.outfit).toBeNull();
       const elsewhere = resolveProtagonistPhonePose(protagonist, { locationId: 'library' });
@@ -33,8 +34,10 @@ describe('resolveProtagonistPhonePose', () => {
   it('returns inline data URLs only for the requested identity', () => {
     const soyo = resolveProtagonistPhonePose('soyo')!;
     const sakiko = resolveProtagonistPhonePose('sakiko', { locationId: 'toyokawa-salon' })!;
+    const renako = resolveProtagonistPhonePose('renako')!;
     expect(soyo.src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(sakiko.src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(soyo.src).not.toBe(sakiko.src);
+    expect(renako.src.startsWith('data:image/webp;base64,')).toBe(true);
+    expect(new Set([soyo.src, sakiko.src, renako.src]).size).toBe(3);
   });
 });

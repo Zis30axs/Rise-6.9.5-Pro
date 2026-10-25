@@ -7,6 +7,7 @@ import soyoPhone from '../../assets/protagonist-phone/soyo-phone.webp?inline';
 import sakikoCasualPhone from '../../assets/protagonist-phone/sakiko-casual-phone.webp?inline';
 import sakikoHomePhone from '../../assets/protagonist-phone/sakiko-home-phone.webp?inline';
 import emmaPhone from '../../assets/protagonist-phone/emma-phone.webp?inline';
+import renakoPhone from '../../assets/protagonist-phone/renako-phone.webp?inline';
 import { resolveSakikoOutfit, type SakikoOutfit } from './sakiko-art-policy';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 
@@ -21,6 +22,7 @@ export interface ProtagonistPhonePose {
 
 const soyo: ProtagonistPhonePose = Object.freeze({ protagonist: 'soyo', outfit: null, src: soyoPhone, width: 1023, height: 1537 });
 const emma: ProtagonistPhonePose = Object.freeze({ protagonist: 'emma', outfit: null, src: emmaPhone, width: 1024, height: 1536 });
+const renako: ProtagonistPhonePose = Object.freeze({ protagonist: 'renako', outfit: null, src: renakoPhone, width: 1024, height: 1536 });
 
 const poses: Partial<Record<ProtagonistId, (outfit: SakikoOutfit) => ProtagonistPhonePose>> = Object.freeze({
   soyo: () => soyo,
@@ -28,6 +30,7 @@ const poses: Partial<Record<ProtagonistId, (outfit: SakikoOutfit) => Protagonist
     ? { protagonist: 'sakiko', outfit, src: sakikoHomePhone, width: 1024, height: 1536 }
     : { protagonist: 'sakiko', outfit, src: sakikoCasualPhone, width: 1024, height: 1536 },
   emma: () => emma,
+  renako: () => renako,
 });
 
 /** Same outfit policy as the standing Sakiko sprite: explicit choice, then Toyokawa interiors. */

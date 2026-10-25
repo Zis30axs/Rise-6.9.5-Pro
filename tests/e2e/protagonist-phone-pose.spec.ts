@@ -24,7 +24,7 @@ function withAcademics(state: WorldState): WorldState {
   return state;
 }
 
-function chatState(target: 'soyo' | 'sakiko' | 'emma'): WorldState {
+function chatState(target: 'soyo' | 'sakiko' | 'emma' | 'renako'): WorldState {
   const state = enableProtagonists(withAcademics(createInitialState()));
   state.story = [{ id: 'narration-latest', role: 'assistant', text: '傍晚的街道安静下来，路灯一盏一盏亮起，晚风带着凉意。' }];
   return reduceState(state, { type: 'switch_protagonist', target });
@@ -149,10 +149,24 @@ for (const viewport of viewports) {
     await expect(page.locator('[data-protagonist-phone-pose]')).toHaveCount(0);
     await expect(page.locator('[data-majo-portrait="majo-emma"]:not(.is-muted)')).toHaveCount(1);
 
+    // Renako's pose likewise replaces her muted watanare sprite while the phone is open.
+    await page.locator('[data-protagonist-select]').selectOption('renako');
+    await expect(page.locator('.uc-shell')).toHaveAttribute('data-current-protagonist', 'renako');
+    await expect(page.locator('[data-majo-portrait="watanare-renako"]:not(.is-muted)')).toHaveCount(1);
+    await page.locator('.tool-dock .phone-launcher').click();
+    await expect(page.locator('[data-protagonist-phone-pose][data-pose-protagonist="renako"]')).toHaveCount(1);
+    await expect(page.locator('.novel-npc-portrait[data-majo-portrait].is-muted')).toHaveCount(1);
+    await noOverflow(page);
+    await page.screenshot({ path: `outputs/phone-pose-qa/${viewport.width}x${viewport.height}-renako-phone.png` });
+    await page.locator('[aria-label="关闭手机窗口"]').click();
+    await expect(page.locator('[data-protagonist-phone-pose]')).toHaveCount(0);
+    await expect(page.locator('[data-majo-portrait="watanare-renako"]:not(.is-muted)')).toHaveCount(1);
+
     expect(errors).toEqual([]);
     writeFileSync(`outputs/phone-pose-qa/${viewport.width}x${viewport.height}.json`, JSON.stringify({
       viewport, soyo: 'pose replaces muted Live2D', sakiko: 'pose outfit casual',
-      emma: 'pose replaces muted sprite', closeRestores: true, stage: 'passed',
+      emma: 'pose replaces muted sprite', renako: 'pose replaces muted sprite',
+      closeRestores: true, stage: 'passed',
     }, null, 2) + '\n');
   });
 }
