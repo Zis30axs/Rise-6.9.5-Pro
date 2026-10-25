@@ -7,6 +7,7 @@ import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { applyNpcPhoneCommand, npcPhoneView } from '../src/runtime/npc-phone';
 import { residentCast } from '../src/runtime/npc-cast';
 import { protagonistOpening } from '../src/runtime/viewpoint-openings';
+import { initializeBackgroundLife } from '../src/runtime/background-life';
 import card from '../src/card.json';
 import { applyPhoneReply } from '../src/runtime/protagonist-world';
 
@@ -52,14 +53,48 @@ describe('third protagonist accounts and timeline', () => {
     );
   });
 
-  it('uses the shared clock for subsequent viewpoint initialization', () => {
+  it.each([
+    { hour: 6, minute: 15, scene: /清晨/ },
+    { hour: 10, minute: 5, scene: /白日/ },
+    { hour: 17, minute: 20, scene: /街灯渐次亮起|和平的傍晚/ },
+    { hour: 23, minute: 40, scene: /夜色/ },
+    { hour: 0, minute: 5, scene: /夜色/ },
+  ])('uses the shared clock and matching prose for subsequent initialization at $hour:$minute', ({ hour, minute, scene }) => {
     const initial = createInitialState();
-    initial.clock = { day: 9, hour: 10, minute: 5 };
+    const savedSoyo = structuredClone({ story: initial.story, journal: initial.journal });
+    initial.clock = { day: 9, hour, minute };
+    const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     const state = enableProtagonists(initial);
+    expect(state.clock).toEqual(initial.clock);
+    expect(state.story).toEqual(savedSoyo.story);
+    expect(state.journal).toEqual(savedSoyo.journal);
     for (const owner of ['sakiko', 'emma'] as const) {
       const personal = personState(state, owner);
-      expect(personal.story[0].text).toContain('2025年9月5日，周五，10:05');
-      expect(personal.journal[0].at).toBe('第 9 天 10:05');
+      expect(personal.story[0].text).toContain(`2025年9月5日，周五，${time}`);
+      expect(personal.story[0].text).toMatch(scene);
+      if (hour !== 17) expect(personal.story[0].text).not.toMatch(/傍晚|晚风|街灯渐次亮起/);
+      expect(personal.journal[0].at).toBe(`第 9 天 ${time}`);
+    }
+  });
+
+  it('preserves saved openings and stories across reload, re-enabling and viewpoint switches at a later time', () => {
+    const state = world();
+    const saved = Object.fromEntries((['soyo', 'sakiko', 'emma'] as const).map(owner => {
+      const personal = personState(state, owner);
+      personal.story.push({ id: `${owner}-saved-story`, role: 'assistant', text: `${owner} 已有的后续故事。` });
+      return [owner, structuredClone({ story: personal.story, journal: personal.journal })];
+    }));
+    state.clock = { day: 9, hour: 10, minute: 5 };
+    state.protagonists!.backgroundLife = initializeBackgroundLife(state);
+    let restored = enableProtagonists(parseState(JSON.parse(JSON.stringify(state))));
+    for (const target of ['sakiko', 'emma', 'soyo', 'emma'] as const) {
+      restored = reduceState(restored, { type: 'switch_protagonist', target });
+      expect(restored.clock).toEqual(state.clock);
+      for (const owner of ['soyo', 'sakiko', 'emma'] as const) {
+        expect(personState(restored, owner).story).toEqual(saved[owner].story);
+        expect(personState(restored, owner).journal).toEqual(saved[owner].journal);
+      }
+      restored = parseState(JSON.parse(JSON.stringify(restored)));
     }
   });
 
@@ -145,6 +180,8 @@ describe('third protagonist accounts and timeline', () => {
 
   it('migrates a 1.12 dual save exactly once and adds Emma without duplicating her', () => {
     const state = world();
+    state.clock = { day: 9, hour: 10, minute: 5 };
+    state.protagonists!.backgroundLife = initializeBackgroundLife(state);
     const raw = JSON.parse(JSON.stringify(state)) as Record<string, unknown>;
     raw.schema_version = '1.12.0';
     const p = raw.protagonists as Record<string, any>;
@@ -157,6 +194,11 @@ describe('third protagonist accounts and timeline', () => {
     const migrated = parseState(raw);
     expect(migrated.schema_version).toBe('1.13.0');
     expect(migrated.protagonists!.inactive).toEqual(beforeInactive);
+    expect(migrated.clock).toEqual(raw.clock);
+    expect(migrated.story).toEqual(state.story);
+    expect(migrated.protagonists!.third.story[0].text).toContain('2025年9月5日，周五，10:05');
+    expect(migrated.protagonists!.third.story[0].text).toContain('白日');
+    expect(migrated.protagonists!.third.story[0].text).not.toMatch(/傍晚|晚风/);
     expect(migrated.protagonists!.third.locationId).toBe('home');
     expect(migrated.protagonists!.accounts.people.emma.cards.gpt).toBe(1200000);
     expect(migrated.protagonists!.accounts.people.emma.deviceId).toBe('unread-city-phone-emma');
@@ -211,4 +253,45 @@ describe('third protagonist accounts and timeline', () => {
     expect(state.protagonists!.backgroundLife!.cursor).toBe(start + 60);
     expect(parseState(state)).toEqual(state);
   });
+});
+
+describe('viewpoint opening time-of-day prose', () => {
+  const times = [
+    { hour: 0, minute: 0, period: 'night' },
+    { hour: 4, minute: 59, period: 'night' },
+    { hour: 5, minute: 0, period: 'morning' },
+    { hour: 8, minute: 59, period: 'morning' },
+    { hour: 9, minute: 0, period: 'day' },
+    { hour: 10, minute: 5, period: 'day' },
+    { hour: 12, minute: 0, period: 'day' },
+    { hour: 16, minute: 59, period: 'day' },
+    { hour: 17, minute: 0, period: 'evening' },
+    { hour: 17, minute: 20, period: 'evening' },
+    { hour: 18, minute: 59, period: 'evening' },
+    { hour: 19, minute: 0, period: 'night' },
+    { hour: 23, minute: 59, period: 'night' },
+  ] as const;
+  const cues = { morning: /清晨/, day: /白日/, evening: /傍晚|街灯渐次亮起/, night: /夜色/ };
+  const characters = {
+    soyo: { place: '高田校园的南门', memory: '那些已经走散的旧友', privateToOthers: /月代雪|牢屋敷/ },
+    sakiko: { place: '目白台', memory: '既然已经亲手戴上了假面', privateToOthers: /月代雪|牢屋敷/ },
+    emma: { place: '杂司谷住宅区', memory: '只要一想起雪，再想起希罗', privateToOthers: /CRYCHIC|Ave Mujica/ },
+  };
+  for (const owner of ['soyo', 'sakiko', 'emma'] as const) {
+    it.each(times)(`${owner} matches $period at $hour:$minute without changing the clock`, ({ hour, minute, period }) => {
+      const clock = Object.freeze({ day: 9, hour, minute });
+      const opening = protagonistOpening(owner, clock);
+      const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      expect(opening).toContain(`2025年9月5日，周五，${time}`);
+      const prose = opening.split('\n\n').slice(1).join('\n\n');
+      expect(prose).toMatch(cues[period]);
+      if (period !== 'evening') expect(prose).not.toMatch(/傍晚|晚风|街灯渐次亮起/);
+      if (period === 'night') expect(prose).not.toMatch(/清晨|白日|无论做什么都还来得及|站在喧嚣的路边/);
+      expect(opening).toContain(protagonistNames[owner]);
+      expect(opening).toContain(characters[owner].place);
+      expect(prose).toContain(characters[owner].memory);
+      expect(prose).not.toMatch(characters[owner].privateToOthers);
+      expect(clock).toEqual({ day: 9, hour, minute });
+    });
+  }
 });
