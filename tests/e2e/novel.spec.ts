@@ -197,6 +197,9 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   await expect(page.locator('.story-list')).not.toContainText('|charac|');
   await page.getByRole('button', { name: '逐句阅读', exact: true }).click();
   await expect(page.locator('.novel-speech')).toHaveText('那就一起走吧。');
+  // History selected the earlier '开心' line. Returning must restore the
+  // current sentence's '安心' portrait rather than retain the history frame.
+  await expect(portrait(page)).toHaveAttribute('data-live2d-emotion', '安心');
   expect(errors).toEqual([]);
 });
 
