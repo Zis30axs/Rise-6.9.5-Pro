@@ -394,7 +394,15 @@ function academicPoints(value: unknown, path: string): number {
 }
 function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: boolean): AcademicState | null {
   if (value === null) return null;
-  const item = object(value, legacy ? ['majorId', 'subjectId', 'points', 'lastGain'] : ['majorId', 'subjects', 'lastGain'], 'academics');
+  const hasCorrection = !legacy && !!value && typeof value === 'object' && !Array.isArray(value) && Object.hasOwn(value, 'correction');
+  const item = object(value, legacy ? ['majorId', 'subjectId', 'points', 'lastGain'] : ['majorId', 'subjects', 'lastGain', ...(hasCorrection ? ['correction'] : [])], 'academics');
+  const correction = hasCorrection ? (() => {
+    const raw = object(item.correction, ['previousMajorId', 'keepProgress'], 'academics.correction');
+    const previousMajorId = id(raw.previousMajorId, 'academics.correction.previousMajorId');
+    if (!getAcademicMajor(previousMajorId)) return invalid('academics.correction.previousMajorId');
+    return { previousMajorId, keepProgress: boolean(raw.keepProgress, 'academics.correction.keepProgress') };
+  })() : undefined;
+  const correctionField = correction ? { correction } : {};
   const majorId = id(item.majorId, 'academics.majorId');
   const major = getAcademicMajor(majorId);
   if (!major) return invalid('academics.majorId');
@@ -418,8 +426,8 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
     if (major.subjects.some(subject => !subjects.some(entry => entry.subjectId === subject.id))) return invalid('academics.subjects 缺少本专业课程');
   }
   if (item.lastGain === null) {
-    if (subjects.some(subject => subject.points !== 0)) return invalid('academics.lastGain 缺少已结算学习记录');
-    return { majorId, subjects, lastGain: null };
+    if (subjects.some(subject => subject.points !== 0) && !correction?.keepProgress) return invalid('academics.lastGain 缺少已结算学习记录');
+    return { majorId, subjects, lastGain: null, ...correctionField };
   }
   const extras = ['outcome', 'channel', 'interactionId', 'energyConsumed', 'moraleChange', 'stressChange'];
   const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
@@ -436,7 +444,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('academics.lastGain.at');
   if (legacy || gain.outcome === null) {
     if (points !== minutes || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
-    return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null } };
+    return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null }, ...correctionField };
   }
   const outcome = gain.outcome;
   if (outcome !== 'normal' && outcome !== 'inspiration' && outcome !== 'confusion') return invalid('academics.lastGain.outcome');
@@ -455,7 +463,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const morale = base.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0);
   const stress = base.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0);
   if (moraleChange < Math.min(0, morale) || moraleChange > Math.max(0, morale) || stressChange < Math.min(0, stress) || stressChange > Math.max(0, stress)) return invalid('academics.lastGain 精神或压力净变化不一致');
-  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange } };
+  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange }, ...correctionField };
 }
 
 /** Convert historical money once; a persisted currency tag stops repeat conversions. */
@@ -954,7 +962,12 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       for (const entry of retained) {
         if (!subjects.some(subject => subject.subjectId === entry.subjectId)) subjects.push({ ...entry });
       }
-      next.academics = { majorId: major.id, subjects, lastGain: null };
+      next.academics = { majorId: major.id, subjects, lastGain: null, correction: { previousMajorId: previous.majorId, keepProgress: action.keepProgress } };
+      // A previous confusion receipt refers to lastGain, intentionally removed above.
+      if (next.interior?.lastStudy) {
+        next.interior.lastStudy = null;
+        if (next.interior.activityId && isStudyInteraction(next.interior.activityId)) next.interior.activityId = null;
+      }
       note(next, `更正本角色专业：${getAcademicMajor(previous.majorId)?.name ?? '原专业'} → ${major.name}。${action.keepProgress ? '保留已积累学习点' : '按确认清零原有学业进度'}；最近一次学习结果已清除。`);
       break;
     }
