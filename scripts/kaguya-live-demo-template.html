@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-kaguya-demo>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>超かぐや姫！3D 直播间 · 独立演示（脱离角色卡）</title>
+<script type="importmap">__IMPORTS__</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100dvh; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: radial-gradient(120% 90% at 50% 0%, #1c1430 0%, #0a0812 70%); color: #f5f2fc;
+    font: 14px/1.6 system-ui, "Microsoft YaHei", sans-serif; padding: 18px; }
+  .stage-wrap { height: min(844px, calc(100dvh - 130px)); aspect-ratio: 390 / 844; max-width: 96vw; }
+  .phone { height: 100%; width: 100%; border-radius: 46px; padding: 10px;
+    background: linear-gradient(150deg, #f7d8e6, #eddcf6 55%, #d9c4ec); box-shadow: 0 24px 60px #000a, inset 0 1px 2px #fff8; }
+  .screen { position: relative; height: 100%; width: 100%; border-radius: 37px; overflow: hidden; background: #0a0812; }
+  .island { position: absolute; z-index: 5; left: 50%; transform: translateX(-50%); top: 12px;
+    width: 96px; height: 25px; border-radius: 14px; background: #0b0714; pointer-events: none; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .hud { position: absolute; z-index: 4; top: 48px; left: 14px; right: 14px; display: flex; align-items: center; gap: 10px; pointer-events: none; }
+  .live-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+    background: #7b42f6; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .08em; box-shadow: 0 2px 10px #7b42f655; }
+  .live-chip i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.6s infinite; }
+  .stream-title { font-size: 13px; font-weight: 600; color: #efe7ff; text-shadow: 0 1px 6px #000a; }
+  .dock { position: absolute; z-index: 4; left: 0; right: 0; bottom: 18px; display: flex; justify-content: center; gap: 10px; }
+  .dock button { min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid #ffffff2e; cursor: pointer;
+    background: #1b1428cc; color: #f5f2fc; font-size: 13px; backdrop-filter: blur(6px); }
+  .dock button:hover { border-color: #9d6bf8; }
+  .status { position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #cfc4e6; background: #0a0812; transition: opacity .3s; }
+  .status.done { opacity: 0; pointer-events: none; }
+  .status.error { color: #ff9bb4; }
+  footer { max-width: 620px; text-align: center; font-size: 12px; line-height: 1.7; color: #b6abc9; }
+  footer b { color: #e8ddfa; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  @media (max-width: 460px) {
+    body { padding: 0; gap: 0; }
+    .stage-wrap { height: calc(100dvh - 96px); max-width: none; }
+    .phone { border-radius: 0; padding: 0; box-shadow: none; }
+    .screen { border-radius: 0; }
+    footer { padding: 8px 12px 12px; }
+  }
+</style>
+</head>
+<body>
+  <main class="stage-wrap">
+    <div class="phone">
+      <div class="screen">
+        <canvas id="cv"></canvas>
+        <div class="island"></div>
+        <div class="hud"><span class="live-chip"><i></i>LIVE</span><span class="stream-title">超かぐや姫！月读空间 · 3D 直播间演示</span></div>
+        <div class="dock">
+          <button type="button" id="reset">回正</button>
+          <button type="button" id="sway" aria-pressed="true">摇摆：开</button>
+        </div>
+        <div id="status" class="status">正在加载辉夜姬模型…</div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <b>独立演示 · 脱离角色卡</b>：双击本页即可打开，不需要酒馆、角色卡或任何服务。<br>
+    拖动旋转 · 滚轮 / 双指缩放 · 顶部按钮回正与开关自动摇摆；系统“减少动态效果”时摇摆与眨眼自动关闭。<br>
+    模型：超かぐや姫！かぐや「水色の描」by <b>【水色の描】</b> · 依利用規約私用展示，禁止再分发，不用于收益用途。
+  </footer>
+<script type="module">
+const MODEL_URL = 'data:model/gltf-binary;base64,__MODEL__';
+const statusEl = document.getElementById('status');
+const canvas = document.getElementById('cv');
+const setErr = message => { statusEl.textContent = message; statusEl.classList.add('error'); window.__kaguyaDemoError = message; };
+
+try {
+  const THREE = await import('three');
+  const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+  const { VRMLoaderPlugin, VRMUtils } = await import('@pixiv/three-vrm');
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NoToneMapping;
+
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xfff0f5, 0x2a1f3d, 0.95));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(0.6, 1.6, 1.9); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9d6bf8, 0.35); rim.position.set(-1.2, 1.2, -1.0); scene.add(rim);
+
+  const pivot = new THREE.Group(); scene.add(pivot);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 40);
+
+  const buffer = await (await fetch(MODEL_URL)).arrayBuffer();
+  const loader = new GLTFLoader();
+  loader.register(parser => new VRMLoaderPlugin(parser));
+  const gltf = await new Promise((resolve, reject) => loader.parse(buffer, '', resolve, reject));
+  const vrm = gltf.userData.vrm;
+  if (!vrm) throw new Error('VRM 插件未识别该模型');
+  VRMUtils.removeUnnecessaryJoints(gltf.scene);
+  VRMUtils.rotateVRM0(vrm);
+  pivot.add(vrm.scene);
+  // VRM rest pose is a T-pose; pose the arms down for a natural livestream stance.
+  const stance = [['leftUpperArm', 66], ['rightUpperArm', -66], ['leftLowerArm', 9], ['rightLowerArm', -9]];
+  for (const [bone, degrees] of stance) {
+    const node = vrm.humanoid?.getNormalizedBoneNode(bone);
+    if (node) node.rotation.z = THREE.MathUtils.degToRad(degrees);
+  }
+
+  const box = new THREE.Box3().setFromObject(vrm.scene);
+  const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+  // Bust shot: vertical extent of ~2/3 body height centered between head and chest,
+  // framed by the 30° vertical fov at the computed distance.
+  const extent = size.y * 0.66;
+  const focus = new THREE.Vector3(center.x, box.max.y - extent / 2, center.z);
+  const baseDistance = extent / 2 / Math.tan(THREE.MathUtils.degToRad(15));
+  let yawUser = 0, pitchUser = 0, zoom = 1, autoSway = !reduced;
+  const reset = () => { yawUser = 0; pitchUser = 0; zoom = 1; };
+  document.getElementById('reset').addEventListener('click', reset);
+  const swayButton = document.getElementById('sway');
+  const paintSway = () => { swayButton.textContent = `摇摆：${autoSway ? '开' : '关'}`; swayButton.setAttribute('aria-pressed', String(autoSway)); };
+  swayButton.addEventListener('click', () => { autoSway = !autoSway; paintSway(); });
+  paintSway();
+
+  const pointers = new Map();
+  let pinchSpan = 0;
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); pinchSpan = 0; });
+  canvas.addEventListener('pointermove', e => {
+    const prev = pointers.get(e.pointerId); if (!prev) return;
+    if (pointers.size === 1) {
+      yawUser += (e.clientX - prev.x) * 0.5; pitchUser = Math.max(-18, Math.min(18, pitchUser + (e.clientY - prev.y) * 0.25));
+    }
+    prev.x = e.clientX; prev.y = e.clientY;
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()]; const span = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchSpan > 0) zoom = Math.min(2.6, Math.max(0.7, zoom * span / pinchSpan));
+      pinchSpan = span;
+    }
+  });
+  const drop = e => { pointers.delete(e.pointerId); pinchSpan = 0; };
+  canvas.addEventListener('pointerup', drop); canvas.addEventListener('pointercancel', drop);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.min(2.6, Math.max(0.7, zoom * Math.exp(-e.deltaY * 0.0012))); }, { passive: false });
+
+  const resize = () => {
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  };
+  new ResizeObserver(resize).observe(canvas); resize();
+
+  const clock = new THREE.Clock();
+  let nextBlink = 2.4, blinkUntil = 0, raf = 0;
+  const frame = () => {
+    raf = 0;
+    const dt = Math.min(clock.getDelta(), 0.1);
+    const t = clock.elapsedTime;
+    pivot.rotation.y = THREE.MathUtils.degToRad(yawUser) + (autoSway ? Math.sin(t * Math.PI * 2 / 7.5) * 0.10 : 0);
+    pivot.rotation.x = THREE.MathUtils.degToRad(pitchUser * 0.4);
+    const distance = baseDistance / zoom;
+    camera.position.set(0, focus.y + distance * Math.sin(THREE.MathUtils.degToRad(pitchUser)) * 0.5, distance);
+    camera.lookAt(focus);
+    if (vrm.expressionManager && !reduced) {
+      if (t >= nextBlink) { blinkUntil = t + 0.15; nextBlink = t + 2.6 + Math.random() * 2.4; }
+      const closing = t < blinkUntil ? Math.sin((t - (blinkUntil - 0.15)) / 0.15 * Math.PI) : 0;
+      try { vrm.expressionManager.setValue('blink', closing); } catch { /* Expressions are optional. */ }
+    }
+    vrm.update(dt);
+    // Spring bones are not part of vrm.update in every build; run them explicitly
+    // so long hair settles under gravity instead of holding its bind pose.
+    try { vrm.springBoneManager?.update(dt); } catch { /* Spring bones are optional. */ }
+    renderer.render(scene, camera);
+    if (!window.__kaguyaDemoReady) window.__kaguyaDemoReady = true;
+    schedule();
+  };
+  const schedule = () => { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); };
+  document.addEventListener('visibilitychange', schedule);
+  statusEl.classList.add('done');
+  schedule();
+} catch (error) {
+  console.error(error);
+  setErr(`加载失败：${error && error.message || error}`);
+}
+</script>
+</body>
+</html>

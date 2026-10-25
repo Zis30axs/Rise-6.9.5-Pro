@@ -1,5 +1,14 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 最新增量：超かぐや姫！3D 直播间独立演示（2026-10-25，脱离角色卡）
+
+用户要求先做一版**脱离角色卡**的前端来预览"纯小说模式手机里的 3D"。已交付 `outputs/kaguya-live-3d-demo.html`：单文件、双击即可打开（file:// 直接运行，无需酒馆/角色卡/服务），以 Peach Flip 风格手机框展示辉夜姬 VRM 模型的"月读空间"直播间画面——拖动旋转、滚轮/双指缩放、回正与自动摇摆开关、待机眨眼；系统"减少动态效果"时摇摆与眨眼自动关闭，页面隐藏时停止渲染。
+
+- **模型素材**：`assets/kaguya-live/kaguya.vrm` 是用户提供的 `素材/超かぐや姫_かぐや_水色の描` VRM 的**字节原样副本**（SHA 记录于 `assets/kaguya-live/manifest.json`）。出处 **【水色の描】**；依其《MMD・VRoidモデル利用規約》仅限私用展示：允许头像/配信用途、禁止收益与再分发，卡与仓库保持私有。v1 不做网格/贴图压缩，保持模型忠实原样（曾试验 gltf-transform+meshopt 压缩，因 VRM 0.x 扩展透传与内部 prune 行为不可控而放弃，待后续用更稳的管线再做）。
+- **组装方式**：`scripts/build_kaguya_live_demo.mjs` 把 three.module.js、GLTFLoader（相对导入改写为 import map 裸说明符）、@pixiv/three-vrm 与 VRM base64 内联进模板 `scripts/kaguya-live-demo-template.html`。`npm run kaguya:demo` 一键重建（先校验模型 SHA）；`npm run kaguya:model` 暂存/校验素材。
+- **验证**：`tests/e2e/kaguya-live-demo.spec.ts` 用系统 Chrome 在 1440×900 与 390×844 加载 file:// 页面，确认 WebGL 渲染成功、无页面错误，截图在 `outputs/kaguya-live-qa/`。静态 T-pose 已按 normalized 骨骼放下手臂，长发经 spring bone 自然垂落。
+- **边界**：这只是独立演示，**尚未接入角色卡**；卡内方案（kaguyaLiveLease 装饰手机租约、父页面向同源手机 iframe 注入 three.js 画布、Twiitch 辉夜姬频道加"3D 直播间"入口）已在调查中，等用户确认演示效果后再实施。未调用真实模型，未跑远程 CI。
+
 ## 最新增量：渡奈（watanare）角色体系、玲奈子第四主角与看手机 CG（2026-10-25，Gemini 工作合并）
 
 Gemini 在独立工作树 `.worktrees/watanare-integration`（分支 `feat/lite-watanare-cast-renako-20261024`）完成的未提交工作，经兼容性整合后合并进 `lite`（合并提交 `88ebf97`，原样提交 `4f5f8e9`）。该工作树按用户指示保留。内容：
