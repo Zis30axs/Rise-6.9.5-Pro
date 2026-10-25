@@ -165,10 +165,9 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   await host(page, initialState());
   await page.getByRole('textbox', { name: '接下来，你想做什么？' }).fill('看看今天的天气。');
   await page.getByRole('button', { name: '继续故事', exact: true }).click();
-  await expect(page.locator('[data-event-reading]')).toContainText('风轻轻吹过。');
-  await expect(page.locator('.novel-speech')).toHaveCount(0);
-  await page.locator('[data-novel-dialogue] [data-toggle-dialogue]').click();
   await expect(page.locator('.novel-speech')).toHaveText('风轻轻吹过。');
+  await expect(page.locator('[data-novel-dialogue]')).toHaveAttribute('data-emotion', '平静');
+  await expect(page.locator('[data-toggle-dialogue]')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-novel-protocol', /\|charac\|emot\|says\|/);
   await expect(portrait(page)).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30000 });
   await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
@@ -200,6 +199,47 @@ test('AVG按点击逐句推进并切换真实Live2D表情，协议仍保留手�
   await expect(page.locator('.novel-speech')).toHaveText('那就一起走吧。');
   expect(errors).toEqual([]);
 });
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  test('小说对白缺少竖线时仍逐句点击、同步表情、保留原始存档 ' + viewport.width + 'x' + viewport.height, async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize(viewport);
+    const state = initialState();
+    state.story.push({
+      id: 'renako-pipe-regression', role: 'assistant',
+      text: [
+        '房间里传来游戏音效。',
+        '甘織玲奈子|生气|“因为这个战争雷霆真的太让人火大了，不管怎么玩都是这种莫名其妙的结局。”',
+        '|素世|开心|下次再试试吧。',
+        '素世|安心|别急，慢慢来。|',
+      ].join('\n'),
+    });
+    await host(page, state);
+    const reader = page.locator('[data-novel-dialogue]');
+    await expect(page.locator('.novel-speech')).toHaveText('房间里传来游戏音效。');
+    await expect(reader).toHaveAttribute('data-emotion', '平静');
+    await expect(reader).not.toContainText('战争雷霆');
+
+    await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+    await expect(reader).toHaveAttribute('data-speaker', '甘織玲奈子');
+    await expect(reader).toHaveAttribute('data-emotion', '生气');
+    await expect(page.locator('.novel-speech')).toHaveText('“因为这个战争雷霆真的太让人火大了，不管怎么玩都是这种莫名其妙的结局。”');
+    await expect(reader).not.toContainText('|生气|');
+
+    await page.getByRole('button', { name: '点击推进剧情', exact: true }).click();
+    await expect(reader).toHaveAttribute('data-speaker', '素世');
+    await expect(reader).toHaveAttribute('data-emotion', '开心');
+    await expect(page.locator('.novel-speech')).toHaveText('下次再试试吧。');
+    await expect(portrait(page)).toHaveAttribute('data-live2d-emotion', '开心', { timeout: 30000 });
+
+    await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
+    await expect(page.locator('.novel-speech')).toHaveText('别急，慢慢来。');
+    await expect(reader).toHaveAttribute('data-emotion', '安心');
+    await expect(page.getByRole('button', { name: '下一句剧情', exact: true })).toBeDisabled();
+    expect(await saved(page)).toEqual(state);
+    await expect(page.locator('body')).not.toHaveAttribute('data-novel-generations');
+  });
+}
 
 for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
   const { width, height } = viewport;
