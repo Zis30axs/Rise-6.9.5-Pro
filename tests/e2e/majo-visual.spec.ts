@@ -74,15 +74,11 @@ for (const viewport of viewports) {
     await expect(backdrop).toHaveAttribute('data-background-source', 'majo-art');
     const sceneBytes = await inlineImage(backdrop.locator('img'), scene);
 
-    // The collapsed reader previews the last spoken line: the semi-main Hiro
-    // transparent sprite. Expanding rewinds to the first line of the entry (Emma).
+    // One sentence is visible at a time; the initial speaker is Emma,
+    // not Hiro's last-line preview. Expressions follow the reader cursor.
     const portrait = page.locator('[data-majo-portrait]');
-    await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
-    await expect(portrait).toHaveAttribute('data-npc-emotion', 'angry');
-    await expect(portrait).toHaveAttribute('data-majo-exact', 'false');
-    const hiroBytes = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
-    await page.screenshot({ path: `${prefix}-hiro-sprite.png` });
-    await page.locator('[data-toggle-dialogue]').click();
+    await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-emma');
+    await expect(page.locator('.novel-speech')).toHaveText('这是平静表情的受控验收对白，庭院的光落在缘侧。');
     const images: Record<string, unknown> = {};
     for (const [index, expression] of expressions.entries()) {
       if (index) await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
@@ -101,7 +97,8 @@ for (const viewport of viewports) {
     await expect(portrait).toHaveAttribute('data-majo-portrait', 'majo-hiro');
     await expect(portrait).toHaveAttribute('data-npc-emotion', 'angry');
     await expect(portrait).toHaveAttribute('data-majo-exact', 'false');
-    await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
+    const hiroBytes = await inlineImage(portrait.locator('img'), art.assets.find(row => row.personId === 'majo-hiro' && row.emotion === 'neutral')!);
+    await page.screenshot({ path: `${prefix}-hiro-sprite.png` });
     await page.screenshot({ path: `${prefix}-hiro-neutral-fallback.png` });
     await noOverflow(page);
 
