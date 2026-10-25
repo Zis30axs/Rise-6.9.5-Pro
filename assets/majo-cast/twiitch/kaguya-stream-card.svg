@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="sc-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#090615"/>
+      <stop offset="45%" stop-color="#140d2a"/>
+      <stop offset="85%" stop-color="#24113e"/>
+      <stop offset="100%" stop-color="#341555"/>
+    </linearGradient>
+    <radialGradient id="sc-moon" cx="50%" cy="36%" r="40%">
+      <stop offset="0%" stop-color="#fff8db" stop-opacity=".9"/>
+      <stop offset="50%" stop-color="#ffd54f" stop-opacity=".6"/>
+      <stop offset="85%" stop-color="#ff9800" stop-opacity=".2"/>
+      <stop offset="100%" stop-color="#ff9800" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sc-laser-l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00f2fe" stop-opacity=".5"/>
+      <stop offset="60%" stop-color="#4facfe" stop-opacity=".15"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sc-laser-r" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff0844" stop-opacity=".45"/>
+      <stop offset="60%" stop-color="#ffb199" stop-opacity=".15"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sc-stage-glow" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#9c27b0" stop-opacity=".7"/>
+      <stop offset="40%" stop-color="#673ab7" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sc-beam-c" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd54f" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#ffd54f" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="720" rx="24" fill="url(#sc-bg)"/>
+
+  <g fill="#fff" opacity=".75">
+    <circle cx="120" cy="90" r="1.5"/><circle cx="210" cy="180" r="2"/><circle cx="340" cy="70" r="1.2"/>
+    <circle cx="480" cy="140" r="1.8"/><circle cx="820" cy="80" r="2.2"/><circle cx="950" cy="130" r="1.5"/>
+    <circle cx="1120" cy="95" r="2"/><circle cx="1190" cy="170" r="1.2"/><circle cx="160" cy="280" r="1.4"/>
+    <circle cx="1080" cy="260" r="1.6"/><circle cx="640" cy="60" r="2"/>
+  </g>
+
+  <circle cx="640" cy="240" r="190" fill="url(#sc-moon)"/>
+  <circle cx="640" cy="240" r="140" fill="none" stroke="#ffd54f" stroke-width="2" stroke-dasharray="8 6" opacity=".5"/>
+  <circle cx="640" cy="240" r="170" fill="none" stroke="#7df9ff" stroke-width="1.5" stroke-dasharray="4 8" opacity=".4"/>
+  <path d="M720 120a140 140 0 1 1-110 250 132 132 0 1 0 110-250z" fill="#ffe082" opacity=".95"/>
+
+  <polygon points="0,0 280,0 720,680 560,680" fill="url(#sc-laser-l)"/>
+  <polygon points="1280,0 1000,0 560,680 720,680" fill="url(#sc-laser-r)"/>
+  <polygon points="560,0 720,0 840,680 440,680" fill="url(#sc-beam-c)"/>
+
+  <ellipse cx="640" cy="620" rx="540" ry="110" fill="url(#sc-stage-glow)"/>
+  <ellipse cx="640" cy="620" rx="460" ry="90" fill="#201036" opacity=".9"/>
+  <ellipse cx="640" cy="620" rx="460" ry="90" fill="none" stroke="#ba68c8" stroke-width="3" opacity=".7"/>
+  <ellipse cx="640" cy="620" rx="360" ry="68" fill="none" stroke="#7df9ff" stroke-width="2.5" opacity=".8"/>
+  <ellipse cx="640" cy="620" rx="260" ry="46" fill="none" stroke="#ffd54f" stroke-width="2" stroke-dasharray="12 6" opacity=".9"/>
+  <ellipse cx="640" cy="620" rx="160" ry="26" fill="none" stroke="#ff4081" stroke-width="1.5" opacity=".7"/>
+
+  <g stroke="#7df9ff" stroke-width="1" opacity=".35">
+    <line x1="640" y1="620" x2="220" y2="670"/>
+    <line x1="640" y1="620" x2="380" y2="700"/>
+    <line x1="640" y1="620" x2="640" y2="720"/>
+    <line x1="640" y1="620" x2="900" y2="700"/>
+    <line x1="640" y1="620" x2="1060" y2="670"/>
+  </g>
+
+  <rect x="40" y="38" width="168" height="42" rx="21" fill="#7b42f6" opacity=".95"/>
+  <circle cx="64" cy="59" r="6" fill="#fff"/>
+  <text x="82" y="65" fill="#fff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="700" letter-spacing="1.5">● VIRTUAL LIVE</text>
+
+  <rect x="40" y="642" width="480" height="42" rx="12" fill="#0c0718" opacity="0.75"/>
+  <text x="58" y="668" fill="#7df9ff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" letter-spacing="1">♬ NOW PLAYING: 月読ファンタジア (Model: 水色の描)</text>
+</svg>

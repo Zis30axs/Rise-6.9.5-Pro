@@ -4,7 +4,7 @@ import { activeProtagonist, enableProtagonists, gameMinute, personState, protago
 import { getInteriorPeople, getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { isCharacterPortraitId } from './characters';
-import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentPresence } from './npc-cast';
+import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentGroupById, residentGroupForNpc, residentPresence, WATANARE_GROUP_ID, WATANARE_GROUP_NAME, WATANARE_QUINTET_IDS } from './npc-cast';
 
 export interface ContactProposal {
   kind: 'contact' | 'group';
@@ -72,6 +72,16 @@ function unique<T>(rows: T[], key: (row: T) => string): T[] {
   return rows;
 }
 function ensure(s: WorldState): NpcPhoneState { return s.protagonists!.npcPhone ??= empty(); }
+const RENAKO_BUILTIN_GROUP_REQUEST_ID = 'builtin-watanare-quintet';
+function isBuiltinGroup(g: PhoneGroup): boolean {
+  return g.owner === 'renako' && g.id === WATANARE_GROUP_ID && g.requestId === RENAKO_BUILTIN_GROUP_REQUEST_ID && g.joinedAt === 0 && g.joinedAfter === 0;
+}
+function effectiveGroups(social: NpcPhoneState, who: ProtagonistId): PhoneGroup[] {
+  if (who === 'renako' && !social.groups.some(g => g.owner === 'renako' && g.id === WATANARE_GROUP_ID)) {
+    return [...social.groups, { id: WATANARE_GROUP_ID, owner: 'renako', name: WATANARE_GROUP_NAME, memberIds: [...WATANARE_QUINTET_IDS], requestId: RENAKO_BUILTIN_GROUP_REQUEST_ID, joinedAt: 0, joinedAfter: 0 }];
+  }
+  return social.groups;
+}
 function safeContact(c: CharacterContact) { return !c.id.startsWith('protagonist-'); }
 export function npcIdForContact(c: CharacterContact): string { return c.sourcePersonId ?? c.id; }
 function contactFor(s: WorldState, who: ProtagonistId, npcId: string) {
@@ -133,10 +143,12 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
     const r = object(item, ['owner', 'npcId', 'contactId', 'requestId']);
     return { owner: owner(r.owner), npcId: id(r.npcId), contactId: id(r.contactId), requestId: id(r.requestId) };
   }), r => r.owner + ':' + r.npcId);
-  const groups = unique(list(root.groups, 3, item => {
+  const groups = unique(list(root.groups, 8, item => {
     const r = object(item, ['id', 'owner', 'name', 'memberIds', 'requestId', 'joinedAt', 'joinedAfter']);
-    const memberIds = unique(list(r.memberIds, 14, id), r => r);
-    if (r.id !== MAJO_GROUP_ID || memberIds.length !== residentCast.length || memberIds.some(i => !residentById(i))) return fail('群成员无效');
+    const groupDef = residentGroupById(String(r.id));
+    if (!groupDef) return fail('群成员无效');
+    const memberIds = unique(list(r.memberIds, groupDef.memberIds.length, id), r => r);
+    if (memberIds.length !== groupDef.memberIds.length || memberIds.some(i => !groupDef.memberIds.includes(i) || !residentById(i))) return fail('群成员无效');
     return { id: id(r.id), owner: owner(r.owner), name: text(r.name, 40), memberIds, requestId: id(r.requestId), joinedAt: minute(r.joinedAt), joinedAfter: minute(r.joinedAfter) };
   }), r => r.owner + ':' + r.id);
   const messages = unique(list(root.messages, 10000, item => {
@@ -160,9 +172,10 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
   }
   for (const r of relationships) if (!requests.some(q => q.id === r.requestId && q.owner === r.owner && q.npcId === r.npcId && q.kind === 'contact' && q.status === 'accepted') ||
     contactFor(s, r.owner, r.npcId)?.id !== r.contactId) fail('关系与联系人不一致');
-  for (const g of groups) if (g.joinedAfter > messages.length || g.joinedAt > gameMinute(s) || !requests.some(q => q.id === g.requestId && q.owner === g.owner && q.kind === 'group' && q.status === 'accepted')) fail('缺少已接受的群邀请');
+  for (const g of groups) if (g.joinedAfter > messages.length || g.joinedAt > gameMinute(s) || (!isBuiltinGroup(g) && !requests.some(q => q.id === g.requestId && q.owner === g.owner && q.kind === 'group' && q.status === 'accepted' && residentGroupForNpc(q.npcId)?.id === g.id))) fail('缺少已接受的群邀请');
+  const candidateState: NpcPhoneState = { version: 1, meetings, evidence, requests, turns, relationships, groups, messages };
   for (const m of messages) {
-    if (m.channel === 'npc' ? !contactFor(s, m.owner, m.targetId) : !groups.some(g => g.owner === m.owner && g.id === m.targetId)) fail('短信缺少联系人或群成员资格');
+    if (m.channel === 'npc' ? !contactFor(s, m.owner, m.targetId) : !effectiveGroups(candidateState, m.owner).some(g => g.owner === m.owner && g.id === m.targetId)) fail('短信缺少联系人或群成员资格');
     if (m.direction === 'outgoing') {
       if (m.speakerId !== m.owner || m.replyTo !== null ||
         m.responderId === null && m.status !== 'silent' && !m.responsePlan ||
@@ -181,7 +194,7 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
       (parent.responsePlan ? parent.responsePlan.some(p => p.id === m.speakerId && p.status === 'answered') && m.id === parent.id + ':reply:' + m.speakerId : parent.responderId === m.speakerId))) fail('回复来源无效');
   }
   if ([...meetings, ...evidence, ...requests, ...messages].some(row => row.at > gameMinute(s))) fail('记录时间在未来');
-  const result: NpcPhoneState = { version: 1, meetings, evidence, requests, turns, relationships, groups, messages };
+  const result: NpcPhoneState = candidateState;
   if (options.retireControlled) retireControlledNpcThreads(result);
   return result;
 }
@@ -266,7 +279,8 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     if (!social.evidence.some(e => e.owner === who && e.npcId === proposal.npcId && e.turnId === evidenceId && e.speaker === 'npc' && e.text === proposal.quote)) return fail('申请引用的对白不存在');
     if (proposal.kind === 'contact' ? !/(联系|手机|号码|好友|短信|账号|連絡|電話|contact|phone)/i.test(proposal.quote)
       : !/(群聊|群里|入群|进群|加群|グループ|group)/i.test(proposal.quote)) return fail('对白没有提出相应联系请求');
-    if (proposal.kind === 'group' && (!residentById(proposal.npcId) || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁联系人');
+    const targetGroup = proposal.kind === 'group' ? residentGroupForNpc(proposal.npcId) : undefined;
+    if (proposal.kind === 'group' && (!targetGroup || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁或五人组联系人');
     const requestId = turnId + ':contact:' + index;
     const duplicate = social.requests.find(q => q.id === requestId);
     if (duplicate) {
@@ -274,7 +288,7 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
       continue;
     }
     if (proposal.kind === 'contact' && contactFor(s, who, proposal.npcId) ||
-        proposal.kind === 'group' && social.groups.some(g => g.owner === who && g.id === MAJO_GROUP_ID) ||
+        proposal.kind === 'group' && targetGroup && effectiveGroups(social, who).some(g => g.owner === who && g.id === targetGroup.id) ||
         social.requests.some(q => q.owner === who && q.npcId === proposal.npcId && q.kind === proposal.kind && q.status === 'pending')) continue;
     if (social.requests.length >= 500) return fail('联系人申请已满');
     social.requests.push({ id: requestId, owner: who, npcId: proposal.npcId, kind: proposal.kind, evidenceId, quote: proposal.quote, status: 'pending', at: gameMinute(s) });
@@ -311,9 +325,13 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
           s.contacts.push(contact);
         }
         if (!social.relationships.some(r => r.owner === who && r.npcId === request.npcId)) social.relationships.push({ owner: who, npcId: request.npcId, contactId: contact.id, requestId: request.id });
-      } else if (!social.groups.some(g => g.owner === who && g.id === MAJO_GROUP_ID)) {
-        if (!contactFor(s, who, request.npcId)) return fail('群邀请人不再是联系人');
-        social.groups.push({ id: MAJO_GROUP_ID, owner: who, name: MAJO_GROUP_NAME, memberIds: residentCast.map(r => r.id), requestId: request.id, joinedAt: gameMinute(s), joinedAfter: social.messages.length });
+      } else {
+        const targetGroup = residentGroupForNpc(request.npcId);
+        if (!targetGroup) return fail('群邀请人不在固定群聊中');
+        if (!effectiveGroups(social, who).some(g => g.owner === who && g.id === targetGroup.id)) {
+          if (!contactFor(s, who, request.npcId)) return fail('群邀请人不再是联系人');
+          social.groups.push({ id: targetGroup.id, owner: who, name: targetGroup.name, memberIds: [...targetGroup.memberIds], requestId: request.id, joinedAt: gameMinute(s), joinedAfter: social.messages.length });
+        }
       }
     }
     request.status = status;
@@ -328,7 +346,11 @@ export function applyNpcPhoneCommand(s: WorldState, who: ProtagonistId, raw: Npc
     if (!contactFor(s, who, targetId)) return fail('请先认识此人并保存联系人');
     responderId = targetId;
   } else {
-    const group = social.groups.find(g => g.id === targetId && g.owner === who);
+    let group = social.groups.find(g => g.id === targetId && g.owner === who);
+    if (!group && who === 'renako' && targetId === WATANARE_GROUP_ID) {
+      group = { id: WATANARE_GROUP_ID, owner: 'renako', name: WATANARE_GROUP_NAME, memberIds: [...WATANARE_QUINTET_IDS], requestId: RENAKO_BUILTIN_GROUP_REQUEST_ID, joinedAt: 0, joinedAfter: 0 };
+      social.groups.push(group);
+    }
     if (!group) return fail('尚未接受这个群的邀请');
     // Residents who are controllable protagonists are not sampled as background NPCs.
     const candidates = group.memberIds.filter(i => i !== controlledPerson(s) && residentPresence(i, s.clock)?.available);
@@ -362,6 +384,13 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
     const person = s.scene && getScenePeople(s.scene, s.contacts, s.clock, hiddenProtagonistPersons(s)).find(p => p.id === actorId);
     return person && person.x === a.x && person.z === a.z;
   }) : undefined;
+  const groupDef = source.channel === 'group' ? residentGroupById(source.targetId) : undefined;
+  const baseGroupMembers = source.channel === 'group'
+    ? (groupDef?.memberIds ?? residentCast.map(r => r.id)).map(memberId => ({ id: memberId, name: residentById(memberId)?.name ?? memberId }))
+    : [];
+  const extraGroupProtagonists = source.channel === 'group'
+    ? social.groups.filter(g => g.id === source.targetId && !baseGroupMembers.some(m => m.id === PROTAGONIST_PERSON_IDS[g.owner])).map(g => ({ id: g.owner, name: protagonistNames[g.owner] }))
+    : [];
   return {
     task: 'reply_to_npc_sms', actor: { id: actorId, name: resident?.name ?? contact?.name ?? meeting?.name,
       worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null },
@@ -379,9 +408,8 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
         .map(({ text, at }) => ({ text: text.slice(0,1000), at }))
       : [],
     messages: thread,
-    group: source.channel === 'group' ? { id: source.targetId, name: MAJO_GROUP_NAME,
-      members: [...residentCast.map(r => ({ id: r.id, name: r.name })),
-        ...social.groups.filter(g => g.id === source.targetId).map(g => ({id:g.owner,name:protagonistNames[g.owner]}))],
+    group: source.channel === 'group' ? { id: source.targetId, name: groupDef?.name ?? MAJO_GROUP_NAME,
+      members: [...baseGroupMembers, ...extraGroupProtagonists],
       rule: '你只扮演当前指定的这一位成员，其他被选成员会依次单独回复；可以回应本轮前面的群发言，不得冒充他人。群聊内容对成员可见，私聊与其他人物的经历不可见。' } : null,
     instruction: '根据本人设定、实际已知对白、此会话和日程决定回复；可以用 text:null 表示暂不回复。不得读取玩家内心、替玩家同意邀请、捏造已经执行的移动或日程。缺少证据的行程保持未知。',
   };
@@ -420,12 +448,13 @@ export function applyNpcPhoneReply(state: WorldState, messageId: string, raw: st
 
 export function npcPhoneView(s: WorldState, who: ProtagonistId) {
   const social = s.protagonists?.npcPhone ?? empty();
+  const ownGroups = effectiveGroups(social, who).filter(g => g.owner === who);
   return {
     contacts: personState(s, who).contacts.filter(safeContact).map(c => ({ id: npcIdForContact(c), contactId: c.id, name: c.name })),
     requests: social.requests.filter(q => q.owner === who).map(q => ({ ...q, name: social.meetings.find(m => m.owner === who && m.npcId === q.npcId)?.name ?? q.npcId })),
-    groups: social.groups.filter(g => g.owner === who).map(g => ({ id: g.id, name: g.name,
-      memberCount: g.memberIds.length + social.groups.filter(member => member.id === g.id).length })),
-    messages: social.messages.filter((m, index) => m.owner === who && m.channel === 'npc' || m.channel === 'group' && social.groups.some(g => g.owner === who && g.id === m.targetId && g.joinedAfter <= index)).map(m => ({ ...m,
+    groups: ownGroups.map(g => ({ id: g.id, name: g.name,
+      memberCount: g.memberIds.length + social.groups.filter(member => member.id === g.id && !g.memberIds.includes(PROTAGONIST_PERSON_IDS[member.owner] ?? '')).length })),
+    messages: social.messages.filter((m, index) => m.owner === who && m.channel === 'npc' || m.channel === 'group' && ownGroups.some(g => g.owner === who && g.id === m.targetId && g.joinedAfter <= index)).map(m => ({ ...m,
       direction: m.direction === 'outgoing' && m.owner === who ? 'outgoing' : 'incoming',
       speakerName: m.direction === 'outgoing' ? (m.owner === who ? '我' : protagonistNames[m.owner]) : residentById(m.speakerId)?.name ?? contactFor(s, who, m.speakerId)?.name ?? m.speakerId })),
   };
@@ -435,6 +464,6 @@ export function contactProposalContext(s: WorldState) {
   const who = activeProtagonist(s), social = s.protagonists?.npcPhone;
   const meeting = social?.meetings.find(m => m.owner === who && m.npcId === s.scene?.encounterId && nearbyEncounterPerson(s, m.npcId));
   return meeting ? { npcId: meeting.npcId, name: meeting.name, worldbook: residentById(meeting.npcId)?.profile ?? meeting.summary,
-    hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: !!residentById(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
+    hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: !!residentGroupForNpc(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
     evidence: social!.evidence.filter(e => e.owner === who && e.npcId === meeting.npcId && e.speaker === 'npc').slice(-4).map(e => ({ evidenceId: e.turnId, quote: e.text })) } : null;
 }

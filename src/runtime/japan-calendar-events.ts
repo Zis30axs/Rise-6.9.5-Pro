@@ -5,6 +5,7 @@
  * Later years are game-only projections, not published government dates. */
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
+import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
 import { gameCalendar, GAME_DAY_LIMIT } from './game-calendar';
 
 export type OccasionKind = 'national-holiday' | 'substitute-holiday' | 'citizens-holiday' | 'festival' | 'birthday';
@@ -13,10 +14,11 @@ export interface CalendarOccasion {
   dayOff: boolean; projected: boolean; personId?: string;
 }
 export interface ResidentBirthday { personId: string; name: string; month: number; date: number }
+const BIRTHDAY_PATTERN = /生日[：:\s]*(\d{1,2})月(\d{1,2})日/;
 /** Derive birthdays from authored character records; never assign one to Yuki implicitly. */
 export const residentBirthdays: readonly ResidentBirthday[] = Object.freeze(lore.entries.flatMap(entry => {
   const personId = entry.extensions.personId;
-  const match = /生日\s*(\d{1,2})月(\d{1,2})日/.exec(entry.content);
+  const match = BIRTHDAY_PATTERN.exec(entry.content);
   if (!personId || !match) return [];
   const month = Number(match[1]), date = Number(match[2]);
   const checked = new Date(Date.UTC(2024, month - 1, date));
@@ -40,15 +42,25 @@ const BANG_DREAM_BIRTHDAY_IDS = {
 export const bangDreamBirthdays: readonly ResidentBirthday[] = Object.freeze(bandLore.entries.flatMap(entry => {
   const personId = BANG_DREAM_BIRTHDAY_IDS[entry.name as keyof typeof BANG_DREAM_BIRTHDAY_IDS];
   if (!personId) return [];
-  const match = /生日\s*(\d{1,2})月(\d{1,2})日/.exec(entry.content);
+  const match = BIRTHDAY_PATTERN.exec(entry.content);
   if (!match) return [];
   const month = Number(match[1]), date = Number(match[2]);
   const checked = new Date(Date.UTC(2024, month - 1, date));
   if (checked.getUTCMonth() !== month - 1 || checked.getUTCDate() !== date) return [];
   return [{ personId, name: entry.name, month, date }];
 }));
+/** Watanare Quintet birthdays derived directly from the Watanare worldbook. */
+export const watanareBirthdays: readonly ResidentBirthday[] = Object.freeze(watanareLore.entries.flatMap(entry => {
+  const personId = entry.extensions.personId;
+  const match = BIRTHDAY_PATTERN.exec(entry.content);
+  if (!personId || !match) return [];
+  const month = Number(match[1]), date = Number(match[2]);
+  const checked = new Date(Date.UTC(2024, month - 1, date));
+  if (checked.getUTCMonth() !== month - 1 || checked.getUTCDate() !== date) return [];
+  return [{ personId, name: entry.name, month, date }];
+}));
 /** All known character birthdays, without altering the 13 existing Majo identities. */
-export const characterBirthdays: readonly ResidentBirthday[] = Object.freeze([...residentBirthdays, ...bangDreamBirthdays]);
+export const characterBirthdays: readonly ResidentBirthday[] = Object.freeze([...residentBirthdays, ...bangDreamBirthdays, ...watanareBirthdays]);
 const pad = (n: number) => String(n).padStart(2, '0');
 const isoDate = (y: number, m: number, d: number) => String(y) + '-' + pad(m) + '-' + pad(d);
 const weekday = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d)).getUTCDay();

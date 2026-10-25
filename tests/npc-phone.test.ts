@@ -5,7 +5,7 @@ import { getSceneArea, getScenePeople, sceneLocationId } from '../src/runtime/sc
 import { applyNpcPhoneReply, npcPhoneReplyContext, npcPhoneView, validateContactProposals } from '../src/runtime/npc-phone';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import { parseNpcPhoneReply } from '../src/runtime/phone-reply';
-import { residentCast, residentPresence } from '../src/runtime/npc-cast';
+import { residentCast, residentPresence, watanareResidentCast, WATANARE_QUINTET_IDS } from '../src/runtime/npc-cast';
 import { createWorldPhoneApi } from '../src/frontend/world-phone';
 import type { GeneratedStory, WorldState } from '../src/frontend/types';
 
@@ -145,7 +145,7 @@ describe('real NPC SMS routing with private context', () => {
   it('keeps prior story messages from this contact while excluding other inboxes', () => {
     let s = accept(proposal().state);
     s.phone.push({id:'ema-previous',npcId:'majo-emma',text:'我们刚才说好明天联系。',read:false,at:'第 1 天 17:20'});
-    s.phone.push({id:'another-person',npcId:'lin',text:'UNRELATED_DM_SECRET',read:false,at:'第 1 天 17:20'});
+    s.phone.push({id:'another-person',npcId:'protagonist-sakiko',text:'UNRELATED_DM_SECRET',read:false,at:'第 1 天 17:20'});
     s = sendNpc(s);
     const context = npcPhoneReplyContext(s,'npc:sms-1');
     expect(context.priorReceivedMessages).toContainEqual(expect.objectContaining({text:'我们刚才说好明天联系。'}));
@@ -296,5 +296,46 @@ describe('the resident fourteen-person group', () => {
     expect(s.protagonists!.npcPhone!.messages.filter(m=>m.replyTo===source.id)).toHaveLength(2);
     expect(()=>npcPhoneReplyContext(s,source.id)).toThrow(/已经/);
     expect(s.phone).toEqual(groupMember().phone);
+  });
+
+  it('gives renako built-in access to watanare-quintet and allows Quintet members to invite other protagonists', () => {
+    const base = enableProtagonists(createInitialState());
+    const renakoView = npcPhoneView(base, 'renako');
+    expect(renakoView.groups).toContainEqual(expect.objectContaining({
+      id: 'watanare-quintet',
+      name: '芦谷五人组',
+      memberCount: 5,
+    }));
+    const switchedToRenako = reduceState(base, { type: 'switch_protagonist', target: 'renako' });
+    const sent = reduceState(switchedToRenako, {
+      type: 'phone_app',
+      owner: 'renako',
+      requestId: 'quintet-hello',
+      command: { type: 'send_group_message', groupId: 'watanare-quintet', text: '大家今天放学后有空吗？' },
+    });
+    const plan = sent.protagonists!.npcPhone!.messages[0]!.responsePlan!;
+    expect(plan.length).toBeGreaterThanOrEqual(1);
+    expect(plan.every(p => WATANARE_QUINTET_IDS.includes(p.id as (typeof WATANARE_QUINTET_IDS)[number]) && p.id !== 'watanare-renako')).toBe(true);
+    expect(watanareResidentCast).toHaveLength(20);
+
+    const metMai = meeting('watanare-mai', base);
+    const friendMai = accept(proposal(metMai, 'contact', 'mai-contact').state, 'mai-accept');
+    const invited = proposal(friendMai, 'group', 'mai-group').state;
+    expect(invited.protagonists!.npcPhone!.requests.at(-1)).toMatchObject({
+      kind: 'group',
+      npcId: 'watanare-mai',
+      status: 'pending',
+    });
+    expect(npcPhoneView(invited, 'soyo').requests.at(-1)).toMatchObject({
+      kind: 'group',
+      npcId: 'watanare-mai',
+      name: '王冢真唯',
+    });
+    const joined = accept(invited, 'mai-join-group');
+    expect(npcPhoneView(joined, 'soyo').groups).toContainEqual(expect.objectContaining({
+      id: 'watanare-quintet',
+      name: '芦谷五人组',
+      memberCount: 6,
+    }));
   });
 });

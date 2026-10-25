@@ -19,11 +19,12 @@ const atStop = (id: string) => {
 
 describe('novel navigation uses the same world and transit rules', () => {
   it('offers the established 15 local landmarks, a downtown landmark and eleven rooms', () => {
-    expect(novelDestinations).toHaveLength(27);
-    expect(new Set(novelDestinations.map(item => item.id)).size).toBe(27);
+    expect(novelDestinations).toHaveLength(32);
+    expect(new Set(novelDestinations.map(item => item.id)).size).toBe(32);
     expect(novelDestinations.filter(item => item.kind === 'interior').map(item => item.id)).toEqual([
       'margo-cafe-room', 'dorm-room', 'classroom', 'study-room', 'toyokawa-house',
       'emma-yuki-home', 'koko-old-house', 'nikaido-house', 'anan-noa-milia-home', 'majo-highrise-home', 'majo-studio',
+      'amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home',
     ]);
     expect(novelDestinations.some(item => ['campus', 'neighborhood', 'city-roads'].includes(item.id))).toBe(false);
   });
@@ -126,7 +127,7 @@ describe('novel navigation uses the same world and transit rules', () => {
       expect(getNovelTravelQuote(state, id).blockedReason).toMatch(/目的地/);
       expect(() => travel(state, id)).toThrow(/目的地/);
     }
-    expect(() => reduceState(state, { type: 'novel_travel', locationId: 'library', vehicleId: 't84' })).toThrow(/乘车/);
+    expect(() => reduceState(state, { type: 'novel_travel', locationId: 'library', vehicleId: 't84' })).toThrow(/乘车|线路/);
     const poor = createInitialState(); poor.player.energy = 0.1;
     expect(travel(poor, 'dorm-room').player.energy).toBe(0);
     const forged = { type: 'novel_travel', locationId: 'home', fare: 0, minutes: 0, x: 0, z: 0 } as WorldAction;

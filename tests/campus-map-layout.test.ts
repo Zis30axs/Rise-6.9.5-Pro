@@ -30,7 +30,7 @@ describe('校园与城市沙盘的真实场景布局', () => {
   });
 
   it('27 个小说目的地均有真实入口坐标，室内沿用所属建筑门口', () => {
-    expect(novelDestinations).toHaveLength(27);
+    expect(novelDestinations).toHaveLength(32);
     for (const destination of novelDestinations) expect(mapLocationPoint(destination.id), destination.id).toBeDefined();
     for (const room of campusInteriors) expect(mapLocationPoint(room.id)).toEqual(room.entrance);
     expect(mapLocationPoint('dorm')).toEqual(sceneLandmarks.find(item => item.id === 'residences'));
@@ -85,10 +85,11 @@ describe('校园与城市沙盘的真实场景布局', () => {
       const point = mapLocationPoint(destination.id)!;
       return point.x >= campusMapBounds.minX && point.x <= campusMapBounds.maxX && point.z >= campusMapBounds.minZ && point.z <= campusMapBounds.maxZ;
     });
-    expect(campus).toHaveLength(17);
+    expect(campus).toHaveLength(18);
     expect(novelDestinations.filter(destination => !campus.includes(destination)).map(destination => destination.id)).toEqual([
       'home', 'commercial', 'downtown', 'city-park', 'toyokawa-house',
       'emma-yuki-home', 'koko-old-house', 'nikaido-house', 'majo-highrise-home', 'majo-studio',
+      'amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment',
     ]);
   });
 });

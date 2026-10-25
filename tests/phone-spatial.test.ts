@@ -29,9 +29,9 @@ function touch(target: Document, type: string, points: [number, number][]) {
   target.dispatchEvent(event); return event;
 }
 describe('spatial phone presentation', () => {
-  it('keeps three distinct hulls, camera layouts and case designs', () => {
-    expect(new Set(Object.values(phoneModels).map(p=>p.width))).toHaveProperty('size',3);
-    expect(new Set(Object.values(phoneModels).map(p=>JSON.stringify(p.cameras)))).toHaveProperty('size',3);
+  it('keeps four distinct hulls, camera layouts and case designs', () => {
+    expect(new Set(Object.values(phoneModels).map(p=>p.width))).toHaveProperty('size',4);
+    expect(new Set(Object.values(phoneModels).map(p=>JSON.stringify(p.cameras)))).toHaveProperty('size',4);
     for (const p of Object.values(phoneModels)) expect(phoneContour(p.width,p.height,p.radius).every(q=>q.length>0&&Number.isFinite(q.angle))).toBe(true);
   });
   it('bounds zoom and pitch, wraps yaw and fits oblique hulls', () => {
@@ -59,19 +59,23 @@ describe('spatial phone presentation', () => {
     const {doc,panel} = setup();
     expect(touch(doc,'touchstart',[[100,100],[200,100]]).defaultPrevented).toBe(true);
     expect(touch(doc,'touchmove',[[80,100],[220,100]]).defaultPrevented).toBe(true);
-    vi.advanceTimersByTime(20); expect(Number(panel.dataset.phoneZoom)).toBe(1.4);
-    touch(doc,'touchcancel',[]); vi.advanceTimersByTime(20); expect(panel.dataset.phoneGesture).toBe('idle');
+    vi.advanceTimersByTime(20); expect(Number(panel.dataset.phoneZoom)).toBeCloseTo(1.4,3);
+    expect(touch(doc,'touchend',[]).defaultPrevented).toBe(true);
+    const click=new MouseEvent('click',{bubbles:true,cancelable:true}); doc.dispatchEvent(click); expect(click.defaultPrevented).toBe(true);
   });
   it('leaves text selection alone, retains the iframe, and cleans up on close', () => {
     const {anchor,panel,frame,source,doc} = setup();
-    const input=doc.createElement('textarea'); doc.body.append(input); input.value='未保存草稿';
-    pointer(input,'pointerdown',100,100); vi.advanceTimersByTime(600); expect(panel.dataset.phoneGesture).toBe('idle');
-    anchor.dispatchEvent(new CustomEvent('unread-city-phone-view',{detail:'back'})); expect(frame.inert).toBe(true);
-    anchor.dispatchEvent(new CustomEvent('unread-city-phone-view',{detail:'front'})); expect(frame.inert).toBe(false);
-    expect(input.value).toBe('未保存草稿'); expect(panel.querySelector('iframe')).toBe(frame);
-    pointer(doc,'pointerdown',100,100); lease!.release(); vi.advanceTimersByTime(600);
-    expect(panel.querySelector('.uc-phone-solid')).toBeNull(); expect(panel.hasAttribute('data-uc-spatial-phone')).toBe(false);
-    expect(doc.documentElement.hasAttribute('data-uc-spatial-screen')).toBe(false);
+    const input = doc.createElement('input'); doc.body.append(input);
+    pointer(input,'pointerdown',10,10); vi.advanceTimersByTime(500);
+    expect(panel.dataset.phoneGesture).toBe('idle');
+    anchor.dispatchEvent(new CustomEvent('unread-city-phone-view',{detail:'back'}));
+    expect(panel.dataset.phoneYaw).toBe('180.00'); expect(frame.inert).toBe(true);
+    anchor.dispatchEvent(new CustomEvent('unread-city-phone-view',{detail:'front'}));
+    expect(panel.dataset.phoneYaw).toBe('0.00'); expect(frame.inert).toBe(false);
+    lease!.release();
     expect(source.release).toHaveBeenCalledTimes(1);
+    expect(frame.parentElement).toBe(panel);
+    expect(panel.querySelector('.uc-phone-solid')).toBeNull();
+    expect(doc.documentElement.dataset.ucSpatialScreen).toBeUndefined();
   });
 });

@@ -1,13 +1,13 @@
-﻿/**
+/**
  * Immutable ledger primitives used by the connected protagonist world.
  * No external payment services and no access to real device data.
  *
- * Three playable viewpoints share one authoritative timeline. Stable person IDs
+ * Four playable viewpoints share one authoritative timeline. Stable person IDs
  * (worldbook `extensions.personId`) are separate from protagonist IDs; the
  * explicit mapping below is the only place a controller may take over an
  * existing resident identity.
  */
-export const PROTAGONISTS = ['soyo', 'sakiko', 'emma'] as const;
+export const PROTAGONISTS = ['soyo', 'sakiko', 'emma', 'renako'] as const;
 export type ProtagonistId = typeof PROTAGONISTS[number];
 export type FictionalCardId = 'gpt' | 'claude' | 'gemini';
 export const FICTIONAL_CARDS: readonly FictionalCardId[] = ['gpt', 'claude', 'gemini'];
@@ -16,6 +16,7 @@ export type PhoneOperation = 'inspect' | 'send_message' | 'change_calendar' | 'o
 /** Existing worldbook residents that are also controllable protagonists. */
 export const PROTAGONIST_PERSON_IDS: Readonly<Partial<Record<ProtagonistId, string>>> = Object.freeze({
   emma: 'majo-emma',
+  renako: 'watanare-renako',
 });
 export const PROTAGONIST_PERSON_ID_LIST: readonly string[] = Object.freeze(
   PROTAGONISTS.flatMap(id => PROTAGONIST_PERSON_IDS[id] ? [PROTAGONIST_PERSON_IDS[id]!] : []),
@@ -34,16 +35,19 @@ export const protagonistDeviceIds: Readonly<Record<ProtagonistId, string>> = Obj
   soyo: 'unread-city-phone-soyo',
   sakiko: 'unread-city-phone-sakiko',
   emma: 'unread-city-phone-emma',
+  renako: 'unread-city-phone-renako',
 });
-export type ProtagonistPhoneTheme = 'soyo-soft' | 'sakiko-blue' | 'emma-soft';
+export type ProtagonistPhoneTheme = 'soyo-soft' | 'sakiko-blue' | 'emma-soft' | 'renako-soft';
 export const protagonistPhoneThemes: Readonly<Record<ProtagonistId, ProtagonistPhoneTheme>> = Object.freeze({
   soyo: 'soyo-soft',
   sakiko: 'sakiko-blue',
   emma: 'emma-soft',
+  renako: 'renako-soft',
 });
 
 /** Game configuration, not a claim about the original work. Awarded only once. */
 export const EMMA_START_CENTS = 1_200_000;
+export const RENAKO_START_CENTS = 950_000;
 
 export interface LedgerEntry {
   id: string;
@@ -90,13 +94,14 @@ function cents(value: number): number {
 const clone = (s: ProtagonistLedger): ProtagonistLedger => structuredClone(s);
 
 /** Idempotent creation. Existing game balances must be converted exactly once by the migration layer. */
-export function makeDualLedger(soyoCents: number, sakikoCents: number, emmaCents = EMMA_START_CENTS): ProtagonistLedger {
+export function makeDualLedger(soyoCents: number, sakikoCents: number, emmaCents = EMMA_START_CENTS, renakoCents = RENAKO_START_CENTS): ProtagonistLedger {
   return {
     active: 'soyo',
     people: {
       soyo: {id: 'soyo', deviceId: protagonistDeviceIds.soyo, theme: protagonistPhoneThemes.soyo, cards: {gpt: cents(soyoCents), claude: 0, gemini: 0}},
       sakiko: {id: 'sakiko', deviceId: protagonistDeviceIds.sakiko, theme: protagonistPhoneThemes.sakiko, cards: {gpt: cents(sakikoCents), claude: 0, gemini: 0}},
       emma: {id: 'emma', deviceId: protagonistDeviceIds.emma, theme: protagonistPhoneThemes.emma, cards: {gpt: cents(emmaCents), claude: 0, gemini: 0}},
+      renako: {id: 'renako', deviceId: protagonistDeviceIds.renako, theme: protagonistPhoneThemes.renako, cards: {gpt: cents(renakoCents), claude: 0, gemini: 0}},
     },
     ledger: [], phoneAccess: [],
   };

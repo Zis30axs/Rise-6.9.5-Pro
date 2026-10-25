@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameDayFromISO } from '../src/runtime/game-calendar';
 import { gameCalendarOccasions, isJapanesePublicHoliday, japanPublicHoliday,
-  bangDreamBirthdays, characterBirthdays, residentBirthdays, upcomingGameCalendarOccasions } from '../src/runtime/japan-calendar-events';
+  bangDreamBirthdays, characterBirthdays, residentBirthdays, upcomingGameCalendarOccasions, watanareBirthdays } from '../src/runtime/japan-calendar-events';
 const at = (date: string) => gameDayFromISO(date);
 describe('Japanese civil holidays and documented Majo birthdays', () => {
   it('uses 2025 announced dates including substitute rest days', () => {
@@ -36,7 +36,7 @@ describe('Japanese civil holidays and documented Majo birthdays', () => {
     expect(upcomingGameCalendarOccasions(at('2025-10-10'), 10)).toEqual(events);
     expect(gameCalendarOccasions(at('2025-08-28'))).toEqual([]);
   });
-  it('reads all ten MyGO!!!!! / Ave Mujica birthdays from the canon profiles', () => {
+  it('reads all ten MyGO!!!!! / Ave Mujica birthdays and five Watanare Quintet birthdays from canon profiles', () => {
     expect(bangDreamBirthdays).toHaveLength(10);
     expect(bangDreamBirthdays.map(({ personId, month, date }) => [personId, month, date])).toEqual([
       ['soyo', 5, 27], ['sakiko', 2, 14], ['bang-tomori', 11, 22],
@@ -44,8 +44,16 @@ describe('Japanese civil holidays and documented Majo birthdays', () => {
       ['bang-mutsumi', 1, 14], ['bang-uika', 6, 26],
       ['bang-umiri', 4, 7], ['bang-nyamu', 6, 1],
     ]);
-    expect(characterBirthdays).toHaveLength(23);
-    expect(new Set(characterBirthdays.map(e => e.personId)).size).toBe(23);
+    expect(watanareBirthdays).toHaveLength(5);
+    expect(watanareBirthdays.map(({ personId, month, date }) => [personId, month, date])).toEqual([
+      ['watanare-renako', 3, 3],
+      ['watanare-mai', 9, 1],
+      ['watanare-ajisai', 6, 24],
+      ['watanare-satsuki', 5, 15],
+      ['watanare-kaho', 11, 11],
+    ]);
+    expect(characterBirthdays).toHaveLength(28);
+    expect(new Set(characterBirthdays.map(e => e.personId)).size).toBe(28);
     expect(residentBirthdays).toHaveLength(13);
   });
   it('shows both Valentine and Sakiko birthday, without gifts or duplicated annual events', () => {
@@ -54,6 +62,8 @@ describe('Japanese civil holidays and documented Majo birthdays', () => {
     expect(valentine[1]).toMatchObject({ kind: 'birthday', personId: 'sakiko', dayOff: false });
     const soyo = gameCalendarOccasions(at('2026-05-27'));
     expect(soyo).toMatchObject([{ name: '长崎素世的生日', personId: 'soyo', dayOff: false }]);
+    const renako = gameCalendarOccasions(at('2026-03-03'));
+    expect(renako).toMatchObject([{ name: '甘织玲奈子的生日', personId: 'watanare-renako', dayOff: false }]);
     const next = upcomingGameCalendarOccasions(at('2025-09-01'), 14);
     expect(next.filter(e => e.personId === 'bang-anon')).toHaveLength(1);
     expect(gameCalendarOccasions(at('2026-02-14'))).toEqual(valentine);

@@ -10,6 +10,9 @@ const profiles = {
   emma: {name:'樱羽艾玛', title:'夜樱与蓝调', ink:'#f8edf2', accent:'#f3b7ce', base:'#0c0d12', fallback:'linear-gradient(145deg,#0c0d12 70%,#243a51 70%,#243a51 72%,#111218 72%,#111218 75%,#79b8ef 75%,#79b8ef 76%,#111218 76%)', theme:'dark', skin:'sky',
     daily:['worldmessages','worldcalendar','twiitch','gallery','notes','worldshop','appie','worlddelivery','worldstyle'],
     focus:['worldcalendar','notes','worldmessages','twiitch','music','appie','gallery','worldshop','worldstyle'], dock:['chat','music','peek','settings']},
+  renako: {name:'甘织玲奈子', title:'粉樱与发夹', ink:'#543252', accent:'#b77aa3', base:'#fff5f9', fallback:'linear-gradient(145deg,#fff5f9,#fce4ee 55%,#eddcf6)', theme:'light', skin:'sky',
+    daily:['worldmessages','worldcalendar','twiitch','notes','gallery','worldshop','worlddelivery','appie','worldstyle'],
+    focus:['worldmessages','worldcalendar','notes','appie','twiitch','gallery','worldshop','worlddelivery','worldstyle'], dock:['chat','games','peek','settings']},
 };
 export function worldPhoneState(screen) {
   try {

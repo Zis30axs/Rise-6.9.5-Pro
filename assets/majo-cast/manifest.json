@@ -92,6 +92,34 @@
       "mime": "image/svg+xml",
       "bytes": 591,
       "sha256": "034956e144beb0fe486657b0e722dd4515fad335519d3d77248ef309227e6485"
+    },
+    {
+      "id": "twiitch/kaguya-avatar",
+      "file": "twiitch/kaguya-avatar.svg",
+      "mime": "image/svg+xml",
+      "bytes": 2917,
+      "sha256": "5b848e3321907797b959ba40eb7bb5228e76bf557a7bec068b319edcd47ec5f8"
+    },
+    {
+      "id": "twiitch/kaguya-channel-cover",
+      "file": "twiitch/kaguya-channel-cover.svg",
+      "mime": "image/svg+xml",
+      "bytes": 2845,
+      "sha256": "c28e6ed03aaae2cd3b5982ddf7e51a0fa5ebe259d94216f6210f8cca782c38ae"
+    },
+    {
+      "id": "twiitch/kaguya-stream-card",
+      "file": "twiitch/kaguya-stream-card.svg",
+      "mime": "image/svg+xml",
+      "bytes": 4504,
+      "sha256": "4a2dfcd5a6029d1bf2d653535ec5cc7cf548ab4efc6ec122e78b71c26384e8f1"
+    },
+    {
+      "id": "twiitch/kaguya-offline-card",
+      "file": "twiitch/kaguya-offline-card.svg",
+      "mime": "image/svg+xml",
+      "bytes": 2318,
+      "sha256": "7aba7efd32dcd1581279ab7a23072170c6e31515ac6e58b1dd702fb98f869a0f"
     }
   ],
   "characterAndScenePngStatus": "15-jpeg-source-images-recovered: 6-character-sheets-and-9-scenes; original-png-and-remaining-art-pending",

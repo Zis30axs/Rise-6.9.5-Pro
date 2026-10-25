@@ -14,10 +14,11 @@ function screen(owner='soyo',appearance) {
   return {state,style,dataset:{},ownerDocument:{documentElement:{dataset:{}},defaultView:{parent:{__unreadCityWorldPhone:{read:()=>state}},matchMedia:()=>({matches:true})}},querySelector:()=>({replaceChildren(){}}),set styleValue(v){},getStyle:()=>style};
 }
 test('all art is static, deterministic and device-specific',()=>{
-  assert.equal(Object.keys(art).length,95);
+  assert.equal(Object.keys(art).length,127);
   for(const file of Object.keys(art).filter(x=>x.startsWith('soyo/')))assert.notEqual(art[file],art[file.replace('soyo/','sakiko/')]);
   for(const file of Object.keys(art).filter(x=>x.startsWith('twiitch/')))assert.match(art[file],/^<svg /);
-  assert.equal(Object.keys(art).filter(x=>x.startsWith('twiitch/')).length,13);
+  assert.equal(Object.keys(art).filter(x=>x.startsWith('twiitch/')).length,17);
+  assert.match(art['twiitch/kaguya-avatar.svg'],/^<svg /);
 });
 test('twiitch app icon uses the recovered per-device SVG',()=>{
   const soyo=visual.worldPhoneIcon(screen('soyo'),'twiitch',art), sakiko=visual.worldPhoneIcon(screen('sakiko'),'twiitch',art);
@@ -33,9 +34,10 @@ test('missing runtime wallpaper/card/icon uses usable fallbacks',()=>{
 });
 test('home preserves every application exactly once and restores device layout',()=>{
   const original={pages:[['appie','worldshop','worldcalendar','notes','gallery','music','draw','worlddelivery','worldmessages','worldstyle']],dock:['chat','settings','listen','peek']};
-  const a=visual.worldPhoneHome(screen('soyo'),original), b=visual.worldPhoneHome(screen('sakiko'),original), c=visual.worldPhoneHome(screen('emma'),original);
+  const a=visual.worldPhoneHome(screen('soyo'),original), b=visual.worldPhoneHome(screen('sakiko'),original), c=visual.worldPhoneHome(screen('emma'),original), d=visual.worldPhoneHome(screen('renako'),original);
   assert.notDeepEqual(a,b);
-  for(const home of [a,b,c]){
+  assert.notDeepEqual(c,d);
+  for(const home of [a,b,c,d]){
     const all=[...home.pages.flat(),...home.dock];assert.equal(new Set(all).size,all.length);
     for(const id of [...original.pages.flat(),...original.dock])assert.ok(all.includes(id));
   }

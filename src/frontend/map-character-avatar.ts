@@ -4,6 +4,7 @@ import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
 import { getSakikoArt } from './downtown-art-runtime';
 import { majoExpressionFor } from './majo-art';
+import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
 export interface MapAvatarIdentity {
@@ -27,10 +28,18 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
     const src = majoExpressionFor('majo-emma', 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
+  if (person.protagonistId === 'renako') {
+    const src = watanareExpressionFor('watanare-renako', 'neutral');
+    return src ? { kind: 'sprite', src } : null;
+  }
   if (person.protagonistId === 'soyo') return { kind: 'sprite', src: soyoHeadshot };
 
   if (person.personId?.startsWith('majo-')) {
     const src = majoExpressionFor(person.personId, 'neutral');
+    return src ? { kind: 'sprite', src } : null;
+  }
+  if (person.personId?.startsWith('watanare-')) {
+    const src = watanareExpressionFor(person.personId, 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
   const atlas = person.portraitId && Object.hasOwn(novelNpcAtlases, person.portraitId)
