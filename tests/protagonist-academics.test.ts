@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, personState } from '../src/runtime/protagonist-world';
 import type { AcademicState } from '../src/frontend/types';
-import type { ProtagonistId } from '../src/runtime/dual-protagonists';
 
 const owners = ['soyo', 'sakiko', 'emma', 'renako'] as const;
 const assignments = {
