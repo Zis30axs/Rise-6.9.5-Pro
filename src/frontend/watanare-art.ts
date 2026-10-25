@@ -105,6 +105,7 @@ export const watanareExpressionSets: Readonly<Record<string, MajoExpressionSet>>
 const watanareSpeakerAliases: Readonly<Record<string, string>> = Object.freeze({
   'watanare-renako': 'watanare-renako',
   '甘织玲奈子': 'watanare-renako',
+  '甘織玲奈子': 'watanare-renako',
   '甘織れな子': 'watanare-renako',
   '玲奈子': 'watanare-renako',
   'れな子': 'watanare-renako',
