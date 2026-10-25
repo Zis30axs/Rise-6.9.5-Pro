@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { spatialPhoneLease } from '../src/frontend/phone-spatial';
 import type { PhoneLease } from '../src/frontend/phone-runtime';
 
+// Vitest stubs ?inline CSS, so jsdom computed styles cannot test hit regions.
+// Assert the real CSS rules here, while Playwright checks computed style and native touch scrolling.
+const caseCss = readFileSync(new URL('../src/frontend/phone-spatial.css', import.meta.url), 'utf8');
+const normalFaceCss = caseCss.match(/\.uc-phone-front,\.uc-phone-back\s*\{([^}]*)\}/)?.[1] ?? '';
+const rearFaceCss = caseCss.match(/#sttts-panel\[data-uc-spatial-phone\]\[data-phone-back-facing=true\] \.uc-phone-back\s*\{([^}]*)\}/)?.[1] ?? '';
 let running: PhoneLease | undefined;
 beforeEach(() => {
   vi.useFakeTimers();
@@ -41,8 +47,9 @@ describe('3D phone native swipe hit testing', () => {
     const front = panel.querySelector<HTMLElement>('.uc-phone-front')!;
     const back = panel.querySelector<HTMLElement>('.uc-phone-back')!;
     expect(panel.dataset.phoneBackFacing).toBe('false');
-    expect(getComputedStyle(front).pointerEvents).toBe('none');
-    expect(getComputedStyle(back).pointerEvents).toBe('none');
+    expect(front).toBeTruthy(); expect(back).toBeTruthy();
+    expect(normalFaceCss).toMatch(/pointer-events\s*:\s*none/);
+    expect(normalFaceCss).toMatch(/touch-action\s*:\s*auto/);
     expect(frame.inert).toBe(false);
   });
   it('does not consume ordinary vertical OR horizontal app swipes', () => {
@@ -60,12 +67,13 @@ describe('3D phone native swipe hit testing', () => {
     const back = panel.querySelector<HTMLElement>('.uc-phone-back')!;
     anchor.dispatchEvent(new CustomEvent('unread-city-phone-view', {detail:'back'}));
     expect(panel.dataset.phoneBackFacing).toBe('true');
-    expect(getComputedStyle(back).pointerEvents).toBe('auto');
-    expect(getComputedStyle(back).touchAction).toBe('none');
+    expect(back).toBeTruthy();
+    expect(rearFaceCss).toMatch(/pointer-events\s*:\s*auto/);
+    expect(rearFaceCss).toMatch(/touch-action\s*:\s*none/);
     expect(frame.inert).toBe(true);
     anchor.dispatchEvent(new CustomEvent('unread-city-phone-view', {detail:'front'}));
     expect(panel.dataset.phoneBackFacing).toBe('false');
-    expect(getComputedStyle(back).pointerEvents).toBe('none');
+    expect(normalFaceCss).toMatch(/pointer-events\s*:\s*none/);
     expect(frame.inert).toBe(false);
   });
   it('keeps long-hold rotation and pinch while cleaning up its data attribute', () => {
