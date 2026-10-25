@@ -4,7 +4,7 @@ import { parseNovelDialogue, type NovelSegment } from './novel-dialogue';
 import { storyDisplayText } from './story-text';
 import type { WorldState } from './types';
 
-const props = defineProps<{ entries: WorldState['story']; busy: boolean }>();
+const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean }>();
 const emit = defineEmits<{ segment: [segment: NovelSegment]; history: [] }>();
 const cursor = ref(0);
 const rows = computed(() => props.entries.flatMap(entry => entry.role === 'assistant'
@@ -18,7 +18,8 @@ watch(() => props.entries.at(-1)?.id, () => {
   cursor.value = Math.max(0, start);
 }, { immediate: true });
 let emittedSegment = '';
-watch(current, row => {
+watch([current, () => props.active], ([row, active]) => {
+  if (!active) { emittedSegment = ''; return; }
   if (!row || row.id === emittedSegment) return;
   emittedSegment = row.id;
   emit('segment', row);
