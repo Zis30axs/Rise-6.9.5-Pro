@@ -1,5 +1,7 @@
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, applyStoryTransferLegs, finishPersonalChange, legacyView, parseProtagonists, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { PROTAGONISTS } from './dual-protagonists';
+import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { knownProtagonistContact } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
@@ -10,7 +12,7 @@ import { applyMargoCafeGift, parseMargoCafeState } from './margo-cafe';
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
-import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
+import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
@@ -92,7 +94,7 @@ function travelVehicle(locationId: string, destinationId: string, requested?: st
 
 /** Both preview and commit execute the same deterministic plan on a private clone. */
 function planNovelTravel(state: WorldState, locationId: string, vehicleId: string) {
-  let next = parseState(state);
+  let next = parseStateCore(state, true);
   const departure = { ...next.player };
   // Capture conditions before any leg consumes nutrition. The rational form
   // also gives exact rounding at half-cent boundaries without float drift.
@@ -101,7 +103,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   // Exiting an already visited room is free and must retain its real exterior pose;
   // never teleport the player back to a distant bus stop on a same-district exit.
   if (state.interior && getCampusInterior(state.interior.roomId)?.parentLocationId === locationId) {
-    return { next: reduceState(next, { type: 'leave_interior' }), quote };
+    return { next: reduceLegacyState(next, { type: 'leave_interior' }), quote };
   }
   try {
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
@@ -133,11 +135,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       position(id);
     };
     const ride = (toStopId: string) => {
-      next = reduceState(next, { type: 'ride_transit', vehicleId, stopId: toStopId });
+      next = reduceLegacyState(next, { type: 'ride_transit', vehicleId, stopId: toStopId });
       const saved = next.transit.lastRide!;
       quote.rides.push({ vehicleId: saved.vehicleId, fromStopId: saved.fromStopId, toStopId: saved.toStopId, minutes: saved.minutes, fare: saved.fare });
     };
-    if (next.interior) next = reduceState(next, { type: 'leave_interior' });
+    if (next.interior) next = reduceLegacyState(next, { type: 'leave_interior' });
     const room = getCampusInterior(locationId);
     const target = room?.parentLocationId ?? locationId;
     const targetStop = transitStops.find(stop => stop.id !== 'campus' && stop.locationId === target);
@@ -161,7 +163,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     // A far-city residence is still an indoor destination after its transit leg.
     if (room) {
       next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
-      next = reduceState(next, { type: 'enter_interior', roomId: room.id });
+      next = reduceLegacyState(next, { type: 'enter_interior', roomId: room.id });
     }
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
@@ -289,12 +291,12 @@ function sceneCoordinates(x: unknown, z: unknown, yaw: unknown) {
   const wrappedYaw = ((yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
   return { ...point, yaw: Math.max(-3.141, Math.min(3.141, Math.round(wrappedYaw * 1000) / 1000)), areaId: area.id };
 }
-function parseScenePresence(value: unknown, interior: InteriorPresence | null): ScenePresence {
+function parseScenePresence(value: unknown, interior: InteriorPresence | null, deferProtagonists = false): ScenePresence {
   const item = object(value, ['x', 'z', 'yaw', 'areaId', 'seed', 'encounterId'], 'scene');
   const coordinates = sceneCoordinates(item.x, item.z, item.yaw);
   if (item.areaId !== coordinates.areaId) return invalid('scene.areaId 与坐标不一致');
   const scene: ScenePresence = { ...coordinates, seed: sceneSeed(item.seed), encounterId: item.encounterId === null ? null : id(item.encounterId, 'scene.encounterId') };
-  if (scene.encounterId) {
+  if (scene.encounterId && !(deferProtagonists && isProtagonistEncounter(scene.encounterId))) {
     const cafeInterior = interior?.roomId === MARGO_CAFE_ROOM_ID ? interior : null;
     const position = cafeInterior ?? scene;
     const people = cafeInterior ? getInteriorPeopleForValidation(cafeInterior.roomId) : getScenePeople(scene);
@@ -487,16 +489,58 @@ function parseInteractionEventRateState(value: unknown, clock: WorldState['clock
   return { version: 1, checks };
 }
 
+const isProtagonistEncounter = (id: string): boolean => PROTAGONISTS.some(owner => protagonistSceneId(owner) === id);
+
+function protagonistViews(state: WorldState): WorldState[] {
+  if (!state.protagonists) return [state];
+  return [state, ...otherProtagonists(activeProtagonist(state)).map(owner => {
+    const view = { ...state, ...personState(state, owner) };
+    const others = otherProtagonists(owner);
+    return { ...view, protagonists: { ...state.protagonists!,
+      accounts: { ...state.protagonists!.accounts, active: owner },
+      inactive: personState(state, others[0]!), third: personState(state, others[1]!),
+    } };
+  })];
+}
+
+function hasLiveEncounter(state: WorldState): boolean {
+  const position = worldScenePosition(state);
+  return !!position && worldScenePeople(state).some(person => person.id === state.scene?.encounterId &&
+    Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE);
+}
+
+/** Called after movement/clock settlement, never as a substitute for input validation. */
+function clearDepartedProtagonistEncounters(state: WorldState): WorldState {
+  for (const view of protagonistViews(state)) {
+    if (view.scene?.encounterId && isProtagonistEncounter(view.scene.encounterId) && !hasLiveEncounter(view)) view.scene.encounterId = null;
+  }
+  return state;
+}
+
 export function parseState(value: unknown): WorldState {
+  const state = parseStateCore(value, true);
+  for (const view of protagonistViews(state)) {
+    if (!view.scene?.encounterId || !isProtagonistEncounter(view.scene.encounterId)) continue;
+    if (view.protagonists && view.scene.encounterId === protagonistSceneId(activeProtagonist(view))) return invalid('scene.encounterId 不能指向当前主角');
+    if (view.protagonists && hasLiveEncounter(view)) continue;
+    // Older Emma NPC encounters used authored anchors. They remain readable,
+    // but the live population never reuses those anchors for a playable Emma.
+    parseScenePresence(view.scene, view.interior);
+  }
+  return state;
+}
+
+/** Personal compatibility projections lack the other protagonists until reassembled. */
+function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   if (value && typeof value === 'object' && !Array.isArray(value) && ['1.12.0', '1.13.0'].includes(String((value as Record<string, unknown>).schema_version))) {
     const source = value as Record<string, unknown>;
     const hasYen = Object.hasOwn(source, 'currency');
     if (hasYen && source.currency !== 'JPY') return invalid('currency');
     const { protagonists, currency: _currency, ...rest } = source;
     // Parse all existing ledgers in their previous units before converting once.
-    const base = parseState({ ...rest, currency: 'JPY', schema_version: '1.11.0' });
+    const base = parseStateCore({ ...rest, currency: 'JPY', schema_version: '1.11.0' }, deferProtagonists);
     const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
-      protagonists: parseProtagonists(protagonists, base, parseState, !hasYen) };
+      protagonists: parseProtagonists(protagonists, base, value => parseStateCore(value, deferProtagonists), !hasYen) };
     if (!hasYen) {
       migrateHistoricalMoney(state);
       const p = state.protagonists!;
@@ -552,7 +596,7 @@ export function parseState(value: unknown): WorldState {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     locationId: place(state.locationId, 'locationId'),
-    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior),
+    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
@@ -625,7 +669,7 @@ export function parseState(value: unknown): WorldState {
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
 function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
-  let next = parseState(state);
+  let next = parseStateCore(state, true);
   const validated = validateStoryActions(actions, next);
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
   const clearInteriorActivity = () => {
@@ -633,17 +677,17 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   };
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
-      case 'travel': next = reduceState(next, { type: 'novel_travel', locationId: action.locationId }); break;
-      case 'service': next = reduceState(next, { type: 'location_service', serviceId: action.serviceId }); break;
-      case 'buy': next = reduceState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }); break;
-      case 'pack': next = reduceState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
-      case 'takeaway': next = reduceState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
-      case 'gift': next = reduceState(next, { ...action, type: 'gift_item' }); break;
-      case 'use': next = reduceState(next, { type: 'use_item', itemId: action.itemId }); break;
+      case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
+      case 'service': next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId }); break;
+      case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }); break;
+      case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
+      case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
+      case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
+      case 'use': next = reduceLegacyState(next, { type: 'use_item', itemId: action.itemId }); break;
       case 'interact':
         if (action.interactionId === 'dorm-rest' || isStudyInteraction(action.interactionId)) throw new Error('休息或学习请使用包含明确分钟数的剧情行动。');
-        next = reduceState(next, { type: 'novel_approach', interactionId: action.interactionId });
-        next = reduceState(next, { type: 'interior_interact', interactionId: action.interactionId });
+        next = reduceLegacyState(next, { type: 'novel_approach', interactionId: action.interactionId });
+        next = reduceLegacyState(next, { type: 'interior_interact', interactionId: action.interactionId });
         break;
       case 'rest': {
         const before = { ...next.player };
@@ -704,7 +748,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         note(next, `新增日程：${action.time}，${locations.find(place => place.id === action.locationId)!.name}，${action.title}。`);
         break;
       }
-      case 'complete_schedule': next = reduceState(next, action); break;
+      case 'complete_schedule': next = reduceLegacyState(next, action); break;
       // Transfer legs are booked by applyStoryTransferLegs on the authoritative
       // ledger after finishPersonalChange; mirroring them here would double-count.
       case 'transfer': break;
@@ -731,7 +775,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       }
     }
   }
-  return parseState(next);
+  return parseStateCore(next, true);
 }
 
 /**
@@ -745,8 +789,9 @@ function commitLegacyStoryTurn(
   result: GeneratedStory,
   ids: { userId: string; assistantId: string },
   now = Date.now(),
+  worldAuthority?: WorldState,
 ): WorldState {
-  let next = parseState(state);
+  let next = parseStateCore(state, true);
   if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText || input.includes('\u0000')) {
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
@@ -778,7 +823,7 @@ function commitLegacyStoryTurn(
   }
   if (recordedFlight) throw new Error('空中事件 ID 冲突；本轮未写入。');
   if (recordedActions.length) throw new Error('剧情行动 ID 冲突；本轮未写入。');
-  next = applyStoryActions(next, worldActions, ids.assistantId);
+  next = applyLegacyStoryActions(next, worldActions, ids.assistantId);
   // Reject the entire turn on cooldown. Accepting prose while dropping its
   // requested pass would leave the narrated scene different from saved facts.
   if (hasFlight) {
@@ -802,15 +847,22 @@ function commitLegacyStoryTurn(
   next.phone.push(...messages);
   const participants = new Set<string>();
   for (const snapshot of [state, next]) {
-    const people = snapshot.interior ? getInteriorPeople(snapshot.interior.roomId, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot))
-      : snapshot.scene ? getScenePeople(snapshot.scene, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)) : [];
     const position = snapshot.interior ?? snapshot.scene;
+    const people = worldScenePeople({ ...snapshot, protagonists: worldAuthority?.protagonists })
+      .filter(person => !person.protagonistId || position && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE);
+    const contacts = snapshot.contacts.filter(contact => {
+      if (!worldAuthority?.protagonists) return true;
+      const owner = PROTAGONISTS.find(owner => contact.id === `protagonist-${owner}` ||
+        contact.id === protagonistSceneId(owner) || contact.sourcePersonId === protagonistSceneId(owner));
+      return !owner || people.some(person => person.protagonistId === owner) ||
+        reply.phoneMessages.some(message => message.npcId === contact.id);
+    });
     if (position && people.some(person => person.id === snapshot.scene?.encounterId &&
       Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE)) participants.add(snapshot.scene!.encounterId!);
     for (const segment of parseNovelDialogue(reply.text)) {
       if (!segment.speaker) continue;
       const matches = [
-        ...snapshot.contacts.filter(contact => contact.id === segment.speaker || contact.name === segment.speaker).map(contact => contact.id),
+        ...contacts.filter(contact => contact.id === segment.speaker || contact.name === segment.speaker).map(contact => contact.id),
         ...people.filter(person => person.id === segment.speaker || person.name === segment.speaker || person.candidateName === segment.speaker).map(person => person.contactId ?? person.id),
       ];
       const unique = [...new Set(matches)];
@@ -825,7 +877,7 @@ function commitLegacyStoryTurn(
   );
   next.story = next.story.slice(-STATE_LIMITS.story);
   if (worldActions.length) note(next, `已结算本轮 ${worldActions.length} 项剧情行动。`, actionReceiptId);
-  return parseState(next);
+  return parseStateCore(next, true);
 }
 
 /** Read receipts can only mark known message IDs; unknown/stale IDs do nothing. */
@@ -838,7 +890,8 @@ export function acknowledgePhoneRead(state: WorldState, ids: readonly string[]):
 }
 
 function clearIndoorEncounter(state: WorldState) {
-  if (state.interior && state.scene?.encounterId && !getInteriorPeople(state.interior.roomId, state.contacts, state.clock).some(person =>
+  // Dynamic protagonists are checked after the personal view is reassembled.
+  if (state.interior && state.scene?.encounterId && !isProtagonistEncounter(state.scene.encounterId) && !getInteriorPeople(state.interior.roomId, state.contacts, state.clock).some(person =>
     person.id === state.scene!.encounterId && Math.hypot(person.x - state.interior!.x, person.z - state.interior!.z) <= SCENE_ENCOUNTER_DISTANCE)) state.scene.encounterId = null;
 }
 
@@ -891,8 +944,8 @@ function activityChangeNote(before: PlayerState, after: PlayerState): string {
  * Structured narrative actions share these transactions; exact-duration rest,
  * study, contextual effects and relationship changes are handled above.
  */
-function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
-  const next = parseState(state);
+function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthority?: WorldState): WorldState {
+  const next = parseStateCore(state, true);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
     case 'save_contact': {
@@ -904,8 +957,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const sourcePersonId = profile.sourcePersonId === undefined ? existing?.sourcePersonId ?? null : profile.sourcePersonId;
       if (existing?.sourcePersonId && sourcePersonId !== existing.sourcePersonId) throw new Error('已确认人物的来源身份不能更换。');
       if (sourcePersonId && sourcePersonId !== existing?.sourcePersonId) {
-        const people = next.interior ? getInteriorPeople(next.interior.roomId, next.contacts, next.clock, hiddenProtagonistPersons(next))
-          : next.scene ? getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next)) : [];
+        const people = worldScenePeople({ ...next, protagonists: worldAuthority?.protagonists });
         const person = people.find(person => person.id === sourcePersonId);
         if (!person) throw new Error('这位陌生人不属于当前场景。');
         if (!existing && profile.id !== sourcePersonId) throw new Error('请沿用陌生人的稳定人物 ID。');
@@ -1001,7 +1053,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
     case 'novel_travel': {
       const planned = planNovelTravel(next, action.locationId, travelVehicle(next.locationId, action.locationId, action.vehicleId));
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
-      return parseState(planned.next);
+      return parseStateCore(planned.next, true);
     }
     case 'novel_approach': {
       if (!next.interior) throw new Error('请先进入室内。');
@@ -1021,16 +1073,16 @@ function reduceLegacyState(state: WorldState, action: WorldAction): WorldState {
       const seed = sceneSeed(action.seed);
       const coordinates = sceneCoordinates(action.x, action.z, action.yaw);
       const scene: ScenePresence = { ...coordinates, seed: next.scene?.seed ?? seed, encounterId: next.scene?.encounterId ?? null };
-      const person = scene.encounterId ? getScenePeople(scene, next.contacts, next.clock, hiddenProtagonistPersons(next)).find(person => person.id === scene.encounterId) : null;
+      const person = scene.encounterId ? worldScenePeople({ ...next, scene, protagonists: worldAuthority?.protagonists }).find(person => person.id === scene.encounterId) : null;
       if (scene.encounterId && (!person || Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE)) scene.encounterId = null;
       next.scene = scene;
       next.locationId = sceneLocationId(scene.areaId);
       break;
     }
     case 'encounter': {
+      if (worldAuthority?.protagonists && !next.scene) next.scene = worldScenePresence(next);
       if (!next.scene) throw new Error('请先进入自由行走，再走到行人附近搭话。');
-      const people = next.interior ? getInteriorPeople(next.interior.roomId, next.contacts, next.clock, hiddenProtagonistPersons(next))
-        : getScenePeople(next.scene, next.contacts, next.clock, hiddenProtagonistPersons(next));
+      const people = worldScenePeople({ ...next, protagonists: worldAuthority?.protagonists });
       const position = next.interior ?? next.scene;
       const person = people.find(person => person.id === action.personId);
       if (!person) throw new Error('这位行人不属于当前场景。');
@@ -1224,16 +1276,17 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     const next = reduceProtagonistAction(before, action);
     captureNewJournalEvidence(before, next);
     settleWeeklyMemory(next);
-    return parseState(next);
+    return parseState(clearDepartedProtagonistEncounters(next));
   }
-  const next = reduceLegacyState(legacyView(before), action);
-  const candidate = finishPersonalChange(before, next, `世界行动：${action.type}`);
-  return parseState(action.type === 'encounter' ? recordNpcEncounter(candidate, action.personId) : candidate);
+  const next = reduceLegacyState(legacyView(before), action, before);
+  const candidate = clearDepartedProtagonistEncounters(finishPersonalChange(before, next, `世界行动：${action.type}`));
+  return parseState(action.type === 'encounter' && !(candidate.protagonists && isProtagonistEncounter(action.personId))
+    ? recordNpcEncounter(candidate, action.personId) : candidate);
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动');
-  return parseState(applyStoryTransferLegs(after, actions, turnId));
+  return parseState(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
@@ -1241,11 +1294,11 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
   const { weeklySummary, contactRequests, phoneDecision, ...legacyResult } = result;
-  const after = finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now), '剧情结算');
-  const settled = applyStoryTransferLegs(after, legacyResult.worldActions ?? [], ids.assistantId);
+  const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
+  const settled = applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, settled, result, ids.assistantId), input, result, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
-  captureNewJournalEvidence(after, next);
+  captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   return parseState(next);
 }

@@ -34,7 +34,8 @@ import { activeProtagonist, protagonistNames } from '../runtime/protagonist-worl
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
-import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { worldScenePeople, worldScenePosition, type WorldScenePerson } from '../runtime/world-presence';
 import type { PlayerState, ShellActions, ShellModel } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, studyDurationOptions, isStudyInteraction, getStudyEnergyCost } from '../runtime/campus-interiors';
@@ -103,23 +104,24 @@ const portraitPeople = computed(() => {
   const seed = props.model.state.scene?.seed ?? walkSeed;
   return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state));
 });
-const scenePeople = computed(() => props.model.state.interior
-  ? getInteriorPeople(props.model.state.interior.roomId, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state)) : portraitPeople.value);
+const scenePeople = computed(() => worldScenePeople(props.model.state));
 const encounterPerson = computed(() => {
-  const position = props.model.state.interior ?? props.model.state.scene;
+  const position = worldScenePosition(props.model.state);
   if (!position) return null;
   return scenePeople.value.find(person => person.id === props.model.state.scene?.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
 });
-const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : segmentSpeaker.value);
+const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value
+  ? encounterPerson.value.protagonistId ? protagonistNames[encounterPerson.value.protagonistId] : encounterPerson.value.id
+  : segmentSpeaker.value);
 // Protagonists without an authored phone pose keep their standing portrait while the phone is open.
 const portraitActive = computed(() => !activeWindow.value
   || (activeWindow.value === 'phone' && !hasProtagonistPhonePose(currentProtagonist.value)));
 const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
   contacts: props.model.state.contacts,
-  scenePeople: [...portraitPeople.value, ...scenePeople.value],
+  scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
   encounterId: props.model.state.scene?.encounterId,
 }));
-function personLabel(person: typeof portraitPeople.value[number]) { return person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
+function personLabel(person: WorldScenePerson) { return person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
 const portraitLabel = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
@@ -159,7 +161,7 @@ const nearbyTransitStop = computed(() => {
   return point ? transitStops.find(stop => Math.hypot(stop.x - point.x, stop.z - point.z) <= 6) ?? null : null;
 });
 const nearbyPeople = computed(() => {
-  const position = props.model.state.interior ?? props.model.state.scene ?? outdoorArrival();
+  const position = worldScenePosition(props.model.state);
   if (!position) return [];
   return scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
     .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance);
@@ -392,7 +394,7 @@ async function saveEncounterContact(sourcePersonId: string) {
   if (props.model.busy || !nearbyPeople.value.some(item => item.person.id === sourcePersonId)) return;
   scene.value?.flushPresence();
   if (!props.model.state.scene && !props.model.state.interior) {
-    const arrival = outdoorArrival();
+    const arrival = worldScenePosition(props.model.state);
     if (arrival) scenePresence(arrival);
   }
   if (walkSyncError.value || !nearbyPeople.value.some(item => item.person.id === sourcePersonId)) return;
@@ -659,7 +661,7 @@ function sceneEncounter(personId: string) {
   if (props.model.busy) return;
   scene.value?.flushPresence();
   if (!props.model.state.scene && !props.model.state.interior) {
-    const arrival = outdoorArrival();
+    const arrival = worldScenePosition(props.model.state);
     if (arrival) scenePresence(arrival);
   }
   if (walkSyncError.value) return;
@@ -729,7 +731,7 @@ onBeforeUnmount(() => {
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="portraitActive" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="segmentSpeaker" :active="!activeWindow && readingMode !== 'expanded'" />
+    <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="portraitLabel" :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
@@ -737,7 +739,7 @@ onBeforeUnmount(() => {
     <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
-    <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
+    <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
     <button v-if="!novelMode && readingMode === 'compact' && !activeWindow" class="walk-launcher" aria-label="自由行走" @click="startWalking"><span aria-hidden="true">↟</span> 自由行走</button>
     <button v-if="!novelMode && nearbyEntrance && !activeWindow && readingMode === 'hidden'" class="campus-entrance" :disabled="model.busy" :aria-label="`进入${nearbyEntrance.label}`" @click="enterInterior(nearbyEntrance.id)"><span aria-hidden="true">⌂</span><span>进入{{ nearbyEntrance.label }}<small>室内探索 · 可随时返回</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && nearbyTransitStop && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-transit-entry aria-label="公交乘车" :disabled="model.busy" @click="openWindow('transit')"><span aria-hidden="true">▣</span><span>公交乘车<small>{{ nearbyTransitStop.label }} · BTR-82A / ZBD-04A</small></span><span aria-hidden="true">↗</span></button>
@@ -770,7 +772,7 @@ onBeforeUnmount(() => {
     <span class="sr-only" role="status" aria-live="polite">{{ unread ? `手机有 ${unread} 条未读消息` : '手机没有未读消息' }}</span>
     <section v-show="readingMode !== 'hidden'" class="reading-layer" data-reading-layer aria-label="小说正文" :class="{ 'reading-expanded': readingMode === 'expanded' }">
       <button type="button" class="reading-resize-grip" data-layout-handle="reading-height" aria-label="上下拖动调整正文高度" title="拖动改变正文高度"><span aria-hidden="true"></span></button>
-      <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
+      <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
       <NovelDialogue v-show="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" />
@@ -787,7 +789,7 @@ onBeforeUnmount(() => {
       <div v-else-if="activeWindow === 'transit'" class="window-content"><TransitPanel :model="model" :stop="nearbyTransitStop" :novel-mode="novelMode" @ride="takeTransit" @approach="approachTransitStop" /></div>
       <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>
