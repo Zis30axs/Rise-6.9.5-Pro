@@ -80,11 +80,19 @@ try {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff0f5, 0x2a1f3d, 0.95));
-  const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(0.6, 1.6, 1.9); scene.add(key);
+  const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(1.2, 1.9, 1.2); scene.add(key);
   const rim = new THREE.DirectionalLight(0x9d6bf8, 0.35); rim.position.set(-1.2, 1.2, -1.0); scene.add(rim);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 0.1; key.shadow.camera.far = 6;
+  key.shadow.radius = 5; key.shadow.bias = -0.0003; key.shadow.normalBias = 0.02;
+  key.shadow.camera.updateProjectionMatrix();
+  scene.add(key.target);
 
   const pivot = new THREE.Group(); scene.add(pivot);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 40);
@@ -107,10 +115,48 @@ try {
 
   const box = new THREE.Box3().setFromObject(vrm.scene);
   const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-  // Bust shot: vertical extent of ~2/3 body height centered between head and chest,
-  // framed by the 30° vertical fov at the computed distance.
-  const extent = size.y * 0.66;
-  const focus = new THREE.Vector3(center.x, box.max.y - extent / 2, center.z);
+  // Simple grounding: the model casts onto an invisible floor; only the soft
+  // shadow shows, so the character stops looking like a floating cutout.
+  const half = Math.max(0.8, size.y * 0.5);
+  key.shadow.camera.left = -half; key.shadow.camera.right = half;
+  key.shadow.camera.top = half; key.shadow.camera.bottom = -half;
+  key.target.position.set(0, size.y * 0.5, 0);
+  vrm.scene.traverse(obj => { if (obj.isMesh) obj.castShadow = true; });
+  // A faint stage disc: visible floor that fades at the rim and receives the
+  // shadow — a dark blob on the near-black page would be invisible.
+  const fade = document.createElement('canvas'); fade.width = fade.height = 256;
+  const ctx = fade.getContext('2d');
+  const gradient = ctx.createRadialGradient(128, 128, 20, 128, 128, 128);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.55, 'rgba(255,255,255,0.85)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, 256, 256);
+  const floorTexture = new THREE.CanvasTexture(fade);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(half * 1.5, 48),
+    new THREE.MeshStandardMaterial({ map: floorTexture, transparent: true, color: 0x8a7fb0, roughness: 0.95, metalness: 0, depthWrite: false }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(center.x, box.min.y + 0.001, center.z);
+  floor.receiveShadow = true;
+  floor.renderOrder = 1;
+  scene.add(floor);
+  // Contact shadow blob: guaranteed-visible grounding even where the shadow
+  // map reads faint; offset away from the key light to fake direction.
+  const blobCanvas = document.createElement('canvas'); blobCanvas.width = blobCanvas.height = 128;
+  const blobCtx = blobCanvas.getContext('2d');
+  const blobGradient = blobCtx.createRadialGradient(64, 64, 4, 64, 64, 64);
+  blobGradient.addColorStop(0, 'rgba(0,0,0,0.72)');
+  blobGradient.addColorStop(0.6, 'rgba(0,0,0,0.36)');
+  blobGradient.addColorStop(1, 'rgba(0,0,0,0)');
+  blobCtx.fillStyle = blobGradient; blobCtx.fillRect(0, 0, 128, 128);
+  const blob = new THREE.Mesh(new THREE.PlaneGeometry(size.y * 0.56, size.y * 0.22),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(blobCanvas), transparent: true, depthWrite: false }));
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.set(center.x - size.y * 0.07, box.min.y + 0.002, center.z - size.y * 0.06);
+  blob.renderOrder = 2;
+  scene.add(blob);
+  // Full-body framing with floor margin so the soft contact shadow stays in view.
+  const extent = size.y * 1.22;
+  const focus = new THREE.Vector3(center.x, box.min.y + size.y * 0.45, center.z);
   const baseDistance = extent / 2 / Math.tan(THREE.MathUtils.degToRad(15));
   let yawUser = 0, pitchUser = 0, zoom = 1, autoSway = !reduced;
   const reset = () => { yawUser = 0; pitchUser = 0; zoom = 1; };
