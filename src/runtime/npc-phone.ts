@@ -208,6 +208,9 @@ export function retireControlledNpcThreads(social: NpcPhoneState): void {
 }
 
 function nearbyEncounterPerson(state: WorldState, npcId: string) {
+  // Playable residents use the protagonist conversation path, including when
+  // an older save still carries their former NPC meeting receipt.
+  if (state.protagonists && isProtagonistPerson(npcId)) return null;
   if (!state.scene || state.scene.encounterId !== npcId) return null;
   const point = state.interior ?? state.scene;
   const people = state.interior

@@ -1,0 +1,14 @@
+{
+  "viewport": {
+    "width": 320,
+    "height": 568
+  },
+  "scenario": "sports at 7 metres",
+  "nearbyProtagonist": true,
+  "actualSprite": true,
+  "mapAvatar": true,
+  "explicitDialogue": true,
+  "modelCalls": "one controlled local reply",
+  "overflow": false,
+  "errors": []
+}

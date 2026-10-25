@@ -4,9 +4,8 @@ import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
-import { getScenePeople, hiddenProtagonistPersons } from '../runtime/scene-context';
-import { PROTAGONIST_PERSON_IDS } from '../runtime/dual-protagonists';
-import { activeProtagonist, otherProtagonists, personState, protagonistNames } from '../runtime/protagonist-world';
+import { worldScenePeople, worldScenePosition } from '../runtime/world-presence';
+import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
@@ -68,7 +67,7 @@ const localLayer = computed(() => layer.value === 'district');
 const geographicLayer = computed(() => layerIndex.value >= 3);
 const currentLocation = computed(() => allLocations.find(place => place.id === props.model.state.locationId));
 const currentMapPosition = computed(() => props.model.state.interior
-  ? mapLocationPoint(props.model.state.interior.roomId) : props.model.state.scene);
+  ? mapLocationPoint(props.model.state.interior.roomId) : worldScenePosition(props.model.state));
 const needsTransitReturn = computed(() => requiresTransitReturn(props.model.state.locationId, props.model.state.scene));
 const transform = computed(() => ({ transform: depth.value > 2 ? 'none' : `translate(${pan.value.x}px, ${pan.value.y}px) scale(${focusZoom.value})` }));
 const localZoomScale = computed(() => depth.value < 0 ? 2 ** -depth.value : 1 - .46 * smooth(depth.value / 2));
@@ -116,26 +115,21 @@ const demoPeople = computed(() => showDemoPeople.value ? personWorldLocationRefs
   return contact && place && contact.affinity >= affinityThreshold
     ? [{ ...record, name: contact.name, personId: contact.sourcePersonId ?? contact.id, portraitId: contact.portraitId, affinity: contact.affinity, place, source: 'demo' as const }] : [];
 }) : []);
-/** The scene's seeded characters and actual second protagonist share the
- * canonical positions used by walking/encounter and background-life. No fake
- * map tracking of absent or undisclosed characters in other districts. */
+/** Location markers share the talk population; NPC disclosure uses this viewpoint's contacts. */
 const visiblePeople = computed(() => {
   const state = props.model.state;
-  const position = state.scene;
-  const scenePeople = position && !state.interior
-    ? getScenePeople(position, state.contacts, state.clock, hiddenProtagonistPersons(state))
-      .filter(person => Math.hypot(person.x - position.x, person.z - position.z) <= 35)
-      .map(person => ({contactId:person.contactId??person.id,name:person.name,personId:person.id,portraitId:person.portraitId,position:{x:person.x,z:person.z},source:'scene' as const}))
-    : [];
-  const otherPeople=position && !state.interior && state.protagonists
-    ? otherProtagonists(activeProtagonist(state)).flatMap(otherId => {
-      const other=personState(state,otherId);
-      return other && !other.interior && other.scene && other.locationId===state.locationId
-        ? [{contactId:`protagonist-${otherId}`,name:protagonistNames[otherId],personId:PROTAGONIST_PERSON_IDS[otherId] ?? otherId,protagonistId:otherId,position:{x:other.scene.x,z:other.scene.z},source:'protagonist' as const}]
-        : [];
-    })
-    : [];
-  return [...scenePeople,...otherPeople,...demoPeople.value];
+  const position = worldScenePosition(state);
+  const people = position ? worldScenePeople(state).flatMap(person => {
+    if (person.protagonistId && !state.interior && personState(state, person.protagonistId).locationId !== state.locationId) return [];
+    const contact = state.contacts.find(item => item.id === person.contactId || item.sourcePersonId === person.id || item.id === person.id);
+    if (!person.protagonistId && (!contact || contact.affinity < affinityThreshold || Math.hypot(person.x - position.x, person.z - position.z) > 35)) return [];
+    const point = state.interior ? mapLocationPoint(state.interior.roomId) : { x: person.x, z: person.z };
+    if (!point) return [];
+    return [{ contactId: person.contactId ?? person.id, name: person.protagonistId ? protagonistNames[person.protagonistId] : person.name,
+      personId: person.id, portraitId: person.portraitId, protagonistId: person.protagonistId, position: point,
+      source: person.protagonistId ? 'protagonist' as const : 'scene' as const }];
+  }) : [];
+  return [...people, ...demoPeople.value];
 });
 const routeOutlooks = computed(() => new Map(locations.map(place => [place.id, getRouteOutlook(props.model.state, place.id)])));
 const travelMinutes = (locationId: string) => 15 + (routeOutlooks.value.get(locationId)?.extraMinutes ?? 0);
@@ -346,7 +340,7 @@ function pointerUp(event: PointerEvent) {
   if (!pointers.size) { tapTarget = undefined; gestureMoved = false; gestureHadMultiple = false; }
 }
 function guardClick(event: MouseEvent) {
-  if (event.detail > 0 && now() < ignoreClickUntil && !(event.target as Element).closest('[data-map-controls]')) { event.preventDefault(); event.stopImmediatePropagation(); }
+  if (event.detail > 0 && now() < ignoreClickUntil && !(event.target as Element).closest('[data-map-controls], [data-map-person-id], [data-map-player]')) { event.preventDefault(); event.stopImmediatePropagation(); }
 }
 function cancelGestures() {
   const ids = [...pointers.keys()]; pointers.clear(); gesture = undefined; tapTarget = undefined;

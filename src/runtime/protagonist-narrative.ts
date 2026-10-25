@@ -2,7 +2,8 @@ import type { GeneratedStory, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { backgroundLifeSummary } from './background-life';
-import { activeProtagonist, otherProtagonists, personState, protagonistNames, protagonistNearby } from './protagonist-world';
+import { activeProtagonist, otherProtagonists, personState, protagonistNames } from './protagonist-world';
+import { protagonistsInTalkingRange } from './world-presence';
 
 const JOURNAL_LIMIT = 100;
 const RECAP_LIMIT = 12;
@@ -48,8 +49,7 @@ export function protagonistRecap(state: WorldState): ProtagonistRecapEntry[] {
 /** Never include the other protagonist's private position, diary, wallet or device. */
 export function narrativeContext(state: WorldState) {
   const owner = activeProtagonist(state);
-  const others = otherProtagonists(owner);
-  const nearby = state.protagonists ? others.filter(id => protagonistNearby(state, id)) : [];
+  const nearby = protagonistsInTalkingRange(state).map(person => person.protagonistId);
   const recentLife = backgroundLifeSummary(state, owner).slice(-6).map(entry => ({ ...entry, text: entry.text.slice(0, 240) }));
   const recentSources = new Set(recentLife.map(entry => sourceId(entry.id)));
   const counterparts = nearby.map(id => ({ id, name: protagonistNames[id], locationId: state.locationId }));
@@ -113,7 +113,8 @@ export function recordProtagonistNarrative(before: WorldState, after: WorldState
   // There is no per-line timeline. A turn with movement or other activities cannot
   // prove who heard which line, even if its endpoints happen to be the same place.
   const stableScene = !reply.worldActions?.some(action => action.type !== 'rest' || action.kind !== 'wait');
-  const listeners = next.protagonists ? others.filter(id => protagonistNearby(before, id) && protagonistNearby(next, id)) : [];
+  const beforeListeners = new Set(protagonistsInTalkingRange(before).map(person => person.protagonistId));
+  const listeners = protagonistsInTalkingRange(next).map(person => person.protagonistId).filter(id => beforeListeners.has(id));
   if (!before.protagonists || !stableScene || !listeners.length) return next;
   const savedText = next.story.find(entry => entry.id === turnId && entry.role === 'assistant')?.text;
   if (!savedText) return next;

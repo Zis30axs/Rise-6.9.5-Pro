@@ -213,12 +213,12 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []) {
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
-    const nearbyPeople = getInteriorPeople(room.id, contacts, clock, hiddenPersonIds)
+    const nearbyPeople = (population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds))
       .map(person => ({ ...person, distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
       .filter(person => person.distanceMetres <= 18);
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.distanceMetres <= SCENE_ENCOUNTER_DISTANCE) ?? null;
@@ -234,7 +234,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   if (!scene) return null;
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
-  const people = getScenePeople(scene, contacts, clock, hiddenPersonIds);
+  const people = population ?? getScenePeople(scene, contacts, clock, hiddenPersonIds);
   const nearby = people
     .map(person => ({ person, distance: Math.hypot(person.x - scene.x, person.z - scene.z) }))
     .filter(item => item.distance <= 18)
