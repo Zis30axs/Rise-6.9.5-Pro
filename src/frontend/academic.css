@@ -121,3 +121,19 @@
  .academic-lesson { grid-template-columns:88px minmax(0,1fr); gap:8px; }
  .academic-progress-grid { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Legacy academic correction lives in the status pane, not the initial enrollment modal. */
+.academic-correction { margin:0 0 22px; border:1px solid #d1c39a46; border-radius:9px; background:#d5c2950b; padding:0 14px 14px; }
+.academic-correction > summary { cursor:pointer; min-height:44px; display:list-item; align-content:center; color:#e6ce9e; font-size:13px; }
+.academic-correction-content { display:grid; gap:11px; padding-top:8px; }
+.academic-correction-content p { color:#bfcbb8; font-size:12px; line-height:1.8; }
+.academic-correction-content strong { color:#eee0bf; }
+.academic-correction-field { display:grid; gap:6px; color:#e2d3b1; font-size:12px; }
+.uc-shell .academic-correction select { width:100%; min-height:44px; border:1px solid #ccba904d; border-radius:7px; background:#1d342c; color:#f3e9d2; padding:8px 10px; font:inherit; }
+.academic-correction-keep { display:flex; gap:10px; align-items:flex-start; font-size:12px; line-height:1.7; color:#d5dbca; }
+.academic-correction-keep input { width:17px; height:17px; flex:none; margin-top:2px; accent-color:#cbb688; }
+.academic-correction-warning { padding:10px 12px; border-left:2px solid #e2b284; background:#b97e3410; color:#efcca4!important; }
+.academic-correction-buttons { display:flex; flex-wrap:wrap; gap:10px; }
+.uc-shell .academic-correction-buttons button { min-height:44px; padding:9px 13px; border:1px solid #cebc9260; border-radius:7px; color:#f3e5c4; font-size:12px; }
+.uc-shell .academic-correction-buttons button:first-child { background:#d4bb8a; color:#203b2e; }
+.uc-shell .academic-correction-buttons button:disabled { opacity:.45; cursor:default; }

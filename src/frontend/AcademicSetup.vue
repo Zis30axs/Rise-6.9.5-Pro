@@ -44,7 +44,7 @@ onMounted(async () => {
       <header class="academic-setup-heading">
         <small>入学档案 · 学业方向</small>
         <h1 id="academic-setup-title">选择你的专业</h1>
-        <p id="academic-setup-description">每个专业包含三门课程，分别积累学习进度。确认后随当前聊天保存，之后不再更换专业。</p>
+        <p id="academic-setup-description">每位主角独立选择专业，三门课程分别积累学习进度。确认后保存在当前主角档案中；旧存档误绑定可到个人状态页手动更正。</p>
       </header>
       <div class="academic-setup-scroll">
         <fieldset class="academic-choices">

@@ -91,6 +91,8 @@ export interface AcademicGain {
 }
 export interface AcademicState {
   majorId: string;
+  /** Explicit legacy major correction; allows retained earned points without a fabricated last gain. */
+  correction?: { previousMajorId: string; keepProgress: boolean };
   /** Per-subject progress uses exact half points. */
   subjects: { subjectId: string; points: number }[];
   lastGain: AcademicGain | null;
@@ -165,6 +167,7 @@ export type WorldAction =
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
+  | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
   | { type: 'buy_item'; itemId: string; quantity: number }
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }

@@ -161,11 +161,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
-  if (s.academics) {
-    next.protagonists!.inactive.academics = structuredClone(s.academics);
-    next.protagonists!.third.academics = structuredClone(s.academics);
-    next.protagonists!.fourth.academics = structuredClone(s.academics);
-  }
+  // Other viewpoints start unassigned, even when the first protagonist has a major.
   return next;
 }
 
@@ -460,7 +456,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     const stateOf=(id:ProtagonistId)=>id===who?leaving:personalState(personState(s,id));
     const nextInactive=stateOf(remaining[0]), nextThird=stateOf(remaining[1]), nextFourth=stateOf(remaining[2]);
     const arriving=personalState(personState(s,target));
-    if (!arriving.academics && s.academics) arriving.academics = structuredClone(s.academics);
+    // A null major is this protagonist's own unmade choice, not a reason to inherit.
     Object.assign(s, arriving);
     p.inactive=nextInactive; p.third=nextThird; p.fourth=nextFourth; p.accounts.active=target; p.revision++;
     return s;
