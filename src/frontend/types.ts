@@ -91,6 +91,8 @@ export interface AcademicGain {
 }
 export interface AcademicState {
   majorId: string;
+  /** Explicit legacy major correction; allows retained earned points without a fabricated last gain. */
+  correction?: { previousMajorId: string; keepProgress: boolean };
   /** Per-subject progress uses exact half points. */
   subjects: { subjectId: string; points: number }[];
   lastGain: AcademicGain | null;
