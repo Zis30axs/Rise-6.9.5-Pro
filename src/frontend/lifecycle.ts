@@ -1,4 +1,5 @@
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { createProtagonistSwitchController } from './protagonist-switch';
 import { createWorldPhoneApi } from './world-phone';
 import { applyNpcPhoneReply, npcReplySource } from '../runtime/npc-phone';
 import { applyPhoneReply } from '../runtime/protagonist-world';
@@ -98,6 +99,7 @@ export function mountShell(
     if (dead) return;
     dead = true; epoch++;
     const cleanups = [
+      () => protagonistSwitch.release(),
       () => cancelInteraction(),
       () => closePhone(),
       () => storyPhone?.dispose(),
@@ -207,7 +209,7 @@ export function mountShell(
     } catch (error) { interactionFailure(pending, error); }
   }
   async function interact(action: WorldAction): Promise<boolean> {
-    if (dead || model.busy || doc.hidden || bridge.session() !== session) return false;
+    if (dead || model.busy || model.switchingProtagonist || doc.hidden || bridge.session() !== session) return false;
     if (!isGameplayInteraction(action)) return false;
     let original: WorldState; let prepared: WorldState;
     let hasEvent = false;
@@ -246,6 +248,7 @@ export function mountShell(
   }
   function visibilitychange() {
     if (!doc.hidden) return;
+    protagonistSwitch.release();
     cancelInteraction();
     if (activePhoneReply) {
       // Phone work never keeps generating in a hidden or retired session.
@@ -257,7 +260,7 @@ export function mountShell(
     }
   }
   function tickAirTraffic() {
-    if (dead || model.busy || doc.hidden || !host.isConnected || bridge.session() !== session) return;
+    if (dead || model.busy || model.switchingProtagonist || doc.hidden || !host.isConnected || bridge.session() !== session) return;
     try {
       const previous = snapshot();
       const next = reduceState(previous, { type: 'air_traffic_tick', now: Date.now() });
@@ -310,7 +313,7 @@ export function mountShell(
       closePhone(); model.phoneStatus = 'error'; model.phoneError = message(error); model.notice = message(error);
     }
   }
-  function bindStoryPhone() {
+  function bindStoryPhone(alreadySaved = false) {
     storyPhone?.dispose(); storyPhone = undefined;
     model.phoneUnread = 0; model.phoneContactUnread = [];
     if (bridge.kind === 'tavern' && phoneRuntime) {
@@ -320,7 +323,7 @@ export function mountShell(
         isCurrent: () => !dead && bridge.session() === session && activeProtagonist(model.state) === deviceOwner,
         state: snapshot,
         async saveContact(raw) {
-          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中保存，或等当前行动结束后重试。');
+          if (dead || bridge.session() !== session || model.busy || model.switchingProtagonist || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中保存，或等当前行动结束后重试。');
           const draft = validateContactProfileDraft(raw);
           const id = draft.id ?? draft.sourcePersonId ?? `person-${storyId()}`;
           const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
@@ -330,7 +333,7 @@ export function mountShell(
             summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
         },
         async generateIntroduction(raw) {
-          if (dead || bridge.session() !== session || model.busy || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中确认生成简介，或等当前行动结束后重试。');
+          if (dead || bridge.session() !== session || model.busy || model.switchingProtagonist || doc.hidden || !model.externalPhoneOpen) throw new Error('请在手机人物编辑页中确认生成简介，或等当前行动结束后重试。');
           const draft = validateContactProfileDraft(raw);
           const request = ++epoch;
           const sequence = phoneSequence;
@@ -360,7 +363,8 @@ export function mountShell(
       });
       // Materialize a new world's initial messages before the phone sees them.
       // A failed save leaves its outbox untouched and offers an explicit retry.
-      actions.retryPhoneSync();
+      if (alreadySaved) void storyPhone.sync().catch(() => {});
+      else actions.retryPhoneSync();
     }
   }
 
@@ -368,7 +372,7 @@ export function mountShell(
   let activePhoneReply: string | null = null;
   async function requestPhoneReply(messageId: string): Promise<void> {
     if (dead || doc.hidden || bridge.session() !== session) throw new Error('请在当前游戏聊天中重试短信回复');
-    if (model.busy || activePhoneReply) throw new Error('上一项剧情或短信回复仍在处理');
+    if (model.busy || model.switchingProtagonist || activePhoneReply) throw new Error('上一项剧情、短信回复或角色切换仍在处理');
     const saved = snapshot();
     const npc = messageId.startsWith('npc:');
     if (npc) {
@@ -408,10 +412,11 @@ export function mountShell(
 
   const worldPhone = createWorldPhoneApi({
     session, current: () => !dead && bridge.session() === session,
-    busy: () => model.busy || doc.hidden, state: snapshot,
+    busy: () => model.busy || !!model.switchingProtagonist || doc.hidden, state: snapshot,
     onOutgoingMessage(messageId) { void requestPhoneReply(messageId).catch(()=>{}); },
     requestReply: requestPhoneReply,
     commit(action) {
+      if (model.switchingProtagonist) throw new Error('正在切换主角，请稍候。');
       const next = reduceState(snapshot(), action); bridge.save(next); model.state = next;
       worldPhone.notify();
       if (storyPhone) void storyPhone.sync().catch(() => {});
@@ -421,30 +426,61 @@ export function mountShell(
   const phoneGlobal = hostWindow as Window & { __unreadCityWorldPhone?: typeof worldPhone };
   phoneGlobal.__unreadCityWorldPhone = worldPhone;
 
+  const protagonistSwitch = createProtagonistSwitchController({
+    state: snapshot,
+    current: () => !dead && !doc.hidden && bridge.session() === session,
+    blocked: () => !!pendingInteraction,
+    pending(value) { model.switchingProtagonist = value; },
+    cancelWork() {
+      epoch++;
+      try { bridge.cancel(); } catch { /* Late work is already invalidated. */ }
+      activePhoneReply = null;
+      closePhone();
+      model.busy = false;
+      model.notice = '';
+    },
+    commit(target) {
+      let next: WorldState;
+      try {
+        next = reduceState(snapshot(), { type: 'switch_protagonist', target });
+        bridge.save(next);
+      } catch (error) { model.notice = message(error); return false; }
+      model.state = next;
+      model.notice = `已切换到${protagonistNames[target]}，可在状态页回顾这段时间的日常。`;
+      try { worldPhone.notify(); bindStoryPhone(true); }
+      catch (error) { model.phoneLinkStatus = 'error'; model.phoneLinkError = message(error); }
+      return true;
+    },
+  });
+
   const actions: ShellActions = {
+    beginProtagonistSwitch(target) {
+      try { return protagonistSwitch.begin(target); }
+      catch (error) { model.notice = message(error); return null; }
+    },
     interact,
     resolveInteraction,
     cancelInteraction,
     dispatch(action) {
-      if (dead || (model.busy && action.type !== 'switch_protagonist') || doc.hidden) return;
+      if (dead || doc.hidden || model.switchingProtagonist) return;
+      if (action.type === 'switch_protagonist') {
+        const lease = actions.beginProtagonistSwitch?.(action.target);
+        if (lease) { try { lease.commit(); } finally { lease.release(); } }
+        return;
+      }
+      if (model.busy) return;
       try {
         const next = reduceState(snapshot(), action);
         bridge.save(next);
-        if (action.type === 'switch_protagonist') {
-          epoch++; bridge.cancel(); activePhoneReply = null; cancelInteraction(); closePhone(); storyPhone?.dispose();
-          model.busy = false;
-        }
         model.state = next;
         worldPhone.notify();
-        model.notice = action.type === 'switch_protagonist'
-          ? `已切换到${protagonistNames[activeProtagonist(next)]}，可在状态页回顾这段时间的日常。` : '';
-        if (action.type === 'switch_protagonist') bindStoryPhone();
+        model.notice = '';
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
     },
     async send(text) {
       const trimmed = text.trim();
-      if (dead || model.busy || !trimmed) return;
+      if (dead || model.busy || model.switchingProtagonist || !trimmed) return;
       if (trimmed.length > 2000) { model.notice = '行动请控制在 2000 字以内。'; return; }
       const request = ++epoch;
       model.busy = true; model.notice = '';
@@ -467,7 +503,7 @@ export function mountShell(
     exit: () => dispose(),
     switchChat: () => dispose('已退出沉浸模式，请在酒馆原生界面选择聊天，再点“进入未读之城”。'),
     openPhone(anchor) {
-      if (dead) return;
+      if (dead || model.switchingProtagonist) return;
       const api = phoneApi();
       if (!api && !phoneRuntime) {
         model.externalPhoneAvailable = false;
@@ -497,13 +533,13 @@ export function mountShell(
     },
     closePhone,
     async openPhoneContact(npcId) {
-      if (!storyPhone || dead) return;
+      if (!storyPhone || dead || model.switchingProtagonist) return;
       const sequence = phoneSequence;
       try { await storyPhone.openContact(npcId, () => !dead && sequence === phoneSequence && model.externalPhoneOpen); }
       catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
     },
     async openPhoneContactEditor(sourcePersonId) {
-      if (!storyPhone || dead || model.busy) return;
+      if (!storyPhone || dead || model.busy || model.switchingProtagonist) return;
       const sequence = phoneSequence;
       try {
         const existing = sourcePersonId ? model.state.contacts.find(contact => contact.id === sourcePersonId || contact.sourcePersonId === sourcePersonId) : undefined;
@@ -512,7 +548,7 @@ export function mountShell(
       } catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
     },
     retryPhoneSync() {
-      if (dead || !storyPhone) return;
+      if (dead || !storyPhone || model.switchingProtagonist) return;
       try {
         bridge.save(snapshot());
         void storyPhone.sync().catch(() => {});
@@ -530,7 +566,7 @@ export function mountShell(
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusables = [...shadow.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(el => el.getClientRects().length);
+    const focusables = [...shadow.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(el => el.getClientRects().length && !el.closest('[inert]'));
     if (phoneLease) {
       const frame = doc.querySelector<HTMLIFrameElement>('#sttts-panel iframe');
       if (frame) focusables.push(frame);

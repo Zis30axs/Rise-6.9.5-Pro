@@ -1,5 +1,5 @@
 import type { WorldAction, WorldState } from '../frontend/types';
-import type { ProtagonistId } from './dual-protagonists';
+import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { getStoreItem, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { INTERACTION_EVENT_MAX_DAILY_OFFERS } from './interaction-event-rate';
 import { MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID, isMargoCafeOpen } from './margo-cafe-venue';
@@ -156,10 +156,10 @@ export function parseMargoCafeState(value: unknown, clock: WorldState['clock']):
     return raw as Record<string, unknown>;
   };
   const state = exact(value, ['version', 'receipts', 'pending']);
-  if (state.version !== 1 || !Array.isArray(state.receipts) || state.receipts.length > 3) return fail();
+  if (state.version !== 1 || !Array.isArray(state.receipts) || state.receipts.length > PROTAGONISTS.length) return fail();
   const parseReceipt = (raw: unknown): MargoCafeReceipt => {
     const row = exact(raw, ['id', 'owner', 'day', 'at', 'giverId', 'itemId']);
-    if (typeof row.owner !== 'string' || !['soyo', 'sakiko', 'emma'].includes(row.owner) || !Number.isSafeInteger(row.at) || !Number.isSafeInteger(row.day)) return fail();
+    if (typeof row.owner !== 'string' || !PROTAGONISTS.includes(row.owner as ProtagonistId) || !Number.isSafeInteger(row.at) || !Number.isSafeInteger(row.day)) return fail();
     const at = row.at as number, day = row.day as number, owner = row.owner as ProtagonistId;
     if (at < 0 || at > minuteOf(clock) || day !== Math.floor(at / 1440) + 1 || day > clock.day) return fail();
     const gift = gifts.find(gift => gift.giverId === row.giverId && gift.itemId === row.itemId);

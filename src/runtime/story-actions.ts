@@ -1,5 +1,6 @@
 import type { StoryAction, WorldState } from '../frontend/types';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { PROTAGONISTS } from './dual-protagonists';
 import { sceneLocationId } from './scene-context';
 import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
@@ -9,7 +10,7 @@ import { locationServiceCatalog } from './location-services';
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
   quantity: 20, relationshipDelta: 20, activityDelta: 100,
-  balanceDelta: 100000, foodEnergyDelta: 20000,
+  balanceDelta: 100000, foodEnergyDelta: 20000, transferCents: 10_000_000,
 } as const;
 
 function invalid(path: string): never { throw new Error(`剧情行动无效：${path}。本轮正文、消息和状态均未写入。`); }
@@ -105,6 +106,18 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const item = record(raw, ['type', 'npcId', 'delta', 'reason'], path);
         if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
         return { type: 'relationship', npcId: item.npcId, delta: number(item.delta, -STORY_ACTION_LIMITS.relationshipDelta, STORY_ACTION_LIMITS.relationshipDelta, `${path} 关系变化`), reason: text(item.reason, 240, `${path} 关系依据`) };
+      }
+      case 'transfer': {
+        const item = record(raw, ['type', 'from', 'to', 'cents', 'reason'], path);
+        const party = (value: unknown, label: string): string => {
+          if (typeof value !== 'string' || !/^[A-Za-z0-9][\w:.-]{0,79}$/.test(value)) return invalid(`${path} ${label}`);
+          if ((PROTAGONISTS as readonly string[]).includes(value) || /^protagonist-(?:soyo|sakiko|emma)$/.test(value) ||
+            state.contacts.some(contact => contact.id === value || contact.sourcePersonId === value)) return value;
+          return invalid(`${path} ${label}`);
+        };
+        const from = party(item.from, '付款方'), to = party(item.to, '收款方');
+        if (from === to) return invalid(`${path} 转账双方`);
+        return { type: 'transfer', from, to, cents: number(item.cents, 1, STORY_ACTION_LIMITS.transferCents, `${path} 金额`), reason: text(item.reason, 240, `${path} 转账依据`) };
       }
       case 'activity': {
         const item = record(raw, ['type', 'label', 'minutes', 'effects'], path);

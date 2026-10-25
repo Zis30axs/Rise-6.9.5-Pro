@@ -1,16 +1,37 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
+import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
+function mapWorldbookResidents(entries: typeof lore.entries) {
+  return entries.filter(entry => entry.extensions.personId).map(entry => ({
+    id: entry.extensions.personId!, name: entry.name, aliases: entry.keys,
+    profile: entry.content, publicProfile: entry.extensions.publicProfile!,
+    anchor: entry.extensions.anchor!, home: entry.extensions.home!,
+  }));
+}
+
 /** Person IDs outlive phone ownership and playable-character assignments. */
-export const residentCast = lore.entries.filter(entry => entry.extensions.personId).map(entry => ({
-  id: entry.extensions.personId!, name: entry.name, aliases: entry.keys,
-  profile: entry.content, publicProfile: entry.extensions.publicProfile!,
-  anchor: entry.extensions.anchor!, home: entry.extensions.home!,
-}));
+export const residentCast = mapWorldbookResidents(lore.entries);
+export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries as typeof lore.entries);
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast]);
+
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
-export const residentById = (id: string) => residentCast.find(row => row.id === id);
+export const WATANARE_GROUP_ID = 'watanare-quintet';
+export const WATANARE_GROUP_NAME = '芦谷五人组';
+export const WATANARE_QUINTET_IDS = ['watanare-renako', 'watanare-mai', 'watanare-ajisai', 'watanare-satsuki', 'watanare-kaho'] as const;
+
+export const residentGroups = Object.freeze({
+  [MAJO_GROUP_ID]: { id: MAJO_GROUP_ID, name: MAJO_GROUP_NAME, memberIds: residentCast.map(r => r.id) },
+  [WATANARE_GROUP_ID]: { id: WATANARE_GROUP_ID, name: WATANARE_GROUP_NAME, memberIds: [...WATANARE_QUINTET_IDS] },
+});
+export const residentGroupById = (id: string) =>
+  (residentGroups as Record<string, { id: string; name: string; memberIds: string[] } | undefined>)[id] ?? null;
+export const residentGroupForNpc = (npcId: string) =>
+  npcId.startsWith('majo-') ? residentGroups[MAJO_GROUP_ID] : npcId.startsWith('watanare-') ? residentGroups[WATANARE_GROUP_ID] : null;
+
+export const residentById = (id: string) => allResidentCast.find(row => row.id === id);
 
 /** Small authored schedules, not agents or claims about canonical itineraries. */
 export function residentPresence(id: string, clock: { hour: number; minute: number }) {

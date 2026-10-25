@@ -35,7 +35,7 @@ const weekAt = (at: number) => Math.floor(at / WEEK_MINUTES) + 1;
 const dayAt = (at: number) => Math.floor(at / 1440) + 1;
 const nowMinute = (clock: WorldState['clock']) => (clock.day - 1) * 1440 + clock.hour * 60 + clock.minute;
 const idPattern = /^[A-Za-z0-9][\w:.-]{0,127}$/;
-const sourcePattern = /^(?:soyo|sakiko|emma):[A-Za-z0-9][\w:.-]{0,127}$/;
+const sourcePattern = /^(?:soyo|sakiko|emma|renako):[A-Za-z0-9][\w:.-]{0,127}$/;
 const timePattern = /^第 (\d+) 天 (\d{2}):(\d{2})$/;
 
 export function createWeeklyMemory(at: number): WeeklyMemory {
@@ -183,7 +183,7 @@ export function captureNewJournalEvidence(before: WorldState, after: WorldState)
       if (!p) return owner === 'soyo' ? s.journal : [];
       if (p.accounts.active === owner) return s.journal;
       const others = PROTAGONISTS.filter(id => id !== p.accounts.active);
-      return owner === others[0] ? p.inactive.journal : p.third.journal;
+      return owner === others[0] ? p.inactive.journal : owner === others[1] ? p.third.journal : p.fourth.journal;
     };
     const old = new Set(personJournal(before).map(row => row.id));
     for (const row of personJournal(after)) {

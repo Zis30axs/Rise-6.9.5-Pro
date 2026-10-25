@@ -25,6 +25,15 @@
 
 短信请求仍用纯 phone_reply 标签，不要求上游 Tool Calling。NPC 回复字段只有 messageId 和 text；text 可以是最多 1000 字的文本或 null。转账、位置、日历、世界行动、追加邀请和额外字段均不能通过短信回复协议执行。
 
+## 联系人转账（Appie Pay）
+
+资金可以在「当前主角 → 另一位主角 / 已保存联系人」之间转移，双边同时入账与扣款，总金额守恒：
+
+- 手机路径：Appie Pay 新增「联系人转账」表单（附 SVG 示意图）。命令 `send_transfer {to, from, cents}` 只能由当前主角本人手机发起；转出卡余额不足、对象不是主角或已保存联系人时整笔拒绝。转账写入双方流水与当前主角日记，并向双方设备发通知。
+- 剧情路径：`world_actions` 新增 `{"type":"transfer","from":"付款方ID","to":"收款方ID","cents":整数,"reason":"依据"}`，单笔上限 100,000 日元（`STORY_ACTION_LIMITS.transferCents`）。from/to 逐字使用主角 ID 或联系人 ID。在 `finishPersonalChange` 之后由 `applyStoryTransferLegs` 直接记入权威账本与联系人钱包，账目 ID 按轮次稳定，剧情重放幂等；短信回复协议仍然禁止转账。
+- 联系人钱包：`ProtagonistWorld.npcWallets`（可选字段，人物 ID → 整数分），旧存档无需迁移；主角余额仍在 accounts 三卡中，入账/扣款后同步各人 `player.balance` 投影，存档解析继续校验投影一致。
+- 防铸币：转账先查双方余额再变动任何一方；NPC 付款方无钱包或余额不足时整轮失败。剧情行动的 `activity.balance` 仍按协议只用于非角色来源收支，角色间资金必须走 transfer。
+
 ## 数据与隐私
 
 ProtagonistWorld.npcPhone 是可选、版本为 1 的增量，仍兼容原 1.12 存档。旧联系人、旧收件和双主角 canonical SMS 不被覆盖或迁移；读取旧存档不会自动创建魔裁好友或把玩家拉进群。只有实际交互才产生新记录。

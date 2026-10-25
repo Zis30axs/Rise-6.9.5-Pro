@@ -1,6 +1,17 @@
 {
   "schemaVersion": 1,
   "checkedOn": "2026-10-17",
+  "progressiveProtagonistSwitch": {
+    "recordedOn": "2026-10-25",
+    "implementationReference": "integration/protagonist-switch/README.md",
+    "verificationReference": "outputs/switch-map-verification.json",
+    "standardDurationMs": 4000,
+    "modes": ["scene", "novel"],
+    "cityDistrictDetails": ["campus", "home", "commercial", "downtown", "city-park"],
+    "controlledBrowserViewports": ["1440x900", "1280x800", "390x844", "320x568"],
+    "physicalTauriTavernTested": false,
+    "deployedToLocalInstallation": false
+  },
   "purpose": "本机安装维护快照与联调边界；版本只作记录，不构成项目最低要求或已通过行为验收的声明。",
   "phoneSpatialPresentation": {
     "recordedOn": "2026-10-24",

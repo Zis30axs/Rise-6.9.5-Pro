@@ -1,0 +1,18 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "elapsed": 4048.800000011921,
+  "switchSaves": 1,
+  "districtIds": [
+    "campus",
+    "home",
+    "commercial",
+    "downtown",
+    "city-park"
+  ],
+  "cameraRestored": true,
+  "overflow": false,
+  "errors": []
+}

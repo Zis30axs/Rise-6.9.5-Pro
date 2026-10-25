@@ -1,38 +1,51 @@
 import { describe, expect, it } from 'vitest';
 import { parseNovelDialogue, readableNovelText } from '../src/frontend/novel-dialogue';
+import { resolveWatanareExpressionPortrait, resolveWatanareSpeaker } from '../src/frontend/watanare-art';
 
-describe('novel dialogue rows', () => {
-  it('preserves mixed narration and adjacent dialogue, ignoring the requested header', () => {
-    expect(parseNovelDialogue('风穿过街道。\n|charac|emot|says| |素世|开心|今天天气真好|\n|林同学|平静|一起走吧。|')).toEqual([
-      { speaker: '', emotion: '平静', text: '风穿过街道。' },
-      { speaker: '素世', emotion: '开心', text: '今天天气真好' },
-      { speaker: '林同学', emotion: '平静', text: '一起走吧。' },
-    ]);
-  });
-  it('parses the reported Renako line without leaking metadata into the text', () => {
-    const raw = '游戏声透过耳机。\n甘織玲奈子|生气|“因为这个战争雷霆真的太让人火大了，不管怎么玩都是这种莫名其妙的结局。”\n|素世|开心|别生气。\n素世|安心|一起再试一次吧。|';
+describe('novel click-through dialogue metadata', () => {
+  it('parses traditional Renako |emotion|speech without leaking metadata to dialogue', () => {
+    const raw = [
+      '游戏的声音从耳机里传出来。',
+      '甘織玲奈子|生气|“因为这个战争雷霆真的太让人火大了，不管怎么玩都是这种莫名其妙的结局。”',
+      '|素世|开心|下次再试试吧。',
+      '甘织玲奈子|安心|好吧，再来一次。|',
+    ].join('\n');
     expect(parseNovelDialogue(raw)).toEqual([
-      { speaker: '', emotion: '平静', text: '游戏声透过耳机。' },
+      { speaker: '', emotion: '平静', text: '游戏的声音从耳机里传出来。' },
       { speaker: '甘織玲奈子', emotion: '生气', text: '“因为这个战争雷霆真的太让人火大了，不管怎么玩都是这种莫名其妙的结局。”' },
-      { speaker: '素世', emotion: '开心', text: '别生气。' },
-      { speaker: '素世', emotion: '安心', text: '一起再试一次吧。' },
+      { speaker: '素世', emotion: '开心', text: '下次再试试吧。' },
+      { speaker: '甘织玲奈子', emotion: '安心', text: '好吧，再来一次。' },
     ]);
     expect(readableNovelText(raw)).not.toContain('|生气|');
   });
-  it('preserves incidental pipe-separated narration instead of guessing a portrait', () => {
-    expect(parseNovelDialogue('这只是选项A|并非情绪|不能当成对白。')).toEqual([
-      { speaker: '', emotion: '平静', text: '这只是选项A|并非情绪|不能当成对白。' },
+  it('maps simplified and traditional Renako to the same real angry sprite', () => {
+    for (const name of ['甘织玲奈子', '甘織玲奈子', '甘織れな子', '玲奈子']) {
+      expect(resolveWatanareSpeaker(name)).toBe('watanare-renako');
+      const result = resolveWatanareExpressionPortrait(name, 'angry');
+      expect(result).toMatchObject({ personId: 'watanare-renako', exact: true, width: 1024, height: 1536 });
+      expect(result?.src).toBeTruthy();
+    }
+  });
+  it('preserves full wrapped rows and drops protocol header', () => {
+    expect(parseNovelDialogue('风吹过。\n|charac|emot|says| |素世|开心|好天气。|\n|玲奈子|生气|真让人火大。|')).toEqual([
+      { speaker: '', emotion: '平静', text: '风吹过。' },
+      { speaker: '素世', emotion: '开心', text: '好天气。' },
+      { speaker: '玲奈子', emotion: '生气', text: '真让人火大。' },
     ]);
   });
-  it('keeps old plain stories and malformed rows without dropping dialogue', () => {
-    expect(parseNovelDialogue('旧正文。\n\n|素世|不完整')).toEqual([
+  it('never interprets arbitrary pipe-delimited prose as a character instruction', () => {
+    expect(parseNovelDialogue('这是一段|没有情绪|不构成台词')).toEqual([
+      { speaker: '', emotion: '平静', text: '这是一段|没有情绪|不构成台词' },
+    ]);
+  });
+  it('keeps malformed rows as visible prose rather than deleting content', () => {
+    expect(parseNovelDialogue('旧正文。\n|素世|不完整')).toEqual([
       { speaker: '', emotion: '平静', text: '旧正文。' },
       { speaker: '', emotion: '平静', text: '|素世|不完整' },
     ]);
   });
-  it('treats markup and unknown emotion as inert text instead of executable instructions', () => {
-    const text = '|素世|javascript:alert(1)|<img src=x onerror=alert(1)>|';
-    expect(parseNovelDialogue(text)[0].text).toBe('<img src=x onerror=alert(1)>');
-    expect(readableNovelText(text)).toBe('素世：<img src=x onerror=alert(1)>');
+  it('treats expression text and HTML payloads as inert data', () => {
+    const raw = '|素世|javascript:alert(1)|<img src=x onerror=alert(1)>|';
+    expect(parseNovelDialogue(raw)[0]).toEqual({ speaker: '素世', emotion: 'javascript:alert(1)', text: '<img src=x onerror=alert(1)>' });
   });
 });

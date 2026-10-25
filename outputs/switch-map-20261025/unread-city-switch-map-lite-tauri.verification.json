@@ -1,0 +1,15 @@
+{
+  "sourceBytes": 25424659,
+  "bytes": 9536468,
+  "sourceSha256": "70717336c44fce27114b1bffe2397e22279c44e2b8f672637636a38af824add2",
+  "sha256": "84b98c8e303fba780b41c7d62f0f0b453c819d89d6e4e002a31afaaac6647963",
+  "metadataEncoding": "zTXt/chara/zlib-method-0",
+  "metadataTextBytes": 22982044,
+  "compressedMetadataBytes": 7093852,
+  "metadataTextSha256": "ab3bc1120348080a662339e0ba2100bb5d91e9b38cbb19c0496bda695b0b0866",
+  "decompressedMetadataByteIdentical": true,
+  "allOtherPngChunksByteIdentical": true,
+  "embeddedScriptChanged": false,
+  "tauriNativeImportTested": false,
+  "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern."
+}

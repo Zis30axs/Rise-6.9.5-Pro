@@ -15,6 +15,7 @@ import type { ScenePerson, ScenePresence } from '../runtime/scene-context';
 import type { AirTrafficState } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { protagonistNames } from '../runtime/protagonist-world';
+import { createSwitchCamera } from './switch-camera';
 
 const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
 const emit = defineEmits<{ hotspot: [action: SceneAction]; presence: [point: { x: number; z: number; yaw: number }]; encounter: [personId: string] }>();
@@ -86,6 +87,8 @@ let aircraftAnimating = false;
 let vehiclesAnimating = false;
 let lastVehicleFrameAt = 0;
 let reducedMotion = false;
+let switchCamera: ReturnType<typeof createSwitchCamera> | undefined;
+const switchLift = ref<number | null>(null);
 let presenceDirty = false;
 let lastPresenceAt = -Infinity;
 let lastPresenceKey = '';
@@ -128,6 +131,7 @@ function updateCamera() {
   const displayYaw = campus ? applyCharacterCamera(camera, eye, yaw, pitch, campus.movementWorld, cameraMode.value, props.phoneActive, width, height) : yaw;
   playerCharacter?.update(eye, displayYaw, showPlayer);
   view.value = `${yaw.toFixed(3)},${pitch.toFixed(3)}`;
+  if (switchCamera && switchLift.value !== null) switchCamera.apply(switchLift.value);
 }
 function toggleCamera() {
   if (props.phoneActive || props.busy || props.paused) return;
@@ -179,6 +183,10 @@ function resetView(report = false) {
 }
 function render(now = 0) {
   frame = 0;
+  if (switchCamera && renderer && scene && camera && !dead && !doc.hidden) {
+    try { renderer.render(scene, camera); } catch { useFallback(); }
+    return;
+  }
   if (dead || props.paused || !renderer || !scene || !camera || !inView || doc.hidden || width < 1 || height < 1) return;
   if ((travel || hasWalkInput() || crowdAnimating || aircraftAnimating || vehiclesAnimating) && now - lastFrameAt < 32) { requestRender(); return; }
   lastFrameAt = now;
@@ -269,6 +277,7 @@ function resize() {
   requestRender();
 }
 function releaseGraphics() {
+  switchCamera = undefined;
   if (frame) { win.cancelAnimationFrame(frame); frame = 0; }
   crowd?.dispose(); crowd = undefined; crowdAnimating = false;
   playerCharacter?.dispose(); playerCharacter = undefined;
@@ -383,7 +392,19 @@ function releaseStick(flush = true) {
 }
 function stopWalking(flush = true) { if (flush) flushPresence(); keys.clear(); releaseStick(false); lastWalkAt = 0; }
 function focus() { canvas.value?.focus({ preventScroll: true }); }
-defineExpose({ focus, flushPresence });
+function setSwitchCamera(lift: number) {
+  if (dead || !renderer || !scene || !camera || mode.value !== 'webgl') return false;
+  switchLift.value = Math.min(1, Math.max(0, lift));
+  if (!switchCamera) { stopWalking(); cancelPointer(); resize(); updateCamera(); switchCamera = createSwitchCamera(camera, eye); }
+  switchCamera.apply(switchLift.value);
+  try { renderer.render(scene, camera); return true; } catch { useFallback(); return false; }
+}
+function clearSwitchCamera() {
+  switchCamera?.restore(); switchCamera = undefined; switchLift.value = null;
+  if (!dead) { updateCamera(); requestRender(); }
+}
+function presentationReady() { return mode.value === 'fallback' || !!renderer && width > 0 && height > 0; }
+defineExpose({ focus, flushPresence, setSwitchCamera, clearSwitchCamera, presentationReady });
 function stickDown(event: PointerEvent) {
   if (props.phoneActive || !props.freeWalk || props.paused || props.busy || mode.value !== 'webgl' || event.button !== 0 || stickPointer || !joystick.value) return;
   const target = joystick.value;
@@ -501,7 +522,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'soyo' ? 'soyo' : 'none'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
+  <div ref="root" class="interactive-campus" :class="{ 'is-night': isNight, 'is-paused': paused, 'is-dragging': dragging, 'is-free-walk': freeWalk }" data-unread-city-scene :data-switch-camera-height="switchLift === null ? '' : camera?.position.y.toFixed(2)" :data-renderer="mode" :data-view="view" :data-position="position" :data-free-walk="freeWalk" :data-scene-node="`${locationId}:${nodeIndex}`" :data-aircraft-status="mode === 'fallback' ? 'fallback' : aircraftStatus" :data-aircraft-id="activeAircraft ? airTraffic?.lastFlight?.id : ''" :data-aircraft-progress="activeAircraft?.progress ?? ''" :data-ground-vehicles="mode === 'fallback' ? 'fallback' : groundVehicleStatus" :data-vehicle-count="activeVehicleIds.length" :data-active-vehicle-ids="activeVehicleIds.join(',')" :data-vehicle-stop="vehicleStopId" :data-character-assets="mode === 'fallback' ? 'fallback' : characterSnapshot.status" :data-character-models="characterSnapshot.modelIds.join(',')" :data-character-instance-count="characterSnapshot.instanceCount" :data-player-model="protagonist === 'soyo' ? 'soyo' : 'none'" :data-player-status="playerStatus" :data-camera-mode="cameraMode" :data-phone-view="phoneActive" :data-player-pose="phoneActive ? 'phone' : 'standing'">
     <svg class="campus-fallback" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="uc-scene-sky" x2="0" y2="1"><stop stop-color="#a5b5b1"/><stop offset=".58" stop-color="#f0d8b5"/><stop offset="1" stop-color="#d4c6a7"/></linearGradient>

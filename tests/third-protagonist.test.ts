@@ -134,12 +134,12 @@ describe('third protagonist accounts and timeline', () => {
     const state = world();
     expect(state.schema_version).toBe('1.13.0');
     expect(state.protagonists!.accounts.active).toBe('soyo');
-    expect(Object.keys(state.protagonists!.accounts.people).sort()).toEqual(['emma', 'sakiko', 'soyo']);
-    expect(Object.keys(state.protagonists!.devices).sort()).toEqual(['emma', 'sakiko', 'soyo']);
+    expect(Object.keys(state.protagonists!.accounts.people).sort()).toEqual(['emma', 'renako', 'sakiko', 'soyo']);
+    expect(Object.keys(state.protagonists!.devices).sort()).toEqual(['emma', 'renako', 'sakiko', 'soyo']);
     expect(state.protagonists!.accounts.people.emma.deviceId).toBe('unread-city-phone-emma');
     expect(state.protagonists!.accounts.people.emma.theme).toBe('emma-soft');
     expect(activeProtagonist(state)).toBe('soyo');
-    expect(otherProtagonists('soyo')).toEqual(['sakiko', 'emma']);
+    expect(otherProtagonists('soyo')).toEqual(['sakiko', 'emma', 'renako']);
     expect(otherProtagonist('emma')).toBe('soyo');
     expect(personState(state, 'emma').locationId).toBe('home');
     expect(protagonistNames.emma).toBe('樱羽艾玛');
@@ -202,7 +202,7 @@ describe('third protagonist accounts and timeline', () => {
     expect(migrated.protagonists!.third.locationId).toBe('home');
     expect(migrated.protagonists!.accounts.people.emma.cards.gpt).toBe(1200000);
     expect(migrated.protagonists!.accounts.people.emma.deviceId).toBe('unread-city-phone-emma');
-    expect(Object.keys(migrated.protagonists!.backgroundLife!.people)).toEqual(['soyo', 'sakiko', 'emma']);
+    expect(Object.keys(migrated.protagonists!.backgroundLife!.people)).toEqual(['soyo', 'sakiko', 'emma', 'renako']);
     expect(parseState(migrated)).toEqual(migrated);
     expect(migrated.protagonists!.accounts.people.emma.deviceId).toBe('unread-city-phone-emma');
   });
@@ -271,13 +271,14 @@ describe('viewpoint opening time-of-day prose', () => {
     { hour: 19, minute: 0, period: 'night' },
     { hour: 23, minute: 59, period: 'night' },
   ] as const;
-  const cues = { morning: /清晨/, day: /白日/, evening: /傍晚|街灯渐次亮起/, night: /夜色/ };
+  const cues = { morning: /清晨/, day: /白日|阳光/, evening: /傍晚|街灯渐次亮起/, night: /夜色/ };
   const characters = {
     soyo: { place: '高田校园的南门', memory: '那些已经走散的旧友', privateToOthers: /月代雪|牢屋敷/ },
     sakiko: { place: '目白台', memory: '既然已经亲手戴上了假面', privateToOthers: /月代雪|牢屋敷/ },
     emma: { place: '杂司谷住宅区', memory: '只要一想起雪，再想起希罗', privateToOthers: /CRYCHIC|Ave Mujica/ },
+    renako: { place: '杂司谷住宅区', memory: '芦谷五人组', privateToOthers: /CRYCHIC|Ave Mujica|牢屋敷/ },
   };
-  for (const owner of ['soyo', 'sakiko', 'emma'] as const) {
+  for (const owner of ['soyo', 'sakiko', 'emma', 'renako'] as const) {
     it.each(times)(`${owner} matches $period at $hour:$minute without changing the clock`, ({ hour, minute, period }) => {
       const clock = Object.freeze({ day: 9, hour, minute });
       const opening = protagonistOpening(owner, clock);
@@ -286,7 +287,7 @@ describe('viewpoint opening time-of-day prose', () => {
       const prose = opening.split('\n\n').slice(1).join('\n\n');
       expect(prose).toMatch(cues[period]);
       if (period !== 'evening') expect(prose).not.toMatch(/傍晚|晚风|街灯渐次亮起/);
-      if (period === 'night') expect(prose).not.toMatch(/清晨|白日|无论做什么都还来得及|站在喧嚣的路边/);
+      if (period === 'night') expect(prose).not.toMatch(/清晨|白日|阳光|无论做什么都还来得及|站在喧嚣的路边/);
       expect(opening).toContain(protagonistNames[owner]);
       expect(opening).toContain(characters[owner].place);
       expect(prose).toContain(characters[owner].memory);

@@ -213,6 +213,7 @@ export type StoryAction =
   | { type: 'schedule'; title: string; locationId: string; time: string }
   | { type: 'complete_schedule'; id: string }
   | { type: 'relationship'; npcId: string; delta: number; reason: string }
+  | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
 export interface GeneratedStory {
@@ -260,6 +261,8 @@ export interface ShellModel {
   mode: Bridge['kind'];
   state: WorldState;
   busy: boolean;
+  /** Temporary presentation lock; never serialized into WorldState. */
+  switchingProtagonist?: boolean;
   interaction?: InteractionPresentation | null;
   notice: string;
   connection: string;
@@ -275,6 +278,7 @@ export interface ShellModel {
 }
 
 export interface ShellActions {
+  beginProtagonistSwitch?(target: import('../runtime/dual-protagonists').ProtagonistId): import('./protagonist-switch').ProtagonistSwitchLease | null;
   dispatch(action: WorldAction): void;
   interact?(action: WorldAction): Promise<boolean>;
   resolveInteraction?(accept: boolean): Promise<void>;

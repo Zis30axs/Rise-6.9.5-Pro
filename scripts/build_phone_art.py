@@ -60,8 +60,26 @@ def emma_art():
         files[f'emma/cards/{card}.svg'] = svg(body, 360, 210)
     return files
 
+def renako_art():
+    """Soft peach-pink and lavender-purple with crossed hairpins & gamepad motifs."""
+    files = {}
+    glyphs = {**GLYPHS, 'twiitch': '<path d="M24 25h48v34L56 73H43l-9 7V65H24zM38 37v15M56 37v15"/>'}
+    for app, glyph in glyphs.items():
+        body = '<rect x="2" y="2" width="92" height="92" rx="26" fill="#fff4f8"/><rect x="6" y="6" width="84" height="84" rx="22" fill="none" stroke="#d89bbb" stroke-opacity=".55"/><path d="m62 12 18 14m0-14-18 14" fill="none" stroke="#9b7dc7" stroke-width="2.8" stroke-linecap="round" opacity=".75"/>'
+        body += f'<g fill="none" stroke="#6d466b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">{glyph}</g>'
+        files[f'renako/icons/{app}.svg'] = svg(body)
+    body = '<rect width="390" height="844" fill="#fff5f9"/><path d="M0 510Q195 430 390 535V844H0Z" fill="#fce4ee"/><path d="M0 645Q210 560 390 665V844H0Z" fill="#eddcf6"/><g fill="none" stroke="#9b7dc7" stroke-linecap="round"><path d="m282 96 62 46m0-46-62 46" stroke-width="7" opacity=".55"/><path d="m52 602 48 36m0-36-48 36" stroke-width="5" opacity=".45"/></g><circle cx="110" cy="190" r="64" fill="#f7cde0" opacity=".45"/><circle cx="312" cy="410" r="46" fill="#dec8f2" opacity=".45"/><g fill="none" stroke="#d47fa6" stroke-width="2.5" opacity=".55"><rect x="256" y="692" width="88" height="52" rx="22"/><path d="M280 718h18M289 709v18"/><circle cx="320" cy="712" r="3.5"/><circle cx="329" cy="723" r="3.5"/></g>'
+    files['renako/wallpaper.svg'] = svg(body, 390, 844)
+    for i, card in enumerate(('gpt', 'claude', 'gemini')):
+        base = ('#7a4f78', '#685082', '#87516d')[i]
+        body = f'<rect width="360" height="210" rx="23" fill="{base}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="#ffd6e8" opacity=".55"/>'
+        body += '<g stroke="#e5ccf8" stroke-linecap="round" fill="none"><path d="m262 34 56 42m0-42-56 42" stroke-width="5" opacity=".7"/><path d="m230 140 110-45" stroke-width="2" opacity=".35"/></g>'
+        body += '<rect x="25" y="58" width="30" height="20" rx="5" fill="#f7d8e6"/><path d="M35 58v20M45 58v20M25 68h30" stroke="#8a5a75" fill="none"/><circle cx="315" cy="176" r="14" fill="#ffb8d6" opacity=".7"/><circle cx="331" cy="176" r="14" fill="#cdb4f6" opacity=".7"/>'
+        files[f'renako/cards/{card}.svg'] = svg(body, 360, 210)
+    return files
+
 def generate():
-    files = emma_art()
+    files = {**emma_art(), **renako_art()}
     for owner in ('soyo', 'sakiko'):
         soft = owner == 'soyo'
         bg, ink, accent = ('#e8ecdc', '#46665d', '#c2a880') if soft else ('#1c2d49', '#e2e8f4', '#9eb7dd')

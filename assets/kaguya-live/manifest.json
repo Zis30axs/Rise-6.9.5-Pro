@@ -1,0 +1,18 @@
+{
+  "schema": "unread-city-kaguya-live-model-v1",
+  "purpose": "超かぐや姫！ Twiitch channel 3D livestream view (standalone demo first; later the embedded phone). Byte-exact copy of the user-provided VRM; presentation only.",
+  "credit": "【水色の描】(https://mizuirononeko.wixsite.com/mizuirononeko/mmd-vroid)",
+  "license": "MMD・VRoidモデル利用規約: avatar/streaming use allowed, no profit use, no corporate use, modification free, redistribution prohibited — personal-use embedding only; the card and repository stay private.",
+  "licensePath": "素材/超かぐや姫_かぐや_水色の描/超かぐや姫！かぐや「水色の描」/超かぐや姫！かぐや「水色の描」vrm/MMD・VRoidモデル利用規約.txt",
+  "source": "素材/超かぐや姫_かぐや_水色の描/超かぐや姫！かぐや「水色の描」/超かぐや姫！かぐや「水色の描」vrm/超かぐや姫！かぐや「水色の描」.vrm",
+  "sourceBytes": 13356520,
+  "sourceSha256": "4ead07c4d132f1b0f55c818afdc2fce214c99129a9310ef920a65e49fdc58cd4",
+  "model": "assets/kaguya-live/kaguya.vrm",
+  "modelBytes": 13356520,
+  "modelSha256": "4ead07c4d132f1b0f55c818afdc2fce214c99129a9310ef920a65e49fdc58cd4",
+  "staging": {
+    "copy": "byte-exact",
+    "compression": "none (v1 faithful copy)",
+    "date": "2026-10-25"
+  }
+}

@@ -1,5 +1,5 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
-import { residentCast, residentPresence } from './npc-cast';
+import { allResidentCast, residentPresence } from './npc-cast';
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
 import { characterForPerson } from '../frontend/character-appearance';
@@ -144,9 +144,18 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
+const WATANARE_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
+  if (WATANARE_INTERIOR_HOMES.has(roomId)) {
+    return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
+      id: resident.id, name: resident.name, candidateName: resident.name,
+      identity: '住户', tags: ['常驻人物', '住户'],
+      description: resident.publicProfile, x: -1.5 + idx * 1.2, z: 0.8,
+      color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
+    }));
+  }
   if (roomId !== MARGO_CAFE_ROOM_ID) return [];
-  return residentCast.flatMap(resident => {
+  return allResidentCast.flatMap(resident => {
     const visit = cafeVisitorSchedule.find(visit => visit.id === resident.id);
     const owner = resident.id === MARGO_CAFE_OWNER_ID;
     if (!owner && !visit) return [];
@@ -188,7 +197,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
   });
   // Resident identity is independent of the pedestrian seed. Without a clock,
   // expose authored meeting anchors for save validation, not live presence.
-  for (const resident of residentCast) {
+  for (const resident of allResidentCast) {
     if (hidden.has(resident.id)) continue;
     const presence = clock ? residentPresence(resident.id, clock) : null;
     if (clock && !presence?.anchorId) continue;
@@ -203,7 +212,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
   return people.map(person => {
     const contact = contacts.find(contact => contact.sourcePersonId === person.id || contact.id === person.id);
     const start = hashString(`confirmed-name|${scene.seed}|${person.id}`) % (surnames.length * givenNames.length);
-    for (let offset = 0; !contact && !residentCast.some(r => r.id === person.id) && occupied.has(person.name); offset++) {
+    for (let offset = 0; !contact && !allResidentCast.some(r => r.id === person.id) && occupied.has(person.name); offset++) {
       const index = (start + offset) % (surnames.length * givenNames.length);
       person.name = surnames[Math.floor(index / givenNames.length)]! + givenNames[index % givenNames.length]!;
     }
@@ -254,4 +263,3 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     encounter: encounter ? personContext(encounter) : null,
   };
 }
-

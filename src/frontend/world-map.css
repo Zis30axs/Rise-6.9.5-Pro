@@ -12,6 +12,9 @@
 .world-map .wm-layers > button { flex:1; flex-shrink:0; min-width:56px; text-align:center; padding:8px 10px; font-size:12px; border-radius:6px; white-space:nowrap; color:#b4c1ad; }
 .world-map .wm-layers > button.active { color:#f4e1b5; background:rgba(194,200,154,.17); box-shadow:inset 0 0 0 1px rgba(225,216,171,.16); }
 .world-map .wm-title { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:17px 0 14px; }
+.world-map .wm-detail-back-row { margin-top:10px; }
+.world-map .wm-detail-back-row button { min-height:44px; padding:7px 14px; border:1px solid #d8c39766; border-radius:8px; color:#f4e1b5; background:#d8c39712; }
+.world-map .wm-detail-back-row + .wm-title { margin-top:8px; }
 .world-map .wm-title p { font-size:10px; color:#aebca6; margin-top:4px; }
 .world-map .wm-zoom-value { font:13px Georgia,serif; color:#e4cba0; white-space:nowrap; }
 .world-map .wm-layout { display:grid; grid-template-columns:minmax(0,1fr) 215px; gap:20px; align-items:start; }

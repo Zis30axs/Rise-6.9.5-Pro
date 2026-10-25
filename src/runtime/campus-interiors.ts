@@ -247,6 +247,92 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: -3.8, z: -0.6, minutes: 30, energyDelta: 6, result: '在床边休息了半小时。', prompt: '你在单身公寓的床边休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
   },
+  {
+    id: 'amaori-family-home', label: '甘织家住宅', parentLocationId: 'home',
+    description: '杂司谷住宅街中充满生活气息的甘织家一户建客厅。沙发前摆着玲奈子常玩的家用主机与电视，餐厅连着母亲美代子下厨的开放式厨房，二楼通向玲奈子与妹妹遥奈各自的房间。',
+    entrance: { x: -180, z: 150, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'amaori-sofa', kind: 'bed', minX: -4.8, maxX: -2.4, minZ: -3.2, maxZ: -1.6 },
+      { id: 'amaori-kitchen', kind: 'shelf', minX: 3, maxX: 5.4, minZ: -4.2, maxZ: -2.6 },
+      { id: 'amaori-table', kind: 'desk', minX: 0.4, maxX: 2.6, minZ: 0.4, maxZ: 1.8 },
+    ],
+    interactions: [
+      { id: 'amaori-sofa-game', label: '在客厅打会儿游戏', description: '在沙发上打 30 分钟家用机游戏，消耗 2 点精力并放松心情。',
+        x: -3.4, z: -0.8, minutes: 30, energyDelta: -2, result: '在甘织家客厅沙发上打了半小时游戏。', prompt: '你在甘织家客厅沙发上打了半小时游戏，程序已推进 30 分钟并扣除 2 点精力。请根据在场人物与日常氛围继续叙述。' },
+      { id: 'amaori-tea-rest', label: '在餐桌旁喝茶休息', description: '休息 25 分钟，恢复至多 6 点精力。',
+        x: 1.5, z: -0.4, minutes: 25, energyDelta: 6, result: '在甘织家餐桌旁喝茶休息了一会儿。', prompt: '你在甘织家餐桌旁喝茶休息了二十五分钟，程序已推进 25 分钟并恢复至多 6 点精力。' },
+      { id: 'amaori-mirror-check', label: '检查今日穿搭与发夹', description: '在玄关镜前整理发型与交叉发夹，不消耗时间或精力。',
+        x: 4, z: -1.4, minutes: 0, energyDelta: 0, result: '在镜前整理了衣领与发夹。', prompt: '你在甘织家镜前检查了穿搭与发夹，未消耗时间或精力。' },
+    ],
+  },
+  {
+    id: 'ouzuka-residence', label: '王冢家宅邸', parentLocationId: 'downtown',
+    description: '目白台高地的王冢家豪宅会客室与内庭回廊。高挑的落地窗映出修剪整齐的玫瑰庭院，室内陈列着「Queen Rose」当季高定礼服与精致茶具。',
+    entrance: { x: 20, z: 208, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'ouzuka-rack', kind: 'shelf', minX: 4.2, maxX: 5.6, minZ: -4.2, maxZ: -2.4 },
+      { id: 'ouzuka-table', kind: 'desk', minX: -2.2, maxX: 0.8, minZ: -0.6, maxZ: 1.4 },
+      { id: 'ouzuka-veranda', kind: 'board', minX: -5.6, maxX: -3.2, minZ: -4.8, maxZ: -4.1 },
+    ],
+    interactions: [
+      { id: 'ouzuka-salon-tea', label: '在会客室品红茶小憩', description: '在会客室安静休息 30 分钟，恢复至多 6 点精力。',
+        x: 2.8, z: 2.6, minutes: 30, energyDelta: 6, result: '在王冢家会客室品茶休息了半小时。', prompt: '你在王冢家会客室休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
+      { id: 'ouzuka-dress-observe', label: '欣赏高定礼服陈列', description: '观察「Queen Rose」礼服与画册，不消耗时间或精力。',
+        x: 4.6, z: -1.6, minutes: 0, energyDelta: 0, result: '欣赏了王冢家陈列的当季礼服与时尚画册。', prompt: '你观察了王冢家陈列的礼服与画册，未消耗时间或精力。' },
+    ],
+  },
+  {
+    id: 'sena-family-home', label: '濑名家住宅', parentLocationId: 'home',
+    description: '杂司谷安静街区的濑名家公寓客餐厅。开放式厨房收拾得温馨整洁，沙发旁放着广树与桔平的掌机和绘本。',
+    entrance: { x: -190, z: 130, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'sena-sofa', kind: 'bed', minX: -4.6, maxX: -2.2, minZ: -3.4, maxZ: -1.8 },
+      { id: 'sena-kitchen', kind: 'shelf', minX: 2.6, maxX: 5.5, minZ: -4.4, maxZ: -2.4 },
+      { id: 'sena-table', kind: 'desk', minX: 0.2, maxX: 2.4, minZ: 0.2, maxZ: 1.6 },
+    ],
+    interactions: [
+      { id: 'sena-sofa-rest', label: '在客厅沙发小憩', description: '休息 30 分钟，恢复至多 6 点精力。',
+        x: -3.2, z: -1.2, minutes: 30, energyDelta: 6, result: '在濑名家温暖的客厅沙发上休息了半小时。', prompt: '你在濑名家客厅沙发上休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
+      { id: 'sena-kitchen-help', label: '在厨房打下手', description: '在厨房帮忙整理餐具与茶点 20 分钟，消耗 2 点精力。',
+        x: 4, z: -1.2, minutes: 20, energyDelta: -2, result: '在濑名家厨房帮忙整理了餐具与点心。', prompt: '你在濑名家厨房帮忙整理了二十分钟，程序已推进 20 分钟并扣除 2 点精力。' },
+      { id: 'sena-living-observe', label: '看看弟弟们的掌机与绘本', description: '观察茶几上的游戏机与家庭合照，不消耗时间或精力。',
+        x: 1.3, z: -0.4, minutes: 0, energyDelta: 0, result: '观察了濑名家茶几上的掌机与温馨合照。', prompt: '你观察了濑名家客厅的陈设，未消耗时间或精力。' },
+    ],
+  },
+  {
+    id: 'koto-apartment', label: '琴家公寓', parentLocationId: 'commercial',
+    description: '神田川至池袋方向的单元公寓室内。靠墙的整面书架按作家姓氏整齐排列着厚厚的文学文库本，窗边茶几上放着阅读灯与书签。',
+    entrance: { x: 196, z: 127, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'koto-sofa', kind: 'bed', minX: -4.8, maxX: -2.2, minZ: -3.4, maxZ: -1.6 },
+      { id: 'koto-bookshelf', kind: 'shelf', minX: 2.8, maxX: 5.4, minZ: -4.4, maxZ: -2.6 },
+      { id: 'koto-table', kind: 'desk', minX: 0.2, maxX: 2.2, minZ: 0.4, maxZ: 1.8 },
+    ],
+    interactions: [
+      { id: 'koto-bookshelf-browse', label: '浏览满墙的文库本', description: '安静翻阅书架上的文学藏书 20 分钟，消耗 2 点精力。',
+        x: 3.4, z: -1.4, minutes: 20, energyDelta: -2, result: '在琴家公寓书架前安静翻阅了二十分钟文库本。', prompt: '你在琴家公寓翻阅了二十分钟藏书，程序已推进 20 分钟并扣除 2 点精力。' },
+      { id: 'koto-sofa-rest', label: '在窗边沙发休息', description: '休息 30 分钟，恢复至多 6 点精力。',
+        x: -3.4, z: -1, minutes: 30, energyDelta: 6, result: '在琴家公寓的窗边沙发上安静休息了半小时。', prompt: '你在琴家公寓休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
+      { id: 'koto-window-observe', label: '看看窗边阅读角', description: '观察阅读灯与书签陈设，不消耗时间或精力。',
+        x: -5.2, z: 2.6, minutes: 0, energyDelta: 0, result: '观察了琴家公寓窗边的阅读角。', prompt: '你观察了琴家公寓窗边的阅读角，未消耗时间或精力。' },
+    ],
+  },
+  {
+    id: 'koyanagi-home', label: '小柳家住宅', parentLocationId: 'junction',
+    description: '西早稻田／高田街区的小柳家室内与香穗的 Cosplay 制作空间。衣架上挂着精心缝制的角色服与假发托，桌边摆着缝纫机、布料色卡与环形补光灯。',
+    entrance: { x: 0, z: 48, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'koyanagi-table', kind: 'desk', minX: -2.4, maxX: 1.6, minZ: -1.2, maxZ: 1.2 },
+      { id: 'koyanagi-sofa', kind: 'bed', minX: 2.8, maxX: 5.4, minZ: -3.8, maxZ: -2.2 },
+      { id: 'koyanagi-cos-rack', kind: 'shelf', minX: -5.4, maxX: -3.6, minZ: -4.2, maxZ: -2.8 },
+    ],
+    interactions: [
+      { id: 'koyanagi-cos-observe', label: '看看 Cosplay 工作台与道具', description: '观察制作中的 Cos 服与假发架，不消耗时间或精力。',
+        x: -4.4, z: -1.8, minutes: 0, energyDelta: 0, result: '观察了小柳家房间里的 Cosplay 服装架与缝纫工作台。', prompt: '你观察了小柳家房间里的 Cosplay 工作台与服装架，未消耗时间或精力。' },
+      { id: 'koyanagi-room-rest', label: '在房间沙发休息', description: '休息 25 分钟，恢复至多 5 点精力。',
+        x: 4, z: -1.4, minutes: 25, energyDelta: 5, result: '在小柳家房间沙发上休息了一会儿。', prompt: '你在小柳家房间沙发上休息了二十五分钟，程序已推进 25 分钟并恢复至多 5 点精力。' },
+    ],
+  },
 ];
 
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
