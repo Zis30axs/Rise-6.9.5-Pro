@@ -95,14 +95,18 @@ const encounterPerson = computed(() => {
   if (!position) return null;
   return scenePeople.value.find(person => person.id === props.model.state.scene?.encounterId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
 });
-const portraitSpeaker = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? encounterPerson.value.id : segmentSpeaker.value);
+// In the visual novel reader, the current click-selected line owns the portrait.
+// A nearby encounter must not silently replace its speaker or expression.
+const useEncounterPortrait = computed(() => !(novelMode.value && !novelHistory.value)
+  && !!encounterPerson.value && !novelHistory.value && !historyPortrait.value);
+const portraitSpeaker = computed(() => useEncounterPortrait.value ? encounterPerson.value!.id : segmentSpeaker.value);
 const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
   contacts: props.model.state.contacts,
   scenePeople: [...portraitPeople.value, ...scenePeople.value],
   encounterId: props.model.state.scene?.encounterId,
 }));
 function personLabel(person: typeof portraitPeople.value[number]) { return person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
-const portraitLabel = computed(() => encounterPerson.value && !novelHistory.value && !historyPortrait.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
+const portraitLabel = computed(() => useEncounterPortrait.value ? personLabel(encounterPerson.value!) : segmentSpeaker.value);
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
