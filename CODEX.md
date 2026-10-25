@@ -1,5 +1,20 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 最新增量：渡奈（watanare）角色体系、玲奈子第四主角与看手机 CG（2026-10-25，Gemini 工作合并）
+
+Gemini 在独立工作树 `.worktrees/watanare-integration`（分支 `feat/lite-watanare-cast-renako-20261024`）完成的未提交工作，经兼容性整合后合并进 `lite`（合并提交 `88ebf97`，原样提交 `4f5f8e9`）。该工作树按用户指示保留。内容：
+
+- **第四主角甘织玲奈子**：`PROTAGONISTS` 扩为四人（soyo/sakiko/emma/renako），新增 `ProtagonistWorld.fourth` 个人状态槽、设备 `unread-city-phone-renako`、主题 `renako-soft`、初始余额 ¥9,500（`RENAKO_START_CENTS` 950,000）。解析器向后兼容：旧三主角存档缺 `fourth` 时自动创建玲奈子初始状态，账本/设备键随 `hasFourth` 可选，余额投影校验扩展到第四人；人物 ID 映射 `renako → watanare-renako`。切换 UI 走 `PROTAGONISTS` 常量，玲奈子自动可切换。
+- **渡奈常驻人物体系**：`src/worldbook/watanare-residents.json`（甘织玲奈子与芦谷五人组及甘织/濑名/琴/王冢家亲属，东京高田、杂司谷、池袋、目白台生活圈）与 `watanare-story-arcs.json`；`npc-cast.ts` 注册渡奈日常群；`initial-contacts.ts` 提供玲奈子初始好友联系人；立绘经 `src/frontend/watanare-art.ts` 与 `assets/watanare-runtime/`（约 17MB）接入，`NovelNpcPortrait.vue` 在魔裁立绘之后回退渡奈表情立绘（玲奈子 9 表情，真唯等半主要角色 3 表情）。
+- **玲奈子专属手机 Peach Flip**：3D 机型 `Peach Flip / 甘织粉紫壳`（`phone-spatial-model.ts`，含镜头岛与 spatial CSS），`assets/phone-visuals/renako/` 主题素材与 `build_phone_art.py`/`phone_visual_assets.mjs` 管线更新；钱包卡号 renako:'0404'；默认日间外观。
+- **超かぐや姫！直播间**：Twiitch 改为多频道（辉夜姬·月读空间 18:00–21:00 + 既有泽渡可可 20:00–23:00），频道切换为本地纯展示，不调用模型；kaguya 四件 SVG 频道素材；`campus-interiors.ts` 新增直播间室内，`majo-housing.ts` 新增渡奈住宅，另涉 japan-calendar-events、background-life、viewpoint-openings、scene-context 等接线。预览 `outputs/kaguya-livestream-preview.html`，素材准备脚本 `scripts/prepare_watanare_visual_assets.py`。
+
+**合并时的兼容修复**：Gemini 分支基于 `f293103`，未包含主工作树当时的未提交功能（看手机 CG、主角切换城市沙盘、联系人转账），已先以 `398369b`（用户清理删除的历史测试/验收产物）与 `19f6a6f`（三批功能检查点）提交为基线再合并。冲突处理：`protagonist-world.ts` 将转账 `npcWallets` 管线与 `fourth` 槽合并（导入、解析键、结果装配）；`phone-apps.js` 钱包视图同时保留联系人转账表单与 renako 卡号，并移除重复的 `switch-twiitch` case；被 Gemini 修改但已被用户清理删除的 10 个历史测试文件保持删除。另将 `protagonist-phone-art.ts` 姿势表放宽为 `Partial<Record<ProtagonistId,…>>` 并新增 `hasProtagonistPhonePose`，`App.vue` 的立绘 `active` 改为 `portraitActive`。
+
+**玲奈子看手机 CG（用户后续提供立绘）**：用户提供的 1024×1536 RGBA 透明 PNG 已按既定管线接入 `assets/protagonist-phone/renako-phone.webp`（无损 WebP，quality 100 / method 6 / exact，逐像素往返校验四通道差值全 0；source PNG 存 `assets/protagonist-phone/source/` 与 `素材/甘织玲奈子看手机.png`，SHA 记录于 manifest.json）。玲奈子姿势无换装变体；打开手机显示该 CG、关闭恢复站立立绘，行为与其余三主角一致。
+
+**验证边界**：合并与 CG 接入后，本地 `vue-tsc --noEmit`、生产构建（IIFE 98,557.83 kB，内嵌手机美术 127 件）与当前 5 文件 28 项 Vitest 通过；四视口（1440×900/1280×800/390×844/320×568）系统 Chrome e2e 覆盖玲奈子开手机出 CG、关手机恢复、无横向溢出、无页面错误，截图在 `outputs/phone-pose-qa/`。这是桌面验证：渡奈世界书内容、直播间室内、渡奈住宅与群聊尚未做受控浏览器场景验收，未调用真实模型，未做 TauriTavern 真机验收，未跑远程 CI；`素材/超かぐや姫…` 为用户投放的 MMD/VRoid 原始素材，不参与构建。
+
 ## 最新增量：联系人转账与剧情转账指令（2026-10-25）
 
 实现用户确认的「联系人之间转账 + LLM 显式转账指令」，填补此前“剧情可单边加钱、对方账户不动”的铸币缺口。两条路径都双边同时入账与扣款、总金额守恒：
