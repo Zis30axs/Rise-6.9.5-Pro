@@ -31,7 +31,7 @@ const requestId = win => win.crypto.randomUUID();
 const total = data => Object.values(data.cards).reduce((a,b)=>a+b,0);
 const twiitchImage = key => {const svg=phoneArt[key];return svg?`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`:'';};
 /** Fully local, read-only Twiitch channel. It never starts a stream, calls a model or changes world state. */
-function twiitchView(data, activeChannel = 'kaguya') {
+function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
   const hour = Number.isFinite(data.clock?.hour) ? data.clock.hour : 12;
   const wordmark = twiitchImage('twiitch/wordmark.svg');
   const overlay = twiitchImage('twiitch/stream-overlay.svg');
@@ -93,14 +93,29 @@ function twiitchView(data, activeChannel = 'kaguya') {
     </div>
     <div class="tp-cover">${ch.cover?`<img src="${ch.cover}" alt="${esc(ch.name)}封面">`:''}${wordmark?`<img class="tp-wm" src="${wordmark}" alt="Twiitch">`:''}</div>
     <div class="tp-head">${ch.avatar?`<img class="tp-avatar" src="${ch.avatar}" alt="${esc(ch.name)}头像">`:''}<div><strong>${esc(ch.name)}</strong><small>${live?ch.hoursLabel:'当前不在直播时段'}</small></div><span class="tp-live ${live?'':'off'}">${live?'直播中':'离线'}</span></div>
-    <div class="tp-card">${cardImg?`<img src="${cardImg}" alt="Twiitch 直播画面">`:''}${live&&overlay&&ch.id==='coco'?`<img class="tp-overlay" src="${overlay}" alt="直播边框">`:''}</div>
+    ${ch.id==='kaguya'&&show3d?`<div class="tp-card tp-card-3d" style="position:relative;border-radius:14px;overflow:hidden;background:#0d0a18;min-height:500px;border:1px solid #7b42f688;box-shadow:0 8px 24px rgba(123,66,246,0.25);">
+      <iframe class="tp-3d-iframe" src="outputs/kaguya-live-3d-demo.html" allow="autoplay" style="width:100%;height:500px;border:none;display:block;background:#070412;" title="超かぐや姫！3D 沉浸直播间"></iframe>
+      <div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px;">
+        <a href="outputs/kaguya-live-3d-demo.html" target="_blank" rel="noopener" style="font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(20,15,35,0.85);backdrop-filter:blur(6px);color:#e9d5ff;border:1px solid #7b42f688;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">全屏 ↗</a>
+        <button type="button" data-action="toggle-twiitch-3d" style="font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(20,15,35,0.85);backdrop-filter:blur(6px);color:#f3e8ff;border:1px solid #7b42f688;cursor:pointer;">收起 3D ✕</button>
+      </div>
+      <div style="padding:8px 12px;background:#140e24;display:flex;justify-content:space-between;align-items:center;font-size:12px;border-top:1px solid #7b42f633;">
+        <span style="color:#d8b4fe;">✨ 3D 舞台视角已激活 (支持触摸旋转/动作交互/姿态切换)</span>
+      </div>
+    </div>`:`<div class="tp-card" style="position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6">${cardImg?`<img src="${cardImg}" alt="Twiitch 直播画面">`:''}${live&&overlay&&ch.id==='coco'?`<img class="tp-overlay" src="${overlay}" alt="直播边框">`:''}${ch.id==='kaguya'?`<div style="position:absolute;left:8px;bottom:8px;right:8px;display:flex;justify-content:space-between;align-items:center;background:rgba(15,10,26,0.88);backdrop-filter:blur(8px);border:1px solid rgba(123,66,246,0.45);border-radius:10px;padding:7px 10px;box-shadow:0 4px 14px rgba(0,0,0,0.5);">
+      <div style="font-size:11px;line-height:1.4;">
+        <strong style="color:#e9d5ff;display:block;">✨ 3D 真实模型互动就绪</strong>
+        <span style="font-size:10px;opacity:0.85;color:#c084fc;">胸锁呼吸 · 动作细化 (比心/挥手)</span>
+      </div>
+      <button type="button" data-action="toggle-twiitch-3d" style="font-size:11px;padding:5px 12px;border-radius:999px;border:none;background:linear-gradient(135deg,#7b42f6,#ff7ebb);color:#fff;cursor:pointer;font-weight:600;box-shadow:0 2px 10px rgba(123,66,246,0.5);white-space:nowrap;">开启 3D 舞台</button>
+    </div>`:''}</div>`}
     <div class="tp-reactions" aria-label="频道反应">${ch.reactions.map(r=>{const src=reaction(r.key);return src?`<figure><img src="${src}" alt=""><span>${esc(r.label)}</span></figure>`:'';}).join('')}</div>
     <article class="tp-post"><strong>最近的频道动态</strong><p>${esc(live?ch.livePost:ch.offlinePost)}</p><p class="tp-note">这是本地静态频道展示，只读取游戏时钟；不会开播、发消息或调用模型。</p></article>
   </section>`;
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
-  let data=null,section=id,peek=false,pending=null,recipient='protagonist',twiitchChannel='kaguya';
+  let data=null,section=id,peek=false,pending=null,recipient='protagonist',twiitchChannel='kaguya',twiitch3d=false;
   const drafts=new Map();
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
   const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice(11):data.other.id;
@@ -158,7 +173,7 @@ function worldApp(ctx,id) {
       }
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
       if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
-      if(id==='twiitch') html+=twiitchView(data,twiitchChannel);
+      if(id==='twiitch') html+=twiitchView(data,twiitchChannel,twiitch3d);
       if(section==='worldmessages'||section==='messages') {
         const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
         const protagonistRows=(data.others||[]).map(other=>['protagonist:'+other.id,other.name]);
@@ -194,7 +209,8 @@ function worldApp(ctx,id) {
       case 'retry': await act(pending.command,pending.owner);break;
       case 'discard':pending=null;data=base();peek=false;section=id;render();break;
       case 'own':refresh();break;
-      case 'switch-twiitch':twiitchChannel=el.dataset.channel||'kaguya';render();break;
+      case 'switch-twiitch':twiitchChannel=el.dataset.channel||'kaguya';twiitch3d=false;render();break;
+      case 'toggle-twiitch-3d':twiitch3d=!twiitch3d;render();break;
       case 'inspect':{const own=base(),owner=own.other.id;data=own;if(await act({type:'inspect',section:el.dataset.section},owner)){peek=true;section=el.dataset.section;render();}break;}
       case 'buy':{const item=data.catalog.find(x=>x.id===el.dataset.item),kind=section==='worlddelivery'?'delivery':'shop',address=formValue('address'),card=formValue('card');if(await ctx.confirm(`确认购买${item.name}？`,`共 ${money(item.price*100+(kind==='delivery'?300:0))}，从 ${cardNames[card]} 支付。`))await act({type:'order',kind,itemId:item.id,quantity:1,card,address});break;}
       case 'cancel':await act({type:'cancel_order',id:el.dataset.id});break;

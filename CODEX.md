@@ -1,5 +1,20 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 最新增量：超かぐや姫！3D 动作细化与角色卡 Twiitch 直播间接入（2026-10-25）
+
+用户在 `素材/《超かぐや姫！》3D 真实模型互动 Live 演示 - 甘织玲奈子专属手机 (Peach Flip).html` 提供了动作细化版本（比心、挥手两大动作精细标定、带手指多节骨骼联动、布料弹性物理与手动姿态编辑器）。已按照这一版全面接入角色卡及独立演示：
+
+- **动作与物理细化**：
+  - 💖 偶像比心：手腕位于躯干前上方聚拢（`L≈(-.080,1.21,-.205), R≈(+.080,1.21,-.205)`），双食指指尖在拇指上方相扣，手指多节骨骼精确联动（`heartFingerPose` 与缓动保持）。
+  - 👋 挥手招呼：大臂小臂多轴自然高位招手。
+  - 🧵 布料弹性与腰间轻扣触感微凹（`clothPhysics`）、手掌贴合（`approachJoint`/`contactHandR`）。
+  - 👘 常驻立姿切换（姬君抚腹/歌姬持麦/优雅随身）与手动骨骼姿态编辑器保留并完全兼容。
+- **角色卡内嵌手机 Twiitch 接入**：
+  - `integration/dual-protagonists/phone-apps.js` 中的 Twiitch 辉夜姬频道正式接驳「3D 沉浸实机舞台」视角；用户可在 2D 静态海报与实时 3D 舞台之间一键切换，并提供新窗口全屏预览入口。
+- **交付与管线验证**：
+  - 独立实机演示同步更新至 `outputs/kaguya-live-3d-demo.html`、`outputs/kaguya-livestream-preview.html` 及其工作树镜像。
+  - 角色卡构建通过：`unread-city-lite.png`、`unread-city-lite-tauri.png`（9.60 MB）与配套素材 ZIP。28 项 Vitest、5 项 Node 视觉测试、41 项 Python 单元测试全部通过。严格标记 `passed-build-only-not-tested-on-iphone`，未作真机误报。
+
 ## 最新增量：超かぐや姫！3D 直播间独立演示（2026-10-25，脱离角色卡）
 
 用户要求先做一版**脱离角色卡**的前端来预览"纯小说模式手机里的 3D"。已交付 `outputs/kaguya-live-3d-demo.html`：单文件、双击即可打开（file:// 直接运行，无需酒馆/角色卡/服务），以 Peach Flip 风格手机框展示辉夜姬 VRM 模型的"月读空间"直播间画面——拖动旋转、滚轮/双指缩放、回正与自动摇摆开关、待机眨眼；系统"减少动态效果"时摇摆与眨眼自动关闭，页面隐藏时停止渲染。

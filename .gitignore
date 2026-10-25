@@ -22,3 +22,9 @@ Thumbs.db
 # Local model conversion tools and extracted working copies (source archives stay in Downloads)
 /.model-tools/
 /outputs/character-model-work/
+
+# Local drop zones and tooling
+/素材/
+/output/
+claude2api.settings.json
+start-claude2api.ps1
