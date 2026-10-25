@@ -11,13 +11,14 @@ import { aircraftPose, createSceneAircraft, loadAircraftModel, type AircraftMode
 import aircraftAsset from '../../assets/models/ambient-aircraft.glb?inline';
 import { createSceneVehicles, createTokyoRoadVehicle, type GroundVehicleId, type GroundVehicleStatus } from './scene-vehicles';
 import { recoverScenePresencePosition } from './scene-presence';
-import type { ScenePerson, ScenePresence } from '../runtime/scene-context';
+import { SCENE_ENCOUNTER_DISTANCE, type ScenePerson, type ScenePresence } from '../runtime/scene-context';
+import type { WorldScenePerson } from '../runtime/world-presence';
 import type { AirTrafficState } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { protagonistNames } from '../runtime/protagonist-world';
 import { createSwitchCamera } from './switch-camera';
 
-const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: ScenePerson[]; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
+const props = withDefaults(defineProps<{ locationId: string; hour: number; paused?: boolean; freeWalk?: boolean; presence?: ScenePresence | null; people?: WorldScenePerson[]; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean; airTraffic?: AirTrafficState | null }>(), { paused: false, freeWalk: false, presence: null, people: () => [], busy: false, protagonist: 'soyo', phoneActive: false, airTraffic: null });
 const emit = defineEmits<{ hotspot: [action: SceneAction]; presence: [point: { x: number; z: number; yaw: number }]; encounter: [personId: string] }>();
 const root = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
@@ -40,7 +41,9 @@ const guideOpen = ref(false);
 const guideTarget = ref('');
 const guideBuildings = ref<{ minX: number; maxX: number; minZ: number; maxZ: number }[]>([]);
 const walkPoint = computed(() => { const [x, , z] = position.value.split(',').map(Number); return { x, z }; });
-const nearbyPeople = computed(() => props.people.map(person => ({ ...person, distance: Math.hypot(person.x - walkPoint.value.x, person.z - walkPoint.value.z) })).filter(person => person.distance <= 6 && canSeePerson(person)).sort((a, b) => a.distance - b.distance).slice(0, 2));
+const nearbyPeople = computed(() => props.people.map(person => ({ ...person, distance: Math.hypot(person.x - walkPoint.value.x, person.z - walkPoint.value.z) }))
+  .filter(person => person.distance <= SCENE_ENCOUNTER_DISTANCE && canSeePerson(person))
+  .sort((a, b) => Number(!!b.protagonistId) - Number(!!a.protagonistId) || a.distance - b.distance).slice(0, 2));
 const walkArea = computed(() => sceneAreas.find(area => walkPoint.value.x >= area.minX && walkPoint.value.x <= area.maxX && walkPoint.value.z >= area.minZ && walkPoint.value.z <= area.maxZ)?.label ?? '校园与街区');
 const nearestLandmark = computed(() => sceneLandmarks.reduce((nearest, place) => Math.hypot(place.x - walkPoint.value.x, place.z - walkPoint.value.z) < Math.hypot(nearest.x - walkPoint.value.x, nearest.z - walkPoint.value.z) ? place : nearest));
 const destination = computed(() => sceneLandmarks.find(place => place.id === guideTarget.value) ?? nearestLandmark.value);
@@ -441,7 +444,7 @@ function select(action: SceneAction) { if (!props.phoneActive && !props.paused &
 function encounter(personId: string) {
   if (props.phoneActive || props.paused || props.busy || !props.freeWalk) return;
   const person = props.people.find(candidate => candidate.id === personId);
-  if (!person || Math.hypot(person.x - eye.x, person.z - eye.z) > 6 || !canSeePerson(person)) return;
+  if (!person || Math.hypot(person.x - eye.x, person.z - eye.z) > SCENE_ENCOUNTER_DISTANCE || !canSeePerson(person)) return;
   presenceDirty = true; stopWalking(); cancelPointer(); emit('encounter', personId);
 }
 function moveTo(index: number) {

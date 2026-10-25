@@ -1,5 +1,11 @@
 # 未读之城 / Unread City
 
+## 同地主角搭话修复（2026-10-25）
+
+修复两位主角同赴运动场后，另一位不出现在搭话选项中的问题。现场列表、头像、对话上下文与保存校验现在读取主角实际位置；地图中的同地主角不受好感限制，其他人物按当前主角的好感显示。点击“交流”再确认继续即可当面对话。
+
+修复在独立分支完成验证后已合入 `lite`。[实现与本地验证](integration/protagonist-presence/README.md) · [本轮检查记录](outputs/protagonist-presence-verification.json)。
+
 ## 超かぐや姫！3D 直播间独立演示（2026-10-25）
 
 双击打开 [outputs/kaguya-live-3d-demo.html](outputs/kaguya-live-3d-demo.html) 即可预览：不需要酒馆、角色卡或任何服务。辉夜姬 3D 模型（超かぐや姫！かぐや「水色の描」by 【水色の描】，依规约私用展示）在 Peach Flip 风格手机框中渲染，拖动旋转、滚轮/双指缩放、可回正与开关自动摇摆；系统"减少动态效果"时动效自动关闭。桌面与手机视口均已实测（截图见 `outputs/kaguya-live-qa/`）。

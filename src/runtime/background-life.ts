@@ -10,6 +10,7 @@ import { gameWeekday, hasStartedAcademicWeek } from './game-calendar';
 import { isJapanesePublicHoliday } from './japan-calendar-events';
 import { applyStoryActions, getNovelTravelQuote, reduceState } from './model';
 import { activeProtagonist, gameMinute, legacyView, otherProtagonist, otherProtagonists, personalState, personState, protagonistNearby, protagonistNames, protagonistsNearby, reduceProtagonistAction, settlePhoneTime, type PersonalState, type PhoneCommand } from './protagonist-world';
+import { protagonistSceneId, protagonistsInTalkingRange } from './world-presence';
 export { protagonistsNearby } from './protagonist-world';
 
 export type BackgroundEventKind = 'routine' | 'rest' | 'meal' | 'travel' | 'study' | 'calendar' | 'order' | 'message' | 'decision';
@@ -413,10 +414,18 @@ function advanceBackgroundPlayer(state: WorldState, owner: ProtagonistId, from: 
   personal.player = advancePlayerNutrition(personal.player, clockAt(from), minutes);
 }
 
+function belongsToForegroundScene(state: WorldState, owner: ProtagonistId): boolean {
+  // Switching viewpoints preserves the encounter in the previous owner's save.
+  const selected = state.scene?.encounterId === protagonistSceneId(owner)
+    || personState(state, owner).scene?.encounterId === protagonistSceneId(activeProtagonist(state));
+  return protagonistNearby(state, owner) || selected
+    && protagonistsInTalkingRange(state).some(person => person.protagonistId === owner);
+}
+
 function settleBackgroundPerson(before: WorldState, state: WorldState, owner: ProtagonistId, start: number, end: number) {
   const p = state.protagonists!, life = p.backgroundLife!, background = life.people[owner];
   // A shared physical scene belongs to the foreground narrator, including arrivals during this action.
-  if (protagonistNearby(before, owner) || protagonistNearby(state, owner)) {
+  if (belongsToForegroundScene(before, owner) || belongsToForegroundScene(state, owner)) {
     if (background.pending) suspendBackgroundActivity(state, owner);
     advanceBackgroundPlayer(state, owner, start, end - start);
     background.nextDecisionAt = nextQuarter(end); return;
@@ -429,7 +438,7 @@ function settleBackgroundPerson(before: WorldState, state: WorldState, owner: Pr
     cursor = boundary; life.cursor = cursor;
     settlePhoneTime({ ...state, clock: clockAt(cursor) });
     if (background.pending && background.pending.due === cursor) complete(state, owner, background.pending);
-    if (protagonistNearby(state, owner)) {
+    if (belongsToForegroundScene(state, owner)) {
       // A completed trip can join the foreground in the middle of one long wait.
       // Do not continue private automation through the remainder of that shared scene.
       advanceBackgroundPlayer(state, owner, cursor, end - cursor);

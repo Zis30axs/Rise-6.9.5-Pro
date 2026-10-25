@@ -6,7 +6,7 @@ import { weeklyMemoryContext } from './weekly-memory';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
-import { getSceneContext, hiddenProtagonistPersons } from './scene-context';
+import { worldSceneContext } from './world-presence';
 import { parseGeneratedStory, STORY_ACTION_LIMITS } from './story-protocol';
 import { loadStoryApiSettings, requestStoryFromCustomApi } from './story-api';
 import { getAirTrafficContext } from './air-traffic';
@@ -290,7 +290,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         }),
         locationDetails: locations.find(location => location.id === snapshot.locationId),
         contactProposal: contactProposalContext(snapshot),
-        scene: getSceneContext(snapshot.scene, snapshot.interior, snapshot.contacts, snapshot.clock, hiddenProtagonistPersons(snapshot)),
+        scene: worldSceneContext(snapshot),
         airTraffic,
         transit: getTransitContext(snapshot.transit, snapshot.scene, snapshot.interior),
         contacts: snapshot.contacts.map(({ id, name, status, affinity, portraitId, isMain }) => ({ id, name, status: status.slice(0, 120), affinity, portraitId, isMain })),

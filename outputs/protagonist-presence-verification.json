@@ -1,0 +1,160 @@
+{
+  "date": "2026-10-25",
+  "branch": "fix/protagonist-presence-20261025",
+  "baselineCommit": "f6dd7828f8ceec73337fdd85becba2b03252e552",
+  "isolation": {
+    "worktree": "D:/.study/cc/.worktrees/protagonist-presence-20261025",
+    "mergedIntoOriginalWorkspace": false,
+    "deployedToTavern": false,
+    "newCardPublished": false
+  },
+  "issue": "Two protagonists at the sports ground: other protagonist missing from talk choices and presence avatar.",
+  "fixes": [
+    "Live population uses saved protagonist positions, including Emma.",
+    "Talk selection, story context, participation and save validation use the same population.",
+    "Same-location protagonist map avatars ignore affinity; NPC avatars require current-viewpoint affinity >= 10 within 35 metres.",
+    "Scene shortcuts use the same 7 metre distance and prioritize protagonists.",
+    "Overlapping avatars have distinct hit areas and leaders; the 450ms gesture guard no longer swallows avatar clicks.",
+    "Selected 7 metre conversations suspend background routines in either viewpoint; phone access remains at 3 metres."
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "unitTests": {
+      "files": 6,
+      "passed": 50,
+      "failed": 0,
+      "scope": "All currently retained Vitest tests. Deleted historical tests were not restored."
+    },
+    "browser": {
+      "uniqueScenariosPassed": 10,
+      "finalMapRun": {
+        "startTime": "2026-10-25T05:32:42.958Z",
+        "duration": 175495.902,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "samePointFollowup": {
+        "startTime": "2026-10-25T05:58:33.253Z",
+        "duration": 63761.915,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sceneRun": {
+        "passed": 4,
+        "source": "outputs/protagonist-presence-qa/playwright-results.json",
+        "note": "Passed before the final map-only click-guard change. The six map/novel tests were rerun after that change, followed by the strengthened same-point click check."
+      },
+      "viewports": [
+        "1440x900",
+        "1280x800",
+        "390x844",
+        "320x568"
+      ],
+      "engine": "Headless Playwright Chromium",
+      "host": "Controlled Tavern/Helper",
+      "realModelCalls": 0,
+      "physicalTauriTavernVerified": false,
+      "dshToolsAvailable": false,
+      "coverage": [
+        "Nearby talk row and enabled action",
+        "Actual protagonist sprite and map avatar",
+        "Immediate avatar detail click",
+        "One explicit controlled dialogue and saved encounter",
+        "Four viewport 3D shortcuts",
+        "Same room, overlapping avatar hit areas",
+        "NPC affinity switches with viewpoint",
+        "Scrolling and horizontal overflow"
+      ],
+      "visualInspection": "Screenshots inspected for all four viewports. Controls and tested text are visible and usable; 320px map content uses vertical scrolling.",
+      "limitations": [
+        "At 320x568 the existing presentation mode toolbar overlaps the top of the large Sakiko standing portrait. This fix does not claim all portrait layout is unobscured."
+      ],
+      "baselineFailures": "Missing protagonist reproduced in runtime and 1440px browser. First integrated browser run exposed the map click guard: 7 passed / 3 failed; affected final scenarios now pass."
+    },
+    "independentReadOnlyReview": "No blocking finding remaining in the changed runtime paths."
+  },
+  "bundle": {
+    "path": "dist/immersive-shell.js",
+    "bytes": 75708655,
+    "sha256": "c06dd5f6bbca99145493b6c30ced05fccb3be066f155fb11b181b686a71e6ad0"
+  },
+  "screenshots": [
+    {
+      "path": "outputs/protagonist-presence-qa/1280x800-sports-3d.png",
+      "bytes": 348907
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1280x800-sports-dialogue.png",
+      "bytes": 1154101
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1280x800-sports-map.png",
+      "bytes": 662861
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1280x800-sports-people.png",
+      "bytes": 603593
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1440x900-sports-3d.png",
+      "bytes": 395808
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1440x900-sports-dialogue.png",
+      "bytes": 1459571
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1440x900-sports-map.png",
+      "bytes": 884243
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/1440x900-sports-people.png",
+      "bytes": 831673
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/320x568-sports-3d.png",
+      "bytes": 131022
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/320x568-sports-dialogue.png",
+      "bytes": 217182
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/320x568-sports-map.png",
+      "bytes": 126279
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/320x568-sports-people.png",
+      "bytes": 104586
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/390x844-sports-3d.png",
+      "bytes": 183201
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/390x844-sports-dialogue.png",
+      "bytes": 381899
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/390x844-sports-map.png",
+      "bytes": 164868
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/390x844-sports-people.png",
+      "bytes": 138795
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/baseline-1440x900-missing-protagonist.png",
+      "bytes": 828585
+    },
+    {
+      "path": "outputs/protagonist-presence-qa/same-room-map.png",
+      "bytes": 452063
+    }
+  ]
+}
