@@ -165,6 +165,7 @@ export type WorldAction =
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
+  | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
   | { type: 'buy_item'; itemId: string; quantity: number }
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }
