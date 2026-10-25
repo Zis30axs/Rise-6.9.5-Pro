@@ -65,8 +65,11 @@ export function spatialPhoneLease(lease: PhoneLease, win: Window, anchor: HTMLEl
     put(frame!, 'transform-origin', '50% 50%'); put(frame!, 'transform', `${transform} translateZ(${spec.depth / 2 + 1}px)`);
     panel!.dataset.phoneYaw = pose.yaw.toFixed(2); panel!.dataset.phonePitch = pose.pitch.toFixed(2); panel!.dataset.phoneZoom = pose.zoom.toFixed(3); panel!.dataset.phoneScale = scale.toFixed(4);
     panel!.dataset.phoneOpening = String(opening !== undefined); panel!.dataset.phoneGesture = mode;
-    // Back faces must not leave invisible app controls in the keyboard sequence.
-    frame!.inert = Math.cos(pose.yaw * Math.PI / 180) < 0;
+    // Both decorative faces stay transparent to touch while the screen faces the user.
+    // Enable rear-case dragging only when the app screen is facing away.
+    const backFacing = Math.cos(pose.yaw * Math.PI / 180) < 0;
+    panel!.dataset.phoneBackFacing = String(backFacing);
+    if (frame!.inert !== backFacing) frame!.inert = backFacing;
   }
   function schedule() { if (!ended && !raf) raf = win.requestAnimationFrame(() => { raf = 0; render(); }); }
   function clearHold() { win.clearTimeout(hold); hold = 0; }
@@ -163,7 +166,7 @@ export function spatialPhoneLease(lease: PhoneLease, win: Window, anchor: HTMLEl
       ended = true; cancel(); win.cancelAnimationFrame(raf); resize.disconnect(); changes.disconnect();
       remove.forEach(fn => fn()); removeScreen?.(); style.remove(); solid.remove();
       frame!.inert = originalInert;
-      for (const key of ['ucSpatialPhone','phoneYaw','phonePitch','phoneZoom','phoneScale','phoneOpening','phoneGesture']) delete panel!.dataset[key];
+      for (const key of ['ucSpatialPhone','phoneYaw','phonePitch','phoneZoom','phoneScale','phoneOpening','phoneGesture','phoneBackFacing']) delete panel!.dataset[key];
       lease.release();
     },
   };
