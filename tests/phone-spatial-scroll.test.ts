@@ -5,7 +5,7 @@ import type { PhoneLease } from '../src/frontend/phone-runtime';
 
 // Vitest stubs ?inline CSS, so jsdom computed styles cannot test hit regions.
 // Assert the real CSS rules here, while Playwright checks computed style and native touch scrolling.
-const caseCss = readFileSync(new URL('../src/frontend/phone-spatial.css', import.meta.url), 'utf8');
+const caseCss = readFileSync('src/frontend/phone-spatial.css', 'utf8');
 const normalFaceCss = caseCss.match(/\.uc-phone-front,\.uc-phone-back\s*\{([^}]*)\}/)?.[1] ?? '';
 const rearFaceCss = caseCss.match(/#sttts-panel\[data-uc-spatial-phone\]\[data-phone-back-facing=true\] \.uc-phone-back\s*\{([^}]*)\}/)?.[1] ?? '';
 let running: PhoneLease | undefined;

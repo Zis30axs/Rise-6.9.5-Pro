@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 test.use({hasTouch: true, isMobile: true});
-const actualCaseCss = readFileSync(new URL('../../src/frontend/phone-spatial.css', import.meta.url), 'utf8');
+const actualCaseCss = readFileSync('src/frontend/phone-spatial.css', 'utf8');
 const dimensions = [
   {width:1440,height:900}, {width:1280,height:800},
   {width:390,height:844}, {width:320,height:568},
