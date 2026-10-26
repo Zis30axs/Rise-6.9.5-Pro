@@ -9,7 +9,7 @@ export interface MapBuilding { id: string; x: number; z: number; width: number; 
 export const campusMapBounds = campusDetailBounds;
 export const mapBounds = districtBounds;
 export const mapPaths = scenePaths;
-export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown'].includes(area.id));
+export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial'].includes(area.id));
 export const mapLandmarks = sceneLandmarks;
 
 // Major building footprints mirror the outdoor scene. A regression compares
@@ -36,6 +36,10 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:downtown-office-south', x: -82, z: 157, width: 22, depth: 17, height: 18.6, color: '#9ba9a0' },
   { id: 'building:downtown-shop-east', x: 87, z: 226, width: 17, depth: 18, height: 13.2, color: '#aa8770' },
   { id: 'building:toyokawa-residence', x: 50, z: 235, width: 24, depth: 20, height: 12.8, color: '#b7ac8b' },
+  { id: 'building:grand-mall', x: -180, z: -175, width: 32, depth: 22, height: 16.5, color: '#8a7d93' },
+  { id: 'building:livehouse', x: -155, z: -135, width: 26, depth: 20, height: 14.2, color: '#9d708b' },
+  { id: 'building:ktv', x: -205, z: -135, width: 24, depth: 18, height: 12.8, color: '#aa726d' },
+  { id: 'building:grand-tower', x: -150, z: -180, width: 20, depth: 20, height: 22.0, color: '#708b9d' },
 ];
 
 const aliases: Record<string, string> = { gate: 'south-gate', cafe: 'campus-cafe', dorm: 'residences' };

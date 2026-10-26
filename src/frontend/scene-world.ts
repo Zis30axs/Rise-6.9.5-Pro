@@ -80,6 +80,11 @@ export const streetRoutes: Record<string, StreetNode[]> = {
     { label: '公园公交站', position: [180, 1.7, -150], yaw: 0 },
     { label: '湖畔绿道', position: [207, 1.7, -174], yaw: 0 },
   ],
+  'grand-commercial': [
+    { label: '大型商业区接驳站', position: [-180, 1.7, -150], yaw: 0 },
+    { label: 'Live House 门前广场', position: [-155, 1.7, -135], yaw: 0 },
+    { label: 'KTV 娱乐城门前', position: [-205, 1.7, -135], yaw: 0 },
+  ],
 };
 
 /** Local geometry only. The scene is illustrative; it is not a world-state authority. */
@@ -472,8 +477,12 @@ export function createCampusWorld(scene: THREE.Scene) {
     for (let index = 0; index < 4; index++) box(0.75, 0.04, 0.04, palette.trim, x - 8, 2.95 - index * 0.24, z - 0.1);
   };
   cityShelter('home', -180, 150); cityShelter('commercial', 180, 150); cityShelter('city-park', 180, -150);
-  cityShelter('downtown', -20, 185);
-  for (const [x, z] of [[-180, 141], [180, 141], [180, -159], [-20, 176]]) {
+  cityShelter('downtown', -20, 185); cityShelter('grand-commercial', -180, -150);
+  build(-180, -175, 32, 16.5, 22, 5, 8, palette.facade, 'grand-mall');
+  build(-155, -135, 26, 14.2, 20, 4, 6, palette.brick, 'livehouse');
+  build(-205, -135, 24, 12.8, 18, 4, 6, palette.shopRed, 'ktv');
+  build(-150, -180, 20, 22.0, 20, 7, 5, palette.stone, 'grand-tower');
+  for (const [x, z] of [[-180, 141], [180, 141], [180, -159], [-20, 176], [-180, -141]]) {
     for (let dx = -53; dx <= 53; dx += 7) if (Math.abs(dx) > 9) box(3.5, 0.025, 0.12, palette.roadPaint, x + dx, 0.035, z);
     for (let dz = -4; dz <= 4; dz += 1.1) box(3, 0.025, 0.5, palette.roadPaint, x - 14, 0.035, z + dz);
   }

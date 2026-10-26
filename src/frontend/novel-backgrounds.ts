@@ -11,6 +11,8 @@ import classroomDay from '../../assets/backgrounds/classroom-day.webp?inline';
 import classroomDusk from '../../assets/backgrounds/classroom-dusk.webp?inline';
 import classroomNight from '../../assets/backgrounds/classroom-night.webp?inline';
 import bedroomDay from '../../assets/backgrounds/bedroom-day.webp?inline';
+import livehouseBg from '../../assets/backgrounds/livehouse.webp?inline';
+import ktvBg from '../../assets/backgrounds/ktv.webp?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -40,7 +42,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   sports: 'park', promenade: 'park', campus: 'park',
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
-  'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial',
+  'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom',
 });
 
@@ -71,6 +73,9 @@ const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelB
   home: { src: majoDistrictArt['old-town-lowrise'], imagePhase: 'day' },
   commercial: { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
   neighborhood: { src: majoDistrictArt['older-apartment-courtyard'], imagePhase: 'day' },
+  livehouse: { src: livehouseBg, imagePhase: 'night' },
+  'ktv-lounge': { src: ktvBg, imagePhase: 'night' },
+  'grand-commercial': { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
 });
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */

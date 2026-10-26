@@ -11,6 +11,7 @@ export const vehicleStops: readonly VehicleStop[] = [
   { id: 'home', x: -180, z: 150, roadZ: 141 },
   { id: 'commercial', x: 180, z: 150, roadZ: 141 },
   { id: 'city-park', x: 180, z: -150, roadZ: -159 },
+  { id: 'grand-commercial', x: -180, z: -150, roadZ: -141 },
 ];
 
 /** Decorative traffic uses visible animation time only, and never changes a saved world clock. */

@@ -12,6 +12,10 @@ import ProtagonistSwitchOverlay from './ProtagonistSwitchOverlay.vue';
 import type { ProtagonistSwitchLease } from './protagonist-switch';
 import type { SwitchSceneHandle } from './switch-camera';
 import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
+import { isSoyoSpeaker } from './live2d-soyo-assets';
+import { isSakikoSpeaker } from './sakiko-art-policy';
+import { resolveMajoSpeaker } from './majo-art';
+import { resolveWatanareSpeaker } from './watanare-art';
 import { hasProtagonistPhonePose } from './protagonist-phone-art';
 import { type NovelSegment } from './novel-dialogue';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
@@ -80,6 +84,7 @@ const novelHistory = ref(false);
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
 const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
 const historyPortrait = ref(false);
+const heldPortrait = ref<{ speaker: string; emotion: string; dimmed: boolean } | null>(null);
 let sceneReadingMode: ReadingMode = 'compact';
 let sceneReadingPosition = { scroll: 0, follows: true, unread: false, storyId: '' };
 const shell = ref<HTMLElement>();
@@ -113,7 +118,7 @@ const encounterPerson = computed(() => {
 // Click-selected dialogue is authoritative in the novel reader; preserve scene
 // encounters for 3D mode, including other protagonists actually present.
 const useEncounterPortrait = computed(() => !novelMode.value && !!encounterPerson.value && !novelHistory.value && !historyPortrait.value);
-const portraitSpeaker = computed(() => useEncounterPortrait.value && encounterPerson.value
+const portraitSpeaker = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value
   ? encounterPerson.value.protagonistId ? protagonistNames[encounterPerson.value.protagonistId] : encounterPerson.value.id
   : segmentSpeaker.value);
 // Protagonists without an authored phone pose keep their standing portrait while the phone is open.
@@ -125,7 +130,17 @@ const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.val
   encounterId: props.model.state.scene?.encounterId,
 }));
 function personLabel(person: WorldScenePerson) { return person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
-const portraitLabel = computed(() => useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
+const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
+const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
+const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
+function recognizesNovelSpeaker(speaker: string): boolean {
+  return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
+    || !!resolveWatanareSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
+      contacts: props.model.state.contacts,
+      scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
+      encounterId: props.model.state.scene?.encounterId,
+    }) !== null;
+}
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
@@ -733,8 +748,8 @@ onBeforeUnmount(() => {
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
-    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="portraitActive" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode" :emotion="novelSegment.emotion" :speaker="portraitLabel" :active="!activeWindow && readingMode !== 'expanded'" />
+    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion" :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
+    <SoyoLive2D v-if="novelMode" :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed" :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
@@ -778,7 +793,7 @@ onBeforeUnmount(() => {
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
-      <NovelDialogue v-show="novelMode && !novelHistory" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" />
+      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :recognizes-speaker="recognizesNovelSpeaker" @focus="heldPortrait = $event" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" />
       <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" @segment="readDialogueSegment" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
       <button v-if="hasNewContent && (!novelMode || novelHistory)" class="new-content" @click="jumpToLatest">有新内容 <span aria-hidden="true">↓</span></button>
       <form class="composer" @submit.prevent="submit"><label class="sr-only" for="uc-action-input">接下来，你想做什么？</label><textarea id="uc-action-input" ref="composer" v-model="draft" aria-label="接下来，你想做什么？" rows="1" maxlength="2000" placeholder="写下你的行动，或说一句想说的话……" @keydown.ctrl.enter.prevent="submit"></textarea><button type="submit" :disabled="model.busy || !draft.trim()">{{ model.busy ? '叙事中…' : '继续故事' }} <span aria-hidden="true">↗</span></button></form>

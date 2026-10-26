@@ -1,5 +1,6 @@
 import type { SceneMovementWorld } from '../frontend/scene-movement';
-import type { InteriorRestRecord, InteriorStudyRecord } from '../frontend/types';
+import type { InteriorRestRecord, InteriorStudyRecord, WorldState } from '../frontend/types';
+import type { ProtagonistId } from './dual-protagonists';
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
 export const INTERIOR_ENTRANCE_RANGE = 5;
@@ -333,6 +334,47 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: 4, z: -1.4, minutes: 25, energyDelta: 5, result: '在小柳家房间沙发上休息了一会儿。', prompt: '你在小柳家房间沙发上休息了二十五分钟，程序已推进 25 分钟并恢复至多 5 点精力。' },
     ],
   },
+  {
+    id: 'livehouse', label: 'Live House 演出现场', parentLocationId: 'grand-commercial',
+    description: '汇聚专业声光音响的大型 Live House 演出现场。正前方是阶梯表演舞台，配备架子鼓、监听音箱与麦克风；台下是观众摇滚池。这里是举办专场演出、乐队排练与音乐交流的核心据点。',
+    entrance: { x: -155, z: -135, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'livehouse-stage', kind: 'podium', minX: -5.5, maxX: 5.5, minZ: -4.8, maxZ: -2.0 },
+      { id: 'livehouse-drums', kind: 'piano', minX: -1.5, maxX: 1.5, minZ: -4.5, maxZ: -2.5 },
+      { id: 'livehouse-amps-left', kind: 'shelf', minX: -5.2, maxX: -3.5, minZ: -4.2, maxZ: -2.2 },
+      { id: 'livehouse-amps-right', kind: 'shelf', minX: 3.5, maxX: 5.2, minZ: -4.2, maxZ: -2.2 },
+    ],
+    interactions: [
+      { id: 'livehouse-booking', label: '预约开办 Livehouse', description: '预约舞台档期与声光设备，开办专场演出。除祥子与素世外，其他主角必须选修音乐专业。',
+        x: -3.2, z: -1.2, minutes: 30, energyDelta: -5, result: '在 Live House 成功预约了演出档期与舞台设备！', prompt: '你已在 Live House 成功预约了开办演出的档期。' },
+      { id: 'livehouse-create-band', label: '创建乐队', description: '在 Livehouse 音乐名录中登记并组建新乐队。除祥子与素世外，其他主角必须选修音乐专业。',
+        x: 3.2, z: -1.2, minutes: 20, energyDelta: -3, result: '在 Live House 正式完成了新乐队的创建与登记！', prompt: '你已在 Live House 完成了新乐队的组建与名录登记。' },
+      { id: 'livehouse-rehearsal', label: '舞台试音排练', description: '在舞台上调试监听音响与乐器并排练 25 分钟，消耗 5 点精力。',
+        x: 0, z: -1.5, minutes: 25, energyDelta: -5, result: '在 Live House 舞台上完成了认真的乐器调试与试音排练。', prompt: '你在 Live House 舞台上完成了排练试音。' },
+      { id: 'livehouse-stage-observe', label: '观察舞台音响与灯光', description: '环视舞台灯光轨道、返听音箱与观众池，不消耗时间或精力。',
+        x: 0, z: 1.5, minutes: 0, energyDelta: 0, result: '仔细观察了 Live House 的舞台灯光布局与返听系统。', prompt: '你在 Live House 台下观察了舞台与设备布局。' },
+    ],
+  },
+  {
+    id: 'ktv-lounge', label: 'KTV 娱乐包厢', parentLocationId: 'grand-commercial',
+    description: '大型商业综合体内的豪华 KTV 娱乐包厢。舒适的环形皮质沙发围绕着长茶几，点歌触控屏与无线麦克风摆在桌上；正前方的大屏幕泛着柔和的霓虹氛围光。',
+    entrance: { x: -205, z: -135, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'ktv-sofa', kind: 'bed', minX: -5.2, maxX: -2.2, minZ: -3.8, maxZ: -1.8 },
+      { id: 'ktv-table', kind: 'desk', minX: -1.8, maxX: 2.2, minZ: -1.2, maxZ: 1.2 },
+      { id: 'ktv-screen', kind: 'board', minX: -4.2, maxX: 4.2, minZ: -4.8, maxZ: -4.4 },
+    ],
+    interactions: [
+      { id: 'ktv-sing', label: '点歌欢唱练声', description: '在包厢里痛快唱歌 40 分钟，消耗 4 点精力，放松身心。',
+        x: 0, z: 2.2, minutes: 40, energyDelta: -4, result: '在 KTV 包厢里拿起麦克风尽情欢唱，心情格外舒畅。', prompt: '你在 KTV 包厢里唱了四十分钟歌，程序已扣除 4 点精力。' },
+      { id: 'ktv-drink', label: '挑选软饮果盘', description: '享用包厢饮品与小吃点心（15 分钟）。',
+        x: 2.8, z: 0.2, minutes: 15, energyDelta: 0, result: '在 KTV 包厢享用了清凉饮品与点心。', prompt: '你在 KTV 包厢里享用了饮品和小吃。' },
+      { id: 'ktv-rest', label: '在沙发仰头小憩', description: '靠在包厢沙发上休息 20 分钟，恢复至多 6 点精力。',
+        x: -3.6, z: -1.0, minutes: 20, energyDelta: 6, result: '在 KTV 包厢舒适的沙发上放松休息了二十分钟。', prompt: '你在 KTV 包厢沙发上休息了二十分钟，程序已恢复至多 6 点精力。' },
+      { id: 'ktv-observe', label: '看看点歌系统', description: '浏览点歌机上的热榜曲目与伴奏音轨，不消耗时间或精力。',
+        x: 0, z: 2.8, minutes: 0, energyDelta: 0, result: '查看了 KTV 点歌机界面的热门新歌榜单。', prompt: '你查看了 KTV 点歌机界面。' },
+    ],
+  },
 ];
 
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
@@ -358,4 +400,25 @@ export function getInteriorActivity(room: CampusInterior, id: string | null | un
 
 export function getInteriorMovementWorld(room: CampusInterior): SceneMovementWorld {
   return { bounds: { ...room.bounds }, colliders: room.obstacles.map(obstacle => ({ ...obstacle, kind: 'box' as const })), surfaces: [] };
+}
+
+const protagonistDisplayNames: Record<ProtagonistId, string> = {
+  soyo: '长崎素世',
+  sakiko: '丰川祥子',
+  emma: '樱羽艾玛',
+  renako: '甘织玲奈子',
+};
+
+export function canManageLivehouseAndBand(state: Pick<WorldState, 'academics'>, owner: ProtagonistId = 'soyo'): { allowed: boolean; reason?: string } {
+  if (owner === 'soyo' || owner === 'sakiko') {
+    return { allowed: true };
+  }
+  if (state.academics?.majorId === 'music') {
+    return { allowed: true };
+  }
+  const name = protagonistDisplayNames[owner] ?? owner;
+  return {
+    allowed: false,
+    reason: `除了祥子和素世以外，其他主角（${name}）必须选修音乐专业才能预约开办 Livehouse 和创建乐队。`,
+  };
 }
