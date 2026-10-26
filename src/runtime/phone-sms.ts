@@ -54,7 +54,7 @@ export function storySmsContext(state: WorldState) {
     text: m.text,
     receipt: m.direction === 'outgoing'
       ? smsReadReceipt(m.at, now, m.status === 'answered')
-      : 'received' as const,
+      : received.has(m.id) ? (received.get(m.id) ? 'read' as const : 'unread' as const) : 'received' as const,
   }));
   // Bounded context: full histories remain in the save and in dedicated SMS
   // reply prompts, while ordinary narrative receives only the latest facts.
