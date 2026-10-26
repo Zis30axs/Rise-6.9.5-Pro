@@ -15,7 +15,7 @@ import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
-import { stageAutonomousSms, applyAutonomousSms } from '../runtime/autonomous-sms';
+import { stageAutonomousSms, applyAutonomousSms, autonomousSmsContext } from '../runtime/autonomous-sms';
 import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
@@ -71,6 +71,7 @@ export function mountShell(
   let airTrafficTimer: number | undefined;
   let smsTimer: number | undefined;
   let smsWorking = false;
+  let attemptedSmsId: string | undefined;
   let observer: MutationObserver | undefined;
   let appliedOverflowPriority: string | undefined;
   let phoneLease: PhoneLease | undefined;
@@ -148,23 +149,28 @@ export function mountShell(
   /** Never compete with the main generation. A persisted reservation survives busy turns. */
   async function tickAutonomousSms() {
     if (smsWorking || dead || doc.hidden || model.busy || model.switchingProtagonist || pendingInteraction || bridge.session() !== session) return;
-    const task = snapshot().autonomousSms?.pending;
-    if (!task) return;
+    const saved = snapshot();
+    const task = saved.autonomousSms?.pending;
+    if (!task || task.id === attemptedSmsId) return;
+    attemptedSmsId = task.id;
     smsWorking = true;
     const request = ++epoch;
     // Keep the main UI responsive. A player action may preempt this low-priority
     // request via bridge.generate(), which cancels the old generation by ID.
     try {
-      const reply = await bridge.generate('', snapshot(), { kind: 'autonomous_sms', ticketId: task.id });
+      autonomousSmsContext(saved, task.id);
+      const reply = await bridge.generate('', saved, { kind: 'autonomous_sms', ticketId: task.id });
       if (!stillCurrent(request)) return;
-      const next = applyAutonomousSms(snapshot(), task.id, reply.autonomousSmsText ?? null);
+      const current = snapshot();
+      if (current.autonomousSms?.pending?.id !== task.id) return;
+      const next = applyAutonomousSms(current, task.id, reply.autonomousSmsText ?? null);
       bridge.save(next); model.state = next;
       worldPhone.notify();
       if (storyPhone) void storyPhone.sync().catch(() => {});
     } catch (error) {
       // A failed background call is not a narrative failure. Consume its reservation
       // so a broken provider cannot trap the user in repeated retries.
-      if (stillCurrent(request)) {
+      if (stillCurrent(request) && model.state.autonomousSms?.pending?.id === task.id) {
         try { const next = applyAutonomousSms(snapshot(), task.id, null); bridge.save(next); model.state = next; }
         catch (failure) { console.warn('[UnreadCity] autonomous SMS skipped', failure); }
       }
