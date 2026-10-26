@@ -28,7 +28,7 @@ export function storySmsContext(state: WorldState) {
   const p = state.protagonists;
   if (!p) return [];
   const ownDual = (p.conversations ?? []).filter(m => m.from === owner || m.to === owner);
-  const received = new Map(personState(state, owner).phone.map(m => [m.id, m.read]));
+  const received = new Map(personState(state, owner).phone.map(m => [m.id, m.read] as const));
   const canonical = ownDual.map(m => ({
     id: m.id,
     channel: 'protagonist' as const,
@@ -43,8 +43,8 @@ export function storySmsContext(state: WorldState) {
       : received.get(m.id) ? 'read' as const : 'unread' as const,
   }));
   const social = npcPhoneView(state, owner);
-  const contacts = new Map(social.contacts.map(c => [c.id, c.name]));
-  const groups = new Map(social.groups.map(g => [g.id, g.name]));
+  const contacts = new Map(social.contacts.map(c => [c.id, c.name] as const));
+  const groups = new Map(social.groups.map(g => [g.id, g.name] as const));
   const npcMessages = social.messages.map(m => ({
     id: m.id,
     channel: m.channel,
