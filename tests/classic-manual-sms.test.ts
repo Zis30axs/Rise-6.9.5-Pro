@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { createWorldPhoneApi } from '../src/frontend/world-phone';
-import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { enableProtagonists, applyPhoneReply } from '../src/runtime/protagonist-world';
 import { smsReadReceipt, storySmsContext } from '../src/runtime/phone-sms';
 import { phoneReplyContext } from '../src/runtime/phone-reply';
-import { npcPhoneReplyContext } from '../src/runtime/npc-phone';
+import { npcPhoneReplyContext, applyNpcPhoneReply } from '../src/runtime/npc-phone';
 
 describe('classic manual game SMS', () => {
   it('does not use wall time: delivered turns to simulated read after five game minutes', () => {
@@ -94,4 +94,29 @@ describe('classic manual game SMS', () => {
       .toEqual(['雪，今晚几点回？','我可以顺路买牛奶。']);
     expect(parseState(state).protagonists?.npcPhone?.messages).toHaveLength(2);
   });
+  it('one manual protagonist reply closes earlier segments without erasing messages', () => {
+    let state = enableProtagonists(createInitialState());
+    for (const [requestId,text] of [['part-one','先说第一句'],['part-two','然后第二句']] as const)
+      state = reduceState(state,{type:'phone_app',requestId,owner:'soyo',command:{type:'send_message',to:'sakiko',text}});
+    state = applyPhoneReply(state,'dual:part-two','两句都看到了，晚点说！');
+    const messages = state.protagonists!.conversations!;
+    expect(messages.map(row=>row.text)).toEqual(['先说第一句','然后第二句','两句都看到了，晚点说！']);
+    expect(messages[0]!.expectsReply).toBe(false);
+    expect(messages[1]!.expectsReply).toBe(true);
+    expect(messages[2]!.replyTo).toBe('dual:part-two');
+    expect(parseState(state)).toEqual(state);
+  });
+
+  it('one NPC reply closes earlier pending bubbles, retaining save format and context', () => {
+    let state = reduceState(enableProtagonists(createInitialState()),{type:'switch_protagonist',target:'emma'});
+    for (const [requestId,text] of [['older-npc','先发一条'],['latest-npc','再补充一条']] as const)
+      state = reduceState(state,{type:'phone_app',requestId,owner:'emma',command:{type:'send_npc_message',npcId:'majo-yuki',text}});
+    state = applyNpcPhoneReply(state,'npc:latest-npc','已经收到前面两条啦。');
+    const messages=state.protagonists!.npcPhone!.messages;
+    expect(messages[0]).toMatchObject({id:'npc:older-npc',status:'silent',text:'先发一条'});
+    expect(messages[1]).toMatchObject({id:'npc:latest-npc',status:'answered'});
+    expect(messages[2]).toMatchObject({replyTo:'npc:latest-npc',text:'已经收到前面两条啦。'});
+    expect(parseState(state)).toEqual(state);
+  });
+
 });
