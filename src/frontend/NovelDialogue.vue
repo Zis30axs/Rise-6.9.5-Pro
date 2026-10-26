@@ -2,23 +2,26 @@
 import { computed, ref, watch } from 'vue';
 import { parseNovelDialogue, type NovelSegment } from './novel-dialogue';
 import { storyDisplayText } from './story-text';
+import { novelPortraitFocus } from './novel-portrait-focus';
 import type { WorldState } from './types';
 
-const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean }>();
-const emit = defineEmits<{ segment: [segment: NovelSegment]; history: [] }>();
+const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean }>();
+const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: [] }>();
 const cursor = ref(0);
 const rows = computed(() => props.entries.flatMap(entry => entry.role === 'assistant'
   ? parseNovelDialogue(storyDisplayText(entry.text)).map((segment, index) => ({ ...segment, id: `${entry.id}:${index}`, entryId: entry.id }))
   : [{ id: `${entry.id}:0`, entryId: entry.id, speaker: '你的行动', emotion: '平静', text: entry.text }]));
 const current = computed(() => rows.value[cursor.value]);
 const canAdvance = computed(() => cursor.value < rows.value.length - 1);
+const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, props.protagonist, props.recognizesSpeaker));
 watch(() => props.entries.at(-1)?.id, () => {
   const latest = props.entries.at(-1)?.id;
   const start = rows.value.findIndex(row => row.entryId === latest);
   cursor.value = Math.max(0, start);
 }, { immediate: true });
 let emittedSegment = '';
-watch([current, () => props.active], ([row, active]) => {
+watch([current, portraitFocus, () => props.active], ([row, focus, active]) => {
+  if (active) emit('focus', focus);
   if (!active) { emittedSegment = ''; return; }
   if (!row || row.id === emittedSegment) return;
   emittedSegment = row.id;
