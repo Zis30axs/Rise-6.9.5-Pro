@@ -285,10 +285,11 @@ export function mountShell(
   }
   function visibilitychange() {
     if (!doc.hidden) return;
-    if (smsWorking) {
+    // A foreground request may have preempted the SMS before its promise
+    // settled. Never cancel or reset an unrelated player generation.
+    if (smsWorking && !model.busy) {
       epoch++;
       try { bridge.cancel(); } catch { /* Keep the saved reservation for later. */ }
-      model.busy = false;
     }
     protagonistSwitch.release();
     cancelInteraction();
