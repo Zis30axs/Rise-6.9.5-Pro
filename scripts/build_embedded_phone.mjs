@@ -12,6 +12,8 @@ const includeSounds = process.argv.includes('--include-sounds') || process.env.U
 const generated = path.join(root, 'src/frontend/generated');
 const gameClockModule = 'virtual:unread-city-phone-clock';
 const gameClockFile = path.join(root, 'src/frontend/phone-game-clock.ts').replaceAll('\\', '/');
+const deviceSettingsModule = 'virtual:unread-city-phone-settings';
+const deviceSettingsFile = path.join(root, 'src/frontend/phone-device-settings.ts').replaceAll('\\', '/');
 const text = relative => readFile(path.join(phoneRoot, relative), 'utf8');
 const manifest = JSON.parse(await text('manifest.json'));
 const tokenizers = { 't5.json': await text('tokenizers/t5.json'), 'qwen.txt': await text('tokenizers/qwen.txt') };
@@ -49,7 +51,7 @@ const sourceFiles = new Map();
 function plugin(stage) {
   return {
     name: 'unread-city-private-phone',
-    resolveId(id) { if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; if(id === gameClockModule) return gameClockFile; },
+    resolveId(id) { if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; if(id === gameClockModule) return gameClockFile; if(id === deviceSettingsModule) return deviceSettingsFile; },
     load(id) {
       if(id === artModule) return `export const phoneArt=${JSON.stringify(phoneArt)};`;
       if (id === worldAppsModule) return worldAppsSource;
@@ -57,7 +59,7 @@ function plugin(stage) {
     },
     async transform(code, id) {
       if (id.startsWith('\0')) return;
-      if (id.replaceAll('\\', '/') === gameClockFile) return;
+      if (id.replaceAll('\\', '/') === gameClockFile || id.replaceAll('\\', '/') === deviceSettingsFile) return;
       if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
       const relative = path.relative(phoneRoot, id).replaceAll('\\', '/');
       if (relative.startsWith('../') || path.isAbsolute(relative) || !/^(?:[\w-]+\.js|(?:core|ui|portable)\/[\w./-]+\.js|fish-mobile\/(?:native-host|native-probe|mcp-errors|client)\.js)$/.test(relative) || /(?:^|\/)(?:test|fixtures|node_modules)(?:\/|\.)/.test(relative) || /\.test\.js$/.test(relative)) throw Error(`拒绝打包白名单以外的手机文件：${relative}`);
@@ -99,6 +101,12 @@ function plugin(stage) {
         code = replaceOnce(code, "    return `<span class=\"tw-head\"><b class=\"tw-red\">${d.getMonth() + 1}月</b><small class=\"tw-dim\">${d.getFullYear()}</small></span><div class=\"tw-month\">${WEEK.map(w => `<i>${w}</i>`).join('')}${cells.map(n => `<span${n === day ? ' class=\"today\"' : ''}>${n}</span>`).join('')}</div>`;", "    return `<span class=\"tw-head\"><b class=\"tw-red\">${d.getUTCMonth() + 1}月</b><small class=\"tw-dim\">${d.getUTCFullYear()}</small></span><div class=\"tw-month\">${WEEK.map(w => `<i>${w}</i>`).join('')}${cells.map(n => `<span${n === day ? ' class=\"today\"' : ''}>${n}</span>`).join('')}</div>`;", "Today month grid UTC header");
         code = replaceOnce(code, "  function face() {\n    const d = now(), m = d.getMinutes(), h = d.getHours() % 12 + m / 60;", "  function face(current = now()) {\n    if (!current) return '<span class=\"tw-line\">--:--</span>';\n    const d = current.date, m = d.getUTCMinutes(), h = d.getUTCHours() % 12 + m / 60;", "Today analog hands game time");
         code = replaceOnce(code, "  function clockBody(size) {\n    if (size === 's') return face();\n    const d = now();\n    return `<div class=\"tw-row\">${face()}<span class=\"tw-stack\"><b class=\"tw-time\">${d.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false})}</b><small class=\"tw-dim\">${d.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'})}</small></span></div>`;\n  }", "  function clockBody(size) {\n    const current = now();\n    if (size === 's') return face(current);\n    if (!current) return '<span class=\"tw-line\">游戏时间未连接</span>';\n    return `<div class=\"tw-row\">${face(current)}<span class=\"tw-stack\"><b class=\"tw-time\">${current.time}</b><small class=\"tw-dim\">${current.label}</small></span></div>`;\n  }", "Today digital clock and date game time");
+      }
+      if (relative === 'ui/settings.js') {
+        code = "import {worldDeviceSettingsMarkup,saveWorldDeviceSettings} from 'virtual:unread-city-phone-settings';\n" + code;
+        code = replaceOnce(code, "          ${toggle('lockOnOpen', '打开时显示锁屏', phone.lockOnOpen, '锁屏可随时跳过，是插件内的外观，不是手机安全锁。想看一眼锁屏，点控制中心里的「锁屏」。')}\n", "", 'move original cosmetic lockscreen preference into privacy section');
+        code = replaceOnce(code, "      + groupTitle('资料')", "      + groupTitle('锁屏与共享')\n      + `<div class=\"group pad\">${toggle('lockOnOpen', '打开时显示锁屏', phone.lockOnOpen, '锁屏可随时跳过，是插件内的外观，不是手机安全锁。想看一眼锁屏，点控制中心里的「锁屏」。')}${worldDeviceSettingsMarkup(ctx.win)}</div>`\n      + groupTitle('资料')", 'unify lockscreen and sharing inside native Settings');
+        code = replaceOnce(code, "      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", "      case 'world-device-save': await v.busy(el, async () => { try { const updated = await saveWorldDeviceSettings(ctx.win, v.root); await render(); ctx.notify(updated ? '锁屏与共享已保存' : '设置没有变化'); } catch (error) { await render(); throw error; } }); break;\n      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", 'save current character-card device permissions from Settings');
       }
       if (relative === 'ui/apps.js') {
         code = replaceOnce(code, 'export const APPS = {', `export const APPS = {
