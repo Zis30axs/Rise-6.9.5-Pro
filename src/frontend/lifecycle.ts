@@ -1,3 +1,4 @@
+import { bandInvitationForMessage, applyBandReply } from '../runtime/livehouse';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { createProtagonistSwitchController } from './protagonist-switch';
 import { createWorldPhoneApi } from './world-phone';
@@ -375,6 +376,8 @@ export function mountShell(
     if (model.busy || model.switchingProtagonist || activePhoneReply) throw new Error('上一项剧情、短信回复或角色切换仍在处理');
     const saved = snapshot();
     const npc = messageId.startsWith('npc:');
+    const invitation = bandInvitationForMessage(saved, messageId);
+    if (invitation && invitation.status !== 'pending') return;
     if (npc) {
       if (npcReplySource(saved, messageId).status !== 'pending') return;
     } else {
@@ -390,12 +393,12 @@ export function mountShell(
         const current=snapshot(), source=npc?npcReplySource(current,messageId):null;
         if(source && source.status!=='pending') break;
         const actorId=source?.responderId ?? undefined;
-        const reply=await bridge.generate('请根据收到的短信和当前人物资料回复对方。',current,{kind:npc?'npc_phone_reply':'phone_reply',messageId});
+        const reply=await bridge.generate('请根据收到的短信和当前人物资料回复对方。',current,{kind:invitation?'band_invitation_reply':npc?'npc_phone_reply':'phone_reply',messageId});
         if (!stillCurrent(request)) return;
         // Commit every decision before asking the next group member, so a
         // partial failure resumes without replaying any completed messages.
         if (reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('短信回复包含了额外行动');
-        const next=npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        const next=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
         bridge.save(next);
         model.state=next;
         worldPhone.notify();
@@ -633,5 +636,6 @@ function message(error: unknown): string {
   } catch { /* A rejected value may expose a throwing message getter. */ }
   return '操作未完成，请退出并重新进入。';
 }
+
 
 

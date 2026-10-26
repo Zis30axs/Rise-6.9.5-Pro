@@ -26,6 +26,7 @@ import ConvenienceStore from './ConvenienceStore.vue';
 import InventoryPanel from './InventoryPanel.vue';
 import LocationServices from './LocationServices.vue';
 import PlaceActions from './PlaceActions.vue';
+import LivehousePanel from './LivehousePanel.vue';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
@@ -96,6 +97,7 @@ const draft = ref('');
 const composerError = ref('');
 const walkSyncError = ref(false);
 const bedRestPicker = ref(false);
+const livehouseMode = ref<'register' | 'book' | null>(null);
 const bedRestDialog = ref<HTMLElement>();
 const studyInteractionId = ref('');
 const bookReadingPicker = ref(false);
@@ -593,6 +595,10 @@ async function roomInteract(interactionId: string, direct = false) {
   if (!interaction) return;
   if (!approachNovelActivity(interactionId, direct)) return;
   if (direct) closeWindow(false);
+  if (interactionId === 'livehouse-create-band' || interactionId === 'livehouse-booking') {
+    livehouseMode.value = interactionId === 'livehouse-create-band' ? 'register' : 'book';
+    return;
+  }
   if (interactionId === 'dorm-rest') {
     localActivityReceipt.value = '';
     bedRestPicker.value = true;
@@ -674,7 +680,7 @@ function durationPickerKeydown(event: KeyboardEvent) {
   if (event.shiftKey && event.target === first) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && event.target === last) { event.preventDefault(); first.focus(); }
 }
-watch(() => props.model.state.locationId, () => { bedRestPicker.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
+watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { livehouseMode.value = null; bedRestPicker.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
 function sceneEncounter(personId: string) {
   if (props.model.busy) return;
   scene.value?.flushPresence();
@@ -694,6 +700,7 @@ function dismissOverlay() {
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
   if (studyPickerOpen.value) { closeStudyPicker(); return true; }
+  if (livehouseMode.value) { livehouseMode.value = null; return true; }
   if (bedRestPicker.value) { closeBedRestPicker(); return true; }
   if (activeWindow.value) { closeWindow(); return true; }
   if (novelMode.value && novelHistory.value) { novelHistory.value = false; void setReadingMode('compact'); return true; }
@@ -764,6 +771,7 @@ onBeforeUnmount(() => {
     <button v-if="!novelMode && storeAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-store-entry aria-label="逛便利店" :disabled="model.busy" @click="openStore"><span aria-hidden="true">▤</span><span>逛便利店<small>选购食物、饮品与日用品</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-book-reading-entry :disabled="model.busy" @click="openBookReading"><span aria-hidden="true">▤</span><span>选书阅读<small>本专业巩固 · 跨专业探索</small></span><span aria-hidden="true">↗</span></button>
     <p v-if="localActivityReceipt && readingMode === 'hidden' && !activeWindow && !bedRestPicker && !studyPickerOpen" class="bed-rest-receipt" data-bed-rest-receipt data-local-activity-receipt role="status">{{ localActivityReceipt }}<small>已保存，无需发送对话。</small></p>
+    <LivehousePanel v-if="livehouseMode" :key="currentProtagonist" :model="model" :actions="actions" :mode="livehouseMode" @close="livehouseMode = null" />
     <div v-if="bedRestPicker" class="bed-rest-overlay" @click.self="closeBedRestPicker">
       <section ref="bedRestDialog" class="bed-rest-dialog" role="dialog" aria-modal="true" aria-label="选择休息时长" data-bed-rest-picker @keydown="durationPickerKeydown">
         <header><small>学生宿舍 · 床铺</small><h2>选择休息时长</h2><p>休息恢复精力与精神，并缓解压力。</p></header>
@@ -816,4 +824,5 @@ onBeforeUnmount(() => {
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
   </div>
 </template>
+
 

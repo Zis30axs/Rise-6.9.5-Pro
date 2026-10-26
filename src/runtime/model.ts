@@ -1,5 +1,6 @@
+import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, enableProtagonists, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { knownProtagonistContact } from './initial-contacts';
@@ -528,6 +529,7 @@ function clearDepartedProtagonistEncounters(state: WorldState): WorldState {
 
 export function parseState(value: unknown): WorldState {
   const state = parseStateCore(value, true);
+  validateLivehouseLinks(state);
   for (const view of protagonistViews(state)) {
     if (!view.scene?.encounterId || !isProtagonistEncounter(view.scene.encounterId)) continue;
     if (view.protagonists && view.scene.encounterId === protagonistSceneId(activeProtagonist(view))) return invalid('scene.encounterId 不能指向当前主角');
@@ -577,6 +579,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const version = (value as Record<string, unknown>).schema_version;
   if (version !== '1.0.0' && version !== '1.1.0' && version !== '1.2.0' && version !== '1.3.0' && version !== '1.4.0' && version !== '1.5.0' && version !== '1.6.0' && version !== '1.7.0' && version !== '1.8.0' && version !== '1.9.0' && version !== '1.10.0' && version !== '1.11.0') return invalid('schema_version（支持 1.0.0 至 1.11.0）');
   const hasInteractionEventRate = version === '1.11.0' && Object.hasOwn(value, 'interactionEventRate');
+  const hasLivehouse = version === '1.11.0' && Object.hasOwn(value, 'livehouse');
   const hasMargoCafeDaily = version === '1.11.0' && Object.hasOwn(value, 'margoCafeDaily');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
@@ -584,7 +587,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -610,6 +613,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
     ...(hasInteractionEventRate ? { interactionEventRate: parseInteractionEventRateState(state.interactionEventRate, parsedClock) } : {}),
+    ...(hasLivehouse ? { livehouse: parseLivehouseState(state.livehouse, (parsedClock.day - 1) * 1440 + parsedClock.hour * 60 + parsedClock.minute) } : {}),
     ...(hasMargoCafeDaily ? { margoCafeDaily: parseMargoCafeState(state.margoCafeDaily, parsedClock) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
@@ -1202,6 +1206,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         const check = canManageLivehouseAndBand(next, who);
         if (!check.allowed) throw new Error(check.reason);
       }
+      const formalLivehouse = interaction.id === 'livehouse-booking' || interaction.id === 'livehouse-create-band';
+      if (formalLivehouse && !prepareLivehouseInteraction(next, action, worldAuthority ?? next)) return next;
       if (interaction.energyDelta < 0 && next.player.energy < -interaction.energyDelta) throw new Error('精力不足，请先休息。');
       if (interaction.minutes === 0 && interaction.energyDelta === 0 && next.interior.activityId === interaction.id) return next;
       const playerBefore = { ...next.player };
@@ -1213,7 +1219,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       next.interior.activityId = interaction.id;
       next.interior.lastRest = null;
       next.interior.lastStudy = null;
-      note(next, `${interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。'}`);
+      note(next, `${formalLivehouse ? livehouseReceipt(worldAuthority ? { ...next, protagonists: worldAuthority.protagonists } : next, action) : interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。'}`);
       break;
     }
     case 'interior_rest': {
@@ -1308,7 +1314,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
 
 /** Public reducers keep the active legacy view as a compatibility projection only. */
 export function reduceState(state: WorldState, action: WorldAction): WorldState {
-  const before = parseState(state);
+  const parsed = parseState(state);
+  const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
   if (action?.type === 'receive_cafe_gift') return parseState(finishPersonalChange(before, applyMargoCafeGift(before, action.offerId), '咖啡馆赠礼'));
   if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') {
     const next = reduceProtagonistAction(before, action);
@@ -1318,6 +1325,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
   }
   const next = reduceLegacyState(legacyView(before), action, before);
   const candidate = clearDepartedProtagonistEncounters(finishPersonalChange(before, next, `世界行动：${action.type}`));
+  if (action.type === 'interior_interact' && action.booking) syncPerformanceCalendars(candidate, action.booking.id);
   return parseState(action.type === 'encounter' && !(candidate.protagonists && isProtagonistEncounter(action.personId))
     ? recordNpcEncounter(candidate, action.personId) : candidate);
 }
@@ -1340,5 +1348,6 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   applyWeeklySummary(next, result.weeklySummary);
   return parseState(next);
 }
+
 
 

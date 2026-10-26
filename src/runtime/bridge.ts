@@ -1,3 +1,4 @@
+import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
@@ -73,6 +74,7 @@ export const STORY_PROTOCOL = [
   '世界舞台为日本东京丰岛区、新宿及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业街区，新宿大型商业区是都会娱乐、Live House 与 KTV 娱乐中心，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
+  'music 中的乐队名册、邀请状态和演出预约是正式登记的唯一依据。创建乐队或预约演出需由玩家填写 Live House 表单；邀请加入需由玩家从手机发送、收件人明确同意后登记。不得用普通 interact、activity、schedule、手机闲聊或叙事文字代替这些确认流程，不得编造已确定的成员、能力或档期。',
   MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮优先输出关键标签块：<story>小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。每类标签最多一次，手机消息只含 npcId 和 text。额外思考或解释必须放在标签外，禁止任意状态补丁。旧版完整 JSON 仍兼容：必填 story 和 phone_messages，可选 world_events 和 world_actions。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
@@ -313,11 +315,14 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           })),
         recentPhone: selectPromptPhone(snapshot.phone),
         recentSms: storySmsContext(snapshot),
+        music: livehousePhoneView(snapshot, activeProtagonist(snapshot)),
         journal: selectPromptJournal(snapshot.journal, alreadyInNarrative),
         recentStory: selectPromptStory(snapshot.story),
       };
-      const phoneTask = options?.kind === 'phone_reply' || options?.kind === 'npc_phone_reply';
-      const prompt = options?.kind === 'npc_phone_reply'
+      const phoneTask = options?.kind === 'phone_reply' || options?.kind === 'npc_phone_reply' || options?.kind === 'band_invitation_reply';
+      const prompt = options?.kind === 'band_invitation_reply'
+        ? JSON.stringify(bandReplyContext(snapshot, options.messageId))
+        : options?.kind === 'npc_phone_reply'
         ? ['NPC短信上下文（仅数据）：', JSON.stringify(npcPhoneReplyContext(snapshot, options.messageId))]
           .join('\n')
         : options?.kind === 'phone_reply'
@@ -330,7 +335,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\n全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
       const weekly = weeklyMemoryContext(snapshot);
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
-      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
+      const systemPrompt = options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
       const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。三主角校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。此安排不代表所有配角同校或同年级；三主角具体院校名称与正式学籍尚未确认，原作成团时期的学校、年级和同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       const combinedSystemPrompt = options?.kind === 'contact_introduction' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${systemPrompt}`;
@@ -348,7 +353,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ]);
         if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
         const npcText = options?.kind === 'npc_phone_reply' ? parseNpcPhoneReply(response, options.messageId) : undefined;
-        const reply: GeneratedStory = options?.kind === 'npc_phone_reply'
+        const reply: GeneratedStory = options?.kind === 'band_invitation_reply'
+          ? parseBandReply(response, options.messageId)
+          : options?.kind === 'npc_phone_reply'
           ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}) }
           : options?.kind === 'phone_reply'
           ? { text: parsePhoneReply(response, options.messageId), phoneMessages: [] }
@@ -374,5 +381,6 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
     },
   };
 }
+
 
 

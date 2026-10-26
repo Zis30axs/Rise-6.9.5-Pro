@@ -1,3 +1,4 @@
+import { livehousePhoneView } from '../runtime/livehouse';
 import { npcPhoneView } from '../runtime/npc-phone';
 import type { WorldAction, WorldState } from './types';
 import { smsReadReceipt } from '../runtime/phone-sms';
@@ -30,6 +31,7 @@ export function createWorldPhoneApi(options: {
       cards: p.accounts.people[owner].cards, ledger: p.accounts.ledger.filter(e=>e.actor===owner).slice(-60),
       calendar: d.calendar, dailyPlans: person.schedule, notifications: d.notifications,
       locked: d.locked, share: d.share,
+      music: livehousePhoneView(enabled, owner),
       npcPhone: { ...social, messages: social.messages.map(m => ({ ...m,
         receipt: m.direction === 'outgoing' ? smsReadReceipt(m.at, now, m.status === 'answered') : 'received',
       })) },
@@ -83,5 +85,6 @@ export function createWorldPhoneApi(options: {
     },
   });
 }
+
 
 

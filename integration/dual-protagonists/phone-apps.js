@@ -1,7 +1,7 @@
 // Private card-specific apps. Loaded through the existing ST-iPhonie app registry.
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
 import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
-import {renderWorldMessenger,worldMessageRows} from 'UNREAD_CITY_PHONE_CHAT';
+import {renderWorldMessenger,worldMessageRows,renderBandPanel} from 'UNREAD_CITY_PHONE_CHAT';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
 const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息',twiitch:'Twiitch'};
@@ -116,7 +116,7 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
-  let data=null,section=id,peek=false,pending=null,recipient='protagonist',chatMode='list',twiitchChannel='kaguya',twiitch3d=false;
+  let data=null,section=id,peek=false,pending=null,recipient='protagonist',chatMode='list',twiitchChannel='kaguya',twiitch3d=false,bandPanelOpen=false;
   const drafts=new Map();
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
   const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice('protagonist:'.length):data.other.id;
@@ -150,11 +150,12 @@ function worldApp(ctx,id) {
     try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();if(!['send_message','send_npc_message','send_group_message'].includes(command.type))ctx.notify('已保存');return true;}
     catch(e){render();ctx.notify(e.message,{error:true});return false;}
   }
-  function refresh() {const before=data?.owner;data=base();section=id;peek=false;pending=null;if(before && before!==data.owner)chatMode='list';render();}
+  function refresh() {bandPanelOpen=false;const before=data?.owner;data=base();section=id;peek=false;pending=null;if(before && before!==data.owner)chatMode='list';render();}
   const formValue=name=>v.root.querySelector(`[data-world-field="${name}"]`)?.value;
   function render() {
     if(v.disposed)return;
     if(id==='worldmessages'){
+      if(bandPanelOpen){v.root.classList.remove('chat-mode');v.draw(renderBandPanel({...data,pendingBandSave:!!pending},{esc,btn,heading,time}));return;}
       const previous=v.root.querySelector('[data-keep-scroll]'),atBottom=!previous || previous.scrollHeight-previous.scrollTop-previous.clientHeight<70;
       const screen=renderWorldMessenger({data,recipient,mode:chatMode,drafts,pending},{esc,btn,heading,time});
       recipient=screen.recipient;
@@ -218,6 +219,13 @@ function worldApp(ctx,id) {
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
     switch(el.dataset.action){
+      case 'open-bands':bandPanelOpen=true;render();break;
+      case 'close-bands':bandPanelOpen=false;render();break;
+      case 'band-invite': {
+        if(!formValue('band')||!formValue('band-contact')||!formValue('band-role'))throw Error('请选择乐队、联系人和分工');
+        await act({type:'band_invite',bandId:formValue('band'),contactId:formValue('band-contact'),role:formValue('band-role')});break;
+      }
+      case 'band-reply':await v.busy(el,async()=>{data=await api().retryReply(el.dataset.id);render();});break;
       case 'open-thread':
         if(id!=='worldmessages')break;
         recipient=el.dataset.recipient;chatMode='thread';render();break;
@@ -270,7 +278,7 @@ function worldApp(ctx,id) {
       event.preventDefault();v.root.querySelector('[data-action="send"]')?.click();
     }
   });
-  v.back=()=>{if(id==='worldmessages'&&chatMode==='thread'){chatMode='list';render();return true;}return false;};
+  v.back=()=>{if(bandPanelOpen){bandPanelOpen=false;render();return true;}if(id==='worldmessages'&&chatMode==='thread'){chatMode='list';render();return true;}return false;};
   v.refresh=()=>{try{refresh();}catch(e){v.draw(heading(labels[id])+`<p>${esc(e.message)}</p>`);}};
   v.refresh();
   // Use the host's short-lived data subscription instead of a background poll.
@@ -286,4 +294,5 @@ function worldApp(ctx,id) {
   return v;
 }
 export const worldPhoneFactories=Object.fromEntries(Object.keys(labels).map(id=>[id,ctx=>worldApp(ctx,id)]));
+
 

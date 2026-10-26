@@ -451,6 +451,7 @@ export function applyNpcPhoneReply(state: WorldState, messageId: string, raw: st
   // that were never generated. All other chats and owners remain isolated.
   const index = social.messages.indexOf(source);
   for (const prior of social.messages.slice(0, index)) {
+    if (s.livehouse?.invitations.some(i => i.messageId === prior.id && i.status === 'pending')) continue;
     if (prior.direction !== 'outgoing' || prior.replyTo !== null ||
         prior.owner !== source.owner || prior.channel !== source.channel ||
         prior.targetId !== source.targetId || prior.status !== 'pending') continue;
@@ -488,3 +489,4 @@ export function contactProposalContext(s: WorldState) {
     hasContact: !!contactFor(s, who, meeting.npcId), canInviteGroup: !!residentGroupForNpc(meeting.npcId) && !!contactFor(s, who, meeting.npcId),
     evidence: social!.evidence.filter(e => e.owner === who && e.npcId === meeting.npcId && e.speaker === 'npc').slice(-4).map(e => ({ evidenceId: e.turnId, quote: e.text })) } : null;
 }
+
