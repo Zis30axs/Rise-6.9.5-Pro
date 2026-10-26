@@ -232,7 +232,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
     },
     async generate(input: string, state: WorldState, options?: StoryGenerationOptions): Promise<GeneratedStory> {
       assertOwner();
-      if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText) throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
+      if (typeof input !== 'string' || (options?.kind !== 'autonomous_sms' && !input.trim()) || input.length > STATE_LIMITS.inputText) throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
       const snapshot = parseState(state);
       const storyApi = loadStoryApiSettings();
       if (storyApi.mode === 'tavern' && context().mainApi !== 'openai') throw new Error('叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型，或在状态页配置独立叙事 API。');
