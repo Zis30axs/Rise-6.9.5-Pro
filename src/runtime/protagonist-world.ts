@@ -600,10 +600,11 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
   // Close only earlier still-unanswered prompts in this exact sender/recipient thread;
   // never alter another protagonist's private conversation or an existing reply.
   const index = rows.indexOf(source);
+  const alreadyAnswered = new Set(rows.filter(answer => answer.replyTo !== null).map(answer => answer.replyTo));
   for (const prior of rows.slice(0, index)) {
     if (prior.replyTo === null && prior.expectsReply &&
         prior.from === source.from && prior.to === source.to &&
-        !rows.some(answer => answer.replyTo === prior.id)) prior.expectsReply = false;
+        !alreadyAnswered.has(prior.id)) prior.expectsReply = false;
   }
   rows.push({id:replyId,from:source.to,to:source.from,at:gameMinute(s),text:replyText,replyTo:source.id,expectsReply:false});
   p.conversations=rows;
