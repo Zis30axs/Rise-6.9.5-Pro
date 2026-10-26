@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { mountSwitchHost, noOverflow, switchState, viewports } from './switch-map-fixture';
 
-const oldPortrait = { x: 0.38, y: 0.48, w: 0.22, h: 0.19 };
 const unrelatedPart = { x: 0.05, y: 0.03, w: 0.4, h: 0.08 };
 
 for (const viewport of viewports) {
