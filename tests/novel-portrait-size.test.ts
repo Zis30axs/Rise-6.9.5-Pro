@@ -28,7 +28,7 @@ describe('novel NPC portrait stage regression', () => {
   });
 
   it('uses a full-height generic atlas stage on desktop, mobile and short mobile', () => {
-    const css = readFileSync(new URL('../src/frontend/novel-npc-portrait.css', import.meta.url), 'utf8');
+    const css = readFileSync('src/frontend/novel-npc-portrait.css', 'utf8');
     expect(css).toMatch(/\.novel-npc-portrait\s*\{[^}]*inset:\s*90px 110px 24px 0/s);
     expect(css).toMatch(/@media\s*\(max-width:\s*760px\)\s*\{\s*\.novel-npc-portrait\s*\{\s*inset:\s*146px 12px 84px;/);
     expect(css).toMatch(/@media\s*\(max-height:\s*670px\) and \(max-width:\s*760px\)\s*\{\s*\.novel-npc-portrait\s*\{\s*inset:\s*118px 12px 24px;/);
