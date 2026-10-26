@@ -47,7 +47,8 @@ describe('classic manual game SMS', () => {
     expect(waited.conversation.map((row: {receipt:string})=>row.receipt)).toEqual(['read','read']);
     expect(reply).not.toHaveBeenCalled();
     await api.retryReply('dual:split-2');
-    expect(reply).toHaveBeenCalledExactlyOnceWith('dual:split-2');
+    expect(reply).toHaveBeenCalledTimes(1);
+    expect(reply).toHaveBeenCalledWith('dual:split-2');
   });
 
   it('rejects stale time, changed sessions and invalid wait durations', async () => {
