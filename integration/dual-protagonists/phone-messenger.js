@@ -110,7 +110,7 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     + btn('request-reply','让对方回复','secondary','data-id="'+esc(lastPending||'')+'"'+(lastPending&&!pending?'':' disabled'))
     + btn('wait-read','等5分钟','text-button','data-minutes="5"'+(pending?' disabled':''))
     + btn('wait-read','等15分钟','text-button','data-minutes="15"'+(pending?' disabled':''))
-    + '<span class="uc-tool-hint">等待仅推进游戏时间，不调用模型</span></div>';
+    + '<span class="uc-tool-hint">已读按游戏分钟模拟 · 不调用模型</span></div>';
   const composer='<div class="composer-wrap"><div class="composer uc-composer">'
     + '<textarea class="field-in" data-field="draft" maxlength="1000" rows="2" enterkeyhint="send" aria-label="输入消息" placeholder="发消息…">'+esc(draft)+'</textarea>'
     + btn('send','发送','primary',pending?'disabled':'')+'</div></div>';
