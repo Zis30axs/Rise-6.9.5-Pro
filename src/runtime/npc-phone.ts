@@ -189,6 +189,8 @@ export function parseNpcPhone(raw: unknown, s: WorldState, options: { retireCont
           replies.length !== m.responsePlan.filter(p => p.status === 'answered').length ||
           m.responsePlan.some(p => replies.filter(r => r.speakerId === p.id).length !== (p.status === 'answered' ? 1 : 0))) fail('群聊回复计划不一致');
       } else if (replies.length !== (m.status === 'answered' ? 1 : 0)) fail('短信回复数量不一致');
+    } else if (m.replyTo === null && m.id === 'auto:' + m.owner + ':' + m.at && m.channel === 'npc' && m.speakerId === m.targetId && m.status === 'answered' && m.responderId === null) {
+      // Strictly shaped unsolicited DM: the only incoming NPC message without a parent send.
     } else if (m.status !== 'answered' || m.responderId !== null || !messages.some(parent => parent.id === m.replyTo && parent.owner === m.owner &&
       parent.channel === m.channel && parent.targetId === m.targetId && parent.direction === 'outgoing' &&
       (parent.responsePlan ? parent.responsePlan.some(p => p.id === m.speakerId && p.status === 'answered') && m.id === parent.id + ':reply:' + m.speakerId : parent.responderId === m.speakerId))) fail('回复来源无效');
