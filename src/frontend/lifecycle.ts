@@ -402,7 +402,7 @@ export function mountShell(
         if (storyPhone) void storyPhone.sync().catch(()=>{});
       }
     } catch(error) {
-      if(stillCurrent(request)) model.notice=`自动短信回复失败，原短信已保存；可在手机中重试：${message(error)}`;
+      if(stillCurrent(request)) model.notice=`短信回复请求失败，原短信已保存；可在手机中手动重试：${message(error)}`;
       throw error;
     } finally {
       if(activePhoneReply===messageId) activePhoneReply=null;
@@ -413,7 +413,6 @@ export function mountShell(
   const worldPhone = createWorldPhoneApi({
     session, current: () => !dead && bridge.session() === session,
     busy: () => model.busy || !!model.switchingProtagonist || doc.hidden, state: snapshot,
-    onOutgoingMessage(messageId) { void requestPhoneReply(messageId).catch(()=>{}); },
     requestReply: requestPhoneReply,
     commit(action) {
       if (model.switchingProtagonist) throw new Error('正在切换主角，请稍候。');
@@ -615,12 +614,7 @@ export function mountShell(
     app.mount(mount);
     if (dead) throw new Error('界面启动失败，已恢复原生界面。');
     bindStoryPhone();
-    // A failed/aborted one-shot reply stays pending in the save and is resumed
-    // on the next deliberate entry; never polls or spawns a background agent.
-    const pendingReply = model.state.protagonists?.conversations?.find(row=>
-      row.expectsReply && row.from===activeProtagonist(model.state) &&
-      !model.state.protagonists!.conversations!.some(reply=>reply.replyTo===row.id));
-    if (pendingReply && !doc.hidden) void requestPhoneReply(pendingReply.id).catch(()=>{});
+    // Pending SMS remain stored until the player explicitly requests a reply.
     shadow.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
     return { dispose, model, actions };
   } catch (error) {

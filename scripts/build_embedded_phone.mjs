@@ -42,7 +42,7 @@ function replaceOnce(code, from, to, label) {
   return code.replace(from, to);
 }
 const worldAppsModule = '\0virtual:unread-city-world-apps';
-const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'));
+const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_CHAT',path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'));
 const dataModule = '\0virtual:unread-city-phone-data';
 let phoneHtml = '';
 const sourceFiles = new Map();
@@ -59,6 +59,7 @@ function plugin(stage) {
       if (id.startsWith('\0')) return;
       if (id.replaceAll('\\', '/') === gameClockFile) return;
       if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
+       if(id===path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'))return;
       const relative = path.relative(phoneRoot, id).replaceAll('\\', '/');
       if (relative.startsWith('../') || path.isAbsolute(relative) || !/^(?:[\w-]+\.js|(?:core|ui|portable)\/[\w./-]+\.js|fish-mobile\/(?:native-host|native-probe|mcp-errors|client)\.js)$/.test(relative) || /(?:^|\/)(?:test|fixtures|node_modules)(?:\/|\.)/.test(relative) || /\.test\.js$/.test(relative)) throw Error(`拒绝打包白名单以外的手机文件：${relative}`);
       sourceFiles.set(relative, createHash('sha256').update(code).digest('hex'));

@@ -1,6 +1,7 @@
 // Private card-specific apps. Loaded through the existing ST-iPhonie app registry.
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
 import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
+import {renderWorldMessenger,worldMessageRows} from 'UNREAD_CITY_PHONE_CHAT';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
 const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息',twiitch:'Twiitch'};
@@ -115,13 +116,13 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
-  let data=null,section=id,peek=false,pending=null,recipient='protagonist',twiitchChannel='kaguya',twiitch3d=false;
+  let data=null,section=id,peek=false,pending=null,recipient='protagonist',chatMode='list',twiitchChannel='kaguya',twiitch3d=false;
   const drafts=new Map();
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
-  const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice(11):data.other.id;
+  const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice('protagonist:'.length):data.other.id;
   const protagonistName=()=>(data.others||[]).find(x=>x.id===protagonistTarget())?.name||data.other.name;
   async function readSelectedContact() {
-    if(reading||v.disposed||peek||id!=='worldmessages'||ctx.doc.hidden||ctx.visible?.(id)===false||!data||!ctx.api.listThreads)return;
+    if(reading||v.disposed||peek||id!=='worldmessages'||chatMode!=='thread'||ctx.doc.hidden||ctx.visible?.(id)===false||!data||!ctx.api.listThreads)return;
     const contactId=recipient.startsWith('npc:')?data.npcPhone?.contacts.find(c=>c.id===recipient.slice(4))?.contactId:recipient.startsWith('protagonist')?'protagonist-'+protagonistTarget():null;
     if(!contactId)return;
     const binding=data.binding,selected=recipient;
@@ -146,13 +147,26 @@ function worldApp(ctx,id) {
   }
   async function act(command,owner=data.owner) {
     pending??={binding:data.binding,revision:data.revision,requestId:requestId(ctx.win),owner,command};
-    try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();ctx.notify('已保存');return true;}
+    try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();if(!['send_message','send_npc_message','send_group_message'].includes(command.type))ctx.notify('已保存');return true;}
     catch(e){render();ctx.notify(e.message,{error:true});return false;}
   }
-  function refresh() {data=base();section=id;peek=false;pending=null;render();}
+  function refresh() {const before=data?.owner;data=base();section=id;peek=false;pending=null;if(before && before!==data.owner)chatMode='list';render();}
   const formValue=name=>v.root.querySelector(`[data-world-field="${name}"]`)?.value;
   function render() {
     if(v.disposed)return;
+    if(id==='worldmessages'){
+      const previous=v.root.querySelector('[data-keep-scroll]'),atBottom=!previous || previous.scrollHeight-previous.scrollTop-previous.clientHeight<70;
+      const screen=renderWorldMessenger({data,recipient,mode:chatMode,drafts,pending},{esc,btn,heading,time});
+      recipient=screen.recipient;
+      v.root.dataset.worldOwner=data.owner;
+      v.root.classList.toggle('chat-mode',chatMode==='thread');
+      v.draw(screen.html);
+      const current=v.root.querySelector('[data-keep-scroll]');
+      if(current&&atBottom)current.scrollTop=current.scrollHeight;
+      void readSelectedContact();
+      return;
+    }
+    v.root.classList.remove('chat-mode');
     let html=heading(labels[id],'','Unread City')+`<p class="world-time">${esc(data.name)} · ${esc(time(data.now))}</p>`;
     if(data.reporting && (id==='worldcalendar' || id==='worldmessages')) html+=`<p class="hint">${esc(data.reporting)}</p>`;
     html+='<style>.world-time{margin:0 4px 14px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.sms-thread{display:grid;gap:8px;padding:12px}.sms-bubble{max-width:90%;padding:10px 13px;border-radius:14px;border:1px solid #8883;background:#8881;overflow-wrap:anywhere}.sms-bubble.outgoing{justify-self:end;background:#8aae8740}.sms-bubble.incoming{justify-self:start}.sms-bubble time{display:block;font-size:11px;opacity:.75}.sms-bubble p{margin:7px 0}.sms-bubble .sms-state{font-size:11px;opacity:.75;display:block;text-align:right}.sms-read-animation{position:relative;display:inline-grid}.sms-read-animation>i,.sms-read-animation>b{grid-area:1/1;font-style:normal}.sms-read-animation>i{animation:sms-unread-out .8s step-end forwards}.sms-read-animation>b{visibility:hidden;animation:sms-read-in .8s step-end forwards}@keyframes sms-unread-out{0%,75%{visibility:visible}76%,100%{visibility:hidden}}@keyframes sms-read-in{0%,75%{visibility:hidden}76%,100%{visibility:visible}}.world-field{display:grid;gap:7px;margin:12px 0}.world-field input,.world-field select,.world-field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px;border:1px solid #8885;border-radius:10px;background:var(--card,#fff);color:inherit}.world-product,.world-event{padding:14px;border-bottom:1px solid #8883;overflow-wrap:anywhere}.world-product button,.world-event button{min-height:44px}.world-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.world-tabs button{min-height:44px}.world-notice{padding:12px;background:#c9a65422;border-radius:12px}.world-form{padding:12px}.world-form button{min-height:44px}.transfer-art{display:block;width:100%;height:auto;margin:2px 0 8px}</style>';
@@ -205,6 +219,30 @@ function worldApp(ctx,id) {
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
     switch(el.dataset.action){
+      case 'open-thread':
+        if(id!=='worldmessages')break;
+        recipient=el.dataset.recipient;chatMode='thread';render();break;
+      case 'back-to-inbox':
+        if(id!=='worldmessages')break;
+        chatMode='list';render();break;
+      case 'wait-read':{
+        if(id!=='worldmessages'||pending)break;
+        const minutes=Number(el.dataset.minutes);
+        data=await api().waitForRead({binding:data.binding,revision:data.revision,now:data.now,minutes});
+        render();ctx.notify('游戏时间已推进 '+minutes+' 分钟（不会自动调用 LLM）');break;
+      }
+      case 'request-reply':{
+        if(id!=='worldmessages'||pending||chatMode!=='thread')break;
+        const rows=worldMessageRows(data,recipient);
+        const latest=[...rows].reverse().find(m=>m.direction==='outgoing'&&m.replyTo==null);
+        if(!latest || latest.id!==el.dataset.id || !(latest.status==='pending'||latest.expectsReply&&!latest.answered))
+          throw Error('消息状态已更新，请重新打开会话');
+        await v.busy(el,async()=>{
+          data=await api().retryReply(latest.id);
+          render();ctx.notify('短信回复已处理');
+        });
+        break;
+      }
       case 'appearance':if(await act({type:'appearance',appearance:{wallpaper:formValue('wallpaper'),theme:formValue('theme'),layout:formValue('layout')}}))ctx.win.stTtsPhone?.home?.(true);break;
       case 'retry': await act(pending.command,pending.owner);break;
       case 'discard':pending=null;data=base();peek=false;section=id;render();break;
@@ -219,16 +257,22 @@ function worldApp(ctx,id) {
       case 'send-transfer':{const to=formValue('payee'),from=formValue('payFrom'),amount=Math.round(Number(formValue('payAmount'))*100);if(!(amount>0))throw Error('请输入大于 0 的转账金额');if(await ctx.confirm('确认转账？',`向${payeeName(to)}转 ${money(amount)}，从 ${cardNames[from]} 支付。`))await act({type:'send_transfer',to,from,cents:amount});break;}
       case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
-      case 'send':{const message=formValue('message'),command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
+      case 'send':{const message=id==='worldmessages'?drafts.get(recipient):formValue('message');if(!message?.trim()){ctx.notify('请先输入消息');break;}const command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
       case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
       case 'retry-reply':try{data=await api().retryReply(el.dataset.id);render();ctx.notify('对方已回复');}catch(e){ctx.notify(e.message,{error:true});}break;
       case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
       case 'read':await act({type:'read_notifications'});break;
     }
   });
-  v.openContact=contactId=>{data=base();peek=false;section=id;const contact=data.npcPhone?.contacts.find(c=>c.contactId===contactId);recipient=contact?'npc:'+contact.id:contactId.startsWith('protagonist-')?'protagonist:'+contactId.slice(12):'protagonist';render();};
+  v.openContact=contactId=>{data=base();peek=false;section=id;const contact=data.npcPhone?.contacts.find(c=>c.contactId===contactId);recipient=contact?'npc:'+contact.id:contactId.startsWith('protagonist-')?'protagonist:'+contactId.slice('protagonist-'.length):'protagonist';chatMode='thread';render();};
   v.on('change','[data-world-field="recipient"]',el=>{recipient=el.value;render();});
-  v.on('input','[data-world-field="message"]',el=>{drafts.set(recipient,el.value);});
+  v.on('input','[data-world-field="message"],[data-field="draft"]',el=>{drafts.set(recipient,el.value);});
+  v.on('keydown','[data-field="draft"]',(el,event)=>{
+    if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){
+      event.preventDefault();v.root.querySelector('[data-action="send"]')?.click();
+    }
+  });
+  v.back=()=>{if(id==='worldmessages'&&chatMode==='thread'){chatMode='list';render();return true;}return false;};
   v.refresh=()=>{try{refresh();}catch(e){v.draw(heading(labels[id])+`<p>${esc(e.message)}</p>`);}};
   v.refresh();
   // Use the host's short-lived data subscription instead of a background poll.
@@ -236,7 +280,7 @@ function worldApp(ctx,id) {
   stopUpdates=api()?.subscribe?.(()=>{
     if(v.disposed){stopUpdates();return;}
     if(!data||pending||peek)return;
-    try{const next=base();if(next.revision!==data.revision){data=next;render();}}
+    try{const next=base();if(next.revision!==data.revision||next.now!==data.now||next.owner!==data.owner){data=next;render();}}
     catch(e){ctx.notify(e.message,{error:true});}
   })||(()=>{});
   stopPhoneUpdates=ctx.api.subscribe?.(event=>{if(event.type==='chat'||event.type==='space')void readSelectedContact();})||(()=>{});

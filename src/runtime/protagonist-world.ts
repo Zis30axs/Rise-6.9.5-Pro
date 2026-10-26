@@ -596,6 +596,16 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
     responder.journal.push({id:sentId,text:`回复${protagonistNames[source.from]}：${replyText}`.slice(0,1000),at});
     responder.journal=responder.journal.slice(-100);
   }
+  // One explicit model turn can answer several consecutive split bubbles.
+  // Close only earlier still-unanswered prompts in this exact sender/recipient thread;
+  // never alter another protagonist's private conversation or an existing reply.
+  const index = rows.indexOf(source);
+  const alreadyAnswered = new Set(rows.filter(answer => answer.replyTo !== null).map(answer => answer.replyTo));
+  for (const prior of rows.slice(0, index)) {
+    if (prior.replyTo === null && prior.expectsReply &&
+        prior.from === source.from && prior.to === source.to &&
+        !alreadyAnswered.has(prior.id)) prior.expectsReply = false;
+  }
   rows.push({id:replyId,from:source.to,to:source.from,at:gameMinute(s),text:replyText,replyTo:source.id,expectsReply:false});
   p.conversations=rows;
   notify(s,source.from,`message:${replyId}`,`${protagonistNames[source.to]}发来回复。`);
