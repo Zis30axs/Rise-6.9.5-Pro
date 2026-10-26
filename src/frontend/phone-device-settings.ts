@@ -29,8 +29,8 @@ interface WorldPhoneBridge {
   }): Promise<unknown>;
 }
 
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+const HTML_ENTITIES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, character => HTML_ENTITIES[character] ?? character);
 
 function linkedDevice(win: Window): { bridge: WorldPhoneBridge; snapshot: PrivacySnapshot } {
   const parent = win.parent as Window & { __unreadCityWorldPhone?: WorldPhoneBridge };
