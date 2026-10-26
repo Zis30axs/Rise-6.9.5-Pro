@@ -280,7 +280,7 @@ function worldApp(ctx,id) {
   stopUpdates=api()?.subscribe?.(()=>{
     if(v.disposed){stopUpdates();return;}
     if(!data||pending||peek)return;
-    try{const next=base();if(next.revision!==data.revision){data=next;render();}}
+    try{const next=base();if(next.revision!==data.revision||next.now!==data.now||next.owner!==data.owner){data=next;render();}}
     catch(e){ctx.notify(e.message,{error:true});}
   })||(()=>{});
   stopPhoneUpdates=ctx.api.subscribe?.(event=>{if(event.type==='chat'||event.type==='space')void readSelectedContact();})||(()=>{});
