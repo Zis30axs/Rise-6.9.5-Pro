@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { isSoyoSpeaker, resolveSoyoEmotion } from './live2d-soyo-assets';
 import type { SoyoPortrait } from './live2d-soyo-runtime';
 
-const props = withDefaults(defineProps<{ emotion: string; speaker: string; active?: boolean }>(), { active: true });
+const props = withDefaults(defineProps<{ emotion: string; speaker: string; active?: boolean; dimmed?: boolean }>(), { active: true });
 const host = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
 const status = ref<'loading' | 'ready' | 'error'>('loading');
@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="host" class="soyo-live2d" :class="{ 'is-muted': !present || !active }" :data-live2d-status="status"
+  <div ref="host" class="soyo-live2d" :class="{ 'is-muted': !present || !active, 'is-dimmed': dimmed }" :data-live2d-status="status"
     :data-live2d-emotion="displayedEmotion" :data-live2d-speaker-visible="present" aria-hidden="true">
     <canvas ref="canvas" class="soyo-live2d-canvas" />
     <span v-if="status === 'error'" class="soyo-live2d-error">立绘暂时未能显示</span>
