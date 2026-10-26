@@ -20,7 +20,12 @@ export function storyDisplayText(text: string): string {
     if (!speech) { result += match[0]; continue; }
     const previous = result.trimEnd();
     const dialogue = unquote(speech);
-    const repeated = dialogue.length > 0 && (previous.endsWith(speech) || previous.endsWith(dialogue)
+    // Old <tts> metadata can follow an already-renderable |speaker|emotion|speech| row.
+    // Its trailing pipe means endsWith(speech) alone misses the duplicate.
+    const priorTag = /\|([^|\r\n]{1,40})\|([^|\r\n]{1,30})\|([^|\r\n]+)\|\s*$/.exec(previous);
+    const taggedEcho = priorTag?.[1].trim() === payload.slice(0, first).trim()
+      && unquote(priorTag[3].trim()) === dialogue;
+    const repeated = dialogue.length > 0 && (taggedEcho || previous.endsWith(speech) || previous.endsWith(dialogue)
       || quotePairs.some(([open, close]) => previous.endsWith(`${open}${dialogue}${close}`)));
     if (!repeated) result += speech;
   }
