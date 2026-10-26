@@ -147,7 +147,7 @@ function worldApp(ctx,id) {
   }
   async function act(command,owner=data.owner) {
     pending??={binding:data.binding,revision:data.revision,requestId:requestId(ctx.win),owner,command};
-    try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();ctx.notify('已保存');return true;}
+    try {const saved=await api().act(pending);pending=null;data=saved.owner===saved.active?base():saved;render();if(!['send_message','send_npc_message','send_group_message'].includes(command.type))ctx.notify('已保存');return true;}
     catch(e){render();ctx.notify(e.message,{error:true});return false;}
   }
   function refresh() {const before=data?.owner;data=base();section=id;peek=false;pending=null;if(before && before!==data.owner)chatMode='list';render();}
@@ -257,7 +257,7 @@ function worldApp(ctx,id) {
       case 'send-transfer':{const to=formValue('payee'),from=formValue('payFrom'),amount=Math.round(Number(formValue('payAmount'))*100);if(!(amount>0))throw Error('请输入大于 0 的转账金额');if(await ctx.confirm('确认转账？',`向${payeeName(to)}转 ${money(amount)}，从 ${cardNames[from]} 支付。`))await act({type:'send_transfer',to,from,cents:amount});break;}
       case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
-      case 'send':{const message=id==='worldmessages'?drafts.get(recipient):formValue('message'),command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
+      case 'send':{const message=id==='worldmessages'?drafts.get(recipient):formValue('message');if(!message?.trim()){ctx.notify('请先输入消息');break;}const command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
       case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
       case 'retry-reply':try{data=await api().retryReply(el.dataset.id);render();ctx.notify('对方已回复');}catch(e){ctx.notify(e.message,{error:true});}break;
       case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
