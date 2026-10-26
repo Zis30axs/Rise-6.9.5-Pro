@@ -414,7 +414,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
     group: source.channel === 'group' ? { id: source.targetId, name: groupDef?.name ?? MAJO_GROUP_NAME,
       members: [...baseGroupMembers, ...extraGroupProtagonists],
       rule: '你只扮演当前指定的这一位成员，其他被选成员会依次单独回复；可以回应本轮前面的群发言，不得冒充他人。群聊内容对成员可见，私聊与其他人物的经历不可见。' } : null,
-    instruction: '根据本人设定、实际已知对白、此会话和日程决定回复；可以用 text:null 表示暂不回复。不得读取玩家内心、替玩家同意邀请、捏造已经执行的移动或日程。缺少证据的行程保持未知。',
+    instruction: '玩家手动触发本次回复；发送者可能已经连续发送了多条短信，请结合 messages 中同一会话已存的短消息作自然的一次答复（无需逐条重复）。仅依据本人设定、已知对白、此会话和实际日程；可以用 text:null 表示暂不回复。不得读取玩家内心、其他人的私聊，不得替玩家同意邀请、捏造移动或日程。缺少证据的行程保持未知。',
   };
 }
 
