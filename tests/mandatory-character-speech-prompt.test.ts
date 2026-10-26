@@ -8,7 +8,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
     for (const requirement of [
       '|说话人姓名或现有称呼|情绪|台词|',
       '开头与结尾的竖线',
-      '旧版完整 JSON 的 story 字符串内',
+      '在本轮 <story> 标签块内',
       '不允许出现未带标签的直接对白',
       '所有主角（包括甘织玲奈子）',
       'NPC、陌生人、路人',
@@ -33,7 +33,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
       '情绪必须从平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心中选择',
       '无法判断时用平静',
       '动作和语气描述写为独立旁白',
-      '逐句检查 <story> 或 JSON 的 story 字符串',
+      '逐句检查 <story> 标签块',
       '若存在一条无标签的对白，就先补全再提交',
     ]) expect(MANDATORY_CHARACTER_SPEECH_RULE + CHARACTER_SPEECH_FINAL_CHECK).toContain(requirement);
   });
@@ -49,6 +49,8 @@ describe('mandatory visual novel speaker and emotion tags', () => {
   it('injects final self-check after all story and event requirements, but not in phone-only tasks', () => {
     const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
     expect(bridge).toContain('const combinedSystemPrompt =');
+    expect(bridge).toContain('const prompt = taggedPrompts.userPrompt');
+    expect(bridge).toContain('applyMandatoryStoryTagContract(');
     expect(bridge).toContain('const systemPrompt = options?.kind');
     expect(bridge).toContain('STORY_PROTOCOL');
     expect(bridge).toContain('CHARACTER_SPEECH_FINAL_CHECK');
