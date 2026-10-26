@@ -285,6 +285,11 @@ export function mountShell(
   }
   function visibilitychange() {
     if (!doc.hidden) return;
+    if (smsWorking) {
+      epoch++;
+      try { bridge.cancel(); } catch { /* Keep the saved reservation for later. */ }
+      model.busy = false;
+    }
     protagonistSwitch.release();
     cancelInteraction();
     if (activePhoneReply) {
