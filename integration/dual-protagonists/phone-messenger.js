@@ -132,14 +132,15 @@ export function renderBandPanel(data,{esc,btn,heading,time}) {
   const music=data.music||{bands:[],bookings:[],invitations:[],contacts:[]};
   const roles={vocal:'主唱',guitar:'吉他',bass:'贝斯',drums:'鼓',keyboard:'键盘'};
   const stateNames={pending:'等待回复',accepted:'已同意并入队',declined:'已拒绝',later:'暂缓'};
-  const options=(rows)=>rows.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
+  const options=(rows,current)=>rows.map(([id,name])=>'<option value="'+esc(id)+'"'+(id===current?' selected':'')+'>'+esc(name)+'</option>').join('');
+  const draft=data.bandDraft||{};
   const roster=music.bands.map(band=>'<article class="uc-band-card"><h3>'+esc(band.name)+'</h3>'
-    +band.members.map(m=>'<details class="uc-band-member"><summary>'+esc(m.name)+' · '+esc(roles[m.role])+'</summary><p>能力面板 · '+(m.profile?.source==='random'?'已保存的随机能力':'固定能力')+'</p>'
+    +band.members.map(m=>'<details class="uc-band-member" data-band-member="'+esc(band.id+'/'+m.personId)+'"'+(data.bandExpanded?.includes(band.id+'/'+m.personId)?' open':'')+'><summary>'+esc(m.name)+' · '+esc(roles[m.role])+'</summary><p>能力面板 · '+(m.profile?.source==='random'?'已保存的随机能力':'固定能力')+'</p>'
       +Object.entries(roles).map(([key,name])=>'<label>'+name+' <meter min="0" max="100" value="'+Number(m.profile?.skills[key]||0)+'"></meter> '+Number(m.profile?.skills[key]||0)+'/100</label>').join('')+'</details>').join('')+'</article>').join('');
   const form=music.bands.length ? '<section class="uc-band-card"><h3>发送乐队邀请链接</h3>'
-    +'<label>乐队<select data-world-field="band"><option value="">请选择乐队</option>'+options(music.bands.map(b=>[b.id,b.name]))+'</select></label>'
-    +'<label>联系人<select data-world-field="band-contact"><option value="">请选择联系人</option>'+options(music.contacts.map(c=>[c.id,c.name]))+'</select></label>'
-    +'<label>受邀分工<select data-world-field="band-role"><option value="">请选择分工</option>'+options(Object.entries(roles))+'</select></label>'
+    +'<label>乐队<select data-world-field="band"><option value="">请选择乐队</option>'+options(music.bands.map(b=>[b.id,b.name]),draft.band)+'</select></label>'
+    +'<label>联系人<select data-world-field="band-contact"><option value="">请选择联系人</option>'+options(music.contacts.map(c=>[c.id,c.name]),draft['band-contact'])+'</select></label>'
+    +'<label>受邀分工<select data-world-field="band-role"><option value="">请选择分工</option>'+options(Object.entries(roles),draft['band-role'])+'</select></label>'
     +'<p>主角需选择音乐专业才可受邀；其他联系人可以直接邀请。对方明确同意后才登记入队。</p>'+btn('band-invite','发送邀请链接','primary',music.contacts.length?'':'disabled')+'</section>' : '<p>到 Live House 登记乐队后，可以在这里邀请联系人。</p>';
   const invitations=music.invitations.map(i=>'<article class="uc-band-card"><strong>'+esc(i.bandName||music.bands.find(b=>b.id===i.bandId)?.name||'乐队邀请')+' · '+esc(i.name)+'</strong><p>'+esc(roles[i.role])+' · '+stateNames[i.status]+'</p>'+(i.reply?'<p>'+esc(i.reply)+'</p>':'')+(i.from===data.owner&&i.status==='pending'?btn('band-reply','让对方回复邀请','secondary','data-id="'+esc(i.messageId)+'"'):'')+'</article>').join('');
   const bookings=music.bookings.map(b=>'<article class="uc-band-card"><strong>'+esc(b.title)+'</strong><p>'+esc(time(b.start))+' · '+Number(b.duration)+' 分钟 · 已确认 '+b.memberIds.length+' 人</p></article>').join('');

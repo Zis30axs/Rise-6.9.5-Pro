@@ -28,6 +28,7 @@ function obj(x: unknown, keys: string[]): Record<string, unknown> {
 }
 const ident = (x: unknown): string => typeof x === 'string' && /^[A-Za-z0-9][\w:.-]{0,79}$/.test(x) ? x : fail('记录 ID 无效');
 const text = (x: unknown, max = 80): string => typeof x === 'string' && !!x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x.trim() : fail('请填写有效名称或回复');
+const replyText = (x: unknown): string => typeof x === 'string' && !!x.trim() && x.length <= 1000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(x) ? x.trim() : fail('邀请回复正文无效');
 const num = (x: unknown, min = 0, max = 525599999): number => typeof x === 'number' && Number.isSafeInteger(x) && x >= min && x <= max ? x : fail('时间或能力数值无效');
 const who = (x: unknown): ProtagonistId => PROTAGONISTS.includes(x as ProtagonistId) ? x as ProtagonistId : fail('主角无效');
 const role = (x: unknown): MusicRole => MUSIC_ROLES.includes(x as MusicRole) ? x as MusicRole : fail('请选择成员分工');
@@ -87,7 +88,7 @@ export function parseLivehouseState(raw: unknown, now: number): LivehouseState {
     const bandId = ident(i.bandId), band = bands.find(b => b.id === bandId), from = who(i.from), personId = ident(i.personId);
     if (!band || !band.members.some(m => m.personId === musicPersonId(from)) || !['pending', 'accepted', 'declined', 'later'].includes(String(i.status))) fail('邀请记录无效');
     if (i.status === 'accepted' && !band.members.some(m => m.personId === personId)) fail('同意邀请缺少花名册记录');
-    const reply = i.reply === null ? null : text(i.reply, 1000);
+    const reply = i.reply === null ? null : replyText(i.reply);
     if ((i.status === 'pending') !== (reply === null)) fail('邀请回复状态无效');
     return { id: ident(i.id), bandId, from, personId, name: text(i.name), role: role(i.role), messageId: ident(i.messageId), at: num(i.at, 0, now), status: i.status as BandInvitation['status'], reply };
   }, i => i.id);
@@ -129,7 +130,8 @@ function ensureProfile(s: WorldState, personId: string, seed: string, name = '')
   if (saved) return saved;
   if (registry.profiles.length >= 300) fail('能力记录已满');
   const canonical = canon.entries.find(e => e.keys.includes(name));
-  const known = fixedSkills[personId] ?? fixedSkills[canonical?.name ?? ''];
+  const fixed = (key: string) => Object.hasOwn(fixedSkills, key) ? fixedSkills[key] : undefined;
+  const known = fixed(personId) ?? fixed(canonical?.name ?? '');
   const authored = !!personOwner(personId) || !!known || !!residentById(personId);
   const profile: MusicProfile = { personId, source: authored ? 'fixed' : 'random', skills: Object.fromEntries(MUSIC_ROLES.map(k => [k, known?.[k] ?? (authored ? 25 : hash(seed + ':' + personId + ':' + k) % 81 + 10)])) as MusicProfile['skills'] };
   registry.profiles.push(profile); return profile;
@@ -165,6 +167,7 @@ export function prepareLivehouseInteraction(s: WorldState, action: Extract<World
     for (const member of band.members) {
       const actor = personOwner(member.personId); if (!actor || !authority.protagonists) continue;
       const calendar = authority.protagonists.devices[actor].calendar;
+      if (calendar.some(e => e.id === 'live:' + input.id)) fail('成员日历 ID 已被占用');
       if (calendar.length >= 100) fail('成员日历已满');
       if (calendar.some(e => e.start < input.start + input.duration && input.start < e.start + e.duration)) fail('成员日历时间冲突');
       if (personState(authority, actor).schedule.some(e => !e.done && (s.clock.day - 1) * 1440 + Number(e.time.slice(0, 2)) * 60 + Number(e.time.slice(3)) >= input.start && (s.clock.day - 1) * 1440 + Number(e.time.slice(0, 2)) * 60 + Number(e.time.slice(3)) < input.start + input.duration)) fail('成员日程时间冲突');
@@ -178,7 +181,12 @@ export function syncPerformanceCalendars(s: WorldState, bookingId: string): void
   for (const booking of (s.livehouse?.bookings ?? []).filter(b => b.id === bookingId)) for (const id of booking.memberIds) {
     const owner = personOwner(id); if (!owner) continue;
     const calendar = s.protagonists.devices[owner].calendar, eventId = 'live:' + booking.id;
-    if (!calendar.some(e => e.id === eventId)) calendar.push({ id: eventId, title: booking.title, locationId: 'livehouse', start: booking.start, duration: booking.duration, reminded: false });
+    const existing = calendar.find(e => e.id === eventId);
+    if (existing && (existing.title !== booking.title || existing.locationId !== 'livehouse' || existing.start !== booking.start || existing.duration !== booking.duration)) fail('成员日历 ID 已被其他安排占用');
+    if (!existing) {
+      if (calendar.length >= 100) fail('成员日历已满');
+      calendar.push({ id: eventId, title: booking.title, locationId: 'livehouse', start: booking.start, duration: booking.duration, reminded: false });
+    }
   }
 }
 export function livehouseReceipt(s: WorldState, action: Extract<WorldAction, {type:'interior_interact'}>): string {
@@ -230,10 +238,10 @@ export function parseBandReply(raw: unknown, messageId: string): { text: string;
   let data: unknown; try { data = JSON.parse(match![1]!); } catch { fail('邀请回复 JSON 无效'); }
   const r = obj(data, ['messageId', 'decision', 'text']);
   if (r.messageId !== messageId || !['accept', 'decline', 'later'].includes(String(r.decision))) fail('邀请回复 ID 或决定无效');
-  return { text: text(r.text, 1000), bandDecision: r.decision as BandDecision, phoneMessages: [] };
+  return { text: replyText(r.text), bandDecision: r.decision as BandDecision, phoneMessages: [] };
 }
 export function applyBandReply(state: WorldState, messageId: string, reply: string, decision: BandDecision): WorldState {
-  reply = text(reply, 1000);
+  reply = replyText(reply);
   if (!['accept', 'decline', 'later'].includes(decision)) fail('缺少明确的邀请决定');
   const original = bandInvitationForMessage(state, messageId);
   if (!original || original.from !== activeProtagonist(state)) fail('邀请来源无效');
@@ -243,7 +251,7 @@ export function applyBandReply(state: WorldState, messageId: string, reply: stri
   }
   const actor = personOwner(original.personId);
   if (actor && decision === 'accept' && personState(state, actor).academics?.majorId !== 'music') fail('受邀主角已不再修读音乐专业');
-  const next = messageId.startsWith('npc:') ? applyNpcPhoneReply(state, messageId, text(reply, 1000), original.personId) : applyPhoneReply(state, messageId, text(reply, 1000));
+  const next = messageId.startsWith('npc:') ? applyNpcPhoneReply(state, messageId, reply, original.personId) : applyPhoneReply(state, messageId, reply);
   const invitation = bandInvitationForMessage(next, messageId)!, band = next.livehouse!.bands.find(b => b.id === invitation.bandId)!;
   if (decision === 'accept' && !band.members.some(m => m.personId === invitation.personId)) {
     if (band.members.length >= 20) fail('乐队成员已满');

@@ -45,7 +45,7 @@ describe('Live House explicit player forms',()=>{
   });
 });
 describe('existing phone Messages band entry',()=>{
-  const data={owner:'soyo',active:'soyo',name:'素世',now:1000,conversation:[],messages:[],others:[],npcPhone:{contacts:[],groups:[],requests:[],messages:[]},music:{bands:[],bookings:[],invitations:[],contacts:[]}};
+  const data={binding:'qa-soyo',revision:0,owner:'soyo',active:'soyo',name:'素世',now:1000,conversation:[],messages:[],others:[],npcPhone:{contacts:[],groups:[],requests:[],messages:[]},music:{bands:[],bookings:[],invitations:[],contacts:[]}};
   it('shows the band entry, fixed saved abilities and escapes user-controlled names and replies',()=>{
     const skills={vocal:25,guitar:25,bass:90,drums:25,keyboard:25};
     const html=renderBandPanel({...data,music:{...data.music,bands:[{id:'one',name:'<img src=x onerror=alert(1)>',members:[{name:'素世',role:'bass',profile:{source:'fixed',skills}}]}],invitations:[{bandId:'one',name:'立希',role:'drums',from:'soyo',status:'pending',messageId:'npc:one',reply:null}]}},{esc,btn,heading,time});
@@ -54,8 +54,8 @@ describe('existing phone Messages band entry',()=>{
     const screen=renderWorldMessenger({data,recipient:'',mode:'list',drafts:new Map(),pending:null},{esc,btn,heading,time});expect(screen.html).toContain('我的乐队');
   });
   it('wires real phone buttons to save an invitation and request a reply only after an explicit click',async()=>{
-    let current={...data,music:{...data.music,bands:[{id:'band-one',name:'夜读',members:[]}],contacts:[{id:'taki',name:'椎名立希'}]}},sends=0,replies=0;
-    const api={read:()=>current,subscribe:()=>()=>{},act:async raw=>{sends++;current={...current,music:{...current.music,invitations:[{bandId:'band-one',name:'椎名立希',role:'drums',from:'soyo',status:'pending',messageId:'npc:invite-one',reply:null}]}};expect(raw.command).toEqual({type:'band_invite',bandId:'band-one',contactId:'taki',role:'drums'});return current;},retryReply:async()=>{replies++;return current;}};
+    let current={...data,music:{...data.music,bands:[{id:'band-one',name:'夜读',members:[{personId:'protagonist-soyo',name:'素世',role:'bass',profile:{source:'fixed',skills:{bass:90}}}]}],contacts:[{id:'taki',name:'椎名立希'}]}},sends=0,replies=0,onWorldUpdate=()=>{};
+    const api={read:()=>current,subscribe:callback=>{onWorldUpdate=callback;return ()=>{};},act:async raw=>{sends++;current={...current,music:{...current.music,invitations:[{bandId:'band-one',name:'椎名立希',role:'drums',from:'soyo',status:'pending',messageId:'npc:invite-one',reply:null}]}};expect(raw.command).toEqual({type:'band_invite',bandId:'band-one',contactId:'taki',role:'drums'});return current;},retryReply:async()=>{replies++;return current;}};
     const root=document.createElement('div'),handlers=new Map();document.body.append(root);
     const view={root,disposed:false,on:(type,selector,fn)=>handlers.set(type+selector,fn),draw:html=>{root.innerHTML=html;},busy:async(el,fn)=>fn(),dispose(){}};
     const source=readFileSync('integration/dual-protagonists/phone-apps.js','utf8').replace(/^import .*;\n/gm,'').replace(/^export \{.*;\n/gm,'').replace('export const worldPhoneFactories','const worldPhoneFactories');
@@ -64,6 +64,12 @@ describe('existing phone Messages band entry',()=>{
     const v=factories.worldmessages(ctx);const click=handlers.get('click[data-action]');
     await click(root.querySelector('[data-action=open-bands]'));
     root.querySelector('[data-world-field=band]').value='band-one';root.querySelector('[data-world-field=band-contact]').value='taki';root.querySelector('[data-world-field=band-role]').value='drums';
-    await click(root.querySelector('[data-action=band-invite]'));expect(sends).toBe(1);expect(replies).toBe(0);await click(root.querySelector('[data-action=band-reply]'));expect(replies).toBe(1);root.remove();
+    root.querySelector('[data-band-member]').open=true;root.scrollTop=180;root.querySelector('[data-world-field=band-role]').focus();
+    current={...current,revision:current.revision+1};onWorldUpdate();
+    expect(root.querySelector('[data-band-member]').open).toBe(true);expect(root.scrollTop).toBe(180);expect(document.activeElement).toBe(root.querySelector('[data-world-field=band-role]'));
+    expect(root.querySelector('[data-world-field=band]').value).toBe('band-one');expect(root.querySelector('[data-world-field=band-contact]').value).toBe('taki');expect(root.querySelector('[data-world-field=band-role]').value).toBe('drums');
+    await click(root.querySelector('[data-action=band-invite]'));expect(sends).toBe(1);expect(replies).toBe(0);await click(root.querySelector('[data-action=band-reply]'));expect(replies).toBe(1);
+    current={...current,binding:'qa-new-chat',revision:current.revision+1};onWorldUpdate();
+    expect(root.querySelector('[data-world-field=band]').value).toBe('');expect(root.querySelector('[data-band-member]').open).toBe(false);root.remove();
   });
 });

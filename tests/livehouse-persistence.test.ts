@@ -82,6 +82,30 @@ describe('Live House confirmed registry',()=>{
     expect(()=>reduceState(s,booking('overlap-calendar',6000))).toThrow(/日历/);
     expect(parseState(JSON.parse(JSON.stringify(s))).livehouse).toEqual(s.livehouse);
   });
+  it('rejects a calendar ID collision without confirming a different slot or changing the existing calendar',()=>{
+    const s=atDesk(withBand(),'book');
+    s.protagonists!.devices.soyo.calendar.push({id:'live:show-one',title:'玩家原有日程',locationId:'home',start:6000,duration:30,reminded:false});
+    const saved=JSON.stringify(s);
+    expect(()=>reduceState(s,booking())).toThrow(/日历.*ID|已占用/);
+    expect(JSON.stringify(s)).toBe(saved);
+  });
+  it('keeps confirmed performance times authoritative when editing or deleting the calendar display',()=>{
+    let s=reduceState(atDesk(withBand(),'book'),booking());
+    const schedule=(id:string,start:number,title='私人日程') => ({type:'phone_app' as const,requestId:'edit-'+id,owner:'soyo' as const,command:{type:'calendar_save' as const,id,title,locationId:'livehouse',start,duration:60}});
+    const saved=JSON.stringify(s);
+    expect(()=>reduceState(s,schedule('live:show-one',6000))).toThrow(/已确认演出/);expect(JSON.stringify(s)).toBe(saved);
+    s=reduceState(s,{type:'phone_app',requestId:'hide-event',owner:'soyo',command:{type:'calendar_delete',id:'live:show-one'}});
+    expect(s.livehouse!.bookings).toHaveLength(1);
+    expect(()=>reduceState(s,schedule('overlap-hidden-show',booking().booking!.start))).toThrow(/已确认演出/);
+    const restored=reduceState(s,booking());
+    expect(restored.protagonists!.devices.soyo.calendar.filter(e=>e.id==='live:show-one')).toHaveLength(1);
+    expect(restored.player.energy).toBe(s.player.energy);expect(restored.clock).toEqual(s.clock);
+  });
+  it('cannot overflow a full calendar when replaying a missing performance projection',()=>{
+    const s=reduceState(atDesk(withBand(),'book'),booking());
+    s.protagonists!.devices.soyo.calendar=Array.from({length:100},(_,n)=>({id:'event-'+n,title:'既有安排',locationId:'home',start:7000+n*10,duration:5,reminded:false}));
+    const saved=JSON.stringify(s);expect(()=>reduceState(s,booking())).toThrow(/日历已满/);expect(JSON.stringify(s)).toBe(saved);
+  });
   it('rejects invalid saved references, duplicate members, malformed skills, unexpected fields and future creation dates',()=>{
     const s=withBand();
     for(const corrupt of [
@@ -116,6 +140,26 @@ describe('phone band invitations and ability roster',()=>{
     expect(next.livehouse!.bands[0]!.members).toHaveLength(1);expect(next.livehouse!.profiles).toHaveLength(1);
     for(const raw of ['同意','<band_reply>{"messageId":"wrong","decision":"accept","text":"好"}</band_reply>','<band_reply>{"messageId":"npc:invite-one","decision":"accept","text":"好","members":["fake"]}</band_reply>']) expect(()=>parseBandReply(raw,'npc:invite-one')).toThrow();
     expect(()=>applyBandReply(s,'npc:invite-one','好',undefined as any)).toThrow();
+  });
+  it.each(['npc','protagonist'] as const)('preserves a multiline acceptance and its saved receipt for %s',channel=>{
+    let s=withBand(),messageId='npc:invite-one';
+    if(channel==='npc') s=invite(contact(s));
+    else {
+      s=reduceState(s,{type:'switch_protagonist',target:'sakiko'});
+      s=reduceState(s,{type:'choose_academics',majorId:'music'});
+      s=reduceState(s,{type:'switch_protagonist',target:'soyo'});
+      s=invite(s,'invite-one','protagonist-sakiko');messageId='dual:invite-one';
+    }
+    const content='好，我愿意加入。\n周末一起练习吧。';
+    const parsed=parseBandReply('<band_reply>'+JSON.stringify({messageId,decision:'accept',text:content})+'</band_reply>',messageId);
+    const accepted=applyBandReply(s,messageId,parsed.text,parsed.bandDecision);
+    expect(parseState(JSON.parse(JSON.stringify(accepted))).livehouse!.invitations[0]!.reply).toBe(content);
+    expect(accepted.livehouse!.bands[0]!.members).toHaveLength(2);
+  });
+  it('randomizes a stranger whose stable ID also happens to be a JavaScript object property name',()=>{
+    const s=invite(contact(withBand(),'constructor','普通陌生人'),'stranger-constructor','constructor');
+    const next=applyBandReply(s,'npc:stranger-constructor','可以。','accept');
+    expect(next.livehouse!.profiles.find(p=>p.personId==='constructor')!.source).toBe('random');
   });
   it('rolls strangers once per stable person and retains the same ability on reload and joining another band',()=>{
     let s=invite(contact(withBand(),'stranger','普通陌生人'), 'stranger-invite','stranger');

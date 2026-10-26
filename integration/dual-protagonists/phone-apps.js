@@ -118,6 +118,7 @@ function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
   let data=null,section=id,peek=false,pending=null,recipient='protagonist',chatMode='list',twiitchChannel='kaguya',twiitch3d=false,bandPanelOpen=false;
   const drafts=new Map();
+  let bandView={binding:null,draft:{},expanded:[],scroll:0,focus:null};
   let stopUpdates=()=>{},stopPhoneUpdates=()=>{},reading=false;
   const protagonistTarget=()=>recipient.startsWith('protagonist:')?recipient.slice('protagonist:'.length):data.other.id;
   const protagonistName=()=>(data.others||[]).find(x=>x.id===protagonistTarget())?.name||data.other.name;
@@ -155,7 +156,21 @@ function worldApp(ctx,id) {
   function render() {
     if(v.disposed)return;
     if(id==='worldmessages'){
-      if(bandPanelOpen){v.root.classList.remove('chat-mode');v.draw(renderBandPanel({...data,pendingBandSave:!!pending},{esc,btn,heading,time}));return;}
+      if(bandPanelOpen){
+        const binding=JSON.stringify([data.binding,data.owner]);
+        if(bandView.binding!==binding) bandView={binding,draft:{},expanded:[],scroll:0,focus:null};
+        else if(v.root.querySelector('.uc-band-page')) {
+          for(const key of ['band','band-contact','band-role']) {const field=v.root.querySelector(`[data-world-field="${key}"]`);if(field)bandView.draft[key]=field.value;}
+          bandView.expanded=[...v.root.querySelectorAll('[data-band-member][open]')].map(el=>el.dataset.bandMember);
+          bandView.scroll=v.root.scrollTop;
+          bandView.focus=ctx.doc.activeElement?.dataset?.worldField||null;
+        }
+        v.root.classList.remove('chat-mode');
+        v.draw(renderBandPanel({...data,pendingBandSave:!!pending,bandDraft:bandView.draft,bandExpanded:bandView.expanded},{esc,btn,heading,time}));
+        v.root.scrollTop=bandView.scroll;
+        if(bandView.focus&&['band','band-contact','band-role'].includes(bandView.focus))v.root.querySelector(`[data-world-field="${bandView.focus}"]`)?.focus({preventScroll:true});
+        return;
+      }
       const previous=v.root.querySelector('[data-keep-scroll]'),atBottom=!previous || previous.scrollHeight-previous.scrollTop-previous.clientHeight<70;
       const screen=renderWorldMessenger({data,recipient,mode:chatMode,drafts,pending},{esc,btn,heading,time});
       recipient=screen.recipient;
