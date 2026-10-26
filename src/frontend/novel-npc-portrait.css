@@ -1,6 +1,7 @@
 .novel-npc-portrait {
   position: absolute;
-  inset: 90px 110px 330px 0;
+  /* Generic atlas figures need the same full-height stage as authored sprites. */
+  inset: 90px 110px 24px 0;
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
@@ -22,15 +23,16 @@
 /* Phone pose replaces the muted standing portrait while the phone window is open. */
 .novel-npc-portrait.protagonist-phone-pose { bottom: 24px; }
 
+/* On phones, reserve room for the mode switch without shrinking generic NPCs. */
 @media (max-width: 760px) {
-  .novel-npc-portrait { inset: 133px 55px 436px 55px; }
+  .novel-npc-portrait { inset: 146px 12px 84px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 133px 12px 84px; }
   /* Keep the head below the presentation switcher on narrow screens. */
   .novel-npc-portrait[data-majo-portrait] { inset: 146px 12px 84px; }
   .novel-npc-portrait.protagonist-phone-pose { inset: 133px 12px 84px; }
 }
 @media (max-height: 670px) and (max-width: 760px) {
-  .novel-npc-portrait { inset: 72px 12px 316px 172px; }
+  .novel-npc-portrait { inset: 118px 12px 24px; }
   .novel-npc-portrait[data-sakiko-sprite] { inset: 72px 12px 24px; }
   .novel-npc-portrait[data-majo-portrait] { inset: 118px 12px 24px; }
   .novel-npc-portrait.protagonist-phone-pose { inset: 72px 12px 24px; }
