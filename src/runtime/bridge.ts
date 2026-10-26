@@ -70,7 +70,7 @@ export const MANDATORY_CHARACTER_SPEECH_RULE = [
 export const CHARACTER_SPEECH_FINAL_CHECK = '【输出前必须自检】逐句检查 <story> 或 JSON 的 story 字符串：只要是任何人物直接说出的原话，无论是否夹在引号、冒号、动作描写或回忆里，都必须转换成完整的 |说话人|九选一情绪|台词| 独立行；若存在一条无标签的对白，就先补全再提交。不要输出检查过程，不要省略任一角色的标签。';
 
 export const STORY_PROTOCOL = [
-  '世界舞台为日本东京丰岛区及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业与乐队活动圈，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
+  '世界舞台为日本东京丰岛区、新宿及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业街区，新宿大型商业区是都会娱乐、Live House 与 KTV 娱乐中心，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   MANDATORY_CHARACTER_SPEECH_RULE,
@@ -82,7 +82,7 @@ export const STORY_PROTOCOL = [
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包；{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
-  '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；不自行设定。',
+  '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；除祥子与素世外，其他主角必须选修音乐专业才能预约开办 Livehouse 和创建乐队。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
   '目录外的合理日常行动如洗澡、做家务、兼职，可使用{"type":"activity","label":"本次活动","minutes":30,"effects":{"energy":-5,"morale":3,"stress":-2,"health":0,"balance":0,"satiety":0,"foodEnergy":0}}。minutes为整数1–10080；七个effects字段必须齐全、无变化填0；除balance整数±100000、foodEnergy整数±20000外其余整数±100。收入支出及身心变化须与行动相符，余额不得为负；时间带来的正常饱腹和能量消耗由程序自动计算，不再手动重扣。不能用activity绕过已配置服务的收费、库存、闭店或学习规则，不能凭空增加物品或学习点。',
   `角色之间的资金往来必须使用显式转账行动：{"type":"transfer","from":"付款方ID","to":"收款方ID","cents":5000,"reason":"本轮转账依据"}。from和to逐字使用主角ID或contacts里的联系人ID，两者不能相同；cents为整数1–${STORY_ACTION_LIMITS.transferCents}（单笔最高十万日元），程序双边同时扣款与入账，总金额守恒。只有本轮明确发生金钱交付时才转账；他人给玩家的钱不得用activity的balance冒充，必须走transfer。付款方余额不足时整轮不保存，转账前先核对。`,

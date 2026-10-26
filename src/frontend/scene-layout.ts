@@ -25,6 +25,7 @@ export const sceneAreas: SceneArea[] = [
   { id: 'commercial', label: '池袋·东池袋商业区', minX: 130, maxX: 250, minZ: 110, maxZ: 210 },
   { id: 'downtown', label: '目白·目白台住宅区', minX: -115, maxX: 110, minZ: 145, maxZ: 255 },
   { id: 'city-park', label: '神田川沿岸公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
+  { id: 'grand-commercial', label: '新宿·大型商业娱乐区', minX: -250, maxX: -120, minZ: -210, maxZ: -100 },
   { id: 'campus', label: '高田·西早稻田校园', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
   { id: 'neighborhood', label: '高田校园南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
   { id: 'city-roads', label: '城市连接道路', ...sceneBounds },
@@ -48,6 +49,7 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'commercial', label: '池袋接驳站', x: 180, z: 150 },
   { id: 'downtown', label: '目白台接驳站', x: -20, z: 185 },
   { id: 'city-park', label: '神田川绿道站', x: 180, z: -150 },
+  { id: 'grand-commercial', label: '新宿大型商业区接驳站', x: -180, z: -150 },
 ];
 
 export const scenePaths: ScenePath[] = [

@@ -15,7 +15,7 @@ import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
-import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
+import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
@@ -375,6 +375,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
   const oldRoutes: Record<string, { minutes: number; fare: number }> = {
     home: { minutes: 45, fare: 6 }, commercial: { minutes: 25, fare: 3 },
     'city-park': { minutes: 35, fare: 4 }, downtown: { minutes: 55, fare: 12 },
+    'grand-commercial': { minutes: 40, fare: 8 },
   };
   const oldDestination = fromStopId === 'campus' ? toStopId : toStopId === 'campus' ? fromStopId : '';
   const old = oldRoutes[oldDestination];
@@ -1196,6 +1197,11 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (Math.hypot(next.interior.x - interaction.x, next.interior.z - interaction.z) > INTERIOR_INTERACTION_RANGE) throw new Error('请先走到对应设施附近再交互。');
       if (interaction.id === 'dorm-rest') throw new Error('请选择休息时长。');
       if (isStudyInteraction(interaction.id)) throw new Error('请选择学习时长。');
+      if (interaction.id === 'livehouse-booking' || interaction.id === 'livehouse-create-band') {
+        const who = (worldAuthority?.protagonists ? activeProtagonist(worldAuthority) : (next.protagonists ? activeProtagonist(next) : 'soyo'));
+        const check = canManageLivehouseAndBand(next, who);
+        if (!check.allowed) throw new Error(check.reason);
+      }
       if (interaction.energyDelta < 0 && next.player.energy < -interaction.energyDelta) throw new Error('精力不足，请先休息。');
       if (interaction.minutes === 0 && interaction.energyDelta === 0 && next.interior.activityId === interaction.id) return next;
       const playerBefore = { ...next.player };
