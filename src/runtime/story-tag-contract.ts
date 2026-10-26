@@ -18,7 +18,7 @@ export const STORY_TAG_FINAL_CHECK =
 export const STORY_TAG_USER_REMINDER =
   '【本轮程序输出格式再次锁定】你的实际回复第一个非空白字符必须是 <story>；全部正文和人物对白必须放在 <story>...</story> 中，闭合后必须有 <phone_messages>[]</phone_messages>（新短信才替换 []）。其余合法标签仅在需要时添加。不得输出旧 JSON 顶层、纯文本、代码围栏、预设自带格式或任何标签外说明。';
 
-const PHONE_ONLY_KINDS = new Set(['phone_reply', 'npc_phone_reply', 'band_invitation_reply']);
+const PHONE_ONLY_KINDS = new Set(['phone_reply', 'npc_phone_reply', 'band_invitation_reply', 'autonomous_sms']);
 
 /** Apply in BOTH channels, leaving phone-only transport formats untouched. */
 export function applyMandatoryStoryTagContract(
