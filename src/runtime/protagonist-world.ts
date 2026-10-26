@@ -1,3 +1,4 @@
+import { parseBandInviteCommand, sendBandInvitation, musicPersonId, type BandInviteCommand } from './livehouse';
 import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
@@ -57,7 +58,7 @@ export interface ProtagonistWorld {
   /** Seven-game-day extractive memories, never a replacement for live state. */
   weeklyMemory?: WeeklyMemory;
 }
-export type PhoneCommand = NpcPhoneCommand
+export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
   | { type: 'appearance'; appearance: PhoneAppearance }
   | { type: 'device'; locked: boolean; share: DeviceState['share'] }
@@ -97,6 +98,7 @@ const exact = (x: unknown, fields: string[]): Record<string, unknown> => {
 };
 const integer = (x: unknown, max = 2000000000, min = 0): number => typeof x === 'number' && Number.isSafeInteger(x) && x >= min && x <= max ? x : fail('数值无效');
 const string = (x: unknown, max = 240): string => typeof x === 'string' && x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x : fail('文本无效');
+const messageText = (x: unknown): string => typeof x === 'string' && x.trim() && x.length <= 1000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(x) ? x : fail('短信文本无效');
 const identifier = (x: unknown): string => typeof x === 'string' && /^[A-Za-z0-9][\w:.-]{0,79}$/.test(x) ? x : fail('ID 无效');
 const actor = (x: unknown): ProtagonistId => PROTAGONISTS.includes(x as ProtagonistId) ? x as ProtagonistId : fail('主角无效');
 const card = (x: unknown): FictionalCardId => FICTIONAL_CARDS.includes(x as FictionalCardId) ? x as FictionalCardId : fail('卡片无效');
@@ -255,7 +257,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     const replyTo=item.replyTo===null?null:identifier(item.replyTo);
     const expectsReply=boolean(item.expectsReply);
     if(replyTo!==null&&expectsReply) fail('自动回复不能再触发自动回复');
-    return {id:identifier(item.id),from,to,at:integer(item.at,525600000),text:string(item.text,1000),replyTo,expectsReply};
+    return {id:identifier(item.id),from,to,at:integer(item.at,525600000),text:messageText(item.text),replyTo,expectsReply};
   })) : [];
   if(conversations.some(row => row.replyTo!==null && !conversations.some(parent =>
     parent.id===row.replyTo && parent.from===row.to && parent.to===row.from && parent.expectsReply))) fail('短信回复来源无效');
@@ -421,12 +423,13 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
 }
 function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
+  if (type === 'band_invite') return parseBandInviteCommand(raw);
   if (type === 'send_npc_message' || type === 'send_group_message' || type === 'resolve_contact_request') return parseNpcPhoneCommand(raw);
-  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
+  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'band_invite'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
   if(type==='send_message'){
     const keys=Object.keys(raw as object).sort().join(',');
-    if(keys==='text,type') return {type,text:string((raw as {text:unknown}).text,1000)};
-    if(keys==='text,to,type') return {type,to:actor((raw as {to:unknown}).to),text:string((raw as {text:unknown}).text,1000)};
+    if(keys==='text,type') return {type,text:messageText((raw as {text:unknown}).text)};
+    if(keys==='text,to,type') return {type,to:actor((raw as {to:unknown}).to),text:messageText((raw as {text:unknown}).text)};
     return fail('短信字段无效');
   }
   if(!Object.hasOwn(fields,type)) return fail('手机操作无效');
@@ -467,12 +470,13 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
   if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
-  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
+  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
+    case 'band_invite': sendBandInvitation(s, command, requestId); break;
     case 'send_npc_message':
     case 'send_group_message':
     case 'resolve_contact_request':
@@ -521,6 +525,10 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       order.status='received';notify(s,owner,`order:${order.id}:received`,`${protagonistNames[who]}已领取订单。`);break;
     }
     case 'calendar_save': {
+      const performances = (s.livehouse?.bookings ?? []).filter(b => b.memberIds.includes(musicPersonId(owner)));
+      const performance = performances.find(b => command.id === 'live:' + b.id);
+      if (performance && (command.title !== performance.title || command.locationId !== 'livehouse' || command.start !== performance.start || command.duration !== performance.duration)) fail('已确认演出不能通过编辑日历改写');
+      if (performances.some(b => command.id !== 'live:' + b.id && b.start < command.start + command.duration && command.start < b.start + b.duration)) fail('与已确认演出档期冲突');
       if(command.start<gameMinute(s)) fail('不能添加已经过去的日程');
       if(!isKnownLocation(command.locationId)) fail('日程地点无效');
       const events=device.calendar.filter(x=>x.id!==command.id);
@@ -579,7 +587,7 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
     if(existing.id!==replyId||existing.text!==replyText||existing.replyTo!==source.id) fail('重复短信回复内容不一致');
     return s;
   }
-  if(typeof replyText!=='string'||!replyText.trim()||replyText.length>1000||/[\u0000-\u001f]/.test(replyText)) fail('短信回复正文无效');
+  if(typeof replyText!=='string'||!replyText.trim()||replyText.length>1000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(replyText)) fail('短信回复正文无效');
   if(rows.length>=10000) fail('短信历史达到存档上限');
   const recipient=personState(s,source.from),responder=personState(s,source.to);
   if(recipient.phone.length>=200) fail('当前手机收件箱已满');
@@ -602,6 +610,7 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
   const index = rows.indexOf(source);
   const alreadyAnswered = new Set(rows.filter(answer => answer.replyTo !== null).map(answer => answer.replyTo));
   for (const prior of rows.slice(0, index)) {
+    if (s.livehouse?.invitations.some(i => i.messageId === prior.id && i.status === 'pending')) continue;
     if (prior.replyTo === null && prior.expectsReply &&
         prior.from === source.from && prior.to === source.to &&
         !alreadyAnswered.has(prior.id)) prior.expectsReply = false;
@@ -612,3 +621,4 @@ export function applyPhoneReply(state: WorldState, messageId: string, replyText:
   p.revision++;
   return s;
 }
+

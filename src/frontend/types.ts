@@ -150,6 +150,8 @@ export interface WorldState {
   interactionEventRate?: InteractionEventRateState;
   /** Authored cafe offers and per-protagonist daily gift receipts. */
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
+  /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
+  livehouse?: import('../runtime/livehouse').LivehouseState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
@@ -180,7 +182,7 @@ export type WorldAction =
   | { type: 'enter_interior'; roomId: string }
   | { type: 'leave_interior' }
   | { type: 'interior_walk'; x: number; z: number; yaw: number }
-  | { type: 'interior_interact'; interactionId: string }
+  | { type: 'interior_interact'; interactionId: string; registration?: import('../runtime/livehouse').BandRegistrationInput; booking?: import('../runtime/livehouse').BookingInput }
   | { type: 'interior_rest'; optionId: string }
   | { type: 'interior_study'; interactionId: string; optionId: string; subjectId: string }
   | { type: 'read_subject'; subjectId: string; optionId: string }
@@ -226,11 +228,12 @@ export interface GeneratedStory {
   worldActions?: StoryAction[];
   contactRequests?: import('../runtime/npc-phone').ContactProposal[];
   phoneDecision?: 'silence';
+  bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
 }
 
 export type StoryGenerationOptions = {
-  kind: 'phone_reply' | 'npc_phone_reply';
+  kind: 'phone_reply' | 'npc_phone_reply' | 'band_invitation_reply';
   messageId: string;
 } | {
   kind: 'interaction_event';
@@ -296,4 +299,5 @@ export interface ShellActions {
   retryPhoneSync(): void;
   setDismissHandler?(handler: (() => boolean) | undefined): void;
 }
+
 

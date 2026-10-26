@@ -85,6 +85,7 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     return {recipient:chosen,replyId:null,html:CHAT_STYLE+heading('消息','','Messages')
       + '<div class="uc-phone-header"><small>'+esc(data.name)+' · '+esc(time(data.now))
       + ' · 发送不会自动请求模型</small></div>'+reqHTML
+      + btn('open-bands','我的乐队 · 名册与邀请','secondary')
       + '<div class="conv-list uc-conv-list" role="list">'+(list||'<p class="chat-empty">暂无可联系的角色</p>')+'</div>'};
   }
   const contact=recipients.find(r=>r.key===chosen);
@@ -104,11 +105,11 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     return '<article class="msg'+(outgoing?' me':'')+'" data-message-id="'+esc(m.id)+'">'
       +(outgoing?'':'<span class="uc-portrait" style="width:32px;height:32px;border-radius:50%;font-size:12px" aria-hidden="true">'+esc(speaker.slice(0,1))+'</span>')
       +'<div class="m-body">'+(chosen.startsWith('group:')?'<span class="m-name">'+esc(speaker)+'</span>':'')
-      +'<div class="chat-bubble">'+esc(m.text)+'</div>'
+      +'<div class="chat-bubble">'+esc(m.text)+(data.music?.invitations.some(i=>i.messageId===m.id)?btn('open-bands','查看乐队邀请','text-button'):'')+'</div>'
       +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>';
   }).join('');
   const pendingUI=pending ? '<div class="sys" role="status">发送未保存 · 可重试'+btn('retry','重试','text-button')+btn('discard','取消','text-button')+'</div>' : '';
-  const tools='<div class="uc-reply-tools">'
+  const tools='<div class="uc-reply-tools">'+btn('open-bands','我的乐队','text-button')
     + btn('request-reply','让对方回复','secondary','data-id="'+esc(lastPending||'')+'"'+(lastPending&&!pending?'':' disabled'))
     + btn('wait-read','等5分钟','text-button','data-minutes="5"'+(pending?' disabled':''))
     + btn('wait-read','等15分钟','text-button','data-minutes="15"'+(pending?' disabled':''))
@@ -123,4 +124,26 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     + '<div class="msgs" data-keep-scroll="world-sms-'+esc(chosen)+'" role="log" aria-live="polite">'
     +(bubbles||'<p class="chat-empty">发几条消息都可以。发送后再点“让对方回复”，或等一段游戏时间查看已读状态。</p>')
     +pendingUI+'</div>'+tools+composer+'</div>'};
+}
+
+
+/** A read-only roster plus explicit invitation controls in the existing Messages app. */
+export function renderBandPanel(data,{esc,btn,heading,time}) {
+  const music=data.music||{bands:[],bookings:[],invitations:[],contacts:[]};
+  const roles={vocal:'主唱',guitar:'吉他',bass:'贝斯',drums:'鼓',keyboard:'键盘'};
+  const stateNames={pending:'等待回复',accepted:'已同意并入队',declined:'已拒绝',later:'暂缓'};
+  const options=(rows,current)=>rows.map(([id,name])=>'<option value="'+esc(id)+'"'+(id===current?' selected':'')+'>'+esc(name)+'</option>').join('');
+  const draft=data.bandDraft||{};
+  const roster=music.bands.map(band=>'<article class="uc-band-card"><h3>'+esc(band.name)+'</h3>'
+    +band.members.map(m=>'<details class="uc-band-member" data-band-member="'+esc(band.id+'/'+m.personId)+'"'+(data.bandExpanded?.includes(band.id+'/'+m.personId)?' open':'')+'><summary>'+esc(m.name)+' · '+esc(roles[m.role])+'</summary><p>能力面板 · '+(m.profile?.source==='random'?'已保存的随机能力':'固定能力')+'</p>'
+      +Object.entries(roles).map(([key,name])=>'<label>'+name+' <meter min="0" max="100" value="'+Number(m.profile?.skills[key]||0)+'"></meter> '+Number(m.profile?.skills[key]||0)+'/100</label>').join('')+'</details>').join('')+'</article>').join('');
+  const form=music.bands.length ? '<section class="uc-band-card"><h3>发送乐队邀请链接</h3>'
+    +'<label>乐队<select data-world-field="band"><option value="">请选择乐队</option>'+options(music.bands.map(b=>[b.id,b.name]),draft.band)+'</select></label>'
+    +'<label>联系人<select data-world-field="band-contact"><option value="">请选择联系人</option>'+options(music.contacts.map(c=>[c.id,c.name]),draft['band-contact'])+'</select></label>'
+    +'<label>受邀分工<select data-world-field="band-role"><option value="">请选择分工</option>'+options(Object.entries(roles),draft['band-role'])+'</select></label>'
+    +'<p>主角需选择音乐专业才可受邀；其他联系人可以直接邀请。对方明确同意后才登记入队。</p>'+btn('band-invite','发送邀请链接','primary',music.contacts.length?'':'disabled')+'</section>' : '<p>到 Live House 登记乐队后，可以在这里邀请联系人。</p>';
+  const invitations=music.invitations.map(i=>'<article class="uc-band-card"><strong>'+esc(i.bandName||music.bands.find(b=>b.id===i.bandId)?.name||'乐队邀请')+' · '+esc(i.name)+'</strong><p>'+esc(roles[i.role])+' · '+stateNames[i.status]+'</p>'+(i.reply?'<p>'+esc(i.reply)+'</p>':'')+(i.from===data.owner&&i.status==='pending'?btn('band-reply','让对方回复邀请','secondary','data-id="'+esc(i.messageId)+'"'):'')+'</article>').join('');
+  const bookings=music.bookings.map(b=>'<article class="uc-band-card"><strong>'+esc(b.title)+'</strong><p>'+esc(time(b.start))+' · '+Number(b.duration)+' 分钟 · 已确认 '+b.memberIds.length+' 人</p></article>').join('');
+  return '<style>.uc-band-page{padding:12px;overflow-wrap:anywhere}.uc-band-card{border:1px solid #8884;border-radius:14px;padding:12px;margin:12px 0}.uc-band-page label{display:grid;gap:6px;margin:10px 0}.uc-band-page select{width:100%;box-sizing:border-box;min-width:0;min-height:44px;background:var(--card,#222);color:inherit;border:1px solid #8886;border-radius:8px;padding:8px}.uc-band-page button,.uc-band-page summary{min-height:44px}.uc-band-page meter{width:100%;max-width:100%}.uc-band-page h3{margin:0 0 10px}.uc-band-page p{font-size:13px;line-height:1.6}.uc-band-member{border-top:1px solid #8883;padding-top:10px}.uc-band-page [data-action=retry]{margin-top:10px}</style>'
+    +'<div class="uc-band-page">'+heading('我的乐队','','Live House')+btn('close-bands','返回消息','text-button')+(data.pendingBandSave?'<p>邀请未保存，可重试或取消。</p>'+btn('retry','重试保存','secondary')+btn('discard','取消','text-button'):'')+roster+form+'<h3>邀请记录</h3>'+(invitations||'<p>暂无邀请</p>')+'<h3>演出预约</h3>'+(bookings||'<p>暂无预约</p>')+'</div>';
 }

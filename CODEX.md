@@ -1,5 +1,9 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## Live House 登记与邀请（2026-10-26）
+
+乐队/演出以共享可选 `WorldState.livehouse` 为正式依据，不从历史成功日志、活动标识或普通叙事补造记录。表单只确认本人为初始成员；其他成员必须经玩家手机发邀请及模型结构化同意。能力按稳定身份保存，陌生人仅首次数值抽样。普通短信合并回复须保留待确认邀请；手机状态重绘须保留同一聊天/主角内的邀请选择。日历是演出预约的投影，不能从编辑日历入口改写已确认档期，隐藏显示也不取消预约。详见 `integration/livehouse/README.md`；四尺寸浏览器及真机验收仍未完成，保持 Draft，不覆盖历史发行物或主动跑 CI。
+
 ## 最新增量：超かぐや姫！3D 动作细化与角色卡 Twiitch 直播间接入（2026-10-25）
 
 用户在 `素材/《超かぐや姫！》3D 真实模型互动 Live 演示 - 甘织玲奈子专属手机 (Peach Flip).html` 提供了动作细化版本（比心、挥手两大动作精细标定、带手指多节骨骼联动、布料弹性物理与手动姿态编辑器）。已按照这一版全面接入角色卡及独立演示：
@@ -916,3 +920,4 @@ Bridge明确区分便利店store和locationServices，提供venue营业安排及
 交付 `outputs/未读之城-地点服务版.png` 为78,374,781字节，SHA-256 `4e1363cee31a12bc8db28577465af154c71c6591d7461c336d01ac8efb300189`；bundle为58,188,878字节，SHA-256 `220a8df42588b5b5745f13eae019ab847898bd117cee3a90b513fc5da7569e93`。已更新既有“未读之城 · 前端联调”卡，备份 `dist/location-services-card-before.png`，其他元数据、脚本与图像块保持。11保护文件、6原压缩包、29聊天及已有内嵌素材核验保持。未调用真实剧情模型、未验收原生酒馆页面或物理TauriTavern，受控浏览器手机为stub；未提交、推送或发布。证据见 `validation.locationServicesCheck`、`outputs/location-services-verification.json`、`outputs/location-services-browser-results.json` 与 `outputs/location-services-packaging.json`。
 
 独立只读复核通过：三份PNG本项目脚本与最终bundle逐字一致，所有PNG块CRC通过；交付图像块与封面一致，安装图像块、其他元数据和脚本与本轮备份一致。11保护文件、6原压缩包、29聊天的哈希、字节数及聊天文件成员集合保持，见`outputs/location-services-independent-audit.json`。
+

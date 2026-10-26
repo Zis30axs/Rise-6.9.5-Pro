@@ -346,9 +346,9 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
     interactions: [
       { id: 'livehouse-booking', label: '预约开办 Livehouse', description: '预约舞台档期与声光设备，开办专场演出。除祥子与素世外，其他主角必须选修音乐专业。',
-        x: -3.2, z: -1.2, minutes: 30, energyDelta: -5, result: '在 Live House 成功预约了演出档期与舞台设备！', prompt: '你已在 Live House 成功预约了开办演出的档期。' },
+        x: -3.2, z: -1.2, minutes: 30, energyDelta: -5, result: '演出预约已写入名录与日历。', prompt: '只依据已保存的乐队、成员和具体时间描述本次演出预约，不得补造档期。' },
       { id: 'livehouse-create-band', label: '创建乐队', description: '在 Livehouse 音乐名录中登记并组建新乐队。除祥子与素世外，其他主角必须选修音乐专业。',
-        x: 3.2, z: -1.2, minutes: 20, energyDelta: -3, result: '在 Live House 正式完成了新乐队的创建与登记！', prompt: '你已在 Live House 完成了新乐队的组建与名录登记。' },
+        x: 3.2, z: -1.2, minutes: 20, energyDelta: -3, result: '乐队名称与已确认成员已写入名录。', prompt: '只依据已保存的乐队名录描述登记，不得自动增加成员。' },
       { id: 'livehouse-rehearsal', label: '舞台试音排练', description: '在舞台上调试监听音响与乐器并排练 25 分钟，消耗 5 点精力。',
         x: 0, z: -1.5, minutes: 25, energyDelta: -5, result: '在 Live House 舞台上完成了认真的乐器调试与试音排练。', prompt: '你在 Live House 舞台上完成了排练试音。' },
       { id: 'livehouse-stage-observe', label: '观察舞台音响与灯光', description: '环视舞台灯光轨道、返听音箱与观众池，不消耗时间或精力。',
@@ -422,3 +422,4 @@ export function canManageLivehouseAndBand(state: Pick<WorldState, 'academics'>, 
     reason: `除了祥子和素世以外，其他主角（${name}）必须选修音乐专业才能预约开办 Livehouse 和创建乐队。`,
   };
 }
+

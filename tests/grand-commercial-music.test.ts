@@ -100,9 +100,11 @@ describe('livehouse booking and band creation music major restrictions', () => {
     // Soyo has null or non-music academics, but can manage livehouse
     expect(canManageLivehouseAndBand(state, 'soyo').allowed).toBe(true);
 
-    // Enter livehouse and book as Soyo
+    // Register explicitly, then book a player-selected date.
+    state = enterRoom(state, 'livehouse', 3.2, -1.2);
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band', registration: { id:'soyo-band', name:'素世测试乐队', founderRole:'bass' } });
     state = enterRoom(state, 'livehouse', -3.2, -1.2);
-    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-booking' });
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-booking', booking: { id:'soyo-show', bandId:'soyo-band', title:'素世测试演出', start:10000, duration:60 } });
     expect(state.interior!.activityId).toBe('livehouse-booking');
     expect(state.journal.at(-1)?.text).toContain('Live House');
 
@@ -113,7 +115,7 @@ describe('livehouse booking and band creation music major restrictions', () => {
 
     // Enter livehouse and create band as Sakiko
     state = enterRoom(state, 'livehouse', 3.2, -1.2);
-    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band' });
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band', registration: { id:'band-'+activeProtagonist(state), name:activeProtagonist(state)+'测试乐队', founderRole:'keyboard' } });
     expect(state.interior!.activityId).toBe('livehouse-create-band');
     expect(state.journal.at(-1)?.text).toContain('Live House');
   });
@@ -137,7 +139,10 @@ describe('livehouse booking and band creation music major restrictions', () => {
     expect(state.academics?.majorId).toBe('music');
     expect(canManageLivehouseAndBand(state, 'emma').allowed).toBe(true);
 
-    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-booking' });
+    state = enterRoom(state, 'livehouse', 3.2, -1.2);
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band', registration: { id:'emma-band', name:'艾玛测试乐队', founderRole:'vocal' } });
+    state = enterRoom(state, 'livehouse', -3.2, -1.2);
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-booking', booking: { id:'emma-show', bandId:'emma-band', title:'艾玛测试演出', start:12000, duration:60 } });
     expect(state.interior!.activityId).toBe('livehouse-booking');
 
     // Switch to Renako
@@ -159,7 +164,7 @@ describe('livehouse booking and band creation music major restrictions', () => {
     expect(state.academics?.majorId).toBe('music');
     expect(canManageLivehouseAndBand(state, 'renako').allowed).toBe(true);
 
-    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band' });
+    state = reduceState(state, { type: 'interior_interact', interactionId: 'livehouse-create-band', registration: { id:'band-'+activeProtagonist(state), name:activeProtagonist(state)+'测试乐队', founderRole:'keyboard' } });
     expect(state.interior!.activityId).toBe('livehouse-create-band');
   });
 
@@ -179,3 +184,4 @@ describe('livehouse booking and band creation music major restrictions', () => {
     expect(state.interior!.activityId).toBe('livehouse-rehearsal');
   });
 });
+
