@@ -445,6 +445,24 @@ export function applyNpcPhoneReply(state: WorldState, messageId: string, raw: st
     source.responderId = source.responsePlan!.find(p => p.status === 'pending')?.id ?? null;
     source.status = source.responderId ? 'pending' : source.responsePlan!.some(p => p.status === 'answered') ? 'answered' : 'silent';
   } else source.status = reply === null ? 'silent' : 'answered';
+  // A manual reply may cover several short consecutive messages. Avoid leaving
+  // older unsent-to-model segments perpetually pending in the persisted thread.
+  // For groups preserve already-answered members while silencing only decisions
+  // that were never generated. All other chats and owners remain isolated.
+  const index = social.messages.indexOf(source);
+  for (const prior of social.messages.slice(0, index)) {
+    if (prior.direction !== 'outgoing' || prior.replyTo !== null ||
+        prior.owner !== source.owner || prior.channel !== source.channel ||
+        prior.targetId !== source.targetId || prior.status !== 'pending') continue;
+    if (prior.responsePlan) {
+      for (const candidate of prior.responsePlan) if (candidate.status === 'pending') candidate.status = 'silent';
+      prior.responderId = null;
+      prior.status = prior.responsePlan.some(candidate => candidate.status === 'answered') ? 'answered' : 'silent';
+    } else {
+      // A direct NPC send must retain its stable responderId for save parsing.
+      prior.status = 'silent';
+    }
+  }
   s.protagonists!.revision++;
   return s;
 }
