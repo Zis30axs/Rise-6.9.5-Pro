@@ -42,7 +42,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
   });
 
   it('injects final self-check after all story and event requirements, but not in phone-only tasks', () => {
-    const bridge = readFileSync(new URL('../src/runtime/bridge.ts', import.meta.url), 'utf8');
+    const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
     expect(bridge).toContain('const combinedSystemPrompt =');
     expect(bridge).toContain('const systemPrompt = options?.kind');
     expect(bridge).toContain('STORY_PROTOCOL');
