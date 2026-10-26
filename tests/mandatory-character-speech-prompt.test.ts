@@ -8,6 +8,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
     for (const requirement of [
       '|说话人姓名或现有称呼|情绪|台词|',
       '开头与结尾的竖线',
+      '旧版完整 JSON 的 story 字符串内',
       '不允许出现未带标签的直接对白',
       '所有主角（包括甘织玲奈子）',
       'NPC、陌生人、路人',
@@ -27,7 +28,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
       '情绪必须从平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心中选择',
       '无法判断时用平静',
       '动作和语气描述写为独立旁白',
-      '逐句检查 <story>',
+      '逐句检查 <story> 或 JSON 的 story 字符串',
       '若存在一条无标签的对白，就先补全再提交',
     ]) expect(MANDATORY_CHARACTER_SPEECH_RULE + CHARACTER_SPEECH_FINAL_CHECK).toContain(requirement);
   });
