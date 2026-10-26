@@ -91,13 +91,15 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
   const rows=worldMessageRows(data,chosen);
   const lastPending=replyCandidate(rows);
   const draft=drafts.get(chosen)||'';
-  const bubbles=rows.map(m=>{
+  const lastRepliedIndex=rows.findLastIndex(m=>m.direction==='outgoing' && (m.status==='answered' || m.answered));
+  const bubbles=rows.map((m,index)=>{
     const outgoing=m.direction==='outgoing';
     const clock=Number.isSafeInteger(m.at)?time(m.at):'';
     const receipt=outgoing
       ? m.receipt==='read' ? '✓✓ 已读' : '✓ 已送达'
       : '';
-    const status=outgoing && m.status==='silent' ? ' · 暂无回复' : '';
+    const covered=outgoing && m.replyTo===null && index<lastRepliedIndex && (m.status==='silent' || m.expectsReply===false);
+    const status=covered ? ' · 已由后续回复承接' : outgoing && m.status==='silent' ? ' · 暂无回复' : '';
     const speaker=outgoing ? '我' : (m.speakerName||contact.name);
     return '<article class="msg'+(outgoing?' me':'')+'" data-message-id="'+esc(m.id)+'">'
       +(outgoing?'':'<span class="uc-portrait" style="width:32px;height:32px;border-radius:50%;font-size:12px" aria-hidden="true">'+esc(speaker.slice(0,1))+'</span>')
