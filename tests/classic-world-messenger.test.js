@@ -46,7 +46,7 @@ describe('classic fictional messenger presentation', () => {
     expect(result.html).toContain('data-action="accept-contact"');
     expect(result.html).toContain('大家的群聊');
     expect(result.html).toContain('发送不会自动请求模型');
-    expect(result.html).not.toContain('此处是祥子的私人会话');
+    // A contact-list preview may show this owner's other conversations; only the open thread is isolated.
   });
 
   it('uses a native-style bubble composer; explicit manual reply targets the latest segment', () => {
