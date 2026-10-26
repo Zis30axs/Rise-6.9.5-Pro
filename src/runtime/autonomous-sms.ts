@@ -232,19 +232,22 @@ export function applyAutonomousSms(state: WorldState, id: string, proposedText: 
   }
   if (person.phone.some(row => row.id === id) || notifications.some(row => row.id === 'message:' + id))
     throw new Error('自动短信消息ID冲突');
-  const at = '第 ' + next.clock.day + ' 天 ' + String(next.clock.hour).padStart(2, '0') + ':' + String(next.clock.minute).padStart(2, '0');
+  // The reservation's game minute is the authoritative send time. Players may
+  // advance the world while this low-priority request is in flight.
+  const minuteOfDay = task.at % 1440;
+  const at = '第 ' + (Math.floor(task.at / 1440) + 1) + ' 天 ' + String(Math.floor(minuteOfDay / 60)).padStart(2, '0') + ':' + String(minuteOfDay % 60).padStart(2, '0');
   const npcId = task.kind === 'npc' ? contact.id : 'protagonist-' + task.peerId;
   person.phone.push({ id, npcId, text, read: false, at });
-  notifications.push({ id: 'message:' + id, at: gameMinute(next), text: contact.name + '发来新消息。', read: false });
+  notifications.push({ id: 'message:' + id, at: task.at, text: contact.name + '发来新消息。', read: false });
   if (task.kind === 'npc') {
     const social = p.npcPhone ??= { version: 1, meetings: [], evidence: [], requests: [], turns: [], relationships: [], groups: [], messages: [] };
     social.messages.push({ id, owner: task.owner, channel: 'npc', targetId: task.peerId,
       direction: 'incoming', speakerId: task.peerId, responderId: null,
-      text, at: gameMinute(next), replyTo: null, status: 'answered' });
+      text, at: task.at, replyTo: null, status: 'answered' });
   } else {
     p.conversations ??= [];
     p.conversations.push({ id, from: task.peerId as ProtagonistId, to: task.owner,
-      at: gameMinute(next), text, replyTo: null, expectsReply: false });
+      at: task.at, text, replyTo: null, expectsReply: false });
   }
   gate!.history = [...gate!.history.filter(row => row.at >= gameMinute(next) - 7 * 1440), task].slice(-128);
   p.revision++;
