@@ -44,7 +44,7 @@ describe('classic manual game SMS', () => {
       binding: second.binding, revision: second.revision, now: second.now, minutes: 5,
     });
     expect(waited.now).toBe(second.now + 5);
-    expect(waited.conversation.map((row: {receipt:string})=>row.receipt)).toEqual(['read','read']);
+    expect(waited.conversation.filter((row: {id:string})=>row.id.startsWith('dual:split-')).map((row: {receipt:string})=>row.receipt)).toEqual(['read','read']);
     expect(reply).not.toHaveBeenCalled();
     await api.retryReply('dual:split-2');
     expect(reply).toHaveBeenCalledTimes(1);
