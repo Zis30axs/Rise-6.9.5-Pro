@@ -148,6 +148,8 @@ export interface WorldState {
   transit: TransitState;
   /** Absent in old saves; populated after the first eligible event check. */
   interactionEventRate?: InteractionEventRateState;
+  /** Hidden SMS-agent checks and reserved tasks; time is the game clock. */
+  autonomousSms?: import('../runtime/autonomous-sms').AutonomousSmsState;
   /** Authored cafe offers and per-protagonist daily gift receipts. */
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
@@ -228,11 +230,15 @@ export interface GeneratedStory {
   worldActions?: StoryAction[];
   contactRequests?: import('../runtime/npc-phone').ContactProposal[];
   phoneDecision?: 'silence';
+  autonomousSmsText?: string | null;
   bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
 }
 
 export type StoryGenerationOptions = {
+  kind: 'autonomous_sms';
+  ticketId: string;
+} | {
   kind: 'phone_reply' | 'npc_phone_reply' | 'band_invitation_reply';
   messageId: string;
 } | {
