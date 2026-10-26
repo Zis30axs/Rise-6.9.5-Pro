@@ -8,6 +8,32 @@ const wrappedRow = /\|([^|\r\n]{1,40})\|([^|\r\n]{1,30})\|([^|\r\n]+)\|/g;
 const unwrappedLine = /^\|?([^|\r\n]{1,40})\|([^|\r\n]{1,30})\|([^|\r\n]+?)\|?$/;
 const knownEmotions = new Set(['平静', '开心', '难过', '生气', '惊讶', '害羞', '思考', '严肃', '安心']);
 
+const quotePairs = [['“', '”'], ['「', '」'], ['『', '』'], ['"', '"'], ["'", "'"]] as const;
+
+/** Compare just the utterance, ignoring narrator prefixes and whole-line quotation marks. */
+function dialogueEchoKey(value: string): string {
+  let text = value.trim().replace(/^(?:旁白|叙述)\s*[:：]\s*/, '').trim();
+  for (const [open, close] of quotePairs) {
+    if (text.startsWith(open) && text.endsWith(close) && text.length > open.length + close.length) {
+      text = text.slice(open.length, -close.length).trim();
+      break;
+    }
+  }
+  return text;
+}
+
+/** Presentation-only: never remove authored action, context, or another character's line. */
+function hideDuplicateNarration(segments: NovelSegment[]): NovelSegment[] {
+  const shown: NovelSegment[] = [];
+  for (const segment of segments) {
+    const previous = shown.at(-1);
+    const echo = !segment.speaker && previous?.speaker && dialogueEchoKey(segment.text);
+    if (echo && echo === dialogueEchoKey(previous.text)) continue;
+    shown.push(segment);
+  }
+  return shown;
+}
+
 /** The saved story is plain text; portrait metadata is parsed only for display. */
 export function parseNovelDialogue(story: string): NovelSegment[] {
   const segments: NovelSegment[] = [];
@@ -38,7 +64,7 @@ export function parseNovelDialogue(story: string): NovelSegment[] {
     }
     addPlainText(line.slice(cursor));
   }
-  return segments;
+  return hideDuplicateNarration(segments);
 }
 
 export function readableNovelText(story: string): string {

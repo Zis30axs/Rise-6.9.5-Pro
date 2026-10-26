@@ -21,6 +21,11 @@ describe('mandatory visual novel speaker and emotion tags', () => {
     ]) expect(MANDATORY_CHARACTER_SPEECH_RULE).toContain(requirement);
   });
 
+  it('forbids repeating a character line in narration or replaying the last turn', () => {
+    expect(STORY_PROTOCOL).toContain('旁白只能增加新的动作');
+    expect(STORY_PROTOCOL).toContain('recentStory 中上一轮末尾的完整台词');
+  });
+
   it('bans natural-language quoted speech without a row and selects a valid emotion', () => {
     for (const requirement of [
       '角色名：台词',
