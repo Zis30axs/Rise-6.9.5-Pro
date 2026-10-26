@@ -212,7 +212,6 @@ function worldApp(ctx,id) {
         html+=`<div class="world-form">${field('会话',`<select data-world-field="recipient">${options(recipients,recipient)}</select>`)}</div><div class="sms-thread" aria-label="真实双向短信记录">${shown||'<p class="hint">暂无消息</p>'}</div>${!peek?`<div class="group world-form">${field('发送消息',`<textarea data-world-field="message" maxlength="1000" rows="3">${esc(drafts.get(recipient)||'')}</textarea>`)}${btn('send','发送消息','primary')}</div>`:''}`;
       }
     }
-    if(!peek)html+=`<details class="group pad"><summary>锁屏与共享许可</summary><div class="world-form">${field('锁屏',`<select data-world-field="locked">${options([['false','解锁'],['true','锁定']],String(data.locked))}</select>`)}${field('借用许可',`<select data-world-field="share">${options([['none','未授权'],['read','允许查看'],['write','允许代操作']],data.share)}</select>`)}${btn('device','保存手机设置','secondary')}</div></details>`;
     html+=`<details class="group pad"><summary>通知 ${data.notifications.filter(x=>!x.read).length}</summary>${[...data.notifications].reverse().map(n=>`<p>${esc(n.text)}<small>${time(n.at)}</small></p>`).join('')}${btn('read','全部标为已读','text-button')}</details><details class="group pad"><summary>手机操作记录</summary>${[...data.audit].reverse().map(e=>`<p>${esc(e.at)} · ${esc(e.actor)} · ${esc(e.detail)} · ${e.authorized?'已授权':'未授权'}</p>`).join('')||'<p>暂无他人访问</p>'}</details>`;
     v.root.dataset.worldOwner=data.owner;v.draw(html);void readSelectedContact();
   }
@@ -260,7 +259,6 @@ function worldApp(ctx,id) {
       case 'send':{const message=id==='worldmessages'?drafts.get(recipient):formValue('message');if(!message?.trim()){ctx.notify('请先输入消息');break;}const command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
       case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
       case 'retry-reply':try{data=await api().retryReply(el.dataset.id);render();ctx.notify('对方已回复');}catch(e){ctx.notify(e.message,{error:true});}break;
-      case 'device':await act({type:'device',locked:formValue('locked')==='true',share:formValue('share')});break;
       case 'read':await act({type:'read_notifications'});break;
     }
   });
