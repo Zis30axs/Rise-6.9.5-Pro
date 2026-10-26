@@ -10,6 +10,8 @@ const sourceOption = process.argv.indexOf('--source');
 const phoneRoot = await realpath(sourceOption < 0 ? path.resolve(root, '../ST-iPhonie') : path.resolve(process.argv[sourceOption + 1] || ''));
 const includeSounds = process.argv.includes('--include-sounds') || process.env.UNREAD_CITY_PHONE_INCLUDE_SOUNDS === '1';
 const generated = path.join(root, 'src/frontend/generated');
+const gameClockModule = 'virtual:unread-city-phone-clock';
+const gameClockFile = path.join(root, 'src/frontend/phone-game-clock.ts').replaceAll('\\', '/');
 const text = relative => readFile(path.join(phoneRoot, relative), 'utf8');
 const manifest = JSON.parse(await text('manifest.json'));
 const tokenizers = { 't5.json': await text('tokenizers/t5.json'), 'qwen.txt': await text('tokenizers/qwen.txt') };
@@ -47,7 +49,7 @@ const sourceFiles = new Map();
 function plugin(stage) {
   return {
     name: 'unread-city-private-phone',
-    resolveId(id) { if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; },
+    resolveId(id) { if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; if(id === gameClockModule) return gameClockFile; },
     load(id) {
       if(id === artModule) return `export const phoneArt=${JSON.stringify(phoneArt)};`;
       if (id === worldAppsModule) return worldAppsSource;
@@ -55,12 +57,17 @@ function plugin(stage) {
     },
     async transform(code, id) {
       if (id.startsWith('\0')) return;
+      if (id.replaceAll('\\', '/') === gameClockFile) return;
       if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
       const relative = path.relative(phoneRoot, id).replaceAll('\\', '/');
       if (relative.startsWith('../') || path.isAbsolute(relative) || !/^(?:[\w-]+\.js|(?:core|ui|portable)\/[\w./-]+\.js|fish-mobile\/(?:native-host|native-probe|mcp-errors|client)\.js)$/.test(relative) || /(?:^|\/)(?:test|fixtures|node_modules)(?:\/|\.)/.test(relative) || /\.test\.js$/.test(relative)) throw Error(`拒绝打包白名单以外的手机文件：${relative}`);
       sourceFiles.set(relative, createHash('sha256').update(code).digest('hex'));
       if (relative === 'ui/phone.js') {
-        code = "import {worldPhoneFactories,applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'virtual:unread-city-world-apps';\n" + code;
+        code = "import {worldPhoneFactories,applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'virtual:unread-city-world-apps';\nimport {readGamePhoneClock} from 'virtual:unread-city-phone-clock';\n" + code;
+        code = replaceOnce(code, "    const now = new Date();\n    const time = now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false});\n    const date = now.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'});", "    const current = readGamePhoneClock(win);\n    const time = current?.time ?? '--:--';\n    const date = current?.label ?? '游戏时间未连接';", "status, home and lock screen use game clock");
+        code = replaceOnce(code, "    if (time !== lastClock) { lastClock = time; today?.paint(['clock', 'calendar']); }", "    const stamp = date + '|' + time;\n    if (stamp !== lastClock) { lastClock = stamp; today?.paint(['clock', 'calendar']); }", "refresh Today widgets on day changes");
+        code = replaceOnce(code, "  const clockTimer = win.setInterval(clock, 15000);", "  const clockTimer = win.setInterval(clock, 15000);\n  const stopGameClockUpdates = win.parent.__unreadCityWorldPhone?.subscribe?.(clock) || (() => {});", "refresh immediately when game state changes");
+        code = replaceOnce(code, "    win.clearInterval(clockTimer); win.clearTimeout(todayTimer);", "    stopGameClockUpdates();\n    win.clearInterval(clockTimer); win.clearTimeout(todayTimer);", "unregister world clock updates on disposal");
         code = replaceOnce(code, 'const ctx = {api, doc, win,', "const ctx = {openWorldContact: contactId=>{open('worldmessages');views.get('worldmessages')?.openContact?.(contactId);},api, doc, win,", '剧情联系人统一短信入口');
         code = replaceOnce(code, 'const FACTORIES = {', 'const FACTORIES = {...worldPhoneFactories,', '游戏手机应用');
         code = replaceOnce(code, 'peek: peekApp,', 'peek: worldPhoneFactories.worldpeek,', '权威查手机');
@@ -82,6 +89,16 @@ function plugin(stage) {
             }
             worldViewOwner=worldOwner;renderHome();
           }`, '切主角后清理旧手机视图');
+      }
+      if (relative === 'ui/today.js') {
+        code = "import {readGamePhoneClock} from 'virtual:unread-city-phone-clock';\n" + code;
+        code = replaceOnce(code, "  const now = () => new Date();", "  const now = () => readGamePhoneClock(win);", "Today widgets read game source");
+        code = replaceOnce(code, "    const d = now(), day = d.getDate();", "    const current = now();\n    if (!current) return '<span class=\"tw-line\">游戏时间未连接</span>';\n    const d = current.date, day = d.getUTCDate();", "Today calendar awaits game source");
+        code = replaceOnce(code, "    if (size === 's') return `<span class=\"tw-red\">星期${WEEK[d.getDay()]}</span><b class=\"tw-day\">${day}</b><small class=\"tw-dim\">${d.getMonth() + 1}月 · ${d.getFullYear()}</small>`;", "    if (size === 's') return `<span class=\"tw-red\">星期${WEEK[d.getUTCDay()]}</span><b class=\"tw-day\">${day}</b><small class=\"tw-dim\">${d.getUTCMonth() + 1}月 · ${d.getUTCFullYear()}</small>`;", "Today compact calendar UTC fields");
+        code = replaceOnce(code, "    const first = new Date(d.getFullYear(), d.getMonth(), 1).getDay(), days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();", "    const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).getUTCDay(), days = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();", "Today month grid UTC weekdays");
+        code = replaceOnce(code, "    return `<span class=\"tw-head\"><b class=\"tw-red\">${d.getMonth() + 1}月</b><small class=\"tw-dim\">${d.getFullYear()}</small></span><div class=\"tw-month\">${WEEK.map(w => `<i>${w}</i>`).join('')}${cells.map(n => `<span${n === day ? ' class=\"today\"' : ''}>${n}</span>`).join('')}</div>`;", "    return `<span class=\"tw-head\"><b class=\"tw-red\">${d.getUTCMonth() + 1}月</b><small class=\"tw-dim\">${d.getUTCFullYear()}</small></span><div class=\"tw-month\">${WEEK.map(w => `<i>${w}</i>`).join('')}${cells.map(n => `<span${n === day ? ' class=\"today\"' : ''}>${n}</span>`).join('')}</div>`;", "Today month grid UTC header");
+        code = replaceOnce(code, "  function face() {\n    const d = now(), m = d.getMinutes(), h = d.getHours() % 12 + m / 60;", "  function face(current = now()) {\n    if (!current) return '<span class=\"tw-line\">--:--</span>';\n    const d = current.date, m = d.getUTCMinutes(), h = d.getUTCHours() % 12 + m / 60;", "Today analog hands game time");
+        code = replaceOnce(code, "  function clockBody(size) {\n    if (size === 's') return face();\n    const d = now();\n    return `<div class=\"tw-row\">${face()}<span class=\"tw-stack\"><b class=\"tw-time\">${d.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false})}</b><small class=\"tw-dim\">${d.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'})}</small></span></div>`;\n  }", "  function clockBody(size) {\n    const current = now();\n    if (size === 's') return face(current);\n    if (!current) return '<span class=\"tw-line\">游戏时间未连接</span>';\n    return `<div class=\"tw-row\">${face(current)}<span class=\"tw-stack\"><b class=\"tw-time\">${current.time}</b><small class=\"tw-dim\">${current.label}</small></span></div>`;\n  }", "Today digital clock and date game time");
       }
       if (relative === 'ui/apps.js') {
         code = replaceOnce(code, 'export const APPS = {', `export const APPS = {
