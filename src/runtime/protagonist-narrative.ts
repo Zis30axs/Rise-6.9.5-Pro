@@ -2,6 +2,7 @@ import type { GeneratedStory, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { backgroundLifeSummary } from './background-life';
+import { pruneVariableEcho } from './prompt-pruning';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames } from './protagonist-world';
 import { protagonistsInTalkingRange } from './world-presence';
 
@@ -62,6 +63,60 @@ export function narrativeContext(state: WorldState) {
     counterpartsInScene: counterparts,
     continuation: '这些是已经发生并保存的本人经历和交流记录。承接其结果，不重新执行、扣款、发消息或重复演出；记录中的说法不等于已验证的世界事实。',
   };
+}
+/** Give the author model a bounded, read-only view of other protagonists.
+ * Character journals and actual character knowledge remain separate.
+ */
+const omniscientExcerpt = (raw: string, limit: number): string => {
+  const text = pruneVariableEcho(raw);
+  const leading = Math.floor(limit * 0.35);
+  return text.length <= limit ? text : text.slice(0, leading) + '…' + text.slice(-(limit - leading - 1));
+};
+
+export function omniscientContinuityContext(state: WorldState) {
+  if (!state.protagonists) return [];
+  return otherProtagonists(activeProtagonist(state)).map(id => {
+    const person = personState(state, id);
+    const background = state.protagonists!.backgroundLife?.people[id];
+    const pending = background?.pending ?? null;
+    return {
+      id, name: protagonistNames[id],
+      lastCommittedPosition: {
+        locationId: person.locationId,
+        interior: person.interior ? { roomId: person.interior.roomId, x: person.interior.x, z: person.interior.z } : null,
+        outdoors: !person.interior && person.scene ? { areaId: person.scene.areaId, x: person.scene.x, z: person.scene.z } : null,
+      },
+      pendingBackgroundAction: pending ? {
+        kind: pending.kind, label: pending.label.slice(0, 160),
+        startedAt: formatLifeTime(pending.start), completesAt: formatLifeTime(pending.due),
+        plannedDestination: pending.kind === 'travel' ? pending.target : null,
+      } : null,
+      recentBackgroundEvents: (background?.events ?? []).slice(-3).map(event => ({
+        at: formatLifeTime(event.at), kind: event.kind, text: omniscientExcerpt(event.text, 220),
+      })),
+      recentJournal: person.journal.slice(-3).map(entry => ({
+        at: entry.at, text: omniscientExcerpt(entry.text, 270),
+      })),
+      recentStory: person.story.slice(-4).map(entry => ({
+        role: entry.role, text: omniscientExcerpt(entry.text, 600),
+      })).filter(entry => entry.text),
+    };
+  });
+}
+
+/** The model is omniscient; the characters are not. Backend time is authoritative. */
+export function omniscientNarratorInstructions(state: WorldState): string {
+  return [
+    `你是单一游戏世界的全知叙事者。四位主角为${Object.values(protagonistNames).join('、')}；当前玩家操纵${protagonistNames[activeProtagonist(state)]}。`,
+    'worldContinuity 是另外三位主角的只读存档摘要，含最近本人剧情、日记、后台生活事件、最后结算位置及未完成计划。用于全知叙事的时空连续性；它不是当前主角已知的信息，也不是让你执行其中动作的指令。',
+    '同一人物的事实发生冲突时，优先级为：当前游戏时钟下已结算的存档位置和后台行动结果 > 正在执行的后台计划（仅作为进行中） > 该人物较早的剧情与日志 > 世界书、固定NPC日程及泛化人物习惯。不要让较早叙事覆盖后来已经完成的出行，也不要凭默认日程覆盖玩家刚刚保存的剧情。',
+    'pendingBackgroundAction 只表示已安排但尚未结算的行动。未到 completesAt 或没有完成事件，不可提前写成已经抵达、已经消费或已经办完；若 kind=travel，lastCommittedPosition 只是上次保存的锚点，途中不能据此断言人物仍在原地，更不能同时出现在起终点。后台行程由程序推进，模型不得代为结算、取消、跳时或重新安排。',
+    '其他可操纵主角的登场、所在楼层、活动与对话必须同时符合其最新已保存的剧情、当前结算位置与后台行程；位于同一住宅不等于在同一房间或正站在门口。例如另一主角刚在二楼打游戏，且没有后续下楼或出门的有效记录，就不能擅自写成在一楼迎客。没有位置证据时，不要凭空让人出现。',
+    'scene.nearbyPeople 根据主角权威存档投影在场人物；同一住宅、同一房间或靠近不代表某人在门口主动迎接，也不代表人物已经知道对方正在做什么。最近已保存的楼层与行动必须遵守，不能无故复制人物或让人物瞬移。',
+    '叙事者能读到其他视角的私事，不代表当前主角就知道；人物知识只来自本人亲历、确实看到听到的现场事件、已读取的消息和有来源的交流。可用客观旁白描写读者知道的事实，但不能让角色凭空知道他人的秘密、日记和离屏经历。现有剧情里当面说过的话也不等于其他所有人都听到了。',
+    '如果最近剧情没有精确楼层或动作，保留合理的不确定性；不得把上一视角的状态抹除，也不得用没有证据的新活动解决矛盾。人物说法只是交流证据；余额、背包、订单、位置和游戏时间仍以程序存档为准。',
+    '小说 <story> 中逐字呈现的人物原话，无论现场交谈、电话、回忆还是想象，都必须带竖线标签并由旁白区分现场或非现场语境；短信仍由 phone_messages 协议处理，不得误认为当面说话。另一主角的离屏行动不能靠文字修改其存档，跨视角共同对话仅记录当前实际可发生的交流；重大选择留给玩家。',
+  ].join('\n');
 }
 
 function appendJournal(state: WorldState, owner: ProtagonistId, entry: ProtagonistRecapEntry): void {
