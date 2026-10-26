@@ -91,7 +91,7 @@ function plugin(stage) {
           }`, '切主角后清理旧手机视图');
       }
       if (relative === 'ui/today.js') {
-        code = "import {readGamePhoneClock} from 'virtual:unread-city-phone-clock';\\n" + code;
+        code = "import {readGamePhoneClock} from 'virtual:unread-city-phone-clock';\n" + code;
         code = replaceOnce(code, "  const now = () => new Date();", "  const now = () => readGamePhoneClock(win);", "Today widgets read game source");
         code = replaceOnce(code, "    const d = now(), day = d.getDate();", "    const current = now();\n    if (!current) return '<span class=\"tw-line\">游戏时间未连接</span>';\n    const d = current.date, day = d.getUTCDate();", "Today calendar awaits game source");
         code = replaceOnce(code, "    if (size === 's') return `<span class=\"tw-red\">星期${WEEK[d.getDay()]}</span><b class=\"tw-day\">${day}</b><small class=\"tw-dim\">${d.getMonth() + 1}月 · ${d.getFullYear()}</small>`;", "    if (size === 's') return `<span class=\"tw-red\">星期${WEEK[d.getUTCDay()]}</span><b class=\"tw-day\">${day}</b><small class=\"tw-dim\">${d.getUTCMonth() + 1}月 · ${d.getUTCFullYear()}</small>`;", "Today compact calendar UTC fields");
