@@ -27,6 +27,7 @@ export interface ShellLayoutLease {
 const PREFIX = 'unread-city-shell-layout-v1';
 const MIN_EDGE = 4;
 const RESIZE_MIN = 44;
+const PORTRAIT_SIZE_REPAIR = 'portrait-stage-scale-20261026';
 const EDITABLE = [
   '.world-chrome',
   '.presentation-switch',
@@ -90,6 +91,19 @@ export function parseLayout(value: string | null): LayoutMap {
   } catch {
     return {};
   }
+}
+
+/**
+ * One-time migration: old novel portraits can be saved as small floating thumbnails.
+ * Drop only that outdated portrait rectangle; preserve all other user-arranged HUD.
+ * The migration marker lets users deliberately resize the portrait afterward.
+ */
+export function repairLegacyPortraitRect(layout: LayoutMap, mobile: boolean): LayoutMap {
+  const portrait = layout.portrait;
+  if (!portrait || portrait.h >= (mobile ? 0.50 : 0.65)) return layout;
+  const repaired = { ...layout };
+  delete repaired.portrait;
+  return repaired;
 }
 
 function partKey(part: HTMLElement): string {
@@ -161,8 +175,22 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
   const scope = () => layoutStorageKey(shell.clientWidth <= 760, shell.dataset.presentationMode ?? 'scene');
   function load(key: string): LayoutMap {
     if (!cache.has(key)) {
-      try { cache.set(key, parseLayout(win!.localStorage.getItem(key))); }
-      catch { cache.set(key, {}); }
+      let layout: LayoutMap = {};
+      try {
+        layout = parseLayout(win!.localStorage.getItem(key));
+        if (key === layoutStorageKey(true, 'novel') || key === layoutStorageKey(false, 'novel')) {
+          const marker = key + ':' + PORTRAIT_SIZE_REPAIR;
+          if (win!.localStorage.getItem(marker) !== '1') {
+            const repaired = repairLegacyPortraitRect(layout, key === layoutStorageKey(true, 'novel'));
+            if (repaired !== layout) {
+              layout = repaired;
+              win!.localStorage.setItem(key, JSON.stringify(layout));
+            }
+            win!.localStorage.setItem(marker, '1');
+          }
+        }
+      } catch { /* Storage may be disabled; keep any in-memory repair. */ }
+      cache.set(key, layout);
     }
     return cache.get(key)!;
   }
