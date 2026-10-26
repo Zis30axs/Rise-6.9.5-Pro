@@ -38,8 +38,10 @@ if (includeSounds) {
 }
 
 function replaceOnce(code, from, to, label) {
-  if (!code.includes(from) || code.indexOf(from) !== code.lastIndexOf(from)) throw Error(`手机源码已变化，请更新内嵌适配：${label}`);
-  return code.replace(from, to);
+  const normFrom = typeof from === 'string' ? from.replace(/\r\n/g, '\n') : from;
+  const normCode = code.replace(/\r\n/g, '\n');
+  if (!normCode.includes(normFrom) || normCode.indexOf(normFrom) !== normCode.lastIndexOf(normFrom)) throw Error(`手机源码已变化，请更新内嵌适配：${label}`);
+  return normCode.replace(normFrom, to);
 }
 const worldAppsModule = '\0virtual:unread-city-world-apps';
 const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_CHAT',path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'));
