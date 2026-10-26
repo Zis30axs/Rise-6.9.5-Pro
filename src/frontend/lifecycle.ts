@@ -15,6 +15,7 @@ import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
+import { stageAutonomousSms, applyAutonomousSms } from '../runtime/autonomous-sms';
 import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
@@ -68,6 +69,8 @@ export function mountShell(
   let stopSession: (() => void) | undefined;
   let timer: number | undefined;
   let airTrafficTimer: number | undefined;
+  let smsTimer: number | undefined;
+  let smsWorking = false;
   let observer: MutationObserver | undefined;
   let appliedOverflowPriority: string | undefined;
   let phoneLease: PhoneLease | undefined;
@@ -113,6 +116,7 @@ export function mountShell(
       () => observer?.disconnect(),
       () => timer !== undefined && hostWindow.clearInterval(timer),
       () => airTrafficTimer !== undefined && hostWindow.clearInterval(airTrafficTimer),
+      () => smsTimer !== undefined && hostWindow.clearInterval(smsTimer),
       () => doc.removeEventListener('keydown', keydown, true),
       () => doc.removeEventListener('focusin', focusin, true),
       () => doc.removeEventListener('visibilitychange', visibilitychange),
@@ -135,6 +139,39 @@ export function mountShell(
 
   const stillCurrent = (request: number) => !dead && epoch === request && bridge.session() === session;
   const snapshot = () => parseState(toRaw(model.state));
+  function saveWithSms(next: WorldState): WorldState {
+    const prepared = stageAutonomousSms(snapshot(), next);
+    bridge.save(prepared);
+    model.state = prepared;
+    return prepared;
+  }
+  /** Never compete with the main generation. A persisted reservation survives busy turns. */
+  async function tickAutonomousSms() {
+    if (smsWorking || dead || doc.hidden || model.busy || model.switchingProtagonist || pendingInteraction || bridge.session() !== session) return;
+    const task = snapshot().autonomousSms?.pending;
+    if (!task) return;
+    smsWorking = true;
+    const request = ++epoch;
+    // Keep the main UI responsive. A player action may preempt this low-priority
+    // request via bridge.generate(), which cancels the old generation by ID.
+    try {
+      const reply = await bridge.generate('', snapshot(), { kind: 'autonomous_sms', ticketId: task.id });
+      if (!stillCurrent(request)) return;
+      const next = applyAutonomousSms(snapshot(), task.id, reply.autonomousSmsText ?? null);
+      bridge.save(next); model.state = next;
+      worldPhone.notify();
+      if (storyPhone) void storyPhone.sync().catch(() => {});
+    } catch (error) {
+      // A failed background call is not a narrative failure. Consume its reservation
+      // so a broken provider cannot trap the user in repeated retries.
+      if (stillCurrent(request)) {
+        try { const next = applyAutonomousSms(snapshot(), task.id, null); bridge.save(next); model.state = next; }
+        catch (failure) { console.warn('[UnreadCity] autonomous SMS skipped', failure); }
+      }
+    } finally {
+      smsWorking = false;
+    }
+  }
   const currentInteraction = (pending: PendingInteraction) => pendingInteraction === pending && stillCurrent(pending.request) && !doc.hidden;
   function clearInteractionTimer(pending: PendingInteraction) {
     if (pending.timer !== undefined) hostWindow.clearInterval(pending.timer);
@@ -162,8 +199,7 @@ export function mountShell(
   }
   function publishInteraction(pending: PendingInteraction, next: WorldState) {
     if (!currentInteraction(pending)) return;
-    bridge.save(next);
-    model.state = next;
+    saveWithSms(next);
     clearInteractionTimer(pending);
     pendingInteraction = undefined;
     model.interaction = null; model.busy = false; model.notice = '';
@@ -249,6 +285,12 @@ export function mountShell(
   }
   function visibilitychange() {
     if (!doc.hidden) return;
+    // A foreground request may have preempted the SMS before its promise
+    // settled. Never cancel or reset an unrelated player generation.
+    if (smsWorking && !model.busy) {
+      epoch++;
+      try { bridge.cancel(); } catch { /* Keep the saved reservation for later. */ }
+    }
     protagonistSwitch.release();
     cancelInteraction();
     if (activePhoneReply) {
@@ -419,7 +461,7 @@ export function mountShell(
     requestReply: requestPhoneReply,
     commit(action) {
       if (model.switchingProtagonist) throw new Error('正在切换主角，请稍候。');
-      const next = reduceState(snapshot(), action); bridge.save(next); model.state = next;
+      const next = saveWithSms(reduceState(snapshot(), action));
       worldPhone.notify();
       if (storyPhone) void storyPhone.sync().catch(() => {});
       return next;
@@ -445,9 +487,8 @@ export function mountShell(
       let next: WorldState;
       try {
         next = reduceState(snapshot(), { type: 'switch_protagonist', target });
-        bridge.save(next);
+        next = saveWithSms(next);
       } catch (error) { model.notice = message(error); return false; }
-      model.state = next;
       model.notice = `已切换到${protagonistNames[target]}，可在状态页回顾这段时间的日常。`;
       try { worldPhone.notify(); bindStoryPhone(true); }
       catch (error) { model.phoneLinkStatus = 'error'; model.phoneLinkError = message(error); }
@@ -473,8 +514,7 @@ export function mountShell(
       if (model.busy) return;
       try {
         const next = reduceState(snapshot(), action);
-        bridge.save(next);
-        model.state = next;
+        saveWithSms(next);
         worldPhone.notify();
         model.notice = '';
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
@@ -492,8 +532,7 @@ export function mountShell(
         // Read receipts may have arrived while generation was in flight. Merge
         // the validated turn into the latest state, then save before delivery.
         const next = commitStoryTurn(snapshot(), trimmed, reply, { userId: storyId(), assistantId: storyId() });
-        bridge.save(next);
-        model.state = next;
+        saveWithSms(next);
         worldPhone.notify();
         if (storyPhone) void storyPhone.sync().catch(() => {});
       } catch (error) {
@@ -614,6 +653,7 @@ export function mountShell(
     observer.observe(doc.body, { childList: true, subtree: false });
     timer = hostWindow.setInterval(integrity, 500);
     airTrafficTimer = hostWindow.setInterval(tickAirTraffic, 5000);
+    smsTimer = hostWindow.setInterval(() => { void tickAutonomousSms(); }, 1200);
     app.mount(mount);
     if (dead) throw new Error('界面启动失败，已恢复原生界面。');
     bindStoryPhone();
