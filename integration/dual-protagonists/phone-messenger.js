@@ -44,8 +44,7 @@ export function worldMessageRows(data,key) {
         (m.from===data.owner && m.to===target) || (m.from===target && m.to===data.owner))
     : (social.messages || []).filter(m => m.channel===(npc?'npc':'group') && m.targetId===target);
   const knownIds = new Set(rows.map(m=>m.id));
-  const contactId = npc ? social.contacts.find(c=>c.id===target)?.contactId :
-    pro ? 'protagonist:'+target.replace(/^/,'').slice(0,0) : null;
+  const contactId = npc ? social.contacts.find(c=>c.id===target)?.contactId : null;
   // Protagonist inbox records use "protagonist-" (not the selector's ":").
   const inboxId = pro ? 'protagonist-' + target : contactId;
   const legacy = group ? [] : (data.messages || [])
