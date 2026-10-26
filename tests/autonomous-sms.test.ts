@@ -21,7 +21,7 @@ describe('autonomous SMS (SillyTavern)', () => {
     expect(parseState(state)).toEqual(state);
   });
 
-  it('keeps the agent's private context limited to its own knowledge', () => {
+  it("keeps the agent\'s private context limited to its own knowledge", () => {
     const state = prepared();
     const id = state.autonomousSms!.pending!.id;
     const ctx = autonomousSmsContext(state,id);
