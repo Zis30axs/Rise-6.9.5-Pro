@@ -152,7 +152,8 @@ export function mountShell(
     if (!task) return;
     smsWorking = true;
     const request = ++epoch;
-    model.busy = true;
+    // Keep the main UI responsive. A player action may preempt this low-priority
+    // request via bridge.generate(), which cancels the old generation by ID.
     try {
       const reply = await bridge.generate('', snapshot(), { kind: 'autonomous_sms', ticketId: task.id });
       if (!stillCurrent(request)) return;
