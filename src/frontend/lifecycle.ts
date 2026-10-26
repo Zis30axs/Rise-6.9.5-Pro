@@ -170,7 +170,6 @@ export function mountShell(
       }
     } finally {
       smsWorking = false;
-      if (stillCurrent(request)) model.busy = false;
     }
   }
   const currentInteraction = (pending: PendingInteraction) => pendingInteraction === pending && stillCurrent(pending.request) && !doc.hidden;
