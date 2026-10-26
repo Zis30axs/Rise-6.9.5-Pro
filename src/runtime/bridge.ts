@@ -58,10 +58,20 @@ type HostWindow = Window & { SillyTavern?: { getContext(): TavernContext } };
 // The frontend's transport contract is fixed for this request. Keep saved story
 // and player text out of this system injection; inherited worldbook formats may
 // describe other frontends, but must not replace the card's own protocol.
-const STORY_PROTOCOL = [
+export const MANDATORY_CHARACTER_SPEECH_RULE = [
+  '【最高优先级·强制对白标记】在 <story> 内，只要出现任何人物逐字说出的台词，每一句都必须独占一行，完整采用 |说话人姓名或现有称呼|情绪|台词|。开头与结尾的竖线、说话人、情绪、台词缺一不可，不允许出现未带标签的直接对白。',
+  '此规则无例外地适用于所有主角（包括甘织玲奈子）、NPC、陌生人、路人和其他发言者；不论只有一两个字、应答、寒暄、插话、打断、喊叫、耳语、争吵、多人连续交流、隔空喊话、电话语音、回忆/梦境/想象里逐字呈现的发言，或事件、行动、转场中的任何人物对话，全部逐句打标签。每一位说话人更换时另起完整标签行，不把多个角色的台词混在同一行。',
+  '绝不把直接台词藏入旁白，也不能用“某人说：……” “某人笑道：……” “角色名：台词”、单独引号或者只有角色名却没有情绪的行替代。动作和语气描述写为独立旁白，再另起标签行输出说出口的话。说话人优先用状态里已有的完整姓名；姓名未知则用已有身份称呼，不臆造身份。情绪必须从平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心中选择；无法判断时用平静，但不可省略情绪。',
+  '本规则只规范 <story> 的直接台词：没有人物原话的环境描写、间接转述和非逐字内心活动仍写旁白。回忆、梦境、想象或电话中的话也要打标签，但先用旁白表明语境，标签不表示该人物现在到场或得知新事实。手机短信必须仍按 phone_messages 等独立消息协议保存，不能给消息 JSON 字段添加竖线标签，也不能冒充面对面台词；不得替玩家编造未表达的新话。',
+].join('\n');
+
+export const CHARACTER_SPEECH_FINAL_CHECK = '【输出前必须自检】逐句检查 <story>：只要是任何人物直接说出的原话，无论是否夹在引号、冒号、动作描写或回忆里，都必须转换成完整的 |说话人|九选一情绪|台词| 独立行；若存在一条无标签的对白，就先补全再提交。不要输出检查过程，不要省略任一角色的标签。';
+
+export const STORY_PROTOCOL = [
   '世界舞台为日本东京丰岛区及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业与乐队活动圈，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
+  MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮优先输出关键标签块：<story>小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。每类标签最多一次，手机消息只含 npcId 和 text。额外思考或解释必须放在标签外，禁止任意状态补丁。旧版完整 JSON 仍兼容：必填 story 和 phone_messages，可选 world_events 和 world_actions。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
@@ -86,7 +96,7 @@ const STORY_PROTOCOL = [
   'player.energy是行动精力，foodEnergy是游戏中的食物能量储备（kcal），satiety是饱腹，stress越高压力越大，health越低健康状况越差。食物能量与饱腹随游戏中已结算的时间消耗；普通对话不推进。香烟的短时提神和减压伴随健康下降，不把高价品牌写成无害，也不把游戏数值解释为现实疗效。',
   '城市交通包括都营巴士与东京Metro联程，玩家作为乘客出行；街道上是普通的民用车辆。',
   '乘车可由travel执行，程序结算车程与车费。transit.lastRide 是已经到站下车的历史结果，使用保存的车辆、起终点、实际耗时和车费，不重复扣费、推进时间或移动玩家。',
-  'story 字符串用于点击推进的视觉小说。旁白按短段落写；人物当面对话每句独占一行，格式为 |charac|emot|says|，三个字段分别替换为实际角色名、情绪和一句台词。例如 |素世|开心|今天天气真好|。示例只说明格式，不强制素世说话或改写玩家身份。不得替玩家决定新台词。',
+  'story 字符串用于点击推进的视觉小说。旁白按短段落写；人物所有直接台词（不限于当面交谈）每句独占一行，格式严格为 |charac|emot|says|，三个字段分别替换为实际角色名、情绪和一句台词。例如 |素世|开心|今天天气真好|。示例只说明格式，不强制素世说话或改写玩家身份。不得替玩家决定新台词。',
   '已有 NPC 的 charac 必须使用下方联系人、附近人物或当前搭话对象中的完整姓名，使立绘与原人物对应；不得把人物改名为外观模型或素材文件名。',
   'emot 应与这句台词及当下反应相符，界面会切换对应的静态表情与配合姿态；动作描写仍写在旁白中，不输出图片路径或动作脚本。',
   '对话情绪使用：平静、开心、难过、生气、惊讶、害羞、思考、严肃、安心。旁白也可用 |旁白|平静|一段环境描写。|。不要输出字段标题行、Markdown表格分隔线或把同一句在旁白里重复；每个字段内不要含竖线或换行。标签正文内可以直接换行。',
@@ -313,10 +323,10 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
           '玩家本次行动：', input.trim(),
         ].join('\n');
-      const perspective = `全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子和艾玛三位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。三位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把另外两人的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。竖线对白仅表示本轮现场实际说出口的话，回忆、想象、内心、旧话引用和手机内容不得伪装成现场对白。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
+      const perspective = `全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。`;
       const weekly = weeklyMemoryContext(snapshot);
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括三位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
-      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}`;
+      const systemPrompt = options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
       const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。三主角校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。此安排不代表所有配角同校或同年级；三主角具体院校名称与正式学籍尚未确认，原作成团时期的学校、年级和同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       const combinedSystemPrompt = options?.kind === 'contact_introduction' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${systemPrompt}`;
