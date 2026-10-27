@@ -253,6 +253,13 @@ function worldApp(ctx,id) {
         data=await api().waitForRead({binding:data.binding,revision:data.revision,now:data.now,minutes});
         render();ctx.notify('游戏时间已推进 '+minutes+' 分钟（不会自动调用 LLM）');break;
       }
+      case 'return-to-story': {
+        if(id!=='worldmessages'||chatMode!=='thread'||pending)break;
+        const scene=(data.phoneScenes||[]).find(row=>row.storyId===el.dataset.id&&worldMessageRows(data,recipient).some(msg=>msg.id===row.messageId));
+        if(!scene)throw Error('这段正文已更新，请重新打开会话');
+        api().returnToStory({binding:data.binding,storyId:scene.storyId});
+        break;
+      }
       case 'request-reply':{
         if(id!=='worldmessages'||pending||chatMode!=='thread')break;
         const rows=worldMessageRows(data,recipient);

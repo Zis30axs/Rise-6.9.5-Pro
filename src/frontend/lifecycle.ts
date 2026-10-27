@@ -4,6 +4,7 @@ import { createProtagonistSwitchController } from './protagonist-switch';
 import { createWorldPhoneApi } from './world-phone';
 import { applyNpcPhoneReply, npcReplySource } from '../runtime/npc-phone';
 import { applyPhoneReply } from '../runtime/protagonist-world';
+import { appendPhoneReplyScene } from '../runtime/phone-scene';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
@@ -441,6 +442,7 @@ export function mountShell(
 
   /** A bounded turn: one DM reply or at most three saved group decisions. */
   let activePhoneReply: string | null = null;
+  let phoneSceneJumpToken = 0;
   async function requestPhoneReply(messageId: string): Promise<void> {
     if (dead || doc.hidden || bridge.session() !== session) throw new Error('请在当前游戏聊天中重试短信回复');
     if (model.busy || model.switchingProtagonist || activePhoneReply) throw new Error('上一项剧情、短信回复或角色切换仍在处理');
@@ -468,7 +470,15 @@ export function mountShell(
         // Commit every decision before asking the next group member, so a
         // partial failure resumes without replaying any completed messages.
         if (reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('短信回复包含了额外行动');
-        const next=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        const answered=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        // The SMS and its optional off-screen novel share a single persisted
+        // snapshot. A failed scene validation never publishes a partial reply.
+        const savedReplyId = npc
+          ? answered.protagonists?.npcPhone?.messages.find(row => row.replyTo === messageId && row.speakerId === actorId)?.id
+          : answered.protagonists?.conversations?.find(row => row.replyTo === messageId)?.id;
+        if (reply.phoneSceneText && (!savedReplyId || invitation || reply.phoneDecision === 'silence'))
+          throw new Error('短信后的小说必须对应一条真实回复。');
+        const next=reply.phoneSceneText ? appendPhoneReplyScene(answered, savedReplyId!, reply.phoneSceneText) : answered;
         bridge.save(next);
         model.state=next;
         worldPhone.notify();
@@ -487,6 +497,7 @@ export function mountShell(
     session, current: () => !dead && bridge.session() === session,
     busy: () => model.busy || !!model.switchingProtagonist || doc.hidden, state: snapshot,
     requestReply: requestPhoneReply,
+    openStory(id) { model.phoneSceneJump = { id, token: ++phoneSceneJumpToken }; },
     commit(action) {
       if (model.switchingProtagonist) throw new Error('正在切换主角，请稍候。');
       const next = saveWithSms(reduceState(snapshot(), action));

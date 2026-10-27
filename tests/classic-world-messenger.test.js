@@ -102,6 +102,20 @@ describe('classic fictional messenger presentation', () => {
     expect(view.html).not.toContain('<img src=x');
   });
 
+  it('shows a centered return-to-story cue only after the matching incoming reply', () => {
+    const data=structuredClone(current);
+    data.npcPhone.messages.push({id:'npc:a:reply',channel:'npc',targetId:'majo-yuki',direction:'incoming',text:'我知道啦。',speakerName:'月代雪',at:1040,replyTo:'npc:a'});
+    data.phoneScenes=[{messageId:'npc:a:reply',storyId:'phone-scene:npc:a:reply'}];
+    const view=renderWorldMessenger({data,recipient:'npc:majo-yuki',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(view.html).toContain('class="uc-scene-handoff"');
+    expect(view.html).toContain('data-action="return-to-story"');
+    expect(view.html).toContain('data-id="phone-scene:npc:a:reply"');
+    expect(view.html.indexOf('data-message-id="npc:a:reply"')).toBeLessThan(view.html.indexOf('class="uc-scene-handoff"'));
+    expect(renderWorldMessenger({data,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers).html).not.toContain('uc-scene-handoff" role=');
+    data.phoneScenes=[];
+    expect(renderWorldMessenger({data,recipient:'npc:majo-yuki',mode:'thread',drafts:new Map(),pending:null},helpers).html).not.toContain('uc-scene-handoff" role=');
+  });
+
   it('includes the actual app lifecycle with manual-only reply and time notifications', () => {
     const life=readFileSync('src/frontend/lifecycle.ts','utf8');
     const api=readFileSync('src/frontend/world-phone.ts','utf8');
