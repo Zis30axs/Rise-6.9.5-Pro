@@ -45,7 +45,8 @@ describe('classic fictional messenger presentation', () => {
     expect(result.html).toContain('data-action="open-thread"');
     expect(result.html).toContain('data-action="accept-contact"');
     expect(result.html).toContain('大家的群聊');
-    expect(result.html).toContain('发送不会自动请求模型');
+    expect(result.html).toContain('樱羽艾玛');
+    expect(result.html).not.toContain('发送不会自动请求模型');
     // A contact-list preview may show this owner's other conversations; only the open thread is isolated.
   });
 
@@ -64,6 +65,24 @@ describe('classic fictional messenger presentation', () => {
     expect(result.html).toContain('✓✓ 已读');
     expect(result.html).not.toContain('此处是祥子的私人会话');
     expect(result.html).not.toContain('sms-read-animation');
+  });
+
+  it('keeps developer mechanics out of player-visible message chrome', () => {
+    const list = renderWorldMessenger({data:current,recipient:'protagonist:soyo',mode:'list',drafts:new Map(),pending:null},helpers);
+    const thread = renderWorldMessenger({data:current,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(thread.html).toContain('<div class="th-title"><strong>长崎素世</strong></div>');
+    expect(thread.html).toContain('data-action="request-reply"');
+    expect(thread.html).toContain('data-action="wait-read"');
+    for (const html of [list.html, thread.html]) {
+      for (const forbidden of ['可连续发送','不触发正文','手动触发回复','发送不会自动请求模型','已读按游戏分钟模拟','不调用模型']) {
+        expect(html).not.toContain(forbidden);
+      }
+    }
+    const empty = structuredClone(current);
+    empty.conversation = [];
+    const emptyThread = renderWorldMessenger({data:empty,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(emptyThread.html).toContain('暂无消息');
+    expect(emptyThread.html).not.toContain('发几条消息都可以');
   });
 
   it('only displays real returned read status, not a decorative timer animation', () => {
