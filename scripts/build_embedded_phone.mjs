@@ -124,6 +124,8 @@ function plugin(stage) {
         code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages',SLOT,SLOT,SLOT],", '游戏应用首页');
       }
       if (relative === 'ui/chat.js') {
+        code = "import {worldPhoneState} from 'virtual:unread-city-world-apps';\\n" + code;
+        code = replaceOnce(code, "  const myName = () => profile().name || api.userName?.() || '我';", "  const myName = () => worldPhoneState(v.root)?.name || profile().name || api.userName?.() || '我';", '联系人与消息页姓名跟随当前主角');
         code = replaceOnce(code, '    thread = loaded;', `    thread = loaded;
     const world=ctx.win.parent.__unreadCityWorldPhone?.read();
     if(thread?.storyLink?.npcId && ctx.openWorldContact && world &&
