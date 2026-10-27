@@ -59,7 +59,11 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       const inRoom = !!getCampusInterior(override.locationId);
       if (state.interior ? (!inRoom || state.interior.roomId !== override.locationId)
         : (inRoom || !scene || sceneLocationId(scene.areaId) !== override.locationId)) continue;
-      const roomAnchor = inRoom ? getInteriorPeopleForValidation(override.locationId).find(person => person.id === resident.id) : null;
+      const room = inRoom ? getCampusInterior(override.locationId) : null;
+      const roomAnchor = room
+        ? getInteriorPeopleForValidation(room.id).find(person => person.id === resident.id)
+          ?? { x: room.spawn.x, z: room.spawn.z }
+        : null;
       // Keep the resident at their real scheduled anchor if the override did not move them.
       // This also works in areas without a sceneLandmark (e.g. promenade).
       const scheduled = residentPresence(resident.id, state.clock);
