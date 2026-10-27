@@ -162,7 +162,12 @@ export interface WorldState {
   contacts: CharacterContact[];
   schedule: { id: string; title: string; locationId: string; time: string; done: boolean }[];
   journal: { id: string; text: string; at: string }[];
-  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[] }[];
+  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[];
+    /** Dedicated viewing beats; never mistaken for dialogue the current hero witnessed. */
+    otherSideBeats?: { protagonists: import('../runtime/dual-protagonists').ProtagonistId[]; text: string }[];
+    /** Continuation of the current viewpoint following the simultaneous beat. */
+    returnStory?: string;
+  }[];
 }
 
 export type WorldAction =
@@ -223,7 +228,25 @@ export type StoryAction =
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
+/** A validated, persisted event in one non-controlled protagonist's viewpoint. */
+export interface OtherSideEvent {
+  /** A co-located group has exactly one event and one narrative, never duplicate tags. */
+  protagonists: import('../runtime/dual-protagonists').ProtagonistId[];
+  text: string;
+  /** Optional shared destination. Omitting it preserves each person's position. */
+  locationId?: string;
+  /** Per-character relative changes only; no wallet, inventory, time or arbitrary patches. */
+  variables?: Partial<Record<import('../runtime/dual-protagonists').ProtagonistId,
+    Partial<Pick<PlayerState, 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy'>>>>;
+  /** Only currently co-located, eligible NPCs; never a switchable viewpoint. */
+  npcs?: { id: string; locationId?: string; status?: string; affinityDelta?: number }[];
+  /** Canonical two-sided off-screen SMS; sender must be part of this event. */
+  messages?: { from: import('../runtime/dual-protagonists').ProtagonistId; to: import('../runtime/dual-protagonists').ProtagonistId; text: string }[];
+}
+
 export interface GeneratedStory {
+  otherSide?: OtherSideEvent[];
+  returnStory?: string;
   text: string;
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];

@@ -22,3 +22,6 @@
   .protagonist-switch-caption { left:16px; bottom:max(20px,env(safe-area-inset-bottom)); padding:10px 16px; }
   .protagonist-switch-caption strong { font-size:20px; }
 }
+
+.protagonist-switch-blackout{position:absolute;inset:0;z-index:3;background:#030609;pointer-events:none;will-change:opacity}
+.protagonist-switch-caption,.protagonist-switch-actions{z-index:4}

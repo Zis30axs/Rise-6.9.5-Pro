@@ -1,22 +1,312 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Unread City Story Turn",
-  "description": "已实现的剧情生成白名单协议，由 src/runtime/story-protocol.ts 校验。npcId 还必须出现在本次世界存档 contacts 中；模型不提供消息 ID、时间、已读状态或任意状态补丁。",
+  "description": "剧情模型输出白名单：标签由 story-protocol.ts 解析。other_side 是 <otherside> 的 JSON 对应键；参与者必须通过确定性机会与现场 NPC 校验，切换目标只限四主角。",
   "type": "object",
   "additionalProperties": false,
-  "required": ["story", "phone_messages"],
+  "required": [
+    "story",
+    "phone_messages"
+  ],
   "properties": {
-    "story": { "type": "string", "minLength": 1, "maxLength": 6000 },
+    "story": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 6000
+    },
     "phone_messages": {
       "type": "array",
       "maxItems": 8,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["npcId", "text"],
+        "required": [
+          "npcId",
+          "text"
+        ],
         "properties": {
-          "npcId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
-          "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
+          "npcId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      }
+    },
+    "story_continue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "可选：<otherside> 后的当前主角视角续写；必须有有效 other_side"
+    },
+    "other_side": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "protagonists",
+          "text"
+        ],
+        "properties": {
+          "protagonists": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "soyo",
+                "sakiko",
+                "emma",
+                "renako"
+              ]
+            }
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "locationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "当前同地范围内的合法地图目的地，不允许免费跨区瞬移"
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "soyo": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "energy": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "health": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "stress": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "morale": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "satiety": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "foodEnergy": {
+                    "type": "integer",
+                    "minimum": -300,
+                    "maximum": 300
+                  }
+                },
+                "minProperties": 1
+              },
+              "sakiko": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "energy": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "health": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "stress": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "morale": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "satiety": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "foodEnergy": {
+                    "type": "integer",
+                    "minimum": -300,
+                    "maximum": 300
+                  }
+                },
+                "minProperties": 1
+              },
+              "emma": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "energy": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "health": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "stress": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "morale": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "satiety": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "foodEnergy": {
+                    "type": "integer",
+                    "minimum": -300,
+                    "maximum": 300
+                  }
+                },
+                "minProperties": 1
+              },
+              "renako": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "energy": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "health": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "stress": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "morale": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "satiety": {
+                    "type": "integer",
+                    "minimum": -20,
+                    "maximum": 20
+                  },
+                  "foodEnergy": {
+                    "type": "integer",
+                    "minimum": -300,
+                    "maximum": 300
+                  }
+                },
+                "minProperties": 1
+              }
+            }
+          },
+          "npcs": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "locationId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "status": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "affinityDelta": {
+                  "type": "integer",
+                  "minimum": -5,
+                  "maximum": 5
+                }
+              }
+            }
+          },
+          "messages": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "from",
+                "to",
+                "text"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "enum": [
+                    "soyo",
+                    "sakiko",
+                    "emma",
+                    "renako"
+                  ]
+                },
+                "to": {
+                  "type": "string",
+                  "enum": [
+                    "soyo",
+                    "sakiko",
+                    "emma",
+                    "renako"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            }
+          }
         }
       }
     }

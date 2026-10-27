@@ -3,7 +3,10 @@ import { characterForPerson } from '../frontend/character-appearance';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONIST_PERSON_ID_LIST, protagonistPersonId, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames, type PersonalState } from './protagonist-world';
-import { getInteriorPeople, getSceneArea, getSceneContext, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
+import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, scenePersonAnchors, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
+import { allResidentCast, residentPresence } from './npc-cast';
+import { getCampusInterior } from './campus-interiors';
+import { activeOtherSideNpcLocation } from './other-side';
 
 export interface WorldScenePerson extends ScenePerson {
   protagonistId?: ProtagonistId;
@@ -41,6 +44,46 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
   const people: WorldScenePerson[] = state.interior
     ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hidden)
     : scene ? getScenePeople(scene, state.contacts, state.clock, hidden) : [];
+  // Expiring story-committed NPC locations supersede authored fallback schedules.
+  // Never project an NPC twice or let a saved NPC event steal a playable identity.
+  if (state.protagonists?.otherSideNpc) {
+    const authoredIds = new Set(allResidentCast.map(row => row.id));
+    for (let index = people.length - 1; index >= 0; index--) {
+      const person = people[index]!;
+      if (authoredIds.has(person.id) && activeOtherSideNpcLocation(state, person.id)) people.splice(index, 1);
+    }
+    for (const resident of allResidentCast) {
+      if (hidden.includes(resident.id) || !authoredIds.has(resident.id)) continue;
+      const override = activeOtherSideNpcLocation(state, resident.id);
+      if (!override) continue;
+      const inRoom = !!getCampusInterior(override.locationId);
+      if (state.interior ? (!inRoom || state.interior.roomId !== override.locationId)
+        : (inRoom || !scene || sceneLocationId(scene.areaId) !== override.locationId)) continue;
+      const room = inRoom ? getCampusInterior(override.locationId) : null;
+      const roomAnchor = room
+        ? getInteriorPeopleForValidation(room.id).find(person => person.id === resident.id)
+          ?? { x: room.spawn.x, z: room.spawn.z }
+        : null;
+      // Keep the resident at their real scheduled anchor if the override did not move them.
+      // This also works in areas without a sceneLandmark (e.g. promenade).
+      const scheduled = residentPresence(resident.id, state.clock);
+      const original = scenePersonAnchors.find(anchor => anchor.id === scheduled?.anchorId);
+      const originalArea = original && getSceneArea(original.x, original.z);
+      const retained = original && originalArea && sceneLocationId(originalArea.id) === override.locationId
+        ? { x: original.x + .6, z: original.z + .6 } : null;
+      const outdoorAnchor = !inRoom ? retained ?? sceneLandmarks.find(row => sceneLocationId(row.id) === override.locationId) : null;
+      if (!roomAnchor && !outdoorAnchor) continue;
+      const contact = state.contacts.find(row => row.sourcePersonId === resident.id || row.id === resident.id);
+      people.push({
+        id: resident.id, name: contact?.name ?? resident.name, candidateName: resident.name,
+        identity: '常驻居民', tags: ['常驻人物'],
+        description: `${contact?.summary ? contact.summary.slice(0, 160) + '；' : ''}${override.status}`,
+        x: roomAnchor?.x ?? outdoorAnchor?.x ?? 0, z: roomAnchor?.z ?? outdoorAnchor?.z ?? 0,
+        color: 0x859c6d, portraitId: contact?.portraitId ?? characterForPerson(resident.id),
+        contactId: contact?.id ?? null, isMain: contact?.isMain ?? false,
+      });
+    }
+  }
   if (!state.protagonists) return people;
   for (const owner of otherProtagonists(activeProtagonist(state))) {
     const personal = personState(state, owner);

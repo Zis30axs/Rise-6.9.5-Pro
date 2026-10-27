@@ -28,7 +28,7 @@ export function pruneVariableEcho(savedText: string): string {
 }
 
 export interface PromptJournal { id: string; at: string; text: string }
-export interface PromptStory { role: 'user' | 'assistant'; text: string }
+export interface PromptStory { role: 'user' | 'assistant'; text: string; returnStory?: string }
 export interface PromptPhone { npcId: string; text: string; read: boolean; at: string }
 
 export function selectPromptJournal(rows: readonly PromptJournal[], excludedIds: ReadonlySet<string> = new Set()): PromptJournal[] {
@@ -45,10 +45,18 @@ export function selectPromptJournal(rows: readonly PromptJournal[], excludedIds:
   return newest.reverse();
 }
 
+/** Read-only prose projection. The foreground return AFTER an off-screen cut is
+ * the actual last narrated moment, so always reserve room for it. Never append
+ * otherSideBeats: those are private, non-witnessed events in other saves. */
 export function selectPromptStory(rows: readonly PromptStory[]): PromptStory[] {
-  return rows.slice(-PROMPT_CONTEXT_LIMITS.storyTurns).map(row => ({
-    role: row.role, text: pruneVariableEcho(row.text).slice(0, PROMPT_CONTEXT_LIMITS.storyText),
-  })).filter(row => row.text);
+  return rows.slice(-PROMPT_CONTEXT_LIMITS.storyTurns).map(row => {
+    const beginning = pruneVariableEcho(row.text);
+    const resumed = row.role === 'assistant' && row.returnStory
+      ? pruneVariableEcho(row.returnStory).slice(-300) : '';
+    const tail = resumed ? '\n【回到当前视角后已经发生的正文】\n' + resumed : '';
+    const available = PROMPT_CONTEXT_LIMITS.storyText - tail.length;
+    return { role: row.role, text: beginning.slice(0, available) + tail };
+  }).filter(row => row.text);
 }
 
 export function selectPromptPhone(rows: readonly PromptPhone[]): PromptPhone[] {

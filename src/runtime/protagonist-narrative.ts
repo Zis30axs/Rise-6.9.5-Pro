@@ -172,7 +172,8 @@ export function recordProtagonistNarrative(before: WorldState, after: WorldState
   const beforeListeners = new Set(protagonistsInTalkingRange(before).map(person => person.protagonistId));
   const listeners = protagonistsInTalkingRange(next).map(person => person.protagonistId).filter(id => beforeListeners.has(id));
   if (!before.protagonists || !stableScene || !listeners.length) return next;
-  const savedText = next.story.find(entry => entry.id === turnId && entry.role === 'assistant')?.text;
+  const savedEntry = next.story.find(entry => entry.id === turnId && entry.role === 'assistant');
+  const savedText = [savedEntry?.text, savedEntry?.returnStory].filter(Boolean).join('\n');
   if (!savedText) return next;
   const dialogue = parseNovelDialogue(savedText).flatMap(segment => {
     const speaker = speakerId(segment.speaker);

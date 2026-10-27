@@ -23,6 +23,10 @@ let warmedImage: HTMLImageElement | undefined, imageReady = !props.novelMode;
 let media: MediaQueryList | undefined;
 const source = props.lease.source.mapAnchor, target = props.lease.target.mapAnchor;
 const targetName = protagonistNames[props.lease.target.protagonist];
+const blackoutOpacity = computed(() => phase.value === 'waiting' ? 1
+  : phase.value === 'traverse' ? switchEase((progress.value - .88) / .12)
+  : phase.value === 'descent' ? 1 - switchEase(progress.value / .20)
+  : phase.value === 'fade' && committed.value ? 1 - progress.value : 0);
 const mapOpacity = computed(() => phase.value === 'ascent' ? switchEase((progress.value - .2) / .6)
   : phase.value === 'descent' ? 1 - switchEase((progress.value - .35) / .65)
   : phase.value === 'fade' ? 1 - progress.value : 1);
@@ -143,6 +147,7 @@ defineExpose({ skip });
       <LocalMapGeometry :width="size.width" :height="size.height" scope="city" :camera-view="cameraView" />
       <div class="protagonist-switch-reticle" aria-hidden="true"><i/><i/><i/></div>
     </div>
+    <div class="protagonist-switch-blackout" aria-hidden="true" :style="{ opacity: blackoutOpacity }"></div>
     <div class="protagonist-switch-caption" role="status" aria-live="polite"><small>视角切换</small><strong>{{ targetName }}</strong></div>
     <div class="protagonist-switch-actions"><button type="button" aria-label="切换动画中恢复酒馆" @click="emit('exit')">恢复酒馆</button><button type="button" data-switch-skip @click="skip">跳过 <kbd>Esc</kbd></button></div>
   </section>

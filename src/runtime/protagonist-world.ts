@@ -1,14 +1,16 @@
 import { parseBandInviteCommand, sendBandInvitation, musicPersonId, type BandInviteCommand } from './livehouse';
 import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
-import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
+import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, PROTAGONIST_PERSON_ID_LIST, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
 import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { getCampusInterior } from './campus-interiors';
-import { sceneLandmarks } from '../frontend/scene-layout';
+import { sceneLandmarks, sceneAreas } from '../frontend/scene-layout';
+import { sceneLocationId } from './scene-context';
 import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
+import { residentById } from './npc-cast';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
@@ -53,6 +55,12 @@ export interface ProtagonistWorld {
   npcWallets?: Record<string, number>;
   /** Shared canonical chat; both phones project the same thread. Absent in old 1.12 saves. */
   conversations?: ProtagonistTextMessage[];
+  /** Incremented only by saved foreground narrative turns, not by reading or switching. */
+  narrativeTurn?: number;
+  /** Idempotent committed off-screen events, capped per day and per game-minute cooldown. */
+  otherSideHistory?: { id: string; at: number; turn: number; protagonists: ProtagonistId[]; payloadHash?: string }[];
+  /** Short-lived, explicit NPC locations and activity labels. Only authored resident IDs. */
+  otherSideNpc?: Record<string, { locationId: string; at: number; until: number; status: string }>;
   /** Older 1.12 saves receive this lazily at their current world clock. */
   backgroundLife?: BackgroundLife;
   /** Seven-game-day extractive memories, never a replacement for live state. */
@@ -174,7 +182,8 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const hasFourth = !!source && typeof source === 'object' && !Array.isArray(source) && Object.hasOwn(source, 'fourth');
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
-    ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations')]);
+    ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -262,7 +271,35 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   })) : [];
   if(conversations.some(row => row.replyTo!==null && !conversations.some(parent =>
     parent.id===row.replyTo && parent.from===row.to && parent.to===row.from && parent.expectsReply))) fail('短信回复来源无效');
-  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,third,fourth,accounts,devices,orders,operations,conversations};
+  const narrativeTurn = Object.hasOwn(p, 'narrativeTurn') ? integer(p.narrativeTurn, Number.MAX_SAFE_INTEGER) : 0;
+  const now = gameMinute(base);
+  const otherSideHistory = Object.hasOwn(p, 'otherSideHistory') ? distinct(array(p.otherSideHistory, 100, raw => {
+    const hasHash = !!raw && typeof raw === 'object' && Object.hasOwn(raw, 'payloadHash');
+    const row = exact(raw, ['id', 'at', 'turn', 'protagonists', ...(hasHash ? ['payloadHash'] : [])]);
+    const at = integer(row.at, now), turn = integer(row.turn, narrativeTurn);
+    const protagonists = array(row.protagonists, 3, actor);
+    if (!protagonists.length || new Set(protagonists).size !== protagonists.length) fail('旁线主角集合无效');
+    return { id: identifier(row.id), at, turn, protagonists,
+      ...(hasHash ? { payloadHash: string(row.payloadHash, 16) } : {}) };
+  })) : [];
+  if (otherSideHistory.some((row, index) => index > 0 && (row.at < otherSideHistory[index - 1]!.at || row.turn < otherSideHistory[index - 1]!.turn)))
+    fail('旁线事件记录顺序无效');
+  const otherSideNpc: NonNullable<ProtagonistWorld['otherSideNpc']> = {};
+  if (Object.hasOwn(p, 'otherSideNpc')) {
+    if (!p.otherSideNpc || typeof p.otherSideNpc !== 'object' || Array.isArray(p.otherSideNpc)
+      || Object.keys(p.otherSideNpc).length > 40) fail('NPC旁线变量列表无效');
+    for (const [id, raw] of Object.entries(p.otherSideNpc)) {
+      if (!id.startsWith('majo-') && !id.startsWith('watanare-')) fail('NPC旁线身份无效');
+      if (PROTAGONIST_PERSON_ID_LIST.includes(id) || !residentById(id)) fail('NPC旁线身份无效');
+      const row = exact(raw, ['locationId', 'at', 'until', 'status']);
+      const locationId = string(row.locationId, 80), at = integer(row.at, now), until = integer(row.until, 525599999);
+      if (!(isKnownLocation(locationId) || sceneAreas.some(area => sceneLocationId(area.id) === locationId))
+        || until <= at || until > at + 1440) fail('NPC旁线地点或有效期无效');
+      otherSideNpc[id] = { locationId, at, until, status: string(row.status, 120) };
+    }
+  }
+  const result: ProtagonistWorld = {revision:integer(p.revision,Number.MAX_SAFE_INTEGER),inactive,third,fourth,accounts,devices,orders,operations,conversations,
+    narrativeTurn, otherSideHistory, otherSideNpc};
   if (Object.hasOwn(p,'npcWallets')) result.npcWallets = parseNpcWallets(p.npcWallets);
   if (Object.hasOwn(p, 'npcPhone')) result.npcPhone = parseNpcPhone(p.npcPhone, {...base, schema_version:'1.13.0', protagonists:result});
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy,!hasThird||!hasFourth) : initializeBackgroundLife({...base,schema_version:'1.13.0',protagonists:result});
