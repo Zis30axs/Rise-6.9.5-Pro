@@ -33,7 +33,7 @@ function onImageError(event: Event) {
     :data-background-phase="background.phase"
     :data-background-image-phase="background.imagePhase"
     :data-background-status="imageFailed ? 'fallback' : 'image'"
-    :data-background-source="background.id.startsWith('majo-') ? 'majo-art' : usingArt ? 'downtown-art' : 'legacy'"
+    :data-background-source="usingArt ? 'downtown-art' : legacy.source"
     aria-hidden="true"
   >
     <img v-if="!imageFailed" :key="background.id" class="novel-backdrop__image" :src="background.src" alt="" draggable="false" @error="onImageError">

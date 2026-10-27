@@ -14,6 +14,7 @@ import bedroomDay from '../../assets/backgrounds/bedroom-day.webp?inline';
 import livehouseBg from '../../assets/backgrounds/livehouse.webp?inline';
 import ktvBg from '../../assets/backgrounds/ktv.webp?inline';
 import mlmOfficeBg from '../../assets/backgrounds/mlm-office.webp?inline';
+import constructionDayBg from '../../assets/backgrounds/construction-day.avif?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -23,7 +24,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
-  source: 'legacy' | 'majo-art';
+  source: 'legacy' | 'majo-art' | 'user-art';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -82,6 +83,9 @@ const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelB
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  // This locally supplied construction photo depicts daylight in every game-time phase.
+  if (locationId === 'construction-site') return { id: 'construction-site-day', src: constructionDayBg,
+    phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
   const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
   if (authored) return { id: `majo-${locationId}`, src: authored.src, phase: novelBackgroundPhase(hour), imagePhase: authored.imagePhase, source: 'majo-art' };
   const family = Object.hasOwn(novelBackgroundLocations, locationId) ? novelBackgroundLocations[locationId] : 'street';

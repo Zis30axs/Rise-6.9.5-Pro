@@ -1,0 +1,21 @@
+{
+  "id": "construction-site-day",
+  "locationId": "construction-site",
+  "source": {
+    "kind": "user-provided-image",
+    "mime": "image/jpeg",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 852621,
+    "sha256": "a35cb64f9d03868a09df89cad5b479934610214867321b9bd77f8d6c2d706c5a"
+  },
+  "derived": {
+    "file": "construction-day.avif",
+    "mime": "image/avif",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 107508,
+    "sha256": "e081f9fc448572aab69781f8184973cd1628f37e2daa80e109f18ff76d83d1fa"
+  },
+  "imagePhase": "day"
+}

@@ -29,3 +29,7 @@
 [novel-backgrounds.ts](../src/frontend/novel-backgrounds.ts) 使用固定 `?inline` 引用随同一个 IIFE / PNG 打包，没有外部图片请求。[NovelBackdrop.vue](../src/frontend/NovelBackdrop.vue) 只接收当前位置和世界小时，输出装饰图片与静态遮罩；图片解码失败时保留静态渐变。样式由 Shell 显式导入 `novel-backdrop.css`，以进入 ShadowRoot。
 
 准备脚本验证原包哈希、条目路径、尺寸和体积上限，只处理固定白名单图片，成品重新解码核对。模块单测覆盖现有地点、时段边界、室内 / 户外区别、缺图和未知输入回退。桌面界面验证及最终角色卡包装由主任务另行记录，不据此宣称 TauriTavern 真机通过。
+
+## 建设工地背景（2026-10-28）
+
+用户在聊天中提供一张建设工地日景 JPEG（1536×1024、852621 字节、SHA-256 `a35cb64f9d03868a09df89cad5b479934610214867321b9bd77f8d6c2d706c5a`）。压缩衍生图 `backgrounds/construction-day.avif` 保持原图 1536×1024 的画幅与构图，AVIF 107508 字节，SHA-256 `e081f9fc448572aab69781f8184973cd1628f37e2daa80e109f18ff76d83d1fa`。绑定小说模式的 `construction-site` 地点；图像实际时段恒为白天，傍晚和夜间仅沿用已有遮罩，不冒充另行绘制的夜景。与背景显示无关的工地工资、精力、时钟与存档逻辑维持不变。
