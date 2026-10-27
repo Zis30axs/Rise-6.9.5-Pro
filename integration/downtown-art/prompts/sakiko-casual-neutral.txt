@@ -1,7 +1,0 @@
-Use case: stylized-concept
-Asset type: one finished full-body visual novel character sprite, not a concept board.
-Subject: Toyokawa Sakiko from BanG Dream! Ave Mujica, recognizable pale blue long twin tails tied with small black ribbons, straight bangs, amber golden eyes, refined reserved face, slender proportions. Contemporary casual outfit: ivory button-up blouse with small dark blue ribbon at collar, open charcoal navy cardigan, dark pleated knee-length skirt, opaque black tights, simple black loafers. Hands naturally together in front, upright front three-quarter standing pose. Neutral composed expression, eyes open, mouth closed.
-Style: clean Japanese TV anime cel shading, delicate dark outlines, restrained flat colors, matching a polished visual novel cast. Elegant everyday clothing; no stage costume.
-Composition: exactly ONE character in a 1024x1792 portrait canvas, entire hair tips, fingers, both legs, both shoes and soles visible. Top of hair at y=90, feet around y=1670; centered at x=512. Ample blank margin around the whole silhouette. No cropped body parts.
-Background: perfectly uniform flat chroma green #00ff00 for later local alpha extraction, including between hair strands and between legs. No shadows on the background or floor. No green in the character.
-Constraints: finished game-ready illustration. No panels, no collage, no sheet, no props, no scene, no writing, no caption, no logo, no watermark, no border, no checkerboard. Keep both twin tails clearly visible. Clothes opaque and modest.

@@ -1,5 +1,0 @@
-Use case: identity-preserve
-Edit target: the provided finished full-body Toyokawa Sakiko portrait.
-Primary request: change ONLY her outfit to a modest refined indoor outfit: soft ivory long-sleeved knitted cardigan over a pale blue high-neck blouse, simple flowing navy midi skirt, opaque black tights and flat dark indoor slippers. Keep exactly the same person's amber eyes, pale blue long twin tails, small black hair ribbons, face design, body proportions, standing pose, hand position and clean flat anime cel shading. Neutral composed expression, open eyes and closed mouth. This is one finished full-body visual novel sprite, not a board.
-Composition: maintain the entire character and both complete shoes, straight standing front three-quarter view, ample margin on all sides. No cropping of hair or feet. Keep subject centered and at exactly the same scale and vertical position as the reference.
-Background: transparent background if supported; otherwise a uniform flat chroma green #00ff00, without any floor shadow, no green clothing. No text, no collage, no multiple figures, no props, no scene, no labels, no watermark. Do not change identity or pose.

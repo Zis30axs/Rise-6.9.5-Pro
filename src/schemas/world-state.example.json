@@ -1,9 +1,0 @@
-{
-  "schema_version": "0.1.0",
-  "clock": {"day": 1, "hour": 8, "minute": 0},
-  "player": {"id": "player", "location_id": null},
-  "characters": {},
-  "locations": {},
-  "relationships": {},
-  "event_log": []
-}
