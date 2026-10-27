@@ -37,3 +37,8 @@
 @media(max-height:670px) and (max-width:760px){
  .uc-shell[data-presentation-mode=novel] .reading-layer:not(.reading-expanded){height:180px}
 }
+
+/* Optional simultaneous-world viewpoint choice, only after a committed event. */
+.novel-dialogue .other-side-choices{display:flex;flex-wrap:wrap;gap:7px;max-height:112px;overflow:auto;align-items:center;padding:4px 0 6px;border-top:1px solid #e5d6b344}
+.novel-dialogue .other-side-choices button{flex:1 1 145px;font-size:12px;min-height:34px;padding:6px 9px;border-radius:8px;border:1px solid #e1d6b877;background:#d4c4a123;color:#fff2d8;cursor:pointer}
+.novel-dialogue .other-side-choices button:first-child{background:#e2d4b72d}
