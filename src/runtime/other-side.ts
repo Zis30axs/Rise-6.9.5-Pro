@@ -124,7 +124,8 @@ export function otherSideOpportunity(state: WorldState): OtherSideOpportunity {
   const now = gameMinute(state), turn = p.narrativeTurn ?? 0;
   const history = p.otherSideHistory ?? [], last = history.at(-1);
   if (history.filter(row => Math.floor(row.at / 1440) === Math.floor(now / 1440)).length >= OTHER_SIDE_RULES.maxPerDay) return nothing();
-  if (last && now - last.at < OTHER_SIDE_RULES.cooldownMinutes && turn - last.turn < OTHER_SIDE_RULES.cooldownStoryTurns) return nothing();
+  // Both clocks must clear: rapidly sending text without advancing game time cannot farm cuts.
+  if (last && (now - last.at < OTHER_SIDE_RULES.cooldownMinutes || turn - last.turn < OTHER_SIDE_RULES.cooldownStoryTurns)) return nothing();
   const lastInteraction = [...(state.interactionEventRate?.checks ?? [])].reverse()
     .find(check => check.offered && now - check.at < 90);
   const chance = lastInteraction ? OTHER_SIDE_RULES.afterRecentInteractionChance : OTHER_SIDE_RULES.chance;
