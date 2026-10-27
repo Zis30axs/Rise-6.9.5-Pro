@@ -286,7 +286,7 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
       const personal = personState(next, owner);
       if (personal.story.some(row => row.id === eventId)) throw new Error('旁线个人剧情 ID 冲突');
       for (const [key, value] of Object.entries(event.variables?.[owner] ?? {})) {
-        const field = key as keyof NonNullable<OtherSideEvent['variables']>[typeof owner];
+        const field = key as 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy';
         if (field === 'foodEnergy') personal.player.foodEnergy = affect(personal.player.foodEnergy, value, 3000);
         else if (typeof personal.player[field] === 'number') personal.player[field] = affect(personal.player[field], value);
       }
@@ -296,7 +296,7 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
         text: `与此同时，${event.text}`.slice(0, 1000) });
       personal.journal = personal.journal.slice(-100);
     }
-    for (const [npcIndex, npc] of (event.npcs ?? []).entries()) {
+    for (const npc of (event.npcs ?? [])) {
       const existing = npcAt(before, npc.id);
       const nextLocation = npc.locationId ?? (event.locationId ?? existing?.locationId);
       if (!existing || !nextLocation) throw new Error('旁线 NPC 不在已确认的场景中');
@@ -313,7 +313,6 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
         if (npc.status) contact.status = npc.status;
         if (npc.affinityDelta) contact.affinity = Math.max(-100, Math.min(100, contact.affinity + npc.affinityDelta));
       }
-      if (npcIndex >= 5) throw new Error('旁线 NPC 数量无效');
     }
     for (const [msgIndex, message] of (event.messages ?? []).entries()) {
       crossViewTextMessage(next, `${eventId}:sms:${msgIndex}`, message.from, message.to, message.text);
