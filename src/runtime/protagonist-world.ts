@@ -6,7 +6,8 @@ import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './conven
 import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { getCampusInterior } from './campus-interiors';
-import { sceneLandmarks } from '../frontend/scene-layout';
+import { sceneLandmarks, sceneAreas } from '../frontend/scene-layout';
+import { sceneLocationId } from './scene-context';
 import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
 import { residentById } from './npc-cast';
@@ -290,7 +291,8 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
       if (PROTAGONIST_PERSON_ID_LIST.includes(id) || !residentById(id)) fail('NPC旁线身份无效');
       const row = exact(raw, ['locationId', 'at', 'until', 'status']);
       const locationId = string(row.locationId, 80), at = integer(row.at, now), until = integer(row.until, 525599999);
-      if (!isKnownLocation(locationId) || until <= at || until > at + 1440) fail('NPC旁线地点或有效期无效');
+      if (!(isKnownLocation(locationId) || sceneAreas.some(area => sceneLocationId(area.id) === locationId))
+        || until <= at || until > at + 1440) fail('NPC旁线地点或有效期无效');
       otherSideNpc[id] = { locationId, at, until, status: string(row.status, 120) };
     }
   }
