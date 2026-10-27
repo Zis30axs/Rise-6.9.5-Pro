@@ -25,7 +25,7 @@ export interface NovelNpcPortraitContext {
   readonly encounterId?: string | null;
 }
 
-const nonNpcSpeakers = new Set(['', '旁白', '叙述', 'narrator', '我', '你', '玩家', '主角', '你的行动', '素世', '长崎素世', '長崎素世', '長崎そよ', 'soyo']);
+const nonNpcSpeakers = new Set(['', '旁白', '叙述', 'narrator', '我', '你', '玩家', '主角', '你的行动', '素世', '长崎素世', '長崎素世', 'soyo']);
 
 /** Resolve existing identities only. A model name or an unknown speaker never creates a new NPC. */
 export function resolveNovelNpcPortrait(speaker: string, context: NovelNpcPortraitContext): NovelNpcPortraitId | null {

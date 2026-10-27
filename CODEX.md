@@ -1,5 +1,12 @@
 # SillyTavern 角色卡：Agent 工作约定
 
+## 硬性约定：正文与文档不出现日文（2026-10-27）
+
+- 源码、世界书、演示页、工程文档一律不写假名；日文名用中文译名，必要时括注拼音或罗马字。此条覆盖旧记录里引用日文原名的写法。
+- 改动入口：世界书 `src/worldbook/*.json`、别名表 `src/frontend/majo-art.ts` 与 `src/frontend/watanare-art.ts`、人物识别 `src/runtime/protagonist-narrative.ts`、演示模板 `scripts/kaguya-live-demo-template.html`、手机文案 `integration/dual-protagonists/phone-apps.js`。
+- 防回归 `npm run check:no-ja`（`tests/no-japanese.test.ts`）；放行项只有第三方署名与许可、`素材/` 真实路径、VRM 骨骼名，见 `DeepSeek.md`。
+- 去日文不改人物关系、剧情和协议 ID；中文译名与既有世界书保持一致。
+
 ## 随机主动短信（2026-10-26）
 
 用户授权在自由推进游戏时间时自动、低频随机地主动来信，无需确认；这是对历史“所有手机生成均需手动”的窄范围更新，**普通短信回复仍由玩家手动请求**。以最新 `lite@800ac01` 初版为基础，主动任务改用 `generateRaw` 显式受限提示或已有自定义 API 的无叙事预设单次调用；无已验证的游戏内 subagent，不依赖开发助手代理或外部 Agent 服务。冷却和随机任务持久化，四主角知识隔离、待回复避让、去重与过期丢弃、保存后同步；不改变乐队明确同意流程。详见 [实现与本地验证](integration/autonomous-sms/README.md)。未调用真实模型或主动运行远程 CI；手机真机验收单列。
@@ -8,9 +15,9 @@
 
 乐队/演出以共享可选 `WorldState.livehouse` 为正式依据，不从历史成功日志、活动标识或普通叙事补造记录。表单只确认本人为初始成员；其他成员必须经玩家手机发邀请及模型结构化同意。能力按稳定身份保存，陌生人仅首次数值抽样。普通短信合并回复须保留待确认邀请；手机状态重绘须保留同一聊天/主角内的邀请选择。日历是演出预约的投影，不能从编辑日历入口改写已确认档期，隐藏显示也不取消预约。详见 `integration/livehouse/README.md`；四尺寸浏览器及真机验收仍未完成，保持 Draft，不覆盖历史发行物或主动跑 CI。
 
-## 最新增量：超かぐや姫！3D 动作细化与角色卡 Twiitch 直播间接入（2026-10-25）
+## 最新增量：超辉夜姬 3D 动作细化与角色卡 Twiitch 直播间接入（2026-10-25）
 
-用户在 `素材/《超かぐや姫！》3D 真实模型互动 Live 演示 - 甘织玲奈子专属手机 (Peach Flip).html` 提供了动作细化版本（比心、挥手两大动作精细标定、带手指多节骨骼联动、布料弹性物理与手动姿态编辑器）。已按照这一版全面接入角色卡及独立演示：
+用户在 `素材/` 下提供的辉夜姬 3D 互动 Live 演示 HTML（原文件名保留）中提供了动作细化版本（比心、挥手两大动作精细标定、带手指多节骨骼联动、布料弹性物理与手动姿态编辑器）。已按照这一版全面接入角色卡及独立演示：
 
 - **动作与物理细化**：
   - 💖 偶像比心：手腕位于躯干前上方聚拢（`L≈(-.080,1.21,-.205), R≈(+.080,1.21,-.205)`），双食指指尖在拇指上方相扣，手指多节骨骼精确联动（`heartFingerPose` 与缓动保持）。
@@ -23,11 +30,11 @@
   - 独立实机演示同步更新至 `outputs/kaguya-live-3d-demo.html`、`outputs/kaguya-livestream-preview.html` 及其工作树镜像。
   - 角色卡构建通过：`unread-city-lite.png`、`unread-city-lite-tauri.png`（9.60 MB）与配套素材 ZIP。28 项 Vitest、5 项 Node 视觉测试、41 项 Python 单元测试全部通过。严格标记 `passed-build-only-not-tested-on-iphone`，未作真机误报。
 
-## 最新增量：超かぐや姫！3D 直播间独立演示（2026-10-25，脱离角色卡）
+## 最新增量：超辉夜姬 3D 直播间独立演示（2026-10-25，脱离角色卡）
 
 用户要求先做一版**脱离角色卡**的前端来预览"纯小说模式手机里的 3D"。已交付 `outputs/kaguya-live-3d-demo.html`：单文件、双击即可打开（file:// 直接运行，无需酒馆/角色卡/服务），以 Peach Flip 风格手机框展示辉夜姬 VRM 模型的"月读空间"直播间画面——拖动旋转、滚轮/双指缩放、回正与自动摇摆开关、待机眨眼；系统"减少动态效果"时摇摆与眨眼自动关闭，页面隐藏时停止渲染。
 
-- **模型素材**：`assets/kaguya-live/kaguya.vrm` 是用户提供的 `素材/超かぐや姫_かぐや_水色の描` VRM 的**字节原样副本**（SHA 记录于 `assets/kaguya-live/manifest.json`）。出处 **【水色の描】**；依其《MMD・VRoidモデル利用規約》仅限私用展示：允许头像/配信用途、禁止收益与再分发，卡与仓库保持私有。v1 不做网格/贴图压缩，保持模型忠实原样（曾试验 gltf-transform+meshopt 压缩，因 VRM 0.x 扩展透传与内部 prune 行为不可控而放弃，待后续用更稳的管线再做）。
+- **模型素材**：`assets/kaguya-live/kaguya.vrm` 是用户提供的辉夜姬 VRM（原始素材目录名保留）的**字节原样副本**（SHA 记录于 `assets/kaguya-live/manifest.json`）。出处 **Mizuirono**；依其原作者许可（原始文件名保留在素材目录）仅限私用展示：允许头像/配信用途、禁止收益与再分发，卡与仓库保持私有。v1 不做网格/贴图压缩，保持模型忠实原样（曾试验 gltf-transform+meshopt 压缩，因 VRM 0.x 扩展透传与内部 prune 行为不可控而放弃，待后续用更稳的管线再做）。
 - **组装方式**：`scripts/build_kaguya_live_demo.mjs` 把 three.module.js、GLTFLoader（相对导入改写为 import map 裸说明符）、@pixiv/three-vrm 与 VRM base64 内联进模板 `scripts/kaguya-live-demo-template.html`。`npm run kaguya:demo` 一键重建（先校验模型 SHA）；`npm run kaguya:model` 暂存/校验素材。
 - **验证**：`tests/e2e/kaguya-live-demo.spec.ts` 用系统 Chrome 在 1440×900 与 390×844 加载 file:// 页面，确认 WebGL 渲染成功、无页面错误，截图在 `outputs/kaguya-live-qa/`。静态 T-pose 已按 normalized 骨骼放下手臂，长发经 spring bone 自然垂落。
 - **边界**：这只是独立演示，**尚未接入角色卡**；卡内方案（kaguyaLiveLease 装饰手机租约、父页面向同源手机 iframe 注入 three.js 画布、Twiitch 辉夜姬频道加"3D 直播间"入口）已在调查中，等用户确认演示效果后再实施。未调用真实模型，未跑远程 CI。
@@ -39,13 +46,13 @@ Gemini 在独立工作树 `.worktrees/watanare-integration`（分支 `feat/lite-
 - **第四主角甘织玲奈子**：`PROTAGONISTS` 扩为四人（soyo/sakiko/emma/renako），新增 `ProtagonistWorld.fourth` 个人状态槽、设备 `unread-city-phone-renako`、主题 `renako-soft`、初始余额 ¥9,500（`RENAKO_START_CENTS` 950,000）。解析器向后兼容：旧三主角存档缺 `fourth` 时自动创建玲奈子初始状态，账本/设备键随 `hasFourth` 可选，余额投影校验扩展到第四人；人物 ID 映射 `renako → watanare-renako`。切换 UI 走 `PROTAGONISTS` 常量，玲奈子自动可切换。
 - **渡奈常驻人物体系**：`src/worldbook/watanare-residents.json`（甘织玲奈子与芦谷五人组及甘织/濑名/琴/王冢家亲属，东京高田、杂司谷、池袋、目白台生活圈）与 `watanare-story-arcs.json`；`npc-cast.ts` 注册渡奈日常群；`initial-contacts.ts` 提供玲奈子初始好友联系人；立绘经 `src/frontend/watanare-art.ts` 与 `assets/watanare-runtime/`（约 17MB）接入，`NovelNpcPortrait.vue` 在魔裁立绘之后回退渡奈表情立绘（玲奈子 9 表情，真唯等半主要角色 3 表情）。
 - **玲奈子专属手机 Peach Flip**：3D 机型 `Peach Flip / 甘织粉紫壳`（`phone-spatial-model.ts`，含镜头岛与 spatial CSS），`assets/phone-visuals/renako/` 主题素材与 `build_phone_art.py`/`phone_visual_assets.mjs` 管线更新；钱包卡号 renako:'0404'；默认日间外观。
-- **超かぐや姫！直播间**：Twiitch 改为多频道（辉夜姬·月读空间 18:00–21:00 + 既有泽渡可可 20:00–23:00），频道切换为本地纯展示，不调用模型；kaguya 四件 SVG 频道素材；`campus-interiors.ts` 新增直播间室内，`majo-housing.ts` 新增渡奈住宅，另涉 japan-calendar-events、background-life、viewpoint-openings、scene-context 等接线。预览 `outputs/kaguya-livestream-preview.html`，素材准备脚本 `scripts/prepare_watanare_visual_assets.py`。
+- **超辉夜姬直播间**：Twiitch 改为多频道（辉夜姬·月读空间 18:00–21:00 + 既有泽渡可可 20:00–23:00），频道切换为本地纯展示，不调用模型；kaguya 四件 SVG 频道素材；`campus-interiors.ts` 新增直播间室内，`majo-housing.ts` 新增渡奈住宅，另涉 japan-calendar-events、background-life、viewpoint-openings、scene-context 等接线。预览 `outputs/kaguya-livestream-preview.html`，素材准备脚本 `scripts/prepare_watanare_visual_assets.py`。
 
 **合并时的兼容修复**：Gemini 分支基于 `f293103`，未包含主工作树当时的未提交功能（看手机 CG、主角切换城市沙盘、联系人转账），已先以 `398369b`（用户清理删除的历史测试/验收产物）与 `19f6a6f`（三批功能检查点）提交为基线再合并。冲突处理：`protagonist-world.ts` 将转账 `npcWallets` 管线与 `fourth` 槽合并（导入、解析键、结果装配）；`phone-apps.js` 钱包视图同时保留联系人转账表单与 renako 卡号，并移除重复的 `switch-twiitch` case；被 Gemini 修改但已被用户清理删除的 10 个历史测试文件保持删除。另将 `protagonist-phone-art.ts` 姿势表放宽为 `Partial<Record<ProtagonistId,…>>` 并新增 `hasProtagonistPhonePose`，`App.vue` 的立绘 `active` 改为 `portraitActive`。
 
 **玲奈子看手机 CG（用户后续提供立绘）**：用户提供的 1024×1536 RGBA 透明 PNG 已按既定管线接入 `assets/protagonist-phone/renako-phone.webp`（无损 WebP，quality 100 / method 6 / exact，逐像素往返校验四通道差值全 0；source PNG 存 `assets/protagonist-phone/source/` 与 `素材/甘织玲奈子看手机.png`，SHA 记录于 manifest.json）。玲奈子姿势无换装变体；打开手机显示该 CG、关闭恢复站立立绘，行为与其余三主角一致。
 
-**验证边界**：合并与 CG 接入后，本地 `vue-tsc --noEmit`、生产构建（IIFE 98,557.83 kB，内嵌手机美术 127 件）与当前 5 文件 28 项 Vitest 通过；四视口（1440×900/1280×800/390×844/320×568）系统 Chrome e2e 覆盖玲奈子开手机出 CG、关手机恢复、无横向溢出、无页面错误，截图在 `outputs/phone-pose-qa/`。这是桌面验证：渡奈世界书内容、直播间室内、渡奈住宅与群聊尚未做受控浏览器场景验收，未调用真实模型，未做 TauriTavern 真机验收，未跑远程 CI；`素材/超かぐや姫…` 为用户投放的 MMD/VRoid 原始素材，不参与构建。
+**验证边界**：合并与 CG 接入后，本地 `vue-tsc --noEmit`、生产构建（IIFE 98,557.83 kB，内嵌手机美术 127 件）与当前 5 文件 28 项 Vitest 通过；四视口（1440×900/1280×800/390×844/320×568）系统 Chrome e2e 覆盖玲奈子开手机出 CG、关手机恢复、无横向溢出、无页面错误，截图在 `outputs/phone-pose-qa/`。这是桌面验证：渡奈世界书内容、直播间室内、渡奈住宅与群聊尚未做受控浏览器场景验收，未调用真实模型，未做 TauriTavern 真机验收，未跑远程 CI；`素材/` 下的辉夜姬 VRM 原始素材 为用户投放的 MMD/VRoid 原始素材，不参与构建。
 
 ## 最新增量：联系人转账与剧情转账指令（2026-10-25）
 

@@ -1,4 +1,4 @@
-// Assembles the standalone 超かぐや姫！ 3D livestream demo into one self-contained
+// Assembles the standalone 超辉夜姬 3D livestream demo into one self-contained
 // HTML file (outputs/kaguya-live-3d-demo.html). No dev server and no character
 // card needed — the page opens directly from disk via file://.
 // Usage: node scripts/build_kaguya_live_demo.mjs

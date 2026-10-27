@@ -1,4 +1,4 @@
-// Stages the user-provided 超かぐや姫！かぐや「水色の描」 VRM byte-exact for the
+// Stages the user-provided Kaguya VRM (original asset file names kept) byte-exact for the
 // 3D livestream demo and (later) the in-card Twiitch live view. The source
 // stays in the user's 素材/ drop zone and is never modified; no mesh/texture
 // recompression is applied — v1 keeps the model faithful to the original.
@@ -30,7 +30,7 @@ copyFileSync(sourcePath, outPath);
 
 const manifest = {
   schema: 'unread-city-kaguya-live-model-v1',
-  purpose: '超かぐや姫！ Twiitch channel 3D livestream view (standalone demo first; later the embedded phone). Byte-exact copy of the user-provided VRM; presentation only.',
+  purpose: '超辉夜姬 Twiitch channel 3D livestream view (standalone demo first; later the embedded phone). Byte-exact copy of the user-provided VRM; presentation only.',
   credit: '【水色の描】(https://mizuirononeko.wixsite.com/mizuirononeko/mmd-vroid)',
   license: 'MMD・VRoidモデル利用規約: avatar/streaming use allowed, no profit use, no corporate use, modification free, redistribution prohibited — personal-use embedding only; the card and repository stay private.',
   licensePath: '素材/超かぐや姫_かぐや_水色の描/超かぐや姫！かぐや「水色の描」/超かぐや姫！かぐや「水色の描」vrm/MMD・VRoidモデル利用規約.txt',

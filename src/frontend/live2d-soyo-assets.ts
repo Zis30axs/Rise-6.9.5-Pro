@@ -22,7 +22,7 @@ export function resolveSoyoEmotion(value: string): SoyoEmotion {
   return Object.hasOwn(soyoEmotionMap, value) ? value as SoyoEmotion : '平静';
 }
 export function isSoyoSpeaker(value: string): boolean {
-  return ['', '旁白', '素世', '长崎素世', '長崎そよ', 'Soyo', 'soyo'].includes(value.trim());
+  return ['', '旁白', '素世', '长崎素世', 'Soyo', 'soyo'].includes(value.trim());
 }
 
 export function getSoyoDefinition() { return structuredClone(modelDefinition); }

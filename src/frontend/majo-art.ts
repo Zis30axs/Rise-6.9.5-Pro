@@ -113,15 +113,15 @@ export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = O
 });
 
 const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
-  '樱羽艾玛': 'majo-emma', '桜羽エマ': 'majo-emma', '艾玛': 'majo-emma',
-  '二阶堂希罗': 'majo-hiro', '二階堂ヒロ': 'majo-hiro', '希罗': 'majo-hiro',
-  '城崎诺亚': 'majo-noa', '城ケ崎ノア': 'majo-noa', '诺亚': 'majo-noa',
-  '佐伯米莉亚': 'majo-milia', '佐伯ミリア': 'majo-milia', '米莉亚': 'majo-milia',
-  '夏目安安': 'majo-anan', '夏目アンアン': 'majo-anan', '安安': 'majo-anan',
-  '橘雪莉': 'majo-sherry', '橘雪梨': 'majo-sherry', '橘シェリー': 'majo-sherry', '雪莉': 'majo-sherry', '雪梨': 'majo-sherry',
-  '远野汉娜': 'majo-hanna', '遠野ハンナ': 'majo-hanna', '汉娜': 'majo-hanna',
-  '宝生玛格': 'majo-margo', '宝生マーゴ': 'majo-margo', '玛格': 'majo-margo', 'マーゴ': 'majo-margo',
-  '月代雪': 'majo-yuki', '月代ユキ': 'majo-yuki',
+  '樱羽艾玛': 'majo-emma', '艾玛': 'majo-emma',
+  '二阶堂希罗': 'majo-hiro', '希罗': 'majo-hiro',
+  '城崎诺亚': 'majo-noa', '诺亚': 'majo-noa',
+  '佐伯米莉亚': 'majo-milia', '米莉亚': 'majo-milia',
+  '夏目安安': 'majo-anan', '安安': 'majo-anan',
+  '橘雪莉': 'majo-sherry', '橘雪梨': 'majo-sherry', '雪莉': 'majo-sherry', '雪梨': 'majo-sherry',
+  '远野汉娜': 'majo-hanna', '汉娜': 'majo-hanna',
+  '宝生玛格': 'majo-margo', '玛格': 'majo-margo',
+  '月代雪': 'majo-yuki',
 });
 
 export function resolveMajoSpeaker(speaker: string): string | null {

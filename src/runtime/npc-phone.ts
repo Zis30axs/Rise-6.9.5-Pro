@@ -283,7 +283,7 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     const evidenceId = proposal.evidenceId === 'current' ? turnId : proposal.evidenceId;
     if (!social.evidence.some(e => e.owner === who && e.npcId === proposal.npcId && e.turnId === evidenceId && e.speaker === 'npc' && e.text === proposal.quote)) return fail('申请引用的对白不存在');
     if (proposal.kind === 'contact' ? !/(联系|手机|号码|好友|短信|账号|連絡|電話|contact|phone)/i.test(proposal.quote)
-      : !/(群聊|群里|入群|进群|加群|グループ|group)/i.test(proposal.quote)) return fail('对白没有提出相应联系请求');
+      : !/(群聊|群里|入群|进群|加群|group)/i.test(proposal.quote)) return fail('对白没有提出相应联系请求');
     const targetGroup = proposal.kind === 'group' ? residentGroupForNpc(proposal.npcId) : undefined;
     if (proposal.kind === 'group' && (!targetGroup || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁或五人组联系人');
     const requestId = turnId + ':contact:' + index;

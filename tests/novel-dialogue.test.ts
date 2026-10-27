@@ -20,7 +20,7 @@ describe('novel click-through dialogue metadata', () => {
     expect(readableNovelText(raw)).not.toContain('|生气|');
   });
   it('maps simplified and traditional Renako to the same real angry sprite', () => {
-    for (const name of ['甘织玲奈子', '甘織玲奈子', '甘織れな子', '玲奈子']) {
+    for (const name of ['甘织玲奈子', '甘織玲奈子', '玲奈子']) {
       expect(resolveWatanareSpeaker(name)).toBe('watanare-renako');
       const result = resolveWatanareExpressionPortrait(name, 'angry');
       expect(result).toMatchObject({ personId: 'watanare-renako', exact: true, width: 1024, height: 1536 });

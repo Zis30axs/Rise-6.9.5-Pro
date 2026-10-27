@@ -1,0 +1,85 @@
+{
+  "task": "japanese-to-chinese-migration",
+  "date": "2026-10-27",
+  "request": "项目中的日语替换为拼音/中文译名，并写入工程记忆，不再出现日语",
+  "scope": {
+    "changed_files": 25,
+    "worldbook": [
+      "src/worldbook/bang-dream-canon.json",
+      "src/worldbook/story-arcs-relationships.json",
+      "src/worldbook/watanare-story-arcs.json",
+      "src/worldbook/watanare-residents.json",
+      "src/worldbook/majo-residents.json"
+    ],
+    "frontend_runtime": [
+      "src/frontend/live2d-soyo-assets.ts",
+      "src/frontend/novel-npc-portraits.ts",
+      "src/frontend/majo-art.ts",
+      "src/frontend/watanare-art.ts",
+      "src/runtime/protagonist-narrative.ts",
+      "src/runtime/npc-phone.ts"
+    ],
+    "kaguya_demo": [
+      "scripts/kaguya-live-demo-template.html",
+      "scripts/build_kaguya_live_demo.mjs",
+      "scripts/prepare_kaguya_live_model.mjs",
+      "outputs/kaguya-live-3d-demo.html",
+      "outputs/kaguya-livestream-preview.html"
+    ],
+    "integration_assets": [
+      "integration/dual-protagonists/phone-apps.js",
+      "integration/majo-visual/README.md",
+      "assets/kaguya-live/manifest.json",
+      "assets/majo-emma/generation-prompts.json"
+    ],
+    "docs": ["README.md", "CODEX.md", "DeepSeek.md"],
+    "tests": ["tests/no-japanese.test.ts (new)", "tests/novel-dialogue.test.ts"]
+  },
+  "transliteration": {
+    "policy": "中文译名优先，必要时括注拼音或罗马字；不写回日文",
+    "examples": {
+      "Nagasaki Soyo": "长崎素世",
+      "Yutenji Nyamu": "祐天寺若麦",
+      "Nyamuchi": "喵梦",
+      "Sakuraba Ema": "樱羽艾玛",
+      "Nikaido Hiro": "二阶堂希罗",
+      "Watanare": "渡奈",
+      "Chou Kaguya-hime": "超辉夜姬",
+      "Tsukuyomi Fantasy": "月读幻想曲",
+      "Mortis": "Mortis（莫蒂斯）",
+      "Timoris": "Timoris（蒂莫里斯）",
+      "Amoris": "Amoris（阿莫里斯）"
+    }
+  },
+  "checks": {
+    "typecheck": "npx vue-tsc --noEmit -> OK",
+    "vitest": "27 files / 261 tests passed (guard included)",
+    "guard": "npm run check:no-ja -> 1 test passed",
+    "demo_rebuild": "node scripts/prepare_kaguya_live_model.mjs --check && node scripts/build_kaguya_live_demo.mjs -> ok, 21,253,158 bytes",
+    "demo_render": {
+      "engine": "Playwright 1.64.1 Chromium for Testing (headless, ANGLE/SwiftShader)",
+      "viewports": ["1440x900", "1280x800", "390x844", "320x568"],
+      "kana_in_visible_text": 0,
+      "page_errors": 0,
+      "horizontal_overflow": {
+        "1440x900": 0,
+        "1280x800": 0,
+        "390x844": 0,
+        "320x568": 35,
+        "note": "320×568 的 35px 横向溢出为既有手机机身几何，改动前后实测同为 35px，不由本次文案替换引入"
+      },
+      "title": "《超辉夜姬》3D 真实模型互动 Live 演示 - 甘织玲奈子专属手机 (Peach Flip)",
+      "host": "超辉夜姬"
+    }
+  },
+  "exceptions_kept": [
+    "assets/kaguya-live/manifest.json: 第三方署名、许可标题、素材真实路径",
+    "scripts/prepare_kaguya_live_model.mjs: 素材路径与署名/许可字段",
+    "src/frontend/scene-character-assets.ts: VRM 骨骼节点名（需与模型一致）",
+    ".worktrees/, dist/, src/frontend/generated/: 历史工作树与生成物，未改"
+  ],
+  "not_done": [
+    "未重建 dist 构建产物与历史 outputs 包（dist/immersive-shell-lite.js、outputs/livehouse-20261026/、outputs/switch-map-20261025/ 仍含旧文案，重建后随源码更新）",
+    "未做 TauriTavern 真机验收，未调用真实模型，未触发远程 CI"
+  ]
+}

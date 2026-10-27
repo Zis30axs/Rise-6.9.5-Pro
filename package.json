@@ -13,6 +13,7 @@
     "precheck": "npm run art:build && npm run phone:build",
     "dev": "vite --host 127.0.0.1",
     "check": "vue-tsc --noEmit",
+    "check:no-ja": "vitest run tests/no-japanese.test.ts",
     "build": "npm run check && vite build",
     "test": "vitest run",
     "test:e2e": "npm run build && playwright test",

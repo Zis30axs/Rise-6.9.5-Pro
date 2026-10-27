@@ -43,7 +43,7 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
       id: 'kaguya',
       tabLabel: '✨ 辉夜姬 · 月读空间',
       name: '辉夜姬 · 月读空间（Tsukuyomi Live）',
-      tag: '虚拟歌姬 · 音乐创作与月读舞台（Model: 水色の描）',
+      tag: '虚拟歌姬 · 音乐创作与月读舞台（模型：Mizuirono）',
       hoursLabel: '直播时段：18:00–21:00',
       isLive: hour >= 18 && hour < 21,
       cover: twiitchImage('twiitch/kaguya-channel-cover.svg'),
@@ -95,7 +95,7 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
     <div class="tp-cover">${ch.cover?`<img src="${ch.cover}" alt="${esc(ch.name)}封面">`:''}${wordmark?`<img class="tp-wm" src="${wordmark}" alt="Twiitch">`:''}</div>
     <div class="tp-head">${ch.avatar?`<img class="tp-avatar" src="${ch.avatar}" alt="${esc(ch.name)}头像">`:''}<div><strong>${esc(ch.name)}</strong><small>${live?ch.hoursLabel:'当前不在直播时段'}</small></div><span class="tp-live ${live?'':'off'}">${live?'直播中':'离线'}</span></div>
     ${ch.id==='kaguya'&&show3d?`<div class="tp-card tp-card-3d" style="position:relative;border-radius:14px;overflow:hidden;background:#0d0a18;min-height:500px;border:1px solid #7b42f688;box-shadow:0 8px 24px rgba(123,66,246,0.25);">
-      <iframe class="tp-3d-iframe" src="outputs/kaguya-live-3d-demo.html" allow="autoplay" style="width:100%;height:500px;border:none;display:block;background:#070412;" title="超かぐや姫！3D 沉浸直播间"></iframe>
+      <iframe class="tp-3d-iframe" src="outputs/kaguya-live-3d-demo.html" allow="autoplay" style="width:100%;height:500px;border:none;display:block;background:#070412;" title="超辉夜姬 3D 沉浸直播间"></iframe>
       <div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px;">
         <a href="outputs/kaguya-live-3d-demo.html" target="_blank" rel="noopener" style="font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(20,15,35,0.85);backdrop-filter:blur(6px);color:#e9d5ff;border:1px solid #7b42f688;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">全屏 ↗</a>
         <button type="button" data-action="toggle-twiitch-3d" style="font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(20,15,35,0.85);backdrop-filter:blur(6px);color:#f3e8ff;border:1px solid #7b42f688;cursor:pointer;">收起 3D ✕</button>

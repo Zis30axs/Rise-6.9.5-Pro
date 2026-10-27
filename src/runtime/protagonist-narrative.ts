@@ -140,8 +140,8 @@ function appendJournal(state: WorldState, owner: ProtagonistId, entry: Protagoni
 function speakerId(name: string | null): ProtagonistId | null {
   if (name === '长崎素世' || name === '素世') return 'soyo';
   if (name === '丰川祥子' || name === '祥子') return 'sakiko';
-  if (name === '樱羽艾玛' || name === '樱羽エマ' || name === '艾玛') return 'emma';
-  if (name === '甘织玲奈子' || name === '甘織れな子' || name === '玲奈子' || name === 'れな子') return 'renako';
+  if (name === '樱羽艾玛' || name === '艾玛') return 'emma';
+  if (name === '甘织玲奈子' || name === '玲奈子') return 'renako';
   return null;
 }
 
