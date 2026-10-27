@@ -43,7 +43,7 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
       id: 'kaguya',
       tabLabel: '✨ 辉夜姬 · 月读空间',
       name: '辉夜姬 · 月读空间（Tsukuyomi Live）',
-      tag: '虚拟歌姬 · 音乐创作与月读舞台（模型：Mizuirono）',
+      tag: '虚拟歌姬 · 音乐创作与月读舞台',
       hoursLabel: '直播时段：18:00–21:00',
       isLive: hour >= 18 && hour < 21,
       cover: twiitchImage('twiitch/kaguya-channel-cover.svg'),
@@ -87,7 +87,7 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
   const live = ch.isLive;
   const cardImg = live ? (ch.streamCard || ch.offlineCard) : ch.offlineCard;
 
-  return `<style>.tp-channel{display:grid;gap:12px;padding:0 4px 14px}.tp-channel-switch{display:flex;gap:8px;padding:2px 2px 6px;overflow-x:auto}.tp-channel-switch button{font-size:12px;padding:6px 14px;border-radius:999px;border:1px solid #8884;background:#8881;color:inherit;cursor:pointer;white-space:nowrap;min-height:36px;transition:all .15s}.tp-channel-switch button.active{background:${ch.badgeColor};color:#fff;border-color:transparent;font-weight:600}.tp-cover{position:relative;border-radius:14px;overflow:hidden;background:#1b1722;min-height:96px}.tp-cover img{display:block;width:100%;height:auto}.tp-wm{position:absolute;left:10px;top:8px;width:74px;max-height:22px;opacity:.95}.tp-head{display:flex;align-items:center;gap:10px;padding:0 2px}.tp-head img.tp-avatar{width:52px;height:52px;border-radius:50%;background:#fff2;padding:3px}.tp-head strong{display:block;font-size:15px}.tp-head small{display:block;opacity:.75}.tp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:${ch.badgeColor};color:#fff;font-size:12px}.tp-live.off{background:#6668}.tp-card{position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6}.tp-card img{display:block;width:100%;height:auto}.tp-overlay{position:absolute;right:6px;bottom:6px;width:42%}.tp-reactions{display:flex;gap:8px;flex-wrap:wrap}.tp-reactions figure{display:flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid #8884;border-radius:999px;background:#8881}.tp-reactions img{width:22px;height:22px}.tp-post{padding:12px;border:1px solid #8883;border-radius:14px;background:#8881}.tp-post p{margin:6px 0 0}.tp-note{font-size:12px;opacity:.75;line-height:1.5}</style>
+  return `<style>.tp-channel{display:grid;gap:12px;padding:0 4px 14px}.tp-channel-switch{display:flex;gap:8px;padding:2px 2px 6px;overflow-x:auto}.tp-channel-switch button{font-size:12px;padding:6px 14px;border-radius:999px;border:1px solid #8884;background:#8881;color:inherit;cursor:pointer;white-space:nowrap;min-height:36px;transition:all .15s}.tp-channel-switch button.active{background:${ch.badgeColor};color:#fff;border-color:transparent;font-weight:600}.tp-cover{position:relative;border-radius:14px;overflow:hidden;background:#1b1722;min-height:96px}.tp-cover img{display:block;width:100%;height:auto}.tp-wm{position:absolute;left:10px;top:8px;width:74px;max-height:22px;opacity:.95}.tp-head{display:flex;align-items:center;gap:10px;padding:0 2px}.tp-head img.tp-avatar{width:52px;height:52px;border-radius:50%;background:#fff2;padding:3px}.tp-head strong{display:block;font-size:15px}.tp-head small{display:block;opacity:.75}.tp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:${ch.badgeColor};color:#fff;font-size:12px}.tp-live.off{background:#6668}.tp-card{position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6}.tp-card img{display:block;width:100%;height:auto}.tp-overlay{position:absolute;right:6px;bottom:6px;width:42%}.tp-reactions{display:flex;gap:8px;flex-wrap:wrap}.tp-reactions figure{display:flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid #8884;border-radius:999px;background:#8881}.tp-reactions img{width:22px;height:22px}.tp-post{padding:12px;border:1px solid #8883;border-radius:14px;background:#8881}.tp-post p{margin:6px 0 0}</style>
   <section class="tp-channel" aria-label="Twiitch 频道">
     <div class="tp-channel-switch" role="tablist" aria-label="频道切换">
       ${Object.values(channels).map(c=>`<button type="button" class="${c.id===ch.id?'active':''}" data-action="switch-twiitch" data-channel="${c.id}" role="tab" aria-selected="${c.id===ch.id}">${esc(c.tabLabel)}</button>`).join('')}
@@ -101,18 +101,28 @@ function twiitchView(data, activeChannel = 'kaguya', show3d = false) {
         <button type="button" data-action="toggle-twiitch-3d" style="font-size:11px;padding:4px 10px;border-radius:999px;background:rgba(20,15,35,0.85);backdrop-filter:blur(6px);color:#f3e8ff;border:1px solid #7b42f688;cursor:pointer;">收起 3D ✕</button>
       </div>
       <div style="padding:8px 12px;background:#140e24;display:flex;justify-content:space-between;align-items:center;font-size:12px;border-top:1px solid #7b42f633;">
-        <span style="color:#d8b4fe;">✨ 3D 舞台视角已激活 (支持触摸旋转/动作交互/姿态切换)</span>
+        <span style="color:#d8b4fe;">✨ 月读舞台 · 自由视角</span>
       </div>
     </div>`:`<div class="tp-card" style="position:relative;border-radius:14px;overflow:hidden;background:#191622;color:#f6eef6">${cardImg?`<img src="${cardImg}" alt="Twiitch 直播画面">`:''}${live&&overlay&&ch.id==='coco'?`<img class="tp-overlay" src="${overlay}" alt="直播边框">`:''}${ch.id==='kaguya'?`<div style="position:absolute;left:8px;bottom:8px;right:8px;display:flex;justify-content:space-between;align-items:center;background:rgba(15,10,26,0.88);backdrop-filter:blur(8px);border:1px solid rgba(123,66,246,0.45);border-radius:10px;padding:7px 10px;box-shadow:0 4px 14px rgba(0,0,0,0.5);">
       <div style="font-size:11px;line-height:1.4;">
-        <strong style="color:#e9d5ff;display:block;">✨ 3D 真实模型互动就绪</strong>
-        <span style="font-size:10px;opacity:0.85;color:#c084fc;">胸锁呼吸 · 动作细化 (比心/挥手)</span>
+        <strong style="color:#e9d5ff;display:block;">✨ 月读舞台 · 特别视角</strong>
+        <span style="font-size:10px;opacity:0.85;color:#c084fc;">拖动视角 · 比心与挥手</span>
       </div>
       <button type="button" data-action="toggle-twiitch-3d" style="font-size:11px;padding:5px 12px;border-radius:999px;border:none;background:linear-gradient(135deg,#7b42f6,#ff7ebb);color:#fff;cursor:pointer;font-weight:600;box-shadow:0 2px 10px rgba(123,66,246,0.5);white-space:nowrap;">开启 3D 舞台</button>
     </div>`:''}</div>`}
     <div class="tp-reactions" aria-label="频道反应">${ch.reactions.map(r=>{const src=reaction(r.key);return src?`<figure><img src="${src}" alt=""><span>${esc(r.label)}</span></figure>`:'';}).join('')}</div>
-    <article class="tp-post"><strong>最近的频道动态</strong><p>${esc(live?ch.livePost:ch.offlinePost)}</p><p class="tp-note">这是本地静态频道展示，只读取游戏时钟；不会开播、发消息或调用模型。</p></article>
+    <article class="tp-post"><strong>最近的频道动态</strong><p>${esc(live?ch.livePost:ch.offlinePost)}</p></article>
   </section>`;
+}
+// Standalone 3D demo credits remain intact; only the embedded view hides build notes.
+function cleanTwiitchStageChrome(doc) {
+  if (!doc) return;
+  const offlineCaption = doc.querySelector('#offlineNotice small');
+  if (offlineCaption) offlineCaption.textContent = '「今天在彩叶的房间写新曲～记得准时入场哦✨」';
+  const creditsPanel = doc.querySelector('.credits-box')?.closest('.panel-card');
+  if (creditsPanel) creditsPanel.hidden = true;
+  const demoHeader = doc.querySelector('header.page-header');
+  if (demoHeader) demoHeader.hidden = true;
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
@@ -229,7 +239,15 @@ function worldApp(ctx,id) {
       }
     }
     html+=`<details class="group pad"><summary>通知 ${data.notifications.filter(x=>!x.read).length}</summary>${[...data.notifications].reverse().map(n=>`<p>${esc(n.text)}<small>${time(n.at)}</small></p>`).join('')}${btn('read','全部标为已读','text-button')}</details><details class="group pad"><summary>手机操作记录</summary>${[...data.audit].reverse().map(e=>`<p>${esc(e.at)} · ${esc(e.actor)} · ${esc(e.detail)} · ${e.authorized?'已授权':'未授权'}</p>`).join('')||'<p>暂无他人访问</p>'}</details>`;
-    v.root.dataset.worldOwner=data.owner;v.draw(html);void readSelectedContact();
+    v.root.dataset.worldOwner=data.owner;v.draw(html);
+    if (id==='twiitch') {
+      const stage=v.root.querySelector('.tp-3d-iframe');
+      stage?.addEventListener('load',()=>{
+        try { cleanTwiitchStageChrome(stage.contentDocument); }
+        catch { /* Some hosts restrict access to embedded frames. */ }
+      },{once:true});
+    }
+    void readSelectedContact();
   }
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
@@ -251,7 +269,7 @@ function worldApp(ctx,id) {
         if(id!=='worldmessages'||pending)break;
         const minutes=Number(el.dataset.minutes);
         data=await api().waitForRead({binding:data.binding,revision:data.revision,now:data.now,minutes});
-        render();ctx.notify('游戏时间已推进 '+minutes+' 分钟（不会自动调用 LLM）');break;
+        render();ctx.notify('游戏时间已推进 '+minutes+' 分钟');break;
       }
       case 'return-to-story': {
         if(id!=='worldmessages'||chatMode!=='thread'||pending)break;
