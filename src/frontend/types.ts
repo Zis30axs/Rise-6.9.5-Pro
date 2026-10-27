@@ -233,6 +233,10 @@ export interface OtherSideEvent {
   /** Per-character relative changes only; no wallet, inventory, time or arbitrary patches. */
   variables?: Partial<Record<import('../runtime/dual-protagonists').ProtagonistId,
     Partial<Pick<PlayerState, 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy'>>>>;
+  /** Only currently co-located, eligible NPCs; never a switchable viewpoint. */
+  npcs?: { id: string; locationId?: string; status?: string; affinityDelta?: number }[];
+  /** Canonical two-sided off-screen SMS; sender must be part of this event. */
+  messages?: { from: import('../runtime/dual-protagonists').ProtagonistId; to: import('../runtime/dual-protagonists').ProtagonistId; text: string }[];
 }
 
 export interface GeneratedStory {
