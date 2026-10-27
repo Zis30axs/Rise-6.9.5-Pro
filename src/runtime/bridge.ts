@@ -20,7 +20,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
 import { buildCharacterIntroductionContext } from './character-context';
 import { contactProposalContext, npcPhoneReplyContext } from './npc-phone';
-import { NPC_PHONE_REPLY_PROTOCOL, parseNpcPhoneReply, PHONE_REPLY_PROTOCOL, phoneReplyContext, parsePhoneReply } from './phone-reply';
+import { NPC_PHONE_REPLY_PROTOCOL, PHONE_REPLY_PROTOCOL, phoneReplyContext, parsePhoneReplyWithScene } from './phone-reply';
 import { storySmsContext } from './phone-sms';
 import { AUTONOMOUS_SMS_PROTOCOL, autonomousSmsContext, parseAutonomousSmsReply } from './autonomous-sms';
 
@@ -402,15 +402,17 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           aborted,
         ]);
         if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
-        const npcText = options?.kind === 'npc_phone_reply' ? parseNpcPhoneReply(response, options.messageId) : undefined;
+        const phoneResponse = options?.kind === 'npc_phone_reply' || options?.kind === 'phone_reply'
+          ? parsePhoneReplyWithScene(response, options.messageId, options.kind === 'npc_phone_reply') : null;
+        const npcText = options?.kind === 'npc_phone_reply' ? phoneResponse!.text : undefined;
         const reply: GeneratedStory = options?.kind === 'autonomous_sms'
           ? { text: '', phoneMessages: [], autonomousSmsText: parseAutonomousSmsReply(response, options.ticketId) }
           : options?.kind === 'band_invitation_reply'
           ? parseBandReply(response, options.messageId)
           : options?.kind === 'npc_phone_reply'
-          ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}) }
+          ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}), ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}) }
           : options?.kind === 'phone_reply'
-          ? { text: parsePhoneReply(response, options.messageId), phoneMessages: [] }
+          ? { text: phoneResponse!.text!, phoneMessages: [], ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}) }
           : parseGeneratedStory(response, snapshot);
         if (options?.kind === 'contact_introduction' && (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length)) throw new Error('人物简介格式无效，未修改角色或剧情，请重试。');
         if (options?.kind === 'interaction_event' && !reply.worldActions?.length) throw new Error('突发事件缺少实际影响，本次交互和事件均未保存；可以重试，或选择正常完成。');

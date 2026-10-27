@@ -5,7 +5,7 @@ import { storyDisplayText } from './story-text';
 import { novelPortraitFocus } from './novel-portrait-focus';
 import type { WorldState } from './types';
 
-const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean }>();
+const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean; focusTarget?: { id: string; token: number } }>();
 const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: [] }>();
 const cursor = ref(0);
 const rows = computed(() => props.entries.flatMap(entry => entry.role === 'assistant'
@@ -18,6 +18,11 @@ watch(() => props.entries.at(-1)?.id, () => {
   const latest = props.entries.at(-1)?.id;
   const start = rows.value.findIndex(row => row.entryId === latest);
   cursor.value = Math.max(0, start);
+}, { immediate: true });
+watch(() => props.focusTarget, target => {
+  if (!target) return;
+  const start = rows.value.findIndex(row => row.entryId === target.id);
+  if (start >= 0) cursor.value = start;
 }, { immediate: true });
 let emittedSegment = '';
 watch([current, portraitFocus, () => props.active], ([row, focus, active]) => {
