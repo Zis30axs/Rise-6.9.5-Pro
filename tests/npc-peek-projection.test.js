@@ -35,6 +35,21 @@ describe('NPC peek projection against authoritative game SMS', () => {
     expect(simulated.chats).toHaveLength(3); // Projection must never corrupt IndexedDB cached snapshot.
   });
 
+  it('includes canonical main-story incoming SMS from legacy inbox, without duplicate replies',()=>{
+    const world=fixture();
+    world.messages=[
+      {id:'npc:reply',npcId:'majo-yuki',text:'重复的消息记录',at:'第 1 天 00:11'},
+      {id:'story-sms-1',npcId:'majo-yuki',text:'主线剧情里直接发来的真实短信',at:'第 1 天 00:13'},
+      {id:'private-sms',npcId:'another-npc',text:'其他联系人的秘密',at:'第 1 天 00:15'},
+    ];
+    const shown=visiblePeekSnapshot(simulated,world);
+    expect(shown.chats[0].lines.map(l=>l.text)).toEqual([
+      '先前真实发出的短信','先前真实收到的回复','主线剧情里直接发来的真实短信',
+    ]);
+    expect(JSON.stringify(shown)).not.toContain('重复的消息记录');
+    expect(JSON.stringify(shown)).not.toContain('其他联系人的秘密');
+  });
+
   it('displays true NPC conversation even before the first generated full peek',()=>{
     const shown=visiblePeekSnapshot(null,fixture(),npc);
     expect(shown.name).toBe(npc);
