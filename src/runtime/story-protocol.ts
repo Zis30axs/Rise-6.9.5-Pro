@@ -78,7 +78,7 @@ export function validateOtherSideEvents(value: unknown, state: WorldState): Othe
         if (!Object.hasOwn(variables, id)) continue;
         const changes = record(variables[id], [], `${path} ${id} 变量`, OTHER_SIDE_VARIABLE_KEYS);
         if (!Object.keys(changes).length) return invalid(`${path} ${id} 变量不能为空`);
-        const parsed: NonNullable<OtherSideEvent['variables']>[typeof id] = {};
+        const parsed: NonNullable<NonNullable<OtherSideEvent['variables']>[typeof id]> = {};
         for (const key of OTHER_SIDE_VARIABLE_KEYS) {
           if (!Object.hasOwn(changes, key)) continue;
           const amount = changes[key], bound = key === 'foodEnergy' ? 300 : 20;
