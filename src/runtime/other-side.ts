@@ -275,6 +275,17 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
   turnId: string, returnStory?: string): WorldState {
   if (!after.protagonists) return after;
   const next: WorldState = structuredClone(after), p = next.protagonists!;
+  const existing = before.story.find(entry => entry.id === turnId && entry.role === 'assistant');
+  if (existing) {
+    const original = existing.otherSideBeats ?? [];
+    const requested = events.map(event => ({ protagonists: event.protagonists, text: event.text }));
+    if (JSON.stringify(original) !== JSON.stringify(requested)
+      || (existing.returnStory ?? '') !== (returnStory ?? ''))
+      throw new Error('重复剧情 ID 的旁线内容不同；未重新结算');
+    // Replays, including a normal turn with NO side event, do not advance the
+    // chance scheduler or duplicate history, SMS, story or NPC writes.
+    return next;
+  }
   const oldTurn = before.protagonists?.narrativeTurn ?? 0;
   if (p.otherSideHistory?.some(row => row.id === turnId)) return next;
   p.narrativeTurn = oldTurn + 1;
