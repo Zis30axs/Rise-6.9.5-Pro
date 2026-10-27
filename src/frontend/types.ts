@@ -223,7 +223,18 @@ export type StoryAction =
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
+/** A validated, persisted event in one non-controlled protagonist's viewpoint. */
+export interface OtherSideEvent {
+  protagonist: import('../runtime/dual-protagonists').ProtagonistId;
+  text: string;
+  /** Optional canonical destination; omitting it preserves the character's pose. */
+  locationId?: string;
+  /** Relative changes only, no arbitrary player, wallet, or inventory patch. */
+  variables?: Partial<Pick<PlayerState, 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy'>>;
+}
+
 export interface GeneratedStory {
+  otherSide?: OtherSideEvent[];
   text: string;
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];
