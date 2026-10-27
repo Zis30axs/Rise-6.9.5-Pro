@@ -9,12 +9,12 @@ import type { WorldState } from './types';
 
 const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean; focusTarget?: { id: string; token: number } }>();
 const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: []; switchSide: [target: ProtagonistId] }>();
-type ViewingRow = NovelSegment & { id: string; entryId: string; choiceTargets?: ProtagonistId[] };
+type ViewingRow = NovelSegment & { id: string; entryId: string; viewpoint: string; choiceTargets?: ProtagonistId[] };
 const cursor = ref(0);
 const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
   const segments: ViewingRow[] = [];
-  const add = (segment: NovelSegment, choiceTargets?: ProtagonistId[]) => {
-    segments.push({ ...segment, id: `${entry.id}:${segments.length}`, entryId: entry.id,
+  const add = (segment: NovelSegment, choiceTargets?: ProtagonistId[], viewpoint = props.protagonist) => {
+    segments.push({ ...segment, id: `${entry.id}:${segments.length}`, entryId: entry.id, viewpoint,
       ...(choiceTargets ? { choiceTargets } : {}) });
   };
   if (entry.role === 'user') {
@@ -24,9 +24,10 @@ const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
   for (const segment of parseNovelDialogue(storyDisplayText(entry.text))) add(segment);
   if (!entry.otherSideBeats?.length) return segments;
   for (const beat of entry.otherSideBeats) {
+    const viewpoint = protagonistNames[beat.protagonists[0]!];
     add({ speaker: '', emotion: '平静',
-      text: `与此同时 · ${beat.protagonists.map(id => protagonistNames[id]).join('、')}` });
-    for (const segment of parseNovelDialogue(storyDisplayText(beat.text))) add(segment);
+      text: `与此同时 · ${beat.protagonists.map(id => protagonistNames[id]).join('、')}` }, undefined, viewpoint);
+    for (const segment of parseNovelDialogue(storyDisplayText(beat.text))) add(segment, undefined, viewpoint);
   }
   const targets = [...new Set(entry.otherSideBeats.flatMap(beat => beat.protagonists))];
   add({ speaker: '', emotion: '平静', text: '这一侧的故事已发生。回到现在，还是继续另一位主角的视角？' }, targets);
@@ -37,7 +38,7 @@ const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
 const current = computed(() => rows.value[cursor.value]);
 const sideChoice = computed(() => current.value?.choiceTargets ?? null);
 const canAdvance = computed(() => cursor.value < rows.value.length - 1);
-const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, props.protagonist, props.recognizesSpeaker));
+const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, current.value?.viewpoint ?? props.protagonist, props.recognizesSpeaker));
 watch(() => props.entries.at(-1)?.id, () => {
   const latest = props.entries.at(-1)?.id;
   const start = rows.value.findIndex(row => row.entryId === latest);
