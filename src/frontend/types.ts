@@ -162,7 +162,7 @@ export interface WorldState {
   contacts: CharacterContact[];
   schedule: { id: string; title: string; locationId: string; time: string; done: boolean }[];
   journal: { id: string; text: string; at: string }[];
-  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[] }[];
+  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[]; otherSideTargets?: import('../runtime/dual-protagonists').ProtagonistId[] }[];
 }
 
 export type WorldAction =
@@ -225,12 +225,14 @@ export type StoryAction =
 
 /** A validated, persisted event in one non-controlled protagonist's viewpoint. */
 export interface OtherSideEvent {
-  protagonist: import('../runtime/dual-protagonists').ProtagonistId;
+  /** A co-located group has exactly one event and one narrative, never duplicate tags. */
+  protagonists: import('../runtime/dual-protagonists').ProtagonistId[];
   text: string;
-  /** Optional canonical destination; omitting it preserves the character's pose. */
+  /** Optional shared destination. Omitting it preserves each person's position. */
   locationId?: string;
-  /** Relative changes only, no arbitrary player, wallet, or inventory patch. */
-  variables?: Partial<Pick<PlayerState, 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy'>>;
+  /** Per-character relative changes only; no wallet, inventory, time or arbitrary patches. */
+  variables?: Partial<Record<import('../runtime/dual-protagonists').ProtagonistId,
+    Partial<Pick<PlayerState, 'energy' | 'health' | 'stress' | 'morale' | 'satiety' | 'foodEnergy'>>>>;
 }
 
 export interface GeneratedStory {
