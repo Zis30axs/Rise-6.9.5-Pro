@@ -1,6 +1,7 @@
-import type { WorldState } from '../frontend/types';
+import type { WorldState, OtherSideEvent } from '../frontend/types';
 import { PROTAGONISTS, PROTAGONIST_PERSON_ID_LIST, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, gameMinute, personState, protagonistNames } from './protagonist-world';
+import { getCampusInterior } from './campus-interiors';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { gameCalendarOccasions } from './japan-calendar-events';
 import { scenePersonAnchors, getSceneArea, sceneLocationId } from './scene-context';
@@ -55,20 +56,18 @@ const categoryForNpc = (id: string): string =>
   id.startsWith('majo-') ? 'majo' : id.startsWith('watanare-') ? 'watanare' : 'bang-dream';
 
 function npcAt(state: WorldState, id: string): { locationId: string; kind: string; x: number; z: number } | null {
-  const present = residentPresence(id, state.clock);
-  if (!present || !present.available) return null;
   const now = gameMinute(state);
   const override = state.protagonists?.otherSideNpc?.[id];
   const validOverride = override && override.at <= now && now < override.until ? override : null;
   if (validOverride) {
-    const room = validOverride.locationId.includes('-home') || validOverride.locationId.includes('-house') || validOverride.locationId.includes('residence')
-      ? null : null; // Interior identification below uses the authored catalog.
-    void room;
     const locationId = validOverride.locationId;
+    if (getCampusInterior(locationId)) return { locationId, kind: 'room', x: 0, z: 0 };
     const landmark = sceneLandmarks.find(p => sceneLocationId(p.id) === locationId);
     if (landmark) return { locationId, kind: 'outdoor', x: landmark.x, z: landmark.z };
     return { locationId, kind: 'room', x: 0, z: 0 };
   }
+  const present = residentPresence(id, state.clock);
+  if (!present || !present.available) return null;
   if (!present.anchorId) return { locationId: present.locationId, kind: 'room', x: 0, z: 0 };
   const anchor = scenePersonAnchors.find(p => p.id === present.anchorId);
   const area = anchor && getSceneArea(anchor.x, anchor.z);
@@ -180,4 +179,155 @@ export function otherSidePromptContext(state: WorldState) {
   const result = otherSideOpportunity(state);
   return { ...result, categories: Object.fromEntries(
     result.groups.flat().map(id => [id, [...OTHER_SIDE_CATEGORIES[id]]])) };
+}
+
+/** Expiring NPC overrides are only applied while their source scene can still be verified. */
+export function activeOtherSideNpcLocation(state: WorldState, id: string) {
+  const value = state.protagonists?.otherSideNpc?.[id];
+  const minute = gameMinute(state);
+  return value && value.at <= minute && minute < value.until ? value : null;
+}
+
+const stamp = (minute: number) => `第 ${Math.floor(minute / 1440) + 1} 天 ${String(Math.floor(minute % 1440 / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+const positionEqual = (a: WorldState, b: WorldState, id: ProtagonistId) => {
+  const left = personState(a, id), right = personState(b, id);
+  return JSON.stringify([left.locationId, left.scene, left.interior]) ===
+    JSON.stringify([right.locationId, right.scene, right.interior]);
+};
+const affect = (current: number, delta: number, max = 100) => Math.round(Math.max(0, Math.min(max, current + delta)) * 100) / 100;
+
+/** Only a local doorway or short outdoor step can move a protagonist without an explicit time-costed travel. */
+function moveLocally(state: WorldState, owner: ProtagonistId, locationId: string) {
+  const person = personState(state, owner);
+  if (person.locationId === locationId) return;
+  const fromRoom = person.interior && getCampusInterior(person.interior.roomId);
+  const toRoom = getCampusInterior(locationId);
+  if (fromRoom && !toRoom && locationId === fromRoom.parentLocationId && person.scene) {
+    person.interior = null;
+    person.locationId = locationId;
+    person.scene.encounterId = null;
+    return;
+  }
+  if (toRoom && !fromRoom && person.locationId === toRoom.parentLocationId && person.scene
+    && Math.hypot(person.scene.x - toRoom.entrance.x, person.scene.z - toRoom.entrance.z) <= 80) {
+    const area = getSceneArea(toRoom.entrance.x, toRoom.entrance.z);
+    if (!area || sceneLocationId(area.id) !== toRoom.parentLocationId) throw new Error('旁线室内入口未连接到权威地图');
+    person.scene = { x: toRoom.entrance.x, z: toRoom.entrance.z, yaw: toRoom.entrance.yaw,
+      areaId: area.id, seed: person.scene.seed, encounterId: null };
+    person.interior = { roomId: toRoom.id, ...toRoom.spawn, activityId: null, lastRest: null, lastStudy: null };
+    person.locationId = toRoom.id;
+    return;
+  }
+  const arrival = sceneLandmarks.find(landmark => sceneLocationId(landmark.id) === locationId);
+  if (!fromRoom && !toRoom && person.scene && arrival &&
+    Math.hypot(person.scene.x - arrival.x, person.scene.z - arrival.z) <= 18) {
+    const area = getSceneArea(arrival.x, arrival.z);
+    if (!area || sceneLocationId(area.id) !== locationId) throw new Error('旁线地点不在地图中');
+    person.scene = { x: arrival.x, z: arrival.z, yaw: 0, areaId: area.id,
+      seed: person.scene.seed, encounterId: null };
+    person.locationId = locationId;
+    return;
+  }
+  throw new Error(`旁线中的${protagonistNames[owner]}不能无消耗瞬移至${locationId}；请先由游戏时间结算行程`);
+}
+
+function crossViewTextMessage(state: WorldState, eventId: string, from: ProtagonistId, to: ProtagonistId, text: string) {
+  const p = state.protagonists!;
+  const rows = p.conversations ??= [];
+  if (rows.some(row => row.id === eventId)) throw new Error('旁线短信 ID 冲突');
+  const sender = personState(state, from), receiver = personState(state, to), at = gameMinute(state);
+  if (rows.length >= 10000 || receiver.phone.length >= 200 || p.devices[to].notifications.length >= 200)
+    throw new Error('旁线短信或通知已达到容量上限');
+  const npcId = `protagonist-${from}`, otherContact = `protagonist-${to}`;
+  const saveContact = (person: typeof sender, id: string, name: string) => {
+    if (person.contacts.some(row => row.id === id)) return;
+    if (person.contacts.length >= 50) throw new Error('旁线短信联系人已满');
+    person.contacts.push({ id, name, tag: '另一位主角', summary: '共享同一个世界的另一位主角。',
+      affinity: 0, status: '手机联系', portraitId: 'deepseek', sourcePersonId: null, isMain: true });
+  };
+  saveContact(receiver, npcId, protagonistNames[from]);
+  saveContact(sender, otherContact, protagonistNames[to]);
+  receiver.phone.push({ id: eventId, npcId, text, read: false, at: stamp(at) });
+  sender.journal.push({ id: `sent:${eventId}`, at: stamp(at), text: `向${protagonistNames[to]}发送短信：“${text}”；发送不代表对方已经阅读。`.slice(0, 1000) });
+  rows.push({ id: eventId, from, to, at, text, replyTo: null, expectsReply: false });
+  p.devices[to].notifications.push({ id: `message:${eventId}`, at, read: false,
+    text: `${protagonistNames[from]}发来新消息。` });
+  sender.journal = sender.journal.slice(-100);
+}
+
+/**
+ * Commit AFTER the foreground actions and automatic-life settlement.
+ * All mutations occur on a private copy; the caller validates and persists once.
+ */
+export function commitOtherSideEvents(before: WorldState, after: WorldState, events: readonly OtherSideEvent[],
+  turnId: string, returnStory?: string): WorldState {
+  if (!after.protagonists) return after;
+  const next: WorldState = structuredClone(after), p = next.protagonists!;
+  const oldTurn = before.protagonists?.narrativeTurn ?? 0;
+  if (p.otherSideHistory?.some(row => row.id === turnId)) return next;
+  p.narrativeTurn = oldTurn + 1;
+  if (!events.length) return next;
+  const opportunity = otherSideOpportunity(before);
+  if (!opportunity.allowed) throw new Error('旁线机会已失效，本轮未保存');
+  const time = gameMinute(next), receipt = { id: turnId, at: time, turn: oldTurn + 1,
+    protagonists: [...new Set(events.flatMap(event => event.protagonists))] };
+  const eventIds = new Set<string>();
+  const beat: NonNullable<WorldState['story'][number]['otherSideBeats']> = [];
+  for (const [index, event] of events.entries()) {
+    const eventId = `${turnId}:side:${index}`;
+    if (eventIds.has(eventId)) throw new Error('旁线记录 ID 冲突');
+    eventIds.add(eventId);
+    for (const owner of event.protagonists) {
+      if (!positionEqual(before, next, owner)) throw new Error('旁线与后台已结算的位置变化冲突，请重新生成');
+      if (p.backgroundLife?.people[owner].pending) throw new Error('旁线人物正在执行后台安排，不能额外结算动作');
+    }
+    for (const owner of event.protagonists) {
+      if (event.locationId) moveLocally(next, owner, event.locationId);
+      const personal = personState(next, owner);
+      if (personal.story.some(row => row.id === eventId)) throw new Error('旁线个人剧情 ID 冲突');
+      for (const [key, value] of Object.entries(event.variables?.[owner] ?? {})) {
+        const field = key as keyof NonNullable<OtherSideEvent['variables']>[typeof owner];
+        if (field === 'foodEnergy') personal.player.foodEnergy = affect(personal.player.foodEnergy, value, 3000);
+        else if (typeof personal.player[field] === 'number') personal.player[field] = affect(personal.player[field], value);
+      }
+      personal.story.push({ id: eventId, role: 'assistant', text: event.text });
+      personal.story = personal.story.slice(-40);
+      personal.journal.push({ id: eventId, at: stamp(time),
+        text: `与此同时，${event.text}`.slice(0, 1000) });
+      personal.journal = personal.journal.slice(-100);
+    }
+    for (const [npcIndex, npc] of (event.npcs ?? []).entries()) {
+      const existing = npcAt(before, npc.id);
+      const nextLocation = npc.locationId ?? (event.locationId ?? existing?.locationId);
+      if (!existing || !nextLocation) throw new Error('旁线 NPC 不在已确认的场景中');
+      if (npc.locationId && npc.locationId !== existing.locationId && npc.locationId !== event.locationId)
+        throw new Error('旁线 NPC 不能离开在场主角单独瞬移');
+      const npcStatus = npc.status ?? p.otherSideNpc?.[npc.id]?.status ?? '正在参与附近的日常活动';
+      p.otherSideNpc ??= {};
+      p.otherSideNpc[npc.id] = { locationId: nextLocation, at: time,
+        until: Math.min(time + 45, 525599999), status: npcStatus };
+      for (const owner of event.protagonists) {
+        const personal = personState(next, owner);
+        const contact = personal.contacts.find(row => row.id === npc.id || row.sourcePersonId === npc.id);
+        if (!contact) continue;
+        if (npc.status) contact.status = npc.status;
+        if (npc.affinityDelta) contact.affinity = Math.max(-100, Math.min(100, contact.affinity + npc.affinityDelta));
+      }
+      if (npcIndex >= 5) throw new Error('旁线 NPC 数量无效');
+    }
+    for (const [msgIndex, message] of (event.messages ?? []).entries()) {
+      crossViewTextMessage(next, `${eventId}:sms:${msgIndex}`, message.from, message.to, message.text);
+    }
+    beat.push({ protagonists: event.protagonists, text: event.text });
+  }
+  const activeStory = next.story.find(row => row.id === turnId && row.role === 'assistant');
+  if (!activeStory) throw new Error('当前剧情尚未写入，无法承接旁线');
+  activeStory.otherSideBeats = beat;
+  if (returnStory) activeStory.returnStory = returnStory;
+  p.otherSideHistory ??= [];
+  p.otherSideHistory.push(receipt);
+  p.otherSideHistory = p.otherSideHistory.slice(-100);
+  p.otherSideNpc = Object.fromEntries(Object.entries(p.otherSideNpc ?? {}).filter(([, value]) => value.until > time).slice(-40));
+  p.revision++;
+  return next;
 }
