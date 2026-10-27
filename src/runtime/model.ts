@@ -7,6 +7,7 @@ import { knownProtagonistContact } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
+import { commitOtherSideEvents } from './other-side';
 import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerState, ScenePresence, StoryAction, TransitState, WorldAction, WorldState, InteractionEventRateState } from '../frontend/types';
 import { INTERACTION_EVENT_HISTORY_LIMIT } from './interaction-event-rate';
 import { parseAutonomousSmsState } from './autonomous-sms';
@@ -647,7 +648,10 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     }),
     story: list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
       const hasParticipants = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'participantIds');
-      const item = object(value, ['id', 'role', 'text', ...(hasParticipants ? ['participantIds'] : [])], path);
+      const hasSideBeats = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'otherSideBeats');
+      const hasReturnStory = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'returnStory');
+      const item = object(value, ['id', 'role', 'text', ...(hasParticipants ? ['participantIds'] : []),
+        ...(hasSideBeats ? ['otherSideBeats'] : []), ...(hasReturnStory ? ['returnStory'] : [])], path);
       if (item.role !== 'user' && item.role !== 'assistant') return invalid(`${path}.role`);
       let participantIds: string[] | undefined;
       if (hasParticipants) {
@@ -655,7 +659,30 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         participantIds = item.participantIds.map((value, index) => id(value, `${path}.participantIds[${index}]`));
         if (new Set(participantIds).size !== participantIds.length) return invalid(`${path}.participantIds 重复`);
       }
-      return { id: id(item.id, `${path}.id`), role: item.role, text: text(item.text, `${path}.text`, STATE_LIMITS.storyText), ...(participantIds ? { participantIds } : {}) };
+      let otherSideBeats: NonNullable<WorldState['story'][number]['otherSideBeats']> | undefined;
+      if (hasSideBeats) {
+        if (item.role !== 'assistant' || !Array.isArray(item.otherSideBeats) || !item.otherSideBeats.length || item.otherSideBeats.length > 3)
+          return invalid(`${path}.otherSideBeats`);
+        const used = new Set<string>();
+        otherSideBeats = item.otherSideBeats.map((rawBeat: unknown, beatIndex: number) => {
+          const beat = object(rawBeat, ['protagonists', 'text'], `${path}.otherSideBeats[${beatIndex}]`);
+          if (!Array.isArray(beat.protagonists) || beat.protagonists.length < 1 || beat.protagonists.length > 3)
+            return invalid(`${path}.otherSideBeats protagonists`);
+          const protagonists = beat.protagonists.map((raw: unknown) => {
+            if (typeof raw !== 'string' || !PROTAGONISTS.includes(raw as (typeof PROTAGONISTS)[number]) || used.has(raw))
+              return invalid(`${path}.otherSideBeats 主角身份`);
+            used.add(raw);
+            return raw as (typeof PROTAGONISTS)[number];
+          });
+          return { protagonists, text: text(beat.text, `${path}.otherSideBeats text`, 1200) };
+        });
+      }
+      if (hasReturnStory && (!hasSideBeats || item.role !== 'assistant')) return invalid(`${path}.returnStory`);
+      return { id: id(item.id, `${path}.id`), role: item.role,
+        text: text(item.text, `${path}.text`, STATE_LIMITS.storyText),
+        ...(participantIds ? { participantIds } : {}),
+        ...(otherSideBeats ? { otherSideBeats } : {}),
+        ...(hasReturnStory ? { returnStory: text(item.returnStory, `${path}.returnStory`, 2000) } : {}) };
     }),
   };
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
@@ -1342,11 +1369,13 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
-  const { weeklySummary, contactRequests, phoneDecision, ...legacyResult } = result;
+  const validated = validateGeneratedStory(result, before);
+  const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
   const settled = applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId);
-  const next = commitNpcDialogue(before, recordProtagonistNarrative(before, settled, result, ids.assistantId), input, result, ids.assistantId);
-  recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, result.text);
+  const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
+  const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
+  recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   return parseState(next);
