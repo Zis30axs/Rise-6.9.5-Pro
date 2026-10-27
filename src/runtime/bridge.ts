@@ -1,7 +1,7 @@
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
-import { otherSidePromptContext, OTHER_SIDE_RULES } from './other-side';
+import { otherSidePromptContext } from './other-side';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { weeklyMemoryContext } from './weekly-memory';
@@ -21,7 +21,8 @@ import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
 import { buildCharacterIntroductionContext } from './character-context';
 import { contactProposalContext, npcPhoneReplyContext } from './npc-phone';
-import { NPC_PHONE_REPLY_PROTOCOL, parseNpcPhoneReply, PHONE_REPLY_PROTOCOL, phoneReplyContext, parsePhoneReply } from './phone-reply';
+import { NPC_PHONE_REPLY_PROTOCOL, PHONE_REPLY_PROTOCOL, phoneReplyContext, parsePhoneReplyWithScene } from './phone-reply';
+import { PHONE_SCENE_PREFIX } from './phone-scene';
 import { storySmsContext } from './phone-sms';
 import { AUTONOMOUS_SMS_PROTOCOL, autonomousSmsContext, parseAutonomousSmsReply } from './autonomous-sms';
 
@@ -341,7 +342,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         recentSms: storySmsContext(snapshot),
         music: livehousePhoneView(snapshot, activeProtagonist(snapshot)),
         journal: selectPromptJournal(snapshot.journal, alreadyInNarrative),
-        recentStory: selectPromptStory(snapshot.story),
+        recentStory: selectPromptStory(snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))),
+        // Third-person SMS cutaways remain read-only until explicitly committed.
+        recentOffscreenScenes: selectPromptStory(snapshot.story.filter(row => row.id.startsWith(PHONE_SCENE_PREFIX))),
       };
       const phoneTask = options?.kind === 'phone_reply' || options?.kind === 'npc_phone_reply' || options?.kind === 'band_invitation_reply' || options?.kind === 'autonomous_sms';
       const rawPrompt = options?.kind === 'autonomous_sms'
@@ -358,11 +361,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
           '玩家本次行动：', input.trim(),
         ].join('\n');
-      const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\n全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
+      const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\nrecentOffscreenScenes 是只供玩家阅读的第三人称离屏镜头，不等于当前主角亲历或知悉，也不授权 NPC 获知其中的内心秘密。全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
       const weekly = weeklyMemoryContext(snapshot);
       const sideOpportunity = otherSidePromptContext(snapshot);
-      // Uses the same deterministic game-clock gate for both model prompt and commit validation.
-      void OTHER_SIDE_RULES;
       const sideInstruction = sideOpportunity.allowed
         ? `【本轮有限旁线机会】程序低概率（${Math.round(sideOpportunity.probability * 100)}%）授权一组其他主角候选：${JSON.stringify(sideOpportunity)}。只允许这些 protagonists 组合输出 <otherside> JSON 数组，最多 ${sideOpportunity.groups.length} 组。若同一地点确实合组，必须用一条事件的 protagonists 数组共同保存，禁止为同场两个角色分别写两条；不同地点则不同组，禁止直接面对面，可使用 messages 生成双方同步手机短信。NPC 只允许从 npcGroups 同场列表选，属于参与者、可以拥有 status/locationId/affinityDelta，但不拥有可切换视角。若没有自然发生的新事件，请完全省略标签；模型不必耗尽所有候选。关系前史、生日和节日仅用于合理创作，不是自动触发已完成行动。可在 <story_continue> 中返回当前主角，但重大选择留给玩家，系统会提供继续/切换按钮。禁止任意远程移动、任意钱包修改、后台行程覆盖。`
         : '【旁线机会未触发】本轮禁止输出 <otherside>、<story_continue> 标签，不得在当前主角的正文写出“与此同时”已改变其他人物位置、余额或实际发生的行为；全知信息仅能作为背景事实引用。';
@@ -410,15 +411,17 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           aborted,
         ]);
         if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
-        const npcText = options?.kind === 'npc_phone_reply' ? parseNpcPhoneReply(response, options.messageId) : undefined;
+        const phoneResponse = options?.kind === 'npc_phone_reply' || options?.kind === 'phone_reply'
+          ? parsePhoneReplyWithScene(response, options.messageId, options.kind === 'npc_phone_reply') : null;
+        const npcText = options?.kind === 'npc_phone_reply' ? phoneResponse!.text : undefined;
         const reply: GeneratedStory = options?.kind === 'autonomous_sms'
           ? { text: '', phoneMessages: [], autonomousSmsText: parseAutonomousSmsReply(response, options.ticketId) }
           : options?.kind === 'band_invitation_reply'
           ? parseBandReply(response, options.messageId)
           : options?.kind === 'npc_phone_reply'
-          ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}) }
+          ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}), ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}) }
           : options?.kind === 'phone_reply'
-          ? { text: parsePhoneReply(response, options.messageId), phoneMessages: [] }
+          ? { text: phoneResponse!.text!, phoneMessages: [], ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}) }
           : parseGeneratedStory(response, snapshot);
         if (options?.kind === 'contact_introduction' && (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length)) throw new Error('人物简介格式无效，未修改角色或剧情，请重试。');
         if (options?.kind === 'interaction_event' && !reply.worldActions?.length) throw new Error('突发事件缺少实际影响，本次交互和事件均未保存；可以重试，或选择正常完成。');
