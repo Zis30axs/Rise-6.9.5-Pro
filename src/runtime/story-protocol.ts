@@ -1,4 +1,8 @@
-import type { GeneratedStory, WorldState } from '../frontend/types';
+import type { GeneratedStory, OtherSideEvent, WorldState } from '../frontend/types';
+import { isProtagonistId } from './dual-protagonists';
+import { sceneLandmarks } from '../frontend/scene-layout';
+import { campusInteriors } from './campus-interiors';
+import { sceneLocationId } from './scene-context';
 import { validateContactProposals } from './npc-phone';
 import { validateStoryActions } from './story-actions';
 export { STORY_ACTION_LIMITS } from './story-actions';
@@ -8,6 +12,8 @@ export const STORY_OUTPUT_LIMITS = {
   inputText: 2000,
   phoneEvents: 8,
   worldEvents: 1,
+  otherSideEvents: 3,
+  otherSideText: 1200,
   messageText: 2000,
   // JSON can use six characters to encode one Unicode code unit. Bound the
   // complete transport without truncating valid JSON before it is parsed.
@@ -30,9 +36,47 @@ function text(value: unknown, max: number, path: string): string {
   return value.trim();
 }
 
+const OTHER_SIDE_VARIABLE_KEYS = ['energy', 'health', 'stress', 'morale', 'satiety', 'foodEnergy'] as const;
+const OTHER_SIDE_LOCATIONS = new Set([
+  ...sceneLandmarks.map(landmark => sceneLocationId(landmark.id)),
+  ...campusInteriors.map(room => room.id),
+]);
+
+/** An off-screen narrative is executable only through this narrow whitelist. */
+export function validateOtherSideEvents(value: unknown, state: WorldState): OtherSideEvent[] {
+  if (!Array.isArray(value) || value.length > STORY_OUTPUT_LIMITS.otherSideEvents) return invalid('otherside 事件数量');
+  if (value.length && !state.protagonists) return invalid('otherside 需要已启用多主角存档');
+  const used = new Set<string>();
+  return value.map((raw, index) => {
+    const path = `otherside 第 ${index + 1} 项`;
+    const item = record(raw, ['protagonist', 'text'], path, ['locationId', 'variables']);
+    if (!isProtagonistId(item.protagonist) || item.protagonist === state.protagonists?.accounts.active || used.has(item.protagonist))
+      return invalid(`${path} 必须是本轮尚未使用的非当前主角 ID`);
+    const protagonist = item.protagonist;
+    used.add(protagonist);
+    const result: OtherSideEvent = { protagonist, text: text(item.text, STORY_OUTPUT_LIMITS.otherSideText, `${path} 剧情`) };
+    if (Object.hasOwn(item, 'locationId')) {
+      if (typeof item.locationId !== 'string' || !OTHER_SIDE_LOCATIONS.has(item.locationId)) return invalid(`${path} 地点`);
+      result.locationId = item.locationId;
+    }
+    if (Object.hasOwn(item, 'variables')) {
+      const variables = record(item.variables, [], `${path} 变量`, OTHER_SIDE_VARIABLE_KEYS);
+      if (!Object.keys(variables).length) return invalid(`${path} 变量不能为空`);
+      result.variables = {};
+      for (const key of OTHER_SIDE_VARIABLE_KEYS) {
+        if (!Object.hasOwn(variables, key)) continue;
+        const value = variables[key], bound = key === 'foodEnergy' ? 300 : 20;
+        if (typeof value !== 'number' || !Number.isInteger(value) || Math.abs(value) > bound) return invalid(`${path} 变量 ${key} 越界`);
+        result.variables[key] = value;
+      }
+    }
+    return result;
+  });
+}
+
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -42,6 +86,7 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
     return { npcId: item.npcId, text: text(item.text, STORY_OUTPUT_LIMITS.messageText, `手机消息 ${index + 1} 的正文`) };
   });
   const parsed: GeneratedStory = { text: story, phoneMessages };
+  if (Object.hasOwn(result, 'otherSide')) parsed.otherSide = validateOtherSideEvents(result.otherSide, state);
   if (Object.hasOwn(result, 'contactRequests')) parsed.contactRequests = validateContactProposals(result.contactRequests);
   if (Object.prototype.hasOwnProperty.call(result, 'worldActions')) parsed.worldActions = validateStoryActions(result.worldActions, state);
   if (Object.prototype.hasOwnProperty.call(result, 'worldEvents')) {
@@ -65,13 +110,13 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
 
 /**
  * Prefer explicit data tags when a model cannot keep a whole JSON envelope.
- * Only these four tags are structural; text outside them is never executed.
+ * Only known tags are structural; text outside them is never executed.
  * The model's actions still pass the exact same whitelist validator as JSON.
  */
 function parseTaggedStory(source: string): Record<string, unknown> | null {
-  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary|contact_requests)>([\s\S]*?)<\/\1>/gi)];
+  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside)>([\s\S]*?)<\/\1>/gi)];
   if (!matches.length) return null;
-  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary|contact_requests)>/gi)];
+  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside)>/gi)];
   if (tokens.length !== matches.length * 2) return invalid('关键标签重复或未闭合');
   const blocks = new Map<string, string>();
   let end = 0;
@@ -95,6 +140,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     story: blocks.get('story'),
     phone_messages: jsonArray('phone_messages'),
     ...(blocks.has('contact_requests') ? { contact_requests: jsonArray('contact_requests') } : {}),
+    ...(blocks.has('otherside') ? { other_side: jsonArray('otherside') } : {}),
     ...(blocks.has('world_actions') ? { world_actions: jsonArray('world_actions') } : {}),
     ...(blocks.has('world_events') ? { world_events: jsonArray('world_events') } : {}),
     ...(blocks.has('weekly_summary') ? { weekly_summary: (() => { try { return JSON.parse(blocks.get('weekly_summary')!); } catch { return invalid('weekly_summary 必须为 JSON 对象'); } })() } : {}),
@@ -113,9 +159,10 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
   if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
-  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests']);
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests', 'other_side']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'contact_requests') ? { contactRequests: envelope.contact_requests } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'other_side') ? { otherSide: envelope.other_side } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'weekly_summary') ? { weeklySummary: envelope.weekly_summary } : {}),
