@@ -329,8 +329,14 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
     }
     for (const npc of (event.npcs ?? [])) {
       const existing = npcAt(before, npc.id);
-      const nextLocation = npc.locationId ?? (event.locationId ?? existing?.locationId);
-      if (!existing || !nextLocation) throw new Error('旁线 NPC 不在已确认的场景中');
+      const settledNpc = npcAt(next, npc.id);
+      // The foreground action may have advanced the game clock past a resident
+      // schedule boundary. An old in-scene hint no longer proves they are here.
+      if (!existing || !settledNpc || existing.kind !== settledNpc.kind
+        || existing.locationId !== settledNpc.locationId)
+        throw new Error('旁线 NPC 在当前时间已经离开该场景，请重新生成');
+      const nextLocation = npc.locationId ?? (event.locationId ?? existing.locationId);
+      if (!nextLocation) throw new Error('旁线 NPC 不在已确认的场景中');
       if (npc.locationId && npc.locationId !== existing.locationId && npc.locationId !== event.locationId)
         throw new Error('旁线 NPC 不能离开在场主角单独瞬移');
       const npcStatus = npc.status ?? p.otherSideNpc?.[npc.id]?.status ?? '正在参与附近的日常活动';
