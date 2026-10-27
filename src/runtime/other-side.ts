@@ -142,6 +142,8 @@ export function otherSideOpportunity(state: WorldState): OtherSideOpportunity {
     for (let i = 0; i < value.length; i++) for (let j = i + 1; j < value.length; j++) {
       if (sameOtherSidePlace(state, value[i]!, value[j]!)) weight += 15;
       else if (point(state, value[i]!).locationId === point(state, value[j]!).locationId) weight += 2;
+      if (OTHER_SIDE_CATEGORIES[value[i]!].some(category => OTHER_SIDE_CATEGORIES[value[j]!].includes(category)))
+        weight += 2;
     }
     const occasionIds = new Set(gameCalendarOccasions(state.clock.day).filter(e => e.kind === 'birthday').map(e => e.personId));
     for (const id of value) if (occasionIds.has(id)) weight += 3;
@@ -162,14 +164,20 @@ export function otherSideOpportunity(state: WorldState): OtherSideOpportunity {
   const calendar = occasions.filter(item => !item.personId || relevant.has(item.personId))
     .slice(0, 4).map(item => item.name);
   const relationships: string[] = [];
+  const attendingNames = npcGroups.flatMap(group => group.npcs.map(npc => npc.name));
+  const hints = (entries: readonly { name: string; keys: readonly string[]; content: string }[], prefix: string, names: readonly string[]) =>
+    entries.filter(entry => entry.name.startsWith(prefix)).map(entry => ({
+      entry, weight: entry.keys.some(key => names.some(name => key.includes(name) || name.includes(key))) ? 5
+        : names.some(name => entry.content.includes(name)) ? 2 : 0,
+    })).sort((a, b) => b.weight - a.weight).slice(0, 2)
+      .map(({ entry }) => `${entry.name}：${entry.content.slice(0, 200)}`);
   if (selected.some(id => id === 'soyo' || id === 'sakiko')) {
-    relationships.push(...relationLore.entries.filter(entry => entry.name.startsWith('乐队人物关系') || entry.name.startsWith('邦邦前史'))
-      .slice(0, 2).map(entry => entry.name));
+    const bandLabels = selected.includes('sakiko') ? ['Ave Mujica', 'CRYCHIC'] : ['MyGO', 'CRYCHIC'];
+    relationships.push(...hints(relationLore.entries, '邦邦前史', bandLabels).slice(0, 1));
+    relationships.push(...hints(relationLore.entries, '乐队人物关系', attendingNames).slice(0, 1));
   }
-  if (selected.includes('emma')) relationships.push(...relationLore.entries.filter(entry => entry.name.startsWith('魔裁旧关系'))
-    .slice(0, 2).map(entry => entry.name));
-  if (selected.includes('renako')) relationships.push(...watanareLore.entries.filter(entry => entry.name.startsWith('渡奈人物关系'))
-    .slice(0, 2).map(entry => entry.name));
+  if (selected.includes('emma')) relationships.push(...hints(relationLore.entries, '魔裁旧关系', attendingNames.length ? attendingNames : ['艾玛', '月代雪']).slice(0, 2));
+  if (selected.includes('renako')) relationships.push(...hints(watanareLore.entries, '渡奈人物关系', attendingNames.length ? attendingNames : ['玲奈子', '真唯']).slice(0, 2));
   return { allowed: true, probability: chance, sampledCount, groups, npcGroups,
     eventHints: { calendar, relationships, interactionRecentlyOffered: !!lastInteraction } };
 }
