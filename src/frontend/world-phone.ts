@@ -35,6 +35,11 @@ export function createWorldPhoneApi(options: {
       npcPhone: { ...social, messages: social.messages.map(m => ({ ...m,
         receipt: m.direction === 'outgoing' ? smsReadReceipt(m.at, now, m.status === 'answered') : 'received',
       })) },
+      // Only the active protagonist's lived context is visible to the NPC peek LLM.
+      peekContext: owner === active ? {
+        recentStory: person.story.slice(-8).map(row => ({role:row.role,text:row.text.slice(0,450)})),
+        recentJournal: person.journal.slice(-12).map(row => ({text:row.text.slice(0,240)})),
+      } : null,
       orders: p.orders.filter(o=>o.owner===owner), messages: person.phone,
       conversation: dual.filter(m=>m.from===owner||m.to===owner).map(m=>({
         ...m, direction: m.from===owner?'outgoing':'incoming',
