@@ -1,7 +1,6 @@
-// The NPC's simulated phone is a view of the canonical protagonist<->NPC SMS
-// history, not a second database of protagonist messages. This module is
-// shared by the embedded ST-iPhonie host and iframe.
-const PROTAGONIST_NAMES = new Set(['长崎素世', '丰川祥子', '樱羽艾玛', '甘织玲奈子']);
+// Restore the original simulated NPC phone, while projecting real game SMS.
+// The protagonist's visible messages always come from the canonical game save.
+const PROTAGONIST_NAMES = new Set(['长崎素世','丰川祥子','樱羽艾玛','甘织玲奈子']);
 
 export function peekWorld(win) {
   try {
@@ -17,7 +16,7 @@ export function peekCanonicalMessages(world, contact) {
   if (!world || !contact) return [];
   return (world.npcPhone?.messages || [])
     .filter(m => m.owner === world.owner && m.channel === 'npc' && m.targetId === contact.id)
-    .sort((a, b) => a.at - b.at || a.id.localeCompare(b.id));
+    .sort((a,b) => a.at - b.at || a.id.localeCompare(b.id));
 }
 
 export function peekCanonicalHistory(world, contact) {
@@ -28,39 +27,47 @@ export function peekCanonicalHistory(world, contact) {
 
 export function withoutProtagonistChats(snapshot) {
   if (!snapshot) return snapshot;
-  return { ...snapshot, chats: (snapshot.chats || []).filter(c => !PROTAGONIST_NAMES.has(c.with) && c.with !== '我') };
+  return {...snapshot, chats:(snapshot.chats || []).filter(c => c.with !== '我' && !PROTAGONIST_NAMES.has(c.with))};
 }
 
-export function visiblePeekSnapshot(snapshot, world) {
-  if (!snapshot || !world) return snapshot;
-  // Never show a prior protagonist's cached simulated messages after a switch.
-  const clean = withoutProtagonistChats(snapshot);
-  const contact = peekWorldContact(world, snapshot.name);
+export function visiblePeekSnapshot(snapshot, world, name = snapshot?.name) {
+  if (!world || !name) return snapshot;
+  const contact = peekWorldContact(world, name);
   const messages = peekCanonicalMessages(world, contact);
-  if (!messages.length) return clean;
+  // Show an existing real SMS thread even before the first model generation.
+  if (!snapshot && !messages.length) return null;
+  const original = withoutProtagonistChats(snapshot) || {
+    name, at:Date.now(), chats:[], searches:[], notes:[], photos:[], cart:[],
+  };
+  if (!messages.length) return original;
   const lines = messages.slice(-24).map(m => ({
-    from: m.direction === 'outgoing' ? 'me' : snapshot.name,
-    text: m.text,
+    from:m.direction === 'outgoing' ? world.name : name,
+    text:m.text,
   }));
-  return { ...clean, chats: [{with: world.name, lines}, ...clean.chats].slice(0, 5) };
+  return {...original, chats:[{with:world.name,lines}, ...original.chats].slice(0,5)};
 }
 
-export function newPeekDialogue(snapshot, world, contact) {
-  if (!snapshot || !world || !contact) return [];
-  const generated = (snapshot.chats || [])
-    .filter(c => c.with === world.name)
-    .flatMap(c => (c.lines || []).filter(l => l.from === 'me' || l.from === snapshot.name)
-      .map(l => ({ speaker: l.from === 'me' ? 'protagonist' : 'npc', text: String(l.text || '').trim().slice(0, 180) })))
-    .filter(l => l.text);
+export function newPeekDialogue(found, world, contact) {
+  if (!world || !contact) return [];
+  const chat = (found.chats || []).find(c => c.with === world.name);
+  if (!chat) return [];
+  const generated = (chat.lines || []).map(l => {
+    if (l.from !== 'me' && l.from !== contact.name) throw Error('主角聊天的发言者无效，请重新生成');
+    return {speaker:l.from === 'me' ? 'protagonist' : 'npc', text:String(l.text || '').trim()};
+  }).filter(row => row.text);
+  if (generated.length > 24) throw Error('主角聊天生成过长，请重新生成');
   const existing = peekCanonicalMessages(world, contact).map(m => ({
-    speaker: m.direction === 'outgoing' ? 'protagonist' : 'npc', text: m.text,
+    speaker:m.direction === 'outgoing' ? 'protagonist' : 'npc', text:m.text,
   }));
-  // A model may quote the last real lines before continuing; keep only the
-  // suffix that is genuinely new. No generated text may replace saved lines.
+  // Ignore a prefix copied from the real chat; only append newly developed lines.
   let overlap = Math.min(generated.length, existing.length);
-  while (overlap && !generated.slice(0, overlap).every((row, i) => {
-    const prior = existing[existing.length - overlap + i];
-    return prior.speaker === row.speaker && prior.text === row.text;
+  while (overlap && !generated.slice(0,overlap).every((line,i) => {
+    const old = existing[existing.length-overlap+i];
+    return old.speaker === line.speaker && old.text === line.text;
   })) overlap--;
-  return generated.slice(overlap).slice(0, 6);
+  const next = generated.slice(overlap);
+  if (next.length > 6 || next.length % 2 !== 0 || next.some((row,i) =>
+    row.speaker !== (i % 2 === 0 ? 'protagonist' : 'npc') || row.text.length > 180))
+    throw Error('生成的主角短信必须从主角开始、双方轮流发言（最多三轮，每条180字），请重新生成');
+  return next;
 }
