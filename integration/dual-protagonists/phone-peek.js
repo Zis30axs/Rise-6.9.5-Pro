@@ -28,7 +28,8 @@ export function peekCanonicalMessages(world, contact) {
     .filter(m => m.npcId === contact.contactId && !canonicalIds.has(m.id))
     .map(m=>({id:m.id,owner:world.owner,channel:'npc',targetId:contact.id,
       direction:'incoming',text:m.text,at:historicalGameMinute(m.at),legacy:true}));
-  return [...canonical,...legacy].sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
+  return [...canonical,...legacy].map((m,index)=>({m,index}))
+    .sort((a,b)=>a.m.at-b.m.at || a.index-b.index).map(row=>row.m);
 }
 
 export function peekCanonicalHistory(world, contact) {
