@@ -3,8 +3,8 @@ import { characterForPerson } from '../frontend/character-appearance';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONIST_PERSON_ID_LIST, protagonistPersonId, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames, type PersonalState } from './protagonist-world';
-import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
-import { allResidentCast } from './npc-cast';
+import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, scenePersonAnchors, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
+import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
 
@@ -60,8 +60,15 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       if (state.interior ? (!inRoom || state.interior.roomId !== override.locationId)
         : (inRoom || !scene || sceneLocationId(scene.areaId) !== override.locationId)) continue;
       const roomAnchor = inRoom ? getInteriorPeopleForValidation(override.locationId).find(person => person.id === resident.id) : null;
-      const outdoorAnchor = !inRoom ? sceneLandmarks.find(row => sceneLocationId(row.id) === override.locationId) : null;
-      if (!roomAnchor && !outdoorAnchor && !state.interior) continue;
+      // Keep the resident at their real scheduled anchor if the override did not move them.
+      // This also works in areas without a sceneLandmark (e.g. promenade).
+      const scheduled = residentPresence(resident.id, state.clock);
+      const original = scenePersonAnchors.find(anchor => anchor.id === scheduled?.anchorId);
+      const originalArea = original && getSceneArea(original.x, original.z);
+      const retained = original && originalArea && sceneLocationId(originalArea.id) === override.locationId
+        ? { x: original.x + .6, z: original.z + .6 } : null;
+      const outdoorAnchor = !inRoom ? retained ?? sceneLandmarks.find(row => sceneLocationId(row.id) === override.locationId) : null;
+      if (!roomAnchor && !outdoorAnchor) continue;
       const contact = state.contacts.find(row => row.sourcePersonId === resident.id || row.id === resident.id);
       people.push({
         id: resident.id, name: contact?.name ?? resident.name, candidateName: resident.name,
