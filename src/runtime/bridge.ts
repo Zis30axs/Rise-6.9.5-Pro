@@ -21,6 +21,7 @@ import { getAdjacentLocations } from './location-links';
 import { buildCharacterIntroductionContext } from './character-context';
 import { contactProposalContext, npcPhoneReplyContext } from './npc-phone';
 import { NPC_PHONE_REPLY_PROTOCOL, PHONE_REPLY_PROTOCOL, phoneReplyContext, parsePhoneReplyWithScene } from './phone-reply';
+import { PHONE_SCENE_PREFIX } from './phone-scene';
 import { storySmsContext } from './phone-sms';
 import { AUTONOMOUS_SMS_PROTOCOL, autonomousSmsContext, parseAutonomousSmsReply } from './autonomous-sms';
 
@@ -339,7 +340,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         recentSms: storySmsContext(snapshot),
         music: livehousePhoneView(snapshot, activeProtagonist(snapshot)),
         journal: selectPromptJournal(snapshot.journal, alreadyInNarrative),
-        recentStory: selectPromptStory(snapshot.story),
+        recentStory: selectPromptStory(snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))),
+        // The omniscient narrator sees off-screen cuts, not the player character.
+        recentOffscreenScenes: selectPromptStory(snapshot.story.filter(row => row.id.startsWith(PHONE_SCENE_PREFIX))),
       };
       const phoneTask = options?.kind === 'phone_reply' || options?.kind === 'npc_phone_reply' || options?.kind === 'band_invitation_reply' || options?.kind === 'autonomous_sms';
       const rawPrompt = options?.kind === 'autonomous_sms'
@@ -356,7 +359,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             ? buildCharacterIntroductionContext(snapshot, options.contact) : summary),
           '玩家本次行动：', input.trim(),
         ].join('\n');
-      const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\n全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
+      const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\nrecentOffscreenScenes 是只供玩家阅读的第三人称离屏镜头，不等于当前主角亲历或知悉，也不授权 NPC 获知其中的内心秘密。全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
       const weekly = weeklyMemoryContext(snapshot);
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
       const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
