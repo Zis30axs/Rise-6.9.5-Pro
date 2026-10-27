@@ -62,9 +62,13 @@ function npcAt(state: WorldState, id: string): { locationId: string; kind: strin
   if (validOverride) {
     const locationId = validOverride.locationId;
     if (getCampusInterior(locationId)) return { locationId, kind: 'room', x: 0, z: 0 };
+    const presence = residentPresence(id, state.clock);
+    const oldAnchor = scenePersonAnchors.find(point => point.id === presence?.anchorId);
+    const oldArea = oldAnchor && getSceneArea(oldAnchor.x, oldAnchor.z);
+    if (oldAnchor && oldArea && sceneLocationId(oldArea.id) === locationId)
+      return { locationId, kind: 'outdoor', x: oldAnchor.x + .6, z: oldAnchor.z + .6 };
     const landmark = sceneLandmarks.find(p => sceneLocationId(p.id) === locationId);
-    if (landmark) return { locationId, kind: 'outdoor', x: landmark.x, z: landmark.z };
-    return { locationId, kind: 'room', x: 0, z: 0 };
+    return landmark ? { locationId, kind: 'outdoor', x: landmark.x, z: landmark.z } : null;
   }
   const present = residentPresence(id, state.clock);
   if (!present || !present.available) return null;
@@ -82,7 +86,7 @@ function groupNpcs(state: WorldState, group: readonly ProtagonistId[]) {
     if (PROTAGONIST_PERSON_ID_LIST.includes(npc.id)) return [];
     const where = npcAt(state, npc.id);
     if (!where || where.kind !== owner.kind || where.locationId !== owner.locationId) return [];
-    if (owner.kind === 'outdoor' && group.every(id => {
+    if (owner.kind === 'outdoor' && group.some(id => {
       const position = point(state, id);
       return Math.hypot(position.x - where.x, position.z - where.z) > 18;
     })) return [];
