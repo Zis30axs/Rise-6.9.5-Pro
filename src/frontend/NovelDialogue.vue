@@ -3,15 +3,39 @@ import { computed, ref, watch } from 'vue';
 import { parseNovelDialogue, type NovelSegment } from './novel-dialogue';
 import { storyDisplayText } from './story-text';
 import { novelPortraitFocus } from './novel-portrait-focus';
+import { protagonistNames } from '../runtime/protagonist-world';
+import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { WorldState } from './types';
 
 const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean }>();
-const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: [] }>();
+const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: []; switchSide: [target: ProtagonistId] }>();
+type ViewingRow = NovelSegment & { id: string; entryId: string; choiceTargets?: ProtagonistId[] };
 const cursor = ref(0);
-const rows = computed(() => props.entries.flatMap(entry => entry.role === 'assistant'
-  ? parseNovelDialogue(storyDisplayText(entry.text)).map((segment, index) => ({ ...segment, id: `${entry.id}:${index}`, entryId: entry.id }))
-  : [{ id: `${entry.id}:0`, entryId: entry.id, speaker: '你的行动', emotion: '平静', text: entry.text }]));
+const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
+  const segments: ViewingRow[] = [];
+  const add = (segment: NovelSegment, choiceTargets?: ProtagonistId[]) => {
+    segments.push({ ...segment, id: `${entry.id}:${segments.length}`, entryId: entry.id,
+      ...(choiceTargets ? { choiceTargets } : {}) });
+  };
+  if (entry.role === 'user') {
+    add({ speaker: '你的行动', emotion: '平静', text: entry.text });
+    return segments;
+  }
+  for (const segment of parseNovelDialogue(storyDisplayText(entry.text))) add(segment);
+  if (!entry.otherSideBeats?.length) return segments;
+  for (const beat of entry.otherSideBeats) {
+    add({ speaker: '', emotion: '平静',
+      text: `与此同时 · ${beat.protagonists.map(id => protagonistNames[id]).join('、')}` });
+    for (const segment of parseNovelDialogue(storyDisplayText(beat.text))) add(segment);
+  }
+  const targets = [...new Set(entry.otherSideBeats.flatMap(beat => beat.protagonists))];
+  add({ speaker: '', emotion: '平静', text: '这一侧的故事已发生。回到现在，还是继续另一位主角的视角？' }, targets);
+  add({ speaker: '', emotion: '平静', text: `镜头回到${props.protagonist}。` });
+  if (entry.returnStory) for (const segment of parseNovelDialogue(storyDisplayText(entry.returnStory))) add(segment);
+  return segments;
+}));
 const current = computed(() => rows.value[cursor.value]);
+const sideChoice = computed(() => current.value?.choiceTargets ?? null);
 const canAdvance = computed(() => cursor.value < rows.value.length - 1);
 const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, props.protagonist, props.recognizesSpeaker));
 watch(() => props.entries.at(-1)?.id, () => {
@@ -33,14 +57,19 @@ function advance() { if (canAdvance.value) cursor.value++; }
 <template>
   <div class="novel-dialogue" data-novel-dialogue :data-segment="cursor" :data-segment-count="rows.length"
     :data-speaker="current?.speaker ?? ''" :data-emotion="current?.emotion ?? ''">
-    <button class="novel-dialogue-text" aria-label="点击推进剧情" :disabled="!canAdvance" @click="advance">
+    <button class="novel-dialogue-text" aria-label="点击推进剧情" :disabled="!canAdvance || !!sideChoice" @click="advance">
       <span class="novel-speaker">{{ current?.speaker || '旁白' }}</span>
       <span class="novel-speech" aria-live="polite">{{ current?.text || '故事即将开始。' }}</span>
     </button>
+    <div v-if="sideChoice" class="other-side-choices" data-other-side-choices aria-label="旁线视角选择">
+      <button type="button" data-side-continue @click="advance">继续{{ protagonist }}的视角</button>
+      <button v-for="target in sideChoice" :key="target" type="button" :data-side-target="target"
+        @click="emit('switchSide', target)">切换到{{ protagonistNames[target] }}的视角</button>
+    </div>
     <div class="novel-dialogue-controls">
       <button :disabled="cursor === 0" aria-label="上一句剧情" @click="cursor--">上一句</button>
       <button @click="emit('history')">全文回看</button>
-      <button :disabled="!canAdvance" aria-label="下一句剧情" @click="advance">{{ canAdvance ? '点击继续 ▸' : busy ? '等待下一段…' : '本段已读完' }}</button>
+      <button v-if="!sideChoice" :disabled="!canAdvance" aria-label="下一句剧情" @click="advance">{{ canAdvance ? '点击继续 ▸' : busy ? '等待下一段…' : '本段已读完' }}</button>
     </div>
   </div>
 </template>
