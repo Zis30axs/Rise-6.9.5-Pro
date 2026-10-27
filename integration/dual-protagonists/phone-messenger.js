@@ -15,6 +15,8 @@ const CHAT_STYLE = '<style>'
   + '.uc-composer textarea.field-in{resize:none;min-height:44px;max-height:90px;padding:10px 13px;border-radius:16px;line-height:1.35}'
   + '.uc-composer button{flex-shrink:0;min-height:44px;border-radius:16px;padding:8px 12px}.uc-thread .msg{max-width:92%}'
   + '.uc-thread .chat-bubble{max-width:100%;font-size:14px}.uc-thread .msgs .sys{font-size:11px}'
+  + '.uc-scene-handoff{display:grid;justify-items:center;gap:7px;width:min(88%,300px);box-sizing:border-box;margin:14px auto;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--card2);text-align:center;line-height:1.5}'
+  + '.uc-scene-handoff strong{font-size:12px;color:inherit}.uc-scene-handoff small{font-size:11px;color:var(--ink2)}.uc-scene-handoff button{min-height:40px;padding:8px 12px;border-radius:15px;max-width:100%;white-space:normal}'
   + '@media(max-width:360px){.uc-reply-tools{gap:4px;padding:6px}.uc-reply-tools button{font-size:11px;padding:6px 8px}.uc-composer button{padding:8px 10px}}'
   + '</style>';
 
@@ -102,11 +104,14 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     const covered=outgoing && m.replyTo===null && index<lastRepliedIndex && (m.status==='silent' || m.expectsReply===false);
     const status=covered ? ' · 已回复' : outgoing && m.status==='silent' ? ' · 暂无回复' : '';
     const speaker=outgoing ? '我' : (m.speakerName||contact.name);
+    const scene=!outgoing && (data.phoneScenes||[]).find(row=>row.messageId===m.id);
+    const handoff=scene?'<div class="uc-scene-handoff" role="note" data-phone-scene-id="'+esc(scene.storyId)+'"><strong>镜头转到了对方那边</strong><small>这段故事已经保存到正文</small>'
+      +btn('return-to-story','返回正文 · 继续剧情','secondary','data-id="'+esc(scene.storyId)+'"')+'</div>':'';
     return '<article class="msg'+(outgoing?' me':'')+'" data-message-id="'+esc(m.id)+'">'
       +(outgoing?'':'<span class="uc-portrait" style="width:32px;height:32px;border-radius:50%;font-size:12px" aria-hidden="true">'+esc(speaker.slice(0,1))+'</span>')
       +'<div class="m-body">'+(chosen.startsWith('group:')?'<span class="m-name">'+esc(speaker)+'</span>':'')
       +'<div class="chat-bubble">'+esc(m.text)+(data.music?.invitations.some(i=>i.messageId===m.id)?btn('open-bands','查看乐队邀请','text-button'):'')+'</div>'
-      +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>';
+      +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>'+handoff;
   }).join('');
   const pendingUI=pending ? '<div class="sys" role="status">发送未保存 · 可重试'+btn('retry','重试','text-button')+btn('discard','取消','text-button')+'</div>' : '';
   const tools='<div class="uc-reply-tools">'+btn('open-bands','我的乐队','text-button')

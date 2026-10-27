@@ -230,6 +230,8 @@ export interface GeneratedStory {
   worldActions?: StoryAction[];
   contactRequests?: import('../runtime/npc-phone').ContactProposal[];
   phoneDecision?: 'silence';
+  /** Optional off-screen novel passage accompanying a manually requested SMS reply. */
+  phoneSceneText?: string;
   autonomousSmsText?: string | null;
   bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
@@ -287,6 +289,8 @@ export interface ShellModel {
   phoneLinkError: string;
   phoneUnread: number;
   phoneContactUnread: { npcId: string; unread: number }[];
+  /** Transient request to return from a message bubble to its saved novel entry. */
+  phoneSceneJump?: { id: string; token: number };
 }
 
 export interface ShellActions {
