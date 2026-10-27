@@ -42,7 +42,7 @@ import { getAdjacentLocations } from '../runtime/location-links';
 import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import { worldScenePeople, worldScenePosition, type WorldScenePerson } from '../runtime/world-presence';
 import type { PlayerState, ShellActions, ShellModel } from './types';
-import type { ProtagonistId } from '../runtime/dual-protagonists';
+import { PROTAGONISTS, type ProtagonistId } from '../runtime/dual-protagonists';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, studyDurationOptions, isStudyInteraction, getStudyEnergyCost } from '../runtime/campus-interiors';
 import { streetRoutes } from './scene-world';
 import { getNearbyTransitStop, transitStops, transitVehicles } from '../runtime/transit';
@@ -59,6 +59,18 @@ function selectProtagonist(event: Event) {
   input.value = currentProtagonist.value;
   if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
   if (!props.actions.beginProtagonistSwitch) { props.actions.dispatch({ type: 'switch_protagonist', target }); return; }
+  switchingLease.value = props.actions.beginProtagonistSwitch(target);
+}
+/** A saved side event exposes only the four playable IDs, never NPC identities. */
+function switchToOtherSide(target: ProtagonistId) {
+  if (!PROTAGONISTS.includes(target) || currentProtagonist.value === target
+    || switchingLease.value || props.model.busy || props.model.interaction) return;
+  scene.value?.flushPresence();
+  if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
+  if (!props.actions.beginProtagonistSwitch) {
+    props.actions.dispatch({ type: 'switch_protagonist', target });
+    return;
+  }
   switchingLease.value = props.actions.beginProtagonistSwitch(target);
 }
 watch(() => props.model.switchingProtagonist, pending => {
@@ -801,8 +813,10 @@ onBeforeUnmount(() => {
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
-      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :recognizes-speaker="recognizesNovelSpeaker" @focus="heldPortrait = $event" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" />
-      <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" @segment="readDialogueSegment" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
+      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :recognizes-speaker="recognizesNovelSpeaker" @focus="heldPortrait = $event" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" @switch-side="switchToOtherSide" />
+      <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
+  :other-side-beats="entry.otherSideBeats" :return-story="entry.returnStory"
+  @segment="readDialogueSegment" @switch-side="switchToOtherSide" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
       <button v-if="hasNewContent && (!novelMode || novelHistory)" class="new-content" @click="jumpToLatest">有新内容 <span aria-hidden="true">↓</span></button>
       <form class="composer" @submit.prevent="submit"><label class="sr-only" for="uc-action-input">接下来，你想做什么？</label><textarea id="uc-action-input" ref="composer" v-model="draft" aria-label="接下来，你想做什么？" rows="1" maxlength="2000" placeholder="写下你的行动，或说一句想说的话……" @keydown.ctrl.enter.prevent="submit"></textarea><button type="submit" :disabled="model.busy || !draft.trim()">{{ model.busy ? '叙事中…' : '继续故事' }} <span aria-hidden="true">↗</span></button></form>
       <p v-if="composerError" class="composer-error" role="alert">{{ composerError }}</p>
