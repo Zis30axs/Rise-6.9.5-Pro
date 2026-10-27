@@ -113,7 +113,7 @@ export interface OtherSideOpportunity {
   eventHints: { calendar: string[]; relationships: string[]; interactionRecentlyOffered: boolean };
 }
 
-const nothing = (probability = OTHER_SIDE_RULES.chance): OtherSideOpportunity => ({
+const nothing = (probability: number = OTHER_SIDE_RULES.chance): OtherSideOpportunity => ({
   allowed: false, probability, sampledCount: 0, groups: [], npcGroups: [],
   eventHints: { calendar: [], relationships: [], interactionRecentlyOffered: false },
 });
