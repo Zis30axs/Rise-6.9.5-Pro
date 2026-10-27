@@ -24,10 +24,11 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
     return code;
   }
   if(relative==='core/peek.js'){
-    code=replaceOnce(code,"before = null}) {","before = null, allowDual = false, realHistory = ''}) {",'dual-speaker prompt args');
+    code=replaceOnce(code,"before = null}) {","before = null, allowDual = false, realHistory = '', realLife = ''}) {",'dual-speaker prompt args');
     code=replaceOnce(code,
       "    ['【' + name + '知道什么】',",
-      "    realHistory.trim() ? '【'+name+'与'+user+'的真实游戏短信】（时间顺序，已存档；不要再写入新聊天记录或改写）\\n'+realHistory.trim() : '',\n"
+      "    realLife.trim() ? '【当前主角的近期真实游戏经历】（此信息仅属于当前主角；不能让 NPC 无端知道）\\n'+realLife.trim() : '',\n"
+      +"    realHistory.trim() ? '【'+name+'与'+user+'的真实游戏短信】（时间顺序，已存档；不要再写入新聊天记录或改写）\\n'+realHistory.trim() : '',\n"
       +"    allowDual ? '【授权的双人短信续写】你可以同时扮演'+user+'和'+name+'。必须在真实短信之后写一到三轮全新的聊天，每轮由'+user+'先发、'+name+'后答；双方各自只知道自己应当知道的事实，不得复制旧短信。生成的新短信会同步写入游戏正式存档；本规则只授权短信，不授权代做购买、转账或剧情行动。' : '',\n"
       +"    ['【' + name + '知道什么】',",
       'inject true NPC SMS history');
@@ -64,8 +65,9 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
       "      const saved=keep ? (await backend.apps.get(peekId(name,key))) || (key ? await backend.apps.get(peekId(name)) : null) : null;",
       "      const before=gameContact ? withoutProtagonistChats(saved) : saved;",
       "      const realHistory=gameContact ? peekCanonicalHistory(world,gameContact) : '';",
+      "      const realLife=gameContact ? [...(world.peekContext?.recentStory||[]).map(row=>row.role+'：'+row.text),...(world.peekContext?.recentJournal||[]).map(row=>row.text)].join('\\n') : '';",
       "      const prompt=buildPeekRequest({preset,before,earlier:memory?.storyMemory()||'',person,story,user,userPersona:activePersona,",
-      "        history,realHistory,allowDual:!!gameContact,memory:remembered,images:!!backend.drawReady(),",
+      "        history,realHistory,realLife,allowDual:!!gameContact,memory:remembered,images:!!backend.drawReady(),",
       "        lore:await lore(preset,[person],story,[realHistory,...history.map(m=>m.text||'')])});",
       "      const found=parsePeek(await ask(ctx,prompt,preset),{name,user});",
       "      if(gameContact){",
