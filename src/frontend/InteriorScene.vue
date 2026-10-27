@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as THREE from 'three';
-import { getCampusInterior, getInteriorMovementWorld, isStudyInteraction, INTERIOR_INTERACTION_RANGE } from '../runtime/campus-interiors';
+import { getCampusInterior, getInteriorMovementWorld, getMlmWorkBlockedReason, isStudyInteraction, INTERIOR_INTERACTION_RANGE } from '../runtime/campus-interiors';
 import { createInteriorWorld } from './scene-interior';
 import { isScenePositionWalkable, moveScenePosition } from './scene-movement';
 import { applyCharacterCamera, createCharacterAssetPool, createScenePlayerCharacter, type CharacterCameraMode, type CharacterModelStatus, type CharacterSnapshot } from './scene-character-assets';
@@ -10,7 +10,7 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { protagonistNames } from '../runtime/protagonist-world';
 
 interface InteriorPresence { roomId: string; x: number; z: number; yaw: number; activityId: string | null }
-const props = withDefaults(defineProps<{ interior: InteriorPresence; hour: number; paused?: boolean; freeWalk?: boolean; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean }>(), { paused: false, freeWalk: false, busy: false, protagonist: 'soyo', phoneActive: false });
+const props = withDefaults(defineProps<{ interior: InteriorPresence; hour: number; paused?: boolean; freeWalk?: boolean; busy?: boolean; protagonist?: ProtagonistId; phoneActive?: boolean; stress?: number }>(), { paused: false, freeWalk: false, busy: false, protagonist: 'soyo', phoneActive: false });
 const emit = defineEmits<{ presence: [point: { x: number; z: number; yaw: number }]; interact: [interactionId: string]; leave: [] }>();
 const room = computed(() => getCampusInterior(props.interior.roomId)!);
 const root = ref<HTMLElement>(), canvas = ref<HTMLCanvasElement>(), joystick = ref<HTMLElement>();
@@ -20,7 +20,8 @@ const characterSnapshot = ref<CharacterSnapshot>({ status: 'idle', modelIds: [],
 const playerStatus = ref<CharacterModelStatus>('idle');
 const objectsOpen = ref(false), view = ref('0.000,-0.080'), position = ref('0.000,1.700,3.800');
 const point = computed(() => { const [x, , z] = position.value.split(',').map(Number); return { x, z }; });
-const objects = computed(() => room.value.interactions.map(item => ({ ...item, distance: Math.hypot(item.x - point.value.x, item.z - point.value.z) })));
+const objects = computed(() => room.value.interactions.map(item => ({ ...item, distance: Math.hypot(item.x - point.value.x, item.z - point.value.z), blockedReason: getMlmWorkBlockedReason(item, props.stress ?? 0) })));
+
 const projected = ref<Record<string, { x: number; y: number; visible: boolean }>>({});
 const stick = ref({ x: 0, y: 0 });
 let win: Window & typeof globalThis, doc: Document;
@@ -161,7 +162,7 @@ function keyup(event: KeyboardEvent) { keys.delete(event.code); flushPresence();
 function keyboardBlur() { keys.clear(); lastWalkAt = 0; flushPresence(); }
 function interact(id: string) {
   if (props.phoneActive || props.paused || props.busy) return;
-  const item = objects.value.find(item => item.id === id); if (!item || item.distance > INTERIOR_INTERACTION_RANGE) return;
+  const item = objects.value.find(item => item.id === id); if (!item || item.distance > INTERIOR_INTERACTION_RANGE || item.blockedReason) return;
   stop(); objectsOpen.value = false; emit('interact', id);
 }
 function approach(id: string) {
@@ -200,9 +201,9 @@ onBeforeUnmount(() => { dead = true; stop(); resizeObserver?.disconnect(); inter
     <div v-show="!paused && !phoneActive" class="interior-hud">
       <div class="interior-title"><span>校园室内</span><strong>{{ room.label }}</strong><small>{{ mode === 'webgl' ? '走近物件后互动' : '静态模式 · 点击走近后互动' }}</small></div>
       <div class="interior-buttons"><button v-if="mode === 'webgl'" type="button" class="character-camera-toggle" :aria-label="cameraMode === 'third-person' ? '切换为第一人称视角' : '切换为第三人称视角'" :disabled="busy" @click="toggleCamera">{{ cameraMode === 'third-person' ? `${protagonistNames[protagonist]} · 第三人称` : '第一人称' }}</button><button type="button" :disabled="busy" data-interior-leave @click="leave">离开{{ room.label }}</button><button v-if="freeWalk || mode === 'fallback'" type="button" aria-label="室内物件" :aria-expanded="objectsOpen" @click="objectsOpen = !objectsOpen">物件 {{ objectsOpen ? '−' : '+' }}</button></div>
-      <div v-if="objectsOpen" class="interior-objects" aria-label="室内互动列表"><p>{{ room.description }}</p><article v-for="item in objects" :key="item.id"><strong>{{ item.label }}<small>{{ Math.round(item.distance) }} 米</small></strong><span>{{ item.id === 'dorm-rest' ? '选择短休、中休或长休，直接结算时间与精力。' : isStudyInteraction(item.id) ? '选择短、中、长三档学习，程序随机确定时长并结算精力。' : item.description }}</span><div><button v-if="mode === 'fallback' && item.distance > INTERIOR_INTERACTION_RANGE" type="button" :disabled="busy" :data-interior-approach="item.id" @click="approach(item.id)">走近{{ item.label }}</button><button type="button" :data-interior-action="item.id" :disabled="busy || item.distance > INTERIOR_INTERACTION_RANGE" @click="interact(item.id)">{{ item.distance > INTERIOR_INTERACTION_RANGE ? '请先走近' : item.label }}<small v-if="item.id === 'dorm-rest'">选择休息时长</small><small v-else-if="isStudyInteraction(item.id)">选择学习时长</small><small v-else>{{ item.minutes }} 分钟{{ item.energyDelta > 0 ? ` · 精力 +${item.energyDelta}` : item.energyDelta < 0 ? ` · 精力 ${item.energyDelta}` : '' }}</small></button></div></article></div>
+      <div v-if="objectsOpen" class="interior-objects" aria-label="室内互动列表"><p>{{ room.description }}</p><article v-for="item in objects" :key="item.id"><strong>{{ item.label }}<small>{{ Math.round(item.distance) }} 米</small></strong><span>{{ item.id === 'dorm-rest' ? '选择短休、中休或长休，直接结算时间与精力。' : isStudyInteraction(item.id) ? '选择短、中、长三档学习，程序随机确定时长并结算精力。' : item.description }}</span><div><button v-if="mode === 'fallback' && item.distance > INTERIOR_INTERACTION_RANGE" type="button" :disabled="busy" :data-interior-approach="item.id" @click="approach(item.id)">走近{{ item.label }}</button><button type="button" :data-interior-action="item.id" :disabled="busy || item.distance > INTERIOR_INTERACTION_RANGE || !!item.blockedReason" :title="item.blockedReason ?? item.description" @click="interact(item.id)">{{ item.distance > INTERIOR_INTERACTION_RANGE ? '请先走近' : item.label }}<small v-if="item.id === 'dorm-rest'">选择休息时长</small><small v-else-if="isStudyInteraction(item.id)">选择学习时长</small><small v-else>{{ item.blockedReason ?? `${item.minutes} 分钟${item.energyDelta > 0 ? ` · 精力 +${item.energyDelta}` : item.energyDelta < 0 ? ` · 精力 ${item.energyDelta}` : ''}` }}</small></button></div></article></div>
     </div>
-    <div v-if="!phoneActive && !paused && !busy && !objectsOpen && mode === 'webgl'" class="interior-hotspots"><button v-for="item in objects" v-show="projected[item.id]?.visible" :key="item.id" type="button" :data-interior-hotspot="item.id" :style="{ left: `${projected[item.id]?.x}%`, top: `${projected[item.id]?.y}%` }" @click="interact(item.id)"><i/>{{ item.label }}<small>{{ item.id === 'dorm-rest' ? '选择休息时长' : isStudyInteraction(item.id) ? '选择学习时长' : `${item.minutes} 分钟` }}</small></button></div>
+    <div v-if="!phoneActive && !paused && !busy && !objectsOpen && mode === 'webgl'" class="interior-hotspots"><button v-for="item in objects" v-show="projected[item.id]?.visible" :key="item.id" type="button" :data-interior-hotspot="item.id" :disabled="!!item.blockedReason" :title="item.blockedReason ?? item.description" :style="{ left: `${projected[item.id]?.x}%`, top: `${projected[item.id]?.y}%` }" @click="interact(item.id)"><i/>{{ item.label }}<small>{{ item.blockedReason ?? (item.id === 'dorm-rest' ? '选择休息时长' : isStudyInteraction(item.id) ? '选择学习时长' : `${item.minutes} 分钟`) }}</small></button></div>
     <div v-if="freeWalk && !phoneActive && !paused && !busy && mode === 'webgl'" class="interior-walk-controls">
       <div ref="joystick" class="interior-joystick" role="group" tabindex="0" aria-label="移动摇杆" data-interior-stick @pointerdown.stop="stickDown" @pointermove.stop="stickMove" @pointerup.stop="stickEnd" @pointercancel="stickEnd" @lostpointercapture="stickEnd" @keydown="keydown" @blur="keyboardBlur"><span aria-hidden="true">↑<br>‹　　　›<br>↓</span><i :style="{ transform: `translate(${stick.x * 32}px, ${stick.y * 32}px)` }"/></div>
       <div class="interior-look" role="group" tabindex="0" aria-label="视角环视区域" data-interior-look @pointerdown.stop="pointerDown" @pointermove.stop="pointerMove" @pointerup.stop="pointerEnd" @pointercancel="pointerEnd" @lostpointercapture="pointerEnd" @keydown="keydown" @blur="keyboardBlur"><span aria-hidden="true">↔</span>拖动环视</div>

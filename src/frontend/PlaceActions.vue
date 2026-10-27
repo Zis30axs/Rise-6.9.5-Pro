@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { canManageLivehouseAndBand, getCampusInterior, isStudyInteraction } from '../runtime/campus-interiors';
+import { canManageLivehouseAndBand, getCampusInterior, getMlmWorkBlockedReason, isStudyInteraction } from '../runtime/campus-interiors';
 import { activeProtagonist } from '../runtime/protagonist-world';
 import { getStoreAvailability } from '../runtime/convenience-store';
 import { getAdjacentLocations } from '../runtime/location-links';
@@ -24,7 +24,8 @@ const activityBlockedReason = (id: string): string | null => {
     const check = canManageLivehouseAndBand(props.model.state, who);
     if (!check.allowed) return check.reason ?? '未选修音乐专业';
   }
-  return null;
+  const item = room.value?.interactions.find(activity => activity.id === id);
+  return item ? getMlmWorkBlockedReason(item, props.model.state.player.stress) : null;
 };
 const activityDisabled = (id: string) => {
   const item = room.value?.interactions.find(activity => activity.id === id);
@@ -41,7 +42,7 @@ const activityDisabled = (id: string) => {
       <div class="place-action-options" tabindex="0" aria-label="此地活动，可左右滚动">
         <button v-for="{ service, quote } in services" :key="service.id" type="button" :data-quick-service="service.id" :disabled="model.busy || !!quote.blockedReason" :title="quote.blockedReason ?? service.description" @click="emit('service', service.id)"><span>{{ service.label }}</span><small>{{ quote.blockedReason ? (status && !status.isOpen ? `开放 ${status.hoursLabel}` : quote.blockedReason) : service.payout ? `工资 ¥${formatGameNumber(service.payout)} · 精力 −${-service.effects.energy} · ${service.minutes} 分钟` : `${service.price ? `¥${formatGameNumber(service.price)}` : '免费'} · ${service.minutes} 分钟` }}</small></button>
         <button v-for="{ service, quote } in takeaways" :key="`pack-${service.id}`" type="button" :data-quick-package-service="service.id" :disabled="model.busy || !!quote.blockedReason" :title="quote.blockedReason ?? '含打包费，放入背包；稍后可使用或送人'" @click="emit('package', service.id)"><span>{{ quote.item?.name }}</span><small>{{ quote.blockedReason ?? `¥${formatGameNumber(quote.totalPrice)} · 含打包费 ¥${quote.packagingFee}` }}</small></button>
-        <button v-for="activity in room?.interactions ?? []" :key="activity.id" type="button" :data-place-activity="activity.id" :disabled="activityDisabled(activity.id)" :title="activityBlockedReason(activity.id) ?? activity.description" @click="emit('activity', activity.id)"><span>{{ activity.label }}</span><small>{{ activityBlockedReason(activity.id) ? '需修读音乐专业' : activity.id === 'dorm-rest' ? '选择休息时长' : isStudyInteraction(activity.id) ? '选择科目与时长' : `${activity.minutes} 分钟${activity.energyDelta < 0 ? ` · 精力 ${activity.energyDelta}` : ''}${activity.balanceDelta ? ` · ¥+${formatGameNumber(activity.balanceDelta)}` : ''}${!activity.energyDelta && !activity.balanceDelta ? ' · 免费' : ''}` }}</small></button>
+        <button v-for="activity in room?.interactions ?? []" :key="activity.id" type="button" :data-place-activity="activity.id" :disabled="activityDisabled(activity.id)" :title="activityBlockedReason(activity.id) ?? activity.description" @click="emit('activity', activity.id)"><span>{{ activity.label }}</span><small>{{ activityBlockedReason(activity.id) ?? (activity.id === 'dorm-rest' ? '选择休息时长' : isStudyInteraction(activity.id) ? '选择科目与时长' : `${activity.minutes} 分钟${activity.energyDelta < 0 ? ` · 精力 ${activity.energyDelta}` : ''}${activity.balanceDelta ? ` · ¥+${formatGameNumber(activity.balanceDelta)}` : ''}${!activity.energyDelta && !activity.balanceDelta ? ' · 免费' : ''}`) }}</small></button>
         <button v-if="storeAvailable" type="button" data-place-store data-store-entry :disabled="model.busy" @click="emit('store')"><span>逛便利店</span><small>货架 · 买入背包</small></button>
         <button v-if="atBookshop" type="button" data-place-books data-book-reading-entry :disabled="model.busy || !status?.isOpen" :title="status?.hoursLabel" @click="emit('books')"><span>选书阅读</span><small>{{ status?.isOpen ? '选择科目与时长' : `开放 ${status?.hoursLabel}` }}</small></button>
         <button v-if="!catalog" type="button" data-place-more @click="emit('more')"><span>{{ services.length || room || storeAvailable || atBookshop ? '查看详情' : '看看此地' }}</span><small>地点与开放时间</small></button>

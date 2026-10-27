@@ -61,6 +61,13 @@ export function getStudyEnergyCost(minutes: number): number {
   return Math.ceil(minutes / 6);
 }
 
+/** High-pressure office work is lucrative briefly but cannot be repeated at maximum stress. */
+export const MLM_WORK_STRESS_LIMIT = 70;
+export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, 'id' | 'balanceDelta'>, stress: number): string | null {
+  if (!interaction.id.startsWith('mlm-') || !interaction.balanceDelta || interaction.balanceDelta <= 0) return null;
+  return stress >= MLM_WORK_STRESS_LIMIT ? `压力过高（${stress}/100），先休息到 ${MLM_WORK_STRESS_LIMIT} 以下再工作。` : null;
+}
+
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
 export const campusInteriors: readonly CampusInterior[] = [
   {
@@ -388,18 +395,18 @@ export const campusInteriors: readonly CampusInterior[] = [
       { id: 'mlm-shelf', kind: 'shelf', minX: 4.2, maxX: 5.4, minZ: -3.0, maxZ: 0.0 },
     ],
     interactions: [
-      { id: 'mlm-phone-sales', label: '拨打推销拉人电话', description: '对着客户名单拨打电销拉人入伙（40 分钟），收入 4000 日元，精力 -8，压力 +25，精神 -8。',
-        x: -3.0, z: 0.8, minutes: 40, energyDelta: -8, balanceDelta: 4000, stressDelta: 25, moraleDelta: -8,
+      { id: 'mlm-phone-sales', label: '拨打推销拉人电话', description: '对着客户名单拨打电销拉人入伙（40 分钟），收入 1600 日元，精力 -12，压力 +25，精神 -10。',
+        x: -3.0, z: 0.8, minutes: 40, energyDelta: -12, balanceDelta: 1600, stressDelta: 25, moraleDelta: -10,
         result: '在工位上机械地拨打推销拉人电话，承受着客户的斥责与内心的煎熬。',
-        prompt: '你在启航商贸工位上拨打了四十分钟推销电话，通过推销分成获得 4000 日元，身心承受了极大的心理压力。' },
-      { id: 'mlm-attend-rally', label: '参加财富早会动员', description: '参加洗脑动员早会（30 分钟），领取早会津贴 1500 日元，精力 -6，压力 +20，精神 -6。',
-        x: 0, z: 1.5, minutes: 30, energyDelta: -6, balanceDelta: 1500, stressDelta: 20, moraleDelta: -6,
+        prompt: '你在启航商贸工位上拨打了四十分钟推销电话，通过推销分成获得 1600 日元，身心承受了极大的心理压力。' },
+      { id: 'mlm-attend-rally', label: '参加财富早会动员', description: '参加洗脑动员早会（30 分钟），领取早会津贴 600 日元，精力 -6，压力 +20，精神 -6。',
+        x: 0, z: 1.5, minutes: 30, energyDelta: -6, balanceDelta: 600, stressDelta: 20, moraleDelta: -6,
         result: '在狂热而诡异的口号声中熬过了早会动员，领到了参会津贴。',
-        prompt: '你在启航商贸参加了半小时财富动员大会，在高分贝口号中获得 1500 日元参会津贴，精神极度紧绷压抑。' },
-      { id: 'mlm-fold-flyers', label: '装订宣讲材料与合同', description: '在长桌旁装订传销话术手册与加盟合同（25 分钟），手工费 2000 日元，精力 -5，压力 +15，精神 -4。',
-        x: 2.8, z: 1.0, minutes: 25, energyDelta: -5, balanceDelta: 2000, stressDelta: 15, moraleDelta: -4,
+        prompt: '你在启航商贸参加了半小时财富动员大会，在高分贝口号中获得 600 日元参会津贴，精神极度紧绷压抑。' },
+      { id: 'mlm-fold-flyers', label: '装订宣讲材料与合同', description: '在长桌旁装订传销话术手册与加盟合同（25 分钟），手工费 800 日元，精力 -8，压力 +15，精神 -5。',
+        x: 2.8, z: 1.0, minutes: 25, energyDelta: -8, balanceDelta: 800, stressDelta: 15, moraleDelta: -5,
         result: '快速装订了厚厚一叠话术材料与空白合同，赚得手工劳务费。',
-        prompt: '你在会议桌旁装订了二十五分钟传销宣讲材料，获得 2000 日元手工费，看着合同上的暴利陷阱感到焦虑不安。' },
+        prompt: '你在会议桌旁装订了二十五分钟传销宣讲材料，获得 800 日元手工费，看着合同上的暴利陷阱感到焦虑不安。' },
       { id: 'mlm-observe-board', label: '观察黑板上的分销图', description: '端详写字板上密密麻麻的层级金字塔与提成机制，不消耗时间或精力。',
         x: 0, z: -3.2, minutes: 0, energyDelta: 0,
         result: '端详了白板上的层级提成图，对这种击鼓传花的运作机制有了直观认识。',

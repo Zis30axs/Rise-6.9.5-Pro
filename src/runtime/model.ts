@@ -18,7 +18,7 @@ import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
-import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
+import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
@@ -1242,6 +1242,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       }
       const formalLivehouse = interaction.id === 'livehouse-booking' || interaction.id === 'livehouse-create-band';
       if (formalLivehouse && !prepareLivehouseInteraction(next, action, worldAuthority ?? next)) return next;
+      const workBlockedReason = getMlmWorkBlockedReason(interaction, next.player.stress);
+      if (workBlockedReason) throw new Error(workBlockedReason);
       if (interaction.energyDelta < 0 && next.player.energy < -interaction.energyDelta) throw new Error('精力不足，请先休息。');
       if (interaction.balanceDelta && interaction.balanceDelta < 0 && next.player.balance < -interaction.balanceDelta) throw new Error(`余额不足，${interaction.label}需要 ${-interaction.balanceDelta} 日元。`);
       if (interaction.balanceDelta && next.player.balance + interaction.balanceDelta > 20_000_000) throw new Error('余额超过存档上限，本轮未结算。');
