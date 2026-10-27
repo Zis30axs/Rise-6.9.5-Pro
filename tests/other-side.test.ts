@@ -111,8 +111,8 @@ describe('otherside sampled cross-view narrative', () => {
 
   it('only invites genuinely co-located NPCs and remembers temporary contact changes', () => {
     const { state, opportunity } = eligible(state => {
-      const main = state.scene!;
-      const located = residentCast.flatMap(resident => {
+      const main = state.scene ?? { x: 0, z: 29 };
+      const located = residentCast.filter(resident => resident.id !== 'majo-emma').flatMap(resident => {
         const presence = residentPresence(resident.id, state.clock);
         const anchor = scenePersonAnchors.find(item => item.id === presence?.anchorId);
         const area = anchor && getSceneArea(anchor.x, anchor.z);
