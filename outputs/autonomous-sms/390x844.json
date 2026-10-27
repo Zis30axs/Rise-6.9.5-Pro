@@ -1,0 +1,16 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "automaticRawCalls": 1,
+  "reloadNoDuplicate": true,
+  "manualReplyCalls": 1,
+  "overflow": {
+    "shell": 0,
+    "document": 0
+  },
+  "errors": [],
+  "blockedExternalOrigins": [],
+  "verification": "controlled local source runtime; no real model or mobile hardware"
+}

@@ -61,16 +61,16 @@ describe('autonomous SMS (SillyTavern)', () => {
     expect(() => parseAutonomousSmsReply('<story>Hi</story>','auto:emma:999')).toThrow();
   });
 
-  it('preserves the reservation timestamp if the player advances time during generation', () => {
+  it('retires old context if the player advances time during generation', () => {
     const state = prepared();
     const task = state.autonomousSms!.pending!;
     const changed = reduceState(state, {type:'wait',minutes:120});
     const reserved = stageAutonomousSms(state,changed,()=>0);
-    expect(reserved.autonomousSms?.pending?.id).toBe(task.id);
-    const delivered = applyAutonomousSms(reserved,task.id,'迟到的背景任务');
-    expect(delivered.protagonists!.npcPhone!.messages.at(-1)!.at).toBe(task.at);
-    expect(delivered.protagonists!.devices.emma.notifications.at(-1)!.at).toBe(task.at);
-    expect(parseState(delivered)).toEqual(delivered);
+    expect(reserved.autonomousSms?.pending).toBeNull();
+    expect(reserved.autonomousSms!.nextAt).toBeGreaterThan(gameMinute(reserved));
+    expect(() => applyAutonomousSms(reserved,task.id,'迟到的背景任务')).toThrow('过期');
+    expect(() => autonomousSmsContext(changed,task.id)).toThrow('过期');
+    expect(parseState(reserved)).toEqual(reserved);
   });
 
   it('limits SMS checks by game clock, not the device clock', () => {
