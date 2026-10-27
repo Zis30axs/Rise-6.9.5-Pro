@@ -1369,7 +1369,15 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
-  const validated = validateGeneratedStory(result, before);
+  const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
+  // A replay is checked against the stored, signed side-effect receipt rather
+  // than re-rolling the probability gate against a state that already advanced.
+  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = result;
+  const validated: GeneratedStory = alreadyCommitted
+    ? { ...validateGeneratedStory(withoutSide, before),
+      ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
+      ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
+    : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
   const settled = applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId);
