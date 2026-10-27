@@ -4,7 +4,7 @@ import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONIST_PERSON_ID_LIST, protagonistPersonId, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames, type PersonalState } from './protagonist-world';
 import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
-import { allResidentCast, residentPresence } from './npc-cast';
+import { allResidentCast } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
 
@@ -66,7 +66,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       people.push({
         id: resident.id, name: contact?.name ?? resident.name, candidateName: resident.name,
         identity: '常驻居民', tags: ['常驻人物'],
-        description: contact?.summary ?? override.status,
+        description: `${contact?.summary ? contact.summary.slice(0, 160) + '；' : ''}${override.status}`,
         x: roomAnchor?.x ?? outdoorAnchor?.x ?? 0, z: roomAnchor?.z ?? outdoorAnchor?.z ?? 0,
         color: 0x859c6d, portraitId: contact?.portraitId ?? characterForPerson(resident.id),
         contactId: contact?.id ?? null, isMain: contact?.isMain ?? false,
