@@ -36,7 +36,7 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
     code=replaceOnce(code,original,swapped,'allow main character NPC chat in peek');
     code=replaceOnce(code,
       "  return [{role: 'system', content: system}, {role: 'user', content: ask}];",
-      "  const extra=allowDual ? '另写【聊天】'+user+'，包含1到3轮新短信，严格每轮'+user+'：一句、'+name+'：一句；每条不超过180字。不能重放已有的短信、不能代人物发起重大剧情决定。' : '';\n"
+      "  const extra=allowDual ? '必须把【聊天】'+user+'放在所有【聊天】段落的第一段（否则可能超出手机最多五个会话的保存限制）。包含1到3轮全新短信，严格每轮'+user+'：一句、'+name+'：一句；每条不超过180字。不能重放已有短信、不能代人物发起重大剧情决定。' : '';\n"
       +"  return [{role: 'system', content: system}, {role: 'user', content: ask+'\\n'+extra}];",
       'require two speakers in peek continuation');
     return code;
