@@ -162,7 +162,12 @@ export interface WorldState {
   contacts: CharacterContact[];
   schedule: { id: string; title: string; locationId: string; time: string; done: boolean }[];
   journal: { id: string; text: string; at: string }[];
-  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[]; otherSideTargets?: import('../runtime/dual-protagonists').ProtagonistId[] }[];
+  story: { id: string; role: 'user' | 'assistant'; text: string; participantIds?: string[];
+    /** Dedicated viewing beats; never mistaken for dialogue the current hero witnessed. */
+    otherSideBeats?: { protagonists: import('../runtime/dual-protagonists').ProtagonistId[]; text: string }[];
+    /** Continuation of the current viewpoint following the simultaneous beat. */
+    returnStory?: string;
+  }[];
 }
 
 export type WorldAction =
@@ -241,6 +246,7 @@ export interface OtherSideEvent {
 
 export interface GeneratedStory {
   otherSide?: OtherSideEvent[];
+  returnStory?: string;
   text: string;
   phoneMessages: { npcId: string; text: string }[];
   worldEvents?: { type: 'airliner_pass' }[];
