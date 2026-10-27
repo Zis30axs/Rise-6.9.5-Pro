@@ -58,7 +58,7 @@ export interface ProtagonistWorld {
   /** Incremented only by saved foreground narrative turns, not by reading or switching. */
   narrativeTurn?: number;
   /** Idempotent committed off-screen events, capped per day and per game-minute cooldown. */
-  otherSideHistory?: { id: string; at: number; turn: number; protagonists: ProtagonistId[] }[];
+  otherSideHistory?: { id: string; at: number; turn: number; protagonists: ProtagonistId[]; payloadHash?: string }[];
   /** Short-lived, explicit NPC locations and activity labels. Only authored resident IDs. */
   otherSideNpc?: Record<string, { locationId: string; at: number; until: number; status: string }>;
   /** Older 1.12 saves receive this lazily at their current world clock. */
@@ -274,11 +274,13 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const narrativeTurn = Object.hasOwn(p, 'narrativeTurn') ? integer(p.narrativeTurn, Number.MAX_SAFE_INTEGER) : 0;
   const now = gameMinute(base);
   const otherSideHistory = Object.hasOwn(p, 'otherSideHistory') ? distinct(array(p.otherSideHistory, 100, raw => {
-    const row = exact(raw, ['id', 'at', 'turn', 'protagonists']);
+    const hasHash = !!raw && typeof raw === 'object' && Object.hasOwn(raw, 'payloadHash');
+    const row = exact(raw, ['id', 'at', 'turn', 'protagonists', ...(hasHash ? ['payloadHash'] : [])]);
     const at = integer(row.at, now), turn = integer(row.turn, narrativeTurn);
     const protagonists = array(row.protagonists, 3, actor);
     if (!protagonists.length || new Set(protagonists).size !== protagonists.length) fail('旁线主角集合无效');
-    return { id: identifier(row.id), at, turn, protagonists };
+    return { id: identifier(row.id), at, turn, protagonists,
+      ...(hasHash ? { payloadHash: string(row.payloadHash, 16) } : {}) };
   })) : [];
   if (otherSideHistory.some((row, index) => index > 0 && (row.at < otherSideHistory[index - 1]!.at || row.turn < otherSideHistory[index - 1]!.turn)))
     fail('旁线事件记录顺序无效');
