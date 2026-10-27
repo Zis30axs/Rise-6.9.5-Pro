@@ -75,4 +75,34 @@ describe('Twiitch player-visible channel text', () => {
     expect(source).toContain('cleanTwiitchStageChrome(stage.contentDocument)');
     expect(source).not.toContain('不会自动调用 LLM');
   });
+
+  it('replaces the embedded demo control-panel acceptance copy without removing actions', () => {
+    const nodes = {
+      '#poseEditorCard .pose-editor-intro': { textContent: '编辑原始 VRM 全部实际骨骼' },
+      '#poseEditorCard .editor-note': { textContent: '本地 XYZ 欧拉角' },
+      '#boneZoneStats': { textContent: '129 个实际骨骼' },
+      '#status span': { textContent: '正在装载模型与骨骼' },
+    };
+    const guides = [
+      { textContent: '打破传统 VRM 呆滞八字型 (A-Pose)' },
+      { textContent: '生理级胸锁呼吸，彻底移除伪呼吸' },
+    ];
+    const headings = [
+      { textContent: '常驻立姿切换' },
+      { textContent: '时间轴仿真控制' },
+      { textContent: '3D 动作互动' },
+    ];
+    const doc = {
+      querySelector: selector => nodes[selector] || null,
+      querySelectorAll: selector => selector === '.control-dock .guide-box' ? guides : headings,
+    };
+    cleanTwiitchStageChrome(doc);
+    for (const node of [...Object.values(nodes), ...guides, ...headings]) {
+      for (const phrase of ['VRM', '仿真控制', '胸锁呼吸', '欧拉角', '实际骨骼']) {
+        expect(node.textContent).not.toContain(phrase);
+      }
+    }
+    expect(headings.map(node => node.textContent)).toEqual(['👘 日常站姿', '⏱️ 观看时段', '🎭 舞台互动']);
+  });
+
 });

@@ -123,6 +123,26 @@ function cleanTwiitchStageChrome(doc) {
   if (creditsPanel) creditsPanel.hidden = true;
   const demoHeader = doc.querySelector('header.page-header');
   if (demoHeader) demoHeader.hidden = true;
+  const replaceText = (selector, value) => {
+    const element = doc.querySelector(selector);
+    if (element) element.textContent = value;
+  };
+  replaceText('#poseEditorCard .pose-editor-intro', '选择喜欢的动作或站姿，拖动画面调整视角，也可以点选部位细调。');
+  replaceText('#poseEditorCard .editor-note', '拖动滑杆或输入角度调整姿势，修改会自动保存。');
+  replaceText('#boneZoneStats', '选择需要调整的部位，拖动控制点即可。');
+  replaceText('#status span', '月读舞台准备中……');
+  for (const box of doc.querySelectorAll?.('.control-dock .guide-box') || []) {
+    if (box.textContent.includes('VRM') || box.textContent.includes('A-Pose')) {
+      box.textContent = '选择喜欢的站姿，欣赏不同的舞台表现。';
+    } else if (box.textContent.includes('胸锁呼吸') || box.textContent.includes('伪呼吸')) {
+      box.textContent = '轻触舞台人物，或使用下方按钮欣赏不同的动作。';
+    }
+  }
+  for (const label of doc.querySelectorAll?.('.control-dock h2 span') || []) {
+    if (label.textContent.includes('常驻立姿切换')) label.textContent = '👘 日常站姿';
+    else if (label.textContent.includes('时间轴仿真控制')) label.textContent = '⏱️ 观看时段';
+    else if (label.textContent.includes('3D 动作互动')) label.textContent = '🎭 舞台互动';
+  }
 }
 function worldApp(ctx,id) {
   const v=createView(ctx,id), api=()=>ctx.win.parent.__unreadCityWorldPhone;
