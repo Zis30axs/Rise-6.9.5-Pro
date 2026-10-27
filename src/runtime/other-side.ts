@@ -268,6 +268,10 @@ function crossViewTextMessage(state: WorldState, eventId: string, from: Protagon
   sender.journal = sender.journal.slice(-100);
 }
 
+/** Stable short signature includes ALL executable fields, not only the prose shown in a story. */
+const payloadHash = (events: readonly OtherSideEvent[], returnStory?: string) =>
+  hash(JSON.stringify({ events, returnStory: returnStory ?? null })).toString(36);
+
 /**
  * Commit AFTER the foreground actions and automatic-life settlement.
  * All mutations occur on a private copy; the caller validates and persists once.
@@ -280,8 +284,10 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
   if (existing) {
     const original = existing.otherSideBeats ?? [];
     const requested = events.map(event => ({ protagonists: event.protagonists, text: event.text }));
+    const receipt = before.protagonists?.otherSideHistory?.find(row => row.id === turnId);
     if (JSON.stringify(original) !== JSON.stringify(requested)
-      || (existing.returnStory ?? '') !== (returnStory ?? ''))
+      || (existing.returnStory ?? '') !== (returnStory ?? '')
+      || (receipt?.payloadHash && receipt.payloadHash !== payloadHash(events, returnStory)))
       throw new Error('重复剧情 ID 的旁线内容不同；未重新结算');
     // Replays, including a normal turn with NO side event, do not advance the
     // chance scheduler or duplicate history, SMS, story or NPC writes.
@@ -294,7 +300,8 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
   const opportunity = otherSideOpportunity(before);
   if (!opportunity.allowed) throw new Error('旁线机会已失效，本轮未保存');
   const time = gameMinute(next), receipt = { id: turnId, at: time, turn: oldTurn + 1,
-    protagonists: [...new Set(events.flatMap(event => event.protagonists))] };
+    protagonists: [...new Set(events.flatMap(event => event.protagonists))],
+    payloadHash: payloadHash(events, returnStory) };
   const eventIds = new Set<string>();
   const beat: NonNullable<WorldState['story'][number]['otherSideBeats']> = [];
   for (const [index, event] of events.entries()) {
