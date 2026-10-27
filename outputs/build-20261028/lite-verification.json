@@ -1,0 +1,12 @@
+{
+  "status": "passed-build-only-not-tested-on-iphone",
+  "liteCardBytes": 9709046,
+  "liteCardSha256": "34a5753d7c336be9c98e38a8e459de951d948bb3a2f068bf94f77723b314ed8e",
+  "liteBundleBytes": 17160346,
+  "zipBytes": 62519216,
+  "zipSha256": "c70f9df5750bf610aa00688adea077e6b883b0297c18cedbf2f1f76cc385f09a",
+  "externalAssets": 130,
+  "approvedNewArtExternalized": 18,
+  "offline": true,
+  "physicalDeviceTested": false
+}

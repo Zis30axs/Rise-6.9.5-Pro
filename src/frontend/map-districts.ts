@@ -13,7 +13,7 @@ export const mapDistricts = [
   { id: 'commercial', name: '池袋／东池袋', shortName: '池袋商业区', description: '商业街、居民住处与池袋接驳站。', x: 180, z: 150 },
   { id: 'downtown', name: '目白／目白台', shortName: '目白台住宅区', description: '丰川家、二阶堂家与目白台接驳站。', x: -20, z: 185 },
   { id: 'city-park', name: '神田川沿岸绿道', shortName: '神田川沿岸', description: '河岸绿道、公园、住处与接驳站。', x: 180, z: -150 },
-  { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House 与 KTV 娱乐中心的繁华都会沙盘。', x: -180, z: -150 },
+  { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House、KTV 娱乐中心与商务写字楼的繁华都会沙盘。', x: -180, z: -150 },
 ] as const;
 
 export function isMapDistrict(value: string): value is MapDistrictId {

@@ -45,7 +45,7 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
   commercial: '池袋／东池袋的室外步行广场；可见商场店面、街道和池袋接驳站，尚未进入商场。',
   downtown: '目白／目白台的街道与步行空间；可见目白台接驳站、商店和丰川家的外部建筑。丰川家私人区域并非公共场所，尚未进入。',
   'city-park': '神田川沿岸的室外绿地与步道；可见树木、休憩区域和神田川绿道站。',
-  'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、Live House 入口与 KTV 娱乐城，尚未进入店内。',
+  'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、写字楼商务中心、Live House 入口与 KTV 娱乐城，尚未进入店内。',
   'city-roads': '连接校园与远处住宅区、商业区、公园的室外道路；可见路面、人行道与过往车辆。',
 };
 

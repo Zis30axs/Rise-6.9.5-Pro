@@ -1243,17 +1243,23 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const formalLivehouse = interaction.id === 'livehouse-booking' || interaction.id === 'livehouse-create-band';
       if (formalLivehouse && !prepareLivehouseInteraction(next, action, worldAuthority ?? next)) return next;
       if (interaction.energyDelta < 0 && next.player.energy < -interaction.energyDelta) throw new Error('精力不足，请先休息。');
-      if (interaction.minutes === 0 && interaction.energyDelta === 0 && next.interior.activityId === interaction.id) return next;
+      if (interaction.balanceDelta && interaction.balanceDelta < 0 && next.player.balance < -interaction.balanceDelta) throw new Error(`余额不足，${interaction.label}需要 ${-interaction.balanceDelta} 日元。`);
+      if (interaction.balanceDelta && next.player.balance + interaction.balanceDelta > 20_000_000) throw new Error('余额超过存档上限，本轮未结算。');
+      if (interaction.minutes === 0 && interaction.energyDelta === 0 && !interaction.balanceDelta && !interaction.stressDelta && !interaction.moraleDelta && next.interior.activityId === interaction.id) return next;
       const playerBefore = { ...next.player };
       advance(next, interaction.minutes);
       next.player.energy = adjustEnergy(next.player.energy, interaction.energyDelta);
+      if (interaction.balanceDelta) next.player.balance += interaction.balanceDelta;
+      if (interaction.stressDelta) next.player.stress = Math.max(0, Math.min(100, next.player.stress + interaction.stressDelta));
+      if (interaction.moraleDelta) next.player.morale = Math.max(0, Math.min(100, next.player.morale + interaction.moraleDelta));
       if (interaction.id === 'dorm-desk') applyActivityEffects(next, 'desk', interaction.minutes);
       if (interaction.id === 'study-shelf') applyActivityEffects(next, 'bookshelf', interaction.minutes);
       if (interaction.id === 'nikaido-kendo-practice') applyActivityEffects(next, 'practice', interaction.minutes);
       next.interior.activityId = interaction.id;
       next.interior.lastRest = null;
       next.interior.lastStudy = null;
-      note(next, `${formalLivehouse ? livehouseReceipt(worldAuthority ? { ...next, protagonists: worldAuthority.protagonists } : next, action) : interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。'}`);
+      const balanceNote = interaction.balanceDelta ? `余额${interaction.balanceDelta > 0 ? '+' : ''}${interaction.balanceDelta} 日元。` : '';
+      note(next, `${formalLivehouse ? livehouseReceipt(worldAuthority ? { ...next, protagonists: worldAuthority.protagonists } : next, action) : interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${balanceNote}${activityChangeNote(playerBefore, next.player)}` : (balanceNote ? ` ${balanceNote}${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。')}`);
       break;
     }
     case 'interior_rest': {

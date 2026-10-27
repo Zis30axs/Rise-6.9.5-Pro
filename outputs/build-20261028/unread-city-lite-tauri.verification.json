@@ -1,0 +1,17 @@
+{
+  "sourceBytes": 25908383,
+  "bytes": 9709046,
+  "sourceSha256": "102385106b7319e4136dc27fbf420254b0dfedf9ec30313e8af52dd020181a20",
+  "sha256": "34a5753d7c336be9c98e38a8e459de951d948bb3a2f068bf94f77723b314ed8e",
+  "metadataEncoding": "zTXt/chara/zlib-method-0",
+  "metadataTextBytes": 23465768,
+  "compressedMetadataBytes": 7266430,
+  "metadataTextSha256": "dc3d8a0f7d5e3977e6cd35105360c30ccc1224faaddcb5628d49e8cc0c729402",
+  "decompressedMetadataByteIdentical": true,
+  "allOtherPngChunksByteIdentical": true,
+  "embeddedScriptChanged": false,
+  "tauriNativeImportTested": false,
+  "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern.",
+  "source": "D:\\.study\\cc\\dist\\unread-city-lite.png",
+  "artifact": "D:\\.study\\cc\\dist\\unread-city-lite-tauri.png"
+}

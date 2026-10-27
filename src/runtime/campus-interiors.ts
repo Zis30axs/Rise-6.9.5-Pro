@@ -13,6 +13,9 @@ export interface InteriorObstacle {
 export interface InteriorInteraction {
   id: string; label: string; description: string;
   x: number; z: number; minutes: number; energyDelta: number;
+  balanceDelta?: number;
+  stressDelta?: number;
+  moraleDelta?: number;
   result: string; prompt: string;
 }
 export interface BedRestOption extends InteriorInteraction {
@@ -373,6 +376,34 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: -3.6, z: -1.0, minutes: 20, energyDelta: 6, result: '在 KTV 包厢舒适的沙发上放松休息了二十分钟。', prompt: '你在 KTV 包厢沙发上休息了二十分钟，程序已恢复至多 6 点精力。' },
       { id: 'ktv-observe', label: '看看点歌系统', description: '浏览点歌机上的热榜曲目与伴奏音轨，不消耗时间或精力。',
         x: 0, z: 2.8, minutes: 0, energyDelta: 0, result: '查看了 KTV 点歌机界面的热门新歌榜单。', prompt: '你查看了 KTV 点歌机界面。' },
+    ],
+  },
+  {
+    id: 'mlm-office', label: '启航商贸（传销咨询）', parentLocationId: 'grand-commercial',
+    description: '商务写字楼高层的商贸咨询办公室。墙上贴满业绩龙虎榜与金字塔分销架构图，茶水桌上堆着宣讲手册与空白加盟合同，空气中弥漫着急功近利的焦躁氛围。',
+    entrance: { x: -150, z: -170, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'mlm-board', kind: 'board', minX: -3.5, maxX: 3.5, minZ: -4.8, maxZ: -4.5 },
+      { id: 'mlm-desk', kind: 'desk', minX: -2.0, maxX: 2.0, minZ: -1.8, maxZ: -0.5 },
+      { id: 'mlm-shelf', kind: 'shelf', minX: 4.2, maxX: 5.4, minZ: -3.0, maxZ: 0.0 },
+    ],
+    interactions: [
+      { id: 'mlm-phone-sales', label: '拨打推销拉人电话', description: '对着客户名单拨打电销拉人入伙（40 分钟），收入 4000 日元，精力 -8，压力 +25，精神 -8。',
+        x: -3.0, z: 0.8, minutes: 40, energyDelta: -8, balanceDelta: 4000, stressDelta: 25, moraleDelta: -8,
+        result: '在工位上机械地拨打推销拉人电话，承受着客户的斥责与内心的煎熬。',
+        prompt: '你在启航商贸工位上拨打了四十分钟推销电话，通过推销分成获得 4000 日元，身心承受了极大的心理压力。' },
+      { id: 'mlm-attend-rally', label: '参加财富早会动员', description: '参加洗脑动员早会（30 分钟），领取早会津贴 1500 日元，精力 -6，压力 +20，精神 -6。',
+        x: 0, z: 1.5, minutes: 30, energyDelta: -6, balanceDelta: 1500, stressDelta: 20, moraleDelta: -6,
+        result: '在狂热而诡异的口号声中熬过了早会动员，领到了参会津贴。',
+        prompt: '你在启航商贸参加了半小时财富动员大会，在高分贝口号中获得 1500 日元参会津贴，精神极度紧绷压抑。' },
+      { id: 'mlm-fold-flyers', label: '装订宣讲材料与合同', description: '在长桌旁装订传销话术手册与加盟合同（25 分钟），手工费 2000 日元，精力 -5，压力 +15，精神 -4。',
+        x: 2.8, z: 1.0, minutes: 25, energyDelta: -5, balanceDelta: 2000, stressDelta: 15, moraleDelta: -4,
+        result: '快速装订了厚厚一叠话术材料与空白合同，赚得手工劳务费。',
+        prompt: '你在会议桌旁装订了二十五分钟传销宣讲材料，获得 2000 日元手工费，看着合同上的暴利陷阱感到焦虑不安。' },
+      { id: 'mlm-observe-board', label: '观察黑板上的分销图', description: '端详写字板上密密麻麻的层级金字塔与提成机制，不消耗时间或精力。',
+        x: 0, z: -3.2, minutes: 0, energyDelta: 0,
+        result: '端详了白板上的层级提成图，对这种击鼓传花的运作机制有了直观认识。',
+        prompt: '你仔细观察了启航商贸白板上的分销层级图，未消耗时间或精力。' },
     ],
   },
 ];

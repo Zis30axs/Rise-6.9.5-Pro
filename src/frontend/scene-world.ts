@@ -87,6 +87,7 @@ export const streetRoutes: Record<string, StreetNode[]> = {
     { label: '大型商业区接驳站', position: [-180, 1.7, -150], yaw: 0 },
     { label: 'Live House 门前广场', position: [-155, 1.7, -135], yaw: 0 },
     { label: 'KTV 娱乐城门前', position: [-205, 1.7, -135], yaw: 0 },
+    { label: '启航商贸写字楼门前', position: [-150, 1.7, -170], yaw: 0 },
   ],
 };
 

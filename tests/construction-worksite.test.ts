@@ -15,6 +15,13 @@ function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   state.locationId = 'construction-site';
   state.scene = null;
   state.player.energy = 95;
+  if (state.protagonists?.backgroundLife) {
+    const minute = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
+    state.protagonists.backgroundLife.cursor = minute;
+    for (const p of Object.values(state.protagonists.backgroundLife.people)) {
+      p.nextDecisionAt = Math.max(p.nextDecisionAt, minute);
+    }
+  }
   return parseState(state);
 }
 
