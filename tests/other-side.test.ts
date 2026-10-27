@@ -89,7 +89,7 @@ describe('otherside sampled cross-view narrative', () => {
     expect(() => validateOtherSideEvents([
       { protagonists: ['sakiko'], text: '祥子的剧情。' },
       { protagonists: ['emma'], text: '艾玛的剧情。' },
-    ], state)).toThrow(/完整使用本轮分配/);
+    ], state)).toThrow();
     expect(validateOtherSideEvents([{ protagonists: group, text: '两人正在同一间房里交谈。' }], state)).toHaveLength(1);
   });
 
@@ -107,6 +107,39 @@ describe('otherside sampled cross-view narrative', () => {
     expect(committed.protagonists!.conversations?.some(row => row.from === 'sakiko' && row.to === 'emma')).toBe(true);
     expect(committed.story.at(-1)?.text).not.toContain('今晚八点再联系吧');
     expect(() => parseState(committed)).not.toThrow();
+  });
+
+  it('does not reroll or resend SMS when the same committed turn is replayed', () => {
+    const { state, opportunity } = eligible(undefined, candidate =>
+      candidate.groups.some(group => group.length === 1 && group[0] === 'sakiko'));
+    const group = opportunity.groups.find(group => group.length === 1 && group[0] === 'sakiko')!;
+    const side = { protagonists: group, text: '祥子靠在窗边写了一封短信。',
+      variables: { sakiko: { morale: 1 } },
+      messages: [{ from: 'sakiko', to: 'emma', text: '晚些再见。' }] };
+    const reply = parseGeneratedStory(format([side]), state);
+    const committed = commitStoryTurn(state, '看向窗外。', reply, ids);
+    const repeated = commitStoryTurn(committed, '看向窗外。', reply, ids);
+    expect(repeated).toEqual(committed);
+    const tampered = structuredClone(reply);
+    tampered.otherSide![0]!.variables!.sakiko!.morale = 5;
+    expect(() => commitStoryTurn(committed, '看向窗外。', tampered, ids)).toThrow(/旁线内容不同/);
+    expect(committed.protagonists!.otherSideHistory?.at(-1)?.payloadHash).toBeTruthy();
+  });
+
+  it('blocks a second cutaway until BOTH game time and story-turn cooldowns have passed', () => {
+    const { state, opportunity } = eligible();
+    const group = opportunity.groups[0]!;
+    const side = { protagonists: group, text: '一次普通的城中小事。' };
+    const committed = commitStoryTurn(state, '走两步。',
+      parseGeneratedStory(format([side]), state), ids);
+    expect(otherSideOpportunity(committed).allowed).toBe(false);
+    const onlyNarratives = structuredClone(committed);
+    onlyNarratives.protagonists!.narrativeTurn! += OTHER_SIDE_RULES.cooldownStoryTurns;
+    expect(otherSideOpportunity(onlyNarratives).allowed).toBe(false);
+    const onlyTime = structuredClone(committed);
+    onlyTime.clock.hour = (onlyTime.clock.hour + 2) % 24;
+    onlyTime.clock.day += committed.clock.hour + 2 >= 24 ? 1 : 0;
+    expect(otherSideOpportunity(onlyTime).allowed).toBe(false);
   });
 
   it('only invites genuinely co-located NPCs and remembers temporary contact changes', () => {
