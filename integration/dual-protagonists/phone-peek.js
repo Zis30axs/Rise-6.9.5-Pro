@@ -12,11 +12,23 @@ export function peekWorldContact(world, name) {
   return world?.npcPhone?.contacts?.find(c => c.name === name) || null;
 }
 
+function historicalGameMinute(stamp) {
+  const match = /^第 (\d+) 天 (\d\d):(\d\d)$/.exec(String(stamp || ''));
+  return match ? (Number(match[1])-1)*1440+Number(match[2])*60+Number(match[3]) : 0;
+}
+
 export function peekCanonicalMessages(world, contact) {
   if (!world || !contact) return [];
-  return (world.npcPhone?.messages || [])
-    .filter(m => m.owner === world.owner && m.channel === 'npc' && m.targetId === contact.id)
-    .sort((a,b) => a.at - b.at || a.id.localeCompare(b.id));
+  const canonical=(world.npcPhone?.messages || [])
+    .filter(m => m.owner === world.owner && m.channel === 'npc' && m.targetId === contact.id);
+  const canonicalIds=new Set(canonical.map(m=>m.id));
+  // Main-story phone_messages and older saves keep incoming SMS in the player's
+  // legacy inbox, not necessarily in npcPhone.messages. Mirror worldMessageRows.
+  const legacy=(world.messages || [])
+    .filter(m => m.npcId === contact.contactId && !canonicalIds.has(m.id))
+    .map(m=>({id:m.id,owner:world.owner,channel:'npc',targetId:contact.id,
+      direction:'incoming',text:m.text,at:historicalGameMinute(m.at),legacy:true}));
+  return [...canonical,...legacy].sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
 }
 
 export function peekCanonicalHistory(world, contact) {
