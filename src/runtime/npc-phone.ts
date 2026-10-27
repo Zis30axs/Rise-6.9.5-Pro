@@ -470,6 +470,47 @@ export function applyNpcPhoneReply(state: WorldState, messageId: string, raw: st
   return s;
 }
 
+/**
+ * Commit model-developed, two-speaker NPC SMS as real game messages in one
+ * versioned phone transaction. Each pair is an outgoing protagonist message
+ * with its NPC reply, so existing save validation, inboxes and story context
+ * continue to use the same authoritative format.
+ */
+export function appendPeekChat(s: WorldState, who: ProtagonistId, npcId: string,
+  turns: {speaker:'protagonist'|'npc';text:string}[], requestId: string): void {
+  if (who !== activeProtagonist(s)) return fail('只能为当前主角发展手机聊天');
+  const contact = contactFor(s, who, npcId);
+  if (!contact) return fail('尚未和此人交换联系方式');
+  if (!Array.isArray(turns) || turns.length < 2 || turns.length > 6 || turns.length % 2 !== 0)
+    return fail('双方短信必须为一至三轮完整对话');
+  for (let i=0;i<turns.length;i++) {
+    const row=turns[i]!;
+    if (row.speaker !== (i%2===0?'protagonist':'npc') || row.text.length > 180) return fail('双方短信格式无效');
+    text(row.text,180);
+  }
+  const social=ensure(s), pairs=turns.length/2;
+  if (social.messages.length+turns.length > 10000) return fail('短信历史达到存档上限');
+  if (s.phone.length+pairs > 200) return fail('短信收件箱已满');
+  const at=gameMinute(s);
+  const stamp='第 '+s.clock.day+' 天 '+String(s.clock.hour).padStart(2,'0')+':'+String(s.clock.minute).padStart(2,'0');
+  // Any older pending request in this exact thread is superseded by the
+  // model's completed conversation, except for an unanswered band invitation.
+  for (const previous of social.messages) {
+    if (previous.owner!==who || previous.channel!=='npc' || previous.targetId!==npcId
+      || previous.direction!=='outgoing' || previous.status!=='pending'
+      || s.livehouse?.invitations.some(invite=>invite.messageId===previous.id && invite.status==='pending')) continue;
+    previous.status='silent';
+  }
+  for (let i=0;i<turns.length;i+=2) {
+    const sent=turns[i]!,received=turns[i+1]!,sentId='npc:peek:'+requestId+':'+(i/2),replyId=sentId+':reply';
+    social.messages.push({id:sentId,owner:who,channel:'npc',targetId:npcId,direction:'outgoing',
+      speakerId:who,responderId:npcId,text:sent.text,at,replyTo:null,status:'answered'});
+    social.messages.push({id:replyId,owner:who,channel:'npc',targetId:npcId,direction:'incoming',
+      speakerId:npcId,responderId:null,text:received.text,at,replyTo:sentId,status:'answered'});
+    s.phone.push({id:replyId,npcId:contact.id,text:received.text,read:false,at:stamp});
+  }
+}
+
 export function npcPhoneView(s: WorldState, who: ProtagonistId) {
   const social = s.protagonists?.npcPhone ?? empty();
   const ownGroups = effectiveGroups(social, who).filter(g => g.owner === who);

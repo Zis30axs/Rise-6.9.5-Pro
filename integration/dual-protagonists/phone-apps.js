@@ -4,7 +4,7 @@ import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
 import {renderWorldMessenger,worldMessageRows,renderBandPanel} from 'UNREAD_CITY_PHONE_CHAT';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
-const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查手机',worldmessages:'消息',twiitch:'Twiitch'};
+const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查主角手机',worldmessages:'消息',twiitch:'Twiitch'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
 // The same UTC day-1 anchor as src/runtime/game-calendar.ts. Host clock stays authoritative.

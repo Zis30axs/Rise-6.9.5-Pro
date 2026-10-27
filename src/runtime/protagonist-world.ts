@@ -1,5 +1,5 @@
 import { parseBandInviteCommand, sendBandInvitation, musicPersonId, type BandInviteCommand } from './livehouse';
-import { applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
+import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
@@ -70,6 +70,7 @@ export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'calendar_save'; id: string; title: string; locationId: string; start: number; duration: number }
   | { type: 'calendar_delete'; id: string }
   | { type: 'send_message'; to?: ProtagonistId; text: string }
+  | { type: 'peek_chat_append'; npcId: string; lines: { speaker: 'protagonist' | 'npc'; text: string }[] }
   | { type: 'read_notifications' };
 
 export const activeProtagonist = (s: WorldState): ProtagonistId => s.protagonists?.accounts.active ?? 'soyo';
@@ -425,7 +426,20 @@ function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
   if (type === 'band_invite') return parseBandInviteCommand(raw);
   if (type === 'send_npc_message' || type === 'send_group_message' || type === 'resolve_contact_request') return parseNpcPhoneCommand(raw);
-  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'band_invite'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
+  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'peek_chat_append' | 'band_invite'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
+  if(type==='peek_chat_append'){
+    const c=exact(raw,['type','npcId','lines']);
+    const lines=array(c.lines,6,item=>{
+      const row=exact(item,['speaker','text']);
+      if(row.speaker!=='protagonist'&&row.speaker!=='npc')fail('短信发言者无效');
+      const value=messageText(row.text);
+      if(value.length>180)fail('生成短信长度超限');
+      return {speaker:row.speaker as 'protagonist'|'npc',text:value};
+    });
+    if(lines.length<2||lines.length%2!==0||lines.some((row,i)=>row.speaker!==(i%2===0?'protagonist':'npc')))
+      fail('双方短信必须轮流发言并以主角开头');
+    return {type,npcId:identifier(c.npcId),lines};
+  }
   if(type==='send_message'){
     const keys=Object.keys(raw as object).sort().join(',');
     if(keys==='text,type') return {type,text:messageText((raw as {text:unknown}).text)};
@@ -470,13 +484,14 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
   if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
-  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
+  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite','peek_chat_append'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
     case 'band_invite': sendBandInvitation(s, command, requestId); break;
+    case 'peek_chat_append': appendPeekChat(s, owner, command.npcId, command.lines, requestId); break;
     case 'send_npc_message':
     case 'send_group_message':
     case 'resolve_contact_request':
