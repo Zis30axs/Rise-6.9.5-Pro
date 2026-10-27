@@ -3,6 +3,7 @@ import { isProtagonistId } from './dual-protagonists';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { campusInteriors } from './campus-interiors';
 import { sceneLocationId } from './scene-context';
+import { otherSideOpportunity } from './other-side';
 import { validateContactProposals } from './npc-phone';
 import { validateStoryActions } from './story-actions';
 export { STORY_ACTION_LIMITS } from './story-actions';
@@ -43,31 +44,45 @@ const OTHER_SIDE_LOCATIONS = new Set([
 ]);
 
 /** An off-screen narrative is executable only through this narrow whitelist. */
+/** Off-screen events are authorized again against the deterministic opportunity at commit. */
 export function validateOtherSideEvents(value: unknown, state: WorldState): OtherSideEvent[] {
   if (!Array.isArray(value) || value.length > STORY_OUTPUT_LIMITS.otherSideEvents) return invalid('otherside 事件数量');
-  if (value.length && !state.protagonists) return invalid('otherside 需要已启用多主角存档');
+  if (!value.length) return [];
+  const opportunity = otherSideOpportunity(state);
+  if (!opportunity.allowed) return invalid('otherside 本轮尚未获得旁线机会');
+  if (value.length > opportunity.groups.length) return invalid('otherside 超过本轮允许的旁线分组');
   const used = new Set<string>();
   return value.map((raw, index) => {
     const path = `otherside 第 ${index + 1} 项`;
-    const item = record(raw, ['protagonist', 'text'], path, ['locationId', 'variables']);
-    if (!isProtagonistId(item.protagonist) || item.protagonist === state.protagonists?.accounts.active || used.has(item.protagonist))
-      return invalid(`${path} 必须是本轮尚未使用的非当前主角 ID`);
-    const protagonist = item.protagonist;
-    used.add(protagonist);
-    const result: OtherSideEvent = { protagonist, text: text(item.text, STORY_OUTPUT_LIMITS.otherSideText, `${path} 剧情`) };
+    const item = record(raw, ['protagonists', 'text'], path, ['locationId', 'variables']);
+    if (!Array.isArray(item.protagonists) || !item.protagonists.length || item.protagonists.length > 3) return invalid(`${path} 主角列表`);
+    if (item.protagonists.some(id => !isProtagonistId(id) || id === state.protagonists?.accounts.active || used.has(id)))
+      return invalid(`${path} 必须使用尚未出现的非当前主角 ID`);
+    const protagonists = item.protagonists as OtherSideEvent['protagonists'];
+    const group = opportunity.groups.find(group => group.length === protagonists.length && group.every(id => protagonists.includes(id)));
+    if (!group) return invalid(`${path} 必须完整使用本轮分配的同场主角分组，不得拆成两个标签`);
+    protagonists.forEach(id => used.add(id));
+    const result: OtherSideEvent = { protagonists: [...group], text: text(item.text, STORY_OUTPUT_LIMITS.otherSideText, `${path} 剧情`) };
     if (Object.hasOwn(item, 'locationId')) {
       if (typeof item.locationId !== 'string' || !OTHER_SIDE_LOCATIONS.has(item.locationId)) return invalid(`${path} 地点`);
       result.locationId = item.locationId;
     }
     if (Object.hasOwn(item, 'variables')) {
-      const variables = record(item.variables, [], `${path} 变量`, OTHER_SIDE_VARIABLE_KEYS);
+      const variables = record(item.variables, [], `${path} 变量`, protagonists);
       if (!Object.keys(variables).length) return invalid(`${path} 变量不能为空`);
       result.variables = {};
-      for (const key of OTHER_SIDE_VARIABLE_KEYS) {
-        if (!Object.hasOwn(variables, key)) continue;
-        const value = variables[key], bound = key === 'foodEnergy' ? 300 : 20;
-        if (typeof value !== 'number' || !Number.isInteger(value) || Math.abs(value) > bound) return invalid(`${path} 变量 ${key} 越界`);
-        result.variables[key] = value;
+      for (const id of protagonists) {
+        if (!Object.hasOwn(variables, id)) continue;
+        const changes = record(variables[id], [], `${path} ${id} 变量`, OTHER_SIDE_VARIABLE_KEYS);
+        if (!Object.keys(changes).length) return invalid(`${path} ${id} 变量不能为空`);
+        const parsed: NonNullable<OtherSideEvent['variables']>[typeof id] = {};
+        for (const key of OTHER_SIDE_VARIABLE_KEYS) {
+          if (!Object.hasOwn(changes, key)) continue;
+          const amount = changes[key], bound = key === 'foodEnergy' ? 300 : 20;
+          if (typeof amount !== 'number' || !Number.isInteger(amount) || Math.abs(amount) > bound) return invalid(`${path} 变量 ${key} 越界`);
+          parsed[key] = amount;
+        }
+        result.variables[id] = parsed;
       }
     }
     return result;
