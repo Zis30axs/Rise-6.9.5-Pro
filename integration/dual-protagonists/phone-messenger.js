@@ -6,15 +6,17 @@ const CHAT_STYLE = '<style>'
   + '.uc-conv-list{margin-top:8px}.uc-portrait{display:grid;place-items:center;flex-shrink:0;width:48px;height:48px;border-radius:17px;background:var(--accent-soft);color:var(--accent-ink);font-size:18px;font-weight:900}'
   + '.uc-requests{margin:14px 12px;padding:10px 12px;border-radius:18px;background:var(--card2)}.uc-requests article{padding:8px 0;border-bottom:1px solid var(--line)}.uc-requests article:last-child{border:0}'
   + '.uc-requests p{margin:4px 0;font-size:12px;line-height:1.5}.uc-requests .actions{display:flex;gap:8px;flex-wrap:wrap}'
-  + '.uc-thread .th-head{padding-top:8px}.uc-thread .th-title small{white-space:normal;line-height:1.45}'
+  + '.uc-thread .th-head{padding-top:8px}'
   + '.uc-thread .msgs{padding-bottom:18px;-webkit-overflow-scrolling:touch}.uc-thread .chat-bubble{white-space:pre-wrap}'
   + '.uc-meta{font-size:11px;color:var(--ink2);max-width:100%;white-space:nowrap;padding:2px 6px}'
   + '.uc-reply-tools{flex-shrink:0;display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding:7px 10px;background:var(--card2);border-top:1px solid var(--line)}'
   + '.uc-reply-tools button{min-height:36px;padding:6px 10px;border-radius:16px;font-size:12px}.uc-reply-tools button:disabled{opacity:.4}'
-  + '.uc-tool-hint{flex:1;font-size:11px;color:var(--ink2)}.uc-thread .uc-composer{padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}'
+  + '.uc-thread .uc-composer{padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}'
   + '.uc-composer textarea.field-in{resize:none;min-height:44px;max-height:90px;padding:10px 13px;border-radius:16px;line-height:1.35}'
   + '.uc-composer button{flex-shrink:0;min-height:44px;border-radius:16px;padding:8px 12px}.uc-thread .msg{max-width:92%}'
   + '.uc-thread .chat-bubble{max-width:100%;font-size:14px}.uc-thread .msgs .sys{font-size:11px}'
+  + '.uc-scene-handoff{display:grid;justify-items:center;gap:7px;width:min(88%,300px);box-sizing:border-box;margin:14px auto;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--card2);text-align:center;line-height:1.5}'
+  + '.uc-scene-handoff strong{font-size:12px;color:inherit}.uc-scene-handoff small{font-size:11px;color:var(--ink2)}.uc-scene-handoff button{min-height:40px;padding:8px 12px;border-radius:15px;max-width:100%;white-space:normal}'
   + '@media(max-width:360px){.uc-reply-tools{gap:4px;padding:6px}.uc-reply-tools button{font-size:11px;padding:6px 8px}.uc-composer button{padding:8px 10px}}'
   + '</style>';
 
@@ -84,7 +86,7 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     }).join('');
     return {recipient:chosen,replyId:null,html:CHAT_STYLE+heading('消息','','Messages')
       + '<div class="uc-phone-header"><small>'+esc(data.name)+' · '+esc(time(data.now))
-      + ' · 发送不会自动请求模型</small></div>'+reqHTML
+      + '</small></div>'+reqHTML
       + btn('open-bands','我的乐队 · 名册与邀请','secondary')
       + '<div class="conv-list uc-conv-list" role="list">'+(list||'<p class="chat-empty">暂无可联系的角色</p>')+'</div>'};
   }
@@ -100,29 +102,32 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
       ? m.receipt==='read' ? '✓✓ 已读' : '✓ 已送达'
       : '';
     const covered=outgoing && m.replyTo===null && index<lastRepliedIndex && (m.status==='silent' || m.expectsReply===false);
-    const status=covered ? ' · 已由后续回复承接' : outgoing && m.status==='silent' ? ' · 暂无回复' : '';
+    const status=covered ? ' · 已回复' : outgoing && m.status==='silent' ? ' · 暂无回复' : '';
     const speaker=outgoing ? '我' : (m.speakerName||contact.name);
+    const scene=!outgoing && (data.phoneScenes||[]).find(row=>row.messageId===m.id);
+    const handoff=scene?'<div class="uc-scene-handoff" role="note" data-phone-scene-id="'+esc(scene.storyId)+'"><strong>镜头转到了对方那边</strong><small>这段故事已经保存到正文</small>'
+      +btn('return-to-story','返回正文 · 继续剧情','secondary','data-id="'+esc(scene.storyId)+'"')+'</div>':'';
     return '<article class="msg'+(outgoing?' me':'')+'" data-message-id="'+esc(m.id)+'">'
       +(outgoing?'':'<span class="uc-portrait" style="width:32px;height:32px;border-radius:50%;font-size:12px" aria-hidden="true">'+esc(speaker.slice(0,1))+'</span>')
       +'<div class="m-body">'+(chosen.startsWith('group:')?'<span class="m-name">'+esc(speaker)+'</span>':'')
       +'<div class="chat-bubble">'+esc(m.text)+(data.music?.invitations.some(i=>i.messageId===m.id)?btn('open-bands','查看乐队邀请','text-button'):'')+'</div>'
-      +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>';
+      +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>'+handoff;
   }).join('');
   const pendingUI=pending ? '<div class="sys" role="status">发送未保存 · 可重试'+btn('retry','重试','text-button')+btn('discard','取消','text-button')+'</div>' : '';
   const tools='<div class="uc-reply-tools">'+btn('open-bands','我的乐队','text-button')
     + btn('request-reply','让对方回复','secondary','data-id="'+esc(lastPending||'')+'"'+(lastPending&&!pending?'':' disabled'))
     + btn('wait-read','等5分钟','text-button','data-minutes="5"'+(pending?' disabled':''))
     + btn('wait-read','等15分钟','text-button','data-minutes="15"'+(pending?' disabled':''))
-    + '<span class="uc-tool-hint">已读按游戏分钟模拟 · 不调用模型</span></div>';
+    + '</div>';
   const composer='<div class="composer-wrap"><div class="composer uc-composer">'
     + '<textarea class="field-in" data-field="draft" maxlength="1000" rows="2" enterkeyhint="send" aria-label="输入消息" placeholder="发消息…">'+esc(draft)+'</textarea>'
     + btn('send','发送','primary',pending?'disabled':'')+'</div></div>';
   return {recipient:chosen,replyId:lastPending,html:CHAT_STYLE+'<div class="chat-thread uc-thread">'
     + '<header class="th-head">'+btn('back-to-inbox','‹ 返回','text-button')
     +'<span class="uc-portrait" style="width:36px;height:36px;border-radius:50%" aria-hidden="true">'+esc(contact.name.slice(0,1))+'</span>'
-    + '<div class="th-title"><strong>'+esc(contact.name)+'</strong><small>可连续发送 · 手动触发回复</small></div></header>'
+    + '<div class="th-title"><strong>'+esc(contact.name)+'</strong></div></header>'
     + '<div class="msgs" data-keep-scroll="world-sms-'+esc(chosen)+'" role="log" aria-live="polite">'
-    +(bubbles||'<p class="chat-empty">发几条消息都可以。发送后再点“让对方回复”，或等一段游戏时间查看已读状态。</p>')
+    +(bubbles||'<p class="chat-empty">暂无消息</p>')
     +pendingUI+'</div>'+tools+composer+'</div>'};
 }
 

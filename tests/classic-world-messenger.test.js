@@ -45,7 +45,8 @@ describe('classic fictional messenger presentation', () => {
     expect(result.html).toContain('data-action="open-thread"');
     expect(result.html).toContain('data-action="accept-contact"');
     expect(result.html).toContain('大家的群聊');
-    expect(result.html).toContain('发送不会自动请求模型');
+    expect(result.html).toContain('樱羽艾玛');
+    expect(result.html).not.toContain('发送不会自动请求模型');
     // A contact-list preview may show this owner's other conversations; only the open thread is isolated.
   });
 
@@ -66,6 +67,24 @@ describe('classic fictional messenger presentation', () => {
     expect(result.html).not.toContain('sms-read-animation');
   });
 
+  it('keeps developer mechanics out of player-visible message chrome', () => {
+    const list = renderWorldMessenger({data:current,recipient:'protagonist:soyo',mode:'list',drafts:new Map(),pending:null},helpers);
+    const thread = renderWorldMessenger({data:current,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(thread.html).toContain('<div class="th-title"><strong>长崎素世</strong></div>');
+    expect(thread.html).toContain('data-action="request-reply"');
+    expect(thread.html).toContain('data-action="wait-read"');
+    for (const html of [list.html, thread.html]) {
+      for (const forbidden of ['可连续发送','不触发正文','手动触发回复','发送不会自动请求模型','已读按游戏分钟模拟','不调用模型']) {
+        expect(html).not.toContain(forbidden);
+      }
+    }
+    const empty = structuredClone(current);
+    empty.conversation = [];
+    const emptyThread = renderWorldMessenger({data:empty,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(emptyThread.html).toContain('暂无消息');
+    expect(emptyThread.html).not.toContain('发几条消息都可以');
+  });
+
   it('only displays real returned read status, not a decorative timer animation', () => {
     const data = structuredClone(current);
     data.conversation[0].receipt = 'delivered';
@@ -81,6 +100,20 @@ describe('classic fictional messenger presentation', () => {
     const view=renderWorldMessenger({data,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers);
     expect(view.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(view.html).not.toContain('<img src=x');
+  });
+
+  it('shows a centered return-to-story cue only after the matching incoming reply', () => {
+    const data=structuredClone(current);
+    data.npcPhone.messages.push({id:'npc:a:reply',channel:'npc',targetId:'majo-yuki',direction:'incoming',text:'我知道啦。',speakerName:'月代雪',at:1040,replyTo:'npc:a'});
+    data.phoneScenes=[{messageId:'npc:a:reply',storyId:'phone-scene:npc:a:reply'}];
+    const view=renderWorldMessenger({data,recipient:'npc:majo-yuki',mode:'thread',drafts:new Map(),pending:null},helpers);
+    expect(view.html).toContain('class="uc-scene-handoff"');
+    expect(view.html).toContain('data-action="return-to-story"');
+    expect(view.html).toContain('data-id="phone-scene:npc:a:reply"');
+    expect(view.html.indexOf('data-message-id="npc:a:reply"')).toBeLessThan(view.html.indexOf('class="uc-scene-handoff"'));
+    expect(renderWorldMessenger({data,recipient:'protagonist:soyo',mode:'thread',drafts:new Map(),pending:null},helpers).html).not.toContain('uc-scene-handoff" role=');
+    data.phoneScenes=[];
+    expect(renderWorldMessenger({data,recipient:'npc:majo-yuki',mode:'thread',drafts:new Map(),pending:null},helpers).html).not.toContain('uc-scene-handoff" role=');
   });
 
   it('includes the actual app lifecycle with manual-only reply and time notifications', () => {
