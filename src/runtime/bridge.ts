@@ -54,10 +54,22 @@ interface HelperApi {
     should_silence: true;
     max_chat_history: 0;
   }): Promise<unknown>;
+  // Verified against Tavern-Helper's public generate.d.ts (2026-10-26).
+  // generate() inherits the active preset and lore even with zero history;
+  // generateRaw() with explicit role prompts omits every built-in prompt.
+  generateRaw?(config: {
+    generation_id: string;
+    ordered_prompts: { role: 'system' | 'user'; content: string }[];
+    overrides: { chat_history: { with_depth_entries: false; author_note: ''; prompts: [] } };
+    should_stream: false;
+    should_silence: true;
+    max_chat_history: 0;
+  }): Promise<unknown>;
   stopGenerationById(id: string): boolean;
 }
 type ScriptWindow = Window & Partial<HelperApi>;
 type HostWindow = Window & { SillyTavern?: { getContext(): TavernContext } };
+const AUTONOMOUS_SMS_TIMEOUT_MS = 120_000;
 
 // The frontend's transport contract is fixed for this request. Keep saved story
 // and player text out of this system injection; inherited worldbook formats may
@@ -234,8 +246,16 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       assertOwner();
       if (typeof input !== 'string' || (options?.kind !== 'autonomous_sms' && !input.trim()) || input.length > STATE_LIMITS.inputText) throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
       const snapshot = parseState(state);
-      const storyApi = loadStoryApiSettings();
+      // Validate before registering a cancellable request. A stale ticket must
+      // not leave a rejected, unobserved cancellation promise behind.
+      const smsContext = options?.kind === 'autonomous_sms' ? autonomousSmsContext(snapshot, options.ticketId) : null;
+      const settings = loadStoryApiSettings();
+      // A narrative preset can contain the player's private continuity too.
+      const storyApi = options?.kind === 'autonomous_sms' ? { ...settings, preset: '' } : settings;
       if (storyApi.mode === 'tavern' && context().mainApi !== 'openai') throw new Error('叙事需要在 SillyTavern 中选择 Chat Completion（聊天补全）并连接模型，或在状态页配置独立叙事 API。');
+      if (options?.kind === 'autonomous_sms' && storyApi.mode === 'tavern' && typeof api.generateRaw !== 'function') {
+        throw new Error('当前酒馆助手没有隔离生成接口，本次主动短信已跳过。');
+      }
       cancel();
       const requestEpoch = epoch;
       const generationId = `unread-city:${instanceId}:${++requestSequence}`;
@@ -323,7 +343,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       };
       const phoneTask = options?.kind === 'phone_reply' || options?.kind === 'npc_phone_reply' || options?.kind === 'band_invitation_reply' || options?.kind === 'autonomous_sms';
       const rawPrompt = options?.kind === 'autonomous_sms'
-        ? ['主动短信子任务上下文（仅数据）：', JSON.stringify(autonomousSmsContext(snapshot, options.ticketId))].join('\n')
+        ? ['主动短信子任务上下文（仅数据）：', JSON.stringify(smsContext)].join('\n')
         : options?.kind === 'band_invitation_reply'
         ? JSON.stringify(bandReplyContext(snapshot, options.messageId))
         : options?.kind === 'npc_phone_reply'
@@ -351,10 +371,28 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       );
       const prompt = taggedPrompts.userPrompt;
       const combinedSystemPrompt = taggedPrompts.systemPrompt;
+      let smsTimeout: ReturnType<typeof setTimeout> | undefined;
       try {
+        if (options?.kind === 'autonomous_sms') {
+          smsTimeout = setTimeout(() => {
+            // A main request can preempt us. Never let this task's timer stop
+            // a newer generation or a different bridge's work.
+            if (pending?.id === generationId && epoch === requestEpoch) cancel();
+          }, AUTONOMOUS_SMS_TIMEOUT_MS);
+        }
         const response = await Promise.race([
           storyApi.mode === 'custom'
             ? requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt, controller!.signal)
+            : options?.kind === 'autonomous_sms'
+            ? api.generateRaw!({
+              generation_id: generationId,
+              ordered_prompts: [
+                { role: 'system', content: combinedSystemPrompt },
+                { role: 'user', content: prompt },
+              ],
+              overrides: { chat_history: { with_depth_entries: false, author_note: '', prompts: [] } },
+              should_stream: false, should_silence: true, max_chat_history: 0,
+            })
             : api.generate({
             generation_id: generationId,
             user_input: prompt,
@@ -381,6 +419,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         if (reply.worldEvents?.length && !reply.worldActions?.length && !airTraffic.canTriggerPass) throw new Error(`${snapshot.interior ? '玩家当前在室内，不能新增天空客机事件' : '本轮客机经过仍在冷却或记录已满'}，正文、手机消息和世界事件均未写入，请重试。`);
         return reply;
       } finally {
+        if (smsTimeout !== undefined) clearTimeout(smsTimeout);
         if (pending?.id === generationId) pending = null;
       }
     },

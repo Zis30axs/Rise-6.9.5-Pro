@@ -1,5 +1,5 @@
 import { bandInvitationForMessage, applyBandReply } from '../runtime/livehouse';
-import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { activeProtagonist, gameMinute, protagonistNames } from '../runtime/protagonist-world';
 import { createProtagonistSwitchController } from './protagonist-switch';
 import { createWorldPhoneApi } from './world-phone';
 import { applyNpcPhoneReply, npcReplySource } from '../runtime/npc-phone';
@@ -15,7 +15,7 @@ import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
-import { stageAutonomousSms, applyAutonomousSms, autonomousSmsContext } from '../runtime/autonomous-sms';
+import { stageAutonomousSms, applyAutonomousSms } from '../runtime/autonomous-sms';
 import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
@@ -71,7 +71,9 @@ export function mountShell(
   let airTrafficTimer: number | undefined;
   let smsTimer: number | undefined;
   let smsWorking = false;
-  let attemptedSmsId: string | undefined;
+  // A completed model decision is retained through failed writes. Retrying local
+  // persistence must not repeatedly spend a model call or change the proposed SMS.
+  let smsResult: { id: string; text: string | null } | undefined;
   let observer: MutationObserver | undefined;
   let appliedOverflowPriority: string | undefined;
   let phoneLease: PhoneLease | undefined;
@@ -149,31 +151,51 @@ export function mountShell(
   /** Never compete with the main generation. A persisted reservation survives busy turns. */
   async function tickAutonomousSms() {
     if (smsWorking || dead || doc.hidden || model.busy || model.switchingProtagonist || pendingInteraction || bridge.session() !== session) return;
-    const saved = snapshot();
-    const task = saved.autonomousSms?.pending;
-    if (!task || task.id === attemptedSmsId) return;
-    attemptedSmsId = task.id;
+    const initial = snapshot();
+    const task = initial.autonomousSms?.pending;
+    if (!task) { smsResult = undefined; return; }
+    if (task.at !== gameMinute(initial) || task.owner !== activeProtagonist(initial)) {
+      smsResult = undefined;
+      try {
+        const retired = stageAutonomousSms(initial, initial);
+        bridge.save(retired); model.state = retired;
+      } catch { /* Retry only local retirement, never generate from stale context. */ }
+      return;
+    }
+    if (smsResult?.id !== task.id) smsResult = undefined;
     smsWorking = true;
     const request = ++epoch;
-    // Keep the main UI responsive. A player action may preempt this low-priority
-    // request via bridge.generate(), which cancels the old generation by ID.
+    // Keep the main UI responsive. A player generation preempts this request.
+    // If a completed decision cannot be saved, later ticks only retry the write.
     try {
-      autonomousSmsContext(saved, task.id);
-      const reply = await bridge.generate('', saved, { kind: 'autonomous_sms', ticketId: task.id });
-      if (!stillCurrent(request)) return;
+      if (!smsResult) {
+        try {
+          const reply = await bridge.generate('', snapshot(), { kind: 'autonomous_sms', ticketId: task.id });
+          if (!stillCurrent(request) || doc.hidden) return;
+          if (reply.text || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length || reply.weeklySummary || reply.bandDecision || reply.phoneDecision ||
+              reply.autonomousSmsText !== null && typeof reply.autonomousSmsText !== 'string') throw new Error('主动短信子任务包含了额外内容');
+          smsResult = { id: task.id, text: reply.autonomousSmsText };
+        } catch {
+          // A failed background call is silent. Persist its completed decision so
+          // a broken provider cannot trap the player in automatic model retries.
+          if (!stillCurrent(request) || doc.hidden) return;
+          smsResult = { id: task.id, text: null };
+        }
+      }
+      if (!stillCurrent(request) || doc.hidden) return;
       const current = snapshot();
-      if (current.autonomousSms?.pending?.id !== task.id) return;
-      const next = applyAutonomousSms(current, task.id, reply.autonomousSmsText ?? null);
-      bridge.save(next); model.state = next;
+      // Game-time advancement and protagonist switches can retire the ticket
+      // while the low-priority request is in flight. Never apply it to a new one.
+      if (current.autonomousSms?.pending?.id !== task.id) { smsResult = undefined; return; }
+      const next = applyAutonomousSms(current, task.id, smsResult.text);
+      bridge.save(next);
+      model.state = next;
+      smsResult = undefined;
       worldPhone.notify();
       if (storyPhone) void storyPhone.sync().catch(() => {});
-    } catch (error) {
-      // A failed background call is not a narrative failure. Consume its reservation
-      // so a broken provider cannot trap the user in repeated retries.
-      if (stillCurrent(request) && model.state.autonomousSms?.pending?.id === task.id) {
-        try { const next = applyAutonomousSms(snapshot(), task.id, null); bridge.save(next); model.state = next; }
-        catch (failure) { console.warn('[UnreadCity] autonomous SMS skipped', failure); }
-      }
+    } catch {
+      // No inbox, notification or canonical thread is published before the write.
+      // Keep the decision cached until a later tick can save it successfully.
     } finally {
       smsWorking = false;
     }

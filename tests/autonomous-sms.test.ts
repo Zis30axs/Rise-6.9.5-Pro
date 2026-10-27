@@ -61,14 +61,15 @@ describe('autonomous SMS (SillyTavern)', () => {
     expect(() => parseAutonomousSmsReply('<story>Hi</story>','auto:emma:999')).toThrow();
   });
 
-  it('discards a proposal when the player advances game time during generation', () => {
+  it('retires old context if the player advances time during generation', () => {
     const state = prepared();
     const task = state.autonomousSms!.pending!;
     const changed = reduceState(state, {type:'wait',minutes:120});
     const reserved = stageAutonomousSms(state,changed,()=>0);
-    expect(reserved.autonomousSms?.pending?.id).not.toBe(task.id);
-    expect(reserved.phone.some(row => row.id === task.id)).toBe(false);
-    expect(() => applyAutonomousSms(reserved,task.id,'迟到的背景任务')).toThrow();
+    expect(reserved.autonomousSms?.pending).toBeNull();
+    expect(reserved.autonomousSms!.nextAt).toBeGreaterThan(gameMinute(reserved));
+    expect(() => applyAutonomousSms(reserved,task.id,'迟到的背景任务')).toThrow('过期');
+    expect(() => autonomousSmsContext(changed,task.id)).toThrow('过期');
     expect(parseState(reserved)).toEqual(reserved);
   });
 

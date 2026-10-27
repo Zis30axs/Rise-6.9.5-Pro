@@ -12,6 +12,12 @@ function initial(kind: 'npc' | 'protagonist' = 'npc') {
   if (kind === 'npc') s = reduceState(s, { type: 'switch_protagonist', target: 'emma' });
   s.contacts = kind === 'npc' ? s.contacts.filter(c => c.id === 'majo-yuki')
     : [knownProtagonistContact('sakiko', '丰川祥子')];
+  // Isolate this scheduler from deterministic background-life mail. Recent
+  // background mail now correctly puts the same protagonist thread on cooldown.
+  for (const owner of PROTAGONISTS) {
+    s.protagonists!.backgroundLife!.people[owner].nextDecisionAt = 30 * 1440;
+    s.protagonists!.backgroundLife!.people[owner].pending = null;
+  }
   return s;
 }
 function reserve(s = initial()) {
@@ -122,7 +128,8 @@ describe('autonomous SMS safety boundaries', () => {
     const s = reserve(), id = s.autonomousSms!.pending!.id;
     const later = parseState(reduceState(s, { type: 'wait', minutes: 5 }));
     expect(() => autonomousSmsContext(later, id)).toThrow();
-    const next = applyAutonomousSms(later, id, '不能把未来发生的事发到过去。');
+    expect(() => applyAutonomousSms(later, id, '不能把未来发生的事发到过去。')).toThrow('过期');
+    const next = stageAutonomousSms(later, later);
     expect(next.phone.some(m => m.id === id)).toBe(false);
     expect(next.autonomousSms?.pending).toBeNull();
   });
