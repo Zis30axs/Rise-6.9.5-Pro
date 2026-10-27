@@ -66,17 +66,18 @@ watch(() => props.model.state.locationId, () => { receipt.value = ''; attempted.
     <p v-if="attempted && model.notice" class="location-service-error" data-location-service-error role="alert">{{ model.notice }}<span>本次活动尚未保存，可以重试。</span></p>
     <div v-if="services.length" class="location-service-list">
       <article v-for="{ service, quote, takeaway } in services" :key="service.id" class="location-service-card" :data-location-service="service.id">
-        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
+        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
         <p>{{ service.description }}</p>
         <small class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
-        <p v-if="!quote.blockedReason" class="location-service-effects" data-location-service-preview>此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
+        <p v-if="!quote.blockedReason" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
         <p v-else class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
-        <button type="button" :data-use-location-service="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">{{ service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
+        <button type="button" :data-use-location-service="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">{{ service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
         <button v-if="takeaway.item" type="button" class="location-service-pack" :data-package-service="service.id" :disabled="model.busy || !!takeaway.blockedReason" :title="takeaway.blockedReason ?? '放入背包，稍后食用或送人；当前不结算食用效果'" @click="packService(service.id)">打包带走 · ¥{{ formatGameNumber(takeaway.totalPrice) }}<small>含打包费 ¥{{ PACKAGING_FEE }}，不立即食用</small></button>
         <p v-if="takeaway.item && takeaway.blockedReason && takeaway.blockedReason !== quote.blockedReason" class="location-service-blocked">打包：{{ takeaway.blockedReason }}</p>
       </article>
     </div>
-    <p v-if="services.length" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。均无需再发对话。</p>
+    <p v-if="services.some(({ service }) => !!service.payout)" class="location-service-note">工资在整班结束后发放；请先确认精力充足，也要在收工时间前完成。</p>
+    <p v-if="services.some(({ service }) => !service.payout)" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。</p>
     <div v-if="guidance" class="location-guidance" data-location-guidance>
       <p>{{ guidance }}</p>
       <button v-if="storeAvailable" type="button" data-location-store :disabled="model.busy" @click="emit('store')">打开便利店货架 ↗</button>

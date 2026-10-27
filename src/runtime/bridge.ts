@@ -326,7 +326,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         locationServices: getLocationServices(snapshot).map(service => {
           const quote = getLocationServiceQuote(snapshot, service.id);
           return { id: service.id, label: service.label, description: service.description, minutes: quote.minutes,
-            price: quote.price, changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason };
+            price: quote.price, ...(quote.payout ? { payout: quote.payout } : {}), changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason };
         }),
         locationDetails: locations.find(location => location.id === snapshot.locationId),
         contactProposal: contactProposalContext(snapshot),

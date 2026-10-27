@@ -43,6 +43,7 @@ export const mapLocations: Location[] = [
   { id: 'teaching', name: '教学楼', subtitle: '教学楼外的广场', description: `【示例场景】${sceneEnvironments.teaching}`, x: 48, y: 13 },
   { id: 'sports', name: '运动场', subtitle: '跑道、球场与看台', description: `【示例场景】${sceneEnvironments.sports}`, x: 46, y: -11 },
   { id: 'junction', name: '南门十字路口', subtitle: '斑马线、交通灯与商铺', description: `【示例场景】${sceneEnvironments.junction}`, x: 0, y: 48 },
+  { id: 'construction-site', name: '建设工地', subtitle: '南门街区 · 临时工集合点', description: sceneEnvironments['construction-site'], x: -52, y: 62 },
   { id: 'bookshop', name: '街角书店', subtitle: '书店门前的橱窗', description: `【示例场景】${sceneEnvironments.bookshop}`, x: -22, y: 56.5 },
   { id: 'convenience', name: '便利店', subtitle: '便利店门前', description: `【示例场景】${sceneEnvironments.convenience}`, x: 21, y: 56.5 },
   { id: 'street-cafe', name: '街边咖啡馆', subtitle: '街边露台', description: `【示例场景】${sceneEnvironments['street-cafe']}`, x: 48, y: 56.5 },
@@ -297,7 +298,8 @@ function sceneCoordinates(x: unknown, z: unknown, yaw: unknown) {
 function parseScenePresence(value: unknown, interior: InteriorPresence | null, deferProtagonists = false): ScenePresence {
   const item = object(value, ['x', 'z', 'yaw', 'areaId', 'seed', 'encounterId'], 'scene');
   const coordinates = sceneCoordinates(item.x, item.z, item.yaw);
-  if (item.areaId !== coordinates.areaId) return invalid('scene.areaId 与坐标不一致');
+  // A legacy neighborhood save may be positioned inside the new worksite boundaries.
+  if (item.areaId !== coordinates.areaId && !(item.areaId === 'neighborhood' && coordinates.areaId === 'construction-site')) return invalid('scene.areaId 与坐标不一致');
   const scene: ScenePresence = { ...coordinates, seed: sceneSeed(item.seed), encounterId: item.encounterId === null ? null : id(item.encounterId, 'scene.encounterId') };
   if (scene.encounterId && !(deferProtagonists && isProtagonistEncounter(scene.encounterId))) {
     const cafeInterior = interior?.roomId === MARGO_CAFE_ROOM_ID ? interior : null;
@@ -685,6 +687,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         ...(hasReturnStory ? { returnStory: text(item.returnStory, `${path}.returnStory`, 2000) } : {}) };
     }),
   };
+  if (result.scene?.areaId === 'construction-site' && result.locationId === 'neighborhood') result.locationId = 'construction-site';
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
   const sourceIds = result.contacts.flatMap(contact => contact.sourcePersonId ? [contact.sourcePersonId] : []);
   if (new Set(sourceIds).size !== sourceIds.length) return invalid('contacts.sourcePersonId 重复');
@@ -1114,7 +1117,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       advance(next, quote.minutes);
       // The quote already includes elapsed nutrition; replace, never apply twice.
       next.player = quote.playerAfter;
-      note(next, `在${status.label}${quote.service.label}，${quote.price ? `支付 ${quote.price} 日元` : '免费'}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
+      const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
+      note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
       break;
     }
     case 'novel_travel': {

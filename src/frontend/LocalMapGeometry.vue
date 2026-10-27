@@ -40,6 +40,12 @@ const buildings = computed(() => visibleMapBuildings(props.scope).map(building =
       <ellipse cx="46" cy="-11" rx="14" ry="20" fill="#90ac80" stroke="#e9e1c9" stroke-width=".5"/>
       <rect x="35" y="-27" width="22" height="32" fill="none" stroke="#eee7cf" stroke-width=".4"/>
       <rect v-for="(path, index) in paths" :key="index" :x="path.x1" :y="path.z1" :width="path.width" :height="path.depth" :fill="path.kind === 'road' ? '#7d8c85' : '#eee2c7'"/>
+      <g data-map-worksite>
+        <rect x="-66.5" y="59.5" width="29" height="23" fill="#cfad83" stroke="#a37546" stroke-width="1" stroke-dasharray="2 1" rx="1"/>
+        <path d="M-64 78l8 -12m-3 14l8 -12m-3 14l8 -12m-3 12l6 -9" fill="none" stroke="#aa8056" stroke-width=".8" opacity=".75"/>
+        <rect x="-59" y="67" width="14" height="10" fill="none" stroke="#776d5d" stroke-width="1" stroke-dasharray="2 1"/>
+        <text x="-52" y="64.5" text-anchor="middle" font-size="3" fill="#715139">工地</text>
+      </g>
       <ellipse cx="179" cy="-192" rx="23" ry="12" fill="#82adb0" stroke="#bacbb1" stroke-width="2"/>
       <path d="M-70 27H-6M6 27H70" fill="none" stroke="#83947d" stroke-width="1"/>
       <text x="46" y="-10" text-anchor="middle" class="cms-ground-label">运动场</text>

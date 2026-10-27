@@ -51,6 +51,9 @@ export const streetRoutes: Record<string, StreetNode[]> = {
   junction: [
     { label: '十字路口', position: [0, 1.7, 48], yaw: 0 },
   ],
+  'construction-site': [
+    { label: '建设工地入口', position: [-52, 1.7, 62], yaw: 3.141 },
+  ],
   bookshop: [
     { label: '书店门前', position: [-22, 1.7, 53], yaw: 3.141 },
   ],
@@ -391,6 +394,32 @@ export function createCampusWorld(scene: THREE.Scene) {
   solidBox('bus-stop-sign-board', 40, 39.5, 1.15, 0.15);
   for (let index = 0; index < 4; index++) box(0.7, 0.04, 0.04, palette.trim, 40, 2.9 - index * 0.23, 39.6);
 
+  // Worksite on the plot west of the bookshop, with an open south entrance.
+  const siteSoil = material(0xb69a72), siteBarrier = material(0xc99e62);
+  const siteSteel = material(0x5d6d72), siteConcrete = material(0xb4b3a7);
+  box(28, 0.04, 22.6, siteSoil, -52, 0.028, 71);
+  for (const x of [-66.2, -37.8]) {
+    box(0.12, 1.65, 22.4, siteBarrier, x, 0.825, 71);
+    solidBox(`construction-fence:${x}`, x, 71, 0.12, 22.4);
+    for (let z = 60; z <= 82; z += 3.7) box(0.16, 1.85, 0.16, siteSteel, x, 0.925, z);
+  }
+  box(28.4, 1.65, 0.12, siteBarrier, -52, 0.825, 82.3);
+  solidBox('construction-fence:north', -52, 82.3, 28.4, 0.12);
+  for (const [x, width] of [[-61, 10.4], [-42.6, 9.6]]) {
+    box(width, 1.65, 0.12, siteBarrier, x, 0.825, 59.8);
+    solidBox(`construction-fence:south:${x}`, x, 59.8, width, 0.12);
+  }
+  box(14, 0.3, 10, siteConcrete, -52, 0.15, 74);
+  solidBox('construction-foundation', -52, 74, 14, 10);
+  for (const x of [-58, -52, -46]) for (const z of [70, 78]) box(0.22, 6.6, 0.22, siteSteel, x, 3.6, z);
+  for (const z of [70, 78]) for (const y of [3.5, 6.7]) box(12.5, 0.2, 0.2, siteSteel, -52, y, z);
+  for (const x of [-58, -52, -46]) for (const y of [3.5, 6.7]) box(0.2, 0.2, 8.3, siteSteel, x, y, 74);
+  for (const [x, z] of [[-62, 73], [-41, 76]]) {
+    box(2.2, 0.32, 1.6, palette.wood, x, 0.16, z);
+    for (let tier = 0; tier < 3; tier++) box(2, 0.18, 1.3, tier % 2 ? siteConcrete : palette.wood, x, 0.41 + tier * 0.2, z);
+    solidBox(`construction-pallet:${x}`, x, z, 2.2, 1.6);
+  }
+  box(7.6, 1.1, 0.14, palette.roof, -52, 2.4, 59.7);
   // Pocket park behind the shops: open walk, shallow fountain and shaded seating.
   box(39, 0.025, 14, palette.grass, 44, 0, 81);
   box(36, 0.035, 3.5, palette.path, 45, 0.02, 80);
@@ -406,7 +435,7 @@ export function createCampusWorld(scene: THREE.Scene) {
   }
 
   // Trees flank the routes instead of filling the walkable corridors.
-  for (const [x, z] of [[-36, -50], [36, -50], [-36, -32], [36, -32], [-36, -10], [36, 14], [-36, 14], [-22, 16], [22, 18], [-61, 14], [61, 17], [-61, -30], [-62, 35], [-47, 35], [-30, 35], [24, 35], [62, 35], [-62, 62], [-43, 65], [-26, 82], [-47, 82], [28, 76], [61, 76], [40, 86], [57, 86]]) tree(x, z, 1.2 + Math.abs(x % 3) * 0.15, Math.abs(x + z) % 4);
+  for (const [x, z] of [[-36, -50], [36, -50], [-36, -32], [36, -32], [-36, -10], [36, 14], [-36, 14], [-22, 16], [22, 18], [-61, 14], [61, 17], [-61, -30], [-62, 35], [-47, 35], [-30, 35], [24, 35], [62, 35], [-26, 82], [28, 76], [61, 76], [40, 86], [57, 86]]) tree(x, z, 1.2 + Math.abs(x % 3) * 0.15, Math.abs(x + z) % 4);
 
   // Three outdoor destination blocks share the city roads and remain genuinely walkable.
   // These are illustrative residential buildings, not facts about the player's real home or family.
@@ -533,6 +562,7 @@ export function createCampusWorld(scene: THREE.Scene) {
   box(8.6, 1.5, 0.13, palette.roof, 0, 5.3, -39.65); signText('教学楼', 0, 5.3, -39.55, 8);
   box(8.6, 1.5, 0.13, palette.roof, -49, 5.1, -7.65); signText('学生公寓', -49, 5.1, -7.55, 8);
   signText('校园咖啡', 14, 3.35, 0.04, 6);
+  signText('建设工地', -52, 2.4, 59.6, 7, true);
   signText('街角书店', -22, 3.48, 58.68, 7.5, true);
   signText('便利店', 21, 3.48, 58.68, 6.5, true);
   signText('街边咖啡', 48, 3.48, 58.68, 7.5, true);

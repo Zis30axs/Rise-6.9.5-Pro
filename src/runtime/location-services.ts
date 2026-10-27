@@ -32,6 +32,7 @@ const venues: readonly Venue[] = [
   { locationId: 'street-cafe', label: '玛格咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '宝生玛格经营的街边咖啡馆营业到次日凌晨两点，提供咖啡、茶与当日甜点；可在露台享用，也可从店门进入馆内。' },
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
+  { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },
   { locationId: 'pocket-park', label: '口袋公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在长椅上小憩，或沿着公园步道散步。' },
   { locationId: 'city-park', label: '城市公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在树荫下的长椅小憩，也可以沿公园步道散步。' },
@@ -72,6 +73,8 @@ export interface LocationService {
   readonly description: string;
   readonly minutes: number;
   readonly price: number;
+  /** Earned only after the full shift, never billed as a negative price. */
+  readonly payout?: number;
   readonly effects: Readonly<LocationServiceEffects>;
 }
 
@@ -89,6 +92,8 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'eat-mall-meal', locationIds: ['grand-commercial'], label: '吃商场快餐', description: '在商业区美食广场点一份快餐，坐下吃完。', minutes: 20, price: 420, effects: effects({ energy: 24, morale: 5, health: 1, stress: -5, satiety: 45, foodEnergy: 650 }) },
   { id: 'browse-music-store', locationIds: ['grand-commercial'], label: '逛音乐周边店', description: '浏览商业区唱片店的乐器配件与黑胶唱片，放松心情。', minutes: 15, price: 0, effects: effects({ energy: -2, morale: 8, stress: -6 }) },
+  { id: 'construction-clear', locationIds: ['construction-site'], label: '清理施工场地', description: '戴好安全帽和手套，清运碎料、整理工具与清扫施工通道。', minutes: 120, price: 0, payout: 3200, effects: effects({ energy: -40, morale: -3, stress: 5 }) },
+  { id: 'construction-carry', locationIds: ['construction-site'], label: '搬运建筑材料', description: '跟随现场工人运送木板和成捆建材，完成四小时的重体力班次。', minutes: 240, price: 0, payout: 6800, effects: effects({ energy: -75, morale: -6, stress: 10 }) },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
   { id: 'stretch', locationIds: ['sports'], label: '拉伸', description: '在运动场边做一组轻量拉伸。', minutes: 10, price: 0, effects: effects({ energy: -2, morale: 4, health: 1, stress: -4 }) },
   { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
@@ -123,6 +128,7 @@ export interface LocationServiceQuote {
   service: LocationService | null;
   minutes: number;
   price: number;
+  payout: number;
   playerAfter: PlayerState;
   changes: LocationServiceEffects & { balance: number };
   blockedReason: string | null;
@@ -133,6 +139,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
   const service = locationServiceCatalog.find(item => item.id === serviceId) ?? null;
   const minutes = service?.minutes ?? 0;
   const price = service?.price ?? 0;
+  const payout = service?.payout ?? 0;
   const status = getLocationStatus(state.locationId, state.clock);
   let blockedReason: string | null = !service ? '不存在的地点活动。'
     : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
@@ -142,6 +149,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
     blockedReason = `距打烊只剩 ${status.minutesUntilClose} 分钟，这项活动需要 ${minutes} 分钟，请下次营业时再来。`;
   }
   if (!blockedReason && state.player.balance < price) blockedReason = `余额不足，这项活动需要 ${price} 日元。`;
+  if (!blockedReason && state.player.balance + payout - price > 20_000_000) blockedReason = '余额已接近上限，暂时无法领取这笔工资。';
   if (!blockedReason && service && energyUnits(state.player.energy) < energyUnits(-service.effects.energy)) {
     blockedReason = `精力不足，这项活动需要 ${-service.effects.energy} 点精力。`;
   }
@@ -149,7 +157,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
   const playerAfter = blockedReason ? { ...state.player } : advancePlayerNutrition(state.player, state.clock, minutes);
   if (service && !blockedReason) {
-    playerAfter.balance -= price;
+    playerAfter.balance += payout - price;
     playerAfter.energy = adjustEnergy(playerAfter.energy, service.effects.energy);
     for (const key of ['morale', 'health', 'stress', 'satiety'] as const) {
       playerAfter[key] = Math.min(100, Math.max(0, playerAfter[key] + service.effects[key]));
@@ -165,5 +173,5 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
     foodEnergy: playerAfter.foodEnergy - state.player.foodEnergy,
     balance: playerAfter.balance - state.player.balance,
   };
-  return { service, minutes, price, playerAfter, changes, blockedReason };
+  return { service, minutes, price, payout, playerAfter, changes, blockedReason };
 }

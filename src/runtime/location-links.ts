@@ -13,8 +13,8 @@ const outdoorLinks: readonly (readonly [string, string])[] = [
   ['gate', 'library'], ['gate', 'cafe'], ['gate', 'junction'], ['gate', 'bus-stop'],
   ['library', 'teaching'], ['library', 'dorm'], ['library', 'cafe'],
   ['dorm', 'teaching'], ['teaching', 'sports'], ['sports', 'cafe'],
-  ['junction', 'bookshop'], ['junction', 'convenience'], ['junction', 'bus-stop'],
-  ['bookshop', 'convenience'], ['convenience', 'street-cafe'],
+  ['junction', 'bookshop'], ['junction', 'construction-site'], ['junction', 'convenience'], ['junction', 'bus-stop'],
+  ['bookshop', 'convenience'], ['bookshop', 'construction-site'], ['convenience', 'street-cafe'],
   ['street-cafe', 'bus-stop'], ['street-cafe', 'pocket-park'], ['convenience', 'pocket-park'],
 ];
 const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial']);
