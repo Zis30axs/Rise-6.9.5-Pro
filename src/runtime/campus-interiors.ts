@@ -397,6 +397,20 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [],
   },
   {
+    id: 'court-hearing', label: '新宿地方裁判所 · 法庭', parentLocationId: 'grand-commercial',
+    description: '地方法院内庄严的公开法庭。正前方是审判席，左右为原告席、被告席与证人席，旁听席排列在后部。书记员记录诉讼进展。人物的身份与证言以真实案卷为准。',
+    entrance: { x: -145, z: -158, yaw: 0 }, bounds, spawn: { x: 0, z: 3.5, yaw: 0 },
+    obstacles: [
+      { id: 'court-judge-bench', kind: 'podium', minX: -4.5, maxX: 4.5, minZ: -4.7, maxZ: -3.4 },
+      { id: 'court-witness-stand', kind: 'podium', minX: -5.0, maxX: -3.0, minZ: -2.7, maxZ: -1.6 },
+      { id: 'court-claimant-desk', kind: 'desk', minX: -4.1, maxX: -1.0, minZ: -0.8, maxZ: 0.1 },
+      { id: 'court-defendant-desk', kind: 'desk', minX: 1.0, maxX: 4.1, minZ: -0.8, maxZ: 0.1 },
+      { id: 'court-gallery-left', kind: 'desk', minX: -4.4, maxX: -0.8, minZ: 2.0, maxZ: 2.7 },
+      { id: 'court-gallery-right', kind: 'desk', minX: 0.8, maxX: 4.4, minZ: 2.0, maxZ: 2.7 },
+    ],
+    interactions: [],
+  },
+  {
     id: 'mlm-office', label: '启航商贸（传销咨询）', parentLocationId: 'grand-commercial',
     description: '商务写字楼高层的商贸咨询办公室。墙上贴满业绩龙虎榜与金字塔分销架构图，茶水桌上堆着宣讲手册与空白加盟合同，空气中弥漫着急功近利的焦躁氛围。',
     entrance: { x: -150, z: -170, yaw: 0 }, bounds, spawn,
