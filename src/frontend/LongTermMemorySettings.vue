@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { DEFAULT_MEMORY_SETTINGS, loadMemorySettings, memoryApiKey, saveMemoryApiKey, saveMemorySettings } from '../runtime/long-term-memory/settings';
 import type { MemorySettings } from '../runtime/long-term-memory/settings';
 import { exportMemory, importMemory } from '../runtime/long-term-memory/storage';
-import { memoryStatus, runMemoryNow } from '../runtime/long-term-memory/scheduler';
+import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
 
 const props = defineProps<{ scope: string }>();
 const settings = ref<MemorySettings>(loadMemorySettings());
@@ -20,6 +20,7 @@ async function refresh() {
 function save() {
   try {
     saveMemorySettings(settings.value);
+    if (!settings.value.enabled && props.scope) pauseMemoryWork(props.scope);
     saveMemoryApiKey('assistant', assistantKey.value.trim());
     saveMemoryApiKey('embedding', embeddingKey.value.trim());
     notice.value = '长期记忆设置已保存。';

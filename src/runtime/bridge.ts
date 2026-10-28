@@ -8,6 +8,7 @@ import { weeklyMemoryContext } from './weekly-memory';
 import { memoryBootstrap, memoryCommitted, memoryPromptContext } from './long-term-memory';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
+import { pauseMemoryWork } from './long-term-memory/scheduler';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
@@ -239,6 +240,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   };
   const chatChanged = () => {
     retired = true;
+    pauseMemoryWork(ownerSession);
     cancel();
     for (const callback of [...subscribers]) callback();
   };

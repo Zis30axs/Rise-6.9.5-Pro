@@ -8,6 +8,14 @@ import { memoryKey } from './types';
 import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
 
 const workingScopes = new Set<string>();
+const pausedScopes = new Set<string>();
+const activeRequests = new Map<string, AbortController>();
+
+/** Stop optional paid activity immediately without touching gameplay or deleting work. */
+export function pauseMemoryWork(scope: string): void {
+  pausedScopes.add(scope);
+  activeRequests.get(scope)?.abort();
+}
 interface Meta { key: string; scope: string; id: string; value: number }
 async function meta(scope: string, id: string): Promise<number> {
   return (await one<Meta>('metadata', scope, id))?.value ?? 0;
@@ -75,9 +83,11 @@ async function remainingBudget(scope: string, settings: MemorySettings, extra: n
   return current + extra <= settings.budgetUsd;
 }
 async function runOne(scope: string, settings: MemorySettings): Promise<boolean> {
+  if (pausedScopes.has(scope) || !loadMemorySettings().enabled) return false;
   const job = await acquireJob(scope);
   if (!job) return false;
   const controller = new AbortController();
+  activeRequests.set(scope, controller);
   const timeout = setTimeout(() => controller.abort(), 90000);
   try {
     const sources = (await Promise.all(job.sourceIds.map(id =>
@@ -91,6 +101,7 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
         throw new Error('长期记忆费用预算已满或价格未配置');
       }
       const response = await requestMemoryJson(settings, system, input, controller.signal);
+      if (controller.signal.aborted || pausedScopes.has(scope)) throw new Error('整理已暂停');
       // Persist the paid response before validating or constructing embeddings.
       // If a subsequent step fails, the next attempt reuses these paid tokens.
       await recordPaidJobResponse(job, response.text, price(response.usage, settings), response.estimated);
@@ -125,22 +136,28 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
     const reason = error instanceof Error ? error.message : '整理失败';
     // Preserve any already-paid response stored by recordPaidJobResponse.
     const existing = await one<MemoryJob>('jobs', scope, job.id);
+    const deliberatelyPaused = pausedScopes.has(scope);
     await put('jobs', { ...existing, ...job,
       responseText: existing?.responseText,
       responseCostUsd: existing?.responseCostUsd,
       usageEstimated: existing?.usageEstimated,
-      state: job.attempts >= 2 ? 'failed' : 'pending',
-      leaseUntil: job.attempts >= 2 ? 0 : Date.now() + 30_000 * (2 ** (job.attempts - 1)),
-      error: reason.slice(0, 220) });
+      attempts: deliberatelyPaused ? Math.max(0, job.attempts - 1) : job.attempts,
+      state: !deliberatelyPaused && job.attempts >= 2 ? 'failed' : 'pending',
+      leaseUntil: deliberatelyPaused || job.attempts >= 2 ? 0 : Date.now() + 30_000 * (2 ** (job.attempts - 1)),
+      error: deliberatelyPaused ? '' : reason.slice(0, 220) });
     return false;
-  } finally { clearTimeout(timeout); }
+  } finally {
+    clearTimeout(timeout);
+    if (activeRequests.get(scope) === controller) activeRequests.delete(scope);
+  }
 }
 async function work(scope: string, settings: MemorySettings): Promise<void> {
-  if (!ready(settings) || workingScopes.has(scope)) return;
+  if (!ready(settings) || workingScopes.has(scope) || pausedScopes.has(scope)) return;
   workingScopes.add(scope);
   try {
     await schedule(scope, settings);
     for (let i = 0; i < 8; i++) {
+      if (pausedScopes.has(scope)) break;
       if (!await runOne(scope, settings)) break;
       await schedule(scope, settings);
       const sources = (await rows<MemorySource>('sources', scope)).filter(s => !s.processed);
@@ -151,6 +168,7 @@ async function work(scope: string, settings: MemorySettings): Promise<void> {
 export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void {
   const settings = loadMemorySettings();
   if (!settings.enabled || !sources.length) return;
+  pausedScopes.delete(scope);
   void ingestSources(sources).then(() => work(scope, settings)).catch(() => {
     // Optional sidecar has no authority to prevent a main-game save.
   });
@@ -159,11 +177,13 @@ export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void
 export function resumeMemoryWork(scope: string): void {
   const settings = loadMemorySettings();
   if (!ready(settings)) return;
+  pausedScopes.delete(scope);
   void work(scope, settings).catch(() => {});
 }
 export async function runMemoryNow(scope: string): Promise<void> {
   const settings = loadMemorySettings();
   if (!ready(settings)) throw new Error('请先配置长期记忆整理模型 API');
+  pausedScopes.delete(scope);
   await resetFailedJobs(scope);
   await schedule(scope, settings, true);
   await work(scope, settings);
