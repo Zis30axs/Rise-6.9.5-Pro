@@ -30,6 +30,7 @@ import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { detectIllnessTransition, getIllnessDebuffs } from './illness';
+import { initialLawCareer, parseLawCareerState, quoteLawCase, settleLawCase } from './law-career';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -227,6 +228,7 @@ export function createInitialState(): WorldState {
     schema_version: '1.11.0', currency: 'JPY', clock, locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
+    lawCareer: initialLawCareer(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [],
     academics: null,
@@ -589,13 +591,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasAutonomousSms = version === '1.11.0' && Object.hasOwn(value, 'autonomousSms');
   const hasLivehouse = version === '1.11.0' && Object.hasOwn(value, 'livehouse');
   const hasMargoCafeDaily = version === '1.11.0' && Object.hasOwn(value, 'margoCafeDaily');
+  const hasLawCareer = version === '1.11.0' && Object.hasOwn(value, 'lawCareer');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -624,6 +627,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasAutonomousSms ? { autonomousSms: parseAutonomousSmsState(state.autonomousSms, (parsedClock.day - 1) * 1440 + parsedClock.hour * 60 + parsedClock.minute) } : {}),
     ...(hasLivehouse ? { livehouse: parseLivehouseState(state.livehouse, (parsedClock.day - 1) * 1440 + parsedClock.hour * 60 + parsedClock.minute) } : {}),
     ...(hasMargoCafeDaily ? { margoCafeDaily: parseMargoCafeState(state.margoCafeDaily, parsedClock) } : {}),
+    lawCareer: hasLawCareer ? parseLawCareerState(state.lawCareer) : initialLawCareer(),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
@@ -1115,6 +1119,25 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
       note(next, `使用${quote.item.name} 1 ${quote.item.useUnit}，耗时 ${quote.minutes} 分钟。${changes ? `实际变化：${changes}。` : '状态已达边界，未产生额外变化。'}${transitionNote}`);
+      break;
+    }
+    case 'law_case': {
+      const quote = quoteLawCase(next, action);
+      if (quote.blockedReason) throw new Error(quote.blockedReason);
+      const before = { ...next.player };
+      const result = settleLawCase(next, action);
+      advance(next, quote.minutes);
+      next.player.energy = adjustEnergy(next.player.energy, -quote.energyCost);
+      next.player.stress = Math.min(100, next.player.stress + quote.stressGain);
+      next.player.morale = Math.min(100, next.player.morale + quote.moraleGain);
+      next.player.balance += quote.payout;
+      next.lawCareer = result.career;
+      const last = result.career.owners[worldAuthority?.protagonists?.accounts.active ?? 'soyo']?.lastResult;
+      const details = last && !result.career.owners[worldAuthority?.protagonists?.accounts.active ?? 'soyo']?.active
+        ? `案件已完美结案，由${last.solvedBy === 'sherry' ? '橘雪莉' : '玩家'}主导最终论证。职业经验 +${last.experience}，报酬 ${last.payout} 日元。`
+        : quote.correct === false ? '举证未成功，可继续尝试。' : quote.feedback;
+      const transition = detectIllnessTransition(before, next.player);
+      note(next, `律师事务所：${details}耗时 ${quote.minutes} 分钟。${activityChangeNote(before, next.player)}${transition.transitionNote ? ' ' + transition.transitionNote : ''}`);
       break;
     }
     case 'location_service': {
