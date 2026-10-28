@@ -135,7 +135,7 @@ describe('law career and Sherry evidence assistance', () => {
 
   it('enforces hours, place, energy and does not commit blocked changes', () => {
     const case1 = lawCases[0]!;
-    const late = inOffice(); late.clock.hour = 17; late.clock.minute = 50;
+    const late = inOffice(); late.clock.hour = 17; late.clock.minute = 30;
     expect(quoteLawCase(late, act('accept', case1.id)).blockedReason).toBeNull();
     const accepted = reduceState(late, act('accept', case1.id));
     expect(quoteLawCase(accepted, act('investigate')).blockedReason).toMatch(/下班/);
