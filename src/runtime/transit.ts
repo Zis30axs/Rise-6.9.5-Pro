@@ -6,7 +6,7 @@ export const TRANSIT_STOP_RANGE = 6;
 export const TRANSIT_SEQUENCE_LIMIT = 1_000_000_000;
 
 export interface TransitStop {
-  id: 'campus' | 'home' | 'commercial' | 'city-park' | 'downtown' | 'grand-commercial';
+  id: 'campus' | 'home' | 'commercial' | 'city-park' | 'downtown' | 'grand-commercial' | 'takao-mountain';
   label: string;
   locationId: string;
   x: number;
@@ -22,6 +22,7 @@ export const transitStops: readonly TransitStop[] = [
   { id: 'downtown', label: '目白／目白台站', locationId: 'downtown', x: -20, z: 185, yaw: 0 },
   { id: 'city-park', label: '神田川绿道站', locationId: 'city-park', x: 180, z: -150, yaw: 0 },
   { id: 'grand-commercial', label: '新宿／大型商业区站', locationId: 'grand-commercial', x: -180, z: -150, yaw: 0 },
+  { id: 'takao-mountain', label: '高尾山风景区站', locationId: 'takao-mountain', x: 0, z: -175, yaw: 0 },
 ];
 
 export const transitVehicles = [
@@ -37,6 +38,7 @@ const cityRoutes = [
   // Only the Metro-linked journey serves Mejiro/Mejirodai; fares are game balancing values.
   { stopId: 'downtown', minutes: 22, fare: 240 },
   { stopId: 'grand-commercial', minutes: 20, fare: 220 },
+  { stopId: 'takao-mountain', minutes: 25, fare: 260 },
 ] as const;
 
 export function createTransitState(): TransitState { return { sequence: 0, lastRide: null }; }

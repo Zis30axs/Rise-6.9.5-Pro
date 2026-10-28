@@ -47,6 +47,17 @@ const buildings = computed(() => visibleMapBuildings(props.scope).map(building =
         <text x="-52" y="64.5" text-anchor="middle" font-size="3" fill="#715139">工地</text>
       </g>
       <ellipse cx="179" cy="-192" rx="23" ry="12" fill="#82adb0" stroke="#bacbb1" stroke-width="2"/>
+      <g data-map-mountain v-if="scope === 'city' || scope === 'takao-mountain'">
+        <polygon points="-85,-135 -40,-230 40,-230 85,-135" fill="#789e70" opacity=".65"/>
+        <polygon points="-65,-145 -25,-220 25,-220 65,-145" fill="#638b59" opacity=".75"/>
+        <polygon points="-40,-165 0,-218 40,-165" fill="#507746" opacity=".88"/>
+        <path d="M0 -155 Q -30 -168 -35 -185 T 0 -200 T 25 -215" fill="none" stroke="#dfd4b6" stroke-width="2.5" stroke-dasharray="3 1.5"/>
+        <line x1="-25" y1="-155" x2="0" y2="-192" stroke="#5b6e5c" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <ellipse cx="45" cy="-155" rx="8" ry="5" fill="#78a0a8" opacity=".85" stroke="#b4c7b0" stroke-width=".8"/>
+        <text x="25" y="-218" text-anchor="middle" class="cms-ground-label">▲ 高尾山顶 599m</text>
+        <text x="45" y="-146" text-anchor="middle" class="cms-ground-label">♨ 极乐汤温泉</text>
+        <text x="-35" y="-176" text-anchor="middle" class="cms-ground-label">山间茶屋</text>
+      </g>
       <path d="M-70 27H-6M6 27H70" fill="none" stroke="#83947d" stroke-width="1"/>
       <text x="46" y="-10" text-anchor="middle" class="cms-ground-label">运动场</text>
       <text x="42" y="84" text-anchor="middle" class="cms-ground-label">口袋公园</text>

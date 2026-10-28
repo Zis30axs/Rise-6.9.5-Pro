@@ -389,6 +389,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
     home: { minutes: 45, fare: 6 }, commercial: { minutes: 25, fare: 3 },
     'city-park': { minutes: 35, fare: 4 }, downtown: { minutes: 55, fare: 12 },
     'grand-commercial': { minutes: 40, fare: 8 },
+    'takao-mountain': { minutes: 50, fare: 10 },
   };
   const oldDestination = fromStopId === 'campus' ? toStopId : toStopId === 'campus' ? fromStopId : '';
   const old = oldRoutes[oldDestination];
@@ -1313,6 +1314,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       advance(next, interaction.minutes);
       next.player.energy = adjustEnergy(next.player.energy, interaction.energyDelta);
       if (interaction.balanceDelta) next.player.balance += interaction.balanceDelta;
+      if (interaction.healthDelta) next.player.health = Math.max(0, Math.min(100, next.player.health + interaction.healthDelta));
       if (interaction.stressDelta) next.player.stress = Math.max(0, Math.min(100, next.player.stress + interaction.stressDelta));
       if (interaction.moraleDelta) next.player.morale = Math.max(0, Math.min(100, next.player.morale + interaction.moraleDelta));
       if (interaction.id === 'dorm-desk') applyActivityEffects(next, 'desk', interaction.minutes);

@@ -17,12 +17,12 @@ const outdoorLinks: readonly (readonly [string, string])[] = [
   ['bookshop', 'convenience'], ['bookshop', 'construction-site'], ['convenience', 'street-cafe'],
   ['street-cafe', 'bus-stop'], ['street-cafe', 'pocket-park'], ['convenience', 'pocket-park'],
 ];
-const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial']);
+const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain']);
 const areaExits: Readonly<Record<string, readonly string[]>> = {
   promenade: ['gate', 'library', 'cafe', 'dorm', 'sports'],
   campus: ['library', 'teaching', 'dorm', 'sports', 'gate'],
   neighborhood: ['junction', 'bookshop', 'convenience', 'street-cafe', 'bus-stop', 'pocket-park'],
-  'city-roads': ['bus-stop', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial'],
+  'city-roads': ['bus-stop', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain'],
 };
 
 /** Only offer destinations supported by the existing travel engine; rooms expose their door first. */

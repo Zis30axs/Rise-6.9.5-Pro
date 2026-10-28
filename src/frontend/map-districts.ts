@@ -2,7 +2,7 @@ import { campusInteriors } from '../runtime/campus-interiors';
 import { mapLocations, novelDestinations } from '../runtime/model';
 import { sceneAreas, sceneBounds } from './scene-layout';
 
-export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial'] as const;
+export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial', 'takao-mountain'] as const;
 export type MapDistrictId = typeof MAP_DISTRICT_IDS[number];
 export type LocalMapScope = 'city' | MapDistrictId;
 export const campusDetailBounds = { minX: -74, maxX: 74, minZ: -64, maxZ: 94 };
@@ -14,6 +14,7 @@ export const mapDistricts = [
   { id: 'downtown', name: '目白／目白台', shortName: '目白台住宅区', description: '丰川家、二阶堂家与目白台接驳站。', x: -20, z: 185 },
   { id: 'city-park', name: '神田川沿岸绿道', shortName: '神田川沿岸', description: '河岸绿道、公园、住处与接驳站。', x: 180, z: -150 },
   { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House、KTV 娱乐中心与商务写字楼的繁华都会沙盘。', x: -180, z: -150 },
+  { id: 'takao-mountain', name: '高尾山自然风景区', shortName: '高尾山风景区', description: '青翠秀美的近郊名山沙盘，包含登山步道、观景展望台、山麓温泉与观光索道。', x: 0, z: -175 },
 ] as const;
 
 export function isMapDistrict(value: string): value is MapDistrictId {

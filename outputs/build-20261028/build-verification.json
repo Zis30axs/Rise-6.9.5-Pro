@@ -1,33 +1,33 @@
 {
   "buildDate": "2026-10-28",
-  "feature": "接入新NPC风堇世界书设定（妈妈般的温柔体贴与习惯乐意）、街区全科诊所日夜背景及对话立绘，关联每周谈心清空压力调理；规范四位主角非在读高中生口径，统一大一秋季报到与未定学籍设定",
-  "verifiedTests": "45 files, 408 passed",
+  "feature": "沙盘接入高尾山自然风景区（含2.5D等高线山地、登山步道、索道及山顶展望台、极乐汤温泉、十一丁目茶屋），提供登山健行/观景/温泉/茶屋/索道5项休闲活动与数值结算，配齐世界书与电车直达交通",
+  "verifiedTests": "46 files, 413 passed",
   "typeCheck": "vue-tsc passed",
   "noJapaneseCheck": "passed",
   "artifacts": {
     "unread-city-lite.png": {
-      "bytes": 25971871,
-      "sha256": "c9a52e591a0c7700073fb06cd8fdeb1634aae25f864d8815137450deba20cf6b"
+      "bytes": 25987875,
+      "sha256": "5390d5698ac91bd7f04a8a573cca11736270566efba6e50d27cd760353a6ec31"
     },
     "unread-city-lite-tauri.png": {
-      "bytes": 9727570,
-      "sha256": "7283447475ec484c9e313ba82d58ff8788f32839a9677e2b3ba6d4f1c438a791"
+      "bytes": 9733017,
+      "sha256": "cef431249658f5b27b55864a2b23c7c117fe9d79de3b095ba2aa5927cf2539f1"
     },
     "unread-city-lite-tauri.verification.json": {
       "bytes": 827,
-      "sha256": "ab8df746ac25617905292f123c8845591cf91086f1ce5fc187a37027719e8695"
+      "sha256": "863c4b7dc76b7c17a646bed40f270dfb059538018dfb2d6a11f65febbcfdb603"
     },
     "unread-city-lite-assets.zip": {
       "bytes": 64562385,
-      "sha256": "520e8a2e8a00a398c00ee20b1cd5049ccb1cdc8b5624c4dc4f153080162ffc4a"
+      "sha256": "c41878eab45124fb3e365ccc4f745eb19ce38686115622d2715736870c08eb70"
     },
     "lite-assets-report.json": {
       "bytes": 487,
-      "sha256": "053f819382af870fe9c5e7183becebb624b2a376e61a04cd2e1215cc2e259d5e"
+      "sha256": "acdfc44f189a860dfdf630e88660c8de96538e4eab70cbdb0d0f7eb92f8c9a99"
     },
     "lite-verification.json": {
       "bytes": 436,
-      "sha256": "8395054febeb2e81da882f2b8fc54c06ceb31d235b4ddb8cc14e8d0987bebc4f"
+      "sha256": "68898f7a2dc81b6fd9c43f4efc899d447e1611b1a11a93f31544f5fa048ba35e"
     }
   }
 }

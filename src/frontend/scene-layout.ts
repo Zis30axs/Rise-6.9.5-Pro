@@ -27,6 +27,7 @@ export const sceneAreas: SceneArea[] = [
   { id: 'downtown', label: '目白·目白台住宅区', minX: -115, maxX: 110, minZ: 145, maxZ: 255 },
   { id: 'city-park', label: '神田川沿岸公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
   { id: 'grand-commercial', label: '新宿·大型商业娱乐区', minX: -250, maxX: -120, minZ: -210, maxZ: -100 },
+  { id: 'takao-mountain', label: '高尾山自然风景区', minX: -95, maxX: 95, minZ: -245, maxZ: -125 },
   { id: 'campus', label: '高田·西早稻田校园', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
   { id: 'neighborhood', label: '高田校园南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
   { id: 'city-roads', label: '城市连接道路', ...sceneBounds },
@@ -52,6 +53,7 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'downtown', label: '目白台接驳站', x: -20, z: 185 },
   { id: 'city-park', label: '神田川绿道站', x: 180, z: -150 },
   { id: 'grand-commercial', label: '新宿大型商业区接驳站', x: -180, z: -150 },
+  { id: 'takao-mountain', label: '高尾山接驳站', x: 0, z: -175 },
 ];
 
 export const scenePaths: ScenePath[] = [
@@ -66,6 +68,8 @@ export const scenePaths: ScenePath[] = [
   { x: -180, z: 141, width: 120, depth: 10, kind: 'road' },
   { x: 180, z: 141, width: 120, depth: 10, kind: 'road' },
   { x: 180, z: -159, width: 120, depth: 10, kind: 'road' },
+  { x: 0, z: -105, width: 8, depth: 80, kind: 'road' },
+  { x: 0, z: -155, width: 90, depth: 10, kind: 'road' },
   // A northern arterial joins the campus street grid to a separate downtown block.
   { x: 0, z: 131, width: 10, depth: 166, kind: 'road' },
   { x: 0, z: 185, width: 195, depth: 10, kind: 'road' },
@@ -86,6 +90,9 @@ export const scenePaths: ScenePath[] = [
   { x: 190, z: 127, width: 94, depth: 10, kind: 'walk' },
   { x: 190, z: -174, width: 110, depth: 5, kind: 'walk' },
   { x: 225, z: -163, width: 5, depth: 24, kind: 'walk' },
+  { x: 0, z: -155, width: 80, depth: 5, kind: 'walk' },
+  { x: -35, z: -185, width: 30, depth: 5, kind: 'walk' },
+  { x: 25, z: -215, width: 40, depth: 5, kind: 'walk' },
   // Campus spine, a complete walking loop, and branches into the destination courtyards.
   { x: 0, z: 12, width: 5.3, depth: 42, kind: 'walk' },
   { x: 0, z: -9.4, width: 23, depth: 4.8, kind: 'walk' },

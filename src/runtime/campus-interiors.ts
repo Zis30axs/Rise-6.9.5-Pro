@@ -14,6 +14,7 @@ export interface InteriorInteraction {
   id: string; label: string; description: string;
   x: number; z: number; minutes: number; energyDelta: number;
   balanceDelta?: number;
+  healthDelta?: number;
   stressDelta?: number;
   moraleDelta?: number;
   result: string; prompt: string;
@@ -422,6 +423,70 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: 0, z: -3.2, minutes: 0, energyDelta: 0,
         result: '端详了白板上的层级提成图，对这种击鼓传花的运作机制有了直观认识。',
         prompt: '你仔细观察了启航商贸白板上的分销层级图，未消耗时间或精力。' },
+    ],
+  },
+  {
+    id: 'takao-onsen', label: '极乐汤温泉会馆', parentLocationId: 'takao-mountain',
+    description: '位于高尾山麓的日式温泉休养会馆。原木格栅与石质露天汤池被翠竹环绕，白雾袅袅，温热天然泉水散发着淡淡的矿物清香。',
+    entrance: { x: 45, z: -155, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'onsen-bath', kind: 'bed', minX: -5.2, maxX: -1.2, minZ: -4.5, maxZ: -1.5 },
+      { id: 'onsen-bench', kind: 'desk', minX: 1.5, maxX: 4.8, minZ: -3.5, maxZ: -1.5 },
+      { id: 'onsen-rack', kind: 'shelf', minX: 3.5, maxX: 5.2, minZ: 0.5, maxZ: 3.5 },
+    ],
+    interactions: [
+      { id: 'onsen-relax', label: '露天温汤浸泡', description: '在露天温汤中浸泡 40 分钟，消耗 850 日元，精力 +30，健康 +20，精神 +18，压力 -35。',
+        x: -3.2, z: -3.0, minutes: 40, energyDelta: 30, balanceDelta: -850, healthDelta: 20, moraleDelta: 18, stressDelta: -35,
+        result: '浸泡在温润的天然汤泉中，周身毛孔舒张，寒气与酸痛一扫而空。',
+        prompt: '你在高尾山麓极乐汤温泉享受了舒适的露天温泉，身体机能显著改善。' },
+      { id: 'onsen-footbath', label: '山泉露天足汤', description: '坐在长凳边享受免费足汤小憩 20 分钟，精力 +10，健康 +5，精神 +8，压力 -15。',
+        x: 3.0, z: -2.5, minutes: 20, energyDelta: 10, balanceDelta: 0, healthDelta: 5, moraleDelta: 8, stressDelta: -15,
+        result: '将双脚浸入温热的山泉足汤中，暖意顺着小腿蔓延全身。',
+        prompt: '你在高尾山温泉足汤边小憩了二十分钟。' },
+      { id: 'onsen-rest', label: '休息区躺椅小憩', description: '在榻榻米休息区放松小憩 20 分钟，精力 +8，压力 -10。',
+        x: 0, z: 1.5, minutes: 20, energyDelta: 8, balanceDelta: 0, stressDelta: -10,
+        result: '在通风舒适的休息区躺椅上安静闭目养神。',
+        prompt: '你在温泉休息区静心休养了二十分钟。' },
+    ],
+  },
+  {
+    id: 'takao-summit', label: '高尾山顶展望台', parentLocationId: 'takao-mountain',
+    description: '海拔599米的高尾山主峰开阔展望台。木质观景步道向外延展，晴空下东京都天际线、筑波山与连绵群山一览无余，山顶立着石质界碑与休息长椅。',
+    entrance: { x: 25, z: -215, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'summit-rail', kind: 'board', minX: -5.0, maxX: 5.0, minZ: -4.8, maxZ: -4.2 },
+      { id: 'summit-marker', kind: 'podium', minX: -1.0, maxX: 1.0, minZ: -2.0, maxZ: 0.0 },
+      { id: 'summit-bench', kind: 'desk', minX: -4.5, maxX: -2.0, minZ: 0.5, maxZ: 2.5 },
+    ],
+    interactions: [
+      { id: 'summit-view', label: '高台极目远眺', description: '站在展望台护栏旁眺望远山天际线（20 分钟），精神 +15，压力 -20，健康 +2。',
+        x: 0, z: -4.0, minutes: 20, energyDelta: -2, healthDelta: 2, moraleDelta: 15, stressDelta: -20,
+        result: '清风拂过山巅，关东平原的浩瀚全景让人心旷神怡。',
+        prompt: '你在高尾山顶展望台远眺群山与城市天际线，心胸开阔，压力全消。' },
+      { id: 'summit-breeze', label: '山顶长椅沐风', description: '在山顶木质长椅上吹着清凉山风发呆（15 分钟），精神 +8，压力 -12。',
+        x: -3.2, z: 1.5, minutes: 15, energyDelta: 0, moraleDelta: 8, stressDelta: -12,
+        result: '坐在山顶长椅上，听着松涛阵阵，呼吸着清澈的山野空气。',
+        prompt: '你在高尾山顶长椅上享受清风拂面的宁静时光。' },
+    ],
+  },
+  {
+    id: 'takao-teahouse', label: '山间十一丁目茶屋', parentLocationId: 'takao-mountain',
+    description: '掩映在古杉林木荫蔽之下的半山腰老铺茶屋。红布长凳摆在展望露台边，炭火烤炉上升起腾腾白烟，烤芝麻三福丸子酱香四溢。',
+    entrance: { x: -35, z: -185, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'teahouse-counter', kind: 'desk', minX: -4.5, maxX: -1.5, minZ: -3.5, maxZ: -1.5 },
+      { id: 'teahouse-stoves', kind: 'shelf', minX: -4.5, maxX: -2.5, minZ: 0.5, maxZ: 3.5 },
+      { id: 'teahouse-seating', kind: 'bed', minX: 1.5, maxX: 4.8, minZ: -2.5, maxZ: 2.5 },
+    ],
+    interactions: [
+      { id: 'teahouse-snack', label: '品尝现烤三福团子', description: '享用炭火现烤的三福芝麻团子与高山煎茶（25 分钟），花费 460 日元，精力 +15，饱腹 +40，精神 +12，压力 -15。',
+        x: 3.0, z: 0.0, minutes: 25, energyDelta: 15, balanceDelta: -460, moraleDelta: 12, stressDelta: -15,
+        result: '在茶屋长凳上吃下了甜咸适口的现烤三福团子，喝了一大口醇香煎茶，整个人暖融融的。',
+        prompt: '你在十一丁目茶屋品尝了著名的烤团子与热茶，补充了充沛体力。' },
+      { id: 'teahouse-tea', label: '品饮山泉冷萃煎茶', description: '点一杯清凉甘洌的高山冷萃茶饮（15 分钟），花费 220 日元，精力 +5，精神 +6，压力 -8。',
+        x: -2.0, z: -2.5, minutes: 15, energyDelta: 5, balanceDelta: -220, moraleDelta: 6, stressDelta: -8,
+        result: '细细品饮冰镇山泉煎茶，茶香清冽回甘。',
+        prompt: '你在十一丁目茶屋享用了清凉回甘的冷萃煎茶。' },
     ],
   },
 ];

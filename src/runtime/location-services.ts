@@ -29,11 +29,12 @@ interface Venue {
 }
 
 /** Authored prototype hours describe services at an existing outdoor location. */
-const venues: readonly Venue[] = [
+export const venues: readonly Venue[] = [
   { locationId: 'cafe', label: '街角咖啡店', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '露台旁设有外带窗口，可点饮品或甜点，在露台享用。' },
   { locationId: 'street-cafe', label: '玛格咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '宝生玛格经营的街边咖啡馆营业到次日凌晨两点，提供咖啡、茶与当日甜点；可在露台享用，也可从店门进入馆内。' },
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
+  { locationId: 'takao-mountain', label: '高尾山风景区', hoursLabel: '06:00–21:00', opens: 6 * 60, closes: 21 * 60, outdoor: true, description: '近郊名山自然风景名胜，拥有绿荫登山步道、山顶全景展望台、山间老字号茶屋与山麓天然温泉。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
   { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
@@ -96,6 +97,11 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'eat-mall-meal', locationIds: ['grand-commercial'], label: '吃商场快餐', description: '在商业区美食广场点一份快餐，坐下吃完。', minutes: 20, price: 420, effects: effects({ energy: 24, morale: 5, health: 1, stress: -5, satiety: 45, foodEnergy: 650 }) },
   { id: 'browse-music-store', locationIds: ['grand-commercial'], label: '逛音乐周边店', description: '浏览商业区唱片店的乐器配件与黑胶唱片，放松心情。', minutes: 15, price: 0, effects: effects({ energy: -2, morale: 8, stress: -6 }) },
+  { id: 'takao-hiking', locationIds: ['takao-mountain', 'takao-summit'], label: '登山步道健行', description: '沿绿荫葱郁的高尾山自然步道拾级而上。在负氧离子与清凉山风中健行攀登，强身健体、大幅清降压力，让神经彻底放松。', minutes: 50, price: 0, effects: effects({ energy: -20, health: 8, morale: 18, stress: -35, satiety: -15, foodEnergy: -250 }) },
+  { id: 'takao-observation', locationIds: ['takao-mountain', 'takao-summit'], label: '山顶观景台眺望', description: '伫立在海拔599米的高尾山顶展望台极目远眺。俯瞰关东平原的壮阔天际线与连绵群山，心胸豁然开朗，治愈烦闷心绪。', minutes: 20, price: 0, effects: effects({ energy: -2, health: 2, morale: 15, stress: -20 }) },
+  { id: 'takao-onsen', locationIds: ['takao-mountain', 'takao-onsen'], label: '山麓温泉浸泡', description: '沉浸在高尾山麓温热宜人的天然药汤与露天汤泉中。热气蒸腾间驱散周身寒气与酸痛疲劳，深层调理体虚，舒缓压力。', minutes: 45, price: 850, effects: effects({ energy: 35, health: 25, morale: 20, stress: -40, satiety: -5 }) },
+  { id: 'takao-teahouse', locationIds: ['takao-mountain', 'takao-teahouse'], label: '山间茶屋特色餐饮', description: '在半山腰绿意盎然的老字号茶屋落座，享用炭火现烤的热乎三福芝麻团子与现沏高山煎茶。软糯甜润、暖胃舒心，快速补充活动能量。', minutes: 25, price: 460, effects: effects({ energy: 15, health: 5, morale: 12, stress: -15, satiety: 40, foodEnergy: 480 }) },
+  { id: 'takao-cablecar', locationIds: ['takao-mountain'], label: '登山索道观光', description: '乘坐复古索道缆车从山麓直升半山腰，隔着林海俯瞰峡谷青翠景观，省去大段爬坡体能消耗，惬意饱览山川风貌。', minutes: 15, price: 490, effects: effects({ energy: 5, health: 1, morale: 10, stress: -12 }) },
   { id: 'construction-clear', locationIds: ['construction-site'], label: '清理施工场地', description: '戴好安全帽和手套，清运碎料、整理工具与清扫施工通道。', minutes: 120, price: 0, payout: 3200, effects: effects({ energy: -40, morale: -3, stress: 5 }) },
   { id: 'construction-carry', locationIds: ['construction-site'], label: '搬运建筑材料', description: '跟随现场工人运送木板和成捆建材，完成四小时的重体力班次。', minutes: 240, price: 0, payout: 6800, effects: effects({ energy: -75, morale: -6, stress: 10 }) },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
