@@ -361,8 +361,9 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       fee:null, assistance:'none', steps:[] };
   } else if (action.phase === 'sherry') {
     const active = current.active;
-    if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission') return error('只有艾玛的职业委托可以由雪莉救场');
-    const payout = Math.round(active.rewardYen * SHERRY_ASSIST_RATE);
+    if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission' || active.day !== state.clock.day) return error('只有艾玛当前的职业委托可以由雪莉救场');
+    active.assistance = 'sherry';
+    const payout = Math.round(active.rewardYen * (active.assistance === 'sherry' ? SHERRY_ASSIST_RATE : 1));
     next.player.balance += payout;
     current.results.push({id:active.id,owner,source:'commission',title:active.title,defendant:null,lawyer:null,verdict:'win',worldVerdict:'win',solvedBy:'sherry',
       payout,experience:Math.round(active.experience * SHERRY_ASSIST_RATE),summary:'橘雪莉依据现有证据完成关键论证，案件得到妥善解决。',atDay:state.clock.day});
