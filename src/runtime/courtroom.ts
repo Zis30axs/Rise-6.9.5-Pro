@@ -279,7 +279,7 @@ const preset = (day: number, categories: CourtCategory[]): CourtOffer => {
 };
 const courtOfficePosition = (state: WorldState) => {
   const room = state.interior;
-  if(state.locationId !== LAW_OFFICE_ID || room?.roomId !== LAW_OFFICE_ID)
+  if(!room || state.locationId !== LAW_OFFICE_ID || room.roomId !== LAW_OFFICE_ID)
     return error('请在事务所受理案件');
   return {x:room.x,z:room.z,yaw:room.yaw};
 };
@@ -496,8 +496,8 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     leaveHearing(next,active);
     current.active = null;
     enrollCareer(next,current.careers!,owner);
-    current.careers![owner].experience += Math.round(active.experience*SHERRY_ASSIST_RATE);
-    current.careers![owner].earnedYen += payout;
+    current.careers![owner].experience = Math.min(10000000,current.careers![owner].experience+Math.round(active.experience*SHERRY_ASSIST_RATE));
+    current.careers![owner].earnedYen = Math.min(20000000,current.careers![owner].earnedYen+payout);
   } else if (action.phase === 'confirm-filing') {
     eligible(state);
     const filing = current.filing;
@@ -643,6 +643,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     const multiplier = assisted ? SHERRY_ASSIST_RATE : verdict === 'win' && active.source === 'commission' ? 1 : 0;
     reward = Math.round(active.rewardYen * multiplier);
     const experience = Math.round(active.experience * multiplier);
+    if(parsed.order && sherry) return error('雪莉救场后的最终判决不能沿用此前败诉内容的执行命令');
     if(parsed.order){
       const plaintiff=active.source==='lawsuit' ? protagonistNames[active.owner] : active.client;
       if(parsed.order.terms.length){
