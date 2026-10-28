@@ -48,6 +48,13 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   if (!person) return null;
   const minute = clock.hour * 60 + clock.minute;
   const housing = housingForPerson(id);
+  // Sherry's legal track is fixed. During office hours she is available to
+  // investigate cases with Emma, rather than disappearing into a generic NPC shift.
+  if (id === 'majo-sherry' && minute >= 9 * 60 && minute < 18 * 60) return {
+    anchorId: null, locationId: 'legal-office',
+    activity: '在律师事务所整理卷宗并协助艾玛调查', available: true,
+    housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+  };
   const cafeVisit = cafeVisitForPerson(id, clock);
   if (id === MARGO_CAFE_OWNER_ID || cafeVisit) {
     const atCafe = isMargoCafeOpen(clock) && (id === MARGO_CAFE_OWNER_ID || !!cafeVisit);
