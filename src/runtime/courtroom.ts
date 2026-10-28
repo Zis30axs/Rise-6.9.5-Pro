@@ -703,6 +703,7 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
       ? '橘雪莉依据当庭已经确认的材料完成了善后，案件得到妥善处理。'
       : '法庭仍需依法处理遗留争议，此处不推定任何一方胜诉或接受和解。') +
     '本次职业报酬为零。').slice(0,1800);
+  leaveHearing(next,trial);
   court.active = null;
   court.pendingSettlement = null;
   next.courtroom = parseCourtroom(court);
