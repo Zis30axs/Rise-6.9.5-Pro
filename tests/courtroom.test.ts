@@ -217,6 +217,129 @@ describe('freeform courtroom and legal services', () => {
     expect(parseState(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
   });
 
+  it('moves a hearing into the authored court and returns to the office after verdict',()=>{
+    let state=openPreset();
+    expect(getCampusInterior('court-hearing')?.label).toContain('法庭');
+    expect(state.locationId).toBe('court-hearing');
+    expect(state.interior?.roomId).toBe('court-hearing');
+    expect(state.courtroom?.active?.returnTo).toEqual({x:0,z:2,yaw:0});
+    state=applyStoryActions(state,[{type:'court_finish',verdict:'loss',summary:'当事人关键证据未获采纳，雪莉进行了合理的善后。'}],'court-return-verdict');
+    expect(state.locationId).toBe('legal-office');
+    expect(state.interior?.roomId).toBe('legal-office');
+    expect(state.courtroom?.active).toBeNull();
+  });
+
+  it('a proposed settlement does not close a suit or charge money before explicit player confirmation',()=>{
+    let state=inOffice();
+    const money=state.player.balance;
+    state=applyStoryActions(state,[{
+      type:'court_quote',defendant:'长崎素世',reason:'请求澄清相互误解',
+      risk:'只有口角时诉讼请求难以获支持',category:'civil',lawyer:null,sherry:false,
+      courtFeeYen:900,lawyerFeeYen:0,sherryFeeYen:0,
+    }],'court-settle-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    expect(state.locationId).toBe('court-hearing');
+    expect(state.player.balance).toBe(money-900);
+    const caseId=state.courtroom!.active!.id;
+    state=applyStoryActions(state,[{type:'court_settlement',
+      summary:'双方同意双方不再反复施压、澄清误解',
+      defendantConsented:true,terms:[
+        {kind:'cease',from:'claimant',description:'不再反复要求对方放弃自己的乐队',amountYen:0,dueDay:2},
+        {kind:'payment',from:'defendant',description:'归还此前借款',amountYen:3000,dueDay:4},
+      ],
+    }],'court-settle-offer');
+    expect(state.courtroom?.active?.id).toBe(caseId);
+    expect(state.courtroom?.pendingSettlement?.terms).toHaveLength(2);
+    expect(state.courtroom?.agreements).toHaveLength(0);
+    expect(state.player.balance).toBe(money-900);
+    const rejected=reduceState(state,{type:'courtroom',phase:'reject-settlement'});
+    expect(rejected.courtroom?.active?.id).toBe(caseId);
+    expect(rejected.courtroom?.pendingSettlement).toBeNull();
+    state=applyStoryActions(rejected,[{type:'court_settlement',
+      summary:'双方自愿达成协议',defendantConsented:true,terms:[
+        {kind:'cease',from:'claimant',description:'不再反复施压',amountYen:0,dueDay:2},
+        {kind:'payment',from:'defendant',description:'归还借款',amountYen:3000,dueDay:4},
+      ],
+    }],'court-settle-reoffer');
+    state=reduceState(state,{type:'courtroom',phase:'accept-settlement'});
+    expect(state.courtroom?.active).toBeNull();
+    expect(state.courtroom?.pendingSettlement).toBeNull();
+    expect(state.courtroom?.results.at(-1)?.verdict).toBe('settled');
+    expect(state.courtroom?.agreements?.at(-1)).toMatchObject({caseId,kind:'settlement'});
+    expect(state.courtroom?.agreements?.at(-1)?.terms[1]?.status).toBe('pending');
+    expect(state.locationId).toBe('legal-office');
+    expect(state.player.balance).toBe(money-900);
+    expect(()=>reduceState(state,{type:'courtroom',phase:'accept-settlement'})).toThrow();
+  });
+
+  it('withdrawal is initiated by the protagonist and never refunds already paid filing fees',()=>{
+    let state=inOffice();
+    const original=state.player.balance;
+    state=applyStoryActions(state,[{
+      type:'court_quote',defendant:'丰川祥子',reason:'请法院澄清合同争议',risk:'法院可能认为请求没有法律依据',
+      category:'civil',lawyer:null,sherry:false,courtFeeYen:1200,lawyerFeeYen:0,sherryFeeYen:0,
+    }],'withdraw-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    expect(state.player.balance).toBe(original-1200);
+    state=reduceState(state,{type:'courtroom',phase:'withdraw'});
+    expect(state.courtroom?.results.at(-1)?.verdict).toBe('withdrawn');
+    expect(state.locationId).toBe('legal-office');
+    expect(state.courtroom?.active).toBeNull();
+    expect(state.player.balance).toBe(original-1200);
+  });
+
+  it('persists judgment obligations and pays an already-funded protagonist debtor once',()=>{
+    let state=inOffice();
+    state=applyStoryActions(state,[{
+      type:'court_quote',defendant:'丰川祥子',reason:'请求返还借款',risk:'须提交证据证明借贷关系',
+      category:'civil',lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
+    }],'judgment-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    state=applyStoryActions(state,[{
+      type:'court_finish',verdict:'win',summary:'法院根据转账凭证判令返还借款。',
+      order:{respondent:'丰川祥子',terms:[
+        {kind:'payment',from:'defendant',description:'向原告偿还借款',amountYen:500,dueDay:3},
+      ],sanctions:[]},
+    }],'judgment-finish');
+    const term=state.courtroom!.agreements![0]!.terms[0]!;
+    expect(term.status).toBe('pending');
+    expect(state.locationId).toBe('legal-office');
+    const beforeEmma=appiePayBalance(state.protagonists!.accounts,'emma');
+    const beforeSakiko=appiePayBalance(state.protagonists!.accounts,'sakiko');
+    state=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
+    state=reduceState(state,{type:'courtroom',phase:'pay-term',termId:term.id});
+    expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
+    expect(appiePayBalance(state.protagonists!.accounts,'emma')-beforeEmma).toBe(50000);
+    expect(beforeSakiko-appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(50000);
+    expect(()=>reduceState(state,{type:'courtroom',phase:'pay-term',termId:term.id})).toThrow();
+  });
+
+  it('records a sentenced NPC restriction without imposing sentences on playable characters',()=>{
+    let state=openPreset();
+    state=applyStoryActions(state,[{
+      type:'court_finish',verdict:'loss',summary:'法庭查明案件后完成裁判。',
+      order:{respondent:'橘雪莉',terms:[],sanctions:[{
+        personId:'majo-sherry',kind:'community-service',startDay:2,endDay:4,detail:'工作日定时履行公益服务',
+      }]},
+    }],'npc-sanction');
+    expect(state.courtroom?.sanctions?.[0]).toMatchObject({personId:'majo-sherry',kind:'community-service'});
+    expect(state.courtroom?.sanctions?.[0]?.endDay).toBe(4);
+    expect(parseState(JSON.parse(JSON.stringify(state))).courtroom?.sanctions).toHaveLength(1);
+  });
+
+  it('legal career fees and assistance experience are credited to the hired playable character',()=>{
+    let state=inOffice();
+    state=applyStoryActions(state,[{
+      type:'court_quote',defendant:'长崎素世',reason:'争议赔偿',
+      risk:'证据不足时请求可能被驳回',category:'civil',lawyer:'sakiko',sherry:false,
+      courtFeeYen:0,lawyerFeeYen:500,sherryFeeYen:0,
+    }],'career-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    expect(state.courtroom?.careers?.sakiko).toMatchObject({enrolled:true,assistedCases:1,earnedYen:500});
+    expect(state.courtroom?.careers?.sakiko?.experience).toBeGreaterThan(0);
+    expect(state.courtroom?.careers?.sakiko?.qualification).not.toBe('licensed');
+  });
+
   it('switching protagonists forfeits the current trial with zero payout and a single respectful return recap',()=>{
     let state=openPreset();
     const money=state.player.balance;
