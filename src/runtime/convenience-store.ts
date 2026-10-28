@@ -7,7 +7,7 @@ export interface StoreItem {
   readonly name: string;
   readonly brand: string;
   readonly tier: 'basic' | 'standard' | 'premium';
-  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette';
+  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine';
   readonly price: number;
   readonly packSize: number;
   readonly purchaseUnit: string;
@@ -31,6 +31,10 @@ export const storeCatalog: readonly StoreItem[] = Object.freeze([
   { id: 'cigarette-basic', name: '灰桥香烟', brand: '灰桥', tier: 'basic', category: 'cigarette', price: 500, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 25, satiety: 0, stress: -20, health: -8 } },
   { id: 'cigarette-standard', name: '夜渡香烟', brand: '夜渡', tier: 'standard', category: 'cigarette', price: 1000, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 35, satiety: 0, stress: -30, health: -6 } },
   { id: 'cigarette-premium', name: '青屿香烟', brand: '青屿', tier: 'premium', category: 'cigarette', price: 1800, packSize: 20, purchaseUnit: '盒', useUnit: '支', kcal: 0, useMinutes: 5, effects: { energy: 40, satiety: 0, stress: -35, health: -8 } },
+  { id: 'medicine-cold', name: '感冒退热颗粒', brand: '仁和堂', tier: 'standard', category: 'medicine', price: 480, packSize: 3, purchaseUnit: '盒', useUnit: '袋', kcal: 15, useMinutes: 3, effects: { energy: 12, health: 25, stress: -5, satiety: 0, morale: 5 } },
+  { id: 'medicine-gastro', name: '温和健胃整肠片', brand: '健宁', tier: 'standard', category: 'medicine', price: 420, packSize: 4, purchaseUnit: '盒', useUnit: '片', kcal: 20, useMinutes: 3, effects: { energy: 10, health: 20, satiety: 15, stress: -6, morale: 4 } },
+  { id: 'medicine-soothe', name: '草本安神舒压水', brand: '清心堂', tier: 'standard', category: 'medicine', price: 560, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 25, useMinutes: 4, effects: { energy: 8, health: 10, stress: -35, satiety: 0, morale: 25 } },
+  { id: 'medicine-vitality', name: '医用营养机能饮', brand: '力维他', tier: 'standard', category: 'medicine', price: 320, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 150, useMinutes: 2, effects: { energy: 28, health: 15, stress: -8, satiety: 8, morale: 6 } },
 ].map(item => Object.freeze({ ...item, effects: Object.freeze(item.effects) })) as StoreItem[]);
 
 export const MAX_PURCHASE_QUANTITY = 20;

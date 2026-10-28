@@ -29,6 +29,7 @@ import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
+import { detectIllnessTransition, getIllnessDebuffs } from './illness';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -102,8 +103,10 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
   const departure = { ...next.player };
   // Capture conditions before any leg consumes nutrition. The rational form
   // also gives exact rounding at half-cent boundaries without float drift.
+  const debuffs = getIllnessDebuffs(departure);
   const conditionNumerator = Math.min(450, Math.max(150, 350 - departure.health - departure.satiety + departure.stress));
-  const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier: conditionNumerator / 300, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
+  const conditionMultiplier = Math.round((conditionNumerator / 300) * debuffs.travelEnergyMultiplier * 100) / 100;
+  const quote: NovelTravelQuote = { minutes: 0, baseEnergyCost: 0, baseEnergyMultiplier: 0.1, conditionMultiplier, calculatedEnergyCost: 0, energyCost: 0, foodEnergyCost: 0, satietyCost: 0, fare: 0, rides: [], alreadyThere: false, blockedReason: null };
   // Exiting an already visited room is free and must retain its real exterior pose;
   // never teleport the player back to a distant bus stop on a same-district exit.
   if (state.interior && getCampusInterior(state.interior.roomId)?.parentLocationId === locationId) {
@@ -816,7 +819,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         next.player.foodEnergy = Math.max(0, Math.min(3000, next.player.foodEnergy + action.effects.foodEnergy));
         next.player.balance += action.effects.balance;
         clearInteriorActivity();
-        note(next, `${action.label}，耗时 ${action.minutes} 分钟。${action.effects.balance ? `余额${action.effects.balance > 0 ? '+' : ''}${action.effects.balance} 日元。` : ''}${activityChangeNote(before, next.player)}`);
+        const transition = detectIllnessTransition(before, next.player);
+        const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
+        note(next, `${action.label}，耗时 ${action.minutes} 分钟。${action.effects.balance ? `余额${action.effects.balance > 0 ? '+' : ''}${action.effects.balance} 日元。` : ''}${activityChangeNote(before, next.player)}${transitionNote}`);
         break;
       }
     }
@@ -1101,12 +1106,15 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     case 'use_item': {
       const quote = getUseItemQuote(next, action.itemId);
       if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
+      const before = { ...next.player };
       advance(next, quote.minutes);
       next.player = quote.playerAfter;
       next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
       const labels = { energy: '精力', health: '健康', morale: '精神', stress: '压力', satiety: '饱腹', foodEnergy: '食物能量' } as const;
       const changes = (Object.keys(labels) as (keyof typeof labels)[]).filter(key => (quote.changes[key] ?? 0) !== 0).map(key => `${labels[key]}${(quote.changes[key] ?? 0) > 0 ? '+' : ''}${quote.changes[key]}${key === 'foodEnergy' ? ' kcal' : ''}`).join('，');
-      note(next, `使用${quote.item.name} 1 ${quote.item.useUnit}，耗时 ${quote.minutes} 分钟。${changes ? `实际变化：${changes}。` : '状态已达边界，未产生额外变化。'}`);
+      const transition = detectIllnessTransition(before, next.player);
+      const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
+      note(next, `使用${quote.item.name} 1 ${quote.item.useUnit}，耗时 ${quote.minutes} 分钟。${changes ? `实际变化：${changes}。` : '状态已达边界，未产生额外变化。'}${transitionNote}`);
       break;
     }
     case 'location_service': {
@@ -1118,7 +1126,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       // The quote already includes elapsed nutrition; replace, never apply twice.
       next.player = quote.playerAfter;
       const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
-      note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}`);
+      const transition = detectIllnessTransition(before, next.player);
+      const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
+      note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
       break;
     }
     case 'novel_travel': {
@@ -1261,7 +1271,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       next.interior.lastRest = null;
       next.interior.lastStudy = null;
       const balanceNote = interaction.balanceDelta ? `余额${interaction.balanceDelta > 0 ? '+' : ''}${interaction.balanceDelta} 日元。` : '';
-      note(next, `${formalLivehouse ? livehouseReceipt(worldAuthority ? { ...next, protagonists: worldAuthority.protagonists } : next, action) : interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${balanceNote}${activityChangeNote(playerBefore, next.player)}` : (balanceNote ? ` ${balanceNote}${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。')}`);
+      const transition = detectIllnessTransition(playerBefore, next.player);
+      const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
+      note(next, `${formalLivehouse ? livehouseReceipt(worldAuthority ? { ...next, protagonists: worldAuthority.protagonists } : next, action) : interaction.result}${interaction.minutes ? `耗时 ${interaction.minutes} 分钟，${interaction.energyDelta > 0 ? `恢复至多 ${interaction.energyDelta}` : `消耗 ${-interaction.energyDelta}`} 点精力。${balanceNote}${activityChangeNote(playerBefore, next.player)}` : (balanceNote ? ` ${balanceNote}${activityChangeNote(playerBefore, next.player)}` : '未消耗时间或精力。')}${transitionNote}`);
       break;
     }
     case 'interior_rest': {
@@ -1274,14 +1286,21 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const minutes = option.minMinutes + Math.min(option.maxMinutes - option.minMinutes, Math.floor(sample * (option.maxMinutes - option.minMinutes + 1)));
       const energyBefore = next.player.energy;
       const playerBefore = { ...next.player };
-      const recovery = option.id === 'dorm-rest-long' ? 100 : Math.floor(minutes * 0.4);
+      const debuffs = getIllnessDebuffs(next.player);
+      const baseRecovery = option.id === 'dorm-rest-long' ? 100 : Math.floor(minutes * 0.4);
+      const recovery = Math.max(1, Math.round(baseRecovery * debuffs.bedRestEnergyMultiplier));
       advance(next, minutes);
       next.player.energy = adjustEnergy(energyBefore, recovery);
       applyActivityEffects(next, 'rest', minutes);
+      if (option.id === 'dorm-rest-long') {
+        next.player.health = Math.min(100, next.player.health + 10);
+      }
       next.interior.activityId = option.id;
       next.interior.lastRest = { optionId: option.id, minutes, energyRecovered: energyDifference(next.player.energy, energyBefore) };
       next.interior.lastStudy = null;
-      note(next, getInteriorActivity(getCampusInterior(next.interior.roomId)!, option.id, next.interior.lastRest)!.result + activityChangeNote(playerBefore, next.player));
+      const transition = detectIllnessTransition(playerBefore, next.player);
+      const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
+      note(next, getInteriorActivity(getCampusInterior(next.interior.roomId)!, option.id, next.interior.lastRest)!.result + activityChangeNote(playerBefore, next.player) + transitionNote);
       break;
     }
     case 'interior_study':

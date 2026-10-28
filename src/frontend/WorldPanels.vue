@@ -16,6 +16,7 @@ import { activeProtagonist, protagonistNames } from '../runtime/protagonist-worl
 import { protagonistRecap } from '../runtime/protagonist-narrative';
 import { formatGameDate, formatGameStamp, gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from '../runtime/japan-calendar-events';
+import { diagnosePlayerIllnesses } from '../runtime/illness';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
@@ -47,6 +48,7 @@ const bodyStats = computed(() => [
   { id: 'satiety', label: '饱腹', value: props.model.state.player.satiety, maximum: 100, state: props.model.state.player.satiety >= 70 ? '饱足' : props.model.state.player.satiety >= 40 ? '尚可' : '饥饿', note: '每经过 15 分钟刻度消耗 1 点，吃喝时补充' },
   { id: 'foodEnergy', label: '食物能量储备', value: props.model.state.player.foodEnergy, maximum: 3000, state: props.model.state.player.foodEnergy >= 600 ? '有储备' : props.model.state.player.foodEnergy > 0 ? '储备偏低' : '暂无储备', note: '每推进 1 分钟消耗 2 kcal，使用食物后补充' },
 ]);
+const activeIllnesses = computed(() => diagnosePlayerIllnesses(props.model.state.player));
 const mindStats = computed(() => [
   { id: 'morale', label: '精神', value: props.model.state.player.morale, maximum: 100, state: condition(props.model.state.player.morale), note: '学习消耗精神；休息、咖啡与放松可恢复' },
   { id: 'stress', label: '压力', value: props.model.state.player.stress, maximum: 100, state: props.model.state.player.stress < 30 ? '放松' : props.model.state.player.stress < 70 ? '有压力' : '紧绷', note: '越低越轻松；学习可能增加，休息和散步可缓解' },
@@ -161,6 +163,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
+      <section class="wp-status-section" data-status-section="illness" aria-label="身体健康与不适"><div class="wp-heading"><h2>身体健康与不适</h2><small>{{ activeIllnesses.length ? '当前体感异常' : '状态平稳' }}</small></div><div v-if="activeIllnesses.length" class="wp-illness-list"><article v-for="illness in activeIllnesses" :key="illness.id" class="wp-illness-card" :class="'wp-severity-' + illness.severity" :data-illness="illness.id"><div class="wp-illness-header"><h3>{{ illness.name }}</h3><span class="wp-illness-badge">{{ illness.severityLabel }}</span></div><p class="wp-illness-desc">{{ illness.description }}</p><div class="wp-illness-symptoms"><span v-for="symptom in illness.symptoms" :key="symptom" class="wp-symptom-tag">{{ symptom }}</span></div><p class="wp-illness-remedy">调理建议：{{ illness.remedyHint }}</p></article></div><p v-else class="wp-health-healthy">身体状况良好，暂无明显不适。规律作息与充足饮食有助于保持健康。</p></section>
       <section class="wp-status-section" data-status-section="resources" aria-label="账户与携带物品"><div class="wp-heading"><h2>账户与携带物品</h2></div><div class="wp-resources"><article class="wp-resource"><h2>Appie Pay</h2><p class="wp-footnote">余额、银行卡与交易流水在手机中查看。</p><button type="button" class="wp-text-button" @click="emit('phone')">打开手机 ↗</button></article><article class="wp-resource"><h2>随身携带</h2><p class="wp-resource-value">{{ model.state.inventory.length }}<small>种 · {{ inventoryCount }} 份／件</small></p><button type="button" class="wp-text-button" data-status-open-inventory @click="emit('inventory')">打开背包 ↗</button></article></div><button v-if="storeAvailability.available" type="button" class="wp-secondary wp-store-entry" data-open-store :disabled="model.busy" @click="emit('store')">逛便利店 ↗</button></section>
       <section class="wp-status-section" data-status-section="recent" aria-label="最近变化"><div class="wp-heading"><h2>最近变化</h2><small>已保存的活动记录</small></div><div class="wp-journal-list"><article v-for="entry in recentChanges" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!recentChanges.length" class="wp-empty">活动完成后会在这里记录实际结果。</p></div></section>
       <AcademicProgress :academics="model.state.academics" />
@@ -177,5 +180,17 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 <style scoped>
 [data-testid="protagonist-recap"] > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
 [data-testid="protagonist-recap"] .wp-journal-entry p { overflow-wrap: anywhere; }
+.wp-illness-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.wp-illness-card { background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 8px; padding: 10px 12px; }
+.wp-illness-card.wp-severity-mild { background: rgba(234, 179, 8, 0.08); border-color: rgba(234, 179, 8, 0.25); }
+.wp-illness-card.wp-severity-severe { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); }
+.wp-illness-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.wp-illness-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.wp-illness-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: rgba(220, 38, 38, 0.18); color: #b91c1c; }
+.wp-illness-desc { font-size: 0.85rem; color: var(--text-color, #374151); margin: 4px 0; }
+.wp-illness-remedy { font-size: 0.8rem; color: var(--text-muted, #6b7280); margin-top: 4px; }
+.wp-illness-symptoms { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.wp-symptom-tag { font-size: 0.72rem; padding: 1px 6px; border-radius: 10px; background: rgba(0, 0, 0, 0.06); }
+.wp-health-healthy { color: #15803d; font-size: 0.88rem; padding: 8px 0; }
 </style>
 

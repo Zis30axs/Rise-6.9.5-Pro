@@ -16,6 +16,7 @@ import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
+import { diagnosePlayerIllnesses } from './illness';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -114,6 +115,7 @@ export const STORY_PROTOCOL = [
   '玩家要求点咖啡、吃饭或运动时，直接选择当前地点相符的service；不要把咖啡馆需求统一赶到便利店。当前已打烊或服务不可用则说明原因和可行去处，除非玩家表达出行意图，不自动带去另一家店。服务描述为门前窗口或露台取用时，不写成已进入未实现的店内。',
   'store.available仅表示便利店货架可购买，不能据此否认其他地点的locationServices。inventory是实际持有物品，持有食物可从常驻背包使用；service不生成库存，takeaway才打包入背包。商品品牌、品质、菜单与价格以目录为准，不自行增加商品、折扣、赠品或库存。书店阅读须遵守venue营业时间和本轮学习时长。',
   'player.energy是行动精力，foodEnergy是游戏中的食物能量储备（kcal），satiety是饱腹，stress越高压力越大，health越低健康状况越差。食物能量与饱腹随游戏中已结算的时间消耗；普通对话不推进。香烟的短时提神和减压伴随健康下降，不把高价品牌写成无害，也不把游戏数值解释为现实疗效。',
+  '当健康过低、过度疲劳、空腹饥饿或严重压力时，角色可能处于感冒、胃痛、重度疲劳或神经衰弱等不适状态（详见illnesses字段）。生病时行动消耗加剧、休息质量受损且无法从事重体力搬运兼职。可在便利店购买对应非处方药、前往校医室或诊所问诊、或按时休息与补充饮食逐渐恢复；叙事中应自然流露身体不适与疗愈过程，避免违背角色的虚弱状态。',
   '城市交通包括都营巴士与东京Metro联程，玩家作为乘客出行；街道上是普通的民用车辆。',
   '乘车可由travel执行，程序结算车程与车费。transit.lastRide 是已经到站下车的历史结果，使用保存的车辆、起终点、实际耗时和车费，不重复扣费、推进时间或移动玩家。',
   '<story> 标签内的正文用于点击推进的视觉小说。旁白按短段落写；人物所有直接台词（不限于当面交谈）每句独占一行，格式严格为 |charac|emot|says|，三个字段分别替换为实际角色名、情绪和一句台词。例如 |素世|开心|今天天气真好|。示例只说明格式，不强制素世说话或改写玩家身份。不得替玩家决定新台词。',
@@ -284,6 +286,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         todayOccasions: gameCalendarOccasions(snapshot.clock.day),
         upcomingOccasions: upcomingGameCalendarOccasions(snapshot.clock.day, 14).slice(0, 8),
         location: snapshot.locationId, player: snapshot.player,
+        illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
           .slice(0, PROMPT_CONTEXT_LIMITS.calendarEntries),

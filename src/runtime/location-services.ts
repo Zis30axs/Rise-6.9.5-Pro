@@ -3,6 +3,7 @@ import { advancePlayerNutrition, getServiceTakeawayItem, INVENTORY_ITEM_LIMIT, M
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import { getIllnessDebuffs } from './illness';
 
 export interface LocationStatus {
   locationId: string;
@@ -98,6 +99,8 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'stretch', locationIds: ['sports'], label: '拉伸', description: '在运动场边做一组轻量拉伸。', minutes: 10, price: 0, effects: effects({ energy: -2, morale: 4, health: 1, stress: -4 }) },
   { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
   { id: 'take-stroll', locationIds: ['pocket-park', 'city-park', 'promenade'], label: '沿步道散步', description: '沿所在区域的步道慢慢走一段，活动结束后仍留在当前地点。', minutes: 20, price: 0, effects: effects({ energy: -3, morale: 7, health: 1, stress: -6 }) },
+  { id: 'clinic-treatment', locationIds: ['commercial', 'grand-commercial', 'pocket-park'], label: '诊所全科问诊', description: '到街区综合全科诊所挂号问诊，进行听诊体检与用药调理。', minutes: 30, price: 1800, effects: effects({ energy: 15, health: 35, stress: -15, satiety: 5, foodEnergy: 100 }) },
+  { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'>): readonly LocationService[] {
@@ -144,6 +147,12 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
   let blockedReason: string | null = !service ? '不存在的地点活动。'
     : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
       : !status ? '当前地点没有已设定的开放安排。' : null;
+  if (!blockedReason && service?.id === 'construction-carry') {
+    const debuffs = getIllnessDebuffs(state.player);
+    if (debuffs.prohibitHeavyLabor) {
+      blockedReason = debuffs.heavyLaborReason ?? '身体抱恙，无法承担高强度重体力劳动。';
+    }
+  }
   if (!blockedReason && status && !status.isOpen) blockedReason = `当前${status.label}${status.statusLabel}，开放时间 ${status.hoursLabel}。`;
   if (!blockedReason && status?.minutesUntilClose != null && minutes > status.minutesUntilClose) {
     blockedReason = `距打烊只剩 ${status.minutesUntilClose} 分钟，这项活动需要 ${minutes} 分钟，请下次营业时再来。`;

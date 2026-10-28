@@ -1,33 +1,33 @@
 {
   "buildDate": "2026-10-28",
-  "feature": "新宿大型商业区传销据点（启航商贸）与高收益高压力交互",
-  "verifiedTests": "40 files, 373 passed",
+  "feature": "基于核心变量的疾病与健康诊疗医药系统（风寒感冒、胃痛虚脱、神经衰弱、重度疲劳）与工地实景背景",
+  "verifiedTests": "42 files, 392 passed",
   "typeCheck": "vue-tsc passed",
   "noJapaneseCheck": "passed",
   "artifacts": {
     "unread-city-lite.png": {
-      "bytes": 25908383,
-      "sha256": "102385106b7319e4136dc27fbf420254b0dfedf9ec30313e8af52dd020181a20"
+      "bytes": 25920863,
+      "sha256": "b806029d0a727c417982c8610705ed5f9727db3525baf6c665be59e101ef1079"
     },
     "unread-city-lite-tauri.png": {
-      "bytes": 9709046,
-      "sha256": "34a5753d7c336be9c98e38a8e459de951d948bb3a2f068bf94f77723b314ed8e"
+      "bytes": 9714594,
+      "sha256": "2517e7a416c4e01e56efb58508a2c48297bb33a75fae45f69e68714ebe57fdca"
     },
     "unread-city-lite-tauri.verification.json": {
       "bytes": 827,
-      "sha256": "f79203dfcfc9d008b87487446f22852f2d6ae1dbe85d4a43d33ed814867de409"
+      "sha256": "262c93e696d4fd85387c7d76beb56bc76a38c8cdea8a25da35de883abb5be1d2"
     },
     "unread-city-lite-assets.zip": {
-      "bytes": 62519216,
-      "sha256": "c70f9df5750bf610aa00688adea077e6b883b0297c18cedbf2f1f76cc385f09a"
+      "bytes": 62627136,
+      "sha256": "3fa78211aa61f8aacf7fb4d613006b44afdbb64f2122f69339158b22bef2118e"
     },
     "lite-assets-report.json": {
       "bytes": 487,
-      "sha256": "d8840c615f8d04f38146356e682f29191bf9060ea75c2a10902f8034d7b98455"
+      "sha256": "907bea08325504d52be583d563a3a5caf521263e0229424130456872bab725d9"
     },
     "lite-verification.json": {
       "bytes": 436,
-      "sha256": "d1daaac1ea80b842731ced59c6c9bd6a25f891b50f9e55836fa16d4aa4cb22e5"
+      "sha256": "85aa46bcae11c88b2854314328dee98635163de99069b63d246ebf6cb1e0a83f"
     }
   }
 }

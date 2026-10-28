@@ -13,6 +13,7 @@ const categories: { id: StoreItem['category']; label: string; description: strin
   { id: 'snack', label: '零食', description: '课间与路上的小小补给。' },
   { id: 'drink', label: '饮品', description: '在货架前挑一瓶喜欢的饮品。' },
   { id: 'cigarette', label: '香烟', description: '按盒购买，按支使用；效果包含健康损失。' },
+  { id: 'medicine', label: '医药', description: '常备非处方药与急救调理品。' },
 ];
 const tiers: Record<StoreItem['tier'], string> = { basic: '基础款', standard: '标准款', premium: '精选款' };
 const selectedCategory = ref<StoreItem['category']>('meal');
