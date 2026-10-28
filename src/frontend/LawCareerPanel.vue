@@ -39,11 +39,11 @@ async function perform(action: LawCaseAction) {
     // Save first, generate optional courtroom dialogue afterward. AI does not pay rewards.
     if (finished && (action.phase === 'sherry' || action.phase === 'present')) {
       const request = action.phase === 'sherry'
-        ? '艾玛把案卷递给雪莉，紧张地问：“雪莉桑，我还是没能把这些线索连起来……你能帮我把真相讲清楚吗？”'
+        ? '橘雪莉接过结案卷宗，逐一说明已有证据怎样推翻关键证词，并陪艾玛确认完整的案件真相与完美结局。'
         : protagonistNames[owner.value] + '举起已经整理好的证据，认真地向在场众人陈述这起案件的最终推理。';
-      void props.actions.send(request);
+      void props.actions.send(request, 'law_narration');
     } else if (action.phase === 'investigate' && owner.value === 'emma') {
-      void props.actions.send('艾玛与雪莉一起核对完卷宗，望向桌上的几件证物。艾玛想听听雪莉的观察，也希望自己能找到矛盾所在。');
+      void props.actions.send('艾玛与橘雪莉核对完案卷资料，雪莉依照眼前能核实的证据分享自己的观察，但把关键质证与最后选择留给艾玛。', 'law_narration');
     }
   } finally {
     working.value = false;
