@@ -50,7 +50,7 @@ function queryArguments(raw: unknown): MemoryQuery {
 export function parseMemoryTag(value: unknown): MemoryQuery | null {
   if (typeof value !== 'string') return null;
   const text = value.trim();
-  if (!text.startsWith('<memory_lookup>')) return null;
+  if (!text.includes('<memory_lookup>') && !text.includes('</memory_lookup>')) return null;
   const match = /^<memory_lookup>\s*([\s\S]{1,2500}?)\s*<\/memory_lookup>$/.exec(text);
   if (!match) throw new Error('记忆标签必须独占本次响应');
   return queryArguments(JSON.parse(match[1]));
