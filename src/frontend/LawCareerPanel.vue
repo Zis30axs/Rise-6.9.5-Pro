@@ -109,7 +109,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
       <article class="law-case" data-court-active>
         <small>庭审进行中 · {{ COURT_CATEGORY_NAMES[myTrial.category] }}</small>
         <h3>{{ myTrial.title }}</h3>
-        <p v-for="(part,index) in highlight(myTrial.white)" :key="index" class="law-inline" :class="{ 'law-keyword':part.keyword }">{{ part.text }}</p>
+        <p class="law-white"><span v-for="(part,index) in highlight(myTrial.white)" :key="index" :class="{ 'law-keyword':part.keyword }">{{ part.text }}</span></p>
         <h4>已提交的证据</h4>
         <div v-for="(item,index) in myTrial.evidence" :key="index" class="law-evidence-item">
           <strong>{{ item.title }}</strong>
@@ -227,7 +227,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 .law-case h4{font-size:15px}
 .law-special-offer{display:grid;gap:9px;padding:9px;border:1px solid #b895a34a;border-radius:9px}
 .law-evidence-item{display:grid;gap:5px;padding:9px;border-left:3px solid #b9a8e1;background:#8c89a00d}
-.law-inline{display:inline!important;white-space:pre-wrap;overflow-wrap:anywhere}
+.law-white{white-space:pre-wrap;overflow-wrap:anywhere}
 .law-keyword{color:#e66a73;font-weight:800}
 .law-filters,.law-tabs{display:flex;flex-wrap:wrap;gap:8px}
 .law-filters label{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #9792a34a;border-radius:8px}
