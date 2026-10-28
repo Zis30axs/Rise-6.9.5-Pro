@@ -24,7 +24,8 @@ const qualificationNames = {unqualified:'尚无执业资格',student:'法学在�
 const pendingSettlement = computed(() => myTrial.value?.source==='lawsuit' ? court.value.pendingSettlement : null);
 const withdrawalPrompt = ref(false);
 const relevantAgreements = computed(() => (court.value.agreements ?? []).filter(row =>
-  row.claimant.id===owner.value || row.defendant.id===owner.value).slice(-10).reverse());
+  row.claimant.id===owner.value || row.defendant.id===owner.value ||
+  court.value.results.some(result=>result.id===row.caseId && (result.owner===owner.value || result.lawyer===owner.value))).slice(-10).reverse());
 function isSelfDebtor(agreement:import('../runtime/court-legal-effects').CourtAgreement,term:import('../runtime/court-legal-effects').CourtTerm) {
   const payer=term.from==='claimant'?agreement.claimant:agreement.defendant;
   return payer.kind==='protagonist' && payer.id===owner.value;
