@@ -6,6 +6,7 @@ import { courtState, courtStoryContext, DAILY_COURT_CATEGORIES, parseCourtroom }
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 import { npcProfession } from '../src/runtime/npc-professions';
 import { worldScenePeople } from '../src/runtime/world-presence';
+import { worldScenePeople } from '../src/runtime/world-presence';
 
 function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   let state = enableProtagonists(createInitialState());
@@ -435,6 +436,8 @@ describe('freeform courtroom and legal services', () => {
     expect(state.courtroom?.sanctions?.[0]).toMatchObject({personId:'majo-sherry',kind:'community-service'});
     expect(state.courtroom?.sanctions?.[0]?.endDay).toBe(4);
     expect(parseState(JSON.parse(JSON.stringify(state))).courtroom?.sanctions).toHaveLength(1);
+    expect(state.locationId).toBe('legal-office');
+    expect(worldScenePeople(state).some(person=>person.id==='majo-sherry')).toBe(false);
   });
 
   it('refuses legal execution against a different person from the frozen case respondent',()=>{
