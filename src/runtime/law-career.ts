@@ -307,7 +307,9 @@ export function lawCareerStoryContext(state: WorldState) {
       statements: current.rounds.map(round => round.statement),
       deductions: progress.active.deductions,
     } : null,
-    lastResult: progress.lastResult ? { ...progress.lastResult, title: caseById(progress.lastResult.caseId).title } : null,
+    lastResult: progress.lastResult ? { ...progress.lastResult, title: caseById(progress.lastResult.caseId).title,
+      evidence: caseById(progress.lastResult.caseId).evidence,
+      statements: caseById(progress.lastResult.caseId).rounds.map(round => round.statement) } : null,
     rule: '案件真相、证据及收益来自程序。雪莉可完整推理并确保完美结局；玩家请她接手时只得40%的经验与报酬，禁止重复结算。',
   };
 }
