@@ -38,6 +38,22 @@ export interface MemoryEvent {
   status: 'active' | 'superseded' | 'disputed';
 }
 
+export interface MemoryEntity {
+  key: string;
+  scope: string;
+  id: string;
+  name: string;
+  kind: 'person' | 'item' | 'place' | 'unknown';
+  lastSeenAt: number;
+}
+export interface MemoryEntityLink {
+  key: string;
+  scope: string;
+  id: string;
+  eventId: string;
+  entityId: string;
+}
+
 export interface MemoryJob {
   key: string;
   scope: string;

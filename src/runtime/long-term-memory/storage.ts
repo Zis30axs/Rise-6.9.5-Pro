@@ -1,5 +1,5 @@
 import { memoryKey } from './types';
-import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
+import type { MemoryEntity, MemoryEntityLink, MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
 
 const DB_NAME = 'unread-city-memory-v1';
 type Table = 'sources' | 'events' | 'entities' | 'entity_links' | 'vectors' | 'jobs' | 'metadata';
@@ -79,7 +79,7 @@ export async function ingestSources(sources: MemorySource[]): Promise<void> {
 }
 export async function finalizeJob(job: MemoryJob, events: MemoryEvent[], vectors: MemoryVector[]): Promise<void> {
   const db = await openMemoryDb();
-  const tx = db.transaction(['sources', 'events', 'vectors', 'jobs', 'metadata'], 'readwrite');
+  const tx = db.transaction(['sources', 'events', 'entities', 'entity_links', 'vectors', 'jobs', 'metadata'], 'readwrite');
   const done = completed(tx);
   const sources = tx.objectStore('sources');
   for (const sourceId of job.sourceIds) {
@@ -89,7 +89,24 @@ export async function finalizeJob(job: MemoryJob, events: MemoryEvent[], vectors
       if (item) sources.put({ ...item, processed: true });
     };
   }
-  for (const event of events) tx.objectStore('events').put(event);
+  const entityStore = tx.objectStore('entities');
+  const linkStore = tx.objectStore('entity_links');
+  for (const event of events) {
+    tx.objectStore('events').put(event);
+    const participants = new Set(event.participants);
+    for (const name of new Set([...event.participants, ...event.entities].filter(Boolean).slice(0, 32))) {
+      if (name.length > 100) continue;
+      const entity: MemoryEntity = {
+        key: memoryKey(job.scope, name), scope: job.scope, id: name,
+        name, kind: participants.has(name) ? 'person' : 'unknown', lastSeenAt: event.at,
+      };
+      const id = JSON.stringify([event.id, name]);
+      const link: MemoryEntityLink = { key: memoryKey(job.scope, id),
+        scope: job.scope, id, eventId: event.id, entityId: name };
+      entityStore.put(entity);
+      linkStore.put(link);
+    }
+  }
   for (const vector of vectors) tx.objectStore('vectors').put(vector);
   tx.objectStore('jobs').put({ ...job, state: 'done', leaseUntil: 0, error: '' });
   tx.objectStore('metadata').put({
@@ -187,17 +204,20 @@ export interface MemoryBackup {
   version: 1;
   sources: MemorySource[];
   events: MemoryEvent[];
+  entities?: MemoryEntity[];
+  entity_links?: MemoryEntityLink[];
   vectors: MemoryVector[];
   jobs: MemoryJob[];
   metadata: { key: string; scope: string; id: string; value: unknown }[];
 }
 export async function exportMemory(scope: string): Promise<MemoryBackup> {
-  const [sources, events, vectors, jobs, metadata] = await Promise.all([
+  const [sources, events, entities, entity_links, vectors, jobs, metadata] = await Promise.all([
     rows<MemorySource>('sources', scope), rows<MemoryEvent>('events', scope),
+    rows<MemoryEntity>('entities', scope), rows<MemoryEntityLink>('entity_links', scope),
     rows<MemoryVector>('vectors', scope), rows<MemoryJob>('jobs', scope),
     rows<{ key: string; scope: string; id: string; value: unknown }>('metadata', scope),
   ]);
-  return { version: 1, sources, events, vectors, jobs, metadata };
+  return { version: 1, sources, events, entities, entity_links, vectors, jobs, metadata };
 }
 export async function importMemory(scope: string, raw: unknown): Promise<void> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('备份文件格式无效');
@@ -206,10 +226,14 @@ export async function importMemory(scope: string, raw: unknown): Promise<void> {
     || !Array.isArray(data.jobs) || !Array.isArray(data.vectors) || !Array.isArray(data.metadata)
     || data.sources.length > 100000 || data.events.length > 100000) throw new Error('备份版本或容量无效');
   const db = await openMemoryDb();
-  const tables = ['sources', 'events', 'vectors', 'jobs', 'metadata'] as const;
+  const tables = ['sources', 'events', 'entities', 'entity_links', 'vectors', 'jobs', 'metadata'] as const;
   const tx = db.transaction(tables, 'readwrite'), done = completed(tx);
   for (const table of tables) {
-    for (const value of data[table] ?? []) {
+    const collection = data[table] ?? [];
+    if (!Array.isArray(collection) || collection.length > 100000) {
+      tx.abort(); throw new Error('备份条目数量无效');
+    }
+    for (const value of collection) {
       if (!value || typeof value !== 'object' || typeof value.key !== 'string') {
         tx.abort(); throw new Error('备份记录无效');
       }
