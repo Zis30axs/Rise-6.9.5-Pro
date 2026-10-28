@@ -253,7 +253,7 @@ describe('freeform courtroom and legal services', () => {
     let state=inOffice();
     const soyoLocation=personState(state,'soyo').locationId;
     const sakikoLocation=personState(state,'sakiko').locationId;
-    state=applyStoryActions(state,[{type:'court_quote',defendant:'月代雪',reason:'请求解决合同争议',
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'长崎素世',reason:'请求解决合同争议',
       risk:'可能缺乏支持请求的关键证据',category:'civil',lawyer:'sakiko',sherry:false,
       courtFeeYen:0,lawyerFeeYen:400,sherryFeeYen:0}],'court-attendees-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
@@ -263,6 +263,21 @@ describe('freeform courtroom and legal services', () => {
     expect(people.some(person=>person.id==='court-judge')).toBe(true);
     expect(personState(state,'soyo').locationId).toBe(soyoLocation);
     expect(personState(state,'sakiko').locationId).toBe(sakikoLocation);
+  });
+
+  it('shows NPC clients and defendants only inside their actual legal hearing',()=>{
+    let state=withBoard('soyo');
+    const offer=state.courtroom!.board!.offers.find(item=>item.category==='minor-criminal')!;
+    state=applyStoryActions(state,[{type:'court_open',offerId:offer.id,respondent:'临时嫌疑人',
+      white:'委托人为本案请求进行证言调查。',
+      evidence:[{title:'交接文件',detail:'记录存在冲突'},{title:'出入记录',detail:'有不同时间戳'}],
+    }],'court-temporary-parties');
+    const people=worldScenePeople(state);
+    expect(people.some(person=>person.name==='临时嫌疑人' && person.identity==='诉讼相对方')).toBe(true);
+    expect(people.some(person=>person.name===offer.client && person.identity==='委托人')).toBe(true);
+    expect(people.some(person=>person.id==='court-judge')).toBe(true);
+    state=applyStoryActions(state,[{type:'court_finish',verdict:'loss',summary:'法院审理后没有支持委托人的请求。'}],'court-temporary-exit');
+    expect(worldScenePeople(state).some(person=>person.name==='临时嫌疑人')).toBe(false);
   });
 
   it('cannot visit the formal court without an actual hearing',()=>{
