@@ -4,11 +4,20 @@ import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
 function mapWorldbookResidents(entries: typeof lore.entries) {
-  return entries.filter(entry => entry.extensions.personId).map(entry => ({
-    id: entry.extensions.personId!, name: entry.name, aliases: entry.keys,
-    profile: entry.content, publicProfile: entry.extensions.publicProfile!,
-    anchor: entry.extensions.anchor!, home: entry.extensions.home!,
-  }));
+  return entries.filter(entry => entry.extensions.personId).map(entry => {
+    const profession = entry.extensions as typeof entry.extensions & {
+      majorId?: string | null; careerId?: string | null; qualification?: string | null;
+    };
+    return {
+      id: entry.extensions.personId!, name: entry.name, aliases: entry.keys,
+      profile: entry.content, publicProfile: entry.extensions.publicProfile!,
+      anchor: entry.extensions.anchor!, home: entry.extensions.home!,
+      /** Every NPC has a professional slot; null is an actual undecided choice. */
+      majorId: profession.majorId ?? null,
+      careerId: profession.careerId ?? null,
+      qualification: profession.qualification ?? null,
+    };
+  });
 }
 
 /** Person IDs outlive phone ownership and playable-character assignments. */
