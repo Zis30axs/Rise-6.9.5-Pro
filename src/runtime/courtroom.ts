@@ -39,6 +39,8 @@ export interface CourtJudgmentOrder {
 export interface CourtCase {
   id: string; source: 'commission' | 'lawsuit'; owner: ProtagonistId; day: number;
   category: CourtCategory; title: string; client: string; summary: string;
+  /** Fixed opponent identity, absent only in legacy and older preset cases. */
+  respondent?: string | null;
   white: string; evidence: CourtEvidence[]; truth: string | null; misdirection: string | null;
   rewardYen: number; experience: number; fee: CourtFiling | null;
   /** Previous office position. Old saved hearings may omit this field. */
@@ -148,8 +150,9 @@ const filing = (raw: unknown): CourtFiling => {
 };
 const courtCase = (raw: unknown): CourtCase => {
   const hasReturn = !!raw && typeof raw === 'object' && Object.hasOwn(raw,'returnTo');
+  const hasRespondent = !!raw && typeof raw === 'object' && Object.hasOwn(raw,'respondent');
   const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','assistance','steps',
-    ...(hasReturn?['returnTo']:[])], '在审案件');
+    ...(hasReturn?['returnTo']:[]),...(hasRespondent?['respondent']:[])], '在审案件');
   if (item.source !== 'commission' && item.source !== 'lawsuit') return error('案件来源');
   if ((item.source === 'commission' && (item.truth === null || item.fee !== null)) ||
     (item.source === 'lawsuit' && (item.truth !== null || item.misdirection !== null))) return error('案件真相');
@@ -167,6 +170,7 @@ const courtCase = (raw: unknown): CourtCase => {
   const parsed = {
     id: string(item.id, 90, '案件编号'), source: item.source, owner: protagonist(item.owner),
     day: whole(item.day, 365000, '开庭日'), category: category(item.category),
+    ...(hasRespondent ? {respondent:item.respondent===null?null:string(item.respondent,100,'被告身份')} : {}),
     title: string(item.title, 100, '案件标题'), client: string(item.client, 100, '委托人'),
     summary: string(item.summary, 700, '案件简介'), white: string(item.white, 2500, '白剧本'),
     evidence: evidence(item.evidence), truth: item.truth === null ? null : string(item.truth, 2500, '黑剧本'),
@@ -348,12 +352,14 @@ export function validateCourtSpecial(raw: unknown, state: WorldState): Extract<S
 export function validateCourtOpen(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_open'}> {
   eligible(state);
   const court = courtState(state);
-  const item = obj(raw, ['type','offerId','white','evidence','truth','misdirection'], '随机卷宗');
+  const item = obj(raw, ['type','offerId','respondent','white','evidence','truth','misdirection'], '随机卷宗');
   const chosen = (court.board?.day === state.clock.day ? court.board.offers.find(row => row.id === item.offerId) : undefined)
     ?? (court.special?.day === state.clock.day && court.special.offer.id === item.offerId ? court.special.offer : undefined);
   if (!chosen || chosen.preset || court.results.some(result => result.id === String(item.offerId)))
     return error('请从今日尚未受理的随机委托中选择');
-  return { type:'court_open', offerId: chosen.id, white:string(item.white,2500,'白剧本'),
+  const respondent=courtDefendantName(string(item.respondent,100,'被告身份'));
+  if(PROTAGONISTS.some(id=>protagonistNames[id]===respondent)) return error('随机委托不能起诉四位可操作主角');
+  return { type:'court_open', offerId: chosen.id, respondent, white:string(item.white,2500,'白剧本'),
     evidence:evidence(item.evidence), truth:string(item.truth,2500,'隐藏真相'),
     misdirection:string(item.misdirection,1200,'隐藏误导') };
 }
@@ -427,7 +433,8 @@ export function validateCourtFinish(raw: unknown, state: WorldState): Extract<St
       sanctions:proposal.sanctions.map(parseCourtSanctionDraft)};
     if(order.terms.some(term=>term.dueDay<state.clock.day) ||
       order.sanctions.some(row=>row.startDay<state.clock.day)) return error('判决执行日期不能早于今天');
-    if(c.fee && order.respondent!==c.fee.defendant) return error('被告与诉状不一致');
+    const fixedRespondent = c.fee?.defendant ?? c.respondent;
+    if(!fixedRespondent || order.respondent!==fixedRespondent) return error('被告与已锁定的卷宗身份不一致');
     if(order.sanctions.some(row=>row.personId !== courtPartyForName(state,order!.respondent,c.id,'defendant').id))
       return error('只能对经认定的涉案被告执行刑罚');
     if(order.sanctions.length && (!['minor-criminal','major-criminal'].includes(c.category) ||
@@ -452,7 +459,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     if (!source) return error('历史委托卷宗不存在');
     current.active = {
       id: 'legacy-' + owner + '-' + source.id, source:'commission', owner, day:state.clock.day,
-      category:'minor-criminal', title:source.title, client:source.client, summary:source.summary,
+      category:'minor-criminal', title:source.title, client:source.client, summary:source.summary,respondent:null,
       white:source.summary + '请依据已经取得的证据自由质证。', evidence:source.evidence.map(item=>({title:item.title,detail:item.detail})),
       truth:source.rounds.map(item=>item.deduction).join(' '),
       misdirection:source.rounds.map(item=>item.statement).join(' '),
@@ -478,7 +485,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     const scripted = authored.find(item => item.title === offer.title);
     if (!scripted) return error('预设卷宗不存在');
     current.active = { id:offer.id, source:'commission', owner, day:state.clock.day,
-      category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,
+      category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,respondent:null,
       white:scripted.white, evidence:structuredClone(scripted.evidence), truth:scripted.truth,
       misdirection:scripted.misdirection, rewardYen:offer.rewardYen, experience:offer.experience,
       fee:null, assistance:'none', returnTo:courtOfficePosition(next), steps:[] };
@@ -512,7 +519,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     current.serial++;
     current.active = { id:'filing-' + state.clock.day + '-' + current.serial, source:'lawsuit', owner, day:state.clock.day,
       category:filing.category, title:protagonistNames[owner] + '诉' + filing.defendant,
-      client:protagonistNames[owner], summary:filing.reason, white:filing.reason,
+      client:protagonistNames[owner], summary:filing.reason, respondent:filing.defendant, white:filing.reason,
       evidence:[{title:'诉状',detail:filing.reason},{title:'现有事实',detail:'以既有剧情和双方实际知情范围为准。'}],
       truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, assistance:'none',
       returnTo:courtOfficePosition(next), steps:[] };
@@ -602,7 +609,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     const offered = chosen ?? court.special?.offer;
     if (!offered || offered.id !== parsed.offerId) return error('待受理卷宗无效');
     court.active = { id:offered.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
-      category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,
+      category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,respondent:parsed.respondent,
       white:parsed.white, evidence:parsed.evidence, truth:parsed.truth, misdirection:parsed.misdirection,
       rewardYen:offered.rewardYen, experience:offered.experience, fee:null, assistance:'none',
       returnTo:courtOfficePosition(next),steps:[] };
