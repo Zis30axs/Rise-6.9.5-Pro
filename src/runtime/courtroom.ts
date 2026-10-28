@@ -3,16 +3,16 @@ import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
-import { getCampusInterior } from './campus-interiors';
 import { personState } from './protagonist-world';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
   parseCourtSanctionDraft, parseCourtSettlementOffer, parseCourtTermDraft,
-  newCourtAgreement, payCourtTerm, courtPartyForName, type CourtCareer,
+  newCourtAgreement, payCourtTerm, courtTermStatus, type CourtCareer,
   type CourtAgreement, type CourtSanction, type CourtSettlementOffer,
   type CourtTermDraft, type CourtSanctionDraft,
 } from './court-legal-effects';
 export const COURT_HEARING_ID = 'court-hearing';
+export { courtTermStatus } from './court-legal-effects';
 
 export type CourtCategory = 'civil' | 'administrative' | 'minor-criminal' | 'major-criminal';
 export const DAILY_COURT_CATEGORIES: readonly CourtCategory[] = ['civil', 'administrative', 'minor-criminal'];
@@ -548,6 +548,15 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     if(current.results.length>300) current.results.shift();
     leaveHearing(next,trial);
     current.active=null;current.pendingSettlement=null;
+  } else if(action.phase==='fulfill-term'){
+    if(current.active) return error('正在开庭时不能登记结案后的履行');
+    const entry=current.agreements?.find(row=>row.terms.some(term=>term.id===action.termId));
+    const term=entry?.terms.find(row=>row.id===action.termId);
+    if(!entry || !term || term.status!=='pending' || term.kind==='payment') return error('没有待履行的非金钱义务');
+    const from=term.from==='claimant'?entry.claimant:entry.defendant;
+    if(from.kind!=='protagonist' || from.id!==owner) return error('不能替其他人物自行承认履行');
+    term.status='fulfilled';
+    term.fulfilledDay=state.clock.day;
   } else if(action.phase==='pay-term' || action.phase==='collect-term'){
     if(current.active) return error('正在开庭时不能办理结案后付款');
     const entry=current.agreements?.find(row=>row.terms.some(term=>term.id===action.termId));
