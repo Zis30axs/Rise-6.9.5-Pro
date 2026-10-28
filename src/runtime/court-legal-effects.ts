@@ -1,5 +1,5 @@
 import type { WorldState } from '../frontend/types';
-import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
+import { PROTAGONISTS, PROTAGONIST_PERSON_ID_LIST, type ProtagonistId } from './dual-protagonists';
 import { applyPartyTransfer, protagonistNames, type TransferParty } from './protagonist-world';
 import { allResidentCast } from './npc-cast';
 
@@ -123,7 +123,7 @@ export function parseCourtSanctionDraft(raw: unknown): CourtSanctionDraft {
   const startDay=integer(item.startDay,365000),endDay=integer(item.endDay,365000);
   if(endDay<startDay || endDay-startDay>365) return fail('刑期');
   const personId=text(item.personId,90);
-  if(!allResidentCast.some(row=>row.id===personId) || PROTAGONISTS.includes(personId as ProtagonistId))
+  if(!allResidentCast.some(row=>row.id===personId) || PROTAGONIST_PERSON_ID_LIST.includes(personId as typeof PROTAGONIST_PERSON_ID_LIST[number]))
     return fail('刑罚对象必须是已知常驻 NPC');
   return {personId,kind:item.kind as CourtSanctionDraft['kind'],startDay,endDay,detail:text(item.detail,500)};
 }
