@@ -190,7 +190,7 @@ export type WorldAction =
   | { type: 'use_item'; itemId: string }
   | { type: 'location_service'; serviceId: string }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
-  | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'sherry'; offerId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
+  | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry'; offerId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
   | { type: 'novel_approach'; interactionId: string }
   | { type: 'air_traffic_tick'; now: number }
