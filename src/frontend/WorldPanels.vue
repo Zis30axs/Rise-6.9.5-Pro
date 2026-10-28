@@ -17,6 +17,7 @@ import { protagonistRecap } from '../runtime/protagonist-narrative';
 import { formatGameDate, formatGameStamp, gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { diagnosePlayerIllnesses } from '../runtime/illness';
+import { lawCases, lawOwner } from '../runtime/law-career';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
@@ -56,6 +57,7 @@ const mindStats = computed(() => [
 const recentChanges = computed(() => props.model.state.journal.slice(-5).reverse());
 const protagonist = computed(() => activeProtagonist(props.model.state));
 const lifeRecap = computed(() => protagonistRecap(props.model.state));
+const lawProgress = computed(() => lawOwner(props.model.state));
 const inventoryCount = computed(() => props.model.state.inventory.reduce((sum, item) => sum + item.quantity, 0));
 const unreadFor = (npcId: string) => props.model.state.phone.filter(item => item.npcId === npcId && !item.read).length;
 const locationName = (id: string) => locations.find(item => item.id === id)?.name ?? '未知地点';
@@ -167,6 +169,12 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-section" data-status-section="resources" aria-label="账户与携带物品"><div class="wp-heading"><h2>账户与携带物品</h2></div><div class="wp-resources"><article class="wp-resource"><h2>Appie Pay</h2><p class="wp-footnote">余额、银行卡与交易流水在手机中查看。</p><button type="button" class="wp-text-button" @click="emit('phone')">打开手机 ↗</button></article><article class="wp-resource"><h2>随身携带</h2><p class="wp-resource-value">{{ model.state.inventory.length }}<small>种 · {{ inventoryCount }} 份／件</small></p><button type="button" class="wp-text-button" data-status-open-inventory @click="emit('inventory')">打开背包 ↗</button></article></div><button v-if="storeAvailability.available" type="button" class="wp-secondary wp-store-entry" data-open-store :disabled="model.busy" @click="emit('store')">逛便利店 ↗</button></section>
       <section class="wp-status-section" data-status-section="recent" aria-label="最近变化"><div class="wp-heading"><h2>最近变化</h2><small>已保存的活动记录</small></div><div class="wp-journal-list"><article v-for="entry in recentChanges" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!recentChanges.length" class="wp-empty">活动完成后会在这里记录实际结果。</p></div></section>
       <AcademicProgress :academics="model.state.academics" />
+      <section v-if="lawProgress.active || lawProgress.completedCaseIds.length" class="wp-status-section" data-status-section="law-career" aria-label="律师职业记录">
+        <div class="wp-heading"><h2>律师职业</h2><small>办案记录</small></div>
+        <p>职业经验 {{ lawProgress.experience }} · 已结案 {{ lawProgress.completedCaseIds.length }} 件 · 累计报酬 ¥{{ formatGameNumber(lawProgress.totalPayout) }}</p>
+        <p v-if="lawProgress.active">正在办理：{{ lawCases.find(item => item.id === lawProgress.active?.caseId)?.title }}。</p>
+        <p v-else-if="lawProgress.lastResult">最近结案：{{ lawProgress.lastResult.solvedBy === 'sherry' ? '雪莉协助完成证据论证' : '独立破案' }}。</p>
+      </section>
       <AcademicCorrection :model="model" :actions="actions" />
       <article v-if="interior" class="wp-air-traffic" aria-label="室内活动"><div class="wp-heading"><h2>室内活动</h2><span class="wp-badge">{{ interior.label }}</span></div><p>{{ lastActivity ? lastActivity.result : '已进入室内，可以走近物件进行观察、学习或休息。' }}</p><small>位置与活动按当前聊天保存，退出房间后回到原入口。</small></article>
       <article class="wp-air-traffic" aria-label="城市交通"><div class="wp-heading"><h2>城市交通</h2><span class="wp-badge">已乘坐 {{ model.state.transit.sequence }} 次</span></div><p v-if="model.state.transit.lastRide">{{ transitVehicles.find(vehicle => vehicle.id === model.state.transit.lastRide?.vehicleId)?.label }} · {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.fromStopId)?.label }} → {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.toStopId)?.label }}，{{ model.state.transit.lastRide.minutes }} 分钟，车费 ¥{{ model.state.transit.lastRide.fare }}。</p><p v-else>在高田接驳站搭乘都营巴士或东京Metro线路，前往池袋、杂司谷及目白等地。</p><button class="wp-text-button" @click="emit('transit')">查看城市交通 ↗</button></article>
