@@ -296,17 +296,17 @@ export async function correctMemoryEvent(scope: string, id: string,
 
 /** Rebuild only this chat's entity graph; never clear another chat's records. */
 export async function rebuildMemoryEntityIndex(scope: string): Promise<void> {
-  const events = await rows<MemoryEvent>('events', scope);
+  const [events, oldEntities, oldLinks] = await Promise.all([
+    rows<MemoryEvent>('events', scope),
+    rows<MemoryEntity>('entities', scope),
+    rows<MemoryEntityLink>('entity_links', scope),
+  ]);
   const db = await openMemoryDb();
   const tx = db.transaction(['entities', 'entity_links'], 'readwrite'), done = completed(tx);
-  for (const table of ['entities', 'entity_links'] as const) {
-    const store = tx.objectStore(table);
-    const request = store.index('by_scope').getAll(scope);
-    request.onsuccess = () => {
-      for (const row of request.result as { key: string }[]) store.delete(row.key);
-    };
-  }
   const entities = tx.objectStore('entities'), links = tx.objectStore('entity_links');
+  // Queue deletes BEFORE replacements in the same atomic transaction.
+  for (const old of oldEntities) entities.delete(old.key);
+  for (const old of oldLinks) links.delete(old.key);
   for (const event of events) {
     if (event.status === 'superseded') continue;
     const participants = new Set(event.participants);
