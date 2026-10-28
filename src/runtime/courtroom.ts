@@ -188,6 +188,7 @@ const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: strin
 ];
 const preset = (day: number, categories: CourtCategory[]): CourtOffer => {
   const preferred = authored.filter(item => categories.includes(item.category));
+  if (!preferred.length) return error('没有匹配的预设委托');
   const source = preferred[(day - 1) % preferred.length] ?? authored[0]!;
   return { id: 'preset-' + day, category: source.category, title: source.title, client: source.client,
     summary: source.summary, difficulty: source.difficulty, rewardYen: source.rewardYen,
@@ -229,7 +230,8 @@ export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<
   const parsed = filing({ ...attributes, claimant: activeProtagonist(state) });
   // A protagonist may help with preparation, but formal legal agency requires
   // a qualification. Until certified, the chosen protagonist is co-counsel only.
-  return { type:'court_quote', ...parsed };
+  const { claimant: _claimant, ...quoted } = parsed;
+  return { type:'court_quote', ...quoted };
 }
 export function validateCourtStep(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_step'}> {
   const c = courtState(state).active;
@@ -316,7 +318,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     minutes = 10;
   } else if (action.type === 'court_quote') {
     const parsed = validateCourtFeeQuote(action,next);
-    court.filing = { claimant:parsed.claimant, defendant:parsed.defendant, reason:parsed.reason,
+    court.filing = { claimant:activeProtagonist(state), defendant:parsed.defendant, reason:parsed.reason,
       category:parsed.category, lawyer:parsed.lawyer, sherry:parsed.sherry,
       courtFeeYen:parsed.courtFeeYen, lawyerFeeYen:parsed.lawyerFeeYen, sherryFeeYen:parsed.sherryFeeYen };
   } else if (action.type === 'court_step') {
@@ -360,6 +362,20 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
     '这次庭审没有带来职业报酬。';
   court.active = null;
   next.courtroom = parseCourtroom(court);
+  return next;
+}
+/** Show a saved post-trial scene once, when the original viewpoint is next entered. */
+export function deliverCourtRecap(state: WorldState): WorldState {
+  const owner = activeProtagonist(state);
+  const recap = courtState(state).pendingRecaps[owner];
+  if (!recap) return state;
+  const next = structuredClone(state);
+  const court = parseCourtroom(next.courtroom ?? initialCourtroom());
+  delete court.pendingRecaps[owner];
+  court.serial++;
+  next.story.push({ id: 'court-recap-' + next.clock.day + '-' + court.serial, role: 'assistant', text: recap });
+  next.story = next.story.slice(-100);
+  next.courtroom = court;
   return next;
 }
 export function isCourtInSession(state: WorldState): boolean {
