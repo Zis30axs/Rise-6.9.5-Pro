@@ -3,6 +3,16 @@ import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
+import { getCampusInterior } from './campus-interiors';
+import { personState } from './protagonist-world';
+import {
+  initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
+  parseCourtSanctionDraft, parseCourtSettlementOffer, parseCourtTermDraft,
+  newCourtAgreement, payCourtTerm, courtPartyForName, type CourtCareer,
+  type CourtAgreement, type CourtSanction, type CourtSettlementOffer,
+  type CourtTermDraft, type CourtSanctionDraft,
+} from './court-legal-effects';
+export const COURT_HEARING_ID = 'court-hearing';
 
 export type CourtCategory = 'civil' | 'administrative' | 'minor-criminal' | 'major-criminal';
 export const DAILY_COURT_CATEGORIES: readonly CourtCategory[] = ['civil', 'administrative', 'minor-criminal'];
@@ -26,6 +36,8 @@ export interface CourtCase {
   category: CourtCategory; title: string; client: string; summary: string;
   white: string; evidence: CourtEvidence[]; truth: string | null; misdirection: string | null;
   rewardYen: number; experience: number; fee: CourtFiling | null;
+  /** Previous office position. Old saved hearings may omit this field. */
+  returnTo?: { x: number; z: number; yaw: number };
   /** Authoritative trial-phase variable, never derived from dialogue text. */
   assistance: 'none' | 'sherry';
   steps: { key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }[];
@@ -49,10 +61,16 @@ export interface CourtroomState {
   results: CourtResult[];
   pendingRecaps: Partial<Record<ProtagonistId, string>>;
   serial: number;
+  /** Optional fields preserve legal records without changing the existing chat-variable root. */
+  pendingSettlement?: CourtSettlementOffer | null;
+  agreements?: CourtAgreement[];
+  sanctions?: CourtSanction[];
+  careers?: Record<ProtagonistId, CourtCareer>;
 }
 export const initialCourtroom = (): CourtroomState => ({
   version: 1, categories: [...DAILY_COURT_CATEGORIES], board: null, special: null, active: null,
   filing: null, results: [], pendingRecaps: {}, serial: 0,
+  pendingSettlement:null,agreements:[],sanctions:[],careers:initialCourtCareers(),
 });
 export const courtState = (state: Pick<WorldState, 'courtroom'>): CourtroomState => state.courtroom ?? initialCourtroom();
 const error = (message: string): never => { throw new Error('法庭存档或行动无效：' + message); };
@@ -124,7 +142,9 @@ const filing = (raw: unknown): CourtFiling => {
   return result;
 };
 const courtCase = (raw: unknown): CourtCase => {
-  const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','assistance','steps'], '在审案件');
+  const hasReturn = !!raw && typeof raw === 'object' && Object.hasOwn(raw,'returnTo');
+  const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','assistance','steps',
+    ...(hasReturn?['returnTo']:[])], '在审案件');
   if (item.source !== 'commission' && item.source !== 'lawsuit') return error('案件来源');
   if ((item.source === 'commission' && (item.truth === null || item.fee !== null)) ||
     (item.source === 'lawsuit' && (item.truth !== null || item.misdirection !== null))) return error('案件真相');
@@ -149,6 +169,7 @@ const courtCase = (raw: unknown): CourtCase => {
     rewardYen: whole(item.rewardYen, 100000, '职业报酬'),
     experience: whole(item.experience, 2000, '职业经验'),
     fee: item.fee === null ? null : filing(item.fee), assistance:item.assistance, steps,
+    ...(hasReturn ? {returnTo:parseCourtReturn(item.returnTo)} : {}),
   } as CourtCase;
   if (parsed.source === 'lawsuit' && (parsed.rewardYen !== 0 || parsed.experience !== 0 ||
     parsed.fee?.claimant !== parsed.owner)) return error('主动起诉不发放职业报酬');
@@ -169,8 +190,17 @@ const result = (raw: unknown): CourtResult => {
     payout: whole(item.payout,100000,'结案收入'), experience: whole(item.experience,2000,'结案经验'),
     summary: string(item.summary,1200,'判决内容'), atDay: whole(item.atDay,365000,'结案日期') };
 };
+const parseCourtReturn = (raw: unknown): {x:number;z:number;yaw:number} => {
+  const data=obj(raw,['x','z','yaw'],'法庭返回位置');
+  for(const key of ['x','z','yaw'] as const)
+    if(typeof data[key]!=='number' || !Number.isFinite(data[key]) || Math.abs(data[key] as number)>360)
+      return error('法庭返回坐标');
+  return {x:data.x as number,z:data.z as number,yaw:data.yaw as number};
+};
 export function parseCourtroom(value: unknown): CourtroomState {
-  const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial'], '根结构');
+  const extra = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string,unknown> : {};
+  const extras = ['pendingSettlement','agreements','sanctions','careers'].filter(key=>Object.hasOwn(extra,key));
+  const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial',...extras], '根结构');
   if (root.version !== 1 || !Array.isArray(root.categories) || !root.categories.length || root.categories.length > 4) return error('版本或筛选');
   const categories = root.categories.map(category);
   if (new Set(categories).size !== categories.length || categories.some(kind => !DAILY_COURT_CATEGORIES.includes(kind))) return error('重复或不受支持的日常筛选');
@@ -199,8 +229,23 @@ export function parseCourtroom(value: unknown): CourtroomState {
   for (const [person, narration] of Object.entries(root.pendingRecaps)) {
     pendingRecaps[protagonist(person)] = string(narration, 1800, '补叙正文');
   }
+  const pendingSettlement = Object.hasOwn(root,'pendingSettlement')
+    ? root.pendingSettlement===null ? null : parseCourtSettlementOffer(root.pendingSettlement)
+    : null;
+  if(pendingSettlement && (!active || active.source!=='lawsuit')) return error('没有诉讼不能提出和解');
+  const agreements = Object.hasOwn(root,'agreements')
+    ? Array.isArray(root.agreements) && root.agreements.length<=300 ? root.agreements.map(parseCourtAgreement) : error('协议列表')
+    : [];
+  const sanctions = Object.hasOwn(root,'sanctions')
+    ? Array.isArray(root.sanctions) && root.sanctions.length<=100 ? root.sanctions.map(parseCourtSanction) : error('刑罚列表')
+    : [];
+  if(new Set(agreements.map(row=>row.id)).size!==agreements.length ||
+    new Set(sanctions.map(row=>row.id)).size!==sanctions.length) return error('重复法律记录');
+  const defaults=initialCourtCareers();
+  const careers=Object.hasOwn(root,'careers') ? obj(root.careers,[...PROTAGONISTS],'主角律师职业') : defaults;
+  const parsedCareers=Object.fromEntries(PROTAGONISTS.map(id=>[id,parseCourtCareer(careers[id])])) as Record<ProtagonistId,CourtCareer>;
   return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
-    serial: whole(root.serial,1000000,'序列号') };
+    serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers };
 }
 const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; truth: string; misdirection: string }> = [
   { category: 'civil', title: '没有归还的定金', client: '租房的大学生', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
