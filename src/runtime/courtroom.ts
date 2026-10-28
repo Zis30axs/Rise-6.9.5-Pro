@@ -241,7 +241,8 @@ export function validateCourtDocketOffers(raw: unknown, state: WorldState): Cour
   if (court.board && court.board.day === state.clock.day) return error('今日公告栏已经确定');
   if (!Array.isArray(raw) || raw.length !== 2) return error('需要两份随机委托');
   const parsed = raw.map(offer);
-  if (parsed.some(item => item.preset || !court.categories.includes(item.category) || item.id.startsWith('preset-')) ||
+  if (parsed.some(item => item.preset || !court.categories.includes(item.category) || item.id.startsWith('preset-') ||
+    court.results.some(result => result.id === item.id) || item.id === preset(state.clock.day,court.categories).id) ||
     new Set(parsed.map(item => item.id)).size !== 2 ||
     new Set([...parsed.map(item => item.title), preset(state.clock.day,court.categories).title]).size !== 3)
     return error('随机委托不符合筛选或标题重复');
@@ -476,6 +477,8 @@ export function courtStoryContext(state: WorldState) {
   return {
     categories:court.categories, board:court.board?.day === state.clock.day ? court.board : null,
     dailyPreset: court.board?.day === state.clock.day ? null : preset(state.clock.day, court.categories),
+    suggestedRandomIds: [`docket-${state.clock.day}-a`,`docket-${state.clock.day}-b`],
+    suggestedSpecialId: `special-${state.clock.day}`,
     special:court.special?.day === state.clock.day ? court.special.offer : null,
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     active:activePublic ? { ...activePublic,
