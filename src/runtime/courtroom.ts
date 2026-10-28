@@ -59,7 +59,7 @@ const obj = (value: unknown, keys: readonly string[], label: string): Record<str
 };
 const string = (value: unknown, max: number, label: string): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > max ||
-    /[\u0000-\u001f]/.test(value)) return error(label);
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) return error(label);
   return value.trim();
 };
 const whole = (value: unknown, max: number, label: string): number => {
@@ -80,8 +80,10 @@ const evidence = (value: unknown): CourtEvidence[] => {
 const offer = (raw: unknown): CourtOffer => {
   const item = obj(raw, ['id','category','title','client','summary','difficulty','rewardYen','experience','preset'], '委托');
   if (!['easy','normal','hard'].includes(String(item.difficulty)) || typeof item.preset !== 'boolean') return error('委托难度');
+  const id = string(item.id, 60, '委托编号');
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,59}$/.test(id)) return error('委托编号格式');
   return {
-    id: string(item.id, 60, '委托编号'), category: category(item.category),
+    id, category: category(item.category),
     title: string(item.title, 100, '委托标题'), client: string(item.client, 80, '委托人'),
     summary: string(item.summary, 450, '委托简介'), difficulty: item.difficulty as CourtDifficulty,
     rewardYen: whole(item.rewardYen, 100000, '委托报酬'), experience: whole(item.experience, 2000, '委托经验'),
@@ -220,7 +222,9 @@ export function validateCourtDocketOffers(raw: unknown, state: WorldState): Cour
   if (!Array.isArray(raw) || raw.length !== 2) return error('需要两份随机委托');
   const parsed = raw.map(offer);
   if (parsed.some(item => item.preset || !court.categories.includes(item.category) || item.id.startsWith('preset-')) ||
-    new Set(parsed.map(item => item.id)).size !== 2) return error('随机委托不符合筛选');
+    new Set(parsed.map(item => item.id)).size !== 2 ||
+    new Set([...parsed.map(item => item.title), preset(state.clock.day,court.categories).title]).size !== 3)
+    return error('随机委托不符合筛选或标题重复');
   return parsed;
 }
 export function validateCourtSpecial(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_special'}> {
