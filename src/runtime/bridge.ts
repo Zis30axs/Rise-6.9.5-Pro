@@ -18,6 +18,7 @@ import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from 
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { diagnosePlayerIllnesses } from './illness';
 import { lawCareerStoryContext } from './law-career';
+import { courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
 import { npcProfession } from './npc-professions';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
@@ -95,7 +96,14 @@ export const STORY_PROTOCOL = [
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   'music 中的乐队名册、邀请状态和演出预约是正式登记的唯一依据。创建乐队或预约演出需由玩家填写 Live House 表单；邀请加入需由玩家从手机发送、收件人明确同意后登记。不得用普通 interact、activity、schedule、手机闲聊或叙事文字代替这些确认流程，不得编造已确定的成员、能力或档期。',
-  'lawCareer 与 residentProfessions 是律师职业和 NPC 专业的权威数据。橘雪莉的法学专业、律师职业路线与见习身份固定；在艾玛参与的委托中她是固定搭档。已保存的案件证据、矛盾、结案结果和职业收益不可被剧情改写。艾玛选择由雪莉接手时，雪莉必须通过原案卷中已记录的证据逐步完成推理，并自然呈现完美结局；艾玛的经验与报酬固定为满额40%，不得用普通 activity、service 或任意叙事补偿剩余60%。法律专业学习不等于拥有日本正式律师资格，法庭正式代理应由持证律师完成。',
+  'lawCareer 是兼容旧存档的律师职业记录；新案件以 courtroom 为准。橘雪莉保持法学专业、律师路线、见习身份，不凭空赋予正式执业资格。正常雪莉救场取得职业收益40%，主角切换中断仅得0%；不得用普通 activity、service、transfer 或其他叙事补偿。法律专业不自动等于正式律师资格。',
+  '【法庭叙事规则】只有在法院或事务所正式开启诉讼时使用 courtroom。每日委托以白剧本给玩家，黑剧本只给主持法庭的模型，绝对禁止把 truth/misdirection 内部真相原样显示给角色。玩家用普通自由文本发表意见、质证、辩护，不要求固定证据按钮。案件已有事实不能被自由起诉改写；主动诉讼不生成黑剧本，任何原告都可能败诉。不能强制 NPC 主动起诉四位主角。民事及行政纠纷不必存在犯罪者。重大刑事不得自动出现在日常委托。',
+  '【委托生成】玩家在枫庭律师事务所要求查看今日三份委托时，若 courtroom.board 今日尚未生成，用 <world_actions>[{"type":"court_docket","offers":[{"id":"day-2-a","category":"civil","title":"委托名","client":"委托人","summary":"简介","difficulty":"easy","rewardYen":8000,"experience":100,"preset":false},{"id":"day-2-b","category":"administrative","title":"委托名","client":"委托人","summary":"简介","difficulty":"normal","rewardYen":12000,"experience":120,"preset":false}]}]</world_actions>；只生成两份随机委托，另有一份预设卷宗由程序插入。id 使用当前游戏 day 组成，类别只能从 courtroom.categories 已勾选日常范围中选，难度 easy/normal/hard，预设随机 false。今日有公告栏时绝不能再生成。',
+  '【随机案件受理】用户选择今日公告栏中的随机委托后，使用 <world_actions>[{"type":"court_open","offerId":"公告栏精确ID","white":"面向玩家的案情，^重要词^以红色突出","evidence":[{"title":"证据名","detail":"玩家可见事实"},{"title":"证据二","detail":"另一事实"}],"truth":"LLM专用已固定的完整客观真相和合理证明链","misdirection":"与事实相容的错误印象"}]</world_actions> 锁定黑白剧本；须有2–8项证据，真相与证据能相互推导。不生成地图调查阶段，受理后直接自由庭审，不能把 truth/misdirection 写进 <story>。',
+  '【主动诉讼咨询】玩家明确提出起诉对象和理由并请事务所报价时，先陈述胜诉风险，费用由模型根据案情合理决定，提交 court_quote 行动：{"type":"court_quote","defendant":"被告姓名","reason":"起诉理由","category":"civil","lawyer":null,"sherry":false,"courtFeeYen":2000,"lawyerFeeYen":0,"sherryFeeYen":0}。category 可为 civil/administrative/minor-criminal；选择另一主角协助时 lawyer 填其主角ID，选择雪莉协助时 sherry=true；未选时费用必须为0。此报价不收费，玩家确认后程序才扣起诉费并真实向受聘人物转账。金钱绝不只靠叙事变动，不用 activity 冒充人物转账。其他主角不自动具有日本律师执业资格，可作为协助人员。',
+  '【开庭中】courtroom.active 非空时剧情锁定同一游戏日同一法庭，不得 travel/rest/购物/学习或主动改换地点。普通辩论耗时0，仅真正新的证言用 {"type":"court_step","key":"testimony-1","kind":"testimony","summary":"新证言"} 推进5分钟，关键新推理 insight 推进10分钟，真正澄清矛盾 contradiction 推进15分钟；key 在本案必须唯一，不得为刷时间重复或假造。继续质证与证言根据角色知情界限合理生成，不能代替玩家决定新台词。案件需要判决时自动或依玩家请求输出 {"type":"court_finish","verdict":"win","summary":"法庭认可的结论"}；若结论尚缺关键论据就继续庭审，而非跳过证明。',
+  '【判决与和解】职业委托有固定真相，艾玛推理不佳导致败诉时雪莉依已知证据自动救场，职业收益40%；玩家独立胜诉100%。玩家可以主动请求雪莉接手，使用事务所救场操作。主动诉讼无预设真相和强制胜诉，原告可赢可输；若双方明确同意可用 court_finish verdict=settled，若玩家主动撤诉可用 withdrawn，不能擅自替玩家接受条件。赔偿只能在判决、双方和解并确认付款时按 transfer 指令真实过账，不得擅自使用 balance 发钱。法庭不能因反复对话自动跨游戏日。',
+
   MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
@@ -292,6 +300,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         location: snapshot.locationId, player: snapshot.player,
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
+        courtroom: courtStoryContext(snapshot),
         // Playable protagonists have their own academics: never overwrite it
         // with a stale NPC lore record in the model context.
         residentProfessions: allResidentCast.flatMap(person => {
