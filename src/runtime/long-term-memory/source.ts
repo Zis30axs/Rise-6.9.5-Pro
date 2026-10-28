@@ -22,12 +22,12 @@ export function collectCommittedSources(scope: string, before: WorldState, after
     if (!clean) return;
     // Never drop a long story tail. Smaller independent provenance chunks also
     // stay below the minimum configured model input budget.
-    const parts = Math.ceil(clean.length / 700);
+    const parts = Math.ceil(clean.length / 640);
     for (let i = 0; i < parts; i++) {
       const partId = parts === 1 ? id : id + ':part:' + i;
       output.push({ key: memoryKey(scope, partId), scope, id: partId, kind, owner,
         knownBy: [...knownBy], participants: [...participants],
-        text: clean.slice(i * 700, (i + 1) * 700), at, turn, processed: false });
+        text: clean.slice(i * 640, (i + 1) * 640), at, turn, processed: false });
     }
   };
   for (const owner of PROTAGONISTS) {

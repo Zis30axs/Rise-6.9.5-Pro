@@ -66,10 +66,6 @@ async function remainingBudget(scope: string, settings: MemorySettings, extra: n
   const current = await meta(scope, 'costUsd');
   return current + extra <= settings.budgetUsd;
 }
-async function charge(scope: string, cost: number): Promise<void> {
-  if (cost <= 0) return;
-  await setMeta(scope, 'costUsd', (await meta(scope, 'costUsd')) + cost);
-}
 async function runOne(scope: string, settings: MemorySettings): Promise<boolean> {
   const job = await acquireJob(scope);
   if (!job) return false;

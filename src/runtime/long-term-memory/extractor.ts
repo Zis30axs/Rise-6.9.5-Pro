@@ -43,7 +43,11 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
       ? value as string[] : [];
     const known = origin.reduce<string[]>((all, source) =>
       all.filter(id => source.knownBy.includes(id as never)), [...PROTAGONISTS]);
-    const eventId = 'extract:' + origin.map(s => s.id).sort().join('|').slice(0, 180) + ':' + i;
+    // Stable bounded ID: source IDs may be long and the batch can be reordered.
+    const identity = origin.map(s => s.id).sort().join('|') + '|' + e.summary + ':' + i;
+    let signature = 2166136261;
+    for (const char of identity) signature = Math.imul(signature ^ char.charCodeAt(0), 16777619);
+    const eventId = 'extract:' + (signature >>> 0).toString(36) + ':' + identity.length + ':' + i;
     const participants = strings(e.participants, 12);
     result.push({
       scope, key: memoryKey(scope, eventId), id: eventId,
