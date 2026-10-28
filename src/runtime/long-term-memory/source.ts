@@ -46,12 +46,35 @@ export function collectCommittedSources(scope: string, before: WorldState, after
       }
     }
   }
+  const oldConversations = new Set(before.protagonists?.conversations?.map(m => m.id) ?? []);
+  for (const row of after.protagonists?.conversations ?? []) {
+    if (!oldConversations.has(row.id)) {
+      add('sms:sent:' + row.id, 'message', row.from, row.text, [row.from], [row.from, row.to]);
+    }
+  }
   const prev = new Map(before.protagonists?.weeklyMemory?.closed.map(w => [w.week, w.summary]) ?? []);
   for (const week of after.protagonists?.weeklyMemory?.closed ?? []) {
     if (week.summary && prev.get(week.week) !== week.summary)
       add('weekly:' + week.week, 'weekly', null, week.summary, []);
   }
   return output;
+}
+
+/** Only backfill source material still present in the authoritative save. */
+export function collectExistingSources(scope: string, state: WorldState): MemorySource[] {
+  const empty = structuredClone(state);
+  for (const owner of PROTAGONISTS) {
+    const person = personal(empty, owner);
+    if (!person) continue;
+    person.story = [];
+    person.journal = [];
+    person.phone = [];
+  }
+  if (empty.protagonists) {
+    empty.protagonists.conversations = [];
+    if (empty.protagonists.weeklyMemory) empty.protagonists.weeklyMemory.closed = [];
+  }
+  return collectCommittedSources(scope, empty, state);
 }
 
 export function importantCandidate(text: string): boolean {

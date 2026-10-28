@@ -100,7 +100,7 @@ export async function finalizeJob(job: MemoryJob, events: MemoryEvent[], vectors
 export async function acquireJob(scope: string): Promise<MemoryJob | null> {
   const all = await rows<MemoryJob>('jobs', scope);
   const now = Date.now();
-  const target = all.filter(j => j.state === 'pending' || (j.state === 'working' && j.leaseUntil < now))
+  const target = all.filter(j => (j.state === 'pending' && j.leaseUntil <= now) || (j.state === 'working' && j.leaseUntil < now))
     .sort((a, b) => a.createdAt - b.createdAt)[0];
   if (!target) return null;
   const db = await openMemoryDb(), tx = db.transaction('jobs', 'readwrite');

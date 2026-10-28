@@ -5,7 +5,7 @@ import { otherSidePromptContext } from './other-side';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { weeklyMemoryContext } from './weekly-memory';
-import { memoryCommitted, memoryPromptContext } from './long-term-memory';
+import { memoryBootstrap, memoryCommitted, memoryPromptContext } from './long-term-memory';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
@@ -254,6 +254,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const state = !Object.prototype.hasOwnProperty.call(variables, 'unread_city')
         ? createInitialState() : parseState(variables.unread_city);
       committedSnapshot = structuredClone(state);
+      memoryBootstrap(ownerSession, state);
       return state;
     },
     save(state: WorldState) {

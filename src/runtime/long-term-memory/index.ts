@@ -1,10 +1,16 @@
 import type { WorldState } from '../../frontend/types';
 import { activeProtagonist } from '../protagonist-world';
 import { loadMemorySettings } from './settings';
-import { collectCommittedSources } from './source';
+import { collectCommittedSources, collectExistingSources } from './source';
 import { searchMemory } from './retrieval';
 import { scheduleMemoryWork } from './scheduler';
 
+export function memoryBootstrap(scope: string, state: WorldState): void {
+  try {
+    if (!loadMemorySettings().enabled) return;
+    scheduleMemoryWork(scope, collectExistingSources(scope, state));
+  } catch { /* Older history may not be available. */ }
+}
 export function memoryCommitted(scope: string, before: WorldState, after: WorldState): void {
   try {
     const settings = loadMemorySettings();

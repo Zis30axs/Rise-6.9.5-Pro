@@ -103,7 +103,7 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
   } catch (error) {
     const reason = error instanceof Error ? error.message : '整理失败';
     await put('jobs', { ...job, state: job.attempts >= 2 ? 'failed' : 'pending',
-      leaseUntil: 0, error: reason.slice(0, 220) });
+      leaseUntil: job.attempts >= 2 ? 0 : Date.now() + 30_000 * (2 ** (job.attempts - 1)), error: reason.slice(0, 220) });
     return false;
   } finally { clearTimeout(timeout); }
 }
