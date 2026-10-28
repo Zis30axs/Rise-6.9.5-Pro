@@ -3,6 +3,7 @@ import { acknowledgePhoneRead, locations, parseState } from '../runtime/model';
 import { bedRestOptions, campusInteriors } from '../runtime/campus-interiors';
 import { getStoreItem } from '../runtime/convenience-store';
 import { locationServiceCatalog } from '../runtime/location-services';
+import { lawCases } from '../runtime/law-career';
 
 export const INTERACTION_DURATION_MS = 1200;
 export const INTERACTION_EVENT_PROBABILITY = .8;
@@ -14,6 +15,9 @@ export function isGameplayInteraction(action: WorldAction): boolean {
 
 export function interactionLabel(action: WorldAction): string {
   switch (action.type) {
+    case 'law_case': return action.phase === 'accept'
+      ? '承接' + (lawCases.find(item => item.id === action.caseId)?.title ?? '法律委托')
+      : action.phase === 'investigate' ? '调查案件' : action.phase === 'present' ? '提交证据' : '请雪莉协助推理';
     case 'location_service': return locationServiceCatalog.find(item => item.id === action.serviceId)?.label ?? '地点服务';
     case 'pack_service': return `打包${locationServiceCatalog.find(item => item.id === action.serviceId)?.label ?? '餐点'}`;
     case 'buy_item': return `购买${getStoreItem(action.itemId)?.name ?? '商品'}`;
