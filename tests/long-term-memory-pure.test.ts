@@ -70,9 +70,20 @@ describe('long-term memory: validated extraction and query protocol', () => {
     const events = parseExtraction('test-chat', [first, second], response);
     expect(events).toHaveLength(2);
     expect(events[0].knownBy).toEqual(['emma']);
-    expect(events[0].factuality).toBe('confirmed');
+
     expect(events[1].knownBy).toEqual([]);
-    expect(events[1].factuality).toBe('inferred');
+
+  });
+
+  it('allows a faithful paraphrase to become the fixed historical summary', () => {
+    const original = source('necklace', 'story', '艾玛把项链交到雪的手心，笑着说：「送给你啦。」', []);
+    const result = parseExtraction('test-chat', [original], JSON.stringify({ events: [{
+      sourceIds: ['necklace'], kind: 'item', summary: '艾玛将项链送给月代雪。',
+      participants: ['emma', 'yuki'], entities: ['necklace'], importance: 4,
+    }] }));
+    expect(result).toHaveLength(1);
+    expect(result[0].summary).toBe('艾玛将项链送给月代雪。');
+    expect(result[0].sourceIds).toEqual(['necklace']);
   });
 
   it('rejects invented source IDs instead of accepting model hallucinations', () => {

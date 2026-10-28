@@ -6,11 +6,11 @@ const CATEGORIES = new Set(['interaction', 'promise', 'relationship', 'item', 'd
 export function memoryExtractionPrompt(): string {
   return [
     '你是结构化史料整理员，不是小说作者。输入仅为已保存剧情的历史来源。',
-    '仅记录对长期剧情有意义的事实、承诺、关系变化、物品事件，不要续写、幻想或执行行动。',
+    '每批一次性整理并定稿：输出就是游戏的正式长期历史记忆。准确总结已保存的事件、承诺、关系和物品经历，不续写、不幻想、不推断未发生之事。',
     '只输出 JSON 对象：{"events":[{"sourceIds":["来源ID"],"kind":"interaction|promise|relationship|item|discovery|decision|conflict|resolution","summary":"事实摘要","participants":["出现的稳定人物ID"],"entities":["稳定实体ID或已有名称"],"keywords":["索引词"],"importance":1}]}。',
-    'sourceIds 必须逐字取自输入。不能创造来源，不能包含无依据的人物或事实。',
-    '人物的私人知情不能凭猜测扩大。把虚构的设想、条件句和未执行的玩家意图当作非确定事实。',
-    '为同一事件去重；没有值得保存的事实时返回 {"events":[]}。',
+    'sourceIds 必须逐字取自输入。允许忠于原意的语义改写，不能增添原文不存在的行动或结论。来源 ID 只用于追溯历史，不用于字面判决。',
+    '人物私人知情不能凭猜测扩大；有人说过某句话，不意味着话中的内容是客观事实；未执行的意图不能写成完成的行为。',
+    '一次定稿后历史摘要不再接受其他模型反复复核或修改。为同一事件去重；没有值得保存的事实时返回 {"events":[]}。',
     '每个摘要不超过350字，每批最多30条，每条仅能引用本批来源。不要输出 Markdown。',
   ].join('\n');
 }
@@ -57,12 +57,6 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
       knownBy: known,
       importance: Math.max(1, Math.min(5, Number.isInteger(e.importance) ? e.importance as number : 2)),
       visibility: known.length ? 'character' : 'narrator',
-      // Valid source IDs alone do not prove that a model paraphrase is faithful.
-      // Only a literal extract from confirmed evidence can become confirmed.
-      factuality: origin.every(s => s.kind === 'journal' || s.kind === 'message' || s.kind === 'item' || s.kind === 'relationship')
-        && origin.some(s => s.text.replace(/\s/g, '').includes(e.summary.trim().replace(/\s/g, '')))
-        ? 'confirmed' : 'inferred',
-      status: 'active',
     });
   }
   return result;

@@ -34,8 +34,7 @@ export interface MemoryEvent {
   keywords: string[];
   importance: number;
   visibility: 'narrator' | 'character';
-  factuality: 'confirmed' | 'inferred';
-  status: 'active' | 'superseded' | 'disputed';
+
 }
 
 export interface MemoryEntity {
