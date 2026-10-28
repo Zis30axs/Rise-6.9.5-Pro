@@ -756,6 +756,12 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         next = legacyView(settled.state);
         if (settled.minutes) advance(next, settled.minutes);
         if (settled.reward) next.player.balance += settled.reward;
+        if (action.type === 'court_finish') {
+          const latest = next.courtroom?.results.at(-1);
+          const sherry = next.npcProfessions?.people['majo-sherry'];
+          if (sherry && latest?.owner === 'emma' && latest.source === 'commission' && latest.solvedBy === 'sherry')
+            sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(latest.experience * 1.5));
+        }
         note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : '庭审已结束：' + action.summary);
         break;
       }
@@ -1446,6 +1452,14 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
     const next = courtAction(prepared, action);
+    if (action.phase === 'accept-preset' || action.phase === 'confirm-filing') advance(next, 10);
+    if (action.phase === 'sherry') {
+      advance(next, 15);
+      const rescued = next.courtroom?.results.at(-1);
+      const sherry = next.npcProfessions?.people['majo-sherry'];
+      if (rescued?.solvedBy === 'sherry' && sherry)
+        sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(rescued.experience * 1.5));
+    }
     const paid = finishPersonalChange(prepared, next, '法庭业务');
     if (feeQuote && paid.courtroom?.active) {
       const payer = { kind:'protagonist' as const, id:feeQuote.claimant, name:protagonistNames[feeQuote.claimant] };
