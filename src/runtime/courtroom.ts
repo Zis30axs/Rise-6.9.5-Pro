@@ -281,7 +281,7 @@ export function validateCourtFinish(raw: unknown, state: WorldState): Extract<St
   if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict))) return error('结案方式');
   if (c.source === 'commission' && ['settled','withdrawn'].includes(String(item.verdict))) return error('职业委托尚未完成查明事实');
-  if (c.source === 'commission' && item.verdict === 'win' && c.steps.length < 1) return error('尚无有效推理');
+  // Evidence adequacy is checked at settlement, after earlier court_step actions in this turn.
   return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明') };
 }
 export function courtAction(state: WorldState, action: Extract<WorldAction,{type:'courtroom'}>): WorldState {
@@ -385,6 +385,8 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
   } else if (action.type === 'court_finish') {
     const parsed = validateCourtFinish(action,next);
     const active = court.active!;
+    if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1)
+      return error('尚无有效推理');
     const sherry = active.source === 'commission' && active.owner === 'emma' && parsed.verdict === 'loss';
     const assisted = active.source === 'commission' && active.owner === 'emma' &&
       (sherry || /雪莉.{0,12}(接手|救场|完成|代为)/.test(parsed.summary));
