@@ -235,6 +235,7 @@ export type StoryAction =
   | { type: 'relationship'; npcId: string; delta: number; reason: string }
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
   | { type: 'court_docket'; offers: import('../runtime/courtroom').CourtOffer[] }
+  | { type: 'court_special'; offer: import('../runtime/courtroom').CourtOffer }
   | { type: 'court_open'; offerId: string; white: string; evidence: import('../runtime/courtroom').CourtEvidence[]; truth: string; misdirection: string }
   | { type: 'court_quote'; defendant: string; reason: string; category: import('../runtime/courtroom').CourtCategory; lawyer: import('../runtime/dual-protagonists').ProtagonistId | null; sherry: boolean; courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number }
   | { type: 'court_step'; key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }
