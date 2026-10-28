@@ -48,6 +48,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
   // Emma's standing legal partner also attends the actual court when retained
   // for this case, without changing other residents' authored daily schedules.
   const trial = state.courtroom?.active;
+  const courtSummoned = new Set<string>();
   if (state.interior?.roomId === 'court-hearing' && trial &&
     (trial.owner === 'emma' || trial.fee?.sherry) &&
     trial.respondent !== '橘雪莉' &&
@@ -55,6 +56,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
     const sherry = allResidentCast.find(person => person.id === 'majo-sherry');
     if (sherry) {
       const contact = state.contacts.find(row => row.id === sherry.id || row.sourcePersonId === sherry.id);
+      courtSummoned.add(sherry.id);
       people.push({
         id:sherry.id,name:contact?.name ?? sherry.name,candidateName:sherry.name,
         identity:'律师事务所法律协助人员',tags:['常驻人物','法律协助'],
@@ -80,6 +82,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       const id=resident?.id ?? 'court-person-'+(entry.role==='委托人'?'client':'respondent');
       if(isNpcUnderCourtRestriction(state,id,state.clock.day,state.clock.hour)) continue;
       const contact=state.contacts.find(row=>row.sourcePersonId===id || row.name===entry.name);
+      courtSummoned.add(id);
       people.push({
         id,name:contact?.name ?? entry.name,candidateName:entry.name,
         identity:entry.role,tags:['法庭',entry.role],
@@ -97,10 +100,10 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
     const authoredIds = new Set(allResidentCast.map(row => row.id));
     for (let index = people.length - 1; index >= 0; index--) {
       const person = people[index]!;
-      if (authoredIds.has(person.id) && activeOtherSideNpcLocation(state, person.id)) people.splice(index, 1);
+      if (!courtSummoned.has(person.id) && authoredIds.has(person.id) && activeOtherSideNpcLocation(state, person.id)) people.splice(index, 1);
     }
     for (const resident of allResidentCast) {
-      if (hidden.includes(resident.id) || !authoredIds.has(resident.id)) continue;
+      if (hidden.includes(resident.id) || !authoredIds.has(resident.id) || courtSummoned.has(resident.id)) continue;
       const override = activeOtherSideNpcLocation(state, resident.id);
       if (!override) continue;
       const inRoom = !!getCampusInterior(override.locationId);
