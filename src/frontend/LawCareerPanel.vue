@@ -106,7 +106,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
       <h3>当前案件正在审理</h3>
       <p>{{ protagonistNames[active.owner] }}正在办理「{{ active.title }}」。这场庭审结束前，事务所不再受理其他案件。</p>
     </div>
-    <div v-else-if="oldTrial" class="law-case" data-court-legacy>
+    <div v-else-if="oldTrial && !myTrial" class="law-case" data-court-legacy>
       <h3>历史委托尚未结束</h3>
       <p v-if="oldTrial[0] === owner">你还有一件此前受理的案件，可以直接转入自由庭审继续办理。</p>
       <p v-else>另一位主角还有正在办理的历史委托，请先切换回对应人物完成案件。</p>
