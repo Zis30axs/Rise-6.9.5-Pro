@@ -1139,6 +1139,15 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       next.lawCareer = result.career;
       const lawOwnerId = worldAuthority?.protagonists?.accounts.active ?? 'soyo';
       const last = result.career.owners[lawOwnerId]?.lastResult;
+      // The NPC professional ledger has its own progression and never borrows
+      // the player's reward. Sherry gains credit only on a newly closed Emma case.
+      if (last && !result.career.owners[lawOwnerId]?.active && lawOwnerId === 'emma') {
+        const sherry = next.npcProfessions?.people['majo-sherry'];
+        if (sherry) {
+          const caseExperience = last.solvedBy === 'sherry' ? Math.round(last.experience * 1.5) : Math.round(last.experience * 0.2);
+          sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + caseExperience);
+        }
+      }
       const details = last && !result.career.owners[lawOwnerId]?.active
         ? `案件已完美结案，由${last.solvedBy === 'sherry' ? '橘雪莉' : '玩家'}主导最终论证。职业经验 +${last.experience}，报酬 ${last.payout} 日元。`
         : quote.correct === false ? '举证未成功，可继续尝试。' : quote.feedback;
