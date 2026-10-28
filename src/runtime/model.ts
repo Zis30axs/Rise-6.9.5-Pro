@@ -736,7 +736,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   const courtView = (legacy: WorldState): WorldState =>
     worldAuthority?.protagonists ? { ...legacy, protagonists: worldAuthority.protagonists } : legacy;
   const validated = validateStoryActions(actions, courtView(next));
-  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_finish','transfer','relationship'].includes(action.type)))
+  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_settlement','court_finish','transfer','relationship'].includes(action.type)))
     throw new Error('庭审正在进行，不能离开法庭或进行其他活动；请先结案。');
   if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_assist' || action.type === 'court_finish'))
     throw new Error('当前没有进行中的庭审。');
@@ -752,6 +752,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'court_quote':
       case 'court_step':
       case 'court_assist':
+      case 'court_settlement':
+      case 'court_fulfill':
       case 'court_finish': {
         const settled = courtStoryAction(courtView(next), action);
         next = legacyView(settled.state);
@@ -763,7 +765,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
           if (sherry && latest?.owner === 'emma' && latest.source === 'commission' && latest.solvedBy === 'sherry')
             sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(latest.experience * 1.5));
         }
-        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : action.type === 'court_assist' ? '橘雪莉正式接手庭审。' : '庭审已结束：' + action.summary);
+        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : action.type === 'court_assist' ? '橘雪莉正式接手庭审。' : action.type === 'court_settlement' ? '双方提出了新的和解条件，等待原告决定。' : action.type === 'court_fulfill' ? '已记录法律义务履行：'+action.description : '庭审已结束：' + action.summary);
         break;
       }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
@@ -1453,6 +1455,9 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
     const next = courtAction(prepared, action);
+    // Court debt payments already mutate the two-sided Appie Pay ledger atomically.
+    // Do not feed them into the legacy single-account mirror a second time.
+    if (action.phase === 'pay-term' || action.phase === 'collect-term') return parseState(next);
     if (action.phase === 'accept-preset' || action.phase === 'confirm-filing' || action.phase === 'migrate-legacy') advance(next, 10);
     if (action.phase === 'sherry') {
       advance(next, Math.min(15, Math.max(0, 1439 - next.clock.hour * 60 - next.clock.minute)));
