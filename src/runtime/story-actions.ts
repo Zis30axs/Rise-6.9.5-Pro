@@ -6,6 +6,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
+import { validateCourtDocketOffers, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
@@ -107,6 +108,14 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
         return { type: 'relationship', npcId: item.npcId, delta: number(item.delta, -STORY_ACTION_LIMITS.relationshipDelta, STORY_ACTION_LIMITS.relationshipDelta, `${path} 关系变化`), reason: text(item.reason, 240, `${path} 关系依据`) };
       }
+      case 'court_docket': {
+        const item = record(raw, ['type','offers'],path);
+        return { type:'court_docket', offers:validateCourtDocketOffers(item.offers,state) };
+      }
+      case 'court_open': return validateCourtOpen(raw,state);
+      case 'court_quote': return validateCourtFeeQuote(raw,state);
+      case 'court_step': return validateCourtStep(raw,state);
+      case 'court_finish': return validateCourtFinish(raw,state);
       case 'transfer': {
         const item = record(raw, ['type', 'from', 'to', 'cents', 'reason'], path);
         const party = (value: unknown, label: string): string => {
