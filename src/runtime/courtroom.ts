@@ -230,6 +230,12 @@ export function validateCourtDocketOffers(raw: unknown, state: WorldState): Cour
     new Set(parsed.map(item => item.id)).size !== 2 ||
     new Set([...parsed.map(item => item.title), preset(state.clock.day,court.categories).title]).size !== 3)
     return error('随机委托不符合筛选或标题重复');
+  // When all three everyday categories are enabled, one of each must appear.
+  // For two categories the board must likewise represent both.
+  const featured = preset(state.clock.day, court.categories);
+  const covered = new Set([featured.category, ...parsed.map(item => item.category)]);
+  if (court.categories.some(kind => !covered.has(kind)))
+    return error('今日三份委托应涵盖全部已选类别');
   return parsed;
 }
 export function validateCourtSpecial(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_special'}> {
@@ -343,7 +349,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     next.player.balance -= filing.courtFeeYen; // Other fees use the shared transfer ledger after this reducer.
     current.serial++;
     current.active = { id:'filing-' + state.clock.day + '-' + current.serial, source:'lawsuit', owner, day:state.clock.day,
-      category:filing.category, title:protagonistNames[owner] + '诉' + filing.defendant,
+      category:filing.category, title:protagonistNames[owner] + (filing.category === 'minor-criminal' ? '告发' : '诉') + filing.defendant,
       client:protagonistNames[owner], summary:filing.reason, white:filing.reason,
       evidence:[{title:'诉状',detail:filing.reason},{title:'现有事实',detail:'以既有剧情和双方实际知情范围为准。'}],
       truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, steps:[] };
@@ -447,13 +453,14 @@ export function courtStoryContext(state: WorldState) {
   const court = courtState(state);
   const owner = activeProtagonist(state);
   const active = court.active?.owner === owner ? court.active : null;
+  const activePublic = active ? (({ truth: _truth, misdirection: _misdirection, ...details }) => details)(active) : null;
   return {
     categories:court.categories, board:court.board?.day === state.clock.day ? court.board : null,
     special:court.special?.day === state.clock.day ? court.special.offer : null,
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
-    active:active ? { ...active,
+    active:activePublic ? { ...activePublic,
       // This hidden truth is only in the model context; it is never in the player UI.
-      hiddenBlackScript: active.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
+      hiddenBlackScript: active?.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
     recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
     rule:'职业委托白剧本给玩家、黑剧本仅供主持法庭；不得将黑剧本、误导点直接念给角色。主动诉讼没有黑剧本，以既有世界事实决定争点。自由文本质询，不要求固定答案。普通对白不推进时间，只有真实的新证言/突破/矛盾触发court_step。重要事件不能离开；无须玩家点击证据。艾玛遭遇不利判决时雪莉必须依据已知证据自动善后，按40%职业收益，强制切换则0%。和解必须双方同意，撤诉必须玩家主动表达。每日三份委托次日刷新。',
