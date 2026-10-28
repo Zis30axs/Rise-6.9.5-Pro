@@ -66,7 +66,12 @@ export async function requestEmbedding(settings: MemorySettings, input: string,
   const usage = bounded(record(record(data)?.usage)?.total_tokens);
   return { vector, tokens: usage ?? approximateTokens(input), estimated: usage === null };
 }
-export function approximateTokens(text: string): number { return Math.ceil(text.length / 2); }
+/** Conservative local quota estimate; exact usage comes from the provider. */
+export function approximateTokens(text: string): number {
+  let han = 0;
+  for (const char of text) if (/\p{Script=Han}/u.test(char)) han++;
+  return Math.ceil(han * 1.6 + (text.length - han) / 2.5 + 16);
+}
 
 async function safeFetch(url: string, body: unknown, secret: string, signal: AbortSignal): Promise<unknown> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

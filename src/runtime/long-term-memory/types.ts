@@ -49,6 +49,10 @@ export interface MemoryJob {
   leaseUntil: number;
   error: string;
   createdAt: number;
+  /** A paid model response is saved before parsing, so retries cannot bill it twice. */
+  responseText?: string;
+  responseCostUsd?: number;
+  usageEstimated?: boolean;
 }
 
 export interface MemoryVector {

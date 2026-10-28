@@ -97,6 +97,52 @@ export async function finalizeJob(job: MemoryJob, events: MemoryEvent[], vectors
   });
   await done;
 }
+/** Save model output and the financial receipt in one IndexedDB transaction. */
+export async function recordPaidJobResponse(job: MemoryJob, text: string,
+  costUsd: number, estimated: boolean): Promise<void> {
+  if (!text || text.length > 64000 || !Number.isFinite(costUsd) || costUsd < 0)
+    throw new Error('整理模型计费记录无效');
+  const db = await openMemoryDb();
+  const tx = db.transaction(['jobs', 'metadata'], 'readwrite');
+  const done = completed(tx), jobs = tx.objectStore('jobs'), metadata = tx.objectStore('metadata');
+  const request = jobs.get(job.key);
+  request.onsuccess = () => {
+    const stored = request.result as MemoryJob | undefined;
+    if (!stored || stored.state !== 'working') { tx.abort(); return; }
+    if (stored.responseText) return;
+    jobs.put({ ...stored, responseText: text, responseCostUsd: costUsd, usageEstimated: estimated });
+    if (costUsd > 0) {
+      const total = metadata.get(memoryKey(job.scope, 'costUsd'));
+      total.onsuccess = () => {
+        const existing = total.result as { value?: number } | undefined;
+        metadata.put({ key: memoryKey(job.scope, 'costUsd'), scope: job.scope,
+          id: 'costUsd', value: (existing?.value ?? 0) + costUsd });
+      };
+    }
+  };
+  await done;
+}
+
+/** A stored vector and its cost receipt either both land or neither does. */
+export async function saveEmbeddingWithCharge(vector: MemoryVector, costUsd: number): Promise<void> {
+  if (!Number.isFinite(costUsd) || costUsd < 0) throw new Error('Embedding 费用无效');
+  const db = await openMemoryDb(), tx = db.transaction(['vectors', 'metadata'], 'readwrite');
+  const done = completed(tx), vectors = tx.objectStore('vectors'), metadata = tx.objectStore('metadata');
+  const request = vectors.get(vector.key);
+  request.onsuccess = () => {
+    if (request.result) return;
+    vectors.put(vector);
+    if (costUsd <= 0) return;
+    const total = metadata.get(memoryKey(vector.scope, 'costUsd'));
+    total.onsuccess = () => {
+      const existing = total.result as { value?: number } | undefined;
+      metadata.put({ key: memoryKey(vector.scope, 'costUsd'), scope: vector.scope,
+        id: 'costUsd', value: (existing?.value ?? 0) + costUsd });
+    };
+  };
+  await done;
+}
+
 export async function acquireJob(scope: string): Promise<MemoryJob | null> {
   const all = await rows<MemoryJob>('jobs', scope);
   const now = Date.now();
@@ -127,7 +173,9 @@ export async function resetFailedJobs(scope: string): Promise<number> {
   request.onsuccess = () => {
     for (const job of request.result as MemoryJob[]) {
       if (job.state !== 'failed') continue;
-      store.put({ ...job, state: 'pending', leaseUntil: 0, attempts: 0, error: '' });
+      store.put({ ...job, state: 'pending', leaseUntil: 0, attempts: 0, error: '',
+        // A manual retry deliberately allows correcting a malformed paid reply.
+        responseText: undefined, responseCostUsd: undefined, usageEstimated: undefined });
       count++;
     }
   };

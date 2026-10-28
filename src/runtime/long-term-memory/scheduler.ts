@@ -2,7 +2,7 @@ import type { MemorySettings } from './settings';
 import { loadMemorySettings } from './settings';
 import { approximateTokens, requestEmbedding, requestMemoryJson } from './providers';
 import { memoryExtractionInput, memoryExtractionPrompt, parseExtraction } from './extractor';
-import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, resetFailedJobs, rows } from './storage';
+import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, recordPaidJobResponse, resetFailedJobs, rows, saveEmbeddingWithCharge } from './storage';
 import { importantCandidate } from './source';
 import { memoryKey } from './types';
 import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
@@ -21,12 +21,15 @@ function price(usage: { input: number; output: number }, settings: MemorySetting
 function ready(settings: MemorySettings): boolean {
   return !!(settings.enabled && settings.assistantEndpoint && settings.assistantModel);
 }
-function chunk(sources: MemorySource[], maxTokens: number): MemorySource[] {
+export function chunk(sources: MemorySource[], maxTokens: number): MemorySource[] {
   const selected: MemorySource[] = [];
   let remaining = maxTokens - 800;
   for (const source of sources) {
     const tokens = approximateTokens(source.text) + 100;
-    if (tokens > remaining && selected.length) break;
+    if (tokens > remaining) {
+      if (!selected.length) throw new Error('单条记忆来源超过输入预算，请缩短分段或提高预算');
+      break;
+    }
     selected.push(source);
     remaining -= tokens;
     if (selected.length >= 40) break;
@@ -77,13 +80,19 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
       one<MemorySource>('sources', scope, id)))).filter((s): s is MemorySource => !!s);
     if (sources.length !== job.sourceIds.length) throw new Error('部分历史来源缺失');
     const system = memoryExtractionPrompt(), input = memoryExtractionInput(sources);
-    if (!await remainingBudget(scope, settings,
-      price({ input: approximateTokens(system + input), output: settings.outputBudget }, settings))) {
-      throw new Error('长期记忆费用预算已满或价格未配置');
+    let responseText = job.responseText;
+    if (!responseText) {
+      if (!await remainingBudget(scope, settings,
+        price({ input: approximateTokens(system + input), output: settings.outputBudget }, settings))) {
+        throw new Error('长期记忆费用预算已满或价格未配置');
+      }
+      const response = await requestMemoryJson(settings, system, input, controller.signal);
+      // Persist the paid response before validating or constructing embeddings.
+      // If a subsequent step fails, the next attempt reuses these paid tokens.
+      await recordPaidJobResponse(job, response.text, price(response.usage, settings), response.estimated);
+      responseText = response.text;
     }
-    const response = await requestMemoryJson(settings, system, input, controller.signal);
-    await charge(scope, price(response.usage, settings));
-    const events = parseExtraction(scope, sources, response.text);
+    const events = parseExtraction(scope, sources, responseText);
     const vectors: MemoryVector[] = [];
     if (settings.embeddingEndpoint && settings.embeddingModel
       && (settings.budgetUsd === 0 || settings.embeddingPrice > 0)) {
@@ -92,10 +101,11 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
           const estimated = approximateTokens(event.summary) * settings.embeddingPrice / 1e6;
           if (settings.budgetUsd > 0 && (await meta(scope, 'costUsd')) + estimated > settings.budgetUsd) break;
           const result = await requestEmbedding(settings, event.summary, controller.signal);
-          await charge(scope, result.tokens * settings.embeddingPrice / 1e6);
-          vectors.push({ key: memoryKey(scope, event.id + ':' + settings.embeddingModel),
+          const vector: MemoryVector = { key: memoryKey(scope, event.id + ':' + settings.embeddingModel),
             scope, eventId: event.id, model: settings.embeddingModel,
-            dimensions: result.vector.length, values: result.vector });
+            dimensions: result.vector.length, values: result.vector };
+          await saveEmbeddingWithCharge(vector, result.tokens * settings.embeddingPrice / 1e6);
+          vectors.push(vector);
         } catch { /* Keep structured memories searchable without embeddings. */ }
       }
     }
@@ -103,8 +113,15 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
     return true;
   } catch (error) {
     const reason = error instanceof Error ? error.message : '整理失败';
-    await put('jobs', { ...job, state: job.attempts >= 2 ? 'failed' : 'pending',
-      leaseUntil: job.attempts >= 2 ? 0 : Date.now() + 30_000 * (2 ** (job.attempts - 1)), error: reason.slice(0, 220) });
+    // Preserve any already-paid response stored by recordPaidJobResponse.
+    const existing = await one<MemoryJob>('jobs', scope, job.id);
+    await put('jobs', { ...existing, ...job,
+      responseText: existing?.responseText,
+      responseCostUsd: existing?.responseCostUsd,
+      usageEstimated: existing?.usageEstimated,
+      state: job.attempts >= 2 ? 'failed' : 'pending',
+      leaseUntil: job.attempts >= 2 ? 0 : Date.now() + 30_000 * (2 ** (job.attempts - 1)),
+      error: reason.slice(0, 220) });
     return false;
   } finally { clearTimeout(timeout); }
 }

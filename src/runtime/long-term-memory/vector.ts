@@ -1,7 +1,7 @@
 import { loadMemorySettings } from './settings';
 import { requestEmbedding, approximateTokens } from './providers';
 import { memoryKey } from './types';
-import { one, put } from './storage';
+import { one, saveEmbeddingWithCharge } from './storage';
 import type { MemoryVector } from './types';
 
 function hash(text: string): string {
@@ -25,11 +25,9 @@ export async function embeddingForMemorySearch(scope: string, query: string): Pr
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 12000);
   try {
     const response = await requestEmbedding(settings, query, controller.signal);
-    await put('vectors', { key: memoryKey(scope, id), scope, eventId: id, model: settings.embeddingModel,
-      dimensions: response.vector.length, values: response.vector });
-    const cost = response.tokens * settings.embeddingPrice / 1e6;
-    if (cost > 0) await put('metadata', { key: memoryKey(scope, 'costUsd'), scope, id: 'costUsd',
-      value: (await currentCost(scope)) + cost });
+    await saveEmbeddingWithCharge({ key: memoryKey(scope, id), scope, eventId: id, model: settings.embeddingModel,
+      dimensions: response.vector.length, values: response.vector },
+      response.tokens * settings.embeddingPrice / 1e6);
     return response.vector;
   } finally { clearTimeout(timeout); }
 }
