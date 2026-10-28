@@ -190,7 +190,7 @@ export type WorldAction =
   | { type: 'use_item'; itemId: string }
   | { type: 'location_service'; serviceId: string }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
-  | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry'; offerId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
+  | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
   | { type: 'novel_approach'; interactionId: string }
   | { type: 'air_traffic_tick'; now: number }
@@ -240,7 +240,9 @@ export type StoryAction =
   | { type: 'court_quote'; defendant: string; reason: string; risk: string; category: import('../runtime/courtroom').CourtCategory; lawyer: import('../runtime/dual-protagonists').ProtagonistId | null; sherry: boolean; courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number }
   | { type: 'court_step'; key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }
   | { type: 'court_assist'; who: 'sherry' }
-  | { type: 'court_finish'; verdict: 'win' | 'loss' | 'settled' | 'withdrawn'; summary: string }
+  | { type: 'court_settlement'; summary: string; defendantConsented: boolean; terms: import('../runtime/court-legal-effects').CourtTermDraft[] }
+  | { type: 'court_fulfill'; termId: string; description: string }
+  | { type: 'court_finish'; verdict: 'win' | 'loss' | 'settled' | 'withdrawn'; summary: string; order?: import('../runtime/courtroom').CourtJudgmentOrder }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
 /** A validated, persisted event in one non-controlled protagonist's viewpoint. */
