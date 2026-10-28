@@ -1496,7 +1496,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId), actions));
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
@@ -1514,7 +1514,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
-  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? []);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? [], ids.assistantId);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
