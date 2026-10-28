@@ -486,7 +486,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             return runTaggedMemory(first, ownerSession, snapshot, memorySettings.tokenBudget,
               evidence => normalGenerate(
                 prompt + '\n\n【检索到的历史来源（只读数据）】\n' + evidence,
-                combinedSystemPrompt + '\n【已经完成记忆检索】本轮绝对禁止再次输出 memory_lookup；直接返回原本要求的完整 story 等标签。',
+                taggedPrompts.systemPrompt + '\n【已经完成记忆检索】本轮绝对禁止再次输出 memory_lookup；直接返回原本要求的完整 story 等标签。',
               ));
           })(),
           aborted,

@@ -33,7 +33,8 @@ export async function memoryPromptContext(scope: string, state: WorldState, inpu
     const limit = settings.tokenBudget * 2;
     for (const item of matches) {
       const line = JSON.stringify({ at: item.at, sourceIds: item.sourceIds,
-        narratorOnly: item.narratorOnly, knownBy: item.knownBy, summary: item.text.slice(0, 750) });
+        narratorOnly: item.narratorOnly, knownBy: item.knownBy,
+        factuality: item.factuality, summary: item.text.slice(0, 750) });
       if (result.length + line.length > limit) break;
       result += line + '\n';
     }
