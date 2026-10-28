@@ -6,7 +6,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
-import { validateCourtDocketOffers, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtFinish } from './courtroom';
+import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
@@ -112,6 +112,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const item = record(raw, ['type','offers'],path);
         return { type:'court_docket', offers:validateCourtDocketOffers(item.offers,state) };
       }
+      case 'court_special': return validateCourtSpecial(raw,state);
       case 'court_open': return validateCourtOpen(raw,state);
       case 'court_quote': return validateCourtFeeQuote(raw,state);
       case 'court_step': return validateCourtStep(raw,state);
