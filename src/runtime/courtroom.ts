@@ -30,6 +30,7 @@ export interface CourtCase {
 }
 export interface CourtResult {
   id: string; owner: ProtagonistId; source: CourtCase['source']; title: string;
+  defendant: string | null; lawyer: ProtagonistId | null;
   verdict: 'win' | 'loss' | 'settled' | 'withdrawn';
   solvedBy: 'player' | 'sherry' | 'forfeit'; payout: number; experience: number;
   summary: string; atDay: number;
@@ -137,12 +138,14 @@ const courtCase = (raw: unknown): CourtCase => {
   return parsed;
 };
 const result = (raw: unknown): CourtResult => {
-  const item = obj(raw, ['id','owner','source','title','verdict','solvedBy','payout','experience','summary','atDay'], '结案记录');
+  const item = obj(raw, ['id','owner','source','title','defendant','lawyer','verdict','solvedBy','payout','experience','summary','atDay'], '结案记录');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict)) ||
     !['player','sherry','forfeit'].includes(String(item.solvedBy)) ||
     !['commission','lawsuit'].includes(String(item.source))) return error('判决类型');
   return { id: string(item.id,90,'结案编号'), owner: protagonist(item.owner),
     source: item.source as CourtCase['source'], title: string(item.title,100,'结案标题'),
+    defendant:item.defendant===null ? null : string(item.defendant,100,'被告'),
+    lawyer:item.lawyer===null ? null : protagonist(item.lawyer),
     verdict: item.verdict as CourtResult['verdict'], solvedBy: item.solvedBy as CourtResult['solvedBy'],
     payout: whole(item.payout,100000,'结案收入'), experience: whole(item.experience,2000,'结案经验'),
     summary: string(item.summary,1200,'判决内容'), atDay: whole(item.atDay,365000,'结案日期') };
@@ -306,7 +309,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission') return error('只有艾玛的职业委托可以由雪莉救场');
     const payout = Math.round(active.rewardYen * SHERRY_ASSIST_RATE);
     next.player.balance += payout;
-    current.results.push({id:active.id,owner,source:'commission',title:active.title,verdict:'win',solvedBy:'sherry',
+    current.results.push({id:active.id,owner,source:'commission',title:active.title,defendant:null,lawyer:null,verdict:'win',solvedBy:'sherry',
       payout,experience:Math.round(active.experience * SHERRY_ASSIST_RATE),summary:'橘雪莉依据现有证据完成关键论证，案件得到妥善解决。',atDay:state.clock.day});
     if (current.results.length > 300) current.results.shift();
     current.active = null;
@@ -371,6 +374,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     reward = Math.round(active.rewardYen * multiplier);
     const experience = Math.round(active.experience * multiplier);
     court.results.push({ id:active.id, owner:active.owner, source:active.source, title:active.title,
+      defendant:active.fee?.defendant ?? null,lawyer:active.fee?.lawyer ?? null,
       verdict, solvedBy:assisted?'sherry':'player', payout:reward, experience,
       summary:finalSummary, atDay:state.clock.day });
     if (court.results.length > 300) court.results.shift();
@@ -387,6 +391,7 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
   const court = parseCourtroom(next.courtroom ?? initialCourtroom());
   const trial = court.active!;
   court.results.push({id:trial.id,owner:trial.owner,source:trial.source,title:trial.title,
+    defendant:trial.fee?.defendant ?? null,lawyer:trial.fee?.lawyer ?? null,
     verdict:'loss',solvedBy:'forfeit',payout:0,experience:0,
     summary:'庭审论证表现不佳，橘雪莉随后澄清了关键争议并完成善后。',atDay:state.clock.day});
   if (court.results.length > 300) court.results.shift();
@@ -428,7 +433,7 @@ export function courtStoryContext(state: WorldState) {
       // This hidden truth is only in the model context; it is never in the player UI.
       hiddenBlackScript: active.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
-    recentResults:court.results.filter(item => item.owner === owner).slice(-4),
+    recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
     rule:'职业委托白剧本给玩家、黑剧本仅供主持法庭；不得将黑剧本、误导点直接念给角色。主动诉讼没有黑剧本，以既有世界事实决定争点。自由文本质询，不要求固定答案。普通对白不推进时间，只有真实的新证言/突破/矛盾触发court_step。重要事件不能离开；无须玩家点击证据。艾玛遭遇不利判决时雪莉必须依据已知证据自动善后，按40%职业收益，强制切换则0%。和解必须双方同意，撤诉必须玩家主动表达。每日三份委托次日刷新。',
   };
 }
