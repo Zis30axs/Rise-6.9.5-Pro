@@ -1454,7 +1454,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     const next = courtAction(prepared, action);
     if (action.phase === 'accept-preset' || action.phase === 'confirm-filing' || action.phase === 'migrate-legacy') advance(next, 10);
     if (action.phase === 'sherry') {
-      advance(next, 15);
+      advance(next, Math.min(15, Math.max(0, 1439 - next.clock.hour * 60 - next.clock.minute)));
       const rescued = next.courtroom?.results.at(-1);
       const sherry = next.npcProfessions?.people['majo-sherry'];
       if (rescued?.solvedBy === 'sherry' && sherry)
