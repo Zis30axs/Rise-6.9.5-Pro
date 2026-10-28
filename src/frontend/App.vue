@@ -803,7 +803,8 @@ onBeforeUnmount(() => {
     <div v-if="pendingCourtSwitch" class="court-switch-mask" data-court-switch-warning role="alertdialog" aria-modal="true" aria-label="重大事件">
       <section class="court-switch-dialog">
         <h2>当前正在进行重大事件，是否继续？</h2>
-        <p>当前庭审尚未结束。继续切换视角后，本案将记为表现不佳，由橘雪莉完成后续处理；本次职业报酬为零。</p>
+        <p v-if="model.state.courtroom?.active?.owner==='emma' && model.state.courtroom.active.source==='commission'">庭审尚未结束。确认切换后，橘雪莉将依据已核实的案卷继续完成委托；艾玛此次职业报酬为零。</p>
+        <p v-else>庭审尚未结束。确认切换后，本次参与将中止，尚未裁决的争议不会自动判定胜负；已支付的费用不退还。</p>
         <div class="court-switch-actions">
           <button type="button" data-court-switch-cancel @click="pendingCourtSwitch=null">取消切换</button>
           <button type="button" data-court-switch-confirm @click="confirmCourtSwitch">继续切换</button>
