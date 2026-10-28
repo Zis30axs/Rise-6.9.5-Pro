@@ -156,6 +156,8 @@ export interface WorldState {
   livehouse?: import('../runtime/livehouse').LivehouseState;
   /** Shared profession cases and rewards, keyed by the responsible protagonist. */
   lawCareer?: import('../runtime/law-career').LawCareerState;
+  /** Shared court docket, active trial, filings and saved verdicts; absent in older saves. */
+  courtroom?: import('../runtime/courtroom').CourtroomState;
   /** Shared NPC major / career records, excluding controlled protagonists. */
   npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
   player: PlayerState;
@@ -188,6 +190,7 @@ export type WorldAction =
   | { type: 'use_item'; itemId: string }
   | { type: 'location_service'; serviceId: string }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
+  | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'sherry'; offerId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
   | { type: 'novel_approach'; interactionId: string }
   | { type: 'air_traffic_tick'; now: number }
@@ -231,6 +234,11 @@ export type StoryAction =
   | { type: 'complete_schedule'; id: string }
   | { type: 'relationship'; npcId: string; delta: number; reason: string }
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
+  | { type: 'court_docket'; offers: import('../runtime/courtroom').CourtOffer[] }
+  | { type: 'court_open'; offerId: string; white: string; evidence: import('../runtime/courtroom').CourtEvidence[]; truth: string; misdirection: string }
+  | { type: 'court_quote'; defendant: string; reason: string; category: import('../runtime/courtroom').CourtCategory; lawyer: import('../runtime/dual-protagonists').ProtagonistId | null; sherry: boolean; courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number }
+  | { type: 'court_step'; key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }
+  | { type: 'court_finish'; verdict: 'win' | 'loss' | 'settled' | 'withdrawn'; summary: string }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
 /** A validated, persisted event in one non-controlled protagonist's viewpoint. */
