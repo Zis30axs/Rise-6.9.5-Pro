@@ -118,6 +118,7 @@ describe('freeform courtroom and legal services', () => {
     expect(opened.courtroom?.active?.assistance).toBe('none');
     expect(opened.courtroom?.active?.owner).toBe('emma');
     expect(parseState(JSON.parse(JSON.stringify(opened))).courtroom?.active?.truth).toBeNull();
+    expect(courtStoryContext(opened).active).not.toHaveProperty('hiddenBlackScript');
   });
 
   it('keeps opt-in serious criminal cases outside the ordinary three offers',()=>{
@@ -471,7 +472,7 @@ describe('freeform courtroom and legal services', () => {
     expect(courtState(state).active).toBeNull();
     expect(courtState(state).results.at(-1)).toMatchObject({solvedBy:'forfeit',verdict:'loss',payout:0,experience:0});
     expect(personState(state,'emma').player.balance).toBe(money);
-    expect(courtState(state).pendingRecaps.emma).toContain('表现');
+    expect(courtState(state).pendingRecaps.emma).toContain('参与已中止');
     state=reduceState(state,{type:'switch_protagonist',target:'emma'});
     expect(courtState(state).pendingRecaps.emma).toBeUndefined();
     expect(state.story.at(-1)?.text).toContain('橘雪莉');
