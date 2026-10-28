@@ -387,7 +387,7 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
     summary:'庭审论证表现不佳，橘雪莉随后澄清了关键争议并完成善后。',atDay:state.clock.day});
   if (court.results.length > 300) court.results.shift();
   court.pendingRecaps[trial.owner] = ('关于「' + trial.title + '」的庭审，' + protagonistNames[trial.owner] +
-    '先前的论证未能说服法庭。橘雪莉重新梳理了已知证据和证词，完成必要的善后与澄清。' +
+    '先前的庭审表现未能说服法庭。橘雪莉重新梳理了已知证据和证词，完成必要的善后与澄清。' +
     (trial.truth ? '案情最终得到澄清：' + trial.truth : '双方就争议作出了相应处理。') +
     '这次庭审没有带来职业报酬。').slice(0,1800);
   court.active = null;
