@@ -456,6 +456,7 @@ export function courtStoryContext(state: WorldState) {
   const activePublic = active ? (({ truth: _truth, misdirection: _misdirection, ...details }) => details)(active) : null;
   return {
     categories:court.categories, board:court.board?.day === state.clock.day ? court.board : null,
+    dailyPreset: court.board?.day === state.clock.day ? null : preset(state.clock.day, court.categories),
     special:court.special?.day === state.clock.day ? court.special.offer : null,
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     active:activePublic ? { ...activePublic,
@@ -463,6 +464,6 @@ export function courtStoryContext(state: WorldState) {
       hiddenBlackScript: active?.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
     recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
-    rule:'职业委托白剧本给玩家、黑剧本仅供主持法庭；不得将黑剧本、误导点直接念给角色。主动诉讼没有黑剧本，以既有世界事实决定争点。自由文本质询，不要求固定答案。普通对白不推进时间，只有真实的新证言/突破/矛盾触发court_step。重要事件不能离开；无须玩家点击证据。艾玛遭遇不利判决时雪莉必须依据已知证据自动善后，按40%职业收益，强制切换则0%。和解必须双方同意，撤诉必须玩家主动表达。每日三份委托次日刷新。',
+    rule:'职业委托白剧本给玩家、黑剧本仅供主持法庭；不得将黑剧本、误导点直接念给角色。主动诉讼没有黑剧本，以既有世界事实决定争点；轻微刑事仅可告发，由检察官决定是否提起公诉，不能把私人写成公诉人。自由文本质询，不要求固定答案。普通对白不推进时间，只有真实的新证言/突破/矛盾触发court_step。重要事件不能离开；无须玩家点击证据。艾玛遭遇不利判决时雪莉必须依据已知证据自动善后，按40%职业收益，强制切换则0%。和解必须双方同意，撤诉必须玩家主动表达。每日三份委托次日刷新。',
   };
 }
