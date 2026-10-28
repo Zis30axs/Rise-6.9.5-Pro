@@ -17,6 +17,7 @@ const active = computed(() => court.value.active);
 const myTrial = computed(() => active.value?.owner === owner.value ? active.value : null);
 const filing = computed(() => court.value.filing?.claimant === owner.value ? court.value.filing : null);
 const lastResult = computed(() => court.value.results.filter(row => row.owner === owner.value).at(-1) ?? null);
+const oldTrial = computed(() => Object.entries(props.model.state.lawCareer?.owners ?? {}).find(([,item]) => !!item?.active) ?? null);
 const lawStats = computed(() => lawOwner(props.model.state));
 const experience = computed(() => lawStats.value.experience + court.value.results.filter(row => row.owner === owner.value).reduce((n,row) => n + row.experience,0));
 const earnings = computed(() => lawStats.value.totalPayout + court.value.results.filter(row => row.owner === owner.value).reduce((n,row) => n + row.payout,0));
