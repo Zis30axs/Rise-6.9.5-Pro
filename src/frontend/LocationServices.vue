@@ -35,13 +35,14 @@ const guidance = computed(() => {
 
 async function useService(serviceId: string) {
   const quote = getLocationServiceQuote(props.model.state, serviceId);
-  if (props.model.busy || quote.blockedReason || !quote.service) return;
+  if (props.model.busy || !quote.service) return;
   receipt.value = '';
   if (quote.service.reveal && revealingJob.value !== serviceId) {
     attempted.value = false;
     revealingJob.value = serviceId;
     return;
   }
+  if (quote.blockedReason) return;
   attempted.value = true;
   const savedReceipt = await completeLocationService(props.model, props.actions, serviceId);
   if (!savedReceipt) return;
@@ -83,7 +84,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
         <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ service.description }}</p>
         <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
         <p v-if="!quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
-        <p v-else-if="quote.blockedReason" class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
+        <p v-else-if="quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
         <div v-if="service.reveal && revealingJob === service.id" class="location-service-reveal" :data-job-reveal="service.id" role="group" aria-label="工作安排">
           <p>{{ service.reveal }}</p>
           <div class="location-service-reveal-actions">
@@ -91,7 +92,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
             <button type="button" class="location-service-cancel" :data-cancel-backend-job="service.id" @click="revealingJob = null">不接了</button>
           </div>
         </div>
-        <button v-else type="button" :data-use-location-service="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">{{ service.reveal ? '前去应聘' : service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
+        <button v-else type="button" :data-use-location-service="service.id" :disabled="model.busy || (!service.reveal && !!quote.blockedReason)" @click="useService(service.id)">{{ service.reveal ? '前去应聘' : service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
         <button v-if="takeaway.item" type="button" class="location-service-pack" :data-package-service="service.id" :disabled="model.busy || !!takeaway.blockedReason" :title="takeaway.blockedReason ?? '放入背包，稍后食用或送人；当前不结算食用效果'" @click="packService(service.id)">打包带走 · ¥{{ formatGameNumber(takeaway.totalPrice) }}<small>含打包费 ¥{{ PACKAGING_FEE }}，不立即食用</small></button>
         <p v-if="takeaway.item && takeaway.blockedReason && takeaway.blockedReason !== quote.blockedReason" class="location-service-blocked">打包：{{ takeaway.blockedReason }}</p>
       </article>

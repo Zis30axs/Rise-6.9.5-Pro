@@ -418,8 +418,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         locationServices: getLocationServices(snapshot).map(service => {
           const quote = getLocationServiceQuote(snapshot, service.id);
           // The narrator knows the published job advert, not the secretly assigned work.
-          if (service.reveal) return { id: service.id, label: service.label, description: service.description,
-            available: !quote.blockedReason, blockedReason: quote.blockedReason };
+          if (service.reveal) return { id: service.id, label: service.label, description: service.description };
           return { id: service.id, label: service.label, description: service.description, minutes: quote.minutes,
             price: quote.price, ...(quote.payout ? { payout: quote.payout } : {}), changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason };
         }),

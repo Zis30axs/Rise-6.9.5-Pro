@@ -63,12 +63,29 @@ describe('backend recruitment UI', () => {
     x.cleanup();
   });
 
+  it('lets an ill applicant read the advert first without exposing heavy labor until application', async () => {
+    const x = mount(LocationServices); await nextTick();
+    x.model.state.player.health = 30;
+    await nextTick();
+    const card = x.target.querySelector(`[data-location-service="${CONSTRUCTION_BACKEND_JOB_ID}"]`);
+    expect(card.textContent).not.toMatch(/感冒|重体力|4900|水泥|75 点精力/);
+    const apply = card.querySelector('[data-use-location-service]');
+    expect(apply.disabled).toBe(false);
+    apply.click(); await nextTick();
+    expect(card.textContent).toContain('4900 袋水泥');
+    expect(card.textContent).toMatch(/感冒|重体力|畏寒/);
+    expect(card.querySelector('[data-confirm-backend-job]').disabled).toBe(true);
+    expect(x.calls).toHaveLength(0);
+    x.cleanup();
+  });
+
   it('keeps the quick action from spoiling the wages and cargo', async () => {
     const emitted = [];
     const x = mount(PlaceActions, { catalog: true, onService: id => emitted.push(id) });
     await nextTick();
     const quick = x.target.querySelector(`[data-quick-service="${CONSTRUCTION_BACKEND_JOB_ID}"]`);
     expect(quick).toBeTruthy();
+    expect(quick.disabled).toBe(false);
     expect(quick.textContent).toContain('后端开发');
     expect(quick.textContent).not.toMatch(/4900|6800|水泥/);
     quick.click();
