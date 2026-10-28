@@ -154,6 +154,8 @@ export interface WorldState {
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
   livehouse?: import('../runtime/livehouse').LivehouseState;
+  /** Shared profession cases and rewards, keyed by the responsible protagonist. */
+  lawCareer?: import('../runtime/law-career').LawCareerState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
@@ -183,6 +185,7 @@ export type WorldAction =
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use_item'; itemId: string }
   | { type: 'location_service'; serviceId: string }
+  | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
   | { type: 'novel_approach'; interactionId: string }
   | { type: 'air_traffic_tick'; now: number }
