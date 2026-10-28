@@ -128,7 +128,7 @@ export function sampleScenePerson(seed: string, anchor: ScenePersonAnchor): Scen
   const name = surnames[Math.floor(random() * surnames.length)]! + givenNames[Math.floor(random() * givenNames.length)]!;
   const colors = [0x699ca5, 0xb58c72, 0x7d8cb6, 0xb999c0, 0x859c6d, 0xc6a66f, 0xa47779, 0x7b9d95];
   const descriptions: Record<string, string> = {
-    同学: '身边带着书包，像是刚下课，正留意周围的路。', 教师: '拿着资料，步履从容。', 职员: '穿着日常通勤服装，手里拿着随身物品。',
+    同学: '身边带着随身背包，像是刚下课，正留意周围的路。', 教师: '拿着资料，步履从容。', 职员: '穿着日常通勤服装，手里拿着随身物品。',
     居民: '穿着轻便，正沿附近的步道散步。', 访客: '不时看一眼周围的路标，像是第一次来这里。', 店员: '穿着整洁，正在店外短暂停留。',
     骑手: '带着配送用的随身装备，正查看附近的方向。', 自由职业者: '背着轻便的随身包，暂时停在路边。',
   };

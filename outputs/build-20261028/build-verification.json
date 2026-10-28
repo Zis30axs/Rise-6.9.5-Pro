@@ -1,33 +1,33 @@
 {
   "buildDate": "2026-10-28",
-  "feature": "接入新NPC风堇世界书设定（妈妈般的温柔体贴与习惯乐意）、街区全科诊所日夜背景及对话立绘，关联每周谈心清空压力调理与全科问诊服务",
+  "feature": "接入新NPC风堇世界书设定（妈妈般的温柔体贴与习惯乐意）、街区全科诊所日夜背景及对话立绘，关联每周谈心清空压力调理；规范四位主角非在读高中生口径，统一大一秋季报到与未定学籍设定",
   "verifiedTests": "45 files, 408 passed",
   "typeCheck": "vue-tsc passed",
   "noJapaneseCheck": "passed",
   "artifacts": {
     "unread-city-lite.png": {
-      "bytes": 25969103,
-      "sha256": "fe26deb23ecb015245da16ceb67cd1ee4b3e542b34375653d977cc04b73de9b9"
+      "bytes": 25971871,
+      "sha256": "c9a52e591a0c7700073fb06cd8fdeb1634aae25f864d8815137450deba20cf6b"
     },
     "unread-city-lite-tauri.png": {
-      "bytes": 9726559,
-      "sha256": "6b37a76d977ae753d638510d5783e04d05777221b80fe9db85e2b8fbcee66669"
+      "bytes": 9727570,
+      "sha256": "7283447475ec484c9e313ba82d58ff8788f32839a9677e2b3ba6d4f1c438a791"
     },
     "unread-city-lite-tauri.verification.json": {
       "bytes": 827,
-      "sha256": "1cdee42474eb8faeddf5cdfd91b09313c99fbeba7c14c5b81109d913145cc1ca"
+      "sha256": "ab8df746ac25617905292f123c8845591cf91086f1ce5fc187a37027719e8695"
     },
     "unread-city-lite-assets.zip": {
       "bytes": 64562385,
-      "sha256": "6d6a4e2a7eef709ed16f505f62d707eddd70d09b948d58f9a234cf44946d4e6f"
+      "sha256": "520e8a2e8a00a398c00ee20b1cd5049ccb1cdc8b5624c4dc4f153080162ffc4a"
     },
     "lite-assets-report.json": {
       "bytes": 487,
-      "sha256": "7238a9a029e40729f387c233f990e0382e8db84a54fbd61f0baa81acf72e3ab1"
+      "sha256": "053f819382af870fe9c5e7183becebb624b2a376e61a04cd2e1215cc2e259d5e"
     },
     "lite-verification.json": {
       "bytes": 436,
-      "sha256": "f32ba5c62332c6f7def0aa4615ac43354cb6231e94dd6ec3f13657be3aed7784"
+      "sha256": "8395054febeb2e81da882f2b8fc54c06ceb31d235b4ddb8cc14e8d0987bebc4f"
     }
   }
 }

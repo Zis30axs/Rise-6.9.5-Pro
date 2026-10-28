@@ -31,8 +31,11 @@
      - 在商业区诊所或口袋公园心理谈心角，每周主角可找风堇医生谈心一次（跨游戏周严格受额度重置控制，四主角额度独立）；
      - 谈心后彻底清空当前压力值（压力直接归零 0），精力充沛恢复至 100，并获得心情与微量健康调理。
    - **地点服务联动**：商业区/口袋公园「诊所全科问诊」与「风堇医生谈心」服务正式关联风堇医生，大模型提示词与叙事规则同步引导。
+5. **四主角学籍与角色表述规范（修复高中生误读）**：
+   - **全主角非在读高中生明确化**：在世界基调（`core.json`）与大模型提示（`bridge.ts`）中明确四位主角（素世、祥子、艾玛、玲奈子）均非在读高中生，四人各自沿用存档专业准备 2025 年 9 月 1 日架空秋季大一报到。
+   - **渡奈常驻人物表述与前史对齐**：全面修正 `watanare-residents.json`、`watanare-story-arcs.json` 及 `viewpoint-openings.ts`，将玲奈子“第二学期开学”、“整理书包肩带”、“高中出道”等容易被误解为现役高中生的表述更正为“随身背包”、“现充出道”，将芦谷高校同学与教师背景明确归属原作前史，其余配角统一标注当前学籍未定，避免模型将玲奈子等人认作高中生。
 
 ## 产物哈希
-- unread-city-lite.png: fe26deb23ecb015245da16ceb67cd1ee4b3e542b34375653d977cc04b73de9b9 (25969103 bytes)
-- unread-city-lite-tauri.png: 6b37a76d977ae753d638510d5783e04d05777221b80fe9db85e2b8fbcee66669 (9726559 bytes)
-- unread-city-lite-assets.zip: 6d6a4e2a7eef709ed16f505f62d707eddd70d09b948d58f9a234cf44946d4e6f (64562385 bytes)
+- unread-city-lite.png: c9a52e591a0c7700073fb06cd8fdeb1634aae25f864d8815137450deba20cf6b (25971871 bytes)
+- unread-city-lite-tauri.png: 7283447475ec484c9e313ba82d58ff8788f32839a9677e2b3ba6d4f1c438a791 (9727570 bytes)
+- unread-city-lite-assets.zip: 520e8a2e8a00a398c00ee20b1cd5049ccb1cdc8b5624c4dc4f153080162ffc4a (64562385 bytes)
