@@ -11,10 +11,14 @@ const workingScopes = new Set<string>();
 const pausedScopes = new Set<string>();
 const activeRequests = new Map<string, AbortController>();
 const activeWorkers = new Map<string, Promise<void>>();
+const pauseVersions = new Map<string, number>();
+export function memoryPauseVersion(scope: string): number { return pauseVersions.get(scope) ?? 0; }
+export function memoryIsPaused(scope: string): boolean { return pausedScopes.has(scope); }
 
 /** Stop optional paid activity immediately without touching gameplay or deleting work. */
 export function pauseMemoryWork(scope: string): Promise<void> {
   pausedScopes.add(scope);
+  pauseVersions.set(scope, memoryPauseVersion(scope) + 1);
   activeRequests.get(scope)?.abort();
   return activeWorkers.get(scope) ?? Promise.resolve();
 }

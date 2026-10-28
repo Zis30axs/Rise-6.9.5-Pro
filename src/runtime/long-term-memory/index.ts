@@ -3,7 +3,8 @@ import { activeProtagonist } from '../protagonist-world';
 import { loadMemorySettings } from './settings';
 import { collectCommittedSources, collectExistingSources } from './source';
 import { searchMemory } from './retrieval';
-import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork } from './scheduler';
+import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork, memoryIsPaused, memoryPauseVersion } from './scheduler';
+import { ingestSources } from './storage';
 import { pruneFutureMemory } from './storage';
 
 const reconciling = new Map<string, Promise<boolean>>();
@@ -18,12 +19,19 @@ export function memoryBootstrap(scope: string, state: WorldState): void {
     if (!loadMemorySettings().enabled) return;
     unsafeScopes.add(scope);
     const idle = pauseMemoryWork(scope);
+    const pauseToken = memoryPauseVersion(scope);
     const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
       at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
     const running = idle.then(() => pruneFutureMemory(scope, cutoff))
       .then(() => {
         unsafeScopes.delete(scope);
         const sources = collectExistingSources(scope, state);
+        // Switching chats while the database is reconciling must not restart
+        // paid work in the retired chat. Backfill remains safe to ingest.
+        if (memoryPauseVersion(scope) !== pauseToken) {
+          if (sources.length) void ingestSources(sources).catch(() => {});
+          return true;
+        }
         if (sources.length) scheduleMemoryWork(scope, sources);
         else resumeMemoryWork(scope);
         return true;
@@ -39,9 +47,19 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
     if (!settings.enabled) return;
     const sources = collectCommittedSources(scope, before, after);
     if (sources.length) {
-      const pending = reconciling.get(scope);
-      if (pending) void pending.then(safe => { if (safe) scheduleMemoryWork(scope, sources); });
-      else if (!unsafeScopes.has(scope)) scheduleMemoryWork(scope, sources);
+      // Preserve the committed evidence even when a session is switched away.
+      void ingestSources(sources).then(() => {
+        const pending = reconciling.get(scope);
+        if (pending) {
+          const pauseToken = memoryPauseVersion(scope);
+          void pending.then(safe => {
+            if (safe && !memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
+              scheduleMemoryWork(scope, []);
+          });
+        } else if (!unsafeScopes.has(scope) && !memoryIsPaused(scope)) {
+          scheduleMemoryWork(scope, []);
+        }
+      }).catch(() => {});
     }
   } catch { /* No memory feature may prevent a normal game save. */ }
 }
