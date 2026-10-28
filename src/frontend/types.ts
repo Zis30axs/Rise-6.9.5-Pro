@@ -315,6 +315,7 @@ export interface Bridge {
 
 export interface ShellModel {
   mode: Bridge['kind'];
+  memoryScope?: string;
   state: WorldState;
   busy: boolean;
   /** Temporary presentation lock; never serialized into WorldState. */

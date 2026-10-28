@@ -5,6 +5,12 @@ import { otherSidePromptContext } from './other-side';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { weeklyMemoryContext } from './weekly-memory';
+import { memoryBootstrap, memoryCommitted, memoryPromptContext, reportMemoryOutboxWarning } from './long-term-memory';
+import { collectCommittedSources } from './long-term-memory/source';
+import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, readSavedMemoryOutbox, outboxOverflowCount } from './long-term-memory/outbox';
+import { loadMemorySettings } from './long-term-memory/settings';
+import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
+import { pauseMemoryWork } from './long-term-memory/scheduler';
 import { PROMPT_CONTEXT_LIMITS, promptTopicHints, selectPromptJournal, selectPromptPhone, selectPromptStory } from './prompt-pruning';
 import type { Bridge, GeneratedStory, StoryGenerationOptions, WorldState } from '../frontend/types';
 import { createInitialState, locations, novelDestinations, parseState, STATE_LIMITS } from './model';
@@ -215,6 +221,20 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   let retired = false;
   let epoch = 0;
   let requestSequence = 0;
+  let committedSnapshot: WorldState | null = null;
+  // This callback only acknowledges sources already durably written to IndexedDB.
+  // It never writes an older copy of the authoritative WorldState.
+  const acknowledgeMemory = (keys: ReadonlySet<string>): void => {
+    try {
+      assertOwner();
+      const current = table(api.getVariables({ type: 'chat' }));
+      assertOwner();
+      const updated = acknowledgeSavedMemoryOutbox(current, ownerSession, keys);
+      if (updated === current) return;
+      // No await between reading current variables and replacing only the outbox.
+      api.replaceVariables(updated, { type: 'chat' });
+    } catch { /* Replay the outbox on the next load. */ }
+  };
   const instanceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const subscribers = new Set<() => void>();
   let pending: { id: string; route: 'tavern' | 'custom'; reject: (error: Error) => void; abort?: () => void } | null = null;
@@ -235,6 +255,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   };
   const chatChanged = () => {
     retired = true;
+    pauseMemoryWork(ownerSession);
     cancel();
     for (const callback of [...subscribers]) callback();
   };
@@ -247,8 +268,15 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       assertOwner();
       const variables = table(api.getVariables({ type: 'chat' }));
       assertOwner();
-      if (!Object.prototype.hasOwnProperty.call(variables, 'unread_city')) return createInitialState();
-      return parseState(variables.unread_city);
+      const state = !Object.prototype.hasOwnProperty.call(variables, 'unread_city')
+        ? createInitialState() : parseState(variables.unread_city);
+      committedSnapshot = structuredClone(state);
+      const outbox = readSavedMemoryOutbox(variables, ownerSession,
+        state.protagonists?.narrativeTurn ?? 0,
+        (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute);
+      reportMemoryOutboxWarning(ownerSession, outbox.overflowCount);
+      memoryBootstrap(ownerSession, state, outbox.sources, acknowledgeMemory);
+      return state;
     },
     save(state: WorldState) {
       const snapshot = parseState(state);
@@ -256,9 +284,22 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const variables = table(api.getVariables({ type: 'chat' }));
       // A save corrupted externally between UI load and save must also survive.
       if (Object.prototype.hasOwnProperty.call(variables, 'unread_city')) parseState(variables.unread_city);
+      const before = committedSnapshot;
+      // Capture the irreversible source delta BEFORE the main game's bounded
+      // story array has any chance to discard it. The outbox and WorldState
+      // travel together in one synchronous chat-variable write.
+      let sources: ReturnType<typeof collectCommittedSources> = [];
+      if (before && loadMemorySettings().enabled) {
+        try { sources = collectCommittedSources(ownerSession, before, snapshot); }
+        catch { sources = []; }
+      }
+      const nextVariables = appendSavedMemoryOutbox(variables, ownerSession, sources);
       // No await between session check and synchronous TH variable replacement.
       assertOwner();
-      api.replaceVariables({ ...variables, unread_city: snapshot }, { type: 'chat' });
+      api.replaceVariables({ ...nextVariables, unread_city: snapshot }, { type: 'chat' });
+      reportMemoryOutboxWarning(ownerSession, outboxOverflowCount(nextVariables, ownerSession));
+      committedSnapshot = structuredClone(snapshot);
+      if (before) memoryCommitted(ownerSession, before, snapshot, sources, acknowledgeMemory);
     },
     onSessionChange(callback) {
       if (disposed) return () => {};
@@ -288,6 +329,25 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         canTriggerWhenOutdoors: getAirTrafficContext(snapshot.airTraffic).canTriggerPass };
       if (snapshot.interior) { airTraffic.active = null; airTraffic.canTriggerPass = false; }
       const currentMinute = (snapshot.clock.day - 1) * 1440 + snapshot.clock.hour * 60 + snapshot.clock.minute;
+      const memorySettings = loadMemorySettings();
+      const memoryNarrative = memorySettings.enabled && !options;
+      let retrievedMemory = '';
+      if (memoryNarrative) {
+        // An optional IndexedDB read must not become a hard prerequisite for storytelling.
+        let deadline: ReturnType<typeof setTimeout> | undefined;
+        try {
+          const limited = new Promise<string>(resolve => {
+            deadline = setTimeout(() => resolve(''), 250);
+          });
+          retrievedMemory = await Promise.race([
+            memoryPromptContext(ownerSession, snapshot, input), limited, aborted,
+          ]);
+        } catch (error) {
+          if (pending?.id === generationId) pending = null;
+          throw error;
+        } finally { if (deadline !== undefined) clearTimeout(deadline); }
+      }
+      if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
       const narrative = narrativeContext(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
@@ -300,6 +360,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         worldContinuity: omniscientContinuityContext(snapshot),
         otherSideOpportunity: otherSidePromptContext(snapshot),
         weeklyMemory: weeklyMemoryContext(snapshot),
+        ...(retrievedMemory ? { retrievedMemory } : {}),
         clock: snapshot.clock, calendarDate: gameCalendar(snapshot.clock.day),
         reporting: registrationNotice(snapshot.clock.day), coursesStarted: hasStartedAcademicWeek(snapshot.clock.day),
         todayOccasions: gameCalendarOccasions(snapshot.clock.day),
@@ -409,7 +470,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;
-      const combinedSystemPrompt = taggedPrompts.systemPrompt;
+      const combinedSystemPrompt = taggedPrompts.systemPrompt + (memoryNarrative && memorySettings.protocol === 'tags'
+        ? '\n【记忆查询独立响应例外】当必须查阅历史时，允许只输出 <memory_lookup>JSON</memory_lookup>，此时无需 story 标签；查询结果返回后的下一次生成必须恢复原有完整剧情标签协议。\n' + MEMORY_TAG_INSTRUCTION : '');
       let smsTimeout: ReturnType<typeof setTimeout> | undefined;
       try {
         if (options?.kind === 'autonomous_sms') {
@@ -419,25 +481,52 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             if (pending?.id === generationId && epoch === requestEpoch) cancel();
           }, AUTONOMOUS_SMS_TIMEOUT_MS);
         }
-        const response = await Promise.race([
-          storyApi.mode === 'custom'
-            ? requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt, controller!.signal)
+        let generationAttempt = 0;
+        const normalGenerate = (inputPrompt: string, instructions: string): Promise<unknown> => {
+          const attempt = ++generationAttempt;
+          const attemptId = attempt === 1 ? generationId : generationId + ':resume:' + attempt;
+          if (storyApi.mode === 'tavern' && pending
+            && (pending.id === generationId || pending.id.startsWith(generationId + ':')))
+            pending.id = attemptId;
+          return storyApi.mode === 'custom'
+            ? requestStoryFromCustomApi(storyApi, inputPrompt, instructions, controller!.signal)
             : options?.kind === 'autonomous_sms'
             ? api.generateRaw!({
-              generation_id: generationId,
+              generation_id: attemptId,
               ordered_prompts: [
-                { role: 'system', content: combinedSystemPrompt },
-                { role: 'user', content: prompt },
+                { role: 'system', content: instructions },
+                { role: 'user', content: inputPrompt },
               ],
               overrides: { chat_history: { with_depth_entries: false, author_note: '', prompts: [] } },
               should_stream: false, should_silence: true, max_chat_history: 0,
             })
             : api.generate({
-            generation_id: generationId,
-            user_input: prompt,
-            injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: combinedSystemPrompt }],
-            should_stream: false, should_silence: true, max_chat_history: 0,
-          }),
+              generation_id: attemptId,
+              user_input: inputPrompt,
+              injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: instructions }],
+              should_stream: false, should_silence: true, max_chat_history: 0,
+            });
+        };
+        const response = await Promise.race([
+          (async (): Promise<unknown> => {
+            if (memoryNarrative && memorySettings.protocol === 'tools' && storyApi.mode === 'custom') {
+              try {
+                return await runNativeMemoryTools(storyApi, memorySettings, ownerSession,
+                  snapshot, prompt, combinedSystemPrompt, controller!.signal);
+              } catch (error) {
+                if (controller!.signal.aborted) throw error;
+                // An optional memory provider must not prevent normal storytelling.
+                return normalGenerate(prompt, combinedSystemPrompt);
+              }
+            }
+            const first = await normalGenerate(prompt, combinedSystemPrompt);
+            if (!memoryNarrative || memorySettings.protocol !== 'tags') return first;
+            return runTaggedMemory(first, ownerSession, snapshot, memorySettings.tokenBudget,
+              evidence => normalGenerate(
+                prompt + '\n\n【检索到的历史来源（只读数据）】\n' + evidence,
+                taggedPrompts.systemPrompt + '\n【已经完成记忆检索】本轮绝对禁止再次输出 memory_lookup；直接返回原本要求的完整 story 等标签。',
+              ));
+          })(),
           aborted,
         ]);
         if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
@@ -461,7 +550,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         return reply;
       } finally {
         if (smsTimeout !== undefined) clearTimeout(smsTimeout);
-        if (pending?.id === generationId) pending = null;
+        if (pending?.id === generationId || pending?.id?.startsWith(generationId + ':')) pending = null;
       }
     },
     cancel,

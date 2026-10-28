@@ -63,7 +63,7 @@ export function mountShell(
     const api = (hostWindow as PhoneWindow).STiPhoniePanelHost;
     return typeof api?.mount === 'function' ? api : null;
   };
-  const model = reactive<ShellModel>({ mode: bridge.kind, state, busy: false, interaction: null, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [] });
+  const model = reactive<ShellModel>({ mode: bridge.kind, memoryScope: session, state, busy: false, interaction: null, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [] });
   let app: VueApp | undefined;
   let dead = false;
   let epoch = 0;

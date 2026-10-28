@@ -153,7 +153,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
     </template>
 
     <template v-else-if="panel === 'status'">
-      <StoryEngineSettings />
+      <StoryEngineSettings :memory-scope="model.memoryScope || ''" />
       <details v-if="model.state.protagonists" class="wp-status-section" data-testid="protagonist-recap" :data-owner="protagonist" open>
         <summary>{{ protagonistNames[protagonist] }} · 各自的日常</summary>
         <p class="wp-footnote">这是你亲历或已留下记录的事情。继续故事时，会从这些经历接着写。</p>
