@@ -292,8 +292,12 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         location: snapshot.locationId, player: snapshot.player,
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
-        residentProfessions: allResidentCast.map(person => ({ id: person.id, name: person.name,
-          ...(npcProfession(snapshot, person.id) ?? { majorId: person.majorId, careerId: person.careerId, qualification: person.qualification }) })),
+        // Playable protagonists have their own academics: never overwrite it
+        // with a stale NPC lore record in the model context.
+        residentProfessions: allResidentCast.flatMap(person => {
+          const profession = npcProfession(snapshot, person.id);
+          return profession ? [{ id: person.id, name: person.name, ...profession }] : [];
+        }),
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
           .slice(0, PROMPT_CONTEXT_LIMITS.calendarEntries),
