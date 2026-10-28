@@ -93,6 +93,7 @@ describe('law career and Sherry evidence assistance', () => {
     expect(lawOwner(state).experience).toBe(case1.experience);
     expect(lawOwner(state).totalPayout).toBe(case1.rewardYen);
     expect(state.player.balance - originalBalance).toBe(case1.rewardYen);
+    expect(npcProfession(state, 'majo-sherry')?.careerExperience).toBe(Math.round(case1.experience * 0.2));
     expect(lawOwner(state).lastResult).toMatchObject({ outcome: 'perfect', solvedBy: 'player' });
     expect(lawOwner(state).lastResult?.deductions).toEqual(case1.rounds.map(round => round.deduction));
     expect(() => reduceState(state, act('accept', case1.id))).toThrow(/已经结案/);
@@ -115,6 +116,7 @@ describe('law career and Sherry evidence assistance', () => {
     expect(result.payout).toBe(Math.round(case2.rewardYen * 0.4));
     expect(result.experience).toBe(Math.round(case2.experience * 0.4));
     expect(state.player.balance - balance).toBe(result.payout);
+    expect(npcProfession(state, 'majo-sherry')?.careerExperience).toBe(Math.round(case2.experience * 0.6));
     expect(lawOwner(state).active).toBeNull();
     expect(result.deductions).toEqual(case2.rounds.map(round => round.deduction));
     expect(lawCareerStoryContext(state).lastResult?.deductions).toEqual(result.deductions);
