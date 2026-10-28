@@ -11,7 +11,7 @@ export interface MemorySource {
   kind: MemoryKind;
   owner: ProtagonistId | null;
   /** Only directly observed, committed information belongs to character knowledge. */
-  knownBy: ProtagonistId[];
+  knownBy: string[];
   participants: string[];
   text: string;
   at: number;
@@ -29,7 +29,7 @@ export interface MemoryEvent {
   at: number;
   turn: number;
   participants: string[];
-  knownBy: ProtagonistId[];
+  knownBy: string[];
   entities: string[];
   keywords: string[];
   importance: number;

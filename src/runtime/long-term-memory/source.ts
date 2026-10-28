@@ -12,12 +12,27 @@ function personal(state: WorldState, owner: ProtagonistId) {
   return owner === others[0] ? p.inactive : owner === others[1] ? p.third : p.fourth;
 }
 const gameMinute = (state: WorldState) => (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
+function parseSavedMinute(stamp: string, fallback: number): number {
+  const m = /第\s*(\d+)\s*天\s*(\d{1,2}):(\d{2})/.exec(stamp);
+  if (!m) return fallback;
+  const day = Number(m[1]), hour = Number(m[2]), minute = Number(m[3]);
+  if (!Number.isSafeInteger(day) || day < 1 || day > 366000
+    || hour < 0 || hour > 23 || minute < 0 || minute > 59) return fallback;
+  const calculated = (day - 1) * 1440 + hour * 60 + minute;
+  return calculated <= fallback ? calculated : fallback;
+}
+function fingerprint(text: string): string {
+  let value = 2166136261;
+  for (let i = 0; i < text.length; i++) value = Math.imul(value ^ text.charCodeAt(i), 16777619);
+  return (value >>> 0).toString(36);
+}
+
 
 export function collectCommittedSources(scope: string, before: WorldState, after: WorldState): MemorySource[] {
   const output: MemorySource[] = [], at = gameMinute(after);
   const turn = after.protagonists?.narrativeTurn ?? 0;
   const add = (id: string, kind: MemorySource['kind'], owner: ProtagonistId | null,
-    text: string, knownBy: ProtagonistId[], participants: string[] = []) => {
+    text: string, knownBy: string[], participants: string[] = [], moment = at) => {
     const clean = pruneVariableEcho(text).trim();
     if (!clean) return;
     // Never drop a long story tail. Smaller independent provenance chunks also
@@ -27,7 +42,7 @@ export function collectCommittedSources(scope: string, before: WorldState, after
       const partId = parts === 1 ? id : id + ':part:' + i;
       output.push({ key: memoryKey(scope, partId), scope, id: partId, kind, owner,
         knownBy: [...knownBy], participants: [...participants],
-        text: clean.slice(i * 640, (i + 1) * 640), at, turn, processed: false });
+        text: clean.slice(i * 640, (i + 1) * 640), at: moment, turn, processed: false });
     }
   };
   for (const owner of PROTAGONISTS) {
@@ -49,7 +64,8 @@ export function collectCommittedSources(scope: string, before: WorldState, after
     }
     const journals = new Set(old?.journal.map(j => j.id) ?? []);
     for (const j of next.journal) {
-      if (!journals.has(j.id)) add('journal:' + owner + ':' + j.id, 'journal', owner, j.text, [owner]);
+      if (!journals.has(j.id)) add('journal:' + owner + ':' + j.id, 'journal', owner,
+        j.text, [owner], [], parseSavedMinute(j.at, at));
     }
     const oldPhone = new Map((old?.phone ?? []).map(p => [p.id, p]));
     for (const sms of next.phone) {
@@ -58,10 +74,54 @@ export function collectCommittedSources(scope: string, before: WorldState, after
       }
     }
   }
+  const beforeNpc = new Set(before.protagonists?.npcPhone?.messages.map(m => m.id) ?? []);
+  const received = new Map(PROTAGONISTS.map(owner => [
+    owner, new Set(personal(after, owner)?.phone.filter(row => row.read).map(row => row.id) ?? []),
+  ] as const));
+  for (const msg of after.protagonists?.npcPhone?.messages ?? []) {
+    if (beforeNpc.has(msg.id)) continue;
+    const participants = [msg.owner, msg.speakerId, msg.targetId];
+    // The owner has not necessarily opened incoming messages; the speaker
+    // knows what they sent. Group membership alone does not prove reading.
+    const confirmedReaders = msg.direction === 'outgoing' ? [msg.owner]
+      : received.get(msg.owner)?.has(msg.id) || received.get(msg.owner)?.has(msg.id.replace(/:reply:.*/, ':reply'))
+      ? [msg.owner] : [];
+    const known = [...new Set([msg.speakerId, ...confirmedReaders])];
+    add('npc-sms:' + msg.id, 'message', msg.owner, msg.text,
+      known, participants, msg.at);
+  }
   const oldConversations = new Set(before.protagonists?.conversations?.map(m => m.id) ?? []);
   for (const row of after.protagonists?.conversations ?? []) {
     if (!oldConversations.has(row.id)) {
-      add('sms:sent:' + row.id, 'message', row.from, row.text, [row.from], [row.from, row.to]);
+      add('sms:sent:' + row.id, 'message', row.from, row.text,
+        [row.from], [row.from, row.to], row.at);
+    }
+  }
+  // Deterministic MVU changes are authoritative evidence, never instructions.
+  const revision = after.protagonists?.revision ?? 0;
+  for (const owner of PROTAGONISTS) {
+    const old = personal(before, owner), next = personal(after, owner);
+    if (!old || !next) continue;
+    const prevItems = new Map(old.inventory.map(row => [row.itemId, row.quantity]));
+    const nowItems = new Map(next.inventory.map(row => [row.itemId, row.quantity]));
+    for (const itemId of new Set([...prevItems.keys(), ...nowItems.keys()])) {
+      const count = nowItems.get(itemId) ?? 0, previous = prevItems.get(itemId) ?? 0;
+      if (count === previous) continue;
+      const diff = count - previous;
+      const text = diff > 0
+        ? '背包中的物品 ' + itemId + ' 增加了 ' + diff + ' 份。'
+        : '背包中的物品 ' + itemId + ' 减少了 ' + (-diff) + ' 份。';
+      add('mvu:item:' + owner + ':' + revision + ':' + fingerprint(itemId + ':' + previous + ':' + count + ':' + at),
+        'item', owner, text, [owner], [owner, itemId]);
+    }
+    const oldContacts = new Map(old.contacts.map(c => [c.id, c]));
+    for (const contact of next.contacts) {
+      const previous = oldContacts.get(contact.id);
+      if (!previous || previous.affinity === contact.affinity) continue;
+      const descriptor = contact.affinity > previous.affinity ? '关系有所改善' : '关系出现紧张';
+      add('mvu:relationship:' + owner + ':' + revision + ':' + fingerprint(contact.id + ':' + previous.affinity + ':' + contact.affinity + ':' + at),
+        'relationship', owner, '与' + contact.name + descriptor + '。',
+        [owner], [owner, contact.sourcePersonId ?? contact.id]);
     }
   }
   const prev = new Map(before.protagonists?.weeklyMemory?.closed.map(w => [w.week, w.summary]) ?? []);

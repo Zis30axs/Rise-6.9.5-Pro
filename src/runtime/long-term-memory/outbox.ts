@@ -61,7 +61,11 @@ export function appendSavedMemoryOutbox(vars: Record<string, unknown>, scope: st
   let chars = sources.reduce((sum, row) => sum + JSON.stringify(row).length, 0);
   let overflowCount = current.overflowCount;
   for (const source of additions) {
-    if (source.scope !== scope || !validSource(source) || known.has(source.key)) continue;
+    if (known.has(source.key)) continue;
+    if (source.scope !== scope || !validSource(source)) {
+      overflowCount++;
+      continue;
+    }
     known.add(source.key);
     const size = JSON.stringify(source).length;
     if (sources.length >= MAX_OUTBOX_SOURCES || chars + size > MAX_OUTBOX_CHARS) {

@@ -2,7 +2,6 @@ import { memoryKey } from './types';
 import type { MemoryEvent, MemorySource } from './types';
 
 const CATEGORIES = new Set(['interaction', 'promise', 'relationship', 'item', 'discovery', 'decision', 'conflict', 'resolution']);
-const PROTAGONISTS = new Set(['soyo', 'sakiko', 'emma', 'renako']);
 
 export function memoryExtractionPrompt(): string {
   return [
@@ -42,7 +41,7 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
       && value.every(s => typeof s === 'string' && s.length <= 100)
       ? value as string[] : [];
     const known = origin.reduce<string[]>((all, source) =>
-      all.filter(id => source.knownBy.includes(id as never)), [...PROTAGONISTS]);
+      all.filter(id => source.knownBy.includes(id)), [...new Set(origin[0].knownBy)]);
     // Stable bounded ID: source IDs may be long and the batch can be reordered.
     const identity = origin.map(s => s.id).sort().join('|') + '|' + e.summary + ':' + i;
     let signature = 2166136261;
@@ -55,12 +54,12 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
       summary: e.summary.trim(), at: Math.max(...origin.map(s => s.at)),
       turn: Math.max(...origin.map(s => s.turn)),
       participants, entities: strings(e.entities, 16), keywords: strings(e.keywords, 20),
-      knownBy: known.filter(id => PROTAGONISTS.has(id)) as MemoryEvent['knownBy'],
+      knownBy: known,
       importance: Math.max(1, Math.min(5, Number.isInteger(e.importance) ? e.importance as number : 2)),
       visibility: known.length ? 'character' : 'narrator',
       // Valid source IDs alone do not prove that a model paraphrase is faithful.
       // Only a literal extract from confirmed evidence can become confirmed.
-      factuality: origin.every(s => s.kind === 'journal' || s.kind === 'message')
+      factuality: origin.every(s => s.kind === 'journal' || s.kind === 'message' || s.kind === 'item' || s.kind === 'relationship')
         && origin.some(s => s.text.replace(/\s/g, '').includes(e.summary.trim().replace(/\s/g, '')))
         ? 'confirmed' : 'inferred',
       status: 'active',
