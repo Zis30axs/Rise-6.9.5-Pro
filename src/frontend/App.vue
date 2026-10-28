@@ -253,7 +253,7 @@ const civilDateLabel = computed(() => {
   const occasion = occasions.find(item => item.dayOff) ?? occasions[0];
   return `${formatGameDate(day)} · ${gameCalendar(day).weekdayLabel}${occasion ? ' · ' + occasion.name : ''}`;
 });
-const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'law' ? '律师事务所 · 案件' : nav.find(item => item.id === activeWindow.value)?.title ?? '');
+const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
 // Phone presentation renders a static front view while all walking remains disabled.
