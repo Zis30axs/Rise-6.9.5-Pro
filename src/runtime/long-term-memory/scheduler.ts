@@ -36,7 +36,7 @@ function chunk(sources: MemorySource[], maxTokens: number): MemorySource[] {
 async function schedule(scope: string, settings: MemorySettings, forced = false): Promise<void> {
   if (!ready(settings)) return;
   const jobs = await rows<MemoryJob>('jobs', scope);
-  if (jobs.some(j => j.state === 'pending' || j.state === 'working')) return;
+  if (jobs.some(j => j.state === 'pending' || j.state === 'working' || (j.state === 'failed' && !forced))) return;
   const pending = (await rows<MemorySource>('sources', scope))
     .filter(s => !s.processed).sort((a, b) => a.turn - b.turn || a.at - b.at || a.id.localeCompare(b.id));
   if (!pending.length) return;

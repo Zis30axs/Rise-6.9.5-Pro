@@ -23,8 +23,8 @@ export function memoryExtractionInput(sources: MemorySource[]): string {
   })));
 }
 export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: string): MemoryEvent[] {
-  const fenced = /^\\\`\\\`\\\`(?:json)?\s*([\s\S]*?)\\\`\\\`\\\`$/i.exec(raw.trim());
-  const parsed: unknown = JSON.parse(fenced ? fenced[1] : raw);
+  const cleaned = raw.trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\`\`\`$/, '').trim();
+  const parsed: unknown = JSON.parse(cleaned);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('整理结果必须是对象');
   const body = parsed as Record<string, unknown>;
   if (!Array.isArray(body.events) || body.events.length > 30) throw new Error('整理事件数量不合法');

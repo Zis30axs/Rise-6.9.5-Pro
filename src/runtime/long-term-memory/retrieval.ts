@@ -32,7 +32,7 @@ export interface RetrievedMemory {
   score: number;
 }
 export async function searchMemory(scope: string, query: string, owner: string, cutoff: number,
-  options: { limit?: number; narrator?: boolean; entities?: string[]; embed?: (text: string) => Promise<number[]> } = {}): Promise<RetrievedMemory[]> {
+  options: { limit?: number; narrator?: boolean; entities?: string[]; embed?: (text: string) => Promise<number[]>; vectorModel?: string } = {}): Promise<RetrievedMemory[]> {
   const narrator = options.narrator === true, limit = Math.max(1, Math.min(8, options.limit ?? 4));
   const [allEvents, allSources] = await Promise.all([
     rows<MemoryEvent>('events', scope), rows<MemorySource>('sources', scope),
@@ -66,7 +66,7 @@ export async function searchMemory(scope: string, query: string, owner: string, 
   if (options.embed && events.length) {
     try {
       const vector = await options.embed(query);
-      const vectors = (await rows<MemoryVector>('vectors', scope)).filter(v => v.dimensions === vector.length);
+      const vectors = (await rows<MemoryVector>('vectors', scope)).filter(v => v.dimensions === vector.length && (!options.vectorModel || v.model === options.vectorModel));
       const current = new Set(events.map(e => e.id));
       const similarities = vectors.filter(v => current.has(v.eventId)).map(v => ({
         id: v.eventId, score: cosine(v.values, vector),
