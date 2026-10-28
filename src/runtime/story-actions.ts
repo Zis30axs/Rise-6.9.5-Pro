@@ -6,7 +6,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
-import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtFinish } from './courtroom';
+import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
@@ -39,7 +39,7 @@ function destination(value: unknown, path: string): string {
 export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
-    /^court_(?:docket|special|open|quote|step|assist|finish)$/.test(String((item as Record<string,unknown>).type)))
+    /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
     .map(item => String((item as Record<string,unknown>).type));
   // A fresh insight or an explicit Sherry handover may be settled in the same response.
   const allowedPair = courtActions.length === 2 &&
@@ -125,6 +125,8 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       case 'court_quote': return validateCourtFeeQuote(raw,state);
       case 'court_step': return validateCourtStep(raw,state);
       case 'court_assist': return validateCourtAssist(raw,state);
+      case 'court_settlement': return validateCourtSettlement(raw,state);
+      case 'court_fulfill': return validateCourtFulfillment(raw,state);
       case 'court_finish': return validateCourtFinish(raw,state);
       case 'transfer': {
         const item = record(raw, ['type', 'from', 'to', 'cents', 'reason'], path);
