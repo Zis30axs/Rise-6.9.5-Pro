@@ -283,12 +283,17 @@ export function validateCourtStep(raw: unknown, state: WorldState): Extract<Stor
 export function validateCourtFinish(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_finish'}> {
   const c = courtState(state).active;
   if (!c || c.owner !== activeProtagonist(state)) return error('当前没有进行中的庭审');
-  const item = obj(raw,['type','verdict','summary'],'庭审结论');
+  const assistedProvided = !!raw && typeof raw === 'object' && !Array.isArray(raw) && Object.hasOwn(raw,'assisted');
+  const item = obj(raw,assistedProvided ? ['type','verdict','summary','assisted'] : ['type','verdict','summary'],'庭审结论');
+  if (assistedProvided && typeof item.assisted !== 'boolean') return error('雪莉协助标记');
+  if (item.assisted === true && (c.source !== 'commission' || c.owner !== 'emma' || item.verdict !== 'win'))
+    return error('雪莉接手只适用于艾玛已完成的职业委托');
   if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict))) return error('结案方式');
   if (c.source === 'commission' && ['settled','withdrawn'].includes(String(item.verdict))) return error('职业委托尚未完成查明事实');
   // Evidence adequacy is checked at settlement, after earlier court_step actions in this turn.
-  return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明') };
+  return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明'),
+    ...(item.assisted === true ? { assisted:true } : {}) };
 }
 export function courtAction(state: WorldState, action: Extract<WorldAction,{type:'courtroom'}>): WorldState {
   const next: WorldState = structuredClone(state);
@@ -394,8 +399,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1)
       return error('尚无有效推理');
     const sherry = active.source === 'commission' && active.owner === 'emma' && parsed.verdict === 'loss';
-    const assisted = active.source === 'commission' && active.owner === 'emma' &&
-      (sherry || /雪莉.{0,12}(接手|救场|完成|代为)/.test(parsed.summary));
+    const assisted = sherry || parsed.assisted === true;
     const verdict = sherry ? 'win' : parsed.verdict;
     const finalSummary = sherry ? '原有论证一度陷入困境，橘雪莉根据已在庭审中确认的证据与证言完成关键澄清，案件妥善结案。' : parsed.summary;
     const multiplier = assisted ? SHERRY_ASSIST_RATE : verdict === 'win' && active.source === 'commission' ? 1 : 0;
