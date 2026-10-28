@@ -260,16 +260,16 @@ export function parseCourtroom(value: unknown): CourtroomState {
   return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
     serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers };
 }
-const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[] }> = [
-  { category: 'civil', title: '没有归还的定金', client: '租房的大学生', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
+const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; respondent: string }> = [
+  { category: 'civil', title: '没有归还的定金', client: '租房的大学生', respondent:'房东', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
     white:'学生在签订租房预约后取消入住。房东拒绝返还定金。^合同条款^、^取消日期^与^收据^是主要争点。',
     evidence:[{title:'预约合同',detail:'第六条要求提前十四日通知；合同附页注明整修期可免费取消。'},{title:'付款收据',detail:'学生已支付两万日元定金。'},{title:'整修通知',detail:'房东承认入住日前十日才告知房间停水整修。'}],
   },
-  { category: 'administrative', title: '咖啡馆的停业通知', client: '街角咖啡馆经营者', summary: '经营者收到停业处分，但申辩记录可能在送达时遗漏。', difficulty:'normal', rewardYen:15000, experience:150,
+  { category: 'administrative', title: '咖啡馆的停业通知', client: '街角咖啡馆经营者', respondent:'作出停业决定的行政机关', summary: '经营者收到停业处分，但申辩记录可能在送达时遗漏。', difficulty:'normal', rewardYen:15000, experience:150,
     white:'咖啡馆收到^停业处分^，业主认为此前的^申辩机会^与^送达手续^存在问题。',
     evidence:[{title:'停业通知书',detail:'载明处分原因和日期。'},{title:'送达回执',detail:'回执上的签收人并非业主本人。'},{title:'提交记录',detail:'咖啡馆曾提交申辩材料，但处分书未提及该材料。'}],
   },
-  { category:'minor-criminal',title:'错位的展厅时钟',client:'被怀疑盗画的志愿者',summary:'监控录像与画作交接记录显示出互相冲突的时间。',difficulty:'hard',rewardYen:22000,experience:180,
+  { category:'minor-criminal',title:'错位的展厅时钟',client:'被怀疑盗画的志愿者',respondent:'被怀疑盗画的志愿者',summary:'监控录像与画作交接记录显示出互相冲突的时间。',difficulty:'hard',rewardYen:22000,experience:180,
     white:'展厅画作暂时失踪，志愿者受到怀疑。^监控时间^与^修复室交接单^存在明显矛盾。',
     evidence:[{title:'监控校时单',detail:'案发当天监控时钟快了二十分钟。'},{title:'门禁簿',detail:'志愿者17:03刷卡离开。'},{title:'修复室交接单',detail:'16:35有两人签字确认画作被正常送往修复室。'}],
   },
@@ -483,7 +483,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     const scripted = authored.find(item => item.title === offer.title);
     if (!scripted) return error('预设卷宗不存在');
     current.active = { id:offer.id, source:'commission', owner, day:state.clock.day,
-      category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,respondent:null,
+      category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,respondent:scripted.respondent,
       white:scripted.white, evidence:structuredClone(scripted.evidence), truth:null,
       misdirection:null, rewardYen:offer.rewardYen, experience:offer.experience,
       fee:null, assistance:'none', returnTo:courtOfficePosition(next), steps:[] };
