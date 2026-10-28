@@ -4,7 +4,7 @@ import { DEFAULT_MEMORY_SETTINGS, loadMemorySettings, memoryApiKey, saveMemoryAp
 import type { MemorySettings } from '../runtime/long-term-memory/settings';
 import { exportMemory, importMemory } from '../runtime/long-term-memory/storage';
 import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
-import { memoryArchiveSafe } from '../runtime/long-term-memory';
+import { memoryArchiveSafe, memoryOutboxWarning } from '../runtime/long-term-memory';
 
 const props = defineProps<{ scope: string }>();
 const settings = ref<MemorySettings>(loadMemorySettings());
@@ -12,10 +12,14 @@ const assistantKey = ref(memoryApiKey('assistant'));
 const embeddingKey = ref(memoryApiKey('embedding'));
 const notice = ref('');
 const working = ref(false);
+const outboxOverflow = ref(0);
 const status = ref<{ sources: number; events: number; pending: number; costUsd: number; lastTurn: number; lastError: string } | null>(null);
 async function refresh() {
   if (!props.scope) return;
-  try { status.value = await memoryStatus(props.scope); }
+  try {
+    status.value = await memoryStatus(props.scope);
+    outboxOverflow.value = memoryOutboxWarning(props.scope);
+  }
   catch { status.value = null; }
 }
 function save() {
@@ -77,11 +81,12 @@ onMounted(() => { void refresh(); });
     <div class="uc-memory-settings-content">
       <label class="uc-memory-row"><input v-model="settings.enabled" type="checkbox" data-memory-enabled /> 启用长期记忆旁路</label>
       <label class="uc-memory-row"><input v-model="settings.passive" type="checkbox" /> 自动注入相关往事</label>
-      <label>整理间隔（已保存的小说楼数）
-        <select v-model.number="settings.interval" data-memory-interval>
-          <option :value="10">每 10 楼</option><option :value="20">每 20 楼</option><option :value="30">每 30 楼</option>
-        </select>
+      <label>整理间隔（已保存的小说楼数，5–100）
+        <input v-model.number="settings.interval" type="number" min="5" max="100" step="1" data-memory-interval />
       </label>
+      <div class="uc-narrative-buttons">
+        <button v-for="preset in [10, 20, 30]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
+      </div>
       <label class="uc-memory-row"><input v-model="settings.important" type="checkbox" data-memory-important /> 重大剧情提前整理</label>
       <label>主模型检索方式
         <select v-model="settings.protocol" data-memory-protocol>
@@ -110,6 +115,7 @@ onMounted(() => { void refresh(); });
       <label>单批输入预算（估算 Token）<input v-model.number="settings.inputBudget" type="number" min="2000" max="24000" step="1000" /></label>
       <label>单批输出预算（Token）<input v-model.number="settings.outputBudget" type="number" min="200" max="4000" step="100" /></label>
       <p v-if="status" class="uc-narrative-note">已归档 {{ status.sources }} 条来源 · 已整理 {{ status.events }} 条事件 · 待处理 {{ status.pending }} 批 · 累计费用估算 USD {{ status.costUsd.toFixed(4) }}</p>
+      <p v-if="outboxOverflow" class="uc-narrative-note" role="alert">待归档箱已超过本地存档容量：至少 {{ outboxOverflow }} 个来源无法写入同步待办。请及时导出数据库备份，减少连续未整理的楼数。</p>
       <p v-if="status?.lastError" class="uc-narrative-note" role="status">最近一次整理失败：{{ status.lastError }}。重新整理可能产生新的 API 费用。</p>
       <p v-else-if="!status" class="uc-narrative-note">记忆数据库尚未就绪，普通剧情不受影响。</p>
       <div class="uc-narrative-buttons">
