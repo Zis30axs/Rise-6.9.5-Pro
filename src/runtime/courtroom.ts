@@ -7,7 +7,7 @@ import { personState } from './protagonist-world';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
   parseCourtSanctionDraft, parseCourtSettlementOffer, parseCourtTermDraft,
-  newCourtAgreement, payCourtTerm, courtTermStatus, type CourtCareer,
+  newCourtAgreement, payCourtTerm, courtTermStatus, courtPartyForName, type CourtCareer,
   type CourtAgreement, type CourtSanction, type CourtSettlementOffer,
   type CourtTermDraft, type CourtSanctionDraft,
 } from './court-legal-effects';
@@ -426,6 +426,8 @@ export function validateCourtFinish(raw: unknown, state: WorldState): Extract<St
     if(order.terms.some(term=>term.dueDay<state.clock.day) ||
       order.sanctions.some(row=>row.startDay<state.clock.day)) return error('判决执行日期不能早于今天');
     if(c.fee && order.respondent!==c.fee.defendant) return error('被告与诉状不一致');
+    if(order.sanctions.some(row=>row.personId !== courtPartyForName(state,order!.respondent,c.id,'defendant').id))
+      return error('只能对经认定的涉案被告执行刑罚');
     if(order.sanctions.length && (!['minor-criminal','major-criminal'].includes(c.category) ||
       !['win','loss'].includes(String(item.verdict)))) return error('民事诉讼不得直接执行刑罚');
     if(order.terms.some(term=>term.kind==='payment' && term.amountYen>1000000)) return error('赔偿过高');
