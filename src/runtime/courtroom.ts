@@ -1,13 +1,13 @@
 import type { WorldAction, WorldState, StoryAction } from '../frontend/types';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
-import { activeProtagonist, protagonistNames } from './protagonist-world';
+import { activeProtagonist, protagonistNames, resolveTransferParty } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
 import { personState } from './protagonist-world';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
   parseCourtSanctionDraft, parseCourtSettlementOffer, parseCourtTermDraft,
-  newCourtAgreement, payCourtTerm, courtPartyForName, type CourtCareer,
+  newCourtAgreement, payCourtTerm, courtPaymentParty, courtPartyForName, type CourtCareer,
   type CourtAgreement, type CourtSanction, type CourtSettlementOffer,
   type CourtTermDraft, type CourtSanctionDraft,
 } from './court-legal-effects';
@@ -707,6 +707,34 @@ export function deliverCourtRecap(state: WorldState): WorldState {
   next.story = next.story.slice(-100);
   next.courtroom = court;
   return next;
+}
+/**
+ * Recognize an ordinary, already-settled shared transfer as performance of
+ * exactly one recorded judgment term. A narrative phrase without a matching
+ * transfer cannot change obligation status.
+ */
+export function acknowledgeCourtTransfers(state: WorldState, actions: readonly StoryAction[]): WorldState {
+  const transfers=actions.filter((action): action is Extract<StoryAction,{type:'transfer'}>=>action.type==='transfer');
+  for(const transfer of transfers){
+    if(!transfer.reason.startsWith('court-obligation:')) continue;
+    const termId=transfer.reason.slice('court-obligation:'.length);
+    const agreement=state.courtroom?.agreements?.find(row=>row.terms.some(term=>term.id===termId));
+    const term=agreement?.terms.find(row=>row.id===termId);
+    if(!agreement || !term || term.status!=='pending' || term.kind!=='payment')
+      return error('转账未对应有效的待履行法律义务');
+    const who=activeProtagonist(state);
+    const actualFrom=resolveTransferParty(state,who,transfer.from);
+    const actualTo=resolveTransferParty(state,who,transfer.to);
+    const expectedFrom=courtPaymentParty(agreement,term.from);
+    const expectedTo=courtPaymentParty(agreement,term.from==='claimant'?'defendant':'claimant');
+    if(transfer.cents!==term.amountYen*100 ||
+       actualFrom.kind!==expectedFrom.kind || actualFrom.id!==expectedFrom.id ||
+       actualTo.kind!==expectedTo.kind || actualTo.id!==expectedTo.id)
+      return error('协议转账双方或金额与待履行条款不符');
+    term.status='fulfilled';
+    term.fulfilledDay=state.clock.day;
+  }
+  return state;
 }
 export function isCourtInSession(state: WorldState): boolean {
   const trial = courtState(state).active;
