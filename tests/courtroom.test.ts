@@ -133,11 +133,21 @@ describe('freeform courtroom and legal services', () => {
     expect(()=>applyStoryActions(state,[boardAction],'court-special-board-repeat')).toThrow();
   });
 
+  it('forbids a new lawsuit against any of the four playable protagonists',()=>{
+    for(const defendant of ['soyo','素世','长崎素世','sakiko','祥子','丰川祥子',
+      'emma','艾玛','樱羽艾玛','renako','玲奈子','甘织玲奈子']){
+      expect(()=>applyStoryActions(inOffice(),[{type:'court_quote',defendant,
+        reason:'单纯想针对一名主角',risk:'缺乏法律依据',category:'civil',
+        lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
+      }],'reject-playable-defendant')).toThrow(/主角/);
+    }
+  });
+
   it('lets an LLM quote legal risks before any charges and uses the existing two-sided transfer ledger',()=>{
     let state=inOffice();
     const before=state.player.balance;
     const recipientBalance=appiePayBalance(state.protagonists!.accounts,'sakiko');
-    const quote={type:'court_quote' as const,defendant:'长崎素世',
+    const quote={type:'court_quote' as const,defendant:'月代雪',
       reason:'原告声称对方不当招揽乐队成员。',
       risk:'邀请加入其他乐队通常不足以当然构成不正当竞争，存在败诉风险。',
       category:'civil' as const,lawyer:'sakiko' as const,sherry:true,
@@ -155,9 +165,9 @@ describe('freeform courtroom and legal services', () => {
     state=applyStoryActions(state,[{type:'court_finish',verdict:'loss',summary:'原告无法证明违法，诉讼请求未获支持。'}],'court-lawsuit-loss');
     expect(courtState(state).results.at(-1)).toMatchObject({source:'lawsuit',verdict:'loss',payout:0});
     expect(courtState(state).active).toBeNull();
-    expect(courtState(state).results.at(-1)?.defendant).toBe('长崎素世');
+    expect(courtState(state).results.at(-1)?.defendant).toBe('月代雪');
     const defendantView=reduceState(state,{type:'switch_protagonist',target:'soyo'});
-    expect(courtStoryContext(defendantView).recentResults.some(row=>row.defendant==='长崎素世')).toBe(true);
+    expect(courtStoryContext(defendantView).recentResults.some(row=>row.defendant==='月代雪')).toBe(false);
   });
 
   it('Sherry rescue still produces a successful professional conclusion at 40 percent',()=>{
@@ -234,7 +244,7 @@ describe('freeform courtroom and legal services', () => {
     let state=inOffice();
     const soyoLocation=personState(state,'soyo').locationId;
     const sakikoLocation=personState(state,'sakiko').locationId;
-    state=applyStoryActions(state,[{type:'court_quote',defendant:'长崎素世',reason:'请求解决合同争议',
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'月代雪',reason:'请求解决合同争议',
       risk:'可能缺乏支持请求的关键证据',category:'civil',lawyer:'sakiko',sherry:false,
       courtFeeYen:0,lawyerFeeYen:400,sherryFeeYen:0}],'court-attendees-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
@@ -256,7 +266,7 @@ describe('freeform courtroom and legal services', () => {
     let state=inOffice();
     const money=state.player.balance;
     state=applyStoryActions(state,[{
-      type:'court_quote',defendant:'长崎素世',reason:'请求澄清相互误解',
+      type:'court_quote',defendant:'月代雪',reason:'请求澄清相互误解',
       risk:'只有口角时诉讼请求难以获支持',category:'civil',lawyer:null,sherry:false,
       courtFeeYen:900,lawyerFeeYen:0,sherryFeeYen:0,
     }],'court-settle-quote');
@@ -299,7 +309,7 @@ describe('freeform courtroom and legal services', () => {
     let state=inOffice();
     const original=state.player.balance;
     state=applyStoryActions(state,[{
-      type:'court_quote',defendant:'丰川祥子',reason:'请法院澄清合同争议',risk:'法院可能认为请求没有法律依据',
+      type:'court_quote',defendant:'月代雪',reason:'请法院澄清合同争议',risk:'法院可能认为请求没有法律依据',
       category:'civil',lawyer:null,sherry:false,courtFeeYen:1200,lawyerFeeYen:0,sherryFeeYen:0,
     }],'withdraw-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
@@ -311,16 +321,18 @@ describe('freeform courtroom and legal services', () => {
     expect(state.player.balance).toBe(original-1200);
   });
 
-  it('persists judgment obligations and pays an already-funded protagonist debtor once',()=>{
+  it('persists judgment obligations and transfers a funded NPC debtor payment exactly once',()=>{
     let state=inOffice();
+    state.protagonists!.npcWallets={...(state.protagonists?.npcWallets ?? {}),'majo-yuki':90000};
+    state=parseState(state);
     state=applyStoryActions(state,[{
-      type:'court_quote',defendant:'丰川祥子',reason:'请求返还借款',risk:'须提交证据证明借贷关系',
+      type:'court_quote',defendant:'月代雪',reason:'请求返还借款',risk:'须提交证据证明借贷关系',
       category:'civil',lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
     }],'judgment-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
     state=applyStoryActions(state,[{
       type:'court_finish',verdict:'win',summary:'法院根据转账凭证判令返还借款。',
-      order:{respondent:'丰川祥子',terms:[
+      order:{respondent:'月代雪',terms:[
         {kind:'payment',from:'defendant',description:'向原告偿还借款',amountYen:500,dueDay:3},
       ],sanctions:[]},
     }],'judgment-finish');
@@ -328,42 +340,48 @@ describe('freeform courtroom and legal services', () => {
     expect(term.status).toBe('pending');
     expect(state.locationId).toBe('legal-office');
     const beforeEmma=appiePayBalance(state.protagonists!.accounts,'emma');
-    const beforeSakiko=appiePayBalance(state.protagonists!.accounts,'sakiko');
-    state=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
-    state=reduceState(state,{type:'courtroom',phase:'pay-term',termId:term.id});
+    const beforeYuki=state.protagonists!.npcWallets!['majo-yuki'];
+    state=reduceState(state,{type:'courtroom',phase:'collect-term',termId:term.id});
     expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
     expect(appiePayBalance(state.protagonists!.accounts,'emma')-beforeEmma).toBe(50000);
-    expect(beforeSakiko-appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(50000);
-    expect(()=>reduceState(state,{type:'courtroom',phase:'pay-term',termId:term.id})).toThrow();
+    expect(beforeYuki-state.protagonists!.npcWallets!['majo-yuki']).toBe(50000);
+    expect(()=>reduceState(state,{type:'courtroom',phase:'collect-term',termId:term.id})).toThrow();
   });
 
   it('recognizes a normal Appie Pay transfer as a paid judgment only when parties and cents match',()=>{
     let state=inOffice();
-    state=applyStoryActions(state,[{type:'court_quote',defendant:'丰川祥子',reason:'请求返还借款',
+    const contact=state.contacts.find(row=>row.sourcePersonId==='majo-yuki') ?? {
+      id:'court-contact-yuki',name:'月代雪',tag:'友人',summary:'已经加入通讯录的当事人',
+      affinity:40,status:'可联系',portraitId:'deepseek' as const,sourcePersonId:'majo-yuki',isMain:false,
+    };
+    if(!state.contacts.some(row=>row.sourcePersonId==='majo-yuki')) state.contacts.push(contact);
+    state=parseState(state);
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'月代雪',reason:'请求返还借款',
       risk:'必须证明存在有效债权',category:'civil',lawyer:null,sherry:false,
       courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0}],'ledger-order-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
-    state=applyStoryActions(state,[{type:'court_finish',verdict:'win',
-      summary:'判令被告支付借款本金',order:{respondent:'丰川祥子',
-      terms:[{kind:'payment',from:'defendant',amountYen:600,dueDay:3,description:'偿还借款'}],sanctions:[]},
+    state=applyStoryActions(state,[{type:'court_finish',verdict:'loss',
+      summary:'因原告未能证明债权，法院裁定负担相关费用。',order:{respondent:'月代雪',
+      terms:[{kind:'payment',from:'claimant',amountYen:600,dueDay:3,description:'承担本案诉讼费用'}],sanctions:[]},
     }],'ledger-order-finish');
     const term=state.courtroom!.agreements![0]!.terms[0]!;
-    state=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
-    const money=appiePayBalance(state.protagonists!.accounts,'sakiko');
-    expect(()=>applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:50000,
+    const money=appiePayBalance(state.protagonists!.accounts,'emma');
+    const beforeYuki=state.protagonists!.npcWallets?.['majo-yuki'] ?? 0;
+    expect(()=>applyStoryActions(state,[{type:'transfer',from:'emma',to:contact.id,cents:50000,
       reason:'court-obligation:'+term.id}],'court-wrong-amount')).toThrow(/金额/);
-    expect(appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(money);
-    state=applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:60000,
+    expect(appiePayBalance(state.protagonists!.accounts,'emma')).toBe(money);
+    state=applyStoryActions(state,[{type:'transfer',from:'emma',to:contact.id,cents:60000,
       reason:'court-obligation:'+term.id}],'court-right-amount');
     expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
-    expect(appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(money-60000);
-    expect(()=>applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:60000,
+    expect(appiePayBalance(state.protagonists!.accounts,'emma')).toBe(money-60000);
+    expect((state.protagonists!.npcWallets?.['majo-yuki'] ?? 0)-beforeYuki).toBe(60000);
+    expect(()=>applyStoryActions(state,[{type:'transfer',from:'emma',to:contact.id,cents:60000,
       reason:'court-obligation:'+term.id}],'court-duplicate-payment')).toThrow();
   });
 
   it('records non-monetary fulfillment as a state transition without creating money',()=>{
     let state=inOffice();
-    state=applyStoryActions(state,[{type:'court_quote',defendant:'长崎素世',
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'月代雪',
       reason:'请求停止骚扰',risk:'取证不足可能败诉',category:'civil',lawyer:null,sherry:false,
       courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0}],'promise-quote');
     state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
@@ -403,7 +421,7 @@ describe('freeform courtroom and legal services', () => {
   it('legal career fees and assistance experience are credited to the hired playable character',()=>{
     let state=inOffice();
     state=applyStoryActions(state,[{
-      type:'court_quote',defendant:'长崎素世',reason:'争议赔偿',
+      type:'court_quote',defendant:'月代雪',reason:'争议赔偿',
       risk:'证据不足时请求可能被驳回',category:'civil',lawyer:'sakiko',sherry:false,
       courtFeeYen:0,lawyerFeeYen:500,sherryFeeYen:0,
     }],'career-quote');
