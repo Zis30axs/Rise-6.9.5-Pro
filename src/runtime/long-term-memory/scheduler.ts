@@ -10,11 +10,13 @@ import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types
 const workingScopes = new Set<string>();
 const pausedScopes = new Set<string>();
 const activeRequests = new Map<string, AbortController>();
+const activeWorkers = new Map<string, Promise<void>>();
 
 /** Stop optional paid activity immediately without touching gameplay or deleting work. */
-export function pauseMemoryWork(scope: string): void {
+export function pauseMemoryWork(scope: string): Promise<void> {
   pausedScopes.add(scope);
   activeRequests.get(scope)?.abort();
+  return activeWorkers.get(scope) ?? Promise.resolve();
 }
 interface Meta { key: string; scope: string; id: string; value: number }
 async function meta(scope: string, id: string): Promise<number> {
@@ -151,7 +153,7 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
     if (activeRequests.get(scope) === controller) activeRequests.delete(scope);
   }
 }
-async function work(scope: string, settings: MemorySettings): Promise<void> {
+async function runWork(scope: string, settings: MemorySettings): Promise<void> {
   if (!ready(settings) || workingScopes.has(scope) || pausedScopes.has(scope)) return;
   workingScopes.add(scope);
   try {
@@ -165,6 +167,16 @@ async function work(scope: string, settings: MemorySettings): Promise<void> {
     }
   } finally { workingScopes.delete(scope); }
 }
+function work(scope: string, settings: MemorySettings): Promise<void> {
+  const existing = activeWorkers.get(scope);
+  if (existing) return existing;
+  const pending = runWork(scope, settings).finally(() => {
+    if (activeWorkers.get(scope) === pending) activeWorkers.delete(scope);
+  });
+  activeWorkers.set(scope, pending);
+  return pending;
+}
+
 export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void {
   const settings = loadMemorySettings();
   if (!settings.enabled || !sources.length) return;
