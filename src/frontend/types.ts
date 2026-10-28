@@ -239,7 +239,7 @@ export type StoryAction =
   | { type: 'court_open'; offerId: string; white: string; evidence: import('../runtime/courtroom').CourtEvidence[]; truth: string; misdirection: string }
   | { type: 'court_quote'; defendant: string; reason: string; risk: string; category: import('../runtime/courtroom').CourtCategory; lawyer: import('../runtime/dual-protagonists').ProtagonistId | null; sherry: boolean; courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number }
   | { type: 'court_step'; key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }
-  | { type: 'court_finish'; verdict: 'win' | 'loss' | 'settled' | 'withdrawn'; summary: string }
+  | { type: 'court_finish'; verdict: 'win' | 'loss' | 'settled' | 'withdrawn'; summary: string; assisted?: boolean }
   | { type: 'activity'; label: string; minutes: number; effects: { energy: number; morale: number; stress: number; health: number; balance: number; satiety: number; foodEnergy: number } };
 
 /** A validated, persisted event in one non-controlled protagonist's viewpoint. */
