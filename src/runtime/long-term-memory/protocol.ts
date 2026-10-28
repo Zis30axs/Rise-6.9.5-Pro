@@ -60,7 +60,8 @@ export async function resolveMemoryQuery(scope: string, state: WorldState,
   query: MemoryQuery, budget: number): Promise<string> {
   const at = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
   try { return await memoryQuery(scope, query, activeProtagonist(state), at, budget,
-    text => embeddingForMemorySearch(scope, text), loadMemorySettings().embeddingModel); }
+    text => embeddingForMemorySearch(scope, text), loadMemorySettings().embeddingModel,
+    state.protagonists?.narrativeTurn ?? Number.MAX_SAFE_INTEGER); }
   catch { return '长期记忆数据库暂不可用。未知不代表从未发生；不要虚构旧事件。'; }
 }
 export async function runTaggedMemory(first: unknown, scope: string, state: WorldState,

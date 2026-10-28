@@ -162,9 +162,20 @@ export async function importMemory(scope: string, raw: unknown): Promise<void> {
   const tx = db.transaction(tables, 'readwrite'), done = completed(tx);
   for (const table of tables) {
     for (const value of data[table] ?? []) {
-      if (!value || typeof value !== 'object' || typeof value.id !== 'string' || value.id.length > 200
-        || typeof value.key !== 'string') { tx.abort(); throw new Error('备份记录无效'); }
-      const record = { ...value, scope, key: memoryKey(scope, value.id) };
+      if (!value || typeof value !== 'object' || typeof value.key !== 'string') {
+        tx.abort(); throw new Error('备份记录无效');
+      }
+      // Vectors have eventId rather than an id field. Preserve their composite
+      // model-scoped key when rebinding a backup to a new chat.
+      let identity: unknown;
+      try {
+        const original = JSON.parse(value.key) as unknown;
+        identity = Array.isArray(original) && original.length === 2 ? original[1] : null;
+      } catch { identity = null; }
+      if (typeof identity !== 'string' || !identity || identity.length > 500) {
+        tx.abort(); throw new Error('备份记录索引无效');
+      }
+      const record = { ...value, scope, key: memoryKey(scope, identity) };
       tx.objectStore(table).put(record);
     }
   }

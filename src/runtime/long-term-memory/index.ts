@@ -27,7 +27,8 @@ export async function memoryPromptContext(scope: string, state: WorldState, inpu
     if (!settings.enabled || !settings.passive || !input.trim()) return '';
     const cutoff = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
     const owner = activeProtagonist(state);
-    const matches = await searchMemory(scope, input, owner, cutoff, { limit: 4, narrator: true });
+    const matches = await searchMemory(scope, input, owner, cutoff, { limit: 4, narrator: true,
+      maxTurn: state.protagonists?.narrativeTurn ?? Number.MAX_SAFE_INTEGER });
     let result = '';
     const limit = settings.tokenBudget * 2;
     for (const item of matches) {
