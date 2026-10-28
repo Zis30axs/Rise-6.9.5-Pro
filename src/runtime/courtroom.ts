@@ -122,11 +122,15 @@ const offer = (raw: unknown): CourtOffer => {
 };
 /** Normalize familiar short names before recording a playable defendant. */
 const courtDefendantName = (raw: string): string => {
+  const normalized = (value: string) => value.toLowerCase().replace(/[\s·•._-]/g,'');
   const aliases: Record<ProtagonistId, string[]> = {
-    soyo:['素世','长崎素世'], sakiko:['祥子','丰川祥子'],
-    emma:['艾玛','樱羽艾玛'], renako:['玲奈子','甘织玲奈子'],
+    soyo:['素世','长崎素世','長崎そよ','soyo','protagonist-soyo'],
+    sakiko:['祥子','丰川祥子','豐川祥子','sakiko','protagonist-sakiko'],
+    emma:['艾玛','艾瑪','樱羽艾玛','櫻羽艾瑪','emma','majo-emma','protagonist-emma'],
+    renako:['玲奈子','甘织玲奈子','甘織玲奈子','renako','watanare-renako','protagonist-renako'],
   };
-  for (const id of PROTAGONISTS) if (raw === id || aliases[id].includes(raw)) return protagonistNames[id];
+  for (const id of PROTAGONISTS)
+    if (aliases[id].some(alias=>normalized(alias)===normalized(raw))) return protagonistNames[id];
   return raw;
 };
 const filing = (raw: unknown): CourtFiling => {
