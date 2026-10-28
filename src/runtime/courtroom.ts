@@ -684,16 +684,20 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
   const next: WorldState = structuredClone(state);
   const court = parseCourtroom(next.courtroom ?? initialCourtroom());
   const trial = court.active!;
+  const sherryCanResolve = trial.source === 'commission' && trial.owner === 'emma';
   court.results.push({id:trial.id,owner:trial.owner,source:trial.source,title:trial.title,
     defendant:trial.fee?.defendant ?? null,lawyer:trial.fee?.lawyer ?? null,
-    verdict:'loss',worldVerdict:trial.source==='commission'?'win':'undetermined',solvedBy:'forfeit',payout:0,experience:0,
-    summary:'庭审论证表现不佳，橘雪莉随后澄清了关键争议并完成善后。',atDay:state.clock.day});
+    verdict:'loss',worldVerdict:sherryCanResolve?'win':'undetermined',solvedBy:'forfeit',payout:0,experience:0,
+    summary:sherryCanResolve?'原有辩论未能继续，橘雪莉依据已确认的证据完成必要善后。':'原告中止了本次庭审的继续参与，最终争议仍待依法处理。',atDay:state.clock.day});
   if (court.results.length > 300) court.results.shift();
   court.pendingRecaps[trial.owner] = ('关于「' + trial.title + '」的庭审，' + protagonistNames[trial.owner] +
-    '先前的庭审表现未能说服法庭。橘雪莉重新梳理了已知证据和证词，完成必要的善后与澄清。' +
-    (trial.truth ? '案情最终得到澄清：' + trial.truth : '双方就争议作出了相应处理。') +
-    '这次庭审没有带来职业报酬。').slice(0,1800);
+    '的庭审参与已中止。' +
+    (sherryCanResolve
+      ? '橘雪莉依据当庭已经确认的材料完成了善后，案件得到妥善处理。'
+      : '法庭仍需依法处理遗留争议，此处不推定任何一方胜诉或接受和解。') +
+    '本次职业报酬为零。').slice(0,1800);
   court.active = null;
+  court.pendingSettlement = null;
   next.courtroom = parseCourtroom(court);
   return next;
 }
