@@ -722,15 +722,15 @@ export function deliverCourtRecap(state: WorldState): WorldState {
  * exactly one recorded judgment term. A narrative phrase without a matching
  * transfer cannot change obligation status.
  */
-export function acknowledgeCourtTransfers(state: WorldState, actions: readonly StoryAction[]): WorldState {
+export function acknowledgeCourtTransfers(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
   const transfers=actions.filter((action): action is Extract<StoryAction,{type:'transfer'}>=>action.type==='transfer');
-  for(const transfer of transfers){
+  for(const [index,transfer] of transfers.entries()){
     if(!transfer.reason.startsWith('court-obligation:')) continue;
     const termId=transfer.reason.slice('court-obligation:'.length);
     const agreement=state.courtroom?.agreements?.find(row=>row.terms.some(term=>term.id===termId));
     const term=agreement?.terms.find(row=>row.id===termId);
-    if(!agreement || !term || term.status!=='pending' || term.kind!=='payment')
-      return error('转账未对应有效的待履行法律义务');
+    if(!agreement || !term || term.kind!=='payment')
+      return error('转账未对应有效的法律付款条款');
     const who=activeProtagonist(state);
     const actualFrom=resolveTransferParty(state,who,transfer.from);
     const actualTo=resolveTransferParty(state,who,transfer.to);
@@ -740,6 +740,15 @@ export function acknowledgeCourtTransfers(state: WorldState, actions: readonly S
        actualFrom.kind!==expectedFrom.kind || actualFrom.id!==expectedFrom.id ||
        actualTo.kind!==expectedTo.kind || actualTo.id!==expectedTo.id)
       return error('协议转账双方或金额与待履行条款不符');
+    if(term.status==='fulfilled'){
+      // A committed story may be processed again with exactly the same turn id.
+      // Only the matching double-entry receipt authorizes an idempotent replay.
+      const key='wa:'+turnId+':t'+index;
+      const receipt=state.protagonists?.accounts.ledger.some(row=>
+        row.id.startsWith(key+':out') || row.id===key+':in');
+      if(!receipt) return error('同一笔法律付款不可重复履行');
+      continue;
+    }
     term.status='fulfilled';
     term.fulfilledDay=state.clock.day;
   }
