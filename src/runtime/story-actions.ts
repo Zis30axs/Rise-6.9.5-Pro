@@ -61,7 +61,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       }
       case 'service': {
         const item = record(raw, ['type', 'serviceId'], path);
-        if (typeof item.serviceId !== 'string' || !locationServiceCatalog.some(service => service.id === item.serviceId)) return invalid(`${path} 地点服务`);
+        if (typeof item.serviceId !== 'string' || !locationServiceCatalog.some(service => service.id === item.serviceId && !service.reveal)) return invalid(`${path} 地点服务`);
         return { type: 'service', serviceId: item.serviceId };
       }
       case 'buy':

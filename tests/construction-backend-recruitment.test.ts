@@ -3,6 +3,7 @@ import { createInitialState, parseState, reduceState } from '../src/runtime/mode
 import { CONSTRUCTION_BACKEND_JOB_ID, getLocationServiceQuote, getLocationServices } from '../src/runtime/location-services';
 import { appiePayBalance, PROTAGONISTS } from '../src/runtime/dual-protagonists';
 import { enableProtagonists, personState } from '../src/runtime/protagonist-world';
+import { validateStoryActions } from '../src/runtime/story-actions';
 
 function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   let state = enableProtagonists(createInitialState());
@@ -42,6 +43,14 @@ describe('construction backend recruitment twist', () => {
     expect(listing.payout).toBe(6800);
     expect(listing.completionDescription).toContain('4900 袋水泥');
     expect(getLocationServices(computerStudent()).map(s => s.id)).toEqual(['construction-clear', 'construction-carry', CONSTRUCTION_BACKEND_JOB_ID]);
+  });
+
+  it('requires explicit player acceptance instead of letting story actions skip the reveal', () => {
+    const student = computerStudent();
+    expect(() => validateStoryActions([{ type: 'service', serviceId: CONSTRUCTION_BACKEND_JOB_ID }], student)).toThrow(/地点服务/);
+    expect(validateStoryActions([{ type: 'service', serviceId: 'construction-clear' }], student)).toEqual([
+      { type: 'service', serviceId: 'construction-clear' },
+    ]);
   });
 
   it('reuses worksite hours, time, health, exhaustion, money cap and existing shifts', () => {
