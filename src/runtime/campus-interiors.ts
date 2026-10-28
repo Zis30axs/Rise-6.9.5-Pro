@@ -386,6 +386,17 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
   },
   {
+    id: 'legal-office', label: '枫庭律师事务所', parentLocationId: 'grand-commercial',
+    description: '新宿商务楼里的律师事务所。接待台旁陈列着案件卷宗，玻璃会议室里摆着证物白板与模拟法庭席位，工作由持证律师指导。',
+    entrance: { x: -145, z: -158, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'legal-office-case-board', kind: 'board', minX: -5, maxX: -2.5, minZ: -4.8, maxZ: -4.4 },
+      { id: 'legal-office-case-table', kind: 'desk', minX: -1.8, maxX: 2.0, minZ: -2.2, maxZ: -0.9 },
+      { id: 'legal-office-shelf', kind: 'shelf', minX: 4.5, maxX: 5.5, minZ: -3, maxZ: 1 },
+    ],
+    interactions: [],
+  },
+  {
     id: 'mlm-office', label: '启航商贸（传销咨询）', parentLocationId: 'grand-commercial',
     description: '商务写字楼高层的商贸咨询办公室。墙上贴满业绩龙虎榜与金字塔分销架构图，茶水桌上堆着宣讲手册与空白加盟合同，空气中弥漫着急功近利的焦躁氛围。',
     entrance: { x: -150, z: -170, yaw: 0 }, bounds, spawn,
