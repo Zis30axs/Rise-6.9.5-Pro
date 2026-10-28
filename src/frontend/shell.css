@@ -266,3 +266,13 @@
 .other-side-inline .other-side-choices p{width:100%;font-size:14px!important;text-indent:0;margin-bottom:3px!important}
 .other-side-inline .other-side-choices button{min-height:40px;padding:8px 11px;border-radius:8px;border:1px solid #ddc9a677;color:#f4e9cd;background:#ceb78e1c;cursor:pointer}
 .other-side-inline .other-side-return{margin-top:12px;padding-top:11px;border-top:1px dashed #e0cfab55}
+
+/* Major events require deliberate confirmation before releasing the trial viewpoint. */
+.court-switch-mask{position:absolute;inset:0;z-index:10000;background:rgba(12,11,20,.77);display:grid;place-items:center;padding:22px}
+.court-switch-dialog{box-sizing:border-box;width:min(100%,440px);padding:24px;background:#24212e;color:#f4f0f8;border:1px solid #9f8aae;border-radius:15px;box-shadow:0 15px 50px #0008}
+.court-switch-dialog h2{font-size:20px;line-height:1.35;margin:0 0 14px}
+.court-switch-dialog p{font-size:14px;line-height:1.7;margin:0 0 20px}
+.court-switch-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.court-switch-actions button{min-height:46px;padding:10px;border:1px solid #c2b8ca;border-radius:9px;color:inherit;background:#62566e;cursor:pointer}
+.court-switch-actions button:first-child{background:transparent}
+.court-switch-actions button:focus-visible{outline:3px solid #dec1ff;outline-offset:2px}
