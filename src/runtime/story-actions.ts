@@ -6,7 +6,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
-import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtFinish } from './courtroom';
+import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
@@ -38,8 +38,14 @@ function destination(value: unknown, path: string): string {
 /** A narrow action language; no dynamic keys, arbitrary object patches, or executable model data. */
 export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
-  if (value.filter(item => !!item && typeof item === 'object' && /^court_(?:docket|special|open|quote|step|finish)$/.test(String((item as Record<string,unknown>).type))).length > 1)
-    return invalid('一轮庭审最多推进一个案件节点');
+  const courtActions = value.filter(item => !!item && typeof item === 'object' &&
+    /^court_(?:docket|special|open|quote|step|assist|finish)$/.test(String((item as Record<string,unknown>).type)))
+    .map(item => String((item as Record<string,unknown>).type));
+  // A fresh insight or an explicit Sherry handover may be settled in the same response.
+  const allowedPair = courtActions.length === 2 &&
+    ((courtActions[0] === 'court_step' || courtActions[0] === 'court_assist') && courtActions[1] === 'court_finish');
+  if (courtActions.length > 2 || (courtActions.length === 2 && !allowedPair))
+    return invalid('同一轮仅允许单项庭审操作，或庭审进展/正式接手后立即结案');
   return value.map((raw, index) => {
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
@@ -118,6 +124,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       case 'court_open': return validateCourtOpen(raw,state);
       case 'court_quote': return validateCourtFeeQuote(raw,state);
       case 'court_step': return validateCourtStep(raw,state);
+      case 'court_assist': return validateCourtAssist(raw,state);
       case 'court_finish': return validateCourtFinish(raw,state);
       case 'transfer': {
         const item = record(raw, ['type', 'from', 'to', 'cents', 'reason'], path);
