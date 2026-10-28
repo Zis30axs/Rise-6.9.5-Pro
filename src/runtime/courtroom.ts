@@ -577,6 +577,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       return error('只能向欠款 NPC 领取已判给本主角的款项');
     next.courtroom=current;
     payCourtTerm(next,entry,term);
+    if(next.protagonists) next.protagonists.revision++;
   } else if (action.phase==='enroll-law') {
     if(current.active) return error('庭审期间不能办理职业登记');
     canOffice(next);
