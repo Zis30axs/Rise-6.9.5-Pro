@@ -41,7 +41,15 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
   const jobs = await rows<MemoryJob>('jobs', scope);
   if (jobs.some(j => j.state === 'pending' || j.state === 'working' || (j.state === 'failed' && !forced))) return;
   const pending = (await rows<MemorySource>('sources', scope))
-    .filter(s => !s.processed).sort((a, b) => a.turn - b.turn || a.at - b.at || a.id.localeCompare(b.id));
+    .filter(s => !s.processed).sort((a, b) => {
+      if (a.turn !== b.turn) return a.turn - b.turn;
+      if (a.at !== b.at) return a.at - b.at;
+      const part = /^(.*):part:(\d+)$/.exec(a.id);
+      const other = /^(.*):part:(\d+)$/.exec(b.id);
+      if (part && other && part[1] === other[1]) return Number(part[2]) - Number(other[2]);
+      const rank = (id: string) => id.startsWith('input:') ? 0 : id.startsWith('story:') ? 1 : 2;
+      return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
+    });
   if (!pending.length) return;
   const latestTurn = Math.max(...pending.map(s => s.turn));
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
@@ -96,8 +104,14 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
         try {
           const estimated = approximateTokens(event.summary) * settings.embeddingPrice / 1e6;
           if (settings.budgetUsd > 0 && (await meta(scope, 'costUsd')) + estimated > settings.budgetUsd) break;
+          const vectorId = event.id + ':' + settings.embeddingModel;
+          const cached = await one<MemoryVector>('vectors', scope, vectorId);
+          if (cached && cached.model === settings.embeddingModel) {
+            vectors.push(cached);
+            continue;
+          }
           const result = await requestEmbedding(settings, event.summary, controller.signal);
-          const vector: MemoryVector = { key: memoryKey(scope, event.id + ':' + settings.embeddingModel),
+          const vector: MemoryVector = { key: memoryKey(scope, vectorId),
             scope, eventId: event.id, model: settings.embeddingModel,
             dimensions: result.vector.length, values: result.vector };
           await saveEmbeddingWithCharge(vector, result.tokens * settings.embeddingPrice / 1e6);

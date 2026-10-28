@@ -4,6 +4,8 @@ import { memoryKey } from './types';
 import { one, saveEmbeddingWithCharge } from './storage';
 import type { MemoryVector } from './types';
 
+const inFlight = new Map<string, Promise<number[] | undefined>>();
+
 function hash(text: string): string {
   let result = 2166136261;
   for (let i = 0; i < text.length; i++) result = Math.imul(result ^ text.charCodeAt(i), 16777619);
@@ -13,7 +15,7 @@ async function currentCost(scope: string): Promise<number> {
   const record = await one<{ value: number }>('metadata', scope, 'costUsd');
   return typeof record?.value === 'number' ? record.value : 0;
 }
-export async function embeddingForMemorySearch(scope: string, query: string): Promise<number[] | undefined> {
+async function embeddingForMemorySearchInternal(scope: string, query: string): Promise<number[] | undefined> {
   const settings = loadMemorySettings();
   if (!settings.enabled || !settings.embeddingEndpoint || !settings.embeddingModel || !query.trim()) return;
   const id = 'query:' + settings.embeddingModel + ':' + hash(query);
@@ -30,4 +32,15 @@ export async function embeddingForMemorySearch(scope: string, query: string): Pr
       response.tokens * settings.embeddingPrice / 1e6);
     return response.vector;
   } finally { clearTimeout(timeout); }
+}
+
+/** A burst of identical lookups shares one embedding bill and result. */
+export function embeddingForMemorySearch(scope: string, query: string): Promise<number[] | undefined> {
+  const key = memoryKey(scope, query);
+  const previous = inFlight.get(key);
+  if (previous) return previous;
+  const pending = embeddingForMemorySearchInternal(scope, query)
+    .finally(() => { if (inFlight.get(key) === pending) inFlight.delete(key); });
+  inFlight.set(key, pending);
+  return pending;
 }

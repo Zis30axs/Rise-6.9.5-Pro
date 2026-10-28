@@ -104,11 +104,11 @@ onMounted(() => { void refresh(); });
       <label>单批输入预算（估算 Token）<input v-model.number="settings.inputBudget" type="number" min="2000" max="24000" step="1000" /></label>
       <label>单批输出预算（Token）<input v-model.number="settings.outputBudget" type="number" min="200" max="4000" step="100" /></label>
       <p v-if="status" class="uc-narrative-note">已归档 {{ status.sources }} 条来源 · 已整理 {{ status.events }} 条事件 · 待处理 {{ status.pending }} 批 · 累计费用估算 USD {{ status.costUsd.toFixed(4) }}</p>
-      <p v-if="status?.lastError" class="uc-narrative-note" role="status">最近一次整理失败：{{ status.lastError }}</p>
+      <p v-if="status?.lastError" class="uc-narrative-note" role="status">最近一次整理失败：{{ status.lastError }}。重新整理可能产生新的 API 费用。</p>
       <p v-else-if="!status" class="uc-narrative-note">记忆数据库尚未就绪，普通剧情不受影响。</p>
       <div class="uc-narrative-buttons">
         <button type="button" data-memory-save @click="save">保存记忆设置</button>
-        <button type="button" :disabled="working" @click="runNow">整理待办</button>
+        <button type="button" :disabled="working" @click="runNow">整理待办／重试</button>
         <button type="button" @click="refresh">刷新状态</button>
         <button type="button" @click="exportBackup">导出备份</button>
         <label class="uc-memory-import">导入备份 <input type="file" accept=".json,application/json" @change="importBackup" /></label>
