@@ -4,6 +4,8 @@ import type { StoryApiSettings } from '../story-api';
 import { loadStoryApiKey, normalizeStoryEndpoint } from '../story-api';
 import type { MemorySettings } from './settings';
 import { memoryQuery } from './retrieval';
+import { embeddingForMemorySearch } from './vector';
+import { loadMemorySettings } from './settings';
 import type { MemoryQuery, MemoryQueryOperation } from './types';
 
 const OPERATIONS = ['search_memory', 'get_event_details', 'get_entity_history', 'get_relationship_history'] as const;
@@ -57,7 +59,8 @@ export function parseMemoryTag(value: unknown): MemoryQuery | null {
 export async function resolveMemoryQuery(scope: string, state: WorldState,
   query: MemoryQuery, budget: number): Promise<string> {
   const at = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-  try { return await memoryQuery(scope, query, activeProtagonist(state), at, budget); }
+  try { return await memoryQuery(scope, query, activeProtagonist(state), at, budget,
+    text => embeddingForMemorySearch(scope, text), loadMemorySettings().embeddingModel); }
   catch { return '长期记忆数据库暂不可用。未知不代表从未发生；不要虚构旧事件。'; }
 }
 export async function runTaggedMemory(first: unknown, scope: string, state: WorldState,
