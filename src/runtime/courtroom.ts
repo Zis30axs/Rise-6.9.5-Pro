@@ -405,7 +405,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     court.active = { id:offered.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
       category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,
       white:parsed.white, evidence:parsed.evidence, truth:parsed.truth, misdirection:parsed.misdirection,
-      rewardYen:offered.rewardYen, experience:offered.experience, fee:null, steps:[] };
+      rewardYen:offered.rewardYen, experience:offered.experience, fee:null, assistance:'none', steps:[] };
     minutes = 10;
   } else if (action.type === 'court_quote') {
     const parsed = validateCourtFeeQuote(action,next);
