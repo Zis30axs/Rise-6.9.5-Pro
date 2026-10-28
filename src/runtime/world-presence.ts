@@ -50,6 +50,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
   const trial = state.courtroom?.active;
   if (state.interior?.roomId === 'court-hearing' && trial &&
     (trial.owner === 'emma' || trial.fee?.sherry) &&
+    trial.respondent !== '橘雪莉' &&
     !isNpcUnderCourtRestriction(state,'majo-sherry',state.clock.day,state.clock.hour)) {
     const sherry = allResidentCast.find(person => person.id === 'majo-sherry');
     if (sherry) {
@@ -61,6 +62,33 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
         x:-2.5,z:0.7,color:0x859c6d,portraitId:contact?.portraitId ?? characterForPerson(sherry.id),
         contactId:contact?.id ?? null,isMain:contact?.isMain ?? false,
       });
+    }
+  }
+  // The client and opposing party are represented in their actual trial,
+  // including temporarily introduced clients with no permanent city schedule.
+  if (state.interior?.roomId === 'court-hearing' && trial) {
+    const named = [
+      ...(trial.source==='commission' ? [{name:trial.client,role:'委托人' as const,x:-2.4}] : []),
+      ...(trial.respondent ? [{name:trial.respondent,role:'诉讼相对方' as const,x:2.4}] : []),
+    ];
+    const shown=new Set(people.map(person=>person.name));
+    for (const entry of named) {
+      if(shown.has(entry.name) || Object.values(protagonistNames).includes(entry.name)) continue;
+      const resident=allResidentCast.find(row=>
+        row.name===entry.name || row.id===entry.name || row.aliases.includes(entry.name));
+      if(resident && PROTAGONIST_PERSON_ID_LIST.includes(resident.id)) continue;
+      const id=resident?.id ?? 'court-person-'+(entry.role==='委托人'?'client':'respondent');
+      if(isNpcUnderCourtRestriction(state,id,state.clock.day,state.clock.hour)) continue;
+      const contact=state.contacts.find(row=>row.sourcePersonId===id || row.name===entry.name);
+      people.push({
+        id,name:contact?.name ?? entry.name,candidateName:entry.name,
+        identity:entry.role,tags:['法庭',entry.role],
+        description:entry.role==='委托人'?'正在参与自己的案件，保留自身知情与表达。':'依据案卷身份应诉，保留自身意志与答辩空间。',
+        x:entry.x,z:0.8,color:0x89766a,
+        portraitId:contact?.portraitId ?? characterForPerson(id),
+        contactId:contact?.id ?? null,isMain:contact?.isMain ?? false,
+      });
+      shown.add(entry.name);
     }
   }
   // Expiring story-committed NPC locations supersede authored fallback schedules.
