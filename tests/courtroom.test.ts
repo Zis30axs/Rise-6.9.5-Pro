@@ -69,7 +69,7 @@ describe('freeform courtroom and legal services', () => {
     const presetId=courtState(state).board!.offers[0]!.id;
     state=reduceState(state,{type:'courtroom',phase:'accept-preset',offerId:presetId});
     expect(courtState(state).active).toMatchObject({owner:'emma',source:'commission',assistance:'none',steps:[]});
-    expect(courtState(state).active?.truth).toBeTruthy();
+    expect(courtState(state).active?.truth).toBeNull();
     expect(courtState(state).active?.white).toContain('^');
     expect(()=>reduceState(state,{type:'novel_travel',locationId:'gate'})).toThrow(/庭审/);
     expect(()=>applyStoryActions(state,[{type:'rest',kind:'rest',minutes:10}],'court-rest')).toThrow(/庭审/);
@@ -113,12 +113,11 @@ describe('freeform courtroom and legal services', () => {
       type:'court_open',offerId:chosen.id,respondent:'临时货运店员',
       white:'店员受到怀疑，证据与证词之间存在矛盾。',
       evidence:[{title:'门禁记录',detail:'登记时间有误差'},{title:'交接单',detail:'另有签收者'}],
-      truth:'交接人在仓库按流程移交货物，店员没有偷窃。',
-      misdirection:'监控时间快了十分钟',
+
     }],'generated-court-open');
     expect(opened.courtroom?.active?.assistance).toBe('none');
     expect(opened.courtroom?.active?.owner).toBe('emma');
-    expect(parseState(JSON.parse(JSON.stringify(opened))).courtroom?.active?.truth).toContain('移交货物');
+    expect(parseState(JSON.parse(JSON.stringify(opened))).courtroom?.active?.truth).toBeNull();
   });
 
   it('keeps opt-in serious criminal cases outside the ordinary three offers',()=>{
@@ -223,7 +222,7 @@ describe('freeform courtroom and legal services', () => {
     const migrated=reduceState(state,{type:'courtroom',phase:'migrate-legacy'});
     expect(migrated.lawCareer?.owners.emma?.active).toBeNull();
     expect(courtState(migrated).active).toMatchObject({owner:'emma',source:'commission'});
-    expect(courtState(migrated).active?.truth).toBeTruthy();
+    expect(courtState(migrated).active?.truth).toBeNull();
     expect(()=>reduceState(migrated,{type:'leave_interior'})).toThrow(/庭审/);
     expect(parseState(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
   });
@@ -405,8 +404,7 @@ describe('freeform courtroom and legal services', () => {
     state=applyStoryActions(state,[{type:'court_open',offerId:selected.id,respondent:'橘雪莉',
       white:'检方呈交证据，法庭继续核实有关事实。',
       evidence:[{title:'证人记录',detail:'部分时间待核对'},{title:'相关单据',detail:'存在第二条时间记录'}],
-      truth:'法庭已完成必要核实，具体罪责由本次模拟裁判说明。',
-      misdirection:'证人可能记错日期'}],'court-open-sanction');
+ }],'court-open-sanction');
     state=applyStoryActions(state,[{
       type:'court_finish',verdict:'loss',summary:'法庭查明案件后完成裁判。',
       order:{respondent:'橘雪莉',terms:[],sanctions:[{
