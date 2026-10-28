@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyStoryActions, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, personState } from '../src/runtime/protagonist-world';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
-import { courtState, DAILY_COURT_CATEGORIES, parseCourtroom } from '../src/runtime/courtroom';
+import { courtState, courtStoryContext, DAILY_COURT_CATEGORIES, parseCourtroom } from '../src/runtime/courtroom';
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 import { npcProfession } from '../src/runtime/npc-professions';
 
@@ -124,6 +124,9 @@ describe('freeform courtroom and legal services', () => {
     state=applyStoryActions(state,[{type:'court_finish',verdict:'loss',summary:'原告无法证明违法，诉讼请求未获支持。'}],'court-lawsuit-loss');
     expect(courtState(state).results.at(-1)).toMatchObject({source:'lawsuit',verdict:'loss',payout:0});
     expect(courtState(state).active).toBeNull();
+    expect(courtState(state).results.at(-1)?.defendant).toBe('长崎素世');
+    const defendantView=reduceState(state,{type:'switch_protagonist',target:'soyo'});
+    expect(courtStoryContext(defendantView).recentResults.some(row=>row.defendant==='长崎素世')).toBe(true);
   });
 
   it('Sherry rescue still produces a successful professional conclusion at 40 percent',()=>{
@@ -140,6 +143,19 @@ describe('freeform courtroom and legal services', () => {
     const rescued=reduceState(other,{type:'courtroom',phase:'sherry'});
     expect(courtState(rescued).active).toBeNull();
     expect(courtState(rescued).results.at(-1)).toMatchObject({solvedBy:'sherry',payout:Math.round(reward*.4)});
+  });
+
+  it('resumes an unfinished legacy investigation as a freeform courtroom case without losing the old save',()=>{
+    let state=inOffice();
+    state=reduceState(state,{type:'law_case',phase:'accept',caseId:'gallery-clock'});
+    expect(state.lawCareer?.owners.emma?.active?.stage).toBe('investigation');
+    expect(()=>applyStoryActions(state,[boardAction],'legacy-conflict')).toThrow(/历史委托/);
+    const migrated=reduceState(state,{type:'courtroom',phase:'migrate-legacy'});
+    expect(migrated.lawCareer?.owners.emma?.active).toBeNull();
+    expect(courtState(migrated).active).toMatchObject({owner:'emma',source:'commission'});
+    expect(courtState(migrated).active?.truth).toBeTruthy();
+    expect(()=>reduceState(migrated,{type:'leave_interior'})).toThrow(/庭审/);
+    expect(parseState(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
   });
 
   it('switching protagonists forfeits the current trial with zero payout and a single respectful return recap',()=>{
