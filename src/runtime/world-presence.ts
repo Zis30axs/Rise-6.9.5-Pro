@@ -104,7 +104,30 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
     }
   }
   if (!state.protagonists) return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
+  // A formal summons supersedes other playable characters' ordinary scene
+  // projection only while this hearing is live. Their saved personal position
+  // and point-of-view are never overwritten by the court scene projection.
+  const courtAttendees = new Set<ProtagonistId>();
+  if (state.interior?.roomId === 'court-hearing' && trial?.fee) {
+    for (const owner of otherProtagonists(activeProtagonist(state))) {
+      const summoned = trial.fee.defendant === protagonistNames[owner];
+      const counsel = trial.fee.lawyer === owner;
+      if (!summoned && !counsel) continue;
+      courtAttendees.add(owner);
+      const id = protagonistSceneId(owner), contact = protagonistContact(state.contacts, owner);
+      people.push({
+        id,protagonistId:owner,name:contact?.name ?? protagonistNames[owner],
+        candidateName:protagonistNames[owner],identity:summoned?'被告当事人':'法律协助人员',
+        tags:['法庭','主角',summoned?'被告':'协助'],
+        description:summoned?'应诉并保留独立知情范围与人格立场。':'协助整理案卷与出庭论证。',
+        x:summoned?2.4:-2.4,z:0.8,color:0x859c6d,
+        portraitId:contact?.portraitId ?? characterForPerson(id),
+        contactId:contact?.id ?? null,isMain:true,
+      });
+    }
+  }
   for (const owner of otherProtagonists(activeProtagonist(state))) {
+    if (courtAttendees.has(owner)) continue;
     const personal = personState(state, owner);
     if (state.interior ? personal.interior?.roomId !== state.interior.roomId : !!personal.interior) continue;
     const position = worldScenePosition(personal);
