@@ -17,6 +17,8 @@ import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { diagnosePlayerIllnesses } from './illness';
+import { lawCareerStoryContext } from './law-career';
+import { allResidentCast } from './npc-cast';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -92,6 +94,7 @@ export const STORY_PROTOCOL = [
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   'music 中的乐队名册、邀请状态和演出预约是正式登记的唯一依据。创建乐队或预约演出需由玩家填写 Live House 表单；邀请加入需由玩家从手机发送、收件人明确同意后登记。不得用普通 interact、activity、schedule、手机闲聊或叙事文字代替这些确认流程，不得编造已确定的成员、能力或档期。',
+  'lawCareer 与 residentProfessions 是律师职业和 NPC 专业的权威数据。橘雪莉的法学专业、律师职业路线与见习身份固定；在艾玛参与的委托中她是固定搭档。已保存的案件证据、矛盾、结案结果和职业收益不可被剧情改写。艾玛选择由雪莉接手时，雪莉必须通过原案卷中已记录的证据逐步完成推理，并自然呈现完美结局；艾玛的经验与报酬固定为满额40%，不得用普通 activity、service 或任意叙事补偿剩余60%。法律专业学习不等于拥有日本正式律师资格，法庭正式代理应由持证律师完成。',
   MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
@@ -287,6 +290,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         upcomingOccasions: upcomingGameCalendarOccasions(snapshot.clock.day, 14).slice(0, 8),
         location: snapshot.locationId, player: snapshot.player,
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
+        lawCareer: lawCareerStoryContext(snapshot),
+        residentProfessions: allResidentCast.map(person => ({ id: person.id, name: person.name,
+          majorId: person.majorId, careerId: person.careerId, qualification: person.qualification })),
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
           .slice(0, PROMPT_CONTEXT_LIMITS.calendarEntries),
