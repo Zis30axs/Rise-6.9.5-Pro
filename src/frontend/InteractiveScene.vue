@@ -40,7 +40,8 @@ const position = ref('0.000,1.700,18.000');
 const guideOpen = ref(false);
 const guideTarget = ref('');
 const guideBuildings = ref<{ minX: number; maxX: number; minZ: number; maxZ: number }[]>([]);
-const walkPoint = computed(() => { const [x, , z] = position.value.split(',').map(Number); return { x, z }; });
+const walk = ref({ x: 0, z: 18 });
+const walkPoint = computed(() => walk.value);
 const nearbyPeople = computed(() => props.people.map(person => ({ ...person, distance: Math.hypot(person.x - walkPoint.value.x, person.z - walkPoint.value.z) }))
   .filter(person => person.distance <= SCENE_ENCOUNTER_DISTANCE && canSeePerson(person))
   .sort((a, b) => Number(!!b.protagonistId) - Number(!!a.protagonistId) || a.distance - b.distance).slice(0, 2));
@@ -60,7 +61,8 @@ const moving = ref(false);
 const route = computed(() => streetRoutes[props.locationId] ?? streetRoutes.gate);
 const currentNode = computed(() => route.value[nodeIndex.value] ?? route.value[0]);
 const nextNode = computed(() => route.value[nodeIndex.value + 1]);
-const projected = ref(sceneHotspots.map((spot) => ({ x: spot.fallback[0], y: spot.fallback[1], visible: true })));
+const hotspotLabels = sceneHotspots.map((spot) => ({ x: spot.fallback[0], y: spot.fallback[1], visible: true }));
+const projected = ref(hotspotLabels);
 const isNight = computed(() => props.hour < 6 || props.hour >= 20);
 let win: Window & typeof globalThis;
 let doc: Document;
@@ -105,6 +107,10 @@ const rayPointer = new THREE.Vector2();
 const projectedPoint = new THREE.Vector3();
 const cleanupEvents: (() => void)[] = [];
 
+function ignoreEndedPointer(error: unknown) {
+  if (error instanceof DOMException && (error.name === 'NotFoundError' || error.name === 'InvalidStateError')) return;
+  throw error;
+}
 function listen(target: EventTarget, event: string, callback: EventListener, options?: AddEventListenerOptions) {
   target.addEventListener(event, callback, options);
   cleanupEvents.push(() => target.removeEventListener(event, callback, options));
@@ -127,13 +133,15 @@ function canSeePerson(person: ScenePerson): boolean {
   });
 }
 function updateCamera() {
-  position.value = `${eye.x.toFixed(3)},${eye.y.toFixed(3)},${eye.z.toFixed(3)}`;
+  const nextPosition = `${eye.x.toFixed(3)},${eye.y.toFixed(3)},${eye.z.toFixed(3)}`;
+  if (nextPosition !== position.value) { position.value = nextPosition; walk.value = { x: eye.x, z: eye.z }; }
   if (!camera) return;
   const showPlayer = props.protagonist === 'soyo' && (props.phoneActive || cameraMode.value === 'third-person');
   playerCharacter?.setPhoneActive(props.phoneActive);
   const displayYaw = campus ? applyCharacterCamera(camera, eye, yaw, pitch, campus.movementWorld, cameraMode.value, props.phoneActive, width, height) : yaw;
   playerCharacter?.update(eye, displayYaw, showPlayer);
-  view.value = `${yaw.toFixed(3)},${pitch.toFixed(3)}`;
+  const nextView = `${yaw.toFixed(3)},${pitch.toFixed(3)}`;
+  if (nextView !== view.value) view.value = nextView;
   if (switchCamera && switchLift.value !== null) switchCamera.apply(switchLift.value);
 }
 function toggleCamera() {
@@ -187,7 +195,7 @@ function resetView(report = false) {
 function render(now = 0) {
   frame = 0;
   if (switchCamera && renderer && scene && camera && !dead && !doc.hidden) {
-    try { renderer.render(scene, camera); } catch { useFallback(); }
+    try { renderer.render(scene, camera); } catch (error) { console.error(error); useFallback(); }
     return;
   }
   if (dead || props.paused || !renderer || !scene || !camera || !inView || doc.hidden || width < 1 || height < 1) return;
@@ -221,30 +229,33 @@ function render(now = 0) {
     lastVehicleFrameAt = now;
     crowdAnimating = crowd?.update(now, camera, eye, props.freeWalk && !props.busy && !reducedMotion && !props.phoneActive) ?? false;
     renderer.render(scene, camera);
-    const labels: { x: number; y: number; visible: boolean }[] = [];
-    projected.value = sceneHotspots.map((spot) => {
+    sceneHotspots.forEach((spot, index) => {
       projectedPoint.copy(spot.position).project(camera!);
       const x = (projectedPoint.x + 1) * 50;
       const y = (1 - projectedPoint.y) * 50;
       const edge = width < 650 ? 18 : 7;
-      // Leave the thumb controls and the top walk caption clear, including on short phones.
       const minLabelY = props.freeWalk ? width <= 760 ? 150 : 170 : height * 0.14;
       const maxLabelY = props.freeWalk ? height - (width <= 760 ? 300 : 235) : height * 0.86;
-      const label = { x: THREE.MathUtils.clamp(x, edge, 100 - edge), y, visible: spot.position.distanceTo(eye) <= hotspotRange && projectedPoint.z >= -1 && projectedPoint.z <= 1 && x > 0 && x < 100 && y * height / 100 > minLabelY && y * height / 100 < maxLabelY };
+      const label = hotspotLabels[index];
+      label.x = THREE.MathUtils.clamp(x, edge, 100 - edge);
+      label.y = y;
+      label.visible = spot.position.distanceTo(eye) <= hotspotRange && projectedPoint.z >= -1 && projectedPoint.z <= 1 && x > 0 && x < 100 && y * height / 100 > minLabelY && y * height / 100 < maxLabelY;
       if (label.visible) {
-        for (const previous of labels) {
-          if (previous.visible && Math.abs(previous.x - label.x) * width / 100 < 122 && Math.abs(previous.y - label.y) * height / 100 < 39) label.y = previous.y - 44 / height * 100;
+        for (let previous = 0; previous < index; previous++) {
+          const other = hotspotLabels[previous];
+          if (other.visible && Math.abs(other.x - label.x) * width / 100 < 122 && Math.abs(other.y - label.y) * height / 100 < 39) label.y = other.y - 44 / height * 100;
         }
       }
-      labels.push(label);
-      return label;
     });
     if (nextNode.value) {
       projectedPoint.set(nextNode.value.position[0], 0.12, nextNode.value.position[2]).project(camera);
-      walkProjected.value = { x: (projectedPoint.x + 1) * 50, y: (1 - projectedPoint.y) * 50, visible: projectedPoint.z >= -1 && projectedPoint.z <= 1 && Math.abs(projectedPoint.x) < 0.85 && Math.abs(projectedPoint.y) < 0.85 };
+      walkProjected.value.x = (projectedPoint.x + 1) * 50;
+      walkProjected.value.y = (1 - projectedPoint.y) * 50;
+      walkProjected.value.visible = projectedPoint.z >= -1 && projectedPoint.z <= 1 && Math.abs(projectedPoint.x) < 0.85 && Math.abs(projectedPoint.y) < 0.85;
     }
     if (travel || hasWalkInput() || crowdAnimating || aircraftAnimating || vehiclesAnimating) requestRender();
-  } catch {
+  } catch (error) {
+    console.error(error);
     useFallback();
   }
 }
@@ -298,7 +309,7 @@ function useFallback() {
   mode.value = 'fallback';
   dragging.value = false; pointer = undefined; travel = undefined; moving.value = false;
   releaseGraphics();
-  projected.value = sceneHotspots.map((spot) => ({ x: spot.fallback[0], y: spot.fallback[1], visible: true }));
+  sceneHotspots.forEach((spot, index) => { hotspotLabels[index].x = spot.fallback[0]; hotspotLabels[index].y = spot.fallback[1]; hotspotLabels[index].visible = true; });
 }
 function initialize() {
   if (dead || !canvas.value || renderer) return;
@@ -333,7 +344,8 @@ function initialize() {
     width = height = 0;
     if (!props.presence || !restorePresence(props.presence)) resetView();
     resize();
-  } catch {
+  } catch (error) {
+    console.error(error);
     useFallback();
   }
 }
@@ -348,7 +360,7 @@ function pointerDown(event: PointerEvent) {
   if (props.phoneActive || props.paused || props.busy || mode.value !== 'webgl' || event.button !== 0 || !canvas.value || pointer) return;
   canvas.value.focus({ preventScroll: true });
   pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false, allowPick: event.currentTarget === canvas.value };
-  try { canvas.value.setPointerCapture(event.pointerId); } catch { /* Capture can disappear during host teardown. */ }
+  try { canvas.value.setPointerCapture(event.pointerId); } catch (error) { ignoreEndedPointer(error); }
 }
 function pointerMove(event: PointerEvent) {
   if (props.paused || !pointer || pointer.id !== event.pointerId) return;
@@ -362,7 +374,7 @@ function pointerUp(event: PointerEvent) {
   const moved = pointer.moved;
   const allowPick = pointer.allowPick;
   pointer = undefined; dragging.value = false;
-  try { canvas.value?.releasePointerCapture(event.pointerId); } catch { /* Already released by the browser. */ }
+  try { canvas.value?.releasePointerCapture(event.pointerId); } catch (error) { ignoreEndedPointer(error); }
   flushPresence();
   if (moved || !allowPick || props.paused || !canvas.value || !camera || !campus) return;
   const rect = canvas.value.getBoundingClientRect();
@@ -381,7 +393,7 @@ function pointerUp(event: PointerEvent) {
 }
 function cancelPointer() {
   const previous = pointer; pointer = undefined; dragging.value = false;
-  if (previous) { try { canvas.value?.releasePointerCapture(previous.id); } catch { /* Already released. */ } }
+  if (previous) { try { canvas.value?.releasePointerCapture(previous.id); } catch (error) { ignoreEndedPointer(error); } }
   flushPresence();
 }
 function hasWalkInput() {
@@ -390,7 +402,7 @@ function hasWalkInput() {
 function releaseStick(flush = true) {
   const previous = stickPointer;
   stickPointer = undefined; stick.value = { x: 0, y: 0 };
-  if (previous) { try { previous.target.releasePointerCapture(previous.id); } catch { /* Released during teardown. */ } }
+  if (previous) { try { previous.target.releasePointerCapture(previous.id); } catch (error) { ignoreEndedPointer(error); } }
   if (flush) flushPresence();
 }
 function stopWalking(flush = true) { if (flush) flushPresence(); keys.clear(); releaseStick(false); lastWalkAt = 0; }
@@ -400,7 +412,7 @@ function setSwitchCamera(lift: number) {
   switchLift.value = Math.min(1, Math.max(0, lift));
   if (!switchCamera) { stopWalking(); cancelPointer(); resize(); updateCamera(); switchCamera = createSwitchCamera(camera, eye); }
   switchCamera.apply(switchLift.value);
-  try { renderer.render(scene, camera); return true; } catch { useFallback(); return false; }
+  try { renderer.render(scene, camera); return true; } catch (error) { console.error(error); useFallback(); return false; }
 }
 function clearSwitchCamera() {
   switchCamera?.restore(); switchCamera = undefined; switchLift.value = null;
@@ -414,7 +426,7 @@ function stickDown(event: PointerEvent) {
   const bounds = target.getBoundingClientRect();
   stickPointer = { id: event.pointerId, target, x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2, radius: bounds.width / 2 - 22 };
   target.focus({ preventScroll: true });
-  try { target.setPointerCapture(event.pointerId); } catch { /* Browser may cancel a gesture during window switching. */ }
+  try { target.setPointerCapture(event.pointerId); } catch (error) { ignoreEndedPointer(error); }
   event.preventDefault(); stickMove(event);
   presenceDirty = true;
 }

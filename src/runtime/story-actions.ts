@@ -46,7 +46,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     ((courtActions[0] === 'court_step' || courtActions[0] === 'court_assist') && courtActions[1] === 'court_finish');
   if (courtActions.length > 2 || (courtActions.length === 2 && !allowedPair))
     return invalid('同一轮仅允许单项庭审操作，或庭审进展/正式接手后立即结案');
-  return value.map((raw, index) => {
+  return value.map((raw, index): StoryAction => {
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
     switch ((raw as Record<string, unknown>).type) {

@@ -107,9 +107,9 @@ describe('mandatory <story> envelope despite conflicting presets', () => {
     const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
     expect(bridge).toContain('applyMandatoryStoryTagContract(');
     expect(bridge).toContain('const prompt = taggedPrompts.userPrompt;');
-    expect(bridge).toContain('const combinedSystemPrompt = taggedPrompts.systemPrompt;');
-    expect(bridge).toContain('requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt');
-    expect(bridge).toContain('user_input: prompt');
+    expect(bridge).toContain('const combinedSystemPrompt = taggedPrompts.systemPrompt');
+    expect(bridge).toContain('requestStoryFromCustomApi(storyApi, inputPrompt, instructions, controller!.signal)');
+    expect(bridge).toContain('user_input: inputPrompt');
     expect(bridge).toContain('position: \'in_chat\'');
     expect(bridge).toContain("options?.kind === 'interaction_event'");
   });

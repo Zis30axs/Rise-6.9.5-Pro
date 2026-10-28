@@ -133,7 +133,7 @@ export async function memoryQuery(scope: string, value: MemoryQuery, owner: stri
         ...events.filter(e => eligible(e, owner, true, cutoff, maxTurn)
           && matches([...e.entities, ...e.participants, ...e.keywords])
           && (operation !== 'get_relationship_history'
-            || e.kind === 'relationship' || e.kind === 'interaction' || e.kind === 'promise'
+            || e.kind === 'relationship' || e.kind === 'promise'
             || e.kind === 'conflict' || e.kind === 'resolution')).map(fromEvent),
         ...sources.filter(s => !s.processed && eligible(s, owner, true, cutoff, maxTurn)
           && matches(s.participants)

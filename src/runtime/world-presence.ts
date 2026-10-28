@@ -75,7 +75,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
     ];
     const shown=new Set(people.map(person=>person.name));
     for (const entry of named) {
-      if(shown.has(entry.name) || Object.values(protagonistNames).includes(entry.name)) continue;
+      if(shown.has(entry.name) || (Object.values(protagonistNames) as readonly string[]).includes(entry.name)) continue;
       const resident=allResidentCast.find(row=>
         row.name===entry.name || row.id===entry.name || row.aliases.includes(entry.name));
       if(resident && PROTAGONIST_PERSON_ID_LIST.includes(resident.id)) continue;

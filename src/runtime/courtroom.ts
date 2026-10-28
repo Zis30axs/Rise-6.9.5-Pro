@@ -745,13 +745,15 @@ export function acknowledgeCourtTransfers(state: WorldState, actions: readonly S
        actualTo.kind!==expectedTo.kind || actualTo.id!==expectedTo.id)
       return error('协议转账双方或金额与待履行条款不符');
     if(term.status==='fulfilled'){
-      // A committed story may be processed again with exactly the same turn id.
-      // Only the matching double-entry receipt authorizes an idempotent replay.
+      // The transfer leg writes this turn's receipt before acknowledgement, so a
+      // brand-new turn id is not proof of a replay. A second journal line for the
+      // same clause is a duplicate payment and must be rejected.
       const key='wa:'+turnId+':t'+index;
-      const receipt=state.protagonists?.accounts.ledger.some(row=>
+      const sameTurn=state.protagonists?.accounts.ledger.some(row=>
         row.id.startsWith(key+':out') || row.id===key+':in') ||
         state.journal.some(row=>row.id===key+':journal');
-      if(!receipt) return error('同一笔法律付款不可重复履行');
+      const earlier=state.journal.some(row=>row.id!==key+':journal' && row.text.includes('court-obligation:'+termId));
+      if(!sameTurn || earlier) return error('同一笔法律付款不可重复履行');
       continue;
     }
     term.status='fulfilled';
