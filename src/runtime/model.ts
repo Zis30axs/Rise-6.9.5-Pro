@@ -1452,7 +1452,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
     const next = courtAction(prepared, action);
-    if (action.phase === 'accept-preset' || action.phase === 'confirm-filing') advance(next, 10);
+    if (action.phase === 'accept-preset' || action.phase === 'confirm-filing' || action.phase === 'migrate-legacy') advance(next, 10);
     if (action.phase === 'sherry') {
       advance(next, 15);
       const rescued = next.courtroom?.results.at(-1);
