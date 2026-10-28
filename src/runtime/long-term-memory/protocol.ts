@@ -68,7 +68,12 @@ export async function resolveMemoryQuery(scope: string, state: WorldState,
 }
 export async function runTaggedMemory(first: unknown, scope: string, state: WorldState,
   budget: number, regenerate: (evidence: string) => Promise<unknown>): Promise<unknown> {
-  const lookup = parseMemoryTag(first);
+  let lookup: MemoryQuery | null;
+  try { lookup = parseMemoryTag(first); }
+  catch {
+    // A malformed optional lookup cannot prevent the story from continuing.
+    return regenerate('上一条记忆检索请求格式无效，未执行任何操作。请直接输出完整剧情协议，不要再次查询历史。');
+  }
   if (!lookup) return first;
   const evidence = await resolveMemoryQuery(scope, state, lookup, budget);
   const second = await regenerate(evidence + '\n本轮记忆检索已结束；禁止再输出 <memory_lookup>，直接输出原有的完整剧情协议。');

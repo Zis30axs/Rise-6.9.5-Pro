@@ -452,12 +452,18 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             if (pending?.id === generationId && epoch === requestEpoch) cancel();
           }, AUTONOMOUS_SMS_TIMEOUT_MS);
         }
-        const normalGenerate = (inputPrompt: string, instructions: string): Promise<unknown> =>
-          storyApi.mode === 'custom'
+        let generationAttempt = 0;
+        const normalGenerate = (inputPrompt: string, instructions: string): Promise<unknown> => {
+          const attempt = ++generationAttempt;
+          const attemptId = attempt === 1 ? generationId : generationId + ':resume:' + attempt;
+          if (storyApi.mode === 'tavern' && pending
+            && (pending.id === generationId || pending.id.startsWith(generationId + ':')))
+            pending.id = attemptId;
+          return storyApi.mode === 'custom'
             ? requestStoryFromCustomApi(storyApi, inputPrompt, instructions, controller!.signal)
             : options?.kind === 'autonomous_sms'
             ? api.generateRaw!({
-              generation_id: generationId,
+              generation_id: attemptId,
               ordered_prompts: [
                 { role: 'system', content: instructions },
                 { role: 'user', content: inputPrompt },
@@ -466,11 +472,12 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
               should_stream: false, should_silence: true, max_chat_history: 0,
             })
             : api.generate({
-              generation_id: generationId,
+              generation_id: attemptId,
               user_input: inputPrompt,
               injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: instructions }],
               should_stream: false, should_silence: true, max_chat_history: 0,
             });
+        };
         const response = await Promise.race([
           (async (): Promise<unknown> => {
             if (memoryNarrative && memorySettings.protocol === 'tools' && storyApi.mode === 'custom') {
@@ -514,7 +521,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         return reply;
       } finally {
         if (smsTimeout !== undefined) clearTimeout(smsTimeout);
-        if (pending?.id === generationId) pending = null;
+        if (pending?.id === generationId || pending?.id?.startsWith(generationId + ':')) pending = null;
       }
     },
     cancel,
