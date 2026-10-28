@@ -559,7 +559,7 @@ export function mountShell(
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
     },
-    async send(text) {
+    async send(text, mode = 'story') {
       const trimmed = text.trim();
       if (dead || model.busy || model.switchingProtagonist || !trimmed) return;
       if (trimmed.length > 2000) { model.notice = '行动请控制在 2000 字以内。'; return; }
@@ -570,7 +570,13 @@ export function mountShell(
         if (!stillCurrent(request)) return;
         // Read receipts may have arrived while generation was in flight. Merge
         // the validated turn into the latest state, then save before delivery.
-        const next = commitStoryTurn(snapshot(), trimmed, reply, { userId: storyId(), assistantId: storyId() });
+        // The courtroom result was already settled by law_case. Its optional
+        // character scene may narrate the evidence but never re-book money,
+        // time, contact actions, off-screen events, SMS or any other side effect.
+        const safeReply = mode === 'law_narration'
+          ? { text: reply.text, phoneMessages: [] }
+          : reply;
+        const next = commitStoryTurn(snapshot(), trimmed, safeReply, { userId: storyId(), assistantId: storyId() });
         saveWithSms(next);
         worldPhone.notify();
         if (storyPhone) void storyPhone.sync().catch(() => {});
