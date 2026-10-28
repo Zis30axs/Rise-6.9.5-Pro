@@ -729,12 +729,16 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState): WorldState {
   let next = parseStateCore(state, true);
-  const validated = validateStoryActions(actions, next);
-  if (isCourtInSession(next) && validated.some(action => !['court_step','court_finish','transfer','relationship'].includes(action.type)))
+  // The legacy view omits the four-protagonist account owner. The court's
+  // active speaker and filing payer must still be the selected protagonist.
+  const courtView = (legacy: WorldState): WorldState =>
+    worldAuthority?.protagonists ? { ...legacy, protagonists: worldAuthority.protagonists } : legacy;
+  const validated = validateStoryActions(actions, courtView(next));
+  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_finish','transfer','relationship'].includes(action.type)))
     throw new Error('庭审正在进行，不能离开法庭或进行其他活动；请先结案。');
-  if (!isCourtInSession(next) && validated.some(action => action.type === 'court_step' || action.type === 'court_finish'))
+  if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_finish'))
     throw new Error('当前没有进行中的庭审。');
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
   const clearInteriorActivity = () => {
@@ -748,8 +752,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'court_quote':
       case 'court_step':
       case 'court_finish': {
-        const settled = courtStoryAction(next, action);
-        next = settled.state;
+        const settled = courtStoryAction(courtView(next), action);
+        next = legacyView(settled.state);
         if (settled.minutes) advance(next, settled.minutes);
         if (settled.reward) next.player.balance += settled.reward;
         note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : '庭审已结束：' + action.summary);
@@ -875,7 +879,7 @@ function commitLegacyStoryTurn(
   if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText || input.includes('\u0000')) {
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
-  const reply = validateGeneratedStory(result, next);
+  const reply = validateGeneratedStory(result, worldAuthority?.protagonists ? { ...next, protagonists:worldAuthority.protagonists } : next);
   // Leave room for the stable message suffix within the 128-char save ID limit.
   const validId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
   if (!ids || !validId(ids.userId) || !validId(ids.assistantId) || ids.userId === ids.assistantId) throw new Error('剧情记录 ID 无效；本轮未写入。');
@@ -903,7 +907,7 @@ function commitLegacyStoryTurn(
   }
   if (recordedFlight) throw new Error('空中事件 ID 冲突；本轮未写入。');
   if (recordedActions.length) throw new Error('剧情行动 ID 冲突；本轮未写入。');
-  next = applyLegacyStoryActions(next, worldActions, ids.assistantId);
+  next = applyLegacyStoryActions(next, worldActions, ids.assistantId, worldAuthority);
   // Reject the entire turn on cooldown. Accepting prose while dropping its
   // requested pass would leave the narrated scene different from saved facts.
   if (hasFlight) {
@@ -1469,7 +1473,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
-  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动');
+  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
   return parseState(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
