@@ -736,9 +736,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   const courtView = (legacy: WorldState): WorldState =>
     worldAuthority?.protagonists ? { ...legacy, protagonists: worldAuthority.protagonists } : legacy;
   const validated = validateStoryActions(actions, courtView(next));
-  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_finish','transfer','relationship'].includes(action.type)))
+  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_finish','transfer','relationship'].includes(action.type)))
     throw new Error('庭审正在进行，不能离开法庭或进行其他活动；请先结案。');
-  if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_finish'))
+  if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_assist' || action.type === 'court_finish'))
     throw new Error('当前没有进行中的庭审。');
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
   const clearInteriorActivity = () => {
@@ -751,6 +751,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'court_open':
       case 'court_quote':
       case 'court_step':
+      case 'court_assist':
       case 'court_finish': {
         const settled = courtStoryAction(courtView(next), action);
         next = legacyView(settled.state);
@@ -762,7 +763,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
           if (sherry && latest?.owner === 'emma' && latest.source === 'commission' && latest.solvedBy === 'sherry')
             sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(latest.experience * 1.5));
         }
-        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : '庭审已结束：' + action.summary);
+        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : action.type === 'court_assist' ? '橘雪莉正式接手庭审。' : '庭审已结束：' + action.summary);
         break;
       }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
