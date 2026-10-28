@@ -31,8 +31,8 @@ function inOffice(owner: 'soyo' | 'emma' = 'emma') {
 const offers = [
   { id:'trial-2-a',category:'civil' as const,title:'失踪的手表',client:'咖啡馆顾客',
     summary:'顾客与店员对手表丢失的责任存在争议。',difficulty:'easy' as const,rewardYen:8000,experience:100,preset:false },
-  { id:'trial-2-b',category:'administrative' as const,title:'误寄的停业通知',client:'小店经营者',
-    summary:'经营者认为停业告知程序不合法。',difficulty:'normal' as const,rewardYen:12000,experience:130,preset:false },
+  { id:'trial-2-b',category:'minor-criminal' as const,title:'配送箱的误会',client:'被误认为盗窃货物的店员',
+    summary:'临时转运与库存登记之间存在时间差。',difficulty:'normal' as const,rewardYen:12000,experience:130,preset:false },
 ];
 const boardAction = {type:'court_docket' as const, offers};
 function withBoard(owner:'soyo'|'emma'='emma') {
@@ -63,6 +63,7 @@ describe('freeform courtroom and legal services', () => {
     expect(courtState(state).board?.offers).toHaveLength(3);
     expect(courtState(state).board?.day).toBe(2);
     expect(courtState(state).board?.offers.filter(item=>item.preset)).toHaveLength(1);
+    expect(new Set(courtState(state).board!.offers.map(row => row.category))).toEqual(new Set(DAILY_COURT_CATEGORIES));
     expect(()=>applyStoryActions(state,[boardAction],'court-docket-repeat')).toThrow();
     const presetId=courtState(state).board!.offers[0]!.id;
     state=reduceState(state,{type:'courtroom',phase:'accept-preset',offerId:presetId});
@@ -88,6 +89,20 @@ describe('freeform courtroom and legal services', () => {
     expect(courtState(state).results.at(-1)).toMatchObject({owner:'emma',verdict:'win',solvedBy:'player',payout:reward});
     expect(state.player.balance-money).toBe(reward);
     expect(()=>applyStoryActions(state,[{type:'court_finish',verdict:'win',summary:'重复结案'}],'court-repeat-finish')).toThrow();
+  });
+
+  it('accepts a new reasoning milestone and verdict in the same model response without double paying',()=>{
+    const original=openPreset();
+    const amount=original.courtroom!.active!.rewardYen;
+    const balance=original.player.balance;
+    const closed=applyStoryActions(original,[
+      {type:'court_step',kind:'contradiction',key:'final-contradiction',summary:'证据已证实核心证言矛盾'},
+      {type:'court_finish',verdict:'win',summary:'法庭认可关键矛盾，支持当事人的请求。'},
+    ],'court-final-same-turn');
+    expect(closed.courtroom?.active).toBeNull();
+    expect(closed.courtroom?.results.at(-1)).toMatchObject({verdict:'win',payout:amount});
+    expect(closed.player.balance-balance).toBe(amount);
+    expect(()=>applyStoryActions(closed,[{type:'court_finish',verdict:'win',summary:'重复'}],'court-final-again')).toThrow();
   });
 
   it('keeps opt-in serious criminal cases outside the ordinary three offers',()=>{
