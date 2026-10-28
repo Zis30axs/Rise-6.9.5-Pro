@@ -9,6 +9,7 @@ import { getLocationStatus } from '../src/runtime/location-services';
 import { getAcademicMajor } from '../src/runtime/academics';
 import { allResidentCast, residentPresence } from '../src/runtime/npc-cast';
 import { lawCases, lawOwner, quoteLawCase, lawCareerStoryContext, SHERRY_ASSIST_RATE } from '../src/runtime/law-career';
+import { npcProfession } from '../src/runtime/npc-professions';
 
 function inOffice(protagonist: 'soyo' | 'emma' = 'emma') {
   let state = enableProtagonists(createInitialState());
@@ -47,6 +48,26 @@ describe('law career and Sherry evidence assistance', () => {
     expect(getLocationStatus('legal-office', { day: 2, hour: 9, minute: 0 })?.isOpen).toBe(true);
     expect(residentPresence('majo-sherry', { hour: 10, minute: 0 })?.locationId).toBe('legal-office');
     expect(getInteriorPeople('legal-office', [], { hour: 10, minute: 0 }).some(person => person.id === 'majo-sherry')).toBe(true);
+  });
+
+  it('persists NPC professional variables separately and keeps Sherry specialization locked', () => {
+    const state = inOffice();
+    expect(npcProfession(state, 'majo-sherry')).toMatchObject({
+      majorId: 'law', careerId: 'lawyer', qualification: 'trainee',
+    });
+    expect(npcProfession(state, 'majo-hiro')?.majorId).toBeNull();
+    const modified = structuredClone(state);
+    modified.npcProfessions!.people['majo-hiro'] = {
+      majorId: 'law', careerId: 'lawyer', qualification: 'student', careerExperience: 9,
+    };
+    const restored = parseState(JSON.parse(JSON.stringify(modified)));
+    expect(npcProfession(restored, 'majo-hiro')).toMatchObject({ majorId: 'law', careerExperience: 9 });
+    const changedSherry = structuredClone(state);
+    changedSherry.npcProfessions!.people['majo-sherry']!.majorId = 'economics';
+    expect(() => parseState(changedSherry)).toThrow(/雪莉/);
+    const legacy = structuredClone(state);
+    delete legacy.npcProfessions;
+    expect(npcProfession(parseState(legacy), 'majo-sherry')?.majorId).toBe('law');
   });
 
   it('lets Emma solve a case without help, earning full rewards exactly once', () => {
