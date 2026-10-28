@@ -5,7 +5,9 @@ import { otherSidePromptContext } from './other-side';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { weeklyMemoryContext } from './weekly-memory';
-import { memoryBootstrap, memoryCommitted, memoryPromptContext } from './long-term-memory';
+import { memoryBootstrap, memoryCommitted, memoryPromptContext, reportMemoryOutboxWarning } from './long-term-memory';
+import { collectCommittedSources } from './long-term-memory/source';
+import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, readSavedMemoryOutbox, outboxOverflowCount } from './long-term-memory/outbox';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
 import { pauseMemoryWork } from './long-term-memory/scheduler';
@@ -220,6 +222,19 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   let epoch = 0;
   let requestSequence = 0;
   let committedSnapshot: WorldState | null = null;
+  // This callback only acknowledges sources already durably written to IndexedDB.
+  // It never writes an older copy of the authoritative WorldState.
+  const acknowledgeMemory = (keys: ReadonlySet<string>): void => {
+    try {
+      assertOwner();
+      const current = table(api.getVariables({ type: 'chat' }));
+      assertOwner();
+      const updated = acknowledgeSavedMemoryOutbox(current, ownerSession, keys);
+      if (updated === current) return;
+      // No await between reading current variables and replacing only the outbox.
+      api.replaceVariables(updated, { type: 'chat' });
+    } catch { /* Replay the outbox on the next load. */ }
+  };
   const instanceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const subscribers = new Set<() => void>();
   let pending: { id: string; route: 'tavern' | 'custom'; reject: (error: Error) => void; abort?: () => void } | null = null;
@@ -256,7 +271,11 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const state = !Object.prototype.hasOwnProperty.call(variables, 'unread_city')
         ? createInitialState() : parseState(variables.unread_city);
       committedSnapshot = structuredClone(state);
-      memoryBootstrap(ownerSession, state);
+      const outbox = readSavedMemoryOutbox(variables, ownerSession,
+        state.protagonists?.narrativeTurn ?? 0,
+        (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute);
+      reportMemoryOutboxWarning(ownerSession, outbox.overflowCount);
+      memoryBootstrap(ownerSession, state, outbox.sources, acknowledgeMemory);
       return state;
     },
     save(state: WorldState) {
@@ -265,12 +284,22 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const variables = table(api.getVariables({ type: 'chat' }));
       // A save corrupted externally between UI load and save must also survive.
       if (Object.prototype.hasOwnProperty.call(variables, 'unread_city')) parseState(variables.unread_city);
+      const before = committedSnapshot;
+      // Capture the irreversible source delta BEFORE the main game's bounded
+      // story array has any chance to discard it. The outbox and WorldState
+      // travel together in one synchronous chat-variable write.
+      let sources: ReturnType<typeof collectCommittedSources> = [];
+      if (before && loadMemorySettings().enabled) {
+        try { sources = collectCommittedSources(ownerSession, before, snapshot); }
+        catch { sources = []; }
+      }
+      const nextVariables = appendSavedMemoryOutbox(variables, ownerSession, sources);
       // No await between session check and synchronous TH variable replacement.
       assertOwner();
-      api.replaceVariables({ ...variables, unread_city: snapshot }, { type: 'chat' });
-      const before = committedSnapshot;
+      api.replaceVariables({ ...nextVariables, unread_city: snapshot }, { type: 'chat' });
+      reportMemoryOutboxWarning(ownerSession, outboxOverflowCount(nextVariables, ownerSession));
       committedSnapshot = structuredClone(snapshot);
-      if (before) memoryCommitted(ownerSession, before, snapshot);
+      if (before) memoryCommitted(ownerSession, before, snapshot, sources, acknowledgeMemory);
     },
     onSessionChange(callback) {
       if (disposed) return () => {};

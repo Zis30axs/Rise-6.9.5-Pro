@@ -9,8 +9,8 @@ import type { MemorySource } from './types';
  * instead of blocking the authoritative game save.
  */
 export const MEMORY_OUTBOX_KEY = 'unread_city_memory_outbox_v1';
-export const MAX_OUTBOX_SOURCES = 240;
-export const MAX_OUTBOX_CHARS = 180_000;
+export const MAX_OUTBOX_SOURCES = 160;
+export const MAX_OUTBOX_CHARS = 96_000;
 
 export interface SavedMemoryOutbox {
   version: 1;

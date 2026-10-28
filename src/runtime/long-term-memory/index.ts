@@ -2,6 +2,7 @@ import type { WorldState } from '../../frontend/types';
 import { activeProtagonist } from '../protagonist-world';
 import { loadMemorySettings } from './settings';
 import { collectCommittedSources, collectExistingSources } from './source';
+import type { MemorySource } from './types';
 import { searchMemory } from './retrieval';
 import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork, memoryIsPaused, memoryPauseVersion } from './scheduler';
 import { ingestSources } from './storage';
@@ -9,60 +10,72 @@ import { pruneFutureMemory } from './storage';
 
 const reconciling = new Map<string, Promise<boolean>>();
 const unsafeScopes = new Set<string>();
+const outboxWarnings = new Map<string, number>();
 
+export function memoryOutboxWarning(scope: string): number {
+  return outboxWarnings.get(scope) ?? 0;
+}
+export function reportMemoryOutboxWarning(scope: string, count: number): void {
+  outboxWarnings.set(scope, Math.max(0, count));
+}
 export function memoryArchiveSafe(scope: string): boolean {
   return !!scope && !reconciling.has(scope) && !unsafeScopes.has(scope);
 }
 
-export function memoryBootstrap(scope: string, state: WorldState): void {
+type IngestAck = (keys: ReadonlySet<string>) => void;
+function ackSources(sources: MemorySource[], callback?: IngestAck): void {
+  if (!callback || !sources.length) return;
+  try { callback(new Set(sources.map(s => s.key))); }
+  catch { /* The persisted outbox is replayed on next load. */ }
+}
+
+export function memoryBootstrap(scope: string, state: WorldState,
+  recovered: MemorySource[] = [], onIngest?: IngestAck): void {
   try {
     if (!loadMemorySettings().enabled) return;
     unsafeScopes.add(scope);
-    const idle = pauseMemoryWork(scope);
-    const pauseToken = memoryPauseVersion(scope);
+    const idle = pauseMemoryWork(scope), pauseToken = memoryPauseVersion(scope);
     const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
       at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
     const running = idle.then(() => pruneFutureMemory(scope, cutoff))
-      .then(() => {
-        unsafeScopes.delete(scope);
+      .then(async () => {
         const sources = collectExistingSources(scope, state);
-        // Switching chats while the database is reconciling must not restart
-        // paid work in the retired chat. Backfill remains safe to ingest.
-        if (memoryPauseVersion(scope) !== pauseToken) {
-          if (sources.length) void ingestSources(sources).catch(() => {});
-          return true;
-        }
-        if (sources.length) scheduleMemoryWork(scope, sources);
-        else resumeMemoryWork(scope);
+        const deduplicated = [...new Map([...recovered, ...sources].map(s => [s.key, s])).values()];
+        await ingestSources(deduplicated);
+        ackSources(recovered, onIngest);
+        unsafeScopes.delete(scope);
+        // A retired chat must not restart background paid requests.
+        if (memoryPauseVersion(scope) === pauseToken) resumeMemoryWork(scope);
         return true;
       })
       .catch(() => false)
       .finally(() => { if (reconciling.get(scope) === running) reconciling.delete(scope); });
     reconciling.set(scope, running);
-  } catch { /* Older history may not be available. */ }
+  } catch { /* Failed optional backfill must not block gameplay. */ }
 }
-export function memoryCommitted(scope: string, before: WorldState, after: WorldState): void {
+
+export function memoryCommitted(scope: string, before: WorldState, after: WorldState,
+  committedSources?: MemorySource[], onIngest?: IngestAck): void {
   try {
-    const settings = loadMemorySettings();
-    if (!settings.enabled) return;
-    const sources = collectCommittedSources(scope, before, after);
-    if (sources.length) {
-      const pausedAt = memoryPauseVersion(scope);
-      const pending = reconciling.get(scope);
-      const archive = (safe: boolean) => {
-        if (!safe) return;
-        // Reconciliation must finish before a newly committed turn can be
-        // archived, or its source may be mistaken for discarded future history.
-        void ingestSources(sources).then(() => {
-          if (!unsafeScopes.has(scope) && !memoryIsPaused(scope)
-            && memoryPauseVersion(scope) === pausedAt) scheduleMemoryWork(scope, []);
-        }).catch(() => {});
-      };
-      if (pending) void pending.then(archive);
-      else archive(!unsafeScopes.has(scope));
-    }
-  } catch { /* No memory feature may prevent a normal game save. */ }
+    if (!loadMemorySettings().enabled) return;
+    const sources = committedSources ?? collectCommittedSources(scope, before, after);
+    if (!sources.length) return;
+    const pending = reconciling.get(scope);
+    const pauseToken = memoryPauseVersion(scope);
+    const archive = async (safe: boolean) => {
+      if (!safe || unsafeScopes.has(scope)) return;
+      try {
+        await ingestSources(sources);
+        ackSources(sources, onIngest);
+        if (!memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
+          scheduleMemoryWork(scope, []);
+      } catch { /* Keep the synchronous chat outbox for recovery. */ }
+    };
+    if (pending) void pending.then(archive);
+    else void archive(true);
+  } catch { /* Sidecar never blocks saving. */ }
 }
+
 export async function memoryPromptContext(scope: string, state: WorldState, input: string): Promise<string> {
   try {
     const settings = loadMemorySettings();
