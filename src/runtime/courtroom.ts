@@ -362,6 +362,7 @@ export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<
   const item = obj(raw, ['type','defendant','reason','risk','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉讼报价');
   const { type: _type, ...attributes } = item;
   const parsed = filing({ ...attributes, claimant: activeProtagonist(state) });
+  if(parsed.category!=='civil' && parsed.category!=='administrative') return error('主动起诉仅限民事与行政诉讼，刑事公诉由检察机关提出');
   // A protagonist may help with preparation, but formal legal agency requires
   // a qualification. Until certified, the chosen protagonist is co-counsel only.
   const { claimant: _claimant, ...quoted } = parsed;
@@ -501,13 +502,14 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     eligible(state);
     const filing = current.filing;
     if (!filing || filing.claimant !== owner) return error('请先完成诉前咨询');
+    if(filing.category!=='civil' && filing.category!=='administrative') return error('不能以私人名义提起刑事公诉');
     if (filing.lawyer && filing.lawyer === owner) return error('不能聘请自己');
     const cost = filing.courtFeeYen + filing.lawyerFeeYen + filing.sherryFeeYen;
     if (next.player.balance < cost) return error('账户余额不足');
     next.player.balance -= filing.courtFeeYen; // Other fees use the shared transfer ledger after this reducer.
     current.serial++;
     current.active = { id:'filing-' + state.clock.day + '-' + current.serial, source:'lawsuit', owner, day:state.clock.day,
-      category:filing.category, title:protagonistNames[owner] + (filing.category === 'minor-criminal' ? '告发' : '诉') + filing.defendant,
+      category:filing.category, title:protagonistNames[owner] + '诉' + filing.defendant,
       client:protagonistNames[owner], summary:filing.reason, white:filing.reason,
       evidence:[{title:'诉状',detail:filing.reason},{title:'现有事实',detail:'以既有剧情和双方实际知情范围为准。'}],
       truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, assistance:'none',
