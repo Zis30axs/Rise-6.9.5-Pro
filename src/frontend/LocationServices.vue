@@ -8,9 +8,10 @@ import { formatGameNumber } from './format-game-number';
 import { completeLocationService, packageLocationService, serviceEffects as effects, signedServiceEffect as signed } from './location-service-action';
 import type { ShellActions, ShellModel } from './types';
 import { MARGO_CAFE_ROOM_ID } from '../runtime/margo-cafe-venue';
+import { LAW_OFFICE_ID } from '../runtime/law-career';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
-const emit = defineEmits<{ map: []; store: []; books: []; activities: [] }>();
+const emit = defineEmits<{ map: []; store: []; books: []; activities: []; law: [] }>();
 const status = computed(() => getLocationStatus(props.model.state.locationId, props.model.state.clock));
 const place = computed(() => locations.find(item => item.id === props.model.state.locationId));
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
@@ -21,6 +22,7 @@ const receipt = ref('');
 const attempted = ref(false);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
+  if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
   if (room.value?.id === MARGO_CAFE_ROOM_ID) return '可以向在场的店主与来客打招呼，点一杯饮品，或在窗边坐一会儿。';
   if (room.value) return '上方可直接选择房间里的学习、整理与休息，也可在 3D 中靠近桌椅、书架或床铺探索。';
   if (storeAvailable.value) return '在店门前打开货架选购，购买的商品放入背包，使用时才结算效果。';
@@ -80,6 +82,7 @@ watch(() => props.model.state.locationId, () => { receipt.value = ''; attempted.
     <p v-if="services.some(({ service }) => !service.payout)" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。</p>
     <div v-if="guidance" class="location-guidance" data-location-guidance>
       <p>{{ guidance }}</p>
+      <button v-if="room?.id === LAW_OFFICE_ID" type="button" data-location-law :disabled="model.busy" @click="emit('law')">打开案件卷宗 ↗</button>
       <button v-if="storeAvailable" type="button" data-location-store :disabled="model.busy" @click="emit('store')">打开便利店货架 ↗</button>
       <button v-if="atBookshop" type="button" data-location-books :disabled="model.busy || !status?.isOpen" @click="emit('books')">选书阅读 ↗</button>
       <button v-if="room" type="button" :disabled="model.busy" @click="emit('activities')">查看上方房间活动 ↑</button>
