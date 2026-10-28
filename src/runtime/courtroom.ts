@@ -91,13 +91,22 @@ const offer = (raw: unknown): CourtOffer => {
     preset: item.preset,
   };
 };
+/** Normalize familiar short names before recording a playable defendant. */
+const courtDefendantName = (raw: string): string => {
+  const aliases: Record<ProtagonistId, string[]> = {
+    soyo:['素世','长崎素世'], sakiko:['祥子','丰川祥子'],
+    emma:['艾玛','樱羽艾玛'], renako:['玲奈子','甘织玲奈子'],
+  };
+  for (const id of PROTAGONISTS) if (raw === id || aliases[id].includes(raw)) return protagonistNames[id];
+  return raw;
+};
 const filing = (raw: unknown): CourtFiling => {
   const item = obj(raw, ['claimant','defendant','reason','risk','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉状');
   const claimant = protagonist(item.claimant);
   const lawyer = item.lawyer === null ? null : protagonist(item.lawyer);
   if (lawyer === claimant || typeof item.sherry !== 'boolean') return error('律师身份');
   const result: CourtFiling = {
-    claimant, defendant: string(item.defendant, 100, '被告姓名'),
+    claimant, defendant: courtDefendantName(string(item.defendant, 100, '被告姓名')),
     reason: string(item.reason, 1000, '起诉事由'), risk: string(item.risk, 1200, '诉前风险'), category: category(item.category),
     lawyer, sherry: item.sherry,
     courtFeeYen: whole(item.courtFeeYen, 100000, '起诉费'),
@@ -105,7 +114,9 @@ const filing = (raw: unknown): CourtFiling => {
     sherryFeeYen: whole(item.sherryFeeYen, 100000, '雪莉费用'),
   };
   if ((!lawyer && result.lawyerFeeYen) || (!result.sherry && result.sherryFeeYen) ||
-    result.defendant === protagonistNames[claimant]) return error('诉状费用或被告');
+    result.defendant === protagonistNames[claimant] ||
+    (lawyer !== null && result.defendant === protagonistNames[lawyer]) ||
+    (result.sherry && result.defendant === '橘雪莉')) return error('诉状费用或代理利益冲突');
   return result;
 };
 const courtCase = (raw: unknown): CourtCase => {
@@ -396,7 +407,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
   } else if (action.type === 'court_finish') {
     const parsed = validateCourtFinish(action,next);
     const active = court.active!;
-    if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1)
+    if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1 && parsed.assisted !== true)
       return error('尚无有效推理');
     const sherry = active.source === 'commission' && active.owner === 'emma' && parsed.verdict === 'loss';
     const assisted = sherry || parsed.assisted === true;
