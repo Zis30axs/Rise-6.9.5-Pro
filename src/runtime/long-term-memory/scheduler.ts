@@ -12,6 +12,21 @@ const pausedScopes = new Set<string>();
 const activeRequests = new Map<string, AbortController>();
 const activeWorkers = new Map<string, Promise<void>>();
 const pauseVersions = new Map<string, number>();
+const wakeups = new Map<string, ReturnType<typeof setTimeout>>();
+function clearWakeup(scope: string): void {
+  const timer = wakeups.get(scope);
+  if (timer !== undefined) clearTimeout(timer);
+  wakeups.delete(scope);
+}
+function wakeup(scope: string, delay: number): void {
+  if (pausedScopes.has(scope) || !loadMemorySettings().enabled) return;
+  clearWakeup(scope);
+  wakeups.set(scope, setTimeout(() => {
+    wakeups.delete(scope);
+    const settings = loadMemorySettings();
+    if (ready(settings) && !pausedScopes.has(scope)) void work(scope, settings).catch(() => {});
+  }, Math.max(100, Math.min(600_000, delay))));
+}
 export function memoryPauseVersion(scope: string): number { return pauseVersions.get(scope) ?? 0; }
 export function memoryIsPaused(scope: string): boolean { return pausedScopes.has(scope); }
 
@@ -20,6 +35,7 @@ export function pauseMemoryWork(scope: string): Promise<void> {
   pausedScopes.add(scope);
   pauseVersions.set(scope, memoryPauseVersion(scope) + 1);
   activeRequests.get(scope)?.abort();
+  clearWakeup(scope);
   return activeWorkers.get(scope) ?? Promise.resolve();
 }
 interface Meta { key: string; scope: string; id: string; value: number }
@@ -53,9 +69,11 @@ export function chunk(sources: MemorySource[], maxTokens: number): MemorySource[
 async function schedule(scope: string, settings: MemorySettings, forced = false): Promise<void> {
   if (!ready(settings)) return;
   const jobs = await rows<MemoryJob>('jobs', scope);
-  if (jobs.some(j => j.state === 'pending' || j.state === 'working' || (j.state === 'failed' && !forced))) return;
+  if (jobs.some(j => j.state === 'pending' || j.state === 'working')) return;
+  // A failed job must not hold unrelated future story sources hostage.
+  const reserved = new Set(jobs.filter(j => j.state !== 'done').flatMap(j => j.sourceIds));
   const pending = (await rows<MemorySource>('sources', scope))
-    .filter(s => !s.processed).sort((a, b) => {
+    .filter(s => !s.processed && !reserved.has(s.id)).sort((a, b) => {
       if (a.turn !== b.turn) return a.turn - b.turn;
       if (a.at !== b.at) return a.at - b.at;
       const part = /^(.*):part:(\d+)$/.exec(a.id);
@@ -69,9 +87,12 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
   const dueThrough = await meta(scope, 'dueThrough');
   const important = settings.important && pending.some(s => importantCandidate(s.text));
-  if (!forced && latestTurn - lastScheduled < settings.interval && !important && !dueThrough) return;
-  if (latestTurn > dueThrough) await setMeta(scope, 'dueThrough', latestTurn);
-  const eligible = pending.filter(s => s.turn <= Math.max(latestTurn, dueThrough));
+  const due = pending.some(s => s.turn <= dueThrough);
+  if (!forced && latestTurn - lastScheduled < settings.interval && !important && !due) return;
+  const schedulingThrough = forced || important || latestTurn - lastScheduled >= settings.interval
+    ? latestTurn : dueThrough;
+  if (schedulingThrough > dueThrough) await setMeta(scope, 'dueThrough', schedulingThrough);
+  const eligible = pending.filter(s => s.turn <= schedulingThrough);
   const selected = chunk(eligible, settings.inputBudget);
   if (!selected.length) return;
   const id = 'job:' + selected[0].id + ':' + selected[selected.length - 1].id;
@@ -173,7 +194,20 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
       const sources = (await rows<MemorySource>('sources', scope)).filter(s => !s.processed);
       if (!sources.length) await setMeta(scope, 'dueThrough', 0);
     }
-  } finally { workingScopes.delete(scope); }
+  } finally {
+    workingScopes.delete(scope);
+    if (!pausedScopes.has(scope) && loadMemorySettings().enabled) {
+      try {
+        const jobs = (await rows<MemoryJob>('jobs', scope)).filter(j =>
+          j.state === 'pending' || j.state === 'working');
+        if (jobs.length) {
+          const now = Date.now();
+          const next = Math.min(...jobs.map(j => j.leaseUntil || now));
+          wakeup(scope, Math.max(100, next - now));
+        }
+      } catch { /* Persistence failure has no impact on gameplay. */ }
+    }
+  }
 }
 function work(scope: string, settings: MemorySettings): Promise<void> {
   const existing = activeWorkers.get(scope);
@@ -189,6 +223,7 @@ export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void
   const settings = loadMemorySettings();
   if (!settings.enabled) return;
   pausedScopes.delete(scope);
+  clearWakeup(scope);
   const archived = sources.length ? ingestSources(sources) : Promise.resolve();
   void archived.then(() => work(scope, settings)).catch(() => {
     // Optional sidecar has no authority to prevent a main-game save.
@@ -199,12 +234,14 @@ export function resumeMemoryWork(scope: string): void {
   const settings = loadMemorySettings();
   if (!ready(settings)) return;
   pausedScopes.delete(scope);
+  clearWakeup(scope);
   void work(scope, settings).catch(() => {});
 }
 export async function runMemoryNow(scope: string): Promise<void> {
   const settings = loadMemorySettings();
   if (!ready(settings)) throw new Error('请先配置长期记忆整理模型 API');
   pausedScopes.delete(scope);
+  clearWakeup(scope);
   await resetFailedJobs(scope);
   await schedule(scope, settings, true);
   await work(scope, settings);
