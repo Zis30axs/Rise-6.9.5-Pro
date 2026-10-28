@@ -39,9 +39,11 @@ async function perform(action: LawCaseAction) {
     // Save first, generate optional courtroom dialogue afterward. AI does not pay rewards.
     if (finished && (action.phase === 'sherry' || action.phase === 'present')) {
       const request = action.phase === 'sherry'
-        ? '艾玛请雪莉桑接过法庭上的推理。请让雪莉逐条解释刚刚保存的证物与证词矛盾，并描写完美结案的过程；不要再结算收入或篡改结果。'
-        : '艾玛根据自己刚刚完成的证据论证总结这个案件，请自然描写证词被澄清及完美结案后的反应；不要再结算收入或篡改结果。';
+        ? '艾玛把案卷递给雪莉，紧张地问：“雪莉桑，我还是没能把这些线索连起来……你能帮我把真相讲清楚吗？”'
+        : '艾玛举起已经整理好的证据，认真地向在场众人陈述她对这起案件的最终推理。';
       void props.actions.send(request);
+    } else if (action.phase === 'investigate' && owner.value === 'emma') {
+      void props.actions.send('艾玛与雪莉一起核对完卷宗，望向桌上的几件证物。艾玛想听听雪莉的观察，也希望自己能找到矛盾所在。');
     }
   } finally {
     working.value = false;
