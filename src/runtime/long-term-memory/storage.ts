@@ -210,18 +210,31 @@ export function isFutureMemory(row: { turn: number; at: number },
   return row.turn > cutoff.turn || row.at > cutoff.at;
 }
 export async function pruneFutureMemory(scope: string,
-  cutoff: { turn: number; at: number }): Promise<number> {
+  cutoff: { turn: number; at: number }, savedSources: readonly MemorySource[] = []): Promise<number> {
   const [sources, events, jobs, vectors, links, metaRows] = await Promise.all([
     rows<MemorySource>('sources', scope), rows<MemoryEvent>('events', scope),
     rows<MemoryJob>('jobs', scope), rows<MemoryVector>('vectors', scope),
     rows<MemoryEntityLink>('entity_links', scope),
     rows<{ key: string; scope: string; id: string; value: unknown }>('metadata', scope),
   ]);
-  const oldSources = sources.filter(s => isFutureMemory(s, cutoff));
-  const oldEvents = events.filter(e => isFutureMemory(e, cutoff));
+  // Two saves with the same day and narrative turn may belong to completely
+  // different plots. Check the retained latest-turn prose IDs and their exact
+  // text, not merely game time. Do not extrapolate from older pruned stories.
+  const current = new Map(savedSources.filter(s =>
+    (s.id.startsWith('story:') || s.id.startsWith('input:')) && s.turn === cutoff.turn)
+    .map(s => [s.key, s.text]));
+  const sameTurnDivergence = cutoff.turn > 0 && sources.some(s =>
+    s.turn === cutoff.turn && (s.id.startsWith('story:') || s.id.startsWith('input:'))
+    && s.at <= cutoff.at && (current.size > 0 && current.get(s.key) !== s.text));
+  const oldSources = sources.filter(s =>
+    isFutureMemory(s, cutoff) || (sameTurnDivergence && s.turn >= cutoff.turn));
+  const oldEvents = events.filter(e =>
+    isFutureMemory(e, cutoff) || (sameTurnDivergence && e.turn >= cutoff.turn));
   const removedEvents = new Set(oldEvents.map(e => e.id));
+  const doomed = new Set(oldSources.map(s => s.id));
   const oldJobs = jobs.filter(j => j.toTurn > cutoff.turn
-    || j.sourceIds.some(id => oldSources.some(source => source.id === id)));
+    || (sameTurnDivergence && j.toTurn >= cutoff.turn)
+    || j.sourceIds.some(id => doomed.has(id)));
   if (!oldSources.length && !oldEvents.length && !oldJobs.length) return 0;
   const db = await openMemoryDb();
   const tx = db.transaction(['sources', 'events', 'entity_links', 'vectors', 'jobs', 'metadata'], 'readwrite');

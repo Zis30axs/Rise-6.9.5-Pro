@@ -37,9 +37,9 @@ export function memoryBootstrap(scope: string, state: WorldState,
     const idle = pauseMemoryWork(scope), pauseToken = memoryPauseVersion(scope);
     const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
       at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
-    const running = idle.then(() => pruneFutureMemory(scope, cutoff))
+    const sources = collectExistingSources(scope, state);
+    const running = idle.then(() => pruneFutureMemory(scope, cutoff, sources))
       .then(async () => {
-        const sources = collectExistingSources(scope, state);
         const deduplicated = [...new Map([...recovered, ...sources].map(s => [s.key, s])).values()];
         await ingestSources(deduplicated);
         ackSources(recovered, onIngest);
