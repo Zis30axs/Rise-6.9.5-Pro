@@ -76,7 +76,7 @@ export const novelDestinations: readonly NovelDestination[] = [
     const location = locations.find(item => item.id === sceneLocationId(landmark.id))!;
     return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
   }),
-  ...campusInteriors.map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+  ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
 ];
 
 export interface NovelTravelQuote {
