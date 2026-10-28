@@ -2,7 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { DEFAULT_MEMORY_SETTINGS, loadMemorySettings, memoryApiKey, saveMemoryApiKey, saveMemorySettings } from '../runtime/long-term-memory/settings';
 import type { MemorySettings } from '../runtime/long-term-memory/settings';
-import { exportMemory, importMemory } from '../runtime/long-term-memory/storage';
+import { correctMemoryEvent, exportMemory, importMemory, rebuildMemoryEntityIndex, rows } from '../runtime/long-term-memory/storage';
+import type { MemoryEvent } from '../runtime/long-term-memory/types';
 import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
 import { memoryArchiveSafe, memoryOutboxWarning } from '../runtime/long-term-memory';
 
@@ -13,6 +14,11 @@ const embeddingKey = ref(memoryApiKey('embedding'));
 const notice = ref('');
 const working = ref(false);
 const outboxOverflow = ref(0);
+const history = ref<MemoryEvent[]>([]);
+const search = ref('');
+const editId = ref('');
+const editSummary = ref('');
+const editStatus = ref<MemoryEvent['status']>('active');
 const status = ref<{ sources: number; events: number; pending: number; costUsd: number; lastTurn: number; lastError: string } | null>(null);
 async function refresh() {
   if (!props.scope) return;
@@ -71,6 +77,42 @@ async function importBackup(event: Event) {
   } catch (error) { notice.value = error instanceof Error ? error.message : '导入失败'; }
   finally { input.value = ''; }
 }
+async function browseHistory() {
+  if (!props.scope) return;
+  try {
+    const all = await rows<MemoryEvent>('events', props.scope);
+    history.value = all.filter(item => !search.value.trim()
+      || (item.summary + item.entities.join(' ') + item.participants.join(' '))
+        .toLowerCase().includes(search.value.trim().toLowerCase()))
+      .sort((a, b) => b.at - a.at || b.turn - a.turn).slice(0, 40);
+    notice.value = history.value.length ? '' : '没有找到匹配的历史事件。';
+  } catch (error) { notice.value = error instanceof Error ? error.message : '无法浏览长期记忆'; }
+}
+function chooseEvent(event: MemoryEvent) {
+  editId.value = event.id;
+  editSummary.value = event.summary;
+  editStatus.value = event.status;
+}
+async function saveCorrection() {
+  if (!props.scope || !editId.value || working.value) return;
+  working.value = true;
+  try {
+    await correctMemoryEvent(props.scope, editId.value, editSummary.value, editStatus.value);
+    await browseHistory();
+    notice.value = '历史档案的解释已更新，游戏中的真实状态未改变。';
+  } catch (error) { notice.value = error instanceof Error ? error.message : '修正失败'; }
+  finally { working.value = false; }
+}
+async function repairIndex() {
+  if (!props.scope || working.value) return;
+  working.value = true;
+  try {
+    await pauseMemoryWork(props.scope);
+    await rebuildMemoryEntityIndex(props.scope);
+    notice.value = '当前聊天的实体关系索引已重建。';
+  } catch (error) { notice.value = error instanceof Error ? error.message : '索引重建失败'; }
+  finally { working.value = false; }
+}
 function reset() { settings.value = { ...DEFAULT_MEMORY_SETTINGS }; assistantKey.value = ''; embeddingKey.value = ''; save(); }
 onMounted(() => { void refresh(); });
 </script>
@@ -126,6 +168,36 @@ onMounted(() => { void refresh(); });
         <label class="uc-memory-import">导入备份 <input type="file" accept=".json,application/json" @change="importBackup" /></label>
         <button type="button" @click="reset">重置记忆配置</button>
       </div>
+      <details class="uc-memory-manager">
+        <summary>查看与纠正长期记忆</summary>
+        <p class="uc-narrative-note">只能修正档案解释，不会改变背包、金额、位置或角色关系的权威状态。</p>
+        <label>查找旧事件 <input v-model="search" type="search" maxlength="200" placeholder="人物、物品、关系或关键词" /></label>
+        <div class="uc-narrative-buttons">
+          <button type="button" :disabled="working" @click="browseHistory">查询历史</button>
+          <button type="button" :disabled="working" @click="repairIndex">重建实体索引</button>
+        </div>
+        <div v-if="history.length" class="uc-memory-history">
+          <button v-for="item in history" :key="item.key" type="button"
+            :class="{ 'uc-memory-selected': editId === item.id }"
+            @click="chooseEvent(item)">
+            <small>第 {{ Math.floor(item.at / 1440) + 1 }} 天 · {{ item.kind }} · {{ item.status }} · {{ item.factuality }}</small>
+            <span>{{ item.summary }}</span>
+          </button>
+        </div>
+        <div v-if="editId" class="uc-memory-editor">
+          <label>历史摘要（最多 350 字）
+            <textarea v-model="editSummary" rows="4" maxlength="350" />
+          </label>
+          <label>记忆可信状态
+            <select v-model="editStatus">
+              <option value="active">保留</option>
+              <option value="disputed">存在争议</option>
+              <option value="superseded">被后续事件覆盖</option>
+            </select>
+          </label>
+          <button type="button" :disabled="working" @click="saveCorrection">保存修正</button>
+        </div>
+      </details>
       <p v-if="notice" role="status" class="uc-narrative-notice">{{ notice }}</p>
     </div>
   </details>
@@ -142,4 +214,12 @@ onMounted(() => { void refresh(); });
 .uc-memory-row input { width:18px; height:18px; }
 .uc-memory-import { border:1px solid #bed0b75e; border-radius:8px; padding:8px 12px; cursor:pointer; }
 .uc-memory-import input { max-width:100%; font-size:11px; }
+.uc-memory-manager { margin-top:12px; border-top:1px solid #bed0b75e; padding-top:10px; }
+.uc-memory-manager summary { cursor:pointer; font-weight:650; }
+.uc-memory-history { display:grid; gap:6px; max-height:320px; overflow:auto; margin:8px 0; }
+.uc-memory-history button { display:grid; gap:4px; text-align:left; color:inherit; background:#10261c; border:1px solid #bed0b735; border-radius:6px; padding:8px; }
+.uc-memory-history small { color:#bbd3bd; }
+.uc-memory-history .uc-memory-selected { border-color:#dfd9aa; }
+.uc-memory-editor { display:grid; gap:8px; }
+.uc-memory-editor textarea { width:100%; background:#12291f; border:1px solid #bed0b75e; color:#f8f4df; border-radius:8px; padding:8px; }
 </style>
