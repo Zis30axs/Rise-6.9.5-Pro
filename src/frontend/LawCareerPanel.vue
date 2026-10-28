@@ -162,6 +162,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
           <h3>诉前费用与风险</h3>
           <p>{{ protagonistNames[filing.claimant] }} 诉 {{ filing.defendant }}</p>
           <p>{{ filing.reason }}</p>
+          <p class="law-risk"><strong>诉讼风险：</strong>{{ filing.risk }}</p>
           <div class="law-fees">
             <p>起诉费 <strong>¥{{ formatGameNumber(filing.courtFeeYen) }}</strong></p>
             <p>代理或协助费 <strong>¥{{ formatGameNumber(filing.lawyerFeeYen) }}</strong></p>
@@ -222,6 +223,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 .law-career button:disabled{opacity:.52;cursor:not-allowed}
 .law-career button:focus-visible{outline:2px solid #c3aadf;outline-offset:2px}
 .law-error{color:#e9b2ad}
+.law-risk{padding:10px 12px;border-left:3px solid #d2aa75;background:#b88c4613}
 .law-return{justify-self:start}
 .law-partner{border-color:#c99cad81}
 @media(max-width:400px){.law-career{padding:8px}.law-filters{gap:5px}}
