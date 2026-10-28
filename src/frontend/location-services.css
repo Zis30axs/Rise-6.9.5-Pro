@@ -33,3 +33,10 @@
 }
 .uc-shell .location-service-card .location-service-pack{background:#d4bd8b0d;border-color:#d6c19466;color:#e8d2a5;margin-top:8px;display:block;min-height:52px;line-height:1.5}
 .location-service-pack small{display:block;font-size:10px;color:#c0c5ae;margin-top:3px}
+
+.backend-recruitment-copy { white-space:pre-line; }
+.location-service-reveal { display:grid; gap:10px; padding:12px; border:1px solid #d2bc8559; border-radius:9px; background:#d2bc850d; }
+.location-service-reveal p { font-size:12px; line-height:1.9; color:#f0dfbd; }
+.location-service-reveal-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.uc-shell .location-service-reveal-actions button { flex:1 1 115px; width:auto; margin-top:0; }
+.uc-shell .location-service-reveal-actions .location-service-cancel { color:#f0d9aa; background:transparent; }

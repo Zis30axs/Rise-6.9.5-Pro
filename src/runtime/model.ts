@@ -1214,7 +1214,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         const stableId = `fengjin-counseling:${owner}:week-${week}`;
         note(next, `在${status.label}风堇的谈心调理，无需付款，耗时 ${quote.minutes} 分钟。风堇带着妈妈般无微不至的包容与温柔倾听抚慰你的疲惫与烦恼，重压烟消云散。精力恢复至 100，压力已清空为 0。${transitionNote}`, stableId);
       } else {
-        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
+        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.completionDescription ?? quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
       }
       break;
     }

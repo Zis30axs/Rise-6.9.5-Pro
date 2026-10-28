@@ -20,6 +20,7 @@ const storeAvailable = computed(() => getStoreAvailability(props.model.state).av
 const atBookshop = computed(() => !props.model.state.interior && props.model.state.locationId === 'bookshop');
 const receipt = ref('');
 const attempted = ref(false);
+const revealingJob = ref<string | null>(null);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
   if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
@@ -36,10 +37,16 @@ async function useService(serviceId: string) {
   const quote = getLocationServiceQuote(props.model.state, serviceId);
   if (props.model.busy || quote.blockedReason || !quote.service) return;
   receipt.value = '';
+  if (quote.service.reveal && revealingJob.value !== serviceId) {
+    attempted.value = false;
+    revealingJob.value = serviceId;
+    return;
+  }
   attempted.value = true;
   const savedReceipt = await completeLocationService(props.model, props.actions, serviceId);
   if (!savedReceipt) return;
   attempted.value = false;
+  revealingJob.value = null;
   receipt.value = savedReceipt;
 }
 async function packService(serviceId: string) {
@@ -52,7 +59,11 @@ async function packService(serviceId: string) {
   attempted.value = false;
   receipt.value = savedReceipt;
 }
-watch(() => props.model.state.locationId, () => { receipt.value = ''; attempted.value = false; });
+watch(() => [props.model.state.locationId, props.model.state.protagonists?.accounts.active, props.model.state.academics?.majorId], () => {
+  receipt.value = '';
+  attempted.value = false;
+  revealingJob.value = null;
+});
 </script>
 
 <template>
@@ -68,12 +79,19 @@ watch(() => props.model.state.locationId, () => { receipt.value = ''; attempted.
     <p v-if="attempted && model.notice" class="location-service-error" data-location-service-error role="alert">{{ model.notice }}<span>本次活动尚未保存，可以重试。</span></p>
     <div v-if="services.length" class="location-service-list">
       <article v-for="{ service, quote, takeaway } in services" :key="service.id" class="location-service-card" :data-location-service="service.id">
-        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
-        <p>{{ service.description }}</p>
-        <small class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
-        <p v-if="!quote.blockedReason" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
+        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
+        <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ service.description }}</p>
+        <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
+        <p v-if="!quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
         <p v-else class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
-        <button type="button" :data-use-location-service="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">{{ service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
+        <div v-if="service.reveal && revealingJob === service.id" class="location-service-reveal" :data-job-reveal="service.id" role="group" aria-label="工作安排">
+          <p>{{ service.reveal }}</p>
+          <div class="location-service-reveal-actions">
+            <button type="button" :data-confirm-backend-job="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">接下这班</button>
+            <button type="button" class="location-service-cancel" :data-cancel-backend-job="service.id" @click="revealingJob = null">不接了</button>
+          </div>
+        </div>
+        <button v-else type="button" :data-use-location-service="service.id" :disabled="model.busy || !!quote.blockedReason" @click="useService(service.id)">{{ service.reveal ? '前去应聘' : service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
         <button v-if="takeaway.item" type="button" class="location-service-pack" :data-package-service="service.id" :disabled="model.busy || !!takeaway.blockedReason" :title="takeaway.blockedReason ?? '放入背包，稍后食用或送人；当前不结算食用效果'" @click="packService(service.id)">打包带走 · ¥{{ formatGameNumber(takeaway.totalPrice) }}<small>含打包费 ¥{{ PACKAGING_FEE }}，不立即食用</small></button>
         <p v-if="takeaway.item && takeaway.blockedReason && takeaway.blockedReason !== quote.blockedReason" class="location-service-blocked">打包：{{ takeaway.blockedReason }}</p>
       </article>

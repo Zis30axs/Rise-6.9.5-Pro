@@ -32,6 +32,7 @@ import LivehousePanel from './LivehousePanel.vue';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
+import { CONSTRUCTION_BACKEND_JOB_ID } from '../runtime/location-services';
 import AcademicSetup from './AcademicSetup.vue';
 import { academicMajors, getAcademicOverview, getAcademicProgress, getAcademicStudyQuote, getAcademicSubjectById } from '../runtime/academics';
 import { getStoreAvailability } from '../runtime/convenience-store';
@@ -313,6 +314,13 @@ async function quickLocationService(serviceId: string) {
   if (props.model.busy) return;
   scene.value?.flushPresence();
   if (walkSyncError.value) return;
+  if (serviceId === CONSTRUCTION_BACKEND_JOB_ID) {
+    await nextTick();
+    const listing = shell.value?.querySelector<HTMLElement>(`[data-location-service="${CONSTRUCTION_BACKEND_JOB_ID}"]`);
+    listing?.scrollIntoView({ block: 'center' });
+    listing?.querySelector<HTMLButtonElement>('[data-use-location-service]')?.focus({ preventScroll: true });
+    return;
+  }
   localActivityReceipt.value = '';
   const receipt = await completeLocationService(props.model, props.actions, serviceId);
   if (receipt) localActivityReceipt.value = receipt;

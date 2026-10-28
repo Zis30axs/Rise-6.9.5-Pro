@@ -6,6 +6,10 @@ import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling } from './fengjin-clinic';
 
+export const CONSTRUCTION_BACKEND_JOB_ID = 'construction-backend-recruitment';
+// The original 200-yuan pay line is part of the advertisement joke; this shift settles in JPY without conversion.
+const CONSTRUCTION_BACKEND_PAY_YEN = 6800;
+
 export interface LocationStatus {
   locationId: string;
   label: string;
@@ -80,6 +84,10 @@ export interface LocationService {
   readonly price: number;
   /** Earned only after the full shift, never billed as a negative price. */
   readonly payout?: number;
+  /** The work is revealed only after the character applies in the location panel. */
+  readonly reveal?: string;
+  /** Logged after completion, instead of repeating a misleading recruitment advert. */
+  readonly completionDescription?: string;
   readonly effects: Readonly<LocationServiceEffects>;
 }
 
@@ -104,6 +112,22 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'takao-cablecar', locationIds: ['takao-mountain'], label: '登山索道观光', description: '乘坐复古索道缆车从山麓直升半山腰，隔着林海俯瞰峡谷青翠景观，省去大段爬坡体能消耗，惬意饱览山川风貌。', minutes: 15, price: 490, effects: effects({ energy: 5, health: 1, morale: 10, stress: -12 }) },
   { id: 'construction-clear', locationIds: ['construction-site'], label: '清理施工场地', description: '戴好安全帽和手套，清运碎料、整理工具与清扫施工通道。', minutes: 120, price: 0, payout: 3200, effects: effects({ energy: -40, morale: -3, stress: 5 }) },
   { id: 'construction-carry', locationIds: ['construction-site'], label: '搬运建筑材料', description: '跟随现场工人运送木板和成捆建材，完成四小时的重体力班次。', minutes: 240, price: 0, payout: 6800, effects: effects({ energy: -75, morale: -6, stress: 10 }) },
+  {
+    id: CONSTRUCTION_BACKEND_JOB_ID, locationIds: ['construction-site'],
+    label: '急聘后端开发工程师（两名）',
+    description: [
+      '有偿急聘两名后端开发人员！',
+      '技术要求：熟悉 Java、Python、Go、Node.js 等主流语言者优先；',
+      '熟悉 Spring Boot、Django、Gin，高并发、分布式系统、微服务、数据库优化和缓存设计者优先；',
+      '掌握 Docker、Kubernetes、CI/CD 工具链者优先；',
+      '会 Rust 或有区块链开发经验，工资双倍！',
+      '工作条件：当天不用带电脑。'
+    ].join('\n'),
+    reveal: `工头把你领到卡车后端，掀开篷布：“后端开发，就是从车后端开始干活！4900 袋水泥，等着卸车！”他晃了晃那张还写着“200 元/人”“Rust 或区块链经验工资双倍”的招工单，又递来现场工单：本班四小时，每人实领 ${CONSTRUCTION_BACKEND_PAY_YEN} 日元。要接下这班吗？`,
+    completionDescription: '原以为是写程序，到了车尾才发现要卸 4900 袋水泥。你戴好安全帽，与工友们忙完了一整个卸货班次。',
+    minutes: 240, price: 0, payout: CONSTRUCTION_BACKEND_PAY_YEN,
+    effects: effects({ energy: -75, morale: -6, stress: 10 }),
+  },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
   { id: 'stretch', locationIds: ['sports'], label: '拉伸', description: '在运动场边做一组轻量拉伸。', minutes: 10, price: 0, effects: effects({ energy: -2, morale: 4, health: 1, stress: -4 }) },
   { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
@@ -113,9 +137,10 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
-export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'>): readonly LocationService[] {
+export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
   return state.interior && state.interior.roomId !== MARGO_CAFE_ROOM_ID ? []
-    : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId)));
+    : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
+      && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }
 
 /** Pay for the portion plus packaging now; nutrition is settled only on later use. */
@@ -155,9 +180,10 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
   const payout = service?.payout ?? 0;
   const status = getLocationStatus(state.locationId, state.clock);
   let blockedReason: string | null = !service ? '不存在的地点活动。'
-    : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
+    : service.id === CONSTRUCTION_BACKEND_JOB_ID && state.academics?.majorId !== 'computer-science' ? '这份招聘只接受计算机专业的应聘者。'
+      : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
       : !status ? '当前地点没有已设定的开放安排。' : null;
-  if (!blockedReason && service?.id === 'construction-carry') {
+  if (!blockedReason && (service?.id === 'construction-carry' || service?.id === CONSTRUCTION_BACKEND_JOB_ID)) {
     const debuffs = getIllnessDebuffs(state.player);
     if (debuffs.prohibitHeavyLabor) {
       blockedReason = debuffs.heavyLaborReason ?? '身体抱恙，无法承担高强度重体力劳动。';
