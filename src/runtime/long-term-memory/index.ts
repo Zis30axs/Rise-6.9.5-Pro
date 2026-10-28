@@ -9,6 +9,10 @@ import { pruneFutureMemory } from './storage';
 const reconciling = new Map<string, Promise<boolean>>();
 const unsafeScopes = new Set<string>();
 
+export function memoryArchiveSafe(scope: string): boolean {
+  return !!scope && !reconciling.has(scope) && !unsafeScopes.has(scope);
+}
+
 export function memoryBootstrap(scope: string, state: WorldState): void {
   try {
     if (!loadMemorySettings().enabled) return;
@@ -44,7 +48,7 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
 export async function memoryPromptContext(scope: string, state: WorldState, input: string): Promise<string> {
   try {
     const settings = loadMemorySettings();
-    if (!settings.enabled || !settings.passive || !input.trim() || reconciling.has(scope) || unsafeScopes.has(scope)) return '';
+    if (!settings.enabled || !settings.passive || !input.trim() || !memoryArchiveSafe(scope)) return '';
     const cutoff = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
     const owner = activeProtagonist(state);
     const matches = await searchMemory(scope, input, owner, cutoff, { limit: 4, narrator: true,

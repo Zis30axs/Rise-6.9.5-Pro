@@ -4,6 +4,7 @@ import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { collectCommittedSources } from '../src/runtime/long-term-memory/source';
 import { parseExtraction } from '../src/runtime/long-term-memory/extractor';
 import { chunk } from '../src/runtime/long-term-memory/scheduler';
+import { isFutureMemory } from '../src/runtime/long-term-memory/storage';
 import { parseMemoryTag } from '../src/runtime/long-term-memory/protocol';
 import { approximateTokens } from '../src/runtime/long-term-memory/providers';
 import type { MemorySource } from '../src/runtime/long-term-memory/types';
@@ -47,6 +48,14 @@ describe('long-term memory: source authority and bounded batching', () => {
     const selected = chunk(sources, 2000);
     expect(selected).toHaveLength(1);
     expect(() => chunk([source('oversize', 'story', '谜'.repeat(3000), [])], 2000)).toThrow();
+  });
+});
+
+describe('long-term memory: rollback cutoff', () => {
+  it('excludes future days and future narrative turns independently', () => {
+    expect(isFutureMemory({ turn: 20, at: 22000 }, { turn: 18, at: 22000 })).toBe(true);
+    expect(isFutureMemory({ turn: 15, at: 23000 }, { turn: 18, at: 22000 })).toBe(true);
+    expect(isFutureMemory({ turn: 15, at: 21000 }, { turn: 18, at: 22000 })).toBe(false);
   });
 });
 

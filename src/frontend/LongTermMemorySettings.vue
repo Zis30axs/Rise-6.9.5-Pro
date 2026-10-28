@@ -4,6 +4,7 @@ import { DEFAULT_MEMORY_SETTINGS, loadMemorySettings, memoryApiKey, saveMemoryAp
 import type { MemorySettings } from '../runtime/long-term-memory/settings';
 import { exportMemory, importMemory } from '../runtime/long-term-memory/storage';
 import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
+import { memoryArchiveSafe } from '../runtime/long-term-memory';
 
 const props = defineProps<{ scope: string }>();
 const settings = ref<MemorySettings>(loadMemorySettings());
@@ -28,6 +29,10 @@ function save() {
 }
 async function runNow() {
   if (working.value || !props.scope) return;
+  if (!memoryArchiveSafe(props.scope)) {
+    notice.value = '长期记忆正在核对存档，暂时不能整理，请重新进入聊天后再试。';
+    return;
+  }
   save();
   working.value = true;
   try {

@@ -4,6 +4,7 @@ import type { StoryApiSettings } from '../story-api';
 import { loadStoryApiKey, normalizeStoryEndpoint } from '../story-api';
 import type { MemorySettings } from './settings';
 import { memoryQuery } from './retrieval';
+import { memoryArchiveSafe } from './index';
 import { embeddingForMemorySearch } from './vector';
 import { loadMemorySettings } from './settings';
 import type { MemoryQuery, MemoryQueryOperation } from './types';
@@ -59,6 +60,7 @@ export function parseMemoryTag(value: unknown): MemoryQuery | null {
 export async function resolveMemoryQuery(scope: string, state: WorldState,
   query: MemoryQuery, budget: number): Promise<string> {
   const at = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
+  if (!memoryArchiveSafe(scope)) return '长期记忆正在核对存档时间线，暂时不能引用旧档案。';
   try { return await memoryQuery(scope, query, activeProtagonist(state), at, budget,
     text => embeddingForMemorySearch(scope, text), loadMemorySettings().embeddingModel,
     state.protagonists?.narrativeTurn ?? Number.MAX_SAFE_INTEGER); }
