@@ -91,21 +91,28 @@ export async function finalizeJob(job: MemoryJob, events: MemoryEvent[], vectors
   }
   const entityStore = tx.objectStore('entities');
   const linkStore = tx.objectStore('entity_links');
+  const eventStore = tx.objectStore('events');
   for (const event of events) {
-    tx.objectStore('events').put(event);
-    const participants = new Set(event.participants);
-    for (const name of new Set([...event.participants, ...event.entities].filter(Boolean).slice(0, 32))) {
-      if (name.length > 100) continue;
-      const entity: MemoryEntity = {
-        key: memoryKey(job.scope, name), scope: job.scope, id: name,
-        name, kind: participants.has(name) ? 'person' : 'unknown', lastSeenAt: event.at,
-      };
-      const id = JSON.stringify([event.id, name]);
-      const link: MemoryEntityLink = { key: memoryKey(job.scope, id),
-        scope: job.scope, id, eventId: event.id, entityId: name };
-      entityStore.put(entity);
-      linkStore.put(link);
-    }
+    // Once finalized, a memory stays canonical. Retried extraction may not
+    // overwrite an existing summary or its entity history.
+    const existing = eventStore.get(event.key);
+    existing.onsuccess = () => {
+      if (existing.result) return;
+      eventStore.add(event);
+      const participants = new Set(event.participants);
+      for (const name of new Set([...event.participants, ...event.entities].filter(Boolean).slice(0, 32))) {
+        if (name.length > 100) continue;
+        const entity: MemoryEntity = {
+          key: memoryKey(job.scope, name), scope: job.scope, id: name,
+          name, kind: participants.has(name) ? 'person' : 'unknown', lastSeenAt: event.at,
+        };
+        const id = JSON.stringify([event.id, name]);
+        const link: MemoryEntityLink = { key: memoryKey(job.scope, id),
+          scope: job.scope, id, eventId: event.id, entityId: name };
+        entityStore.put(entity);
+        linkStore.put(link);
+      }
+    };
   }
   for (const vector of vectors) tx.objectStore('vectors').put(vector);
   tx.objectStore('jobs').put({ ...job, state: 'done', leaseUntil: 0, error: '' });
