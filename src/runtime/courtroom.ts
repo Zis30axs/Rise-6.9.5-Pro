@@ -272,6 +272,33 @@ const preset = (day: number, categories: CourtCategory[]): CourtOffer => {
     summary: source.summary, difficulty: source.difficulty, rewardYen: source.rewardYen,
     experience: source.experience, preset: true };
 };
+const courtOfficePosition = (state: WorldState) => {
+  const room = state.interior;
+  if(state.locationId !== LAW_OFFICE_ID || room?.roomId !== LAW_OFFICE_ID)
+    return error('请在事务所受理案件');
+  return {x:room.x,z:room.z,yaw:room.yaw};
+};
+/** Formal trial uses a real interior; the office position is restored on conclusion. */
+const enterHearing = (state: WorldState): void => {
+  const active=courtState(state).active;
+  if(!active) return error('没有案件可开庭');
+  active.returnTo = courtOfficePosition(state);
+  state.locationId=COURT_HEARING_ID;
+  state.interior={roomId:COURT_HEARING_ID,x:0,z:3.5,yaw:0,
+    activityId:null,lastRest:null,lastStudy:null};
+};
+const leaveHearing = (state: WorldState, active: CourtCase): void => {
+  if(state.locationId !== COURT_HEARING_ID) return;
+  const pos=active.returnTo ?? {x:0,z:2,yaw:0};
+  state.locationId=LAW_OFFICE_ID;
+  state.interior={roomId:LAW_OFFICE_ID,...pos,activityId:null,lastRest:null,lastStudy:null};
+};
+const enrollCareer = (state: WorldState, careers: Record<ProtagonistId,CourtCareer>, id:ProtagonistId): void => {
+  const row=careers[id];
+  row.enrolled=true;
+  if(row.qualification==='unqualified' && personState(state,id).academics?.majorId==='law')
+    row.qualification='student';
+};
 const canOffice = (state: WorldState): void => {
   if (state.locationId !== LAW_OFFICE_ID || state.interior?.roomId !== LAW_OFFICE_ID)
     error('请先进入枫庭律师事务所');
@@ -383,9 +410,13 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       truth:source.rounds.map(item=>item.deduction).join(' '),
       misdirection:source.rounds.map(item=>item.statement).join(' '),
       rewardYen:source.rewardYen,experience:source.experience,fee:null,assistance:'none',
+      returnTo:courtOfficePosition(next),
       steps:old.deductions.map((summary,index)=>({key:'old-proof-'+index,kind:'contradiction' as const,summary:summary.slice(0,240)})),
     };
     oldOwner.active = null;
+    enrollCareer(next,current.careers!,owner);
+    next.courtroom=current;
+    enterHearing(next);
   } else if (action.phase === 'filter') {
     eligible(state);
     if (current.board?.day === state.clock.day) return error('今天的公告栏已经公布，明日可以重新筛选');
@@ -403,7 +434,10 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,
       white:scripted.white, evidence:structuredClone(scripted.evidence), truth:scripted.truth,
       misdirection:scripted.misdirection, rewardYen:offer.rewardYen, experience:offer.experience,
-      fee:null, assistance:'none', steps:[] };
+      fee:null, assistance:'none', returnTo:courtOfficePosition(next), steps:[] };
+    enrollCareer(next,current.careers!,owner);
+    next.courtroom=current;
+    enterHearing(next);
   } else if (action.phase === 'sherry') {
     const active = current.active;
     if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission' || active.day !== state.clock.day) return error('只有艾玛当前的职业委托可以由雪莉救场');
@@ -413,7 +447,11 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     current.results.push({id:active.id,owner,source:'commission',title:active.title,defendant:null,lawyer:null,verdict:'win',worldVerdict:'win',solvedBy:'sherry',
       payout,experience:Math.round(active.experience * SHERRY_ASSIST_RATE),summary:'橘雪莉依据现有证据完成关键论证，案件得到妥善解决。',atDay:state.clock.day});
     if (current.results.length > 300) current.results.shift();
+    leaveHearing(next,active);
     current.active = null;
+    enrollCareer(next,current.careers!,owner);
+    current.careers![owner].experience += Math.round(active.experience*SHERRY_ASSIST_RATE);
+    current.careers![owner].earnedYen += payout;
   } else if (action.phase === 'confirm-filing') {
     eligible(state);
     const filing = current.filing;
@@ -427,8 +465,26 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       category:filing.category, title:protagonistNames[owner] + (filing.category === 'minor-criminal' ? '告发' : '诉') + filing.defendant,
       client:protagonistNames[owner], summary:filing.reason, white:filing.reason,
       evidence:[{title:'诉状',detail:filing.reason},{title:'现有事实',detail:'以既有剧情和双方实际知情范围为准。'}],
-      truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, assistance:'none', steps:[] };
+      truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, assistance:'none',
+      returnTo:courtOfficePosition(next), steps:[] };
+    enrollCareer(next,current.careers!,owner);
+    if(filing.lawyer){
+      enrollCareer(next,current.careers!,filing.lawyer);
+      const colleague=current.careers![filing.lawyer];
+      colleague.earnedYen=Math.min(20000000,colleague.earnedYen+filing.lawyerFeeYen);
+      colleague.experience=Math.min(10000000,colleague.experience+40);
+      colleague.assistedCases++;
+    }
+    next.courtroom=current;
+    enterHearing(next);
     current.filing = null;
+  } else if (action.phase==='enroll-law') {
+    if(current.active) return error('庭审期间不能办理职业登记');
+    canOffice(next);
+    enrollCareer(next,current.careers!,owner);
+  } else if (action.phase==='return-office') {
+    if(current.active || next.locationId!==COURT_HEARING_ID) return error('当前无法离开法庭');
+    leaveHearing(next,{returnTo:{x:0,z:2,yaw:0}} as CourtCase);
   } else return error('未知的诉讼操作');
   next.courtroom = parseCourtroom(current);
   return next;
@@ -451,7 +507,11 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     court.active = { id:offered.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
       category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,
       white:parsed.white, evidence:parsed.evidence, truth:parsed.truth, misdirection:parsed.misdirection,
-      rewardYen:offered.rewardYen, experience:offered.experience, fee:null, assistance:'none', steps:[] };
+      rewardYen:offered.rewardYen, experience:offered.experience, fee:null, assistance:'none',
+      returnTo:courtOfficePosition(next),steps:[] };
+    enrollCareer(next,court.careers!,activeProtagonist(state));
+    next.courtroom=court;
+    enterHearing(next);
     minutes = 10;
   } else if (action.type === 'court_quote') {
     const parsed = validateCourtFeeQuote(action,next);
@@ -483,7 +543,13 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
       verdict, worldVerdict:verdict, solvedBy:assisted?'sherry':'player', payout:reward, experience,
       summary:finalSummary, atDay:state.clock.day });
     if (court.results.length > 300) court.results.shift();
+    enrollCareer(next,court.careers!,active.owner);
+    const professional=court.careers![active.owner];
+    professional.earnedYen=Math.min(20000000,professional.earnedYen+reward);
+    professional.experience=Math.min(10000000,professional.experience+experience);
+    leaveHearing(next,active);
     court.active = null;
+    court.pendingSettlement=null;
     minutes = 10;
   }
   next.courtroom = parseCourtroom(court);
@@ -538,6 +604,11 @@ export function courtStoryContext(state: WorldState) {
     suggestedSpecialId: `special-${state.clock.day}`,
     special:court.special?.day === state.clock.day ? court.special.offer : null,
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
+    venue:active ? {id:COURT_HEARING_ID,label:'法庭',returnTo:LAW_OFFICE_ID} : null,
+    careers:court.careers,
+    agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner).slice(-12),
+    sanctions:court.sanctions?.filter(row=>state.clock.day>=row.startDay && state.clock.day<=row.endDay),
+    pendingSettlement:active?.source==='lawsuit'?court.pendingSettlement:null,
     active:activePublic ? { ...activePublic,
       // This hidden truth is only in the model context; it is never in the player UI.
       hiddenBlackScript: active?.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
