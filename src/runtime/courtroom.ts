@@ -26,6 +26,8 @@ export interface CourtCase {
   category: CourtCategory; title: string; client: string; summary: string;
   white: string; evidence: CourtEvidence[]; truth: string | null; misdirection: string | null;
   rewardYen: number; experience: number; fee: CourtFiling | null;
+  /** Authoritative trial-phase variable, never derived from dialogue text. */
+  assistance: 'none' | 'sherry';
   steps: { key: string; kind: 'testimony' | 'insight' | 'contradiction'; summary: string }[];
 }
 export interface CourtResult {
@@ -122,10 +124,12 @@ const filing = (raw: unknown): CourtFiling => {
   return result;
 };
 const courtCase = (raw: unknown): CourtCase => {
-  const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','steps'], '在审案件');
+  const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','assistance','steps'], '在审案件');
   if (item.source !== 'commission' && item.source !== 'lawsuit') return error('案件来源');
   if ((item.source === 'commission' && (item.truth === null || item.fee !== null)) ||
     (item.source === 'lawsuit' && (item.truth !== null || item.misdirection !== null))) return error('案件真相');
+  if (item.assistance !== 'none' && item.assistance !== 'sherry') return error('救场状态变量');
+  if (item.assistance === 'sherry' && (item.source !== 'commission' || item.owner !== 'emma')) return error('雪莉不能接手此类案件');
   if (!Array.isArray(item.steps) || item.steps.length > 30) return error('庭审进展');
   const seen = new Set<string>();
   const steps = item.steps.map(rawStep => {
@@ -144,7 +148,7 @@ const courtCase = (raw: unknown): CourtCase => {
     misdirection: item.misdirection === null ? null : string(item.misdirection, 1200, '隐藏误导点'),
     rewardYen: whole(item.rewardYen, 100000, '职业报酬'),
     experience: whole(item.experience, 2000, '职业经验'),
-    fee: item.fee === null ? null : filing(item.fee), steps,
+    fee: item.fee === null ? null : filing(item.fee), assistance:item.assistance, steps,
   } as CourtCase;
   if (parsed.source === 'lawsuit' && (parsed.rewardYen !== 0 || parsed.experience !== 0 ||
     parsed.fee?.claimant !== parsed.owner)) return error('主动起诉不发放职业报酬');
@@ -296,20 +300,24 @@ export function validateCourtStep(raw: unknown, state: WorldState): Extract<Stor
     return error('重复或未知的庭审进展');
   return { type:'court_step', key, kind:item.kind as CourtCase['steps'][number]['kind'], summary:string(item.summary,240,'庭审进展') };
 }
+export function validateCourtAssist(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_assist'}> {
+  const c = courtState(state).active;
+  if (!c || c.owner !== 'emma' || activeProtagonist(state) !== 'emma' ||
+    c.source !== 'commission' || c.assistance !== 'none' || c.day !== state.clock.day)
+    return error('当前案件无法再次请求雪莉接手');
+  const item = obj(raw,['type','who'],'雪莉接手');
+  if (item.type !== 'court_assist' || item.who !== 'sherry') return error('法律协助者');
+  return {type:'court_assist',who:'sherry'};
+}
 export function validateCourtFinish(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_finish'}> {
   const c = courtState(state).active;
   if (!c || c.owner !== activeProtagonist(state)) return error('当前没有进行中的庭审');
-  const assistedProvided = !!raw && typeof raw === 'object' && !Array.isArray(raw) && Object.hasOwn(raw,'assisted');
-  const item = obj(raw,assistedProvided ? ['type','verdict','summary','assisted'] : ['type','verdict','summary'],'庭审结论');
-  if (assistedProvided && typeof item.assisted !== 'boolean') return error('雪莉协助标记');
-  if (item.assisted === true && (c.source !== 'commission' || c.owner !== 'emma' || item.verdict !== 'win'))
-    return error('雪莉接手只适用于艾玛已完成的职业委托');
+  const item = obj(raw,['type','verdict','summary'],'庭审结论');
   if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict))) return error('结案方式');
   if (c.source === 'commission' && ['settled','withdrawn'].includes(String(item.verdict))) return error('职业委托尚未完成查明事实');
   // Evidence adequacy is checked at settlement, after earlier court_step actions in this turn.
-  return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明'),
-    ...(item.assisted === true ? { assisted:true } : {}) };
+  return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明') };
 }
 export function courtAction(state: WorldState, action: Extract<WorldAction,{type:'courtroom'}>): WorldState {
   const next: WorldState = structuredClone(state);
@@ -329,7 +337,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       white:source.summary + '请依据已经取得的证据自由质证。', evidence:source.evidence.map(item=>({title:item.title,detail:item.detail})),
       truth:source.rounds.map(item=>item.deduction).join(' '),
       misdirection:source.rounds.map(item=>item.statement).join(' '),
-      rewardYen:source.rewardYen,experience:source.experience,fee:null,
+      rewardYen:source.rewardYen,experience:source.experience,fee:null,assistance:'none',
       steps:old.deductions.map((summary,index)=>({key:'old-proof-'+index,kind:'contradiction' as const,summary:summary.slice(0,240)})),
     };
     oldOwner.active = null;
@@ -350,7 +358,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,
       white:scripted.white, evidence:structuredClone(scripted.evidence), truth:scripted.truth,
       misdirection:scripted.misdirection, rewardYen:offer.rewardYen, experience:offer.experience,
-      fee:null, steps:[] };
+      fee:null, assistance:'none', steps:[] };
   } else if (action.phase === 'sherry') {
     const active = current.active;
     if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission') return error('只有艾玛的职业委托可以由雪莉救场');
@@ -373,13 +381,13 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       category:filing.category, title:protagonistNames[owner] + (filing.category === 'minor-criminal' ? '告发' : '诉') + filing.defendant,
       client:protagonistNames[owner], summary:filing.reason, white:filing.reason,
       evidence:[{title:'诉状',detail:filing.reason},{title:'现有事实',detail:'以既有剧情和双方实际知情范围为准。'}],
-      truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, steps:[] };
+      truth:null, misdirection:null, rewardYen:0, experience:0, fee:filing, assistance:'none', steps:[] };
     current.filing = null;
   } else return error('未知的诉讼操作');
   next.courtroom = parseCourtroom(current);
   return next;
 }
-export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_special'|'court_open'|'court_quote'|'court_step'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
+export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_special'|'court_open'|'court_quote'|'court_step'|'court_assist'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
   const next: WorldState = structuredClone(state);
   const court = parseCourtroom(next.courtroom ?? initialCourtroom());
   let minutes = 0, reward = 0;
@@ -409,13 +417,16 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     const active = court.active!;
     active.steps.push({ key:parsed.key, kind:parsed.kind, summary:parsed.summary });
     minutes = { testimony:5, insight:10, contradiction:15 }[parsed.kind];
+  } else if (action.type === 'court_assist') {
+    validateCourtAssist(action,next);
+    court.active!.assistance = 'sherry';
   } else if (action.type === 'court_finish') {
     const parsed = validateCourtFinish(action,next);
     const active = court.active!;
-    if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1 && parsed.assisted !== true)
+    if (active.source === 'commission' && parsed.verdict === 'win' && active.steps.length < 1 && active.assistance !== 'sherry')
       return error('尚无有效推理');
     const sherry = active.source === 'commission' && active.owner === 'emma' && parsed.verdict === 'loss';
-    const assisted = sherry || parsed.assisted === true;
+    const assisted = sherry || active.assistance === 'sherry';
     const verdict = sherry ? 'win' : parsed.verdict;
     const finalSummary = sherry ? '原有论证一度陷入困境，橘雪莉根据已在庭审中确认的证据与证言完成关键澄清，案件妥善结案。' : parsed.summary;
     const multiplier = assisted ? SHERRY_ASSIST_RATE : verdict === 'win' && active.source === 'commission' ? 1 : 0;
@@ -486,6 +497,6 @@ export function courtStoryContext(state: WorldState) {
       hiddenBlackScript: active?.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
     recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
-    rule:'职业委托白剧本给玩家、黑剧本仅供主持法庭；不得将黑剧本、误导点直接念给角色。主动诉讼没有黑剧本，以既有世界事实决定争点；轻微刑事仅可告发，由检察官决定是否提起公诉，不能把私人写成公诉人。自由文本质询，不要求固定答案。普通对白不推进时间，只有真实的新证言/突破/矛盾触发court_step。重要事件不能离开；无须玩家点击证据。艾玛遭遇不利判决时雪莉必须依据已知证据自动善后，按40%职业收益，强制切换则0%；此时 verdict=loss 仅记录玩家的职业表现，worldVerdict 则记录雪莉善后后的世界案件结果。和解必须双方同意，撤诉必须玩家主动表达。每日三份委托次日刷新。',
+    rule:'庭审进程以持久化 court.active.assistance 和 court.results 等脚本变量为准，不以文字或临时结案词判断。雪莉正式接手必须先由 court_assist 将 assistance=sherry；普通建议不修改变量。职业委托白剧本给玩家、黑剧本仅供主持法庭，不能泄漏内部真相。主动诉讼没有黑剧本，以已有世界事实决定争点；轻微刑事仅可告发，检察官决定公诉。自由文本质询，只有新的证言/推理/矛盾推动 court_step。庭审不能离开。艾玛独立胜诉100%，正式雪莉救场40%，切换主角0%；切换后的世界案件结果与玩家职业判负分开。和解须双方同意，撤诉必须玩家主动表达。每日委托次日刷新。',
   };
 }
