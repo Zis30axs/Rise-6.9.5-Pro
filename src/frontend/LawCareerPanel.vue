@@ -128,8 +128,8 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 <template>
   <section class="law-career" data-law-career>
     <header class="law-career-heading">
-      <small>枫庭律师事务所</small>
-      <h2>案件与诉讼</h2>
+      <small>{{ model.state.locationId==='court-hearing'?'新宿地方裁判所 · 庭审中':'枫庭律师事务所' }}</small>
+      <h2>{{ model.state.locationId==='court-hearing'?'庭审卷宗':'案件与诉讼' }}</h2>
       <div class="law-career-stats">
         <span>职业经验 <strong>{{ formatGameNumber(experience) }}</strong></span>
         <span>累计报酬 <strong>¥{{ formatGameNumber(earnings) }}</strong></span>
