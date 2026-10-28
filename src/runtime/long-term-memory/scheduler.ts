@@ -133,9 +133,13 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
             dimensions: result.vector.length, values: result.vector };
           await saveEmbeddingWithCharge(vector, result.tokens * settings.embeddingPrice / 1e6);
           vectors.push(vector);
-        } catch { /* Keep structured memories searchable without embeddings. */ }
+        } catch {
+          if (controller.signal.aborted || pausedScopes.has(scope)) throw new Error('整理已暂停');
+          // A missing optional vector must not discard the structured event.
+        }
       }
     }
+    if (controller.signal.aborted || pausedScopes.has(scope)) throw new Error('整理已暂停');
     await finalizeJob(job, events, vectors);
     return true;
   } catch (error) {
