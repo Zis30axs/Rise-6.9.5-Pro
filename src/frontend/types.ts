@@ -158,6 +158,8 @@ export interface WorldState {
   lawCareer?: import('../runtime/law-career').LawCareerState;
   /** Shared NPC major / career records, excluding controlled protagonists. */
   npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
+  /** Shared counseling records with Dr. Fengjin; weekly per protagonist. */
+  fengjinClinic?: import('../runtime/fengjin-clinic').FengjinClinicState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];

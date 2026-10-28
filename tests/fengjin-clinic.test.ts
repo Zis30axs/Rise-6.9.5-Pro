@@ -3,7 +3,21 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { resolveFengjinSpeaker, resolveFengjinExpressionPortrait, fengjinExpressions } from '../src/frontend/fengjin-art';
 import { getNovelBackground } from '../src/frontend/novel-backgrounds';
-import { locationServiceCatalog } from '../src/runtime/location-services';
+import { locationServiceCatalog, getLocationServiceQuote } from '../src/runtime/location-services';
+import { createInitialState, parseState, reduceState } from '../src/runtime/model';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { getGameWeek, hasUsedWeeklyCounseling } from '../src/runtime/fengjin-clinic';
+
+function setTestClock(state: any, day: number, hour: number, minute: number) {
+  state.clock = { day, hour, minute };
+  if (state.protagonists?.backgroundLife) {
+    const cursor = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
+    state.protagonists.backgroundLife.cursor = cursor;
+    for (const person of Object.values(state.protagonists.backgroundLife.people as Record<string, any>)) {
+      person.nextDecisionAt = Math.max(person.nextDecisionAt, cursor);
+    }
+  }
+}
 
 describe('风堇与街区全科诊所', () => {
   it('正确识别风堇及其别名说话人', () => {
@@ -75,7 +89,7 @@ describe('风堇与街区全科诊所', () => {
     expect(getNovelBackground('clinic-room', 12).id).toBe('clinic-day');
   });
 
-  it('世界书包含风堇与全科诊所的完整设定', () => {
+  it('世界书包含风堇母亲般温柔与每周谈心设定', () => {
     const worldbookPath = resolve(process.cwd(), 'src/worldbook/fengjin-clinic.json');
     const content = JSON.parse(readFileSync(worldbookPath, 'utf8'));
 
@@ -89,16 +103,100 @@ describe('风堇与街区全科诊所', () => {
     expect(doctorEntry.keys).toContain('风堇');
     expect(doctorEntry.keys).toContain('雅辛忒丝');
     expect(doctorEntry.keys).toContain('摇光的医师');
+    expect(doctorEntry.content).toContain('妈妈般的温柔与包容');
+    expect(doctorEntry.content).toContain('本人已经习惯甚至乐意');
+    expect(doctorEntry.content).toContain('每周谈心');
+    expect(doctorEntry.content).toContain('清空压力值');
+    expect(doctorEntry.content).toContain('恢复充沛精力');
 
     const clinicEntry = content.entries.find((e: { name: string }) => e.name === '街区全科诊所');
     expect(clinicEntry).toBeDefined();
     expect(clinicEntry.extensions.locationId).toBe('clinic');
+    expect(clinicEntry.content).toContain('心理谈心角');
   });
 
-  it('地点服务目录中诊所问诊关联风堇医生', () => {
+  it('地点服务目录中包含诊所问诊与风堇每周谈心服务', () => {
     const clinicService = locationServiceCatalog.find(s => s.id === 'clinic-treatment');
     expect(clinicService).toBeDefined();
     expect(clinicService?.locationIds).toContain('clinic');
     expect(clinicService?.description).toContain('风堇医生');
+
+    const counselingService = locationServiceCatalog.find(s => s.id === 'clinic-counseling');
+    expect(counselingService).toBeDefined();
+    expect(counselingService?.price).toBe(0);
+    expect(counselingService?.locationIds).toContain('clinic');
+    expect(counselingService?.description).toContain('母亲般');
+    expect(counselingService?.description).toContain('每周');
+  });
+
+  it('每周可找风堇谈心一次：清空压力并完全恢复精力，多主角与周跨度独立结算', () => {
+    let state = enableProtagonists(createInitialState());
+    state.locationId = 'pocket-park'; state.scene = null;
+    setTestClock(state, 2, 11, 0);
+    state.player.stress = 80;
+    state.player.energy = 25;
+    state.player.morale = 40;
+
+    expect(getGameWeek(state.clock)).toBe(1);
+    expect(hasUsedWeeklyCounseling(state)).toBe(false);
+
+    // 第一周首次谈心可用
+    const quote1 = getLocationServiceQuote(state, 'clinic-counseling');
+    expect(quote1.blockedReason).toBeNull();
+    expect(quote1.price).toBe(0);
+
+    // 执行谈心调理
+    state = reduceState(state, { type: 'location_service', serviceId: 'clinic-counseling' });
+
+    // 验证核心效果：压力清空为 0，精力完全恢复为 100
+    expect(state.player.stress).toBe(0);
+    expect(state.player.energy).toBe(100);
+    expect(state.player.morale).toBeGreaterThanOrEqual(65);
+    expect(hasUsedWeeklyCounseling(state)).toBe(true);
+    expect(state.fengjinClinic?.counselingReceipts).toHaveLength(1);
+    expect(state.fengjinClinic?.counselingReceipts[0]).toMatchObject({ owner: 'soyo', week: 1 });
+
+    // 第一周再次申请谈心被拦截
+    const quoteBlocked = getLocationServiceQuote(state, 'clinic-counseling');
+    expect(quoteBlocked.blockedReason).toContain('本周已经找风堇医生谈过心了');
+    expect(() => reduceState(state, { type: 'location_service', serviceId: 'clinic-counseling' })).toThrow(/本周已经找风堇医生谈过心了/);
+
+    // 切换到艾玛视角：艾玛第一周尚未谈心，状态独立
+    state = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
+    expect(hasUsedWeeklyCounseling(state)).toBe(false);
+    state.locationId = 'pocket-park'; state.scene = null;
+    state.player.stress = 60;
+    state.player.energy = 30;
+    const emmaQuote = getLocationServiceQuote(state, 'clinic-counseling');
+    expect(emmaQuote.blockedReason).toBeNull();
+
+    // 艾玛完成谈心
+    state = reduceState(state, { type: 'location_service', serviceId: 'clinic-counseling' });
+    expect(state.player.stress).toBe(0);
+    expect(state.player.energy).toBe(100);
+    expect(hasUsedWeeklyCounseling(state)).toBe(true);
+
+    // 切回素世
+    state = reduceState(state, { type: 'switch_protagonist', target: 'soyo' });
+    expect(hasUsedWeeklyCounseling(state)).toBe(true);
+
+    // 推进时间到第二周（第 8 天）
+    setTestClock(state, 8, 10, 0);
+    expect(getGameWeek(state.clock)).toBe(2);
+    expect(hasUsedWeeklyCounseling(state)).toBe(false);
+
+    // 第二周素世可以再次进行每周谈心
+    state.player.stress = 50;
+    state.player.energy = 40;
+    state.locationId = 'pocket-park'; state.scene = null;
+    const week2Quote = getLocationServiceQuote(state, 'clinic-counseling');
+    expect(week2Quote.blockedReason).toBeNull();
+    state = reduceState(state, { type: 'location_service', serviceId: 'clinic-counseling' });
+    expect(state.player.stress).toBe(0);
+    expect(state.player.energy).toBe(100);
+
+    // 存档序列化与校验保留
+    const parsed = parseState(state);
+    expect(parsed.fengjinClinic?.counselingReceipts.length).toBe(3);
   });
 });

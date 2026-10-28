@@ -4,6 +4,7 @@ import { adjustEnergy, energyDifference, energyUnits } from './energy';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
+import { hasUsedWeeklyCounseling } from './fengjin-clinic';
 
 export interface LocationStatus {
   locationId: string;
@@ -34,6 +35,7 @@ const venues: readonly Venue[] = [
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
+  { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },
   { locationId: 'pocket-park', label: '口袋公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在长椅上小憩，或沿着公园步道散步。' },
@@ -101,6 +103,7 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
   { id: 'take-stroll', locationIds: ['pocket-park', 'city-park', 'promenade'], label: '沿步道散步', description: '沿所在区域的步道慢慢走一段，活动结束后仍留在当前地点。', minutes: 20, price: 0, effects: effects({ energy: -3, morale: 7, health: 1, stress: -6 }) },
   { id: 'clinic-treatment', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '诊所全科问诊', description: '到街区全科诊所向风堇医生挂号问诊，进行听诊体检与用药调理。', minutes: 30, price: 1800, effects: effects({ energy: 15, health: 35, stress: -15, satiety: 5, foodEnergy: 100 }) },
+  { id: 'clinic-counseling', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '风堇的谈心调理', description: '在诊所安静温馨的茶歇角与风堇医生轻声交谈。感受她如母亲般温暖包容的关切与开导，清空一切心理重压并重新充盈充沛精力。（每周限一次）', minutes: 40, price: 0, effects: effects({ energy: 100, morale: 25, health: 15, stress: -100, satiety: 5, foodEnergy: 100 }) },
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
@@ -139,7 +142,7 @@ export interface LocationServiceQuote {
 }
 
 /** Preview is pure and shares authored costs, hours and nutrition with commit. */
-export function getLocationServiceQuote(state: WorldState, serviceId: string): LocationServiceQuote {
+export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState): LocationServiceQuote {
   const service = locationServiceCatalog.find(item => item.id === serviceId) ?? null;
   const minutes = service?.minutes ?? 0;
   const price = service?.price ?? 0;
@@ -152,6 +155,11 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string): L
     const debuffs = getIllnessDebuffs(state.player);
     if (debuffs.prohibitHeavyLabor) {
       blockedReason = debuffs.heavyLaborReason ?? '身体抱恙，无法承担高强度重体力劳动。';
+    }
+  }
+  if (!blockedReason && service?.id === 'clinic-counseling') {
+    if (hasUsedWeeklyCounseling(state, undefined, worldAuthority)) {
+      blockedReason = '本周已经找风堇医生谈过心了，请遵循医嘱好好休养，下周再来吧。';
     }
   }
   if (!blockedReason && status && !status.isOpen) blockedReason = `当前${status.label}${status.statusLabel}，开放时间 ${status.hoursLabel}。`;

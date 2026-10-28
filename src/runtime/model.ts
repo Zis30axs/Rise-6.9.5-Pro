@@ -31,6 +31,7 @@ import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, 
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { detectIllnessTransition, getIllnessDebuffs } from './illness';
 import { initialLawCareer, parseLawCareerState, quoteLawCase, settleLawCase } from './law-career';
+import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengjinCounseling } from './fengjin-clinic';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
@@ -595,13 +596,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasMargoCafeDaily = version === '1.11.0' && Object.hasOwn(value, 'margoCafeDaily');
   const hasLawCareer = version === '1.11.0' && Object.hasOwn(value, 'lawCareer');
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
+  const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -632,6 +634,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasMargoCafeDaily ? { margoCafeDaily: parseMargoCafeState(state.margoCafeDaily, parsedClock) } : {}),
     lawCareer: hasLawCareer ? parseLawCareerState(state.lawCareer) : initialLawCareer(),
     npcProfessions: hasNpcProfessions ? parseNpcProfessions(state.npcProfessions) : initialNpcProfessions(),
+    ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
@@ -973,7 +976,7 @@ function note(state: WorldState, message: string, stableId?: string) {
   const storyIds = new Set(state.story.filter(item => item.role === 'assistant').map(item => item.id));
   const protectedReceipt = (entry: WorldState['journal'][number]) => {
     const match = /^(.*):wa:[0-9a-f]{24}$/.exec(entry.id);
-    return !!match && storyIds.has(match[1]);
+    return (!!match && storyIds.has(match[1])) || entry.id.startsWith('fengjin-counseling:');
   };
   while (entries.length > STATE_LIMITS.journal) {
     const index = entries.findIndex(entry => !protectedReceipt(entry));
@@ -1156,7 +1159,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'location_service': {
-      const quote = getLocationServiceQuote(next, action.serviceId);
+      const quote = getLocationServiceQuote(next, action.serviceId, worldAuthority);
       if (quote.blockedReason || !quote.service) throw new Error(quote.blockedReason ?? '不存在的地点活动。');
       const before = { ...next.player };
       const status = getLocationStatus(next.locationId, next.clock)!;
@@ -1166,7 +1169,17 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
-      note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
+      if (quote.service.id === 'clinic-counseling') {
+        const week = getGameWeek(next.clock);
+        const owner = activeProtagonistId(next, worldAuthority);
+        next.fengjinClinic = recordFengjinCounseling(worldAuthority ?? next, next.clock, worldAuthority);
+        next.player.stress = 0;
+        next.player.energy = 100;
+        const stableId = `fengjin-counseling:${owner}:week-${week}`;
+        note(next, `在${status.label}风堇的谈心调理，无需付款，耗时 ${quote.minutes} 分钟。风堇带着妈妈般无微不至的包容与温柔倾听抚慰你的疲惫与烦恼，重压烟消云散。精力恢复至 100，压力已清空为 0。${transitionNote}`, stableId);
+      } else {
+        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
+      }
       break;
     }
     case 'novel_travel': {
