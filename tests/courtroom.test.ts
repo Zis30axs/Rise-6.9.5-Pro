@@ -6,7 +6,6 @@ import { courtState, courtStoryContext, DAILY_COURT_CATEGORIES, parseCourtroom }
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 import { npcProfession } from '../src/runtime/npc-professions';
 import { worldScenePeople } from '../src/runtime/world-presence';
-import { worldScenePeople } from '../src/runtime/world-presence';
 
 function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   let state = enableProtagonists(createInitialState());
@@ -134,13 +133,22 @@ describe('freeform courtroom and legal services', () => {
     expect(()=>applyStoryActions(state,[boardAction],'court-special-board-repeat')).toThrow();
   });
 
-  it('forbids a new lawsuit against any of the four playable protagonists',()=>{
-    for(const defendant of ['soyo','素世','长崎 素世','長崎そよ','sakiko','祥子','豐川祥子',
-      'emma','艾玛','majo-emma','樱羽艾玛','renako','玲奈子','watanare-renako','甘织玲奈子']){
+  it('allows a player to sue another protagonist, but prevents self-lawsuits',()=>{
+    for(const defendant of ['emma','艾玛','樱羽艾玛','majo-emma','protagonist-emma']){
       expect(()=>applyStoryActions(inOffice(),[{type:'court_quote',defendant,
-        reason:'单纯想针对一名主角',risk:'缺乏法律依据',category:'civil',
+        reason:'原告无法起诉自己',risk:'缺少对立当事人',category:'civil',
         lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
-      }],'reject-playable-defendant')).toThrow(/主角/);
+      }],'reject-self-lawsuit')).toThrow();
+    }
+    for(const defendant of ['soyo','长崎素世','sakiko','丰川祥子','renako','甘织玲奈子']){
+      const quoted=applyStoryActions(inOffice(),[{type:'court_quote',defendant,
+        reason:'原告申请澄清双方民事权益争议',risk:'需要举证，否则可能败诉',category:'civil',
+        lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
+      }],'voluntary-lawsuit');
+      const filed=reduceState(quoted,{type:'courtroom',phase:'confirm-filing'});
+      expect(filed.courtroom?.active?.owner).toBe('emma');
+      expect(filed.courtroom?.active?.respondent).toBe(quoted.courtroom?.filing?.defendant);
+      expect(filed.locationId).toBe('court-hearing');
     }
   });
 
