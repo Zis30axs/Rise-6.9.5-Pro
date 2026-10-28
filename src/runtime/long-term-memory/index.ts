@@ -3,14 +3,26 @@ import { activeProtagonist } from '../protagonist-world';
 import { loadMemorySettings } from './settings';
 import { collectCommittedSources, collectExistingSources } from './source';
 import { searchMemory } from './retrieval';
-import { scheduleMemoryWork, resumeMemoryWork } from './scheduler';
+import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork } from './scheduler';
+import { pruneFutureMemory } from './storage';
+
+const reconciling = new Map<string, Promise<void>>();
 
 export function memoryBootstrap(scope: string, state: WorldState): void {
   try {
     if (!loadMemorySettings().enabled) return;
-    const sources = collectExistingSources(scope, state);
-    if (sources.length) scheduleMemoryWork(scope, sources);
-    else resumeMemoryWork(scope);
+    pauseMemoryWork(scope);
+    const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
+      at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
+    const running = pruneFutureMemory(scope, cutoff)
+      .then(() => {
+        const sources = collectExistingSources(scope, state);
+        if (sources.length) scheduleMemoryWork(scope, sources);
+        else resumeMemoryWork(scope);
+      })
+      .catch(() => { /* Do not allow an unverified archive into this session. */ })
+      .finally(() => { if (reconciling.get(scope) === running) reconciling.delete(scope); });
+    reconciling.set(scope, running);
   } catch { /* Older history may not be available. */ }
 }
 export function memoryCommitted(scope: string, before: WorldState, after: WorldState): void {
@@ -18,13 +30,17 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
     const settings = loadMemorySettings();
     if (!settings.enabled) return;
     const sources = collectCommittedSources(scope, before, after);
-    if (sources.length) scheduleMemoryWork(scope, sources);
+    if (sources.length) {
+      const pending = reconciling.get(scope);
+      if (pending) void pending.then(() => scheduleMemoryWork(scope, sources));
+      else scheduleMemoryWork(scope, sources);
+    }
   } catch { /* No memory feature may prevent a normal game save. */ }
 }
 export async function memoryPromptContext(scope: string, state: WorldState, input: string): Promise<string> {
   try {
     const settings = loadMemorySettings();
-    if (!settings.enabled || !settings.passive || !input.trim()) return '';
+    if (!settings.enabled || !settings.passive || !input.trim() || reconciling.has(scope)) return '';
     const cutoff = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
     const owner = activeProtagonist(state);
     const matches = await searchMemory(scope, input, owner, cutoff, { limit: 4, narrator: true,

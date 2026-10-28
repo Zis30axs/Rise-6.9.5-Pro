@@ -200,6 +200,51 @@ export async function resetFailedJobs(scope: string): Promise<number> {
   return count;
 }
 
+/**
+ * A restored older game save must not retrieve events that belong only to a
+ * discarded future. Pruning runs in the optional archive, never in WorldState.
+ * Paid cost history is kept because those API requests actually happened.
+ */
+export function isFutureMemory(row: { turn: number; at: number },
+  cutoff: { turn: number; at: number }): boolean {
+  return row.turn > cutoff.turn || row.at > cutoff.at;
+}
+export async function pruneFutureMemory(scope: string,
+  cutoff: { turn: number; at: number }): Promise<number> {
+  const [sources, events, jobs, vectors, links, metaRows] = await Promise.all([
+    rows<MemorySource>('sources', scope), rows<MemoryEvent>('events', scope),
+    rows<MemoryJob>('jobs', scope), rows<MemoryVector>('vectors', scope),
+    rows<MemoryEntityLink>('entity_links', scope),
+    rows<{ key: string; scope: string; id: string; value: unknown }>('metadata', scope),
+  ]);
+  const oldSources = sources.filter(s => isFutureMemory(s, cutoff));
+  const oldEvents = events.filter(e => isFutureMemory(e, cutoff));
+  const removedEvents = new Set(oldEvents.map(e => e.id));
+  const oldJobs = jobs.filter(j => j.toTurn > cutoff.turn
+    || j.sourceIds.some(id => oldSources.some(source => source.id === id)));
+  if (!oldSources.length && !oldEvents.length && !oldJobs.length) return 0;
+  const db = await openMemoryDb();
+  const tx = db.transaction(['sources', 'events', 'entity_links', 'vectors', 'jobs', 'metadata'], 'readwrite');
+  const done = completed(tx);
+  for (const source of oldSources) tx.objectStore('sources').delete(source.key);
+  for (const event of oldEvents) tx.objectStore('events').delete(event.key);
+  for (const job of oldJobs) tx.objectStore('jobs').delete(job.key);
+  for (const vector of vectors) {
+    if (removedEvents.has(vector.eventId)) tx.objectStore('vectors').delete(vector.key);
+  }
+  for (const link of links) {
+    if (removedEvents.has(link.eventId)) tx.objectStore('entity_links').delete(link.key);
+  }
+  for (const field of ['lastScheduledTurn', 'lastTurn', 'dueThrough']) {
+    const meta = metaRows.find(item => item.id === field);
+    if (meta && typeof meta.value === 'number' && meta.value > cutoff.turn) {
+      tx.objectStore('metadata').put({ ...meta, value: cutoff.turn });
+    }
+  }
+  await done;
+  return oldSources.length + oldEvents.length;
+}
+
 export interface MemoryBackup {
   version: 1;
   sources: MemorySource[];
