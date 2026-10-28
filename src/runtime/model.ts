@@ -32,7 +32,7 @@ import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { detectIllnessTransition, getIllnessDebuffs } from './illness';
 import { initialLawCareer, parseLawCareerState, quoteLawCase, settleLawCase } from './law-career';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
-import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession } from './courtroom';
+import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -1494,7 +1494,7 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
-  return parseState(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId));
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId), actions));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
@@ -1512,7 +1512,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
-  const settled = applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? []);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
