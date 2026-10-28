@@ -38,6 +38,8 @@ function destination(value: unknown, path: string): string {
 /** A narrow action language; no dynamic keys, arbitrary object patches, or executable model data. */
 export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
+  if (value.filter(item => !!item && typeof item === 'object' && /^court_(?:docket|special|open|quote|step|finish)$/.test(String((item as Record<string,unknown>).type))).length > 1)
+    return invalid('一轮庭审最多推进一个案件节点');
   return value.map((raw, index) => {
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
