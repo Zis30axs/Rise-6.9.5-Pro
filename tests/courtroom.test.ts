@@ -314,6 +314,48 @@ describe('freeform courtroom and legal services', () => {
     expect(()=>reduceState(state,{type:'courtroom',phase:'pay-term',termId:term.id})).toThrow();
   });
 
+  it('recognizes a normal Appie Pay transfer as a paid judgment only when parties and cents match',()=>{
+    let state=inOffice();
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'丰川祥子',reason:'请求返还借款',
+      risk:'必须证明存在有效债权',category:'civil',lawyer:null,sherry:false,
+      courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0}],'ledger-order-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    state=applyStoryActions(state,[{type:'court_finish',verdict:'win',
+      summary:'判令被告支付借款本金',order:{respondent:'丰川祥子',
+      terms:[{kind:'payment',from:'defendant',amountYen:600,dueDay:3,description:'偿还借款'}],sanctions:[]},
+    }],'ledger-order-finish');
+    const term=state.courtroom!.agreements![0]!.terms[0]!;
+    state=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
+    const money=appiePayBalance(state.protagonists!.accounts,'sakiko');
+    expect(()=>applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:50000,
+      reason:'court-obligation:'+term.id}],'court-wrong-amount')).toThrow(/金额/);
+    expect(appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(money);
+    state=applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:60000,
+      reason:'court-obligation:'+term.id}],'court-right-amount');
+    expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
+    expect(appiePayBalance(state.protagonists!.accounts,'sakiko')).toBe(money-60000);
+    expect(()=>applyStoryActions(state,[{type:'transfer',from:'sakiko',to:'emma',cents:60000,
+      reason:'court-obligation:'+term.id}],'court-duplicate-payment')).toThrow();
+  });
+
+  it('records non-monetary fulfillment as a state transition without creating money',()=>{
+    let state=inOffice();
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'长崎素世',
+      reason:'请求停止骚扰',risk:'取证不足可能败诉',category:'civil',lawyer:null,sherry:false,
+      courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0}],'promise-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    state=applyStoryActions(state,[{type:'court_settlement',summary:'双方约定不再相互施压',
+      defendantConsented:true,terms:[{kind:'cease',from:'claimant',description:'停止持续纠缠',
+      amountYen:0,dueDay:4}]}],'promise-proposal');
+    state=reduceState(state,{type:'courtroom',phase:'accept-settlement'});
+    const balance=state.player.balance;
+    const term=state.courtroom!.agreements![0]!.terms[0]!;
+    state=reduceState(state,{type:'courtroom',phase:'fulfill-term',termId:term.id});
+    expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
+    expect(state.player.balance).toBe(balance);
+    expect(()=>reduceState(state,{type:'courtroom',phase:'fulfill-term',termId:term.id})).toThrow();
+  });
+
   it('records a sentenced NPC restriction without imposing sentences on playable characters',()=>{
     let state=withBoard();
     const selected=state.courtroom!.board!.offers.find(row=>row.category==='minor-criminal')!;
