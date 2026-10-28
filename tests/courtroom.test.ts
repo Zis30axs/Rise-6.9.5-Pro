@@ -495,6 +495,8 @@ describe('freeform courtroom and legal services', () => {
     const money=state.player.balance;
     state=reduceState(state,{type:'switch_protagonist',target:'soyo'});
     expect(activeProtagonist(state)).toBe('soyo');
+    expect(personState(state,'emma').locationId).toBe('legal-office');
+    expect(personState(state,'emma').interior?.roomId).toBe('legal-office');
     expect(courtState(state).active).toBeNull();
     expect(courtState(state).results.at(-1)).toMatchObject({solvedBy:'forfeit',verdict:'loss',payout:0,experience:0});
     expect(personState(state,'emma').player.balance).toBe(money);
