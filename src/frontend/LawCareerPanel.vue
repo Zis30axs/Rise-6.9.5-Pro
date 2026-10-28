@@ -56,6 +56,7 @@ function performTerm(agreement:import('../runtime/court-legal-effects').CourtAgr
 const experience = computed(() => lawStats.value.experience + (career.value?.experience ?? 0));
 const earnings = computed(() => lawStats.value.totalPayout + (career.value?.earnedYen ?? 0));
 const candidates = computed(() => PROTAGONISTS.filter(id => id !== owner.value));
+const civilCategories = DAILY_COURT_CATEGORIES.filter(id=>id==='civil'||id==='administrative');
 const tab = ref<'docket'|'filing'>('docket');
 const categories = ref<CourtCategory[]>([...DAILY_COURT_CATEGORIES]);
 const defendant = ref(''), reason = ref(''), category = ref<CourtCategory>('civil');
@@ -268,7 +269,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
           <label>起诉理由 <textarea v-model.trim="reason" maxlength="1000" rows="3" placeholder="说明争议经过与诉求"></textarea></label>
           <label>案件类别
             <select v-model="category">
-              <option v-for="kind in DAILY_COURT_CATEGORIES" :key="kind" :value="kind">{{ COURT_CATEGORY_NAMES[kind] }}</option>
+              <option v-for="kind in civilCategories" :key="kind" :value="kind">{{ COURT_CATEGORY_NAMES[kind] }}</option>
             </select>
           </label>
           <label>律师或协助人
