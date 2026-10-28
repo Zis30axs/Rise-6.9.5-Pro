@@ -67,7 +67,7 @@ describe('freeform courtroom and legal services', () => {
     expect(()=>applyStoryActions(state,[boardAction],'court-docket-repeat')).toThrow();
     const presetId=courtState(state).board!.offers[0]!.id;
     state=reduceState(state,{type:'courtroom',phase:'accept-preset',offerId:presetId});
-    expect(courtState(state).active).toMatchObject({owner:'emma',source:'commission',steps:[]});
+    expect(courtState(state).active).toMatchObject({owner:'emma',source:'commission',assistance:'none',steps:[]});
     expect(courtState(state).active?.truth).toBeTruthy();
     expect(courtState(state).active?.white).toContain('^');
     expect(()=>reduceState(state,{type:'novel_travel',locationId:'gate'})).toThrow(/庭审/);
@@ -103,6 +103,21 @@ describe('freeform courtroom and legal services', () => {
     expect(closed.courtroom?.results.at(-1)).toMatchObject({verdict:'win',payout:amount});
     expect(closed.player.balance-balance).toBe(amount);
     expect(()=>applyStoryActions(closed,[{type:'court_finish',verdict:'win',summary:'重复'}],'court-final-again')).toThrow();
+  });
+
+  it('starts model-generated cases with a persisted non-assisted state',()=>{
+    const board=withBoard();
+    const chosen=board.courtroom!.board!.offers.find(item=>!item.preset)!;
+    const opened=applyStoryActions(board,[{
+      type:'court_open',offerId:chosen.id,
+      white:'店员受到怀疑，证据与证词之间存在矛盾。',
+      evidence:[{title:'门禁记录',detail:'登记时间有误差'},{title:'交接单',detail:'另有签收者'}],
+      truth:'交接人在仓库按流程移交货物，店员没有偷窃。',
+      misdirection:'监控时间快了十分钟',
+    }],'generated-court-open');
+    expect(opened.courtroom?.active?.assistance).toBe('none');
+    expect(opened.courtroom?.active?.owner).toBe('emma');
+    expect(parseState(JSON.parse(JSON.stringify(opened))).courtroom?.active?.truth).toContain('移交货物');
   });
 
   it('keeps opt-in serious criminal cases outside the ordinary three offers',()=>{
@@ -170,11 +185,23 @@ describe('freeform courtroom and legal services', () => {
     expect(alone.courtroom?.results.at(-1)?.payout).toBe(full);
     expect(alone.courtroom?.results.at(-1)?.solvedBy).toBe('player');
     let assisted=openPreset();
+    assisted=applyStoryActions(assisted,[
+      {type:'court_assist',who:'sherry'},
+    ],'explicit-sherry-state');
+    expect(assisted.courtroom?.active?.assistance).toBe('sherry');
+    expect(parseState(JSON.parse(JSON.stringify(assisted))).courtroom?.active?.assistance).toBe('sherry');
     assisted=applyStoryActions(assisted,[{
-      type:'court_finish',verdict:'win',assisted:true,summary:'艾玛请求雪莉接手，雪莉依据已保存的证据完成论证。',
+      type:'court_finish',verdict:'win',summary:'艾玛请求雪莉接手，雪莉依据已保存的证据完成论证。',
     }],'explicit-sherry-takeover');
     expect(assisted.courtroom?.results.at(-1)?.payout).toBe(Math.round(full*.4));
     expect(assisted.courtroom?.results.at(-1)?.solvedBy).toBe('sherry');
+    expect(()=>applyStoryActions(openPreset(),[{type:'court_finish',verdict:'win',summary:'仅靠文本写了雪莉接手'}],'no-assist-text')).toThrow(/推理/);
+    const atomic = applyStoryActions(openPreset(),[
+      {type:'court_assist',who:'sherry'},
+      {type:'court_finish',verdict:'win',summary:'雪莉完成了关键论证。'},
+    ],'sherry-same-turn');
+    expect(atomic.courtroom?.results.at(-1)?.payout).toBe(Math.round(full*.4));
+    expect(atomic.courtroom?.results.at(-1)?.solvedBy).toBe('sherry');
   });
 
   it('resumes an unfinished legacy investigation as a freeform courtroom case without losing the old save',()=>{
