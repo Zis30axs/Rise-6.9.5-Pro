@@ -31,6 +31,11 @@ export interface CourtFiling {
   lawyer: ProtagonistId | null; sherry: boolean;
   courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number;
 }
+export interface CourtJudgmentOrder {
+  respondent: string;
+  terms: CourtTermDraft[];
+  sanctions: CourtSanctionDraft[];
+}
 export interface CourtCase {
   id: string; source: 'commission' | 'lawsuit'; owner: ProtagonistId; day: number;
   category: CourtCategory; title: string; client: string; summary: string;
@@ -381,15 +386,53 @@ export function validateCourtAssist(raw: unknown, state: WorldState): Extract<St
   if (item.type !== 'court_assist' || item.who !== 'sherry') return error('法律协助者');
   return {type:'court_assist',who:'sherry'};
 }
+export function validateCourtSettlement(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_settlement'}> {
+  const c=courtState(state).active;
+  if(!c || c.owner!==activeProtagonist(state) || c.source!=='lawsuit' || c.day!==state.clock.day)
+    return error('没有可以和解的主动诉讼');
+  const item=obj(raw,['type','summary','defendantConsented','terms'],'庭外和解提案');
+  const parsed=parseCourtSettlementOffer({summary:item.summary,defendantConsented:item.defendantConsented,terms:item.terms});
+  if(parsed.terms.some(term=>term.dueDay<state.clock.day)) return error('和解不得设置过去的履行日期');
+  return {type:'court_settlement',...parsed};
+}
+export function validateCourtFulfillment(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_fulfill'}> {
+  const item=obj(raw,['type','termId','description'],'法律义务履行');
+  const termId=string(item.termId,90,'履行条款编号');
+  const agreement=courtState(state).agreements?.find(row=>row.terms.some(term=>term.id===termId));
+  const term=agreement?.terms.find(row=>row.id===termId);
+  if(!agreement || !term || term.status!=='pending' || term.kind==='payment') return error('不存在需要履行的非金钱义务');
+  const debtor=term.from==='claimant'?agreement.claimant:agreement.defendant;
+  if(debtor.kind==='protagonist' && debtor.id!==activeProtagonist(state))
+    return error('不能替另一个主角履行其个人承诺');
+  return {type:'court_fulfill',termId,description:string(item.description,500,'履行依据')};
+}
 export function validateCourtFinish(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_finish'}> {
   const c = courtState(state).active;
   if (!c || c.owner !== activeProtagonist(state)) return error('当前没有进行中的庭审');
-  const item = obj(raw,['type','verdict','summary'],'庭审结论');
+  const hasOrder=!!raw && typeof raw==='object' && Object.hasOwn(raw,'order');
+  const item = obj(raw,['type','verdict','summary',...(hasOrder?['order']:[])],'庭审结论');
   if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict))) return error('结案方式');
-  if (c.source === 'commission' && ['settled','withdrawn'].includes(String(item.verdict))) return error('职业委托尚未完成查明事实');
+  if (item.verdict==='settled' || item.verdict==='withdrawn')
+    return error('和解须经玩家确认，撤诉须从庭审菜单提出');
+  let order: CourtJudgmentOrder | undefined;
+  if(hasOrder){
+    const proposal=obj(item.order,['respondent','terms','sanctions'],'判决执行内容');
+    if(!Array.isArray(proposal.terms) || proposal.terms.length>8 ||
+      !Array.isArray(proposal.sanctions) || proposal.sanctions.length>3) return error('判决条款数量');
+    order={respondent:string(proposal.respondent,100,'诉讼对方'),
+      terms:proposal.terms.map(parseCourtTermDraft),
+      sanctions:proposal.sanctions.map(parseCourtSanctionDraft)};
+    if(order.terms.some(term=>term.dueDay<state.clock.day) ||
+      order.sanctions.some(row=>row.startDay<state.clock.day)) return error('判决执行日期不能早于今天');
+    if(c.fee && order.respondent!==c.fee.defendant) return error('被告与诉状不一致');
+    if(order.sanctions.length && (!['minor-criminal','major-criminal'].includes(c.category) ||
+      !['win','loss'].includes(String(item.verdict)))) return error('民事诉讼不得直接执行刑罚');
+    if(order.terms.some(term=>term.kind==='payment' && term.amountYen>1000000)) return error('赔偿过高');
+  }
   // Evidence adequacy is checked at settlement, after earlier court_step actions in this turn.
-  return { type:'court_finish', verdict:item.verdict as CourtResult['verdict'], summary:string(item.summary,1200,'判决说明') };
+  return {type:'court_finish',verdict:item.verdict as CourtResult['verdict'],
+    summary:string(item.summary,1200,'判决说明'),...(order?{order}:{})};
 }
 export function courtAction(state: WorldState, action: Extract<WorldAction,{type:'courtroom'}>): WorldState {
   const next: WorldState = structuredClone(state);
@@ -478,6 +521,45 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     next.courtroom=current;
     enterHearing(next);
     current.filing = null;
+  } else if(action.phase==='accept-settlement'){
+    const trial=current.active;
+    const offer=current.pendingSettlement;
+    if(!trial || trial.source!=='lawsuit' || trial.owner!==owner ||
+      !offer || !offer.defendantConsented) return error('双方尚未同意和解条款');
+    if(offer.terms.some(term=>term.dueDay<state.clock.day)) return error('协议履行日期已过期，请重新协商');
+    current.agreements!.push(newCourtAgreement(next,trial.id,protagonistNames[owner],
+      trial.fee!.defendant,offer.summary,'settlement',offer.terms));
+    current.results.push({id:trial.id,owner:trial.owner,source:trial.source,title:trial.title,
+      defendant:trial.fee!.defendant,lawyer:trial.fee?.lawyer??null,verdict:'settled',worldVerdict:'settled',
+      solvedBy:'player',payout:0,experience:0,summary:offer.summary,atDay:state.clock.day});
+    if(current.results.length>300) current.results.shift();
+    if(current.agreements!.length>300) current.agreements!.shift();
+    leaveHearing(next,trial);
+    current.active=null;current.pendingSettlement=null;
+  } else if(action.phase==='reject-settlement'){
+    if(!current.active || current.active.owner!==owner) return error('当前没有可以拒绝的和解');
+    current.pendingSettlement=null;
+  } else if(action.phase==='withdraw'){
+    const trial=current.active;
+    if(!trial || trial.owner!==owner || trial.source!=='lawsuit') return error('只有主动起诉人可以撤诉');
+    current.results.push({id:trial.id,owner,source:trial.source,title:trial.title,
+      defendant:trial.fee!.defendant,lawyer:trial.fee!.lawyer,verdict:'withdrawn',worldVerdict:'withdrawn',
+      solvedBy:'player',payout:0,experience:0,summary:'原告自行撤回诉讼请求，已发生费用不自动退还。',atDay:state.clock.day});
+    if(current.results.length>300) current.results.shift();
+    leaveHearing(next,trial);
+    current.active=null;current.pendingSettlement=null;
+  } else if(action.phase==='pay-term' || action.phase==='collect-term'){
+    if(current.active) return error('正在开庭时不能办理结案后付款');
+    const entry=current.agreements?.find(row=>row.terms.some(term=>term.id===action.termId));
+    const term=entry?.terms.find(row=>row.id===action.termId);
+    if(!entry || !term || term.status!=='pending' || term.kind!=='payment') return error('没有这笔待付金额');
+    const from=term.from==='claimant'?entry.claimant:entry.defendant;
+    const to=term.from==='claimant'?entry.defendant:entry.claimant;
+    if(action.phase==='pay-term' && (from.kind!=='protagonist' || from.id!==owner)) return error('只能支付本主角的债务');
+    if(action.phase==='collect-term' && (from.kind!=='npc' || to.kind!=='protagonist' || to.id!==owner))
+      return error('只能向欠款 NPC 领取已判给本主角的款项');
+    next.courtroom=current;
+    payCourtTerm(next,entry,term);
   } else if (action.phase==='enroll-law') {
     if(current.active) return error('庭审期间不能办理职业登记');
     canOffice(next);
@@ -489,7 +571,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
   next.courtroom = parseCourtroom(current);
   return next;
 }
-export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_special'|'court_open'|'court_quote'|'court_step'|'court_assist'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
+export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_special'|'court_open'|'court_quote'|'court_step'|'court_assist'|'court_settlement'|'court_fulfill'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
   const next: WorldState = structuredClone(state);
   const court = parseCourtroom(next.courtroom ?? initialCourtroom());
   let minutes = 0, reward = 0;
@@ -526,6 +608,16 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
   } else if (action.type === 'court_assist') {
     validateCourtAssist(action,next);
     court.active!.assistance = 'sherry';
+  } else if(action.type==='court_settlement'){
+    const offer=validateCourtSettlement(action,next);
+    court.pendingSettlement={summary:offer.summary,defendantConsented:offer.defendantConsented,terms:offer.terms};
+  } else if(action.type==='court_fulfill'){
+    const fulfilled=validateCourtFulfillment(action,next);
+    const agreement=court.agreements?.find(row=>row.terms.some(term=>term.id===fulfilled.termId));
+    const term=agreement?.terms.find(row=>row.id===fulfilled.termId);
+    if(!term || term.kind==='payment' || term.status!=='pending') return error('承诺已履行或不存在');
+    term.status='fulfilled';term.fulfilledDay=state.clock.day;
+    minutes=5;
   } else if (action.type === 'court_finish') {
     const parsed = validateCourtFinish(action,next);
     const active = court.active!;
@@ -538,6 +630,21 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     const multiplier = assisted ? SHERRY_ASSIST_RATE : verdict === 'win' && active.source === 'commission' ? 1 : 0;
     reward = Math.round(active.rewardYen * multiplier);
     const experience = Math.round(active.experience * multiplier);
+    if(parsed.order){
+      const plaintiff=active.source==='lawsuit' ? protagonistNames[active.owner] : active.client;
+      if(parsed.order.terms.length){
+        if((court.agreements??[]).some(row=>row.caseId===active.id)) return error('此案已经保存履行协议');
+        court.agreements!.push(newCourtAgreement(next,active.id,plaintiff,parsed.order.respondent,
+          parsed.summary,'judgment',parsed.order.terms));
+        if(court.agreements!.length>300) court.agreements!.shift();
+      }
+      for(const [index,sanction] of parsed.order.sanctions.entries()){
+        if(court.sanctions!.some(row=>row.caseId===active.id && row.personId===sanction.personId))
+          return error('同案重复处罚');
+        court.sanctions!.push({...sanction,id:'court-sanction-'+active.id+'-'+index,caseId:active.id});
+      }
+      if(court.sanctions!.length>100) court.sanctions!.splice(0,court.sanctions!.length-100);
+    }
     court.results.push({ id:active.id, owner:active.owner, source:active.source, title:active.title,
       defendant:active.fee?.defendant ?? null,lawyer:active.fee?.lawyer ?? null,
       verdict, worldVerdict:verdict, solvedBy:assisted?'sherry':'player', payout:reward, experience,
