@@ -148,6 +148,16 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
 /** Static identity/position authority for stored encounters; never a live population. */
 const WATANARE_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
+  if (roomId === 'legal-office') {
+    const sherry = allResidentCast.find(row => row.id === 'majo-sherry');
+    return sherry ? [{
+      id: sherry.id, name: sherry.name, candidateName: sherry.name,
+      identity: '律师事务所见习人员', tags: ['常驻人物', '法律专业', '律师职业'],
+      description: '橘雪莉正整理案卷，准备陪同艾玛核对证据。',
+      x: -2, z: 1.2, color: 0x859c6d, portraitId: characterForPerson(sherry.id),
+      contactId: null, isMain: false,
+    }] : [];
+  }
   if (WATANARE_INTERIOR_HOMES.has(roomId)) {
     return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
