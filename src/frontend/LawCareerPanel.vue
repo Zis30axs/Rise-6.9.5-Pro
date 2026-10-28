@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { courtState, COURT_CATEGORY_NAMES, DAILY_COURT_CATEGORIES, type CourtCategory, type CourtOffer } from '../runtime/courtroom';
+import { courtState, courtTermStatus, COURT_CATEGORY_NAMES, DAILY_COURT_CATEGORIES, type CourtCategory, type CourtOffer } from '../runtime/courtroom';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { PROTAGONISTS, type ProtagonistId } from '../runtime/dual-protagonists';
 import { lawOwner } from '../runtime/law-career';
@@ -19,8 +19,42 @@ const filing = computed(() => court.value.filing?.claimant === owner.value ? cou
 const lastResult = computed(() => court.value.results.filter(row => row.owner === owner.value).at(-1) ?? null);
 const oldTrial = computed(() => Object.entries(props.model.state.lawCareer?.owners ?? {}).find(([,item]) => !!item?.active) ?? null);
 const lawStats = computed(() => lawOwner(props.model.state));
-const experience = computed(() => lawStats.value.experience + court.value.results.filter(row => row.owner === owner.value).reduce((n,row) => n + row.experience,0));
-const earnings = computed(() => lawStats.value.totalPayout + court.value.results.filter(row => row.owner === owner.value).reduce((n,row) => n + row.payout,0));
+const career = computed(() => court.value.careers?.[owner.value] ?? null);
+const qualificationNames = {unqualified:'尚无执业资格',student:'法学在读',trainee:'见习',licensed:'执业资格已登记'};
+const pendingSettlement = computed(() => myTrial.value?.source==='lawsuit' ? court.value.pendingSettlement : null);
+const withdrawalPrompt = ref(false);
+const relevantAgreements = computed(() => (court.value.agreements ?? []).filter(row =>
+  row.claimant.id===owner.value || row.defendant.id===owner.value).slice(-10).reverse());
+function isSelfDebtor(agreement:import('../runtime/court-legal-effects').CourtAgreement,term:import('../runtime/court-legal-effects').CourtTerm) {
+  const payer=term.from==='claimant'?agreement.claimant:agreement.defendant;
+  return payer.kind==='protagonist' && payer.id===owner.value;
+}
+function canCollect(agreement:import('../runtime/court-legal-effects').CourtAgreement,term:import('../runtime/court-legal-effects').CourtTerm) {
+  const payer=term.from==='claimant'?agreement.claimant:agreement.defendant;
+  const payee=term.from==='claimant'?agreement.defendant:agreement.claimant;
+  return payer.kind==='npc' && payee.kind==='protagonist' && payee.id===owner.value;
+}
+function handleSettlement(accept:boolean) {
+  if(!pendingSettlement.value || props.model.busy) return;
+  props.actions.dispatch({type:'courtroom',phase:accept?'accept-settlement':'reject-settlement'});
+  if(accept && !props.model.notice) emit('close');
+}
+function handleWithdraw() {
+  if(!myTrial.value || myTrial.value.source!=='lawsuit' || props.model.busy) return;
+  props.actions.dispatch({type:'courtroom',phase:'withdraw'});
+  withdrawalPrompt.value=false;
+  if(!props.model.notice) emit('close');
+}
+function performTerm(agreement:import('../runtime/court-legal-effects').CourtAgreement,term:import('../runtime/court-legal-effects').CourtTerm) {
+  if(props.model.busy || term.status!=='pending') return;
+  if(term.kind==='payment') {
+    props.actions.dispatch({type:'courtroom',phase:isSelfDebtor(agreement,term)?'pay-term':'collect-term',termId:term.id});
+  } else if(isSelfDebtor(agreement,term)) {
+    props.actions.dispatch({type:'courtroom',phase:'fulfill-term',termId:term.id});
+  }
+}
+const experience = computed(() => lawStats.value.experience + (career.value?.experience ?? 0));
+const earnings = computed(() => lawStats.value.totalPayout + (career.value?.earnedYen ?? 0));
 const candidates = computed(() => PROTAGONISTS.filter(id => id !== owner.value));
 const tab = ref<'docket'|'filing'>('docket');
 const categories = ref<CourtCategory[]>([...DAILY_COURT_CATEGORIES]);
@@ -99,9 +133,15 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
         <span>职业经验 <strong>{{ formatGameNumber(experience) }}</strong></span>
         <span>累计报酬 <strong>¥{{ formatGameNumber(earnings) }}</strong></span>
         <span>已结案 <strong>{{ lawStats.completedCaseIds.length + court.results.filter(row => row.owner === owner).length }}</strong></span>
+        <span>律师职业 <strong>{{ career?.enrolled ? qualificationNames[career.qualification] : '未登记' }}</strong></span>
       </div>
     </header>
     <p v-if="model.notice" class="law-error" role="alert">{{ model.notice }}</p>
+    <div v-if="!career?.enrolled && !active && model.state.locationId==='legal-office'" class="law-case">
+      <h3>律师职业登记</h3>
+      <p>可从事务所开始法律职业路线。法学专业进度与正式律师执业资格是两回事；在获得资格前可自诉或协助庭审，但不冒充持证代理人。</p>
+      <button type="button" data-court-enroll :disabled="model.busy" @click="actions.dispatch({type:'courtroom',phase:'enroll-law'})">登记法律职业路线</button>
+    </div>
     <div v-if="active && !myTrial" class="law-case">
       <h3>当前案件正在审理</h3>
       <p>{{ protagonistNames[active.owner] }}正在办理「{{ active.title }}」。这场庭审结束前，事务所不再受理其他案件。</p>
@@ -125,6 +165,31 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
         </div>
         <p v-if="myTrial.steps.length" class="law-progress">庭审记录：{{ myTrial.steps.map(step=>step.summary).join('；') }}</p>
         <button type="button" data-court-return @click="emit('close')">回到法庭继续辩论</button>
+        <template v-if="myTrial.source==='lawsuit'">
+          <article v-if="pendingSettlement" class="law-partner" data-court-settlement>
+            <h4>对方提出的和解条件</h4>
+            <p>{{ pendingSettlement.summary }}</p>
+            <p v-for="(term,i) in pendingSettlement.terms" :key="i">
+              {{ term.from==='claimant'?'原告':'被告' }}：{{ term.description }}
+              <strong v-if="term.kind==='payment'">¥{{ formatGameNumber(term.amountYen) }}</strong>
+              <small>· 第 {{ term.dueDay }} 天前履行</small>
+            </p>
+            <small>{{ pendingSettlement.defendantConsented?'对方已明确同意，可由你决定是否接受':'对方尚未同意，请继续协商' }}</small>
+            <div class="law-tabs">
+              <button type="button" data-court-settle-yes :disabled="model.busy || !pendingSettlement.defendantConsented"
+                @click="handleSettlement(true)">接受和解</button>
+              <button type="button" data-court-settle-no :disabled="model.busy" @click="handleSettlement(false)">拒绝并继续庭审</button>
+            </div>
+          </article>
+          <div v-if="withdrawalPrompt" class="law-partner" data-court-withdraw-confirm>
+            <p>确定撤诉？已产生的律师费和起诉费用不会因此自动返还。</p>
+            <div class="law-tabs">
+              <button type="button" @click="withdrawalPrompt=false">继续庭审</button>
+              <button type="button" :disabled="model.busy" data-court-withdraw-yes @click="handleWithdraw">确认撤诉</button>
+            </div>
+          </div>
+          <button v-else type="button" data-court-withdraw @click="withdrawalPrompt=true">提出撤诉</button>
+        </template>
       </article>
       <div v-if="owner==='emma' && myTrial.source==='commission'" class="law-partner">
         <strong>橘雪莉</strong>
@@ -209,7 +274,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
           <label>律师或协助人
             <select v-model="lawyer">
               <option value="">本人出庭</option>
-              <option v-for="id in candidates" :key="id" :value="id">{{ protagonistNames[id] }} · 协助庭审</option>
+              <option v-for="id in candidates" :key="id" :value="id">{{ protagonistNames[id] }} · {{ court.careers?.[id]?.qualification==='licensed'?'执业律师代理':'法律协助人员' }}</option>
             </select>
           </label>
           <label class="law-check"><input v-model="sherry" type="checkbox" /> 请橘雪莉协助</label>
@@ -218,6 +283,24 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
         </article>
       </template>
     </template>
+    <article v-if="relevantAgreements.length" class="law-case" data-court-agreements>
+      <h3>我的协议与判决执行</h3>
+      <div v-for="agreement in relevantAgreements" :key="agreement.id" class="law-evidence-item">
+        <strong>{{ agreement.kind==='settlement'?'和解协议':'法院判决' }} · {{ agreement.summary }}</strong>
+        <p v-for="term in agreement.terms" :key="term.id" class="law-obligation">
+          <span>{{ term.from==='claimant'?agreement.claimant.name:agreement.defendant.name }}：{{ term.description }}
+            <strong v-if="term.kind==='payment'">¥{{ formatGameNumber(term.amountYen) }}</strong>
+            <small> · {{ courtTermStatus(term,model.state.clock.day)==='fulfilled'?'已履行':courtTermStatus(term,model.state.clock.day)==='overdue'?'已逾期':'待履行' }}</small>
+          </span>
+          <button v-if="term.status==='pending' && (isSelfDebtor(agreement,term) || (term.kind==='payment' && canCollect(agreement,term)))"
+            type="button" :disabled="model.busy" :data-court-term="term.id" @click="performTerm(agreement,term)">
+            {{ term.kind==='payment'?(isSelfDebtor(agreement,term)?'支付':'领取欠款'):'确认履行' }}
+          </button>
+        </p>
+      </div>
+    </article>
+    <button v-if="model.state.locationId==='court-hearing' && !myTrial" type="button" data-court-return-office
+      :disabled="model.busy" @click="actions.dispatch({type:'courtroom',phase:'return-office'})">返回事务所</button>
     <button type="button" class="law-return" @click="emit('close')">返回此地</button>
   </section>
 </template>
@@ -252,5 +335,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 .law-risk{padding:10px 12px;border-left:3px solid #d2aa75;background:#b88c4613}
 .law-return{justify-self:start}
 .law-partner{border-color:#c99cad81}
+.law-obligation{display:grid;gap:6px;padding:8px 0;border-top:1px solid #9995}
+.law-obligation button{justify-self:start}
 @media(max-width:400px){.law-career{padding:8px}.law-filters{gap:5px}}
 </style>
