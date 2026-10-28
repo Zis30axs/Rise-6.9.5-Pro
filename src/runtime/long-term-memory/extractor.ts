@@ -29,6 +29,9 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
   if (!Array.isArray(body.events) || body.events.length > 30) throw new Error('整理事件数量不合法');
   const index = new Map(sourceRows.map(s => [s.id, s]));
   const result: MemoryEvent[] = [];
+  // A second paraphrase of the same committed source must never create an
+  // alternative historical entry. Memory identity does not depend on wording.
+  const sourceKindCounts = new Map<string, number>();
   for (const [i, value] of body.events.entries()) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('事件结构非法');
     const e = value as Record<string, unknown>;
@@ -43,10 +46,13 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
     const known = origin.reduce<string[]>((all, source) =>
       all.filter(id => source.knownBy.includes(id)), [...new Set(origin[0].knownBy)]);
     // Stable bounded ID: source IDs may be long and the batch can be reordered.
-    const identity = origin.map(s => s.id).sort().join('|') + '|' + e.summary + ':' + i;
+    const grouping = JSON.stringify([origin.map(s => s.id).sort(), e.kind]);
+    const ordinal = sourceKindCounts.get(grouping) ?? 0;
+    sourceKindCounts.set(grouping, ordinal + 1);
+    const identity = grouping + ':' + ordinal;
     let signature = 2166136261;
     for (const char of identity) signature = Math.imul(signature ^ char.charCodeAt(0), 16777619);
-    const eventId = 'extract:' + (signature >>> 0).toString(36) + ':' + identity.length + ':' + i;
+    const eventId = 'extract:' + (signature >>> 0).toString(36) + ':' + identity.length + ':' + ordinal;
     const participants = strings(e.participants, 12);
     result.push({
       scope, key: memoryKey(scope, eventId), id: eventId,

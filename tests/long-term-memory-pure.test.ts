@@ -86,6 +86,15 @@ describe('long-term memory: validated extraction and query protocol', () => {
     expect(result[0].sourceIds).toEqual(['necklace']);
   });
 
+  it('keeps the same event ID when a retry paraphrases the same historical source', () => {
+    const original = source('gift-retry', 'story', '艾玛递给雪一枚戒指。', []);
+    const extract = (summary: string) => parseExtraction('test-chat', [original],
+      JSON.stringify({ events: [{
+        sourceIds: ['gift-retry'], kind: 'item', summary, importance: 4,
+      }] }))[0];
+    expect(extract('艾玛给雪一枚戒指。').id).toBe(extract('雪收到艾玛递来的戒指。').id);
+  });
+
   it('rejects invented source IDs instead of accepting model hallucinations', () => {
     expect(() => parseExtraction('test-chat', [source('a', 'story', '已有记录', [])],
       '{"events":[{"sourceIds":["fabricated"],"kind":"promise","summary":"编造的承诺"}]}')).toThrow();
