@@ -15,6 +15,8 @@ import livehouseBg from '../../assets/backgrounds/livehouse.webp?inline';
 import ktvBg from '../../assets/backgrounds/ktv.webp?inline';
 import mlmOfficeBg from '../../assets/backgrounds/mlm-office.webp?inline';
 import constructionDayBg from '../../assets/backgrounds/construction-day.avif?inline';
+import legalOfficeDayBg from '../../assets/backgrounds/legal-office-day.avif?inline';
+import legalOfficeNightBg from '../../assets/backgrounds/legal-office-night.avif?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -45,7 +47,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
-  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'mlm-office': 'commercial', 'legal-office': 'classroom',
+  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'mlm-office': 'commercial',
 });
 
 export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
@@ -83,6 +85,15 @@ const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelB
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (locationId === 'legal-office') {
+    const phase = novelBackgroundPhase(hour);
+    const isNight = phase === 'night';
+    return {
+      id: isNight ? 'legal-office-night' : 'legal-office-day',
+      src: isNight ? legalOfficeNightBg : legalOfficeDayBg,
+      phase, imagePhase: isNight ? 'night' : 'day', source: 'user-art',
+    };
+  }
   // This locally supplied construction photo depicts daylight in every game-time phase.
   if (locationId === 'construction-site') return { id: 'construction-site-day', src: constructionDayBg,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };

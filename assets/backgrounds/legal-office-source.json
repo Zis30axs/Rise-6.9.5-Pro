@@ -1,0 +1,45 @@
+{
+  "locationId": "legal-office",
+  "source": {
+    "day": {
+      "kind": "user-provided-image",
+      "mime": "image/jpeg",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 607939,
+      "sha256": "898c9e62c2e032f8533dac319dd41babd5f7a0e5c433adbed90a955b26e3e9aa"
+    },
+    "night": {
+      "kind": "generated-variation",
+      "mime": "image/png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2237442,
+      "sha256": "ecffc802348259960bd3af22cc13dd79278464ed46dacc3227711cb869013d37"
+    }
+  },
+  "derived": {
+    "day": {
+      "file": "legal-office-day.avif",
+      "mime": "image/avif",
+      "width": 1280,
+      "height": 853,
+      "bytes": 61641,
+      "sha256": "c9a706e384c54033d58aa0232da3953b51130f13945e2dd8e4120ef3f904f8df"
+    },
+    "night": {
+      "file": "legal-office-night.avif",
+      "mime": "image/avif",
+      "width": 1280,
+      "height": 853,
+      "bytes": 66458,
+      "sha256": "e83d73234b40cb727466277068b7c556ffd70318b80c89cd1e6a8f50e1a5a076"
+    }
+  },
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59 (day image)",
+    "night": "19:00-05:59"
+  },
+  "target": "novel mode legal-office only"
+}
