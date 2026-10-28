@@ -746,7 +746,8 @@ export function acknowledgeCourtTransfers(state: WorldState, actions: readonly S
       // Only the matching double-entry receipt authorizes an idempotent replay.
       const key='wa:'+turnId+':t'+index;
       const receipt=state.protagonists?.accounts.ledger.some(row=>
-        row.id.startsWith(key+':out') || row.id===key+':in');
+        row.id.startsWith(key+':out') || row.id===key+':in') ||
+        state.journal.some(row=>row.id===key+':journal');
       if(!receipt) return error('同一笔法律付款不可重复履行');
       continue;
     }
