@@ -294,7 +294,8 @@ export function lawCareerStoryContext(state: WorldState) {
   const progress = lawOwner(state);
   const current = currentLawCase(state);
   return {
-    occupation: '律师职业路线',
+    occupation: progress.active || progress.completedCaseIds.length ? '律师职业路线' : null,
+    careerAvailable: true,
     office: LAW_OFFICE_ID,
     protagonist: owner,
     sherry: { personId: SHERRY_PERSON_ID, majorId: 'law', careerId: 'lawyer', qualification: 'trainee', guaranteedPartner: owner === 'emma' },
