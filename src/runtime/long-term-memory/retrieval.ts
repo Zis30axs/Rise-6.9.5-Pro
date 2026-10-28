@@ -108,7 +108,7 @@ export async function memoryQuery(scope: string, value: MemoryQuery, owner: stri
   if (operation === 'get_event_details') {
     const id = value.eventId ?? '';
     const item = await one<MemoryEvent>('events', scope, id);
-    if (item && eligible(item, owner, true, cutoff, maxTurn) && true) {
+    if (item && eligible(item, owner, true, cutoff, maxTurn)) {
       total = item.sourceIds.length;
       const ids = item.sourceIds.slice(offset, offset + requestedLimit);
       const sources = await Promise.all(ids.map(sourceId => one<MemorySource>('sources', scope, sourceId)));

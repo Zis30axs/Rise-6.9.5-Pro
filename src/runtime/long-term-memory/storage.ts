@@ -258,42 +258,6 @@ export async function pruneFutureMemory(scope: string,
   return oldSources.length + oldEvents.length;
 }
 
-/**
- * User corrections affect only the interpretation index. Provenance sources,
- * the real inventory, relationship variables, bank accounts, and other MVU
- * state stay unchanged.
- */
-export async function correctMemoryEvent(scope: string, id: string,
-  summary: string, status: MemoryEvent['status']): Promise<void> {
-  if (!['active', 'disputed', 'superseded'].includes(status)
-    || !summary.trim() || summary.length > 350
-    || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(summary))
-    throw new Error('记忆修正内容无效');
-  const db = await openMemoryDb();
-  const tx = db.transaction(['events', 'vectors'], 'readwrite'), done = completed(tx);
-  const req = tx.objectStore('events').get(memoryKey(scope, id));
-  req.onsuccess = () => {
-    const original = req.result as MemoryEvent | undefined;
-    if (!original) { tx.abort(); return; }
-    const edited = original.summary !== summary.trim();
-    tx.objectStore('events').put({ ...original, summary: summary.trim(), status,
-      factuality: edited ? 'inferred' : original.factuality,
-      keywords: edited ? [...new Set(summary.match(/[\p{Script=Han}]{2,8}|[a-z0-9_:-]+/giu) ?? [])].slice(0, 20)
-        : original.keywords });
-    // Old semantic vectors must not be used for a corrected textual claim.
-    if (edited) {
-      const vectors = tx.objectStore('vectors');
-      const request = vectors.index('by_scope').getAll(scope);
-      request.onsuccess = () => {
-        for (const vector of request.result as MemoryVector[]) {
-          if (vector.eventId === id) vectors.delete(vector.key);
-        }
-      };
-    }
-  };
-  await done;
-}
-
 /** Rebuild only this chat's entity graph; never clear another chat's records. */
 export async function rebuildMemoryEntityIndex(scope: string): Promise<void> {
   const [events, oldEntities, oldLinks] = await Promise.all([
@@ -308,7 +272,7 @@ export async function rebuildMemoryEntityIndex(scope: string): Promise<void> {
   for (const old of oldEntities) entities.delete(old.key);
   for (const old of oldLinks) links.delete(old.key);
   for (const event of events) {
-    if (event.status === 'superseded') continue;
+
     const participants = new Set(event.participants);
     for (const entityId of new Set([...event.participants, ...event.entities].filter(Boolean))) {
       if (entityId.length > 100) continue;

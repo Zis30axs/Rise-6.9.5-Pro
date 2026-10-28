@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { DEFAULT_MEMORY_SETTINGS, loadMemorySettings, memoryApiKey, saveMemoryApiKey, saveMemorySettings } from '../runtime/long-term-memory/settings';
 import type { MemorySettings } from '../runtime/long-term-memory/settings';
-import { correctMemoryEvent, exportMemory, importMemory, rebuildMemoryEntityIndex, rows } from '../runtime/long-term-memory/storage';
+import { exportMemory, importMemory, rebuildMemoryEntityIndex, rows } from '../runtime/long-term-memory/storage';
 import type { MemoryEvent } from '../runtime/long-term-memory/types';
 import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
 import { memoryArchiveSafe, memoryOutboxWarning } from '../runtime/long-term-memory';
@@ -18,7 +18,6 @@ const history = ref<MemoryEvent[]>([]);
 const search = ref('');
 const editId = ref('');
 const editSummary = ref('');
-const editStatus = ref<MemoryEvent['status']>('active');
 const status = ref<{ sources: number; events: number; pending: number; costUsd: number; lastTurn: number; lastError: string } | null>(null);
 async function refresh() {
   if (!props.scope) return;
@@ -91,17 +90,6 @@ async function browseHistory() {
 function chooseEvent(event: MemoryEvent) {
   editId.value = event.id;
   editSummary.value = event.summary;
-  editStatus.value = event.status;
-}
-async function saveCorrection() {
-  if (!props.scope || !editId.value || working.value) return;
-  working.value = true;
-  try {
-    await correctMemoryEvent(props.scope, editId.value, editSummary.value, editStatus.value);
-    await browseHistory();
-    notice.value = '历史档案的解释已更新，游戏中的真实状态未改变。';
-  } catch (error) { notice.value = error instanceof Error ? error.message : '修正失败'; }
-  finally { working.value = false; }
 }
 async function repairIndex() {
   if (!props.scope || working.value) return;
@@ -109,7 +97,7 @@ async function repairIndex() {
   try {
     await pauseMemoryWork(props.scope);
     await rebuildMemoryEntityIndex(props.scope);
-    notice.value = '当前聊天的实体关系索引已重建。';
+    notice.value = '当前聊天的实体关系索引已重建。已定稿记忆保持不变。';
   } catch (error) { notice.value = error instanceof Error ? error.message : '索引重建失败'; }
   finally { working.value = false; }
 }
@@ -169,8 +157,8 @@ onMounted(() => { void refresh(); });
         <button type="button" @click="reset">重置记忆配置</button>
       </div>
       <details class="uc-memory-manager">
-        <summary>查看与纠正长期记忆</summary>
-        <p class="uc-narrative-note">只能修正档案解释，不会改变背包、金额、位置或角色关系的权威状态。</p>
+        <summary>长期历史档案</summary>
+        <p class="uc-narrative-note">整理成功后摘要就是已定稿的历史记忆，不会由后续模型重新审判或改写。原始来源保留供查询具体对白；当前状态仍由 MVU 决定。</p>
         <label>查找旧事件 <input v-model="search" type="search" maxlength="200" placeholder="人物、物品、关系或关键词" /></label>
         <div class="uc-narrative-buttons">
           <button type="button" :disabled="working" @click="browseHistory">查询历史</button>
@@ -180,22 +168,14 @@ onMounted(() => { void refresh(); });
           <button v-for="item in history" :key="item.key" type="button"
             :class="{ 'uc-memory-selected': editId === item.id }"
             @click="chooseEvent(item)">
-            <small>第 {{ Math.floor(item.at / 1440) + 1 }} 天 · {{ item.kind }} · {{ item.status }} · {{ item.factuality }}</small>
+            <small>第 {{ Math.floor(item.at / 1440) + 1 }} 天 · {{ item.kind }}</small>
             <span>{{ item.summary }}</span>
           </button>
         </div>
         <div v-if="editId" class="uc-memory-editor">
-          <label>历史摘要（最多 350 字）
-            <textarea v-model="editSummary" rows="4" maxlength="350" />
+          <label>已定稿的历史摘要（只读）
+            <textarea :value="editSummary" rows="4" readonly />
           </label>
-          <label>记忆可信状态
-            <select v-model="editStatus">
-              <option value="active">保留</option>
-              <option value="disputed">存在争议</option>
-              <option value="superseded">被后续事件覆盖</option>
-            </select>
-          </label>
-          <button type="button" :disabled="working" @click="saveCorrection">保存修正</button>
         </div>
       </details>
       <p v-if="notice" role="status" class="uc-narrative-notice">{{ notice }}</p>
