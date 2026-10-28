@@ -64,7 +64,7 @@ describe('long-term memory: validated extraction and query protocol', () => {
     const first = source('a', 'journal', '艾玛收藏了那封信。', ['emma']);
     const second = source('b', 'story', '叙事者知道雪的秘密。', []);
     const response = JSON.stringify({ events: [
-      { sourceIds: ['a'], kind: 'item', summary: '艾玛收藏信件。', importance: 5, entities: ['letter'], participants: ['majo-emma'], keywords: ['信件'] },
+      { sourceIds: ['a'], kind: 'item', summary: '艾玛收藏了那封信。', importance: 5, entities: ['letter'], participants: ['majo-emma'], keywords: ['信件'] },
       { sourceIds: ['a', 'b'], kind: 'discovery', summary: '提及未知的秘密。', importance: 5 },
     ] });
     const events = parseExtraction('test-chat', [first, second], response);

@@ -58,8 +58,11 @@ export function parseExtraction(scope: string, sourceRows: MemorySource[], raw: 
       knownBy: known.filter(id => PROTAGONISTS.has(id)) as MemoryEvent['knownBy'],
       importance: Math.max(1, Math.min(5, Number.isInteger(e.importance) ? e.importance as number : 2)),
       visibility: known.length ? 'character' : 'narrator',
-      // Narrated memories are historical text, not authoritative state transitions.
-      factuality: origin.every(s => s.kind === 'journal' || s.kind === 'message') ? 'confirmed' : 'inferred',
+      // Valid source IDs alone do not prove that a model paraphrase is faithful.
+      // Only a literal extract from confirmed evidence can become confirmed.
+      factuality: origin.every(s => s.kind === 'journal' || s.kind === 'message')
+        && origin.some(s => s.text.replace(/\s/g, '').includes(e.summary.trim().replace(/\s/g, '')))
+        ? 'confirmed' : 'inferred',
       status: 'active',
     });
   }
