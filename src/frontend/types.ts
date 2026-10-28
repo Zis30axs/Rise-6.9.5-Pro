@@ -156,6 +156,8 @@ export interface WorldState {
   livehouse?: import('../runtime/livehouse').LivehouseState;
   /** Shared profession cases and rewards, keyed by the responsible protagonist. */
   lawCareer?: import('../runtime/law-career').LawCareerState;
+  /** Shared NPC major / career records, excluding controlled protagonists. */
+  npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
