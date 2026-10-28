@@ -266,8 +266,8 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
         </article>
         <article class="law-case">
           <h3>起诉申请</h3>
-          <label>起诉对象 <input v-model.trim="defendant" maxlength="100" placeholder="非主角人物姓名" /></label>
-          <small>主动诉讼仅能针对其他人物，不开放对四位可操作主角起诉。</small>
+          <label>起诉对象 <input v-model.trim="defendant" maxlength="100" placeholder="被告姓名，也可选择其他主角" /></label>
+          <small>主动起诉由当前主角担任原告；其他主角被诉时会独立应诉，不切换玩家控制权。</small>
           <label>起诉理由 <textarea v-model.trim="reason" maxlength="1000" rows="3" placeholder="说明争议经过与诉求"></textarea></label>
           <label>案件类别
             <select v-model="category">
