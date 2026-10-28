@@ -1,7 +1,7 @@
 import type { WorldAction, WorldState, StoryAction } from '../frontend/types';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
-import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE } from './law-career';
+import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
 
 export type CourtCategory = 'civil' | 'administrative' | 'minor-criminal' | 'major-criminal';
@@ -216,6 +216,8 @@ const canOffice = (state: WorldState): void => {
 };
 const eligible = (state: WorldState): void => {
   if (courtState(state).active) error('当前庭审尚未结案');
+  if (Object.values(state.lawCareer?.owners ?? {}).some(owner => owner?.active))
+    error('尚有历史委托未完成，请先将旧案件接入自由庭审');
   canOffice(state);
 };
 export function validateCourtDocketOffers(raw: unknown, state: WorldState): CourtOffer[] {
@@ -286,7 +288,25 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
   const next: WorldState = structuredClone(state);
   const current = parseCourtroom(next.courtroom ?? initialCourtroom());
   const owner = activeProtagonist(state);
-  if (action.phase === 'filter') {
+  if (action.phase === 'migrate-legacy') {
+    if (current.active) return error('当前已有进行中的庭审');
+    canOffice(state);
+    const oldOwner = next.lawCareer?.owners[owner];
+    if (!oldOwner?.active) return error('当前人物没有待继续的历史委托');
+    const old = oldOwner.active;
+    const source = lawCases.find(item => item.id === old.caseId);
+    if (!source) return error('历史委托卷宗不存在');
+    current.active = {
+      id: 'legacy-' + owner + '-' + source.id, source:'commission', owner, day:state.clock.day,
+      category:'minor-criminal', title:source.title, client:source.client, summary:source.summary,
+      white:source.summary + '请依据已经取得的证据自由质证。', evidence:source.evidence.map(item=>({title:item.title,detail:item.detail})),
+      truth:source.rounds.map(item=>item.deduction).join(' '),
+      misdirection:source.rounds.map(item=>item.statement).join(' '),
+      rewardYen:source.rewardYen,experience:source.experience,fee:null,
+      steps:old.deductions.map((summary,index)=>({key:'old-proof-'+index,kind:'contradiction' as const,summary:summary.slice(0,240)})),
+    };
+    oldOwner.active = null;
+  } else if (action.phase === 'filter') {
     eligible(state);
     if (current.board?.day === state.clock.day) return error('今天的公告栏已经公布，明日可以重新筛选');
     const categories = action.categories;
