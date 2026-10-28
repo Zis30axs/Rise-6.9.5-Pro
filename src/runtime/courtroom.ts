@@ -37,6 +37,7 @@ export interface CourtroomState {
   version: 1;
   categories: CourtCategory[];
   board: { day: number; offers: CourtOffer[] } | null;
+  special: { day: number; offer: CourtOffer } | null;
   active: CourtCase | null;
   filing: CourtFiling | null;
   results: CourtResult[];
@@ -44,7 +45,7 @@ export interface CourtroomState {
   serial: number;
 }
 export const initialCourtroom = (): CourtroomState => ({
-  version: 1, categories: [...DAILY_COURT_CATEGORIES], board: null, active: null,
+  version: 1, categories: [...DAILY_COURT_CATEGORIES], board: null, special: null, active: null,
   filing: null, results: [], pendingRecaps: {}, serial: 0,
 });
 export const courtState = (state: Pick<WorldState, 'courtroom'>): CourtroomState => state.courtroom ?? initialCourtroom();
@@ -144,7 +145,7 @@ const result = (raw: unknown): CourtResult => {
     summary: string(item.summary,1200,'判决内容'), atDay: whole(item.atDay,365000,'结案日期') };
 };
 export function parseCourtroom(value: unknown): CourtroomState {
-  const root = obj(value, ['version','categories','board','active','filing','results','pendingRecaps','serial'], '根结构');
+  const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial'], '根结构');
   if (root.version !== 1 || !Array.isArray(root.categories) || !root.categories.length || root.categories.length > 4) return error('版本或筛选');
   const categories = root.categories.map(category);
   if (new Set(categories).size !== categories.length) return error('重复筛选');
@@ -156,6 +157,13 @@ export function parseCourtroom(value: unknown): CourtroomState {
     if (new Set(offers.map(item => item.id)).size !== 3) return error('委托编号重复');
     board = { day: whole(raw.day,365000,'公告日期'), offers };
   }
+  let special: CourtroomState['special'] = null;
+  if (root.special !== null) {
+    const raw = obj(root.special, ['day','offer'], '特殊委托');
+    const selected = offer(raw.offer);
+    if (selected.category !== 'major-criminal' || selected.preset) return error('特殊委托范围');
+    special = { day:whole(raw.day,365000,'特殊委托日期'), offer:selected };
+  }
   const active = root.active === null ? null : courtCase(root.active);
   const pending = root.filing === null ? null : filing(root.filing);
   if (!Array.isArray(root.results) || root.results.length > 300) return error('结案历史过长');
@@ -166,7 +174,7 @@ export function parseCourtroom(value: unknown): CourtroomState {
   for (const [person, narration] of Object.entries(root.pendingRecaps)) {
     pendingRecaps[protagonist(person)] = string(narration, 1800, '补叙正文');
   }
-  return { version: 1, categories, board, active, filing: pending, results, pendingRecaps,
+  return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
     serial: whole(root.serial,1000000,'序列号') };
 }
 const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; truth: string; misdirection: string }> = [
@@ -212,11 +220,22 @@ export function validateCourtDocketOffers(raw: unknown, state: WorldState): Cour
     new Set(parsed.map(item => item.id)).size !== 2) return error('随机委托不符合筛选');
   return parsed;
 }
+export function validateCourtSpecial(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_special'}> {
+  eligible(state);
+  const court = courtState(state);
+  if (court.special?.day === state.clock.day) return error('今天已领取特殊委托');
+  const item = obj(raw,['type','offer'],'特殊委托');
+  const selected = offer(item.offer);
+  if (selected.category !== 'major-criminal' || selected.preset || selected.rewardYen < 30000 ||
+    court.results.some(row => row.id === selected.id)) return error('特殊委托内容');
+  return {type:'court_special',offer:selected};
+}
 export function validateCourtOpen(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_open'}> {
   eligible(state);
   const court = courtState(state);
   const item = obj(raw, ['type','offerId','white','evidence','truth','misdirection'], '随机卷宗');
-  const chosen = court.board?.day === state.clock.day ? court.board.offers.find(row => row.id === item.offerId) : undefined;
+  const chosen = (court.board?.day === state.clock.day ? court.board.offers.find(row => row.id === item.offerId) : undefined)
+    ?? (court.special?.day === state.clock.day && court.special.offer.id === item.offerId ? court.special.offer : undefined);
   if (!chosen || chosen.preset || court.results.some(result => result.id === String(item.offerId)))
     return error('请从今日尚未受理的随机委托中选择');
   return { type:'court_open', offerId: chosen.id, white:string(item.white,2500,'白剧本'),
@@ -301,20 +320,25 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
   next.courtroom = parseCourtroom(current);
   return next;
 }
-export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_open'|'court_quote'|'court_step'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
+export function courtStoryAction(state: WorldState, action: Extract<StoryAction,{type:'court_docket'|'court_special'|'court_open'|'court_quote'|'court_step'|'court_finish'}>): { state: WorldState; minutes: number; reward: number } {
   const next: WorldState = structuredClone(state);
   const court = parseCourtroom(next.courtroom ?? initialCourtroom());
   let minutes = 0, reward = 0;
   if (action.type === 'court_docket') {
     const random = validateCourtDocketOffers(action.offers, next);
     court.board = { day: state.clock.day, offers: [preset(state.clock.day,court.categories), ...random] };
+  } else if (action.type === 'court_special') {
+    const parsed = validateCourtSpecial(action,next);
+    court.special = {day:state.clock.day,offer:parsed.offer};
   } else if (action.type === 'court_open') {
     const parsed = validateCourtOpen(action, next);
-    const chosen = court.board!.offers.find(item => item.id === parsed.offerId)!;
-    court.active = { id:chosen.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
-      category:chosen.category, title:chosen.title, client:chosen.client, summary:chosen.summary,
+    const chosen = court.board?.day === state.clock.day ? court.board.offers.find(item => item.id === parsed.offerId) : undefined;
+    const offered = chosen ?? court.special?.offer;
+    if (!offered || offered.id !== parsed.offerId) return error('待受理卷宗无效');
+    court.active = { id:offered.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
+      category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,
       white:parsed.white, evidence:parsed.evidence, truth:parsed.truth, misdirection:parsed.misdirection,
-      rewardYen:chosen.rewardYen, experience:chosen.experience, fee:null, steps:[] };
+      rewardYen:offered.rewardYen, experience:offered.experience, fee:null, steps:[] };
     minutes = 10;
   } else if (action.type === 'court_quote') {
     const parsed = validateCourtFeeQuote(action,next);
@@ -388,6 +412,7 @@ export function courtStoryContext(state: WorldState) {
   const active = court.active?.owner === owner ? court.active : null;
   return {
     categories:court.categories, board:court.board?.day === state.clock.day ? court.board : null,
+    special:court.special?.day === state.clock.day ? court.special.offer : null,
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     active:active ? { ...active,
       // This hidden truth is only in the model context; it is never in the player UI.
