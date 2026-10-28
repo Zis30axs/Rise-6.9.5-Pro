@@ -773,7 +773,8 @@ export function courtStoryContext(state: WorldState) {
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     venue:active ? {id:COURT_HEARING_ID,label:'法庭',returnTo:LAW_OFFICE_ID} : null,
     careers:court.careers,
-    agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner).slice(-12),
+    agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner ||
+      court.results.some(r=>r.id===a.caseId && (r.owner===owner || r.lawyer===owner))).slice(-12),
     sanctions:court.sanctions?.filter(row=>state.clock.day>=row.startDay && state.clock.day<=row.endDay),
     pendingSettlement:active?.source==='lawsuit'?court.pendingSettlement:null,
     active: activePublic,
