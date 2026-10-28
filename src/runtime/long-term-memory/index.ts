@@ -47,19 +47,19 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
     if (!settings.enabled) return;
     const sources = collectCommittedSources(scope, before, after);
     if (sources.length) {
-      // Preserve the committed evidence even when a session is switched away.
-      void ingestSources(sources).then(() => {
-        const pending = reconciling.get(scope);
-        if (pending) {
-          const pauseToken = memoryPauseVersion(scope);
-          void pending.then(safe => {
-            if (safe && !memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
-              scheduleMemoryWork(scope, []);
-          });
-        } else if (!unsafeScopes.has(scope) && !memoryIsPaused(scope)) {
-          scheduleMemoryWork(scope, []);
-        }
-      }).catch(() => {});
+      const pausedAt = memoryPauseVersion(scope);
+      const pending = reconciling.get(scope);
+      const archive = (safe: boolean) => {
+        if (!safe) return;
+        // Reconciliation must finish before a newly committed turn can be
+        // archived, or its source may be mistaken for discarded future history.
+        void ingestSources(sources).then(() => {
+          if (!unsafeScopes.has(scope) && !memoryIsPaused(scope)
+            && memoryPauseVersion(scope) === pausedAt) scheduleMemoryWork(scope, []);
+        }).catch(() => {});
+      };
+      if (pending) void pending.then(archive);
+      else archive(!unsafeScopes.has(scope));
     }
   } catch { /* No memory feature may prevent a normal game save. */ }
 }

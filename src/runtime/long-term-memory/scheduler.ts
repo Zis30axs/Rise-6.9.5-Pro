@@ -183,9 +183,10 @@ function work(scope: string, settings: MemorySettings): Promise<void> {
 
 export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void {
   const settings = loadMemorySettings();
-  if (!settings.enabled || !sources.length) return;
+  if (!settings.enabled) return;
   pausedScopes.delete(scope);
-  void ingestSources(sources).then(() => work(scope, settings)).catch(() => {
+  const archived = sources.length ? ingestSources(sources) : Promise.resolve();
+  void archived.then(() => work(scope, settings)).catch(() => {
     // Optional sidecar has no authority to prevent a main-game save.
   });
 }
