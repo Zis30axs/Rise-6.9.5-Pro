@@ -12,6 +12,7 @@ const emit = defineEmits<{ close: [] }>();
 const owner = computed(() => activeProtagonist(props.model.state));
 const court = computed(() => courtState(props.model.state));
 const board = computed(() => court.value.board?.day === props.model.state.clock.day ? court.value.board : null);
+const special = computed(() => court.value.special?.day === props.model.state.clock.day ? court.value.special.offer : null);
 const active = computed(() => court.value.active);
 const myTrial = computed(() => active.value?.owner === owner.value ? active.value : null);
 const filing = computed(() => court.value.filing?.claimant === owner.value ? court.value.filing : null);
@@ -43,6 +44,13 @@ async function requestDocket() {
   working.value = true;
   try {
     await props.actions.send('请展示今天枫庭律师事务所的三份委托。请根据已选的民事、行政、轻微刑事范围制作两份新委托，并用 court_docket 行动保存公告栏；另有一份事务所保留的卷宗。不要立即开庭。');
+  } finally { working.value=false; }
+}
+async function requestSpecial() {
+  if (props.model.busy || working.value || active.value || special.value) return;
+  working.value = true;
+  try {
+    await props.actions.send('我希望主动查看一次重大刑事特殊委托。请只生成一份新的高报酬重大刑事卷宗，涉案人物优先使用临时人物，不从日常委托抽取，用 court_special 行动记录；现在只看委托概要，不开庭。');
   } finally { working.value=false; }
 }
 async function accept(offer:CourtOffer) {
@@ -154,7 +162,16 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
         </template>
         <details class="law-case">
           <summary>重大刑事 · 特殊委托</summary>
-          <p>重大刑事案件不会出现在日常委托中。仅在明确选择特殊委托时才受理，涉案人物优先使用新出现的临时人物。</p>
+          <p>特殊案件不会出现在日常委托中；涉案人物优先为新出现的临时人物。</p>
+          <article v-if="special" class="law-special-offer" data-court-special>
+            <h3>{{ special.title }}</h3>
+            <p>{{ special.summary }}</p>
+            <small>委托人：{{ special.client }} · 报酬 ¥{{ formatGameNumber(special.rewardYen) }}</small>
+            <button type="button" :disabled="model.busy || working || court.results.some(row=>row.id===special.id)" @click="accept(special)">
+              {{ court.results.some(row=>row.id===special.id)?'已结案':'承接特殊委托' }}
+            </button>
+          </article>
+          <button v-else type="button" data-court-special-request :disabled="model.busy || working" @click="requestSpecial">查看特殊委托</button>
         </details>
       </template>
       <template v-else>
@@ -208,6 +225,7 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 .law-case p,.law-partner p{line-height:1.6}
 .law-case h3{font-size:17px}
 .law-case h4{font-size:15px}
+.law-special-offer{display:grid;gap:9px;padding:9px;border:1px solid #b895a34a;border-radius:9px}
 .law-evidence-item{display:grid;gap:5px;padding:9px;border-left:3px solid #b9a8e1;background:#8c89a00d}
 .law-inline{display:inline!important;white-space:pre-wrap;overflow-wrap:anywhere}
 .law-keyword{color:#e66a73;font-weight:800}
