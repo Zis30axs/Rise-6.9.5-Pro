@@ -225,7 +225,8 @@ export function validateCourtOpen(raw: unknown, state: WorldState): Extract<Stor
 export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_quote'}> {
   eligible(state);
   const item = obj(raw, ['type','defendant','reason','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉讼报价');
-  const parsed = filing({ ...item, claimant: activeProtagonist(state) });
+  const { type: _type, ...attributes } = item;
+  const parsed = filing({ ...attributes, claimant: activeProtagonist(state) });
   // A protagonist may help with preparation, but formal legal agency requires
   // a qualification. Until certified, the chosen protagonist is co-counsel only.
   return { type:'court_quote', ...parsed };
@@ -256,7 +257,8 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     eligible(state);
     if (current.board?.day === state.clock.day) return error('今天的公告栏已经公布，明日可以重新筛选');
     const categories = action.categories;
-    if (!categories || !categories.length || new Set(categories).size !== categories.length) return error('筛选不能为空');
+    if (!categories || !categories.length || new Set(categories).size !== categories.length ||
+      categories.some(category => !DAILY_COURT_CATEGORIES.includes(category))) return error('日常委托筛选无效');
     current.categories = categories.map(category);
   } else if (action.phase === 'accept-preset') {
     eligible(state);
@@ -269,6 +271,15 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       white:scripted.white, evidence:structuredClone(scripted.evidence), truth:scripted.truth,
       misdirection:scripted.misdirection, rewardYen:offer.rewardYen, experience:offer.experience,
       fee:null, steps:[] };
+  } else if (action.phase === 'sherry') {
+    const active = current.active;
+    if (!active || active.owner !== 'emma' || owner !== 'emma' || active.source !== 'commission') return error('只有艾玛的职业委托可以由雪莉救场');
+    const payout = Math.round(active.rewardYen * SHERRY_ASSIST_RATE);
+    next.player.balance += payout;
+    current.results.push({id:active.id,owner,source:'commission',title:active.title,verdict:'win',solvedBy:'sherry',
+      payout,experience:Math.round(active.experience * SHERRY_ASSIST_RATE),summary:'橘雪莉依据现有证据完成关键论证，案件得到妥善解决。',atDay:state.clock.day});
+    if (current.results.length > 300) current.results.shift();
+    current.active = null;
   } else if (action.phase === 'confirm-filing') {
     eligible(state);
     const filing = current.filing;
@@ -304,7 +315,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
       rewardYen:chosen.rewardYen, experience:chosen.experience, fee:null, steps:[] };
     minutes = 10;
   } else if (action.type === 'court_quote') {
-    const parsed = validateCourtFeeQuote({type:'court_quote',...action},next);
+    const parsed = validateCourtFeeQuote(action,next);
     court.filing = { claimant:parsed.claimant, defendant:parsed.defendant, reason:parsed.reason,
       category:parsed.category, lawyer:parsed.lawyer, sherry:parsed.sherry,
       courtFeeYen:parsed.courtFeeYen, lawyerFeeYen:parsed.lawyerFeeYen, sherryFeeYen:parsed.sherryFeeYen };
