@@ -1122,18 +1122,20 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'law_case': {
-      const quote = quoteLawCase(next, action);
+      const lawContext = { ...next, protagonists: worldAuthority?.protagonists };
+      const quote = quoteLawCase(lawContext, action);
       if (quote.blockedReason) throw new Error(quote.blockedReason);
       const before = { ...next.player };
-      const result = settleLawCase(next, action);
+      const result = settleLawCase(lawContext, action);
       advance(next, quote.minutes);
       next.player.energy = adjustEnergy(next.player.energy, -quote.energyCost);
       next.player.stress = Math.min(100, next.player.stress + quote.stressGain);
       next.player.morale = Math.min(100, next.player.morale + quote.moraleGain);
       next.player.balance += quote.payout;
       next.lawCareer = result.career;
-      const last = result.career.owners[worldAuthority?.protagonists?.accounts.active ?? 'soyo']?.lastResult;
-      const details = last && !result.career.owners[worldAuthority?.protagonists?.accounts.active ?? 'soyo']?.active
+      const lawOwnerId = worldAuthority?.protagonists?.accounts.active ?? 'soyo';
+      const last = result.career.owners[lawOwnerId]?.lastResult;
+      const details = last && !result.career.owners[lawOwnerId]?.active
         ? `案件已完美结案，由${last.solvedBy === 'sherry' ? '橘雪莉' : '玩家'}主导最终论证。职业经验 +${last.experience}，报酬 ${last.payout} 日元。`
         : quote.correct === false ? '举证未成功，可继续尝试。' : quote.feedback;
       const transition = detectIllnessTransition(before, next.player);
