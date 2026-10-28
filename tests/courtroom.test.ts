@@ -315,7 +315,13 @@ describe('freeform courtroom and legal services', () => {
   });
 
   it('records a sentenced NPC restriction without imposing sentences on playable characters',()=>{
-    let state=openPreset();
+    let state=withBoard();
+    const selected=state.courtroom!.board!.offers.find(row=>row.category==='minor-criminal')!;
+    state=applyStoryActions(state,[{type:'court_open',offerId:selected.id,
+      white:'检方呈交证据，法庭继续核实有关事实。',
+      evidence:[{title:'证人记录',detail:'部分时间待核对'},{title:'相关单据',detail:'存在第二条时间记录'}],
+      truth:'法庭已完成必要核实，具体罪责由本次模拟裁判说明。',
+      misdirection:'证人可能记错日期'}],'court-open-sanction');
     state=applyStoryActions(state,[{
       type:'court_finish',verdict:'loss',summary:'法庭查明案件后完成裁判。',
       order:{respondent:'橘雪莉',terms:[],sanctions:[{
