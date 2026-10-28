@@ -7,6 +7,7 @@ import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSce
 import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
+import { isNpcUnderCourtRestriction } from './court-legal-effects';
 
 export interface WorldScenePerson extends ScenePerson {
   protagonistId?: ProtagonistId;
@@ -84,7 +85,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       });
     }
   }
-  if (!state.protagonists) return people;
+  if (!state.protagonists) return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
   for (const owner of otherProtagonists(activeProtagonist(state))) {
     const personal = personState(state, owner);
     if (state.interior ? personal.interior?.roomId !== state.interior.roomId : !!personal.interior) continue;
@@ -98,7 +99,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       portraitId: contact?.portraitId ?? characterForPerson(id), contactId: contact?.id ?? null, isMain: true,
     });
   }
-  return people;
+  return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
 }
 
 /** Rendering, talk targeting and model context share the same saved population. */
