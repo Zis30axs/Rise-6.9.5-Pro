@@ -16,7 +16,7 @@ export interface CourtOffer {
   difficulty: CourtDifficulty; rewardYen: number; experience: number; preset: boolean;
 }
 export interface CourtFiling {
-  claimant: ProtagonistId; defendant: string; reason: string; category: CourtCategory;
+  claimant: ProtagonistId; defendant: string; reason: string; risk: string; category: CourtCategory;
   lawyer: ProtagonistId | null; sherry: boolean;
   courtFeeYen: number; lawyerFeeYen: number; sherryFeeYen: number;
 }
@@ -88,13 +88,13 @@ const offer = (raw: unknown): CourtOffer => {
   };
 };
 const filing = (raw: unknown): CourtFiling => {
-  const item = obj(raw, ['claimant','defendant','reason','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉状');
+  const item = obj(raw, ['claimant','defendant','reason','risk','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉状');
   const claimant = protagonist(item.claimant);
   const lawyer = item.lawyer === null ? null : protagonist(item.lawyer);
   if (lawyer === claimant || typeof item.sherry !== 'boolean') return error('律师身份');
   const result: CourtFiling = {
     claimant, defendant: string(item.defendant, 100, '被告姓名'),
-    reason: string(item.reason, 1000, '起诉事由'), category: category(item.category),
+    reason: string(item.reason, 1000, '起诉事由'), risk: string(item.risk, 1200, '诉前风险'), category: category(item.category),
     lawyer, sherry: item.sherry,
     courtFeeYen: whole(item.courtFeeYen, 100000, '起诉费'),
     lawyerFeeYen: whole(item.lawyerFeeYen, 100000, '律师费'),
@@ -244,7 +244,7 @@ export function validateCourtOpen(raw: unknown, state: WorldState): Extract<Stor
 }
 export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_quote'}> {
   eligible(state);
-  const item = obj(raw, ['type','defendant','reason','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉讼报价');
+  const item = obj(raw, ['type','defendant','reason','risk','category','lawyer','sherry','courtFeeYen','lawyerFeeYen','sherryFeeYen'], '诉讼报价');
   const { type: _type, ...attributes } = item;
   const parsed = filing({ ...attributes, claimant: activeProtagonist(state) });
   // A protagonist may help with preparation, but formal legal agency requires
@@ -342,7 +342,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     minutes = 10;
   } else if (action.type === 'court_quote') {
     const parsed = validateCourtFeeQuote(action,next);
-    court.filing = { claimant:activeProtagonist(state), defendant:parsed.defendant, reason:parsed.reason,
+    court.filing = { claimant:activeProtagonist(state), defendant:parsed.defendant, reason:parsed.reason, risk:parsed.risk,
       category:parsed.category, lawyer:parsed.lawyer, sherry:parsed.sherry,
       courtFeeYen:parsed.courtFeeYen, lawyerFeeYen:parsed.lawyerFeeYen, sherryFeeYen:parsed.sherryFeeYen };
   } else if (action.type === 'court_step') {
