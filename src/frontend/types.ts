@@ -327,7 +327,8 @@ export interface ShellActions {
   interact?(action: WorldAction): Promise<boolean>;
   resolveInteraction?(accept: boolean): Promise<void>;
   cancelInteraction?(): void;
-  send(text: string): Promise<void>;
+  /** Narrative-only recaps may not submit additional world effects. */
+  send(text: string, mode?: 'story' | 'law_narration'): Promise<void>;
   exit(): void;
   switchChat(): void;
   openPhone(anchor?: HTMLElement): void;
