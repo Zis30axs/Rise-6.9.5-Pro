@@ -45,6 +45,24 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
   const people: WorldScenePerson[] = state.interior
     ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hidden)
     : scene ? getScenePeople(scene, state.contacts, state.clock, hidden) : [];
+  // Emma's standing legal partner also attends the actual court when retained
+  // for this case, without changing other residents' authored daily schedules.
+  const trial = state.courtroom?.active;
+  if (state.interior?.roomId === 'court-hearing' && trial &&
+    (trial.owner === 'emma' || trial.fee?.sherry) &&
+    !isNpcUnderCourtRestriction(state,'majo-sherry',state.clock.day,state.clock.hour)) {
+    const sherry = allResidentCast.find(person => person.id === 'majo-sherry');
+    if (sherry) {
+      const contact = state.contacts.find(row => row.id === sherry.id || row.sourcePersonId === sherry.id);
+      people.push({
+        id:sherry.id,name:contact?.name ?? sherry.name,candidateName:sherry.name,
+        identity:'律师事务所法律协助人员',tags:['常驻人物','法律协助'],
+        description:'随同当事人来到法庭，依据当前案卷整理证据。',
+        x:-2.5,z:0.7,color:0x859c6d,portraitId:contact?.portraitId ?? characterForPerson(sherry.id),
+        contactId:contact?.id ?? null,isMain:contact?.isMain ?? false,
+      });
+    }
+  }
   // Expiring story-committed NPC locations supersede authored fallback schedules.
   // Never project an NPC twice or let a saved NPC event steal a playable identity.
   if (state.protagonists?.otherSideNpc) {
