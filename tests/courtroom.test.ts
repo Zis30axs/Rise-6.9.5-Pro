@@ -5,6 +5,7 @@ import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { courtState, courtStoryContext, DAILY_COURT_CATEGORIES, parseCourtroom } from '../src/runtime/courtroom';
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 import { npcProfession } from '../src/runtime/npc-professions';
+import { worldScenePeople } from '../src/runtime/world-presence';
 
 function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   let state = enableProtagonists(createInitialState());
@@ -227,6 +228,28 @@ describe('freeform courtroom and legal services', () => {
     expect(state.locationId).toBe('legal-office');
     expect(state.interior?.roomId).toBe('legal-office');
     expect(state.courtroom?.active).toBeNull();
+  });
+
+  it('shows summoned defendants and other playable counsel in the courtroom without changing their personal saves',()=>{
+    let state=inOffice();
+    const soyoLocation=personState(state,'soyo').locationId;
+    const sakikoLocation=personState(state,'sakiko').locationId;
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'长崎素世',reason:'请求解决合同争议',
+      risk:'可能缺乏支持请求的关键证据',category:'civil',lawyer:'sakiko',sherry:false,
+      courtFeeYen:0,lawyerFeeYen:400,sherryFeeYen:0}],'court-attendees-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    const people=worldScenePeople(state);
+    expect(people.some(person=>person.protagonistId==='soyo' && person.identity==='被告当事人')).toBe(true);
+    expect(people.some(person=>person.protagonistId==='sakiko' && person.identity==='法律协助人员')).toBe(true);
+    expect(people.some(person=>person.id==='court-judge')).toBe(true);
+    expect(personState(state,'soyo').locationId).toBe(soyoLocation);
+    expect(personState(state,'sakiko').locationId).toBe(sakikoLocation);
+  });
+
+  it('cannot visit the formal court without an actual hearing',()=>{
+    const state=inOffice();
+    expect(()=>reduceState(state,{type:'novel_travel',locationId:'court-hearing'})).toThrow();
+    expect(()=>reduceState(state,{type:'enter_interior',roomId:'court-hearing'})).toThrow();
   });
 
   it('a proposed settlement does not close a suit or charge money before explicit player confirmation',()=>{
