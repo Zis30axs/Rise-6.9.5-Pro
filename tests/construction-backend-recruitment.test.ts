@@ -45,6 +45,26 @@ describe('construction backend recruitment twist', () => {
     expect(getLocationServices(computerStudent()).map(s => s.id)).toEqual(['construction-clear', 'construction-carry', CONSTRUCTION_BACKEND_JOB_ID]);
   });
 
+  it('keeps CS recruitment eligibility exclusive to the chosen major across all four viewpoints', () => {
+    const majors = { soyo: 'computer-science', sakiko: 'law', emma: 'computer-science', renako: 'music' } as const;
+    let state = enableProtagonists(createInitialState());
+    for (const owner of PROTAGONISTS) {
+      if (state.protagonists?.accounts.active !== owner) {
+        state = reduceState(state, { type: 'switch_protagonist', target: owner });
+      }
+      state = reduceState(state, { type: 'choose_academics', majorId: majors[owner] });
+      expect(getLocationServices({ ...state, locationId: 'construction-site', interior: null })
+        .some(service => service.id === CONSTRUCTION_BACKEND_JOB_ID)).toBe(majors[owner] === 'computer-science');
+    }
+    for (const owner of [...PROTAGONISTS].reverse()) {
+      state = reduceState(state, { type: 'switch_protagonist', target: owner });
+      state = parseState(state);
+      expect(state.academics?.majorId).toBe(majors[owner]);
+      expect(getLocationServices({ ...state, locationId: 'construction-site', interior: null })
+        .some(service => service.id === CONSTRUCTION_BACKEND_JOB_ID)).toBe(majors[owner] === 'computer-science');
+    }
+  });
+
   it('requires explicit player acceptance instead of letting story actions skip the reveal', () => {
     const student = computerStudent();
     expect(() => validateStoryActions([{ type: 'service', serviceId: CONSTRUCTION_BACKEND_JOB_ID }], student)).toThrow(/地点服务/);
