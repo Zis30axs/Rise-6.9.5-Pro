@@ -359,7 +359,7 @@ export function validateCourtOpen(raw: unknown, state: WorldState): Extract<Stor
   if (!chosen || chosen.preset || court.results.some(result => result.id === String(item.offerId)))
     return error('请从今日尚未受理的随机委托中选择');
   const respondent=courtDefendantName(string(item.respondent,100,'被告身份'));
-  if(PROTAGONISTS.some(id=>protagonistNames[id]===respondent)) return error('随机委托不能起诉四位可操作主角');
+  if(PROTAGONISTS.some(id=>protagonistNames[id]===respondent)) return error('日常委托不得安排可操作主角为被告');
   return { type:'court_open', offerId: chosen.id, respondent, white:string(item.white,2500,'案情'),
     evidence:evidence(item.evidence) };
 }
@@ -369,7 +369,6 @@ export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<
   const { type: _type, ...attributes } = item;
   const parsed = filing({ ...attributes, claimant: activeProtagonist(state) });
   if(parsed.category!=='civil' && parsed.category!=='administrative') return error('主动起诉仅限民事与行政诉讼，刑事公诉由检察机关提出');
-  if(PROTAGONISTS.some(id=>protagonistNames[id]===parsed.defendant)) return error('不可主动起诉四位可操作主角');
   // A protagonist may help with preparation, but formal legal agency requires
   // a qualification. Until certified, the chosen protagonist is co-counsel only.
   const { claimant: _claimant, ...quoted } = parsed;
@@ -510,7 +509,6 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     const filing = current.filing;
     if (!filing || filing.claimant !== owner) return error('请先完成诉前咨询');
     if(filing.category!=='civil' && filing.category!=='administrative') return error('不能以私人名义提起刑事公诉');
-    if(PROTAGONISTS.some(id=>protagonistNames[id]===filing.defendant)) return error('不得对四位可操作主角提起新诉讼');
     if (filing.lawyer && filing.lawyer === owner) return error('不能聘请自己');
     const cost = filing.courtFeeYen + filing.lawyerFeeYen + filing.sherryFeeYen;
     if (next.player.balance < cost) return error('账户余额不足');
