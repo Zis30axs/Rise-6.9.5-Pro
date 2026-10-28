@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { currentLawCase, lawCases, lawOwner, quoteLawCase, type LawCaseAction } from '../runtime/law-career';
-import { activeProtagonist } from '../runtime/protagonist-world';
+import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { runInteraction } from './interaction-action';
 import { formatGameNumber } from './format-game-number';
 import type { ShellActions, ShellModel } from './types';
@@ -32,7 +32,7 @@ async function perform(action: LawCaseAction) {
     const finished = !!result && !progress.value.active &&
       result.caseId === (current.value?.id ?? action.caseId ?? result.caseId);
     receipt.value = finished && result
-      ? '完美结案 · ' + (result.solvedBy === 'sherry' ? '雪莉完成了证据推理' : '艾玛独立完成了证据论证') +
+      ? '完美结案 · ' + (result.solvedBy === 'sherry' ? '雪莉完成了证据推理' : protagonistNames[owner.value] + '独立完成了证据论证') +
         ' · 经验 +' + result.experience + ' · 报酬 ¥' + formatGameNumber(result.payout) + '。'
       : before.feedback;
     attempted.value = false;
@@ -40,7 +40,7 @@ async function perform(action: LawCaseAction) {
     if (finished && (action.phase === 'sherry' || action.phase === 'present')) {
       const request = action.phase === 'sherry'
         ? '艾玛把案卷递给雪莉，紧张地问：“雪莉桑，我还是没能把这些线索连起来……你能帮我把真相讲清楚吗？”'
-        : '艾玛举起已经整理好的证据，认真地向在场众人陈述她对这起案件的最终推理。';
+        : protagonistNames[owner.value] + '举起已经整理好的证据，认真地向在场众人陈述这起案件的最终推理。';
       void props.actions.send(request);
     } else if (action.phase === 'investigate' && owner.value === 'emma') {
       void props.actions.send('艾玛与雪莉一起核对完卷宗，望向桌上的几件证物。艾玛想听听雪莉的观察，也希望自己能找到矛盾所在。');
