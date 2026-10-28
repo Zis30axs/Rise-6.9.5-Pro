@@ -160,6 +160,23 @@ describe('freeform courtroom and legal services', () => {
     expect(courtState(rescued).results.at(-1)).toMatchObject({solvedBy:'sherry',payout:Math.round(reward*.4)});
   });
 
+  it('does not reduce independent rewards just because Sherry was mentioned in the verdict',()=>{
+    let alone=openPreset();
+    const full=alone.courtroom!.active!.rewardYen;
+    alone=applyStoryActions(alone,[
+      {type:'court_step',kind:'insight',key:'player-solved',summary:'艾玛独立完成了关键证明'},
+      {type:'court_finish',verdict:'win',summary:'雪莉给出一般建议，艾玛自行完成全部论证。'},
+    ],'independent-with-advice');
+    expect(alone.courtroom?.results.at(-1)?.payout).toBe(full);
+    expect(alone.courtroom?.results.at(-1)?.solvedBy).toBe('player');
+    let assisted=openPreset();
+    assisted=applyStoryActions(assisted,[{
+      type:'court_finish',verdict:'win',assisted:true,summary:'艾玛请求雪莉接手，雪莉依据已保存的证据完成论证。',
+    }],'explicit-sherry-takeover');
+    expect(assisted.courtroom?.results.at(-1)?.payout).toBe(Math.round(full*.4));
+    expect(assisted.courtroom?.results.at(-1)?.solvedBy).toBe('sherry');
+  });
+
   it('resumes an unfinished legacy investigation as a freeform courtroom case without losing the old save',()=>{
     let state=inOffice();
     state=reduceState(state,{type:'law_case',phase:'accept',caseId:'gallery-clock'});
