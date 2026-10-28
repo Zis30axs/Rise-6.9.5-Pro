@@ -110,7 +110,7 @@ describe('freeform courtroom and legal services', () => {
     const board=withBoard();
     const chosen=board.courtroom!.board!.offers.find(item=>!item.preset)!;
     const opened=applyStoryActions(board,[{
-      type:'court_open',offerId:chosen.id,
+      type:'court_open',offerId:chosen.id,respondent:'临时货运店员',
       white:'店员受到怀疑，证据与证词之间存在矛盾。',
       evidence:[{title:'门禁记录',detail:'登记时间有误差'},{title:'交接单',detail:'另有签收者'}],
       truth:'交接人在仓库按流程移交货物，店员没有偷窃。',
@@ -402,7 +402,7 @@ describe('freeform courtroom and legal services', () => {
     // and a rescued verdict cannot reuse punitive orders from the failed case.
     let state=withBoard('soyo');
     const selected=state.courtroom!.board!.offers.find(row=>row.category==='minor-criminal')!;
-    state=applyStoryActions(state,[{type:'court_open',offerId:selected.id,
+    state=applyStoryActions(state,[{type:'court_open',offerId:selected.id,respondent:'橘雪莉',
       white:'检方呈交证据，法庭继续核实有关事实。',
       evidence:[{title:'证人记录',detail:'部分时间待核对'},{title:'相关单据',detail:'存在第二条时间记录'}],
       truth:'法庭已完成必要核实，具体罪责由本次模拟裁判说明。',
