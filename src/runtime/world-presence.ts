@@ -7,6 +7,7 @@ import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSce
 import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
+import { isNpcUnderCourtRestriction } from './court-legal-effects';
 
 export interface WorldScenePerson extends ScenePerson {
   protagonistId?: ProtagonistId;
@@ -44,16 +45,65 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
   const people: WorldScenePerson[] = state.interior
     ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hidden)
     : scene ? getScenePeople(scene, state.contacts, state.clock, hidden) : [];
+  // Emma's standing legal partner also attends the actual court when retained
+  // for this case, without changing other residents' authored daily schedules.
+  const trial = state.courtroom?.active;
+  const courtSummoned = new Set<string>();
+  if (state.interior?.roomId === 'court-hearing' && trial &&
+    (trial.owner === 'emma' || trial.fee?.sherry) &&
+    trial.respondent !== '橘雪莉' &&
+    !isNpcUnderCourtRestriction(state,'majo-sherry',state.clock.day,state.clock.hour)) {
+    const sherry = allResidentCast.find(person => person.id === 'majo-sherry');
+    if (sherry) {
+      const contact = state.contacts.find(row => row.id === sherry.id || row.sourcePersonId === sherry.id);
+      courtSummoned.add(sherry.id);
+      people.push({
+        id:sherry.id,name:contact?.name ?? sherry.name,candidateName:sherry.name,
+        identity:'律师事务所法律协助人员',tags:['常驻人物','法律协助'],
+        description:'随同当事人来到法庭，依据当前案卷整理证据。',
+        x:-2.5,z:0.7,color:0x859c6d,portraitId:contact?.portraitId ?? characterForPerson(sherry.id),
+        contactId:contact?.id ?? null,isMain:contact?.isMain ?? false,
+      });
+    }
+  }
+  // The client and opposing party are represented in their actual trial,
+  // including temporarily introduced clients with no permanent city schedule.
+  if (state.interior?.roomId === 'court-hearing' && trial) {
+    const named = [
+      ...(trial.source==='commission' ? [{name:trial.client,role:'委托人' as const,x:-2.4}] : []),
+      ...(trial.respondent ? [{name:trial.respondent,role:'诉讼相对方' as const,x:2.4}] : []),
+    ];
+    const shown=new Set(people.map(person=>person.name));
+    for (const entry of named) {
+      if(shown.has(entry.name) || Object.values(protagonistNames).includes(entry.name)) continue;
+      const resident=allResidentCast.find(row=>
+        row.name===entry.name || row.id===entry.name || row.aliases.includes(entry.name));
+      if(resident && PROTAGONIST_PERSON_ID_LIST.includes(resident.id)) continue;
+      const id=resident?.id ?? 'court-person-'+(entry.role==='委托人'?'client':'respondent');
+      if(isNpcUnderCourtRestriction(state,id,state.clock.day,state.clock.hour)) continue;
+      const contact=state.contacts.find(row=>row.sourcePersonId===id || row.name===entry.name);
+      courtSummoned.add(id);
+      people.push({
+        id,name:contact?.name ?? entry.name,candidateName:entry.name,
+        identity:entry.role,tags:['法庭',entry.role],
+        description:entry.role==='委托人'?'正在参与自己的案件，保留自身知情与表达。':'依据案卷身份应诉，保留自身意志与答辩空间。',
+        x:entry.x,z:0.8,color:0x89766a,
+        portraitId:contact?.portraitId ?? characterForPerson(id),
+        contactId:contact?.id ?? null,isMain:contact?.isMain ?? false,
+      });
+      shown.add(entry.name);
+    }
+  }
   // Expiring story-committed NPC locations supersede authored fallback schedules.
   // Never project an NPC twice or let a saved NPC event steal a playable identity.
   if (state.protagonists?.otherSideNpc) {
     const authoredIds = new Set(allResidentCast.map(row => row.id));
     for (let index = people.length - 1; index >= 0; index--) {
       const person = people[index]!;
-      if (authoredIds.has(person.id) && activeOtherSideNpcLocation(state, person.id)) people.splice(index, 1);
+      if (!courtSummoned.has(person.id) && authoredIds.has(person.id) && activeOtherSideNpcLocation(state, person.id)) people.splice(index, 1);
     }
     for (const resident of allResidentCast) {
-      if (hidden.includes(resident.id) || !authoredIds.has(resident.id)) continue;
+      if (hidden.includes(resident.id) || !authoredIds.has(resident.id) || courtSummoned.has(resident.id)) continue;
       const override = activeOtherSideNpcLocation(state, resident.id);
       if (!override) continue;
       const inRoom = !!getCampusInterior(override.locationId);
@@ -84,8 +134,31 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       });
     }
   }
-  if (!state.protagonists) return people;
+  if (!state.protagonists) return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
+  // A formal summons supersedes other playable characters' ordinary scene
+  // projection only while this hearing is live. Their saved personal position
+  // and point-of-view are never overwritten by the court scene projection.
+  const courtAttendees = new Set<ProtagonistId>();
+  if (state.interior?.roomId === 'court-hearing' && trial?.fee) {
+    for (const owner of otherProtagonists(activeProtagonist(state))) {
+      const summoned = trial.fee.defendant === protagonistNames[owner];
+      const counsel = trial.fee.lawyer === owner;
+      if (!summoned && !counsel) continue;
+      courtAttendees.add(owner);
+      const id = protagonistSceneId(owner), contact = protagonistContact(state.contacts, owner);
+      people.push({
+        id,protagonistId:owner,name:contact?.name ?? protagonistNames[owner],
+        candidateName:protagonistNames[owner],identity:summoned?'被告当事人':'法律协助人员',
+        tags:['法庭','主角',summoned?'被告':'协助'],
+        description:summoned?'应诉并保留独立知情范围与人格立场。':'协助整理案卷与出庭论证。',
+        x:summoned?2.4:-2.4,z:0.8,color:0x859c6d,
+        portraitId:contact?.portraitId ?? characterForPerson(id),
+        contactId:contact?.id ?? null,isMain:true,
+      });
+    }
+  }
   for (const owner of otherProtagonists(activeProtagonist(state))) {
+    if (courtAttendees.has(owner)) continue;
     const personal = personState(state, owner);
     if (state.interior ? personal.interior?.roomId !== state.interior.roomId : !!personal.interior) continue;
     const position = worldScenePosition(personal);
@@ -98,7 +171,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       portraitId: contact?.portraitId ?? characterForPerson(id), contactId: contact?.id ?? null, isMain: true,
     });
   }
-  return people;
+  return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
 }
 
 /** Rendering, talk targeting and model context share the same saved population. */

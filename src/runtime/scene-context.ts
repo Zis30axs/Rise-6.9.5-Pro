@@ -149,6 +149,14 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
 /** Static identity/position authority for stored encounters; never a live population. */
 const WATANARE_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
+  if (roomId === 'court-hearing') return [
+    {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
+      description:'端坐于审判席，主持庭审与秩序。',x:0,z:-3.1,color:0x7f6a5b,
+      portraitId:characterForPerson('court-judge'),contactId:null,isMain:false},
+    {id:'court-clerk',name:'书记员',candidateName:'书记员',identity:'法院工作人员',tags:['法庭'],
+      description:'在一侧核对卷宗并记录发言。',x:4.8,z:-1.4,color:0x7f6a5b,
+      portraitId:characterForPerson('court-clerk'),contactId:null,isMain:false},
+  ];
   if (roomId === 'legal-office') {
     const sherry = allResidentCast.find(row => row.id === 'majo-sherry');
     return sherry ? [{
@@ -185,6 +193,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
 /** Authored indoor people are separate from outdoor anchors and random pedestrians. */
 export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   if (!clock) return [];
+  if (roomId === 'court-hearing') return getInteriorPeopleForValidation(roomId);
   return getInteriorPeopleForValidation(roomId).flatMap(person => {
     if (hiddenPersonIds.includes(person.id)) return [];
     const presence = residentPresence(person.id, clock);

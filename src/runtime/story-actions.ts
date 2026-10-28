@@ -6,6 +6,7 @@ import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
+import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
   actions: 12, minutes: 10080, studyMinMinutes: 15, studyMaxMinutes: 240,
@@ -37,6 +38,14 @@ function destination(value: unknown, path: string): string {
 /** A narrow action language; no dynamic keys, arbitrary object patches, or executable model data. */
 export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
+  const courtActions = value.filter(item => !!item && typeof item === 'object' &&
+    /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
+    .map(item => String((item as Record<string,unknown>).type));
+  // A fresh insight or an explicit Sherry handover may be settled in the same response.
+  const allowedPair = courtActions.length === 2 &&
+    ((courtActions[0] === 'court_step' || courtActions[0] === 'court_assist') && courtActions[1] === 'court_finish');
+  if (courtActions.length > 2 || (courtActions.length === 2 && !allowedPair))
+    return invalid('同一轮仅允许单项庭审操作，或庭审进展/正式接手后立即结案');
   return value.map((raw, index) => {
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
@@ -107,6 +116,18 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
         return { type: 'relationship', npcId: item.npcId, delta: number(item.delta, -STORY_ACTION_LIMITS.relationshipDelta, STORY_ACTION_LIMITS.relationshipDelta, `${path} 关系变化`), reason: text(item.reason, 240, `${path} 关系依据`) };
       }
+      case 'court_docket': {
+        const item = record(raw, ['type','offers'],path);
+        return { type:'court_docket', offers:validateCourtDocketOffers(item.offers,state) };
+      }
+      case 'court_special': return validateCourtSpecial(raw,state);
+      case 'court_open': return validateCourtOpen(raw,state);
+      case 'court_quote': return validateCourtFeeQuote(raw,state);
+      case 'court_step': return validateCourtStep(raw,state);
+      case 'court_assist': return validateCourtAssist(raw,state);
+      case 'court_settlement': return validateCourtSettlement(raw,state);
+      case 'court_fulfill': return validateCourtFulfillment(raw,state);
+      case 'court_finish': return validateCourtFinish(raw,state);
       case 'transfer': {
         const item = record(raw, ['type', 'from', 'to', 'cents', 'reason'], path);
         const party = (value: unknown, label: string): string => {

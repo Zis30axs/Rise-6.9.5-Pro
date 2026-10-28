@@ -38,6 +38,7 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { isCourtInSession } from '../runtime/courtroom';
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
@@ -53,20 +54,10 @@ const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 const currentProtagonist = computed(() => activeProtagonist(props.model.state));
 const switchingLease = shallowRef<ProtagonistSwitchLease | null>(null);
 const switchOverlay = ref<{ skip(): Promise<void> }>();
-function selectProtagonist(event: Event) {
-  if (switchingLease.value || props.model.interaction) return;
-  scene.value?.flushPresence();
-  const input = event.target as HTMLSelectElement;
-  const target = input.value as ProtagonistId;
-  input.value = currentProtagonist.value;
-  if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
-  if (!props.actions.beginProtagonistSwitch) { props.actions.dispatch({ type: 'switch_protagonist', target }); return; }
-  switchingLease.value = props.actions.beginProtagonistSwitch(target);
-}
-/** A saved side event exposes only the four playable IDs, never NPC identities. */
-function switchToOtherSide(target: ProtagonistId) {
-  if (!PROTAGONISTS.includes(target) || currentProtagonist.value === target
-    || switchingLease.value || props.model.busy || props.model.interaction) return;
+const pendingCourtSwitch = ref<ProtagonistId | null>(null);
+function commitProtagonistSwitch(target: ProtagonistId) {
+  if (!PROTAGONISTS.includes(target) || currentProtagonist.value === target ||
+    switchingLease.value || props.model.busy || props.model.interaction) return;
   scene.value?.flushPresence();
   if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
   if (!props.actions.beginProtagonistSwitch) {
@@ -75,10 +66,35 @@ function switchToOtherSide(target: ProtagonistId) {
   }
   switchingLease.value = props.actions.beginProtagonistSwitch(target);
 }
+function requestProtagonistSwitch(target: ProtagonistId) {
+  if (pendingCourtSwitch.value || !PROTAGONISTS.includes(target) || target === currentProtagonist.value ||
+    switchingLease.value || props.model.busy || props.model.interaction) return;
+  if (isCourtInSession(props.model.state)) {
+    pendingCourtSwitch.value = target;
+    void nextTick(() => shell.value?.querySelector<HTMLButtonElement>('[data-court-switch-cancel]')?.focus({preventScroll:true}));
+    return;
+  }
+  commitProtagonistSwitch(target);
+}
+function confirmCourtSwitch() {
+  const target = pendingCourtSwitch.value;
+  pendingCourtSwitch.value = null;
+  if (target) commitProtagonistSwitch(target);
+}
+function selectProtagonist(event: Event) {
+  const input = event.target as HTMLSelectElement;
+  const target = input.value as ProtagonistId;
+  input.value = currentProtagonist.value;
+  requestProtagonistSwitch(target);
+}
+/** Side-story viewpoints use the same active-trial warning as the main selector. */
+function switchToOtherSide(target: ProtagonistId) {
+  requestProtagonistSwitch(target);
+}
 watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
-watch(currentProtagonist, protagonist => { closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
+watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'transit' | 'store' | 'location' | 'law';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -237,7 +253,7 @@ const civilDateLabel = computed(() => {
   const occasion = occasions.find(item => item.dayOff) ?? occasions[0];
   return `${formatGameDate(day)} · ${gameCalendar(day).weekdayLabel}${occasion ? ' · ' + occasion.name : ''}`;
 });
-const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'law' ? '律师事务所 · 案件' : nav.find(item => item.id === activeWindow.value)?.title ?? '');
+const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
 // Phone presentation renders a static front view while all walking remains disabled.
@@ -727,6 +743,7 @@ function sceneEncounter(personId: string) {
   void prepareAction(`我向${personLabel(person)}打招呼，想和对方聊几句。请根据我们眼下所在的地方继续当面的对话，不要替我决定下一句话。`);
 }
 function dismissOverlay() {
+  if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
   if (studyPickerOpen.value) { closeStudyPicker(); return true; }
@@ -783,7 +800,18 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
-    <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
+    <div v-if="pendingCourtSwitch" class="court-switch-mask" data-court-switch-warning role="alertdialog" aria-modal="true" aria-label="重大事件">
+      <section class="court-switch-dialog">
+        <h2>当前正在进行重大事件，是否继续？</h2>
+        <p v-if="model.state.courtroom?.active?.owner==='emma' && model.state.courtroom.active.source==='commission'">庭审尚未结束。确认切换后，橘雪莉将依据已核实的案卷继续完成委托；艾玛此次职业报酬为零。</p>
+        <p v-else>庭审尚未结束。确认切换后，本次参与将中止，尚未裁决的争议不会自动判定胜负；已支付的费用不退还。</p>
+        <div class="court-switch-actions">
+          <button type="button" data-court-switch-cancel @click="pendingCourtSwitch=null">取消切换</button>
+          <button type="button" data-court-switch-confirm @click="confirmCourtSwitch">继续切换</button>
+        </div>
+      </section>
+    </div>
+    <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion" :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
     <SoyoLive2D v-if="novelMode" :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed" :active="!activeWindow && readingMode !== 'expanded'" />
@@ -795,6 +823,8 @@ onBeforeUnmount(() => {
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
+    <button v-if="model.state.locationId==='court-hearing' && !activeWindow" type="button"
+      class="court-case-launcher" data-court-case-open @click="openWindow('law')">庭审案卷</button>
     <button v-if="!novelMode && readingMode === 'compact' && !activeWindow" class="walk-launcher" aria-label="自由行走" @click="startWalking"><span aria-hidden="true">↟</span> 自由行走</button>
     <button v-if="!novelMode && nearbyEntrance && !activeWindow && readingMode === 'hidden'" class="campus-entrance" :disabled="model.busy" :aria-label="`进入${nearbyEntrance.label}`" @click="enterInterior(nearbyEntrance.id)"><span aria-hidden="true">⌂</span><span>进入{{ nearbyEntrance.label }}<small>室内探索 · 可随时返回</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && nearbyTransitStop && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-transit-entry aria-label="公交乘车" :disabled="model.busy" @click="openWindow('transit')"><span aria-hidden="true">▣</span><span>公交乘车<small>{{ nearbyTransitStop.label }} · BTR-82A / ZBD-04A</small></span><span aria-hidden="true">↗</span></button>
@@ -842,10 +872,10 @@ onBeforeUnmount(() => {
     <button v-if="readingMode === 'hidden'" class="resume-reading" aria-label="继续阅读" @click="setReadingMode('compact')">继续阅读 <span v-if="hasNewContent" class="resume-dot">有新内容</span><span aria-hidden="true">↑</span></button>
     <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'">
       <div v-if="activeWindow === 'phone'" class="phone-controls" aria-label="手机显示操作"><button type="button" class="phone-size-toggle" :aria-label="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :title="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :aria-expanded="phoneExpanded" @click="togglePhoneSize"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="phoneExpanded ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5' : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5'" /></svg></button><button type="button" aria-label="查看手机背面" title="查看背面；长按拖动旋转，双指缩放" @click="adjustPhoneView('back')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><circle cx="10" cy="6" r="1"/><circle cx="10" cy="10" r="1"/></svg></button><button type="button" aria-label="手机回正" title="回到正面并恢复大小" @click="adjustPhoneView('front')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button><button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
-      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
+      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span v-if="activeWindow!=='law'" class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>
       <div v-else-if="activeWindow === 'transit'" class="window-content"><TransitPanel :model="model" :stop="nearbyTransitStop" :novel-mode="novelMode" @ride="takeTransit" @approach="approachTransitStop" /></div>
-      <div v-else-if="activeWindow === 'law'" class="window-content"><LawCareerPanel :model="model" :actions="actions" @close="openWindow('location')" /></div>
+      <div v-else-if="activeWindow === 'law'" class="window-content"><LawCareerPanel :model="model" :actions="actions" @close="closeWindow(false)" /></div>
       <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>

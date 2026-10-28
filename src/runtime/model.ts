@@ -1,6 +1,6 @@
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, enableProtagonists, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { knownProtagonistContact } from './initial-contacts';
@@ -33,6 +33,7 @@ import { detectIllnessTransition, getIllnessDebuffs } from './illness';
 import { initialLawCareer, parseLawCareerState, quoteLawCase, settleLawCase } from './law-career';
 import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengjinCounseling } from './fengjin-clinic';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
+import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -76,7 +77,7 @@ export const novelDestinations: readonly NovelDestination[] = [
     const location = locations.find(item => item.id === sceneLocationId(landmark.id))!;
     return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
   }),
-  ...campusInteriors.map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+  ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
 ];
 
 export interface NovelTravelQuote {
@@ -116,6 +117,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     return { next: reduceLegacyState(next, { type: 'leave_interior' }), quote };
   }
   try {
+    if(locationId==='court-hearing') throw new Error('法庭仅供已受理案件正式开庭时进入。');
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择都营巴士或东京Metro接驳线路。');
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
@@ -231,6 +233,7 @@ export function createInitialState(): WorldState {
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
     lawCareer: initialLawCareer(),
+    courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [],
@@ -596,6 +599,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasLivehouse = version === '1.11.0' && Object.hasOwn(value, 'livehouse');
   const hasMargoCafeDaily = version === '1.11.0' && Object.hasOwn(value, 'margoCafeDaily');
   const hasLawCareer = version === '1.11.0' && Object.hasOwn(value, 'lawCareer');
+  const hasCourtroom = version === '1.11.0' && Object.hasOwn(value, 'courtroom');
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
@@ -604,7 +608,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -634,6 +638,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasLivehouse ? { livehouse: parseLivehouseState(state.livehouse, (parsedClock.day - 1) * 1440 + parsedClock.hour * 60 + parsedClock.minute) } : {}),
     ...(hasMargoCafeDaily ? { margoCafeDaily: parseMargoCafeState(state.margoCafeDaily, parsedClock) } : {}),
     lawCareer: hasLawCareer ? parseLawCareerState(state.lawCareer) : initialLawCareer(),
+    courtroom: hasCourtroom ? parseCourtroom(state.courtroom) : initialCourtroom(),
     npcProfessions: hasNpcProfessions ? parseNpcProfessions(state.npcProfessions) : initialNpcProfessions(),
     ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
@@ -729,15 +734,45 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState): WorldState {
   let next = parseStateCore(state, true);
-  const validated = validateStoryActions(actions, next);
+  // The legacy view omits the four-protagonist account owner. The court's
+  // active speaker and filing payer must still be the selected protagonist.
+  const courtView = (legacy: WorldState): WorldState =>
+    worldAuthority?.protagonists ? { ...legacy, protagonists: worldAuthority.protagonists } : legacy;
+  const validated = validateStoryActions(actions, courtView(next));
+  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_settlement','court_finish','transfer','relationship'].includes(action.type)))
+    throw new Error('庭审正在进行，不能离开法庭或进行其他活动；请先结案。');
+  if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_assist' || action.type === 'court_finish'))
+    throw new Error('当前没有进行中的庭审。');
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(turnId)) throw new Error('剧情行动记录 ID 无效。');
   const clearInteriorActivity = () => {
     if (next.interior) { next.interior.activityId = null; next.interior.lastRest = null; next.interior.lastStudy = null; }
   };
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
+      case 'court_docket':
+      case 'court_special':
+      case 'court_open':
+      case 'court_quote':
+      case 'court_step':
+      case 'court_assist':
+      case 'court_settlement':
+      case 'court_fulfill':
+      case 'court_finish': {
+        const settled = courtStoryAction(courtView(next), action);
+        next = legacyView(settled.state);
+        if (settled.minutes) advance(next, settled.minutes);
+        if (settled.reward) next.player.balance += settled.reward;
+        if (action.type === 'court_finish') {
+          const latest = next.courtroom?.results.at(-1);
+          const sherry = next.npcProfessions?.people['majo-sherry'];
+          if (sherry && latest?.owner === 'emma' && latest.source === 'commission' && latest.solvedBy === 'sherry')
+            sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(latest.experience * 1.5));
+        }
+        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : action.type === 'court_assist' ? '橘雪莉正式接手庭审。' : action.type === 'court_settlement' ? '双方提出了新的和解条件，等待原告决定。' : action.type === 'court_fulfill' ? '已记录法律义务履行：'+action.description : '庭审已结束：' + action.summary);
+        break;
+      }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
       case 'service': next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId }); break;
       case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }); break;
@@ -858,7 +893,7 @@ function commitLegacyStoryTurn(
   if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText || input.includes('\u0000')) {
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
-  const reply = validateGeneratedStory(result, next);
+  const reply = validateGeneratedStory(result, worldAuthority?.protagonists ? { ...next, protagonists:worldAuthority.protagonists } : next);
   // Leave room for the stable message suffix within the 128-char save ID limit.
   const validId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
   if (!ids || !validId(ids.userId) || !validId(ids.assistantId) || ids.userId === ids.assistantId) throw new Error('剧情记录 ID 无效；本轮未写入。');
@@ -886,7 +921,7 @@ function commitLegacyStoryTurn(
   }
   if (recordedFlight) throw new Error('空中事件 ID 冲突；本轮未写入。');
   if (recordedActions.length) throw new Error('剧情行动 ID 冲突；本轮未写入。');
-  next = applyLegacyStoryActions(next, worldActions, ids.assistantId);
+  next = applyLegacyStoryActions(next, worldActions, ids.assistantId, worldAuthority);
   // Reject the entire turn on cooldown. Accepting prose while dropping its
   // requested pass would leave the narrated scene different from saved facts.
   if (hasFlight) {
@@ -1262,6 +1297,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.interior) throw new Error('请先离开当前房间。');
       const room = getCampusInterior(action.roomId);
       if (!room) throw new Error('不存在的室内地点。');
+      if (room.id === 'court-hearing') throw new Error('法庭仅在正式庭审期间开放，不能自行进入。');
       if (room.id === MARGO_CAFE_ROOM_ID && !getLocationStatus(MARGO_CAFE_LOCATION_ID, next.clock)?.isOpen) throw new Error('玛格的咖啡馆已打烊，营业时间 10:00–次日 02:00。');
       if (!next.scene || next.locationId !== room.parentLocationId || Math.hypot(next.scene.x - room.entrance.x, next.scene.z - room.entrance.z) > INTERIOR_ENTRANCE_RANGE) throw new Error('请先走到建筑入口附近，再进入室内。');
       next.interior = { roomId: room.id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
@@ -1430,9 +1466,38 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
 export function reduceState(state: WorldState, action: WorldAction): WorldState {
   const parsed = parseState(state);
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
+  if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
+    throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
+  if (action?.type === 'courtroom') {
+    const prepared = enableProtagonists(before);
+    const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
+    const next = courtAction(prepared, action);
+    // Court debt payments already mutate the two-sided Appie Pay ledger atomically.
+    // Do not feed them into the legacy single-account mirror a second time.
+    if (action.phase === 'pay-term' || action.phase === 'collect-term') return parseState(next);
+    if (action.phase === 'accept-preset' || action.phase === 'confirm-filing' || action.phase === 'migrate-legacy') advance(next, 10);
+    if (action.phase === 'sherry') {
+      advance(next, Math.min(15, Math.max(0, 1439 - next.clock.hour * 60 - next.clock.minute)));
+      const rescued = next.courtroom?.results.at(-1);
+      const sherry = next.npcProfessions?.people['majo-sherry'];
+      if (rescued?.solvedBy === 'sherry' && sherry)
+        sherry.careerExperience = Math.min(10_000_000, sherry.careerExperience + Math.round(rescued.experience * 1.5));
+    }
+    const paid = finishPersonalChange(prepared, next, '法庭业务');
+    if (feeQuote && paid.courtroom?.active) {
+      const payer = { kind:'protagonist' as const, id:feeQuote.claimant, name:protagonistNames[feeQuote.claimant] };
+      if (feeQuote.lawyer && feeQuote.lawyerFeeYen) applyPartyTransfer(paid, 'court:' + paid.courtroom.active.id + ':lawyer', payer,
+        { kind:'protagonist', id:feeQuote.lawyer, name:protagonistNames[feeQuote.lawyer] }, feeQuote.lawyerFeeYen * 100, '律师代理费用');
+      if (feeQuote.sherry && feeQuote.sherryFeeYen) applyPartyTransfer(paid, 'court:' + paid.courtroom.active.id + ':sherry', payer,
+        { kind:'npc', id:'majo-sherry', name:'橘雪莉' }, feeQuote.sherryFeeYen * 100, '法律协助费用');
+    }
+    return parseState(paid);
+  }
   if (action?.type === 'receive_cafe_gift') return parseState(finishPersonalChange(before, applyMargoCafeGift(before, action.offerId), '咖啡馆赠礼'));
   if (action?.type === 'switch_protagonist' || action?.type === 'phone_app') {
-    const next = reduceProtagonistAction(before, action);
+    const next = action.type === 'switch_protagonist'
+      ? deliverCourtRecap(reduceProtagonistAction(abandonTrialOnSwitch(before), action))
+      : reduceProtagonistAction(before, action);
     captureNewJournalEvidence(before, next);
     settleWeeklyMemory(next);
     return parseState(clearDepartedProtagonistEncounters(next));
@@ -1445,8 +1510,8 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const before = parseState(state);
-  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId), '剧情行动');
-  return parseState(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId));
+  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const before = parseState(state);
@@ -1464,7 +1529,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
-  const settled = applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? [], ids.assistantId);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));

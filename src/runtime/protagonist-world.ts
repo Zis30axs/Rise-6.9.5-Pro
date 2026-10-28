@@ -417,7 +417,8 @@ export function applyStoryTransferLegs(state: WorldState, actions: readonly Stor
   let booked = false;
   for (const [order, { action }] of transfers.entries()) {
     const transferId = `wa:${turnId}:t${order}`;
-    if (p.accounts.ledger.some(row => row.id.startsWith(`${transferId}:out`) || row.id === `${transferId}:in`)) continue;
+    if (p.accounts.ledger.some(row => row.id.startsWith(`${transferId}:out`) || row.id === `${transferId}:in`) ||
+      s.journal.some(row => row.id === `${transferId}:journal`)) continue;
     const from = resolveTransferParty(s, who, action.from);
     const to = resolveTransferParty(s, who, action.to);
     applyPartyTransfer(s, transferId, from, to, action.cents, action.reason);
