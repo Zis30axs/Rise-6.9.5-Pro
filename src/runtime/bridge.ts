@@ -19,6 +19,7 @@ import { academicMajors, getAcademicOverview, getAcademicTimetable } from './aca
 import { diagnosePlayerIllnesses } from './illness';
 import { lawCareerStoryContext } from './law-career';
 import { allResidentCast } from './npc-cast';
+import { npcProfession } from './npc-professions';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -292,7 +293,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
         residentProfessions: allResidentCast.map(person => ({ id: person.id, name: person.name,
-          majorId: person.majorId, careerId: person.careerId, qualification: person.qualification })),
+          ...(npcProfession(snapshot, person.id) ?? { majorId: person.majorId, careerId: person.careerId, qualification: person.qualification }) })),
         phoneCalendar: (snapshot.protagonists?.devices[activeProtagonist(snapshot)].calendar ?? [])
           .filter(e => e.start + e.duration >= currentMinute && e.start <= currentMinute + 14 * 1440)
           .slice(0, PROMPT_CONTEXT_LIMITS.calendarEntries),
