@@ -154,8 +154,8 @@ const courtCase = (raw: unknown): CourtCase => {
   const item = obj(raw, ['id','source','owner','day','category','title','client','summary','white','evidence','truth','misdirection','rewardYen','experience','fee','assistance','steps',
     ...(hasReturn?['returnTo']:[]),...(hasRespondent?['respondent']:[])], '在审案件');
   if (item.source !== 'commission' && item.source !== 'lawsuit') return error('案件来源');
-  if ((item.source === 'commission' && (item.truth === null || item.fee !== null)) ||
-    (item.source === 'lawsuit' && (item.truth !== null || item.misdirection !== null))) return error('案件真相');
+  if ((item.source === 'commission' && item.fee !== null) ||
+    (item.source === 'lawsuit' && (item.truth !== null || item.misdirection !== null))) return error('案件来源及兼容字段');
   if (item.assistance !== 'none' && item.assistance !== 'sherry') return error('救场状态变量');
   if (item.assistance === 'sherry' && (item.source !== 'commission' || item.owner !== 'emma')) return error('雪莉不能接手此类案件');
   if (!Array.isArray(item.steps) || item.steps.length > 30) return error('庭审进展');
@@ -256,22 +256,19 @@ export function parseCourtroom(value: unknown): CourtroomState {
   return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
     serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers };
 }
-const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; truth: string; misdirection: string }> = [
+const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[] }> = [
   { category: 'civil', title: '没有归还的定金', client: '租房的大学生', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
     white:'学生在签订租房预约后取消入住。房东拒绝返还定金。^合同条款^、^取消日期^与^收据^是主要争点。',
     evidence:[{title:'预约合同',detail:'第六条要求提前十四日通知；合同附页注明整修期可免费取消。'},{title:'付款收据',detail:'学生已支付两万日元定金。'},{title:'整修通知',detail:'房东承认入住日前十日才告知房间停水整修。'}],
-    truth:'房东晚于约定告知整修，学生在通知后当天取消；合同附页适用，定金应退还。',
-    misdirection:'房东坚持只引用合同主文第六条而不提附页。' },
+  },
   { category: 'administrative', title: '咖啡馆的停业通知', client: '街角咖啡馆经营者', summary: '经营者收到停业处分，但申辩记录可能在送达时遗漏。', difficulty:'normal', rewardYen:15000, experience:150,
     white:'咖啡馆收到^停业处分^，业主认为此前的^申辩机会^与^送达手续^存在问题。',
     evidence:[{title:'停业通知书',detail:'载明处分原因和日期。'},{title:'送达回执',detail:'回执上的签收人并非业主本人。'},{title:'提交记录',detail:'咖啡馆曾提交申辩材料，但处分书未提及该材料。'}],
-    truth:'行政机关未充分处理依法提出的申辩，程序存在瑕疵；应重新审查而不是当然免除所有管理责任。',
-    misdirection:'经营者认为程序出错就能使此前的全部违规记录消失。' },
+  },
   { category:'minor-criminal',title:'错位的展厅时钟',client:'被怀疑盗画的志愿者',summary:'监控录像与画作交接记录显示出互相冲突的时间。',difficulty:'hard',rewardYen:22000,experience:180,
     white:'展厅画作暂时失踪，志愿者受到怀疑。^监控时间^与^修复室交接单^存在明显矛盾。',
     evidence:[{title:'监控校时单',detail:'案发当天监控时钟快了二十分钟。'},{title:'门禁簿',detail:'志愿者17:03刷卡离开。'},{title:'修复室交接单',detail:'16:35有两人签字确认画作被正常送往修复室。'}],
-    truth:'画作由保管员依合法修复手续转移，志愿者未盗窃；监控时钟误差制造了错误指控。',
-    misdirection:'证人把不准确的监控时间当作绝对可信的时间。' },
+  },
 ];
 const preset = (day: number, categories: CourtCategory[]): CourtOffer => {
   const preferred = authored.filter(item => categories.includes(item.category));
@@ -352,16 +349,15 @@ export function validateCourtSpecial(raw: unknown, state: WorldState): Extract<S
 export function validateCourtOpen(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_open'}> {
   eligible(state);
   const court = courtState(state);
-  const item = obj(raw, ['type','offerId','respondent','white','evidence','truth','misdirection'], '随机卷宗');
+  const item = obj(raw, ['type','offerId','respondent','white','evidence'], '随机卷宗');
   const chosen = (court.board?.day === state.clock.day ? court.board.offers.find(row => row.id === item.offerId) : undefined)
     ?? (court.special?.day === state.clock.day && court.special.offer.id === item.offerId ? court.special.offer : undefined);
   if (!chosen || chosen.preset || court.results.some(result => result.id === String(item.offerId)))
     return error('请从今日尚未受理的随机委托中选择');
   const respondent=courtDefendantName(string(item.respondent,100,'被告身份'));
   if(PROTAGONISTS.some(id=>protagonistNames[id]===respondent)) return error('随机委托不能起诉四位可操作主角');
-  return { type:'court_open', offerId: chosen.id, respondent, white:string(item.white,2500,'白剧本'),
-    evidence:evidence(item.evidence), truth:string(item.truth,2500,'隐藏真相'),
-    misdirection:string(item.misdirection,1200,'隐藏误导') };
+  return { type:'court_open', offerId: chosen.id, respondent, white:string(item.white,2500,'案情'),
+    evidence:evidence(item.evidence) };
 }
 export function validateCourtFeeQuote(raw: unknown, state: WorldState): Extract<StoryAction,{type:'court_quote'}> {
   eligible(state);
@@ -461,8 +457,7 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
       id: 'legacy-' + owner + '-' + source.id, source:'commission', owner, day:state.clock.day,
       category:'minor-criminal', title:source.title, client:source.client, summary:source.summary,respondent:null,
       white:source.summary + '请依据已经取得的证据自由质证。', evidence:source.evidence.map(item=>({title:item.title,detail:item.detail})),
-      truth:source.rounds.map(item=>item.deduction).join(' '),
-      misdirection:source.rounds.map(item=>item.statement).join(' '),
+      truth:null, misdirection:null,
       rewardYen:source.rewardYen,experience:source.experience,fee:null,assistance:'none',
       returnTo:courtOfficePosition(next),
       steps:old.deductions.map((summary,index)=>({key:'old-proof-'+index,kind:'contradiction' as const,summary:summary.slice(0,240)})),
@@ -486,8 +481,8 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     if (!scripted) return error('预设卷宗不存在');
     current.active = { id:offer.id, source:'commission', owner, day:state.clock.day,
       category:offer.category, title:offer.title, client:offer.client, summary:offer.summary,respondent:null,
-      white:scripted.white, evidence:structuredClone(scripted.evidence), truth:scripted.truth,
-      misdirection:scripted.misdirection, rewardYen:offer.rewardYen, experience:offer.experience,
+      white:scripted.white, evidence:structuredClone(scripted.evidence), truth:null,
+      misdirection:null, rewardYen:offer.rewardYen, experience:offer.experience,
       fee:null, assistance:'none', returnTo:courtOfficePosition(next), steps:[] };
     enrollCareer(next,current.careers!,owner);
     next.courtroom=current;
@@ -610,7 +605,7 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     if (!offered || offered.id !== parsed.offerId) return error('待受理卷宗无效');
     court.active = { id:offered.id, source:'commission', owner:activeProtagonist(state), day:state.clock.day,
       category:offered.category, title:offered.title, client:offered.client, summary:offered.summary,respondent:parsed.respondent,
-      white:parsed.white, evidence:parsed.evidence, truth:parsed.truth, misdirection:parsed.misdirection,
+      white:parsed.white, evidence:parsed.evidence, truth:null, misdirection:null,
       rewardYen:offered.rewardYen, experience:offered.experience, fee:null, assistance:'none',
       returnTo:courtOfficePosition(next),steps:[] };
     enrollCareer(next,court.careers!,activeProtagonist(state));
@@ -771,11 +766,9 @@ export function courtStoryContext(state: WorldState) {
     agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner).slice(-12),
     sanctions:court.sanctions?.filter(row=>state.clock.day>=row.startDay && state.clock.day<=row.endDay),
     pendingSettlement:active?.source==='lawsuit'?court.pendingSettlement:null,
-    active:activePublic ? { ...activePublic,
-      // This hidden truth is only in the model context; it is never in the player UI.
-      hiddenBlackScript: active?.source === 'commission' ? { truth:active.truth, misdirection:active.misdirection } : null } : null,
+    active: activePublic,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
     recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
-    rule:'庭审进程以持久化 court.active.assistance 和 court.results 等脚本变量为准，不以文字或临时结案词判断。雪莉正式接手必须先由 court_assist 将 assistance=sherry；普通建议不修改变量。职业委托白剧本给玩家、黑剧本仅供主持法庭，不能泄漏内部真相。主动诉讼没有黑剧本，以已有世界事实决定争点；轻微刑事仅可告发，检察官决定公诉。自由文本质询，只有新的证言/推理/矛盾推动 court_step。庭审不能离开。艾玛独立胜诉100%，正式雪莉救场40%，切换主角0%；切换后的世界案件结果与玩家职业判负分开。和解须双方同意，撤诉必须玩家主动表达。每日委托次日刷新。',
+    rule:'庭审进程以持久化 court.active.assistance 和 court.results 等脚本变量为准，不以文字或临时结案词判断。雪莉正式接手必须先由 court_assist 将 assistance=sherry；普通建议不修改变量。所有委托仅保存公开案情和证据，不生成或注入预设黑剧本；依据现有世界事实、证据与人物知情边界自由推理，不得临时篡改已确认的历史；轻微刑事仅可告发，检察官决定公诉。自由文本质询，只有新的证言/推理/矛盾推动 court_step。庭审不能离开。艾玛独立胜诉100%，正式雪莉救场40%，切换主角0%；切换后的世界案件结果与玩家职业判负分开。和解须双方同意，撤诉必须玩家主动表达。每日委托次日刷新。',
   };
 }
