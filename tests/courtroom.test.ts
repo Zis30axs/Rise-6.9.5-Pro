@@ -357,7 +357,9 @@ describe('freeform courtroom and legal services', () => {
   });
 
   it('records a sentenced NPC restriction without imposing sentences on playable characters',()=>{
-    let state=withBoard();
+    // Use a non-Emma professional view: Emma's loss would trigger Sherry rescue,
+    // and a rescued verdict cannot reuse punitive orders from the failed case.
+    let state=withBoard('soyo');
     const selected=state.courtroom!.board!.offers.find(row=>row.category==='minor-criminal')!;
     state=applyStoryActions(state,[{type:'court_open',offerId:selected.id,
       white:'检方呈交证据，法庭继续核实有关事实。',
