@@ -3,12 +3,14 @@ import { activeProtagonist } from '../protagonist-world';
 import { loadMemorySettings } from './settings';
 import { collectCommittedSources, collectExistingSources } from './source';
 import { searchMemory } from './retrieval';
-import { scheduleMemoryWork } from './scheduler';
+import { scheduleMemoryWork, resumeMemoryWork } from './scheduler';
 
 export function memoryBootstrap(scope: string, state: WorldState): void {
   try {
     if (!loadMemorySettings().enabled) return;
-    scheduleMemoryWork(scope, collectExistingSources(scope, state));
+    const sources = collectExistingSources(scope, state);
+    if (sources.length) scheduleMemoryWork(scope, sources);
+    else resumeMemoryWork(scope);
   } catch { /* Older history may not be available. */ }
 }
 export function memoryCommitted(scope: string, before: WorldState, after: WorldState): void {

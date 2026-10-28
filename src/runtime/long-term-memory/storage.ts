@@ -109,12 +109,30 @@ export async function acquireJob(scope: string): Promise<MemoryJob | null> {
   const request = store.get(target.key);
   request.onsuccess = () => {
     const current = request.result as MemoryJob | undefined;
-    if (!current || (current.state !== 'pending' && !(current.state === 'working' && current.leaseUntil < now))) return;
+    if (!current || !((current.state === 'pending' && current.leaseUntil <= now) || (current.state === 'working' && current.leaseUntil < now))) return;
     acquired = { ...current, state: 'working', attempts: current.attempts + 1, leaseUntil: now + 120_000 };
     store.put(acquired);
   };
   await done;
   return acquired;
+}
+
+/** Manual retry intentionally resets exhausted work, but never replays a committed game action. */
+export async function resetFailedJobs(scope: string): Promise<number> {
+  const db = await openMemoryDb();
+  const tx = db.transaction('jobs', 'readwrite'), done = completed(tx);
+  const store = tx.objectStore('jobs');
+  let count = 0;
+  const request = store.index('by_scope').getAll(scope);
+  request.onsuccess = () => {
+    for (const job of request.result as MemoryJob[]) {
+      if (job.state !== 'failed') continue;
+      store.put({ ...job, state: 'pending', leaseUntil: 0, attempts: 0, error: '' });
+      count++;
+    }
+  };
+  await done;
+  return count;
 }
 
 export interface MemoryBackup {

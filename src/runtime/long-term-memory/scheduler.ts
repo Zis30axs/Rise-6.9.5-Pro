@@ -2,7 +2,7 @@ import type { MemorySettings } from './settings';
 import { loadMemorySettings } from './settings';
 import { approximateTokens, requestEmbedding, requestMemoryJson } from './providers';
 import { memoryExtractionInput, memoryExtractionPrompt, parseExtraction } from './extractor';
-import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, rows } from './storage';
+import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, resetFailedJobs, rows } from './storage';
 import { importantCandidate } from './source';
 import { memoryKey } from './types';
 import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
@@ -85,7 +85,8 @@ async function runOne(scope: string, settings: MemorySettings): Promise<boolean>
     await charge(scope, price(response.usage, settings));
     const events = parseExtraction(scope, sources, response.text);
     const vectors: MemoryVector[] = [];
-    if (settings.embeddingEndpoint && settings.embeddingModel && settings.embeddingPrice >= 0) {
+    if (settings.embeddingEndpoint && settings.embeddingModel
+      && (settings.budgetUsd === 0 || settings.embeddingPrice > 0)) {
       for (const event of events) {
         try {
           const estimated = approximateTokens(event.summary) * settings.embeddingPrice / 1e6;
@@ -127,13 +128,23 @@ export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void
     // Optional sidecar has no authority to prevent a main-game save.
   });
 }
+/** Resume a persisted batch even when the visible recent story was pruned. */
+export function resumeMemoryWork(scope: string): void {
+  const settings = loadMemorySettings();
+  if (!ready(settings)) return;
+  void work(scope, settings).catch(() => {});
+}
 export async function runMemoryNow(scope: string): Promise<void> {
   const settings = loadMemorySettings();
   if (!ready(settings)) throw new Error('请先配置长期记忆整理模型 API');
+  await resetFailedJobs(scope);
   await schedule(scope, settings, true);
   await work(scope, settings);
 }
 export async function memoryStatus(scope: string) {
+  const jobs = await rows<MemoryJob>('jobs', scope);
+  const latestProblem = jobs.filter(j => j.state === 'failed' || j.error)
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
   return { ...(await memoryStats(scope)), lastTurn: await meta(scope, 'lastScheduledTurn'),
-    enabled: loadMemorySettings().enabled };
+    lastError: latestProblem?.error ?? '', enabled: loadMemorySettings().enabled };
 }

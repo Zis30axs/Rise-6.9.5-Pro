@@ -300,7 +300,22 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const currentMinute = (snapshot.clock.day - 1) * 1440 + snapshot.clock.hour * 60 + snapshot.clock.minute;
       const memorySettings = loadMemorySettings();
       const memoryNarrative = memorySettings.enabled && !options;
-      const retrievedMemory = memoryNarrative ? await memoryPromptContext(ownerSession, snapshot, input) : '';
+      let retrievedMemory = '';
+      if (memoryNarrative) {
+        // An optional IndexedDB read must not become a hard prerequisite for storytelling.
+        let deadline: ReturnType<typeof setTimeout> | undefined;
+        try {
+          const limited = new Promise<string>(resolve => {
+            deadline = setTimeout(() => resolve(''), 250);
+          });
+          retrievedMemory = await Promise.race([
+            memoryPromptContext(ownerSession, snapshot, input), limited, aborted,
+          ]);
+        } catch (error) {
+          if (pending?.id === generationId) pending = null;
+          throw error;
+        } finally { if (deadline !== undefined) clearTimeout(deadline); }
+      }
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
       const narrative = narrativeContext(snapshot);
