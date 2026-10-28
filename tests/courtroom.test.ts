@@ -304,6 +304,22 @@ describe('freeform courtroom and legal services', () => {
     expect(()=>reduceState(state,{type:'courtroom',phase:'accept-settlement'})).toThrow();
   });
 
+  it('switching viewpoints with an offered settlement clears the offer instead of corrupting the save',()=>{
+    let state=inOffice();
+    state=applyStoryActions(state,[{type:'court_quote',defendant:'月代雪',reason:'双方的财物归属争议',
+      risk:'争议证据尚不充分',category:'civil',lawyer:null,sherry:false,
+      courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0}],'switch-offer-quote');
+    state=reduceState(state,{type:'courtroom',phase:'confirm-filing'});
+    state=applyStoryActions(state,[{type:'court_settlement',summary:'就争议签署道歉条款',
+      defendantConsented:true,terms:[{kind:'apology',from:'defendant',description:'道歉',
+        amountYen:0,dueDay:3}]}],'switch-offer-proposal');
+    state=reduceState(state,{type:'switch_protagonist',target:'soyo'});
+    expect(state.courtroom?.active).toBeNull();
+    expect(state.courtroom?.pendingSettlement).toBeNull();
+    expect(state.courtroom?.results.at(-1)?.worldVerdict).toBe('undetermined');
+    expect(parseState(JSON.parse(JSON.stringify(state)))).toEqual(state);
+  });
+
   it('withdrawal is initiated by the protagonist and never refunds already paid filing fees',()=>{
     let state=inOffice();
     const original=state.player.balance;
@@ -374,6 +390,10 @@ describe('freeform courtroom and legal services', () => {
     expect(state.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
     expect(appiePayBalance(state.protagonists!.accounts,'emma')).toBe(money-60000);
     expect((state.protagonists!.npcWallets?.['majo-yuki'] ?? 0)-beforeYuki).toBe(60000);
+    const replay=applyStoryActions(state,[{type:'transfer',from:'emma',to:contact.id,cents:60000,
+      reason:'court-obligation:'+term.id}],'court-right-amount');
+    expect(appiePayBalance(replay.protagonists!.accounts,'emma')).toBe(appiePayBalance(state.protagonists!.accounts,'emma'));
+    expect(replay.courtroom?.agreements?.[0]?.terms[0]?.status).toBe('fulfilled');
     expect(()=>applyStoryActions(state,[{type:'transfer',from:'emma',to:contact.id,cents:60000,
       reason:'court-obligation:'+term.id}],'court-duplicate-payment')).toThrow();
   });
@@ -414,6 +434,20 @@ describe('freeform courtroom and legal services', () => {
     expect(state.courtroom?.sanctions?.[0]).toMatchObject({personId:'majo-sherry',kind:'community-service'});
     expect(state.courtroom?.sanctions?.[0]?.endDay).toBe(4);
     expect(parseState(JSON.parse(JSON.stringify(state))).courtroom?.sanctions).toHaveLength(1);
+  });
+
+  it('refuses legal execution against a different person from the frozen case respondent',()=>{
+    let state=withBoard('soyo');
+    const offer=state.courtroom!.board!.offers.find(row=>row.category==='minor-criminal')!;
+    state=applyStoryActions(state,[{type:'court_open',offerId:offer.id,respondent:'临时委托嫌疑人',
+      white:'法庭正在讨论一份存在争议的取证记录。',
+      evidence:[{title:'案件材料',detail:'证人记录可能存在错误'},{title:'登记表',detail:'确认了时间顺序'}]}],
+      'frozen-defendant-open');
+    expect(()=>applyStoryActions(state,[{type:'court_finish',verdict:'loss',summary:'法庭准备处理执行事项。',
+      order:{respondent:'橘雪莉',terms:[],sanctions:[{
+        personId:'majo-sherry',kind:'custody',startDay:2,endDay:3,detail:'无关第三人被误写成被告',
+      }]}}],'frozen-defendant-bad')).toThrow(/被告|卷宗/);
+    expect(state.courtroom?.sanctions).toHaveLength(0);
   });
 
   it('legal career fees and assistance experience are credited to the hired playable character',()=>{
