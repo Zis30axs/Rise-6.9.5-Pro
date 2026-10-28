@@ -1,11 +1,11 @@
 {
   "status": "passed-build-only-not-tested-on-iphone",
-  "liteCardBytes": 9714594,
-  "liteCardSha256": "2517e7a416c4e01e56efb58508a2c48297bb33a75fae45f69e68714ebe57fdca",
-  "liteBundleBytes": 17169682,
-  "zipBytes": 62627136,
-  "zipSha256": "3fa78211aa61f8aacf7fb4d613006b44afdbb64f2122f69339158b22bef2118e",
-  "externalAssets": 131,
+  "liteCardBytes": 9723124,
+  "liteCardSha256": "cedcf662a64f17d4746ae34282c53353323480324ebb631b6e4646684f9296bc",
+  "liteBundleBytes": 17197834,
+  "zipBytes": 64562385,
+  "zipSha256": "c5ab1234fad9d16d4b6ea09265ef223941257dd469fd58cc37e243b4a771fb6f",
+  "externalAssets": 138,
   "approvedNewArtExternalized": 18,
   "offline": true,
   "physicalDeviceTested": false

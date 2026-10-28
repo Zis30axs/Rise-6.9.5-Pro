@@ -1,33 +1,33 @@
 {
   "buildDate": "2026-10-28",
-  "feature": "基于核心变量的疾病与健康诊疗医药系统（风寒感冒、胃痛虚脱、神经衰弱、重度疲劳）与工地实景背景",
-  "verifiedTests": "42 files, 392 passed",
+  "feature": "接入新NPC风堇世界书设定、街区全科诊所日夜背景及对话立绘，关联诊所全科问诊服务",
+  "verifiedTests": "45 files, 407 passed",
   "typeCheck": "vue-tsc passed",
   "noJapaneseCheck": "passed",
   "artifacts": {
     "unread-city-lite.png": {
-      "bytes": 25920863,
-      "sha256": "b806029d0a727c417982c8610705ed5f9727db3525baf6c665be59e101ef1079"
+      "bytes": 25963719,
+      "sha256": "e39d13d1d647c1877c34139c0d10857b96b258341bdc135872d55901ab625e07"
     },
     "unread-city-lite-tauri.png": {
-      "bytes": 9714594,
-      "sha256": "2517e7a416c4e01e56efb58508a2c48297bb33a75fae45f69e68714ebe57fdca"
+      "bytes": 9723124,
+      "sha256": "cedcf662a64f17d4746ae34282c53353323480324ebb631b6e4646684f9296bc"
     },
     "unread-city-lite-tauri.verification.json": {
       "bytes": 827,
-      "sha256": "262c93e696d4fd85387c7d76beb56bc76a38c8cdea8a25da35de883abb5be1d2"
+      "sha256": "1a9695d2afb1bc673b989499295951fca03dae7f59562f349a04cd882974bb55"
     },
     "unread-city-lite-assets.zip": {
-      "bytes": 62627136,
-      "sha256": "3fa78211aa61f8aacf7fb4d613006b44afdbb64f2122f69339158b22bef2118e"
+      "bytes": 64562385,
+      "sha256": "c5ab1234fad9d16d4b6ea09265ef223941257dd469fd58cc37e243b4a771fb6f"
     },
     "lite-assets-report.json": {
       "bytes": 487,
-      "sha256": "907bea08325504d52be583d563a3a5caf521263e0229424130456872bab725d9"
+      "sha256": "63cfef4678d13af94c4cab25430b18d9d6d32f8596054f215596beef65adf42b"
     },
     "lite-verification.json": {
       "bytes": 436,
-      "sha256": "85aa46bcae11c88b2854314328dee98635163de99069b63d246ebf6cb1e0a83f"
+      "sha256": "73fe80aa7556322f3d548ec3d17770b23b9ec74772a0b8e0b79dba629bc8b93d"
     }
   }
 }

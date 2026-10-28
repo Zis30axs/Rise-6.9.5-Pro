@@ -14,6 +14,21 @@
 - 防回归 `npm run check:no-ja`（`tests/no-japanese.test.ts`）；放行项只有第三方署名与许可、`素材/` 真实路径、VRM 骨骼名，见 `DeepSeek.md`。
 - 去日文不改人物关系、剧情和协议 ID；中文译名与既有世界书保持一致。
 
+## 新 NPC 风堇与街区全科诊所视觉与世界书体系（2026-10-28）
+
+- **角色定位与世界书**：`src/worldbook/fengjin-clinic.json` 注册常驻主治医师风堇（雅辛忒丝 / Hyacinthia），称号「摇光的医师」，性格温柔包容、医术精湛，对前来就医的患者耐心关照，对透支体力、忽视身体健康的行为严肃叮嘱。
+- **诊所日夜背景体系**：
+  - 本地素材转制：`assets/backgrounds/clinic-day.webp` 与 `clinic-night.webp`。
+  - 接入 `src/frontend/novel-backgrounds.ts` 的 `getNovelBackground`，根据小说与世界时间（6:00–19:00 白昼，其余黑夜）智能自动切换白昼明亮窗景与夜晚温馨暖灯。
+- **医生小说对话立绘体系**：
+  - 本地素材转制：`assets/characters/fengjin/neutral.webp`、`happy.webp`、`serious.webp`（1024×1536）。
+  - `src/frontend/fengjin-art.ts` 提供 `resolveFengjinSpeaker` 与 `resolveFengjinExpressionPortrait`，支持平静（neutral）、开心（happy）、严肃（serious）三款高清立绘，其余衍生情绪（安心退避开心，思考/生气/难过退避严肃）自动退避。
+  - 集成进 `src/frontend/NovelNpcPortrait.vue` 与 `src/frontend/App.vue`（`recognizesNovelSpeaker`），直接复用全屏立绘排版与自适应缩放机制。
+- **诊所问诊服务与大模型引导联动**：
+  - `src/runtime/location-services.ts` 中的 `clinic-treatment`（诊所全科问诊）正式关联风堇医生，地点扩展包含 `clinic`。
+  - `src/runtime/bridge.ts` 叙事注入提示词明确全科诊所由风堇医师坐诊，引导大模型在问诊、配药、体征检查与生病剧情中生动呈现风堇对主角的关怀与医嘱。
+- **零日文假名与测试覆盖**：所有新增源码、世界书与测试通过 `npm run check:no-ja`；新增 `tests/fengjin-clinic.test.ts`，全量 43 套件 397 项测试 100% 通过。
+
 ## 基于核心变量的疾病与健康诊疗系统（2026-10-28）
 
 - **变量关联与纯函数诊断（src/runtime/illness.ts）**：

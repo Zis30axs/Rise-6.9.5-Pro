@@ -1,13 +1,13 @@
 {
   "status": "offline-assets-extracted",
-  "fullScriptBytes": 100301038,
-  "liteScriptBytes": 16915438,
-  "assets": 131,
-  "extractedBytes": 62572827,
-  "replacedLiteralOccurrences": 131,
-  "manifestSha256": "911c2482be846b4e225a3e92602fc634513ec4ad56feb252173786f89758f1c7",
-  "zipBytes": 62627136,
-  "zipSha256": "3fa78211aa61f8aacf7fb4d613006b44afdbb64f2122f69339158b22bef2118e",
+  "fullScriptBytes": 103301877,
+  "liteScriptBytes": 16943589,
+  "assets": 138,
+  "extractedBytes": 64505194,
+  "replacedLiteralOccurrences": 139,
+  "manifestSha256": "fee88f614f14870b527e8f2cf0a4d43135f610ea05210651f855230d3ee7a45d",
+  "zipBytes": 64562385,
+  "zipSha256": "c5ab1234fad9d16d4b6ea09265ef223941257dd469fd58cc37e243b4a771fb6f",
   "reconstructionMode": "IndexedDB Blob URLs; no remote fetch",
   "deviceTested": false
 }

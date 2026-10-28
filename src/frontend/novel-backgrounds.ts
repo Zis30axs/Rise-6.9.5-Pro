@@ -17,6 +17,8 @@ import mlmOfficeBg from '../../assets/backgrounds/mlm-office.webp?inline';
 import constructionDayBg from '../../assets/backgrounds/construction-day.avif?inline';
 import legalOfficeDayBg from '../../assets/backgrounds/legal-office-day.avif?inline';
 import legalOfficeNightBg from '../../assets/backgrounds/legal-office-night.avif?inline';
+import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
+import clinicNightBg from '../../assets/backgrounds/clinic-night.webp?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -48,6 +50,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'mlm-office': 'commercial',
+  clinic: 'commercial', 'clinic-room': 'commercial',
 });
 
 export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
@@ -92,6 +95,17 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
       id: isNight ? 'legal-office-night' : 'legal-office-day',
       src: isNight ? legalOfficeNightBg : legalOfficeDayBg,
       phase, imagePhase: isNight ? 'night' : 'day', source: 'user-art',
+    };
+  }
+  if (locationId === 'clinic' || locationId === 'clinic-room') {
+    const phase = novelBackgroundPhase(hour);
+    const isNight = phase === 'night';
+    return {
+      id: isNight ? 'clinic-night' : 'clinic-day',
+      src: isNight ? clinicNightBg : clinicDayBg,
+      phase,
+      imagePhase: isNight ? 'night' : 'day',
+      source: 'user-art',
     };
   }
   // This locally supplied construction photo depicts daylight in every game-time phase.

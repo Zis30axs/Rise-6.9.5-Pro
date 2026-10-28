@@ -23,8 +23,13 @@
    - 室内场景：采用真实办公室背景图（mlm-office.webp），归属大型商业区写字楼高层。
    - 赚钱与高压力交互：拨打推销拉人电话、参加财富早会动员、装订宣讲材料等。
    - 平衡办公室工资与体力劳动，引入高压限制（压力达到 70 时必须休整）。
+4. **新 NPC 风堇（雅辛忒丝）与街区全科诊所日夜背景及对话立绘**：
+   - **人物世界书设定**：`src/worldbook/fengjin-clinic.json` 注册常驻主治医师风堇（Hyacinthia，称号「摇光的医师」），温柔包容、医术精湛，细致关照身心健康，对忽视健康或过度透支的主角严肃叮嘱。
+   - **街区全科诊所日夜背景**：小说模式及诊所场景支持昼夜切换（白昼明亮大窗，夜晚柔和暖灯），已无缝接入 `getNovelBackground`。
+   - **小说模式医生对白立绘**：`src/frontend/fengjin-art.ts` 接入平静（neutral）、开心（happy）、严肃（serious）三款高清立绘，并自动回退衍生情绪。
+   - **地点服务联动**：商业区/口袋公园「诊所全科问诊」服务正式关联风堇医生，大模型提示词与叙事规则同步引导。
 
 ## 产物哈希
-- unread-city-lite.png: b806029d0a727c417982c8610705ed5f9727db3525baf6c665be59e101ef1079 (25920863 bytes)
-- unread-city-lite-tauri.png: 2517e7a416c4e01e56efb58508a2c48297bb33a75fae45f69e68714ebe57fdca (9714594 bytes)
-- unread-city-lite-assets.zip: 3fa78211aa61f8aacf7fb4d613006b44afdbb64f2122f69339158b22bef2118e (62627136 bytes)
+- unread-city-lite.png: e39d13d1d647c1877c34139c0d10857b96b258341bdc135872d55901ab625e07 (25963719 bytes)
+- unread-city-lite-tauri.png: cedcf662a64f17d4746ae34282c53353323480324ebb631b6e4646684f9296bc (9723124 bytes)
+- unread-city-lite-assets.zip: c5ab1234fad9d16d4b6ea09265ef223941257dd469fd58cc37e243b4a771fb6f (64562385 bytes)

@@ -11,11 +11,11 @@ import { allResidentCast, residentPresence } from '../src/runtime/npc-cast';
 import { lawCases, lawOwner, quoteLawCase, lawCareerStoryContext, SHERRY_ASSIST_RATE } from '../src/runtime/law-career';
 import { npcProfession } from '../src/runtime/npc-professions';
 
-function inOffice(protagonist: 'soyo' | 'emma' = 'emma') {
+function inOffice(protagonist: 'soyo' | 'emma' = 'emma', hour = 9, minute = 0) {
   let state = enableProtagonists(createInitialState());
   if (protagonist !== 'soyo') state = reduceState(state, { type: 'switch_protagonist', target: protagonist });
   const room = getCampusInterior('legal-office')!;
-  state.clock = { day: 2, hour: 9, minute: 0 };
+  state.clock = { day: 2, hour, minute };
   state.locationId = room.id;
   state.scene = {
     x: room.entrance.x, z: room.entrance.z, yaw: room.entrance.yaw,
@@ -158,7 +158,7 @@ describe('law career and Sherry evidence assistance', () => {
 
   it('enforces hours, place, energy and does not commit blocked changes', () => {
     const case1 = lawCases[0]!;
-    const late = inOffice(); late.clock.hour = 17; late.clock.minute = 30;
+    const late = inOffice('emma', 17, 30);
     expect(quoteLawCase(late, act('accept', case1.id)).blockedReason).toBeNull();
     const accepted = reduceState(late, act('accept', case1.id));
     expect(quoteLawCase(accepted, act('investigate')).blockedReason).toMatch(/下班/);
