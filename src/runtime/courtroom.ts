@@ -2,6 +2,7 @@ import type { WorldAction, WorldState, StoryAction } from '../frontend/types';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE } from './law-career';
+import { getLocationStatus } from './location-services';
 
 export type CourtCategory = 'civil' | 'administrative' | 'minor-criminal' | 'major-criminal';
 export const DAILY_COURT_CATEGORIES: readonly CourtCategory[] = ['civil', 'administrative', 'minor-criminal'];
@@ -148,7 +149,7 @@ export function parseCourtroom(value: unknown): CourtroomState {
   const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial'], '根结构');
   if (root.version !== 1 || !Array.isArray(root.categories) || !root.categories.length || root.categories.length > 4) return error('版本或筛选');
   const categories = root.categories.map(category);
-  if (new Set(categories).size !== categories.length) return error('重复筛选');
+  if (new Set(categories).size !== categories.length || categories.some(kind => !DAILY_COURT_CATEGORIES.includes(kind))) return error('重复或不受支持的日常筛选');
   let board: CourtroomState['board'] = null;
   if (root.board !== null) {
     const raw = obj(root.board, ['day','offers'], '公告栏');
@@ -205,6 +206,8 @@ const preset = (day: number, categories: CourtCategory[]): CourtOffer => {
 const canOffice = (state: WorldState): void => {
   if (state.locationId !== LAW_OFFICE_ID || state.interior?.roomId !== LAW_OFFICE_ID)
     error('请先进入枫庭律师事务所');
+  if (!getLocationStatus(LAW_OFFICE_ID,state.clock)?.isOpen)
+    error('律师事务所当前不受理新案件');
 };
 const eligible = (state: WorldState): void => {
   if (courtState(state).active) error('当前庭审尚未结案');
@@ -256,6 +259,7 @@ export function validateCourtStep(raw: unknown, state: WorldState): Extract<Stor
   const c = courtState(state).active;
   if (!c || c.owner !== activeProtagonist(state)) return error('当前没有进行中的庭审');
   const item = obj(raw,['type','key','kind','summary'],'庭审节点');
+  if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   const key = string(item.key,50,'节点标记');
   if (!['testimony','insight','contradiction'].includes(String(item.kind)) || c.steps.some(step => step.key === key))
     return error('重复或未知的庭审进展');
@@ -265,6 +269,7 @@ export function validateCourtFinish(raw: unknown, state: WorldState): Extract<St
   const c = courtState(state).active;
   if (!c || c.owner !== activeProtagonist(state)) return error('当前没有进行中的庭审');
   const item = obj(raw,['type','verdict','summary'],'庭审结论');
+  if (state.clock.day !== c.day) return error('庭审必须在开庭当天结束');
   if (!['win','loss','settled','withdrawn'].includes(String(item.verdict))) return error('结案方式');
   if (c.source === 'commission' && ['settled','withdrawn'].includes(String(item.verdict))) return error('职业委托尚未完成查明事实');
   if (c.source === 'commission' && item.verdict === 'win' && c.steps.length < 1) return error('尚无有效推理');
@@ -357,12 +362,13 @@ export function courtStoryAction(state: WorldState, action: Extract<StoryAction,
     const assisted = active.source === 'commission' && active.owner === 'emma' &&
       (sherry || /雪莉.{0,12}(接手|救场|完成|代为)/.test(parsed.summary));
     const verdict = sherry ? 'win' : parsed.verdict;
+    const finalSummary = sherry ? '原有论证一度陷入困境，橘雪莉根据已在庭审中确认的证据与证言完成关键澄清，案件妥善结案。' : parsed.summary;
     const multiplier = assisted ? SHERRY_ASSIST_RATE : verdict === 'win' && active.source === 'commission' ? 1 : 0;
     reward = Math.round(active.rewardYen * multiplier);
     const experience = Math.round(active.experience * multiplier);
     court.results.push({ id:active.id, owner:active.owner, source:active.source, title:active.title,
       verdict, solvedBy:assisted?'sherry':'player', payout:reward, experience,
-      summary:parsed.summary, atDay:state.clock.day });
+      summary:finalSummary, atDay:state.clock.day });
     if (court.results.length > 300) court.results.shift();
     court.active = null;
     minutes = 10;
@@ -380,10 +386,10 @@ export function abandonTrialOnSwitch(state: WorldState): WorldState {
     verdict:'loss',solvedBy:'forfeit',payout:0,experience:0,
     summary:'庭审论证表现不佳，橘雪莉随后澄清了关键争议并完成善后。',atDay:state.clock.day});
   if (court.results.length > 300) court.results.shift();
-  court.pendingRecaps[trial.owner] = '关于「' + trial.title + '」的庭审，' + protagonistNames[trial.owner] +
+  court.pendingRecaps[trial.owner] = ('关于「' + trial.title + '」的庭审，' + protagonistNames[trial.owner] +
     '先前的论证未能说服法庭。橘雪莉重新梳理了已知证据和证词，完成必要的善后与澄清。' +
     (trial.truth ? '案情最终得到澄清：' + trial.truth : '双方就争议作出了相应处理。') +
-    '这次庭审没有带来职业报酬。';
+    '这次庭审没有带来职业报酬。').slice(0,1800);
   court.active = null;
   next.courtroom = parseCourtroom(court);
   return next;
