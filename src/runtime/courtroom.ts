@@ -124,7 +124,7 @@ const offer = (raw: unknown): CourtOffer => {
 const courtDefendantName = (raw: string): string => {
   const normalized = (value: string) => value.toLowerCase().replace(/[\s·•._-]/g,'');
   const aliases: Record<ProtagonistId, string[]> = {
-    soyo:['素世','长崎素世','長崎そよ','soyo','protagonist-soyo'],
+    soyo:['素世','长崎素世','soyo','protagonist-soyo'],
     sakiko:['祥子','丰川祥子','豐川祥子','sakiko','protagonist-sakiko'],
     emma:['艾玛','艾瑪','樱羽艾玛','櫻羽艾瑪','emma','majo-emma','protagonist-emma'],
     renako:['玲奈子','甘织玲奈子','甘織玲奈子','renako','watanare-renako','protagonist-renako'],
