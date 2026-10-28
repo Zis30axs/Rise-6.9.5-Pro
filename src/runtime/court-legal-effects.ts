@@ -148,7 +148,7 @@ export function courtPartyForName(state: WorldState, display: string, caseId: st
   if(known) return {kind:'npc',id:known.id,name:known.name};
   const contact=state.contacts.find(row=>row.name===display || row.id===display || row.sourcePersonId===display);
   if(contact) return {kind:'npc',id:contact.sourcePersonId ?? contact.id,name:contact.name};
-  return {kind:'npc',id:'court-'+caseId+':'+role,name:display};
+  return {kind:'npc',id:'court-'+caseId.slice(0,50)+':'+role,name:display};
 }
 export function newCourtAgreement(state: WorldState, caseId: string, claimant: string,
   defendant: string, summary: string, kind: CourtAgreement['kind'], terms: CourtTermDraft[]): CourtAgreement {
