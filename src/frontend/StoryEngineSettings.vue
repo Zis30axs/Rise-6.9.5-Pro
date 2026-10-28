@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
+import LongTermMemorySettings from './LongTermMemorySettings.vue';
 import { DEFAULT_STORY_API, loadStoryApiKey, loadStoryApiSettings, requestStoryFromCustomApi, saveStoryApiKey, saveStoryApiSettings } from '../runtime/story-api';
 import type { StoryApiSettings } from '../runtime/story-api';
 
+defineProps<{ memoryScope?: string }>();
 const settings = ref<StoryApiSettings>(loadStoryApiSettings());
 const secret = ref(loadStoryApiKey());
 const notice = ref('');
@@ -84,5 +86,6 @@ onBeforeUnmount(() => pendingTest?.abort());
       <button type="button" data-story-api-reset :disabled="testing" @click="reset">恢复酒馆模型</button>
     </div>
     <p v-if="notice" class="uc-narrative-notice" role="status">{{ notice }}</p>
+    <LongTermMemorySettings :scope="memoryScope || ''" />
   </section>
 </template>
