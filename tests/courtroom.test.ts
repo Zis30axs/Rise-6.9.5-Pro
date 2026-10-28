@@ -134,8 +134,8 @@ describe('freeform courtroom and legal services', () => {
   });
 
   it('forbids a new lawsuit against any of the four playable protagonists',()=>{
-    for(const defendant of ['soyo','素世','长崎素世','sakiko','祥子','丰川祥子',
-      'emma','艾玛','樱羽艾玛','renako','玲奈子','甘织玲奈子']){
+    for(const defendant of ['soyo','素世','长崎 素世','長崎そよ','sakiko','祥子','豐川祥子',
+      'emma','艾玛','majo-emma','樱羽艾玛','renako','玲奈子','watanare-renako','甘织玲奈子']){
       expect(()=>applyStoryActions(inOffice(),[{type:'court_quote',defendant,
         reason:'单纯想针对一名主角',risk:'缺乏法律依据',category:'civil',
         lawyer:null,sherry:false,courtFeeYen:0,lawyerFeeYen:0,sherryFeeYen:0,
