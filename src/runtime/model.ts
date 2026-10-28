@@ -743,6 +743,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
       case 'court_docket':
+      case 'court_special':
       case 'court_open':
       case 'court_quote':
       case 'court_step':
@@ -751,7 +752,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         next = settled.state;
         if (settled.minutes) advance(next, settled.minutes);
         if (settled.reward) next.player.balance += settled.reward;
-        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : '庭审已结束：' + action.summary);
+        note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : '庭审已结束：' + action.summary);
         break;
       }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
