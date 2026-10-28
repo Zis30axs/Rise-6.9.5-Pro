@@ -43,14 +43,14 @@ async function requestDocket() {
   if (props.model.busy || active.value || board.value || working.value) return;
   working.value = true;
   try {
-    await props.actions.send('请展示今天枫庭律师事务所的三份委托。请根据已选的民事、行政、轻微刑事范围制作两份新委托，并用 court_docket 行动保存公告栏；另有一份事务所保留的卷宗。不要立即开庭。');
+    await props.actions.send('请让我看看今天枫庭律师事务所的委托目录。我想先挑选一份合适的案件，不急着开庭。');
   } finally { working.value=false; }
 }
 async function requestSpecial() {
   if (props.model.busy || working.value || active.value || special.value) return;
   working.value = true;
   try {
-    await props.actions.send('我希望主动查看一次重大刑事特殊委托。请只生成一份新的高报酬重大刑事卷宗，涉案人物优先使用临时人物，不从日常委托抽取，用 court_special 行动记录；现在只看委托概要，不开庭。');
+    await props.actions.send('我想看看今天是否有需要特别办理的重大刑事委托。先让我看一看案情概要。');
   } finally { working.value=false; }
 }
 async function accept(offer:CourtOffer) {
@@ -61,7 +61,7 @@ async function accept(offer:CourtOffer) {
   }
   working.value=true;
   try {
-    await props.actions.send('我决定承接今天的委托「'+offer.title+'」（编号 '+offer.id+'）。请补全案情、公开证据和固定真相，用 court_open 行动锁定卷宗。开庭后由我自由推理，不进行地图调查，也不要提前泄露真正结论。');
+    await props.actions.send('我决定承接「'+offer.title+'」这份委托，请把案情与证据交给我，直接准备开庭。');
   } finally { working.value=false; }
 }
 async function requestQuote() {
@@ -72,7 +72,7 @@ async function requestQuote() {
       '。事由：'+reason.value.trim()+'。案件类别：'+COURT_CATEGORY_NAMES[category.value]+'。'+
       (lawyer.value ? '希望由'+protagonistNames[lawyer.value]+'协助庭审。' : '我自行出庭。')+
       (sherry.value ? '另外请橘雪莉协助。' : '不聘请橘雪莉。')+
-      '请先评估法律风险，然后根据案情报出起诉费、律师费和法律协助费，并以 court_quote 行动记录。现在只是咨询，请勿扣款，也不提前生成既定真相。');
+      '请先说明法律风险，并告诉我起诉费和协助费用。现在只是咨询，未经我确认不要提交诉状或付款。');
   } finally { working.value=false; }
 }
 function confirmFiling() {
