@@ -38,6 +38,7 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { isCourtInSession } from '../runtime/courtroom';
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
@@ -53,20 +54,10 @@ const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 const currentProtagonist = computed(() => activeProtagonist(props.model.state));
 const switchingLease = shallowRef<ProtagonistSwitchLease | null>(null);
 const switchOverlay = ref<{ skip(): Promise<void> }>();
-function selectProtagonist(event: Event) {
-  if (switchingLease.value || props.model.interaction) return;
-  scene.value?.flushPresence();
-  const input = event.target as HTMLSelectElement;
-  const target = input.value as ProtagonistId;
-  input.value = currentProtagonist.value;
-  if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
-  if (!props.actions.beginProtagonistSwitch) { props.actions.dispatch({ type: 'switch_protagonist', target }); return; }
-  switchingLease.value = props.actions.beginProtagonistSwitch(target);
-}
-/** A saved side event exposes only the four playable IDs, never NPC identities. */
-function switchToOtherSide(target: ProtagonistId) {
-  if (!PROTAGONISTS.includes(target) || currentProtagonist.value === target
-    || switchingLease.value || props.model.busy || props.model.interaction) return;
+const pendingCourtSwitch = ref<ProtagonistId | null>(null);
+function commitProtagonistSwitch(target: ProtagonistId) {
+  if (!PROTAGONISTS.includes(target) || currentProtagonist.value === target ||
+    switchingLease.value || props.model.busy || props.model.interaction) return;
   scene.value?.flushPresence();
   if (walkSyncError.value) { props.model.notice = '当前位置尚未保存，请稍后重试。'; return; }
   if (!props.actions.beginProtagonistSwitch) {
@@ -75,10 +66,35 @@ function switchToOtherSide(target: ProtagonistId) {
   }
   switchingLease.value = props.actions.beginProtagonistSwitch(target);
 }
+function requestProtagonistSwitch(target: ProtagonistId) {
+  if (pendingCourtSwitch.value || !PROTAGONISTS.includes(target) || target === currentProtagonist.value ||
+    switchingLease.value || props.model.busy || props.model.interaction) return;
+  if (isCourtInSession(props.model.state)) {
+    pendingCourtSwitch.value = target;
+    void nextTick(() => shell.value?.querySelector<HTMLButtonElement>('[data-court-switch-cancel]')?.focus({preventScroll:true}));
+    return;
+  }
+  commitProtagonistSwitch(target);
+}
+function confirmCourtSwitch() {
+  const target = pendingCourtSwitch.value;
+  pendingCourtSwitch.value = null;
+  if (target) commitProtagonistSwitch(target);
+}
+function selectProtagonist(event: Event) {
+  const input = event.target as HTMLSelectElement;
+  const target = input.value as ProtagonistId;
+  input.value = currentProtagonist.value;
+  requestProtagonistSwitch(target);
+}
+/** Side-story viewpoints use the same active-trial warning as the main selector. */
+function switchToOtherSide(target: ProtagonistId) {
+  requestProtagonistSwitch(target);
+}
 watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
-watch(currentProtagonist, protagonist => { closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
+watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'transit' | 'store' | 'location' | 'law';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -727,6 +743,7 @@ function sceneEncounter(personId: string) {
   void prepareAction(`我向${personLabel(person)}打招呼，想和对方聊几句。请根据我们眼下所在的地方继续当面的对话，不要替我决定下一句话。`);
 }
 function dismissOverlay() {
+  if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
   if (studyPickerOpen.value) { closeStudyPicker(); return true; }
@@ -783,7 +800,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
-    <div :inert="!model.state.academics || !!model.interaction || !!switchingLease" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || undefined" style="display: contents">
+    <div v-if="pendingCourtSwitch" class="court-switch-mask" data-court-switch-warning role="alertdialog" aria-modal="true" aria-label="重大事件">
+      <section class="court-switch-dialog">
+        <h2>当前正在进行重大事件，是否继续？</h2>
+        <p>当前庭审尚未结束。继续切换视角后，本案将记为表现不佳，由橘雪莉完成后续处理；本次职业报酬为零。</p>
+        <div class="court-switch-actions">
+          <button type="button" data-court-switch-cancel @click="pendingCourtSwitch=null">取消切换</button>
+          <button type="button" data-court-switch-confirm @click="confirmCourtSwitch">继续切换</button>
+        </div>
+      </section>
+    </div>
+    <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
     <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion" :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
     <SoyoLive2D v-if="novelMode" :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed" :active="!activeWindow && readingMode !== 'expanded'" />
