@@ -93,6 +93,9 @@ export interface MemoryQuery {
   entities?: string[];
   entityId?: string;
   otherId?: string;
+  /** 0-based paging for event source fragments and history timelines. */
+  offset?: number;
+  limit?: number;
 }
 
 export function memoryKey(scope: string, id: string): string {

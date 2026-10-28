@@ -19,7 +19,7 @@ export const MEMORY_TOOL_INSTRUCTION = [
 export const MEMORY_TAG_INSTRUCTION = [
   MEMORY_TOOL_INSTRUCTION,
   '如果确实需要查找重要的过去事件，必须在本轮只输出一个 <memory_lookup>JSON对象</memory_lookup>。',
-  '对象字段只允许 operation、query、eventId、entities、entityId、otherId，operation 从 search_memory/get_event_details/get_entity_history/get_relationship_history 中选择。',
+  '对象字段只允许 operation、query、eventId、entities、entityId、otherId、offset、limit；get_event_details 用 offset/limit 分页读取旧正文。operation 从 search_memory/get_event_details/get_entity_history/get_relationship_history 中选择。',
   '第一次回忆请求中绝不能提前生成剧情、世界行动、短信、周报或其他标签。',
   '若不需要查阅历史，则直接输出正常剧情协议，不要输出 memory_lookup。',
 ].join('\n');
@@ -29,19 +29,24 @@ function record(v: unknown): Record<string, unknown> | null {
 function queryArguments(raw: unknown): MemoryQuery {
   const value = record(raw);
   if (!value || !OPERATIONS.includes(value.operation as MemoryQueryOperation)
-    || Object.keys(value).some(k => !['operation', 'query', 'eventId', 'entities', 'entityId', 'otherId'].includes(k)))
+    || Object.keys(value).some(k => !['operation', 'query', 'eventId', 'entities', 'entityId', 'otherId', 'offset', 'limit'].includes(k)))
     throw new Error('长期记忆检索参数无效');
   const clean = (x: unknown) => typeof x === 'string' && x.trim().length > 0 && x.length <= 240 ? x.trim() : undefined;
   const entities = value.entities === undefined ? undefined
     : Array.isArray(value.entities) && value.entities.length <= 8 && value.entities.every(x => !!clean(x))
       ? value.entities as string[] : undefined;
   if (value.entities !== undefined && !entities) throw new Error('实体列表不合法');
+  if (value.offset !== undefined && (!Number.isSafeInteger(value.offset) || Number(value.offset) < 0 || Number(value.offset) > 10000)
+    || value.limit !== undefined && (!Number.isSafeInteger(value.limit) || Number(value.limit) < 1 || Number(value.limit) > 8))
+    throw new Error('记忆分页参数不合法');
   const operation = value.operation as MemoryQueryOperation;
   const result: MemoryQuery = { operation, ...(clean(value.query) ? { query: clean(value.query) } : {}),
     ...(clean(value.eventId) ? { eventId: clean(value.eventId) } : {}),
     ...(entities ? { entities } : {}),
     ...(clean(value.entityId) ? { entityId: clean(value.entityId) } : {}),
-    ...(clean(value.otherId) ? { otherId: clean(value.otherId) } : {}) };
+    ...(clean(value.otherId) ? { otherId: clean(value.otherId) } : {}),
+    ...(value.offset !== undefined ? { offset: Number(value.offset) } : {}),
+    ...(value.limit !== undefined ? { limit: Number(value.limit) } : {}) };
   if (operation === 'search_memory' && !result.query
     || operation === 'get_event_details' && !result.eventId
     || (operation === 'get_entity_history' || operation === 'get_relationship_history') && !result.entityId)
@@ -90,6 +95,8 @@ const schema = {
     entities: { type: 'array', items: { type: 'string' } },
     entityId: { type: 'string' },
     otherId: { type: 'string' },
+    offset: { type: 'integer', minimum: 0, maximum: 10000 },
+    limit: { type: 'integer', minimum: 1, maximum: 8 },
   },
   required: ['operation'],
 } as const;
