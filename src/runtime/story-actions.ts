@@ -9,6 +9,7 @@ import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
+import { parseAgendaDraft, socialMinute } from './social-agenda';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
@@ -84,7 +85,9 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       }
       case 'social_invite': {
         const hasResponse = Object.hasOwn(raw, 'responseQuote');
-        const item = record(raw, ['type', 'targetId', 'source', 'locationId', 'day', 'time', 'message', 'outcome', ...(hasResponse ? ['responseQuote'] : [])], path);
+        const hasAgenda = Object.hasOwn(raw,'agenda');
+        const item = record(raw, ['type', 'targetId', 'source', 'locationId', 'day', 'time', 'message', 'outcome', ...(hasResponse ? ['responseQuote'] : []), ...(hasAgenda ? ['agenda'] : [])], path);
+        if(hasAgenda && (item.source !== 'meeting' || item.outcome !== 'accepted')) return invalid(`${path} 私人赴约日程只能随当面明确同意创建`);
         if (item.source !== 'meeting' && item.source !== 'sms') return invalid(`${path} 邀约渠道`);
         if (!['pending', 'accepted', 'declined'].includes(String(item.outcome))) return invalid(`${path} 邀约状态`);
         const targetId = typeof item.targetId === 'string' ? item.targetId : '';
@@ -112,7 +115,24 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         return { type: 'social_invite', targetId: contact?.id ?? targetId,
           source: item.source, locationId: destination(item.locationId, `${path} 邀约地点`), day: date, time,
           message: text(item.message, 500, `${path} 邀约内容`), outcome: item.outcome as 'pending' | 'accepted' | 'declined',
-          ...(hasResponse ? { responseQuote: text(item.responseQuote, 300, `${path} 回应原话`) } : {}) };
+          ...(hasResponse ? { responseQuote: text(item.responseQuote, 300, `${path} 回应原话`) } : {}),
+          ...(hasAgenda ? {agenda:parseAgendaDraft(item.agenda,{day:date,time},socialMinute(state))} : {}) };
+      }
+      case 'social_agenda': {
+        const hasAgenda=Object.hasOwn(raw,'agenda');
+        const item=record(raw,['type','invitationId','decision','triggerId','reason',...(hasAgenda?['agenda']:[])],path);
+        const invitationId=text(item.invitationId,128,`${path} 邀约 ID`);
+        const invitation=state.protagonists?.socialInvitations?.find(row=>row.id===invitationId);
+        if(!invitation||invitation.status!=='accepted') return invalid(`${path} 只允许修改真实已同意的邀约`);
+        if(invitation.owner!==state.protagonists?.accounts.active) return invalid(`${path} 不属于当前主角的邀约`);
+        if(!['plan','revise','cancel','no_show'].includes(String(item.decision))) return invalid(`${path} 计划决定`);
+        const decision=item.decision as 'plan'|'revise'|'cancel'|'no_show';
+        if((decision==='plan'||decision==='revise')!==hasAgenda) return invalid(`${path} 计划字段`);
+        const triggerId=text(item.triggerId,128,`${path} 变更原因 ID`);
+        const reason=text(item.reason,240,`${path} 具体依据`);
+        return {type:'social_agenda',invitationId,decision,triggerId,reason,
+          ...(hasAgenda?{agenda:parseAgendaDraft(item.agenda,invitation,socialMinute(state),
+            decision==='revise'?(invitation.agenda?.steps.filter(step=>step.done)??[]):[]):} :{})};
       }
       case 'travel': {
         const item = record(raw, ['type', 'locationId'], path);
