@@ -244,7 +244,6 @@ export function settleSocialAgendas(before:WorldState,state:WorldState):void {
     if(plan.status==='scheduled'){
       const background=who?state.protagonists.backgroundLife?.people[who]:undefined;
       const depart=plan.steps.find(step=>step.kind==='depart')!;
-      const arrival=plan.steps.find(step=>step.kind==='arrive')!;
       const leaving=plan.steps.find(step=>step.kind==='leave')!;
       const travels=background?.events.filter(e=>e.kind==='travel')??[];
       const arrived=travels.find(e=>e.at>=depart.at&&e.at<=end&&e.text.includes('约好的见面'));
