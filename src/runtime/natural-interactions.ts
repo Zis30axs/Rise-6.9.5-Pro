@@ -124,7 +124,7 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
 export function narrativeOperationId(turnId: string, index: number): string {
   let h = 2166136261;
   for (const ch of turnId) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return 'story-' + (h >>> 0).toString(16).padStart(8, '0') + '-' + index;
+  return 'story-' + turnId.slice(0, 24) + '-' + (h >>> 0).toString(16).padStart(8, '0') + '-' + index;
 }
 export function narrativeMessageId(turnId: string, index: number, toProtagonist: boolean): string {
   const id = narrativeOperationId(turnId, index);
@@ -144,6 +144,7 @@ export function recordGamePurchases(state: WorldState, actions: readonly StoryAc
   if (saved.some(item => item.id === id)) return next;
   saved.push({ id, owner, game: row.game, benefit: row.benefit, amountYen: row.amountYen, at: nowMinute(next) });
   next.protagonists!.gamePurchases = saved.slice(-purchaseLimit);
+  next.protagonists!.revision++;
   return next;
 }
 
@@ -173,6 +174,7 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
     });
   }
   next.protagonists!.socialInvitations = rows.slice(-invitationLimit);
+  next.protagonists!.revision++;
   return next;
 }
 
@@ -186,5 +188,6 @@ export function applySocialInvitationReply(state: WorldState, messageId: string,
   if (decision === 'accepted') invitation.status = 'accepted';
   if (decision === 'declined') invitation.status = 'declined';
   invitation.response = response.slice(0, 500);
+  next.protagonists!.revision++;
   return next;
 }
