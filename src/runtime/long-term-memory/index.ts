@@ -136,7 +136,7 @@ export async function memoryPromptContext(scope: string, state: WorldState, inpu
     let result = '';
     const limit = settings.tokenBudget * 2;
     for (const item of matches) {
-      const line = JSON.stringify({ at: item.at, sourceIds: item.sourceIds,
+      const line = JSON.stringify({ origin: item.origin, at: item.at, sourceIds: item.sourceIds,
         narratorOnly: item.narratorOnly, knownBy: item.knownBy,
         summary: item.text.slice(0, 750) });
       if (result.length + line.length > limit) break;
