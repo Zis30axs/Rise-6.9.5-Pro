@@ -100,14 +100,14 @@ describe('third protagonist accounts and timeline', () => {
 
   it('seeds only the intended contacts and leaves all demo messages and schedules out of a new game', () => {
     const initial = createInitialState();
-    expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko']);
+    expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi']);
     expect(initial.phone).toEqual([]);
     expect(initial.schedule).toEqual([]);
     expect(initial.story[0].text).not.toContain('手机轻震了两下');
 
     const state = world();
-    expect(personState(state, 'soyo').contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko']);
-    expect(personState(state, 'sakiko').contacts.map(contact => contact.id)).toEqual(['protagonist-soyo']);
+    expect(personState(state, 'soyo').contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi']);
+    expect(personState(state, 'sakiko').contacts.map(contact => contact.id)).toEqual(['protagonist-soyo', 'bang-mutsumi', 'bang-uika', 'bang-umiri', 'bang-nyamu']);
     expect(personState(state, 'soyo').phone).toEqual([]);
     expect(personState(state, 'sakiko').phone).toEqual([]);
 

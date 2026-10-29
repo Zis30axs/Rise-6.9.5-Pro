@@ -3,7 +3,7 @@ import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneComma
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, PROTAGONIST_PERSON_ID_LIST, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
-import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts } from './initial-contacts';
+import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts, sakikoInitialBandContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { getCampusInterior } from './campus-interiors';
 import { sceneLandmarks, sceneAreas } from '../frontend/scene-layout';
@@ -171,7 +171,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     locationId: 'downtown', scene: { x: point?.x ?? x, z: point?.z ?? z, yaw: 0, areaId: 'downtown', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
     player: { energy: 80, balance: SAKIKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
-    contacts: [knownProtagonistContact('soyo', protagonistNames.soyo)], phone: [], schedule: [], journal: [protagonistOpeningJournal('sakiko', s.clock)],
+    contacts: [knownProtagonistContact('soyo', protagonistNames.soyo), ...sakikoInitialBandContacts()], phone: [], schedule: [], journal: [protagonistOpeningJournal('sakiko', s.clock)],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: protagonistOpening('sakiko', s.clock) }],
   };
   const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s), fourth: renakoPersonalState(s), socialSkills: createSocialSkills(),
@@ -296,7 +296,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     if (!p.otherSideNpc || typeof p.otherSideNpc !== 'object' || Array.isArray(p.otherSideNpc)
       || Object.keys(p.otherSideNpc).length > 40) fail('NPC旁线变量列表无效');
     for (const [id, raw] of Object.entries(p.otherSideNpc)) {
-      if (!id.startsWith('majo-') && !id.startsWith('watanare-')) fail('NPC旁线身份无效');
+      if (!id.startsWith('majo-') && !id.startsWith('watanare-') && !id.startsWith('bang-')) fail('NPC旁线身份无效');
       if (PROTAGONIST_PERSON_ID_LIST.includes(id) || !residentById(id)) fail('NPC旁线身份无效');
       const row = exact(raw, ['locationId', 'at', 'until', 'status']);
       const locationId = string(row.locationId, 80), at = integer(row.at, now), until = integer(row.until, 525599999);

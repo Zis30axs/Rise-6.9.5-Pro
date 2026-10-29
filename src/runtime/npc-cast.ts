@@ -1,5 +1,6 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
+import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 
@@ -23,22 +24,34 @@ function mapWorldbookResidents(entries: typeof lore.entries) {
 /** Person IDs outlive phone ownership and playable-character assignments. */
 export const residentCast = mapWorldbookResidents(lore.entries);
 export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries as typeof lore.entries);
-export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast]);
+/** MyGO!!!!! and Ave Mujica members registered on the existing canon worldbook. Soyo and Sakiko stay protagonists. */
+export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId) as typeof lore.entries);
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast]);
 
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
 export const WATANARE_GROUP_ID = 'watanare-quintet';
 export const WATANARE_GROUP_NAME = '芦谷五人组';
 export const WATANARE_QUINTET_IDS = ['watanare-renako', 'watanare-mai', 'watanare-ajisai', 'watanare-satsuki', 'watanare-kaho'] as const;
+export const MYGO_GROUP_ID = 'mygo-band';
+export const MYGO_GROUP_NAME = 'MyGO!!!!!';
+export const MYGO_MEMBER_IDS = ['bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana'] as const;
+export const AVE_MUJICA_GROUP_ID = 'ave-mujica';
+export const AVE_MUJICA_GROUP_NAME = 'Ave Mujica';
+export const AVE_MUJICA_MEMBER_IDS = ['bang-mutsumi', 'bang-uika', 'bang-umiri', 'bang-nyamu'] as const;
 
 export const residentGroups = Object.freeze({
   [MAJO_GROUP_ID]: { id: MAJO_GROUP_ID, name: MAJO_GROUP_NAME, memberIds: residentCast.map(r => r.id) },
   [WATANARE_GROUP_ID]: { id: WATANARE_GROUP_ID, name: WATANARE_GROUP_NAME, memberIds: [...WATANARE_QUINTET_IDS] },
+  [MYGO_GROUP_ID]: { id: MYGO_GROUP_ID, name: MYGO_GROUP_NAME, memberIds: [...MYGO_MEMBER_IDS] },
+  [AVE_MUJICA_GROUP_ID]: { id: AVE_MUJICA_GROUP_ID, name: AVE_MUJICA_GROUP_NAME, memberIds: [...AVE_MUJICA_MEMBER_IDS] },
 });
 export const residentGroupById = (id: string) =>
   (residentGroups as Record<string, { id: string; name: string; memberIds: string[] } | undefined>)[id] ?? null;
 export const residentGroupForNpc = (npcId: string) =>
-  npcId.startsWith('majo-') ? residentGroups[MAJO_GROUP_ID] : npcId.startsWith('watanare-') ? residentGroups[WATANARE_GROUP_ID] : null;
+  npcId.startsWith('majo-') ? residentGroups[MAJO_GROUP_ID]
+    : npcId.startsWith('watanare-') ? residentGroups[WATANARE_GROUP_ID]
+      : Object.values(residentGroups).find(group => (group.memberIds as readonly string[]).includes(npcId)) ?? null;
 
 export const residentById = (id: string) => allResidentCast.find(row => row.id === id);
 
@@ -50,6 +63,12 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   const housing = housingForPerson(id);
   // Sherry's legal track is fixed. During office hours she is available to
   // investigate cases with Emma, rather than disappearing into a generic NPC shift.
+  // Canon places Taki's job at the live house. The existing interior is that workplace.
+  if (id === 'bang-taki' && minute >= 16 * 60 && minute < 22 * 60) return {
+    anchorId: null, locationId: 'livehouse',
+    activity: '在 Live House 打工并整理鼓组', available: true,
+    housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+  };
   if (id === 'majo-sherry' && minute >= 9 * 60 && minute < 18 * 60) return {
     anchorId: null, locationId: 'legal-office',
     activity: '在律师事务所整理卷宗并协助艾玛调查', available: true,

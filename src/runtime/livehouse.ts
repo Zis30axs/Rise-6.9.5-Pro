@@ -123,6 +123,8 @@ const fixedSkills: Record<string, Partial<MusicProfile['skills']>> = {
   '长崎素世': { bass: 90 }, '丰川祥子': { keyboard: 96 },
   '高松灯': { vocal: 90 }, '千早爱音': { guitar: 58 }, '椎名立希': { drums: 94 }, '要乐奈': { guitar: 97 },
   '若叶睦': { guitar: 93 }, '三角初华': { vocal: 94, guitar: 90 }, '八幡海铃': { bass: 96 }, '祐天寺若麦': { drums: 86 },
+  'bang-tomori': { vocal: 90 }, 'bang-anon': { guitar: 58 }, 'bang-taki': { drums: 94 }, 'bang-rana': { guitar: 97 },
+  'bang-mutsumi': { guitar: 93 }, 'bang-uika': { vocal: 94, guitar: 90 }, 'bang-umiri': { bass: 96 }, 'bang-nyamu': { drums: 86 },
 };
 const hash = (s: string) => { let n = 2166136261; for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619); return n >>> 0; };
 function ensureProfile(s: WorldState, personId: string, seed: string, name = '') {

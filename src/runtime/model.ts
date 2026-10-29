@@ -3,7 +3,7 @@ import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './n
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
-import { knownProtagonistContact } from './initial-contacts';
+import { knownProtagonistContact, soyoInitialBandContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
 import { recordProtagonistNarrative } from './protagonist-narrative';
@@ -241,7 +241,7 @@ export function createInitialState(): WorldState {
     inventory: [],
     academics: null,
     phone: [],
-    contacts: [knownProtagonistContact('sakiko', protagonistNames.sakiko)],
+    contacts: [knownProtagonistContact('sakiko', protagonistNames.sakiko), ...soyoInitialBandContacts()],
     schedule: [],
     journal: [protagonistOpeningJournal('soyo', clock)],
     story: [{ id: 'opening', role: 'assistant', text: protagonistOpening('soyo', clock) }],
