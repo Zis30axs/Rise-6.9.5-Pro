@@ -88,7 +88,7 @@ export function parseSocialSkills(raw: unknown): SocialSkillState {
         stressGain: integer(event.stressGain, 0, 7, owner + '.latest.stressGain'),
         day: integer(event.day, 1, 365000, owner + '.latest.day'),
       };
-      if (latest.day < daily.day) throw new Error('社交能力最近记录日期无效');
+      if (latest.day > daily.day) throw new Error('社交能力最近记录日期无效');
     }
     people[owner] = { xp, daily, latest };
   }
