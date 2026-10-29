@@ -7,7 +7,7 @@ import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { campusInteriors } from '../runtime/campus-interiors';
 import { transitStops } from '../runtime/transit';
-import { anchorLabels, createCampusMapProjection, mapBounds, mapDistrictLabels, mapLocationPoint, separatePoints, type CampusMapScope, type MapPoint } from './campus-map-layout';
+import { createCampusMapProjection, districtChipMetrics, mapBounds, mapDistrictLabels, mapLocationPoint, placeDistrictChips, screenBuildingBoxes, separatePoints, visibleMapBuildings, type CampusMapScope, type MapPoint } from './campus-map-layout';
 import { bindCitySandboxPick, createCitySandbox, type CitySandboxHandle } from './city-sandbox';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
@@ -60,7 +60,20 @@ const extraMarkers = computed(() => {
     return [{ ...place, point: spot, leader: spot.moved ? points([place.anchor, spot]) : '' }];
   });
 });
-const districts = computed(() => anchorLabels(mapDistricts.map(item => ({ ...item, anchor: project(item.x, item.z) })), props.width, props.height));
+const chip = computed(() => districtChipMetrics(props.width, props.viewScale));
+const districts = computed(() => placeDistrictChips(
+  mapDistricts.map(item => ({ ...item, anchor: project(item.x, item.z) })),
+  screenBuildingBoxes(visibleMapBuildings('city'), project),
+  props.width,
+  props.height,
+  chip.value,
+));
+const districtStyle = (point: MapPoint) => ({
+  left: `${point.x}px`, top: `${point.y}px`,
+  fontSize: `${chip.value.font}px`,
+  padding: `1px ${chip.value.padX}px`,
+  transform: `translate(-50%, -50%) scale(${chip.value.layoutScale})`,
+});
 const player = computed(() => {
   const point = props.position ?? mapLocationPoint(props.locationId);
   if (!point || point.x < bounds.value.minX || point.x > bounds.value.maxX || point.z < bounds.value.minZ || point.z > bounds.value.maxZ) return undefined;
@@ -134,7 +147,7 @@ onBeforeUnmount(() => { motionQuery?.removeEventListener('change', motionChanged
     <svg class="cms-geometry cms-labels" :viewBox="`0 0 ${Math.max(1, width)} ${Math.max(1, height)}`" aria-hidden="true">
       <g v-for="stop in stops" :key="stop.id" :data-transit-stop="stop.id"><circle :cx="stop.anchor.x" :cy="stop.anchor.y" r="4" fill="#e5bc6a" stroke="#fff7d9"/><text :x="stop.anchor.x + 6" :y="stop.anchor.y + 3" class="cms-stop-label">站</text></g>
       <g v-if="scope !== 'city'"><polyline v-for="marker in markers" :key="marker.id" :points="marker.leader" fill="none" stroke="#7c8c70" stroke-width="1" opacity=".75"/><polyline v-for="place in extraMarkers.filter(item => item.leader)" :key="'extra-' + place.id" :points="place.leader" fill="none" stroke="#7c8c70" stroke-width=".8" stroke-dasharray="2 2"/></g>
-      <g v-else><polyline v-for="district in districts" :key="district.id" :points="points([district.anchor, district.label])" fill="none" stroke="#7c8c70" stroke-width="1"/></g>
+      <g v-else><polyline v-for="district in districts.filter(item => item.visible && Math.hypot(item.label.x - item.anchor.x, item.label.y - item.anchor.y) > 10)" :key="district.id" :points="points([district.anchor, district.label])" fill="none" stroke="#7c8c70" stroke-width="1" opacity=".45"/></g>
       <g v-if="scope !== 'city'"><polyline v-for="person in peoplePositions.filter(item => item.leader)" :key="person.contactId" :points="person.leader" fill="none" stroke="#806393" stroke-width="1.2"/></g>
     </svg>
     <template v-if="scope !== 'city'">
@@ -144,6 +157,6 @@ onBeforeUnmount(() => { motionQuery?.removeEventListener('change', motionChanged
       <button v-for="person in peoplePositions" :key="person.contactId" type="button" class="cms-avatar-pin cms-avatar-person" :class="{ selected: selectedPersonId === person.contactId }" :style="markerStyle(person.point)" :data-map-person-id="person.contactId" :title="person.name" :aria-label="'查看人物：' + person.name" :aria-pressed="selectedPersonId === person.contactId" @click="selectedPersonId = selectedPersonId === person.contactId ? '' : person.contactId"><MapCharacterAvatar :name="person.name" :person-id="person.personId" :portrait-id="person.portraitId" :protagonist-id="person.protagonistId" /></button>
       <div v-if="selectedPerson" class="cms-person-detail" role="status"><strong>{{ selectedPerson.name }}</strong><small>{{ selectedPerson.source === 'protagonist' ? '另一主角 · 她在这里' : selectedPerson.source === 'scene' ? '现场人物' : '演示定位' }}</small><button type="button" aria-label="关闭人物信息" @click="selectedPersonId = ''">×</button></div>
     </template>
-    <button v-for="district in scope === 'city' ? districts : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="markerStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.shortName }}</button>
+    <button v-for="district in scope === 'city' ? districts.filter(item => item.visible) : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="districtStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.shortName }}</button>
   </div>
 </template>

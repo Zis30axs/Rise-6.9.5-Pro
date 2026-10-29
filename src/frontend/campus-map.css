@@ -19,8 +19,8 @@
 .world-map .cms-person-pin { pointer-events:none; transform:translate(-50%,-100%); margin-top:-4px; }
 .world-map .cms-ground-label { fill:#485e4b; font:3px system-ui,sans-serif; paint-order:stroke; stroke:#e0e6ce; stroke-width:.5px; }
 .world-map .cms-stop-label { fill:#576b53; font:8px system-ui,sans-serif; paint-order:stroke; stroke:#f5edd6; stroke-width:2px; }
-.world-map .cms-district-pin { position:absolute; box-sizing:border-box; transform:translate(-50%,-50%); width:104px; height:44px; min-height:44px; padding:7px; border:1px solid #efe6cf; border-radius:9px; background:#f7f3e6f2; color:#375443; font-size:11px; white-space:nowrap; box-shadow:0 8px 18px #1d332866; }
-.world-map .cms-district-pin.selected { background:#365d48; color:#fff0c7; border-color:#d9c99b; }
+.world-map .cms-district-pin { position:absolute; box-sizing:border-box; width:auto; height:auto; min-width:0; min-height:0; border:1px solid rgba(239,230,207,.5); border-radius:999px; background:rgba(247,243,230,.42); color:#375443; line-height:1.25; white-space:nowrap; box-shadow:0 1px 3px rgba(29,51,40,.16); z-index:3; touch-action:none; }
+.world-map .cms-district-pin.selected { background:rgba(54,93,72,.72); color:#fff6e4; border-color:rgba(217,201,155,.7); }
 @media (max-width:760px) {
   .world-map .cms-place-pin { padding:4px; gap:3px; font-size:10px; }
   .world-map .cms-pin-index { min-width:18px; height:18px; font-size:9px; }

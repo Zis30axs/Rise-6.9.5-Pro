@@ -69,21 +69,76 @@ export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonl
   return items.map((item, index) => ({ ...item, label: best[index] ?? item.anchor }));
 }
 
-/** Keep a chip near its anchor. Edge columns stay available for the six campus destinations. */
-export function anchorLabels<T extends { anchor: MapPoint }>(items: readonly T[], width: number, height: number, labelWidth = 104, labelHeight = 44): (T & { label: MapPoint })[] {
-  const placed: MapPoint[] = [];
-  const overlaps = (x: number, y: number) => placed.some(other => Math.abs(other.x - x) < labelWidth - 4 && Math.abs(other.y - y) < labelHeight - 4);
-  const offsets: [number, number][] = [[0, -40], [0, 42], [78, -8], [-78, -8], [78, 36], [-78, 36], [0, -86], [0, 88], [150, 0], [-150, 0]];
+export interface DistrictChipMetrics {
+  font: number;
+  height: number;
+  padX: number;
+  /** Compensates the map's CSS zoom, then lets the chip grow only a little as you zoom in. */
+  layoutScale: number;
+  show: boolean;
+}
+
+/** City-overview chips stay small. Below this zoom they hide so the buildings stay readable. */
+export function districtChipMetrics(viewportWidth: number, viewScale: number): DistrictChipMetrics {
+  const zoom = Math.min(4, Math.max(0.45, Number.isFinite(viewScale) ? viewScale : 1));
+  const narrow = viewportWidth < 480;
+  const font = narrow ? 9 : 10;
+  const height = narrow ? 16 : 18;
+  const padX = narrow ? 4 : 5;
+  const screenFactor = Math.min(1.08, Math.max(0.7, 0.9 + 0.16 * Math.log2(zoom)));
+  return { font, height, padX, layoutScale: screenFactor / zoom, show: zoom >= 0.8 };
+}
+
+export function districtChipWidth(text: string, metrics: Pick<DistrictChipMetrics, 'font' | 'padX' | 'layoutScale'>) {
+  return Math.ceil([...text].length * metrics.font * metrics.layoutScale + metrics.padX * 2 * metrics.layoutScale);
+}
+
+export interface ScreenBox { x: number; y: number; w: number; h: number }
+
+/** Screen rectangle of an extruded footprint, used so a chip can step off the roof. */
+export function screenBuildingBoxes(buildings: readonly MapBuilding[], project: (x: number, z: number, elevation?: number) => MapPoint, pad = 4): ScreenBox[] {
+  return buildings.map(building => {
+    const xs = [building.x - building.width / 2, building.x + building.width / 2];
+    const zs = [building.z - building.depth / 2, building.z + building.depth / 2];
+    const points = xs.flatMap(x => zs.flatMap(z => [project(x, z, 0), project(x, z, building.height)]));
+    const minX = Math.min(...points.map(point => point.x)) - pad;
+    const maxX = Math.max(...points.map(point => point.x)) + pad;
+    const minY = Math.min(...points.map(point => point.y)) - pad;
+    const maxY = Math.max(...points.map(point => point.y)) + pad;
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  });
+}
+
+function boxesOverlap(a: ScreenBox, b: ScreenBox) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/** Small chips near each district. A chip that would cover a building or another chip is omitted. */
+export function placeDistrictChips<T extends { anchor: MapPoint; shortName: string }>(
+  items: readonly T[],
+  obstacles: readonly ScreenBox[],
+  width: number,
+  height: number,
+  metrics: DistrictChipMetrics,
+): (T & { label: MapPoint; visible: boolean; chipWidth: number; chipHeight: number })[] {
+  if (!metrics.show) return items.map(item => ({ ...item, label: item.anchor, visible: false, chipWidth: 0, chipHeight: 0 }));
+  const placed: ScreenBox[] = [];
+  const chipHeight = metrics.height * metrics.layoutScale;
   return items.map(item => {
-    const spot = offsets.map(([dx, dy]) => ({ x: item.anchor.x + dx, y: item.anchor.y + dy })).find(candidate =>
-      candidate.x >= labelWidth / 2 + 6 && candidate.x <= width - labelWidth / 2 - 6
-      && candidate.y >= labelHeight / 2 + 6 && candidate.y <= height - labelHeight / 2 - 6
-      && !overlaps(candidate.x, candidate.y)) ?? {
-      x: Math.max(labelWidth / 2 + 6, Math.min(width - labelWidth / 2 - 6, item.anchor.x)),
-      y: Math.max(labelHeight / 2 + 6, Math.min(height - labelHeight / 2 - 6, item.anchor.y)),
-    };
-    placed.push(spot);
-    return { ...item, label: spot };
+    const chipWidth = districtChipWidth(item.shortName, metrics);
+    const offsets: [number, number][] = [[0, -(chipHeight + 10)]];
+    for (let ring = 1; ring <= 6; ring++) {
+      const step = ring * (chipHeight + 8);
+      offsets.push([0, -step], [0, step], [step * 1.6, -chipHeight], [-step * 1.6, -chipHeight], [step, step * 0.6], [-step, step * 0.6]);
+    }
+    const spot = offsets.map(([dx, dy]) => ({ x: item.anchor.x + dx, y: item.anchor.y + dy })).find(center => {
+      const box = { x: center.x - chipWidth / 2, y: center.y - chipHeight / 2, w: chipWidth, h: chipHeight };
+      const inside = box.x >= 4 && box.y >= 4 && box.x + box.w <= width - 4 && box.y + box.h <= height - 4;
+      return inside && !placed.some(other => boxesOverlap(box, other)) && !obstacles.some(other => boxesOverlap(box, other));
+    });
+    if (!spot) return { ...item, label: item.anchor, visible: false, chipWidth, chipHeight };
+    placed.push({ x: spot.x - chipWidth / 2, y: spot.y - chipHeight / 2, w: chipWidth, h: chipHeight });
+    return { ...item, label: spot, visible: true, chipWidth, chipHeight };
   });
 }
 

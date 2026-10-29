@@ -12,6 +12,7 @@
     "predev": "npm run art:build && npm run phone:build",
     "precheck": "npm run art:build && npm run phone:build",
     "dev": "vite --host 127.0.0.1",
+    "sandbox:demo": "vite build --config vite.sandbox.config.ts",
     "check": "vue-tsc --noEmit",
     "check:no-ja": "vitest run tests/no-japanese.test.ts",
     "build": "npm run check && vite build",

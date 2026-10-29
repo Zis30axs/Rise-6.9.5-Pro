@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { anchorLabels, createCampusMapProjection, mapDistrictLabels, separatePoints } from '../src/frontend/campus-map-layout';
+import { createCampusMapProjection, districtChipMetrics, mapDistrictLabels, placeDistrictChips, screenBuildingBoxes, separatePoints, visibleMapBuildings } from '../src/frontend/campus-map-layout';
 import { applySandboxFrame } from '../src/frontend/sandbox-camera';
 import { createCampusWorld } from '../src/frontend/scene-world';
 import {
@@ -39,26 +39,42 @@ describe('shared city layout', () => {
     }
   });
 
-  it('gives all seven district labels a non-overlapping touch target', () => {
-    const projection = createCampusMapProjection(1100, 640, 18, 'city');
-    const labels = anchorLabels(mapDistricts.map(district => ({ ...district, anchor: projection.project(district.x, district.z) })), 1100, 640);
-    const edged = mapDistrictLabels(mapDistricts.map(district => ({ ...district, anchor: projection.project(district.x, district.z) })), 640, 420);
-    expect(edged).toHaveLength(7);
-    expect(labels).toHaveLength(7);
-    for (let index = 0; index < labels.length; index++) {
-      const label = labels[index].label;
-      expect(label.x).toBeGreaterThanOrEqual(52);
-      expect(label.x).toBeLessThanOrEqual(1048);
-      expect(label.y).toBeGreaterThanOrEqual(22);
-      expect(label.y).toBeLessThanOrEqual(618);
-      expect(Math.hypot(label.x - labels[index].anchor.x, label.y - labels[index].anchor.y)).toBeLessThan(180);
-      for (const other of labels.slice(index + 1)) {
-        const box = { x: label.x - 52, y: label.y - 22, w: 104, h: 44 };
-        const next = { x: other.label.x - 52, y: other.label.y - 22, w: 104, h: 44 };
-        const overlap = box.x < next.x + next.w && box.x + box.w > next.x && box.y < next.y + next.h && box.y + box.h > next.y;
-        expect(overlap).toBe(false);
+  it('keeps district chips small, apart, and off building footprints', () => {
+    const rested = districtChipMetrics(1100, 1);
+    const narrow = districtChipMetrics(390, 1);
+    const zoomed = districtChipMetrics(1100, 2);
+    expect(rested.show).toBe(true);
+    expect(rested.font).toBeLessThanOrEqual(10);
+    expect(rested.height).toBeLessThanOrEqual(18);
+    expect(narrow.font).toBeLessThan(rested.font);
+    expect(narrow.height).toBeLessThan(rested.height);
+    expect(zoomed.layoutScale).toBeLessThan(rested.layoutScale);
+    expect(districtChipMetrics(800, 0.6).show).toBe(false);
+    for (const [width, height, least] of [[1100, 640, 5], [390, 520, 4]] as const) {
+      const metrics = districtChipMetrics(width, 1);
+      const projection = createCampusMapProjection(width, height, 18, 'city');
+      const project = projection.project.bind(projection);
+      const obstacles = screenBuildingBoxes(visibleMapBuildings('city'), project);
+      const chips = placeDistrictChips(mapDistricts.map(district => ({ ...district, anchor: project(district.x, district.z) })), obstacles, width, height, metrics);
+      const visible = chips.filter(chip => chip.visible);
+      expect(visible.length).toBeGreaterThanOrEqual(least);
+      for (let index = 0; index < visible.length; index++) {
+        const chip = visible[index];
+        expect(chip.chipWidth).toBeLessThan(96);
+        expect(chip.chipHeight).toBeLessThan(22);
+        const box = { x: chip.label.x - chip.chipWidth / 2, y: chip.label.y - chip.chipHeight / 2, w: chip.chipWidth, h: chip.chipHeight };
+        for (const block of obstacles) {
+          const overlap = box.x < block.x + block.w && box.x + box.w > block.x && box.y < block.y + block.h && box.y + box.h > block.y;
+          expect(overlap).toBe(false);
+        }
+        for (const other of visible.slice(index + 1)) {
+          const next = { x: other.label.x - other.chipWidth / 2, y: other.label.y - other.chipHeight / 2, w: other.chipWidth, h: other.chipHeight };
+          const overlap = box.x < next.x + next.w && box.x + box.w > next.x && box.y < next.y + next.h && box.y + box.h > next.y;
+          expect(overlap).toBe(false);
+        }
       }
     }
+    expect(mapDistrictLabels([{ anchor: { x: 20, y: 20 } }, { anchor: { x: 200, y: 200 } }], 320, 240)).toHaveLength(2);
   });
 
   it('separates stacked touch points without comparing every pair up front', () => {
