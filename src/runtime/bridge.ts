@@ -224,12 +224,12 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
   let committedSnapshot: WorldState | null = null;
   // This callback only acknowledges sources already durably written to IndexedDB.
   // It never writes an older copy of the authoritative WorldState.
-  const acknowledgeMemory = (keys: ReadonlySet<string>): void => {
+  const acknowledgeMemory = (texts: ReadonlyMap<string, string>): void => {
     try {
       assertOwner();
       const current = table(api.getVariables({ type: 'chat' }));
       assertOwner();
-      const updated = acknowledgeSavedMemoryOutbox(current, ownerSession, keys);
+      const updated = acknowledgeSavedMemoryOutbox(current, ownerSession, texts);
       if (updated === current) return;
       // No await between reading current variables and replacing only the outbox.
       api.replaceVariables(updated, { type: 'chat' });
