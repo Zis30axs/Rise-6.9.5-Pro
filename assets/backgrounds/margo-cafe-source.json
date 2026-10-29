@@ -1,0 +1,58 @@
+{
+  "locationId": "margo-cafe-room",
+  "source": {
+    "day": {
+      "kind": "user-provided-image",
+      "file": "margo-cafe-day.jpg",
+      "mime": "image/jpeg",
+      "width": 1280,
+      "height": 720,
+      "bytes": 399599,
+      "sha256": "109641479cf90235c06a96d26f97d33d0dbff70dd8d7b89af31da917ddf68531"
+    },
+    "night": {
+      "kind": "user-provided-image",
+      "file": "margo-cafe-night.jpg",
+      "mime": "image/jpeg",
+      "width": 1280,
+      "height": 720,
+      "bytes": 357325,
+      "sha256": "003e6ed4d246b8868f24e0a901ec68080feb8db350f61214a410b21b7b525a3b"
+    }
+  },
+  "derived": {
+    "day": {
+      "file": "margo-cafe-day.avif",
+      "mime": "image/avif",
+      "width": 1280,
+      "height": 720,
+      "bytes": 62083,
+      "sha256": "55d15b3940bb7aae1a42963500ca350914e40d4861f685f31af2b998561db4c7"
+    },
+    "night": {
+      "file": "margo-cafe-night.avif",
+      "mime": "image/avif",
+      "width": 1280,
+      "height": 720,
+      "bytes": 43369,
+      "sha256": "4d452b4b50113608fc5fed76c5b17bf7eb402617928d92a2cc7c955515e82e3e"
+    }
+  },
+  "encoding": {
+    "codec": "libaom-av1",
+    "stillPicture": true,
+    "crf": 32,
+    "cpuUsed": 6,
+    "pixFmt": "yuv420p",
+    "colorRange": "pc",
+    "colorSpace": "smpte170m",
+    "colorPrimaries": "bt709",
+    "colorTransfer": "iec61966-2-1"
+  },
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59 (night image)",
+    "night": "19:00-05:59"
+  },
+  "target": "novel mode margo-cafe-room only"
+}
