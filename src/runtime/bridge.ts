@@ -304,7 +304,21 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       releaseAcknowledgedMemorySpills(variables, nextVariables, ownerSession);
       reportMemoryOutboxWarning(ownerSession, outboxOverflowCount(nextVariables, ownerSession));
       committedSnapshot = structuredClone(snapshot);
-      if (before) memoryCommitted(ownerSession, before, snapshot, sources, acknowledgeMemory);
+      if (before) {
+        const priorTurn = before.protagonists?.narrativeTurn ?? 0;
+        const nextTurn = snapshot.protagonists?.narrativeTurn ?? 0;
+        const priorMinute = (before.clock.day - 1) * 1440 + before.clock.hour * 60 + before.clock.minute;
+        const nextMinute = (snapshot.clock.day - 1) * 1440 + snapshot.clock.hour * 60 + snapshot.clock.minute;
+        const priorStory = new Map(before.story.map(item => [item.id, item.text + (item.returnStory ?? '')]));
+        const sameTurnRewritten = nextTurn === priorTurn && snapshot.story.some(item =>
+          priorStory.has(item.id) && priorStory.get(item.id) !== item.text + (item.returnStory ?? ''));
+        if (nextTurn < priorTurn || nextMinute < priorMinute || sameTurnRewritten) {
+          // A saved rewind must block old-timeline retrieval immediately,
+          // then prune and replay sources off the main gameplay path.
+          const recover = recoverSavedMemoryOutbox(nextVariables, ownerSession, nextTurn, nextMinute);
+          memoryBootstrap(ownerSession, snapshot, recover.sources, acknowledgeMemory);
+        } else memoryCommitted(ownerSession, before, snapshot, sources, acknowledgeMemory);
+      }
     },
     onSessionChange(callback) {
       if (disposed) return () => {};
