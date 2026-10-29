@@ -339,3 +339,36 @@ test('短信邀约：真实手机回复同意或拒绝、到期通知中心、�
     throw error;
   }
 });
+
+test('不可伪造旧事件来将真实邀约改成爽约', async ({ page }) => {
+  const agent = await AgentSession.open(page, 'agenda-forged-trigger');
+  await margoScene(agent, page);
+  const agreed = await acceptMargo(agent);
+  const before = latest(await snapshot(agent));
+  const rejected = await agent.playRejected('我只是回顾已有的约定，什么新事情也没有发生。', envelope(
+    '长崎素世想起已有的约定，但没有得到新的消息。',
+    [{ type: 'social_agenda', invitationId: agreed.id, decision: 'no_show',
+      triggerId: 'forged-previous-receipt', reason: '伪造旧事件来改变私人决定' }],
+  ));
+  expect(rejected.rejected).toBe(true);
+  expect(latest(await snapshot(agent))).toEqual(before);
+});
+
+test('到期前执行过的准备和出发步骤不可由 LLM 倒写', async ({ page }) => {
+  const agent = await AgentSession.open(page, 'agenda-immutable-past');
+  await margoScene(agent, page);
+  const agreed = await acceptMargo(agent);
+  await agent.play('我等待到约定的十九点半。', waitReply(90));
+  const before = latest(await snapshot(agent));
+  expect(stepDone(before, 'prepare')).toBe(true);
+  expect(stepDone(before, 'depart')).toBe(true);
+  const altered = standardPlan();
+  altered.steps[0]!.detail = '现在才假称以前已经买好了礼物';
+  const rejected = await agent.playRejected('我继续观察，没有允许改写旧日程。', envelope(
+    '已发生的准备不能被本轮的新故事重新编造。',
+    [{ type: 'social_agenda', invitationId: agreed.id, decision: 'revise', triggerId: 'current',
+      reason: '试图用现在的故事覆盖过去的准备', agenda: altered }],
+  ));
+  expect(rejected.rejected).toBe(true);
+  expect(latest(await snapshot(agent))).toEqual(before);
+});
