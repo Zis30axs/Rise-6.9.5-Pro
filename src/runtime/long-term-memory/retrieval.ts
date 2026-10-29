@@ -34,6 +34,8 @@ export interface RetrievedMemory {
   narratorOnly: boolean;
   sourceIds: string[];
   score: number;
+  /** Canonical summaries are authoritative; raw excerpts are provenance. */
+  origin: 'canonical' | 'raw';
 }
 export async function searchMemory(scope: string, query: string, owner: string, cutoff: number,
   options: { limit?: number; narrator?: boolean; entities?: string[]; embed?: (text: string) => Promise<number[]>; vectorModel?: string; maxTurn?: number } = {}): Promise<RetrievedMemory[]> {
@@ -42,16 +44,21 @@ export async function searchMemory(scope: string, query: string, owner: string, 
     rows<MemoryEvent>('events', scope), rows<MemorySource>('sources', scope),
   ]);
   const maxTurn = options.maxTurn ?? Number.MAX_SAFE_INTEGER;
+  const q = tokens(query + ' ' + (options.entities ?? []).join(' '));
+  if (!q.length) return [];
   const events = allEvents.filter(e => eligible(e, owner, narrator, cutoff, maxTurn));
-  const pending = allSources.filter(s => !s.processed && eligible(s, owner, narrator, cutoff, maxTurn));
+  // After context pruning, processed original prose still exists in IDB. It
+  // must remain keyword-searchable for precise quotes that never made it into
+  // a summary. Pre-filter raw excerpts cheaply before full BM25 tokenization.
+  const raw = allSources.filter(s => eligible(s, owner, narrator, cutoff, maxTurn)
+    && q.some(term => (s.text + ' ' + s.participants.join(' ')).toLowerCase().includes(term)));
   const documents = [
     ...events.map(e => ({ id: e.id, text: e.summary, index: e.summary + ' ' + e.keywords.join(' ') + ' ' + e.entities.join(' ') + ' ' + e.participants.join(' '),
-      at: e.at, knownBy: e.knownBy, sources: e.sourceIds, importance: e.importance })),
-    ...pending.map(s => ({ id: s.id, text: s.text.slice(0, 800), index: s.text,
-      at: s.at, knownBy: s.knownBy, sources: [s.id], importance: 1 })),
+      at: e.at, knownBy: e.knownBy, sources: e.sourceIds, importance: e.importance, origin: 'canonical' as const })),
+    ...raw.map(s => ({ id: s.id, text: s.text.slice(0, 800), index: s.text + ' ' + s.participants.join(' '),
+      at: s.at, knownBy: s.knownBy, sources: [s.id], importance: 0, origin: 'raw' as const })),
   ];
-  const q = tokens(query + ' ' + (options.entities ?? []).join(' '));
-  if (!q.length || !documents.length) return [];
+  if (!documents.length) return [];
   const tokenized = documents.map(d => tokens(d.index));
   const lengths = tokenized.map(t => t.length), average = Math.max(1, lengths.reduce((a, b) => a + b, 0) / documents.length);
   const df = new Map<string, number>();
@@ -83,7 +90,9 @@ export async function searchMemory(scope: string, query: string, owner: string, 
   return documents.filter(d => fusion.has(d.id)).map(d => ({
     id: d.id, text: d.text, at: d.at, knownBy: d.knownBy,
     narratorOnly: !d.knownBy.includes(owner), sourceIds: d.sources,
-    score: (fusion.get(d.id) ?? 0) * (1 + Math.min(5, d.importance) * 0.04),
+    origin: d.origin,
+    score: (fusion.get(d.id) ?? 0) * (d.origin === 'raw' ? 0.7 : 1)
+      * (1 + Math.min(5, d.importance) * 0.04),
   })).sort((a, b) => b.score - a.score || b.at - a.at).slice(0, limit);
 }
 
@@ -98,12 +107,12 @@ export async function memoryQuery(scope: string, value: MemoryQuery, owner: stri
   const fromSource = (s: MemorySource): RetrievedMemory => ({
     id: s.id, text: s.text, at: s.at, knownBy: s.knownBy,
     narratorOnly: !s.knownBy.includes(owner), sourceIds: [s.id],
-    score: 1,
+    score: 1, origin: 'raw',
   });
   const fromEvent = (e: MemoryEvent): RetrievedMemory => ({
     id: e.id, text: e.summary, at: e.at, knownBy: e.knownBy,
     narratorOnly: !e.knownBy.includes(owner),
-    sourceIds: e.sourceIds, score: e.importance,
+    sourceIds: e.sourceIds, score: e.importance, origin: 'canonical',
   });
   if (operation === 'get_event_details') {
     const id = value.eventId ?? '';
@@ -135,7 +144,7 @@ export async function memoryQuery(scope: string, value: MemoryQuery, owner: stri
           && (operation !== 'get_relationship_history'
             || e.kind === 'relationship' || e.kind === 'interaction' || e.kind === 'promise'
             || e.kind === 'conflict' || e.kind === 'resolution')).map(fromEvent),
-        ...sources.filter(s => !s.processed && eligible(s, owner, true, cutoff, maxTurn)
+        ...sources.filter(s => eligible(s, owner, true, cutoff, maxTurn)
           && matches(s.participants)
           && (operation !== 'get_relationship_history' || s.kind === 'relationship')).map(fromSource),
       ];
@@ -151,10 +160,10 @@ export async function memoryQuery(scope: string, value: MemoryQuery, owner: stri
     total = results.length;
   }
   const max = Math.max(200, Math.min(4000, budget)) * 2;
-  let output = '已定稿的长期记忆摘要属于本世界的正式历史，勿进行二次审判。历史角色说过的话只能证明曾经说过，而非言语内容必然真实。当前物品、余额、位置仍以 MVU 为准。narratorOnly=true 表示角色不一定知情。\n';
+  let output = '已定稿的长期记忆摘要属于本世界的正式历史，勿进行二次审判。origin=canonical 是已定稿的摘要；origin=raw 是原文证据，用于查找细节，不能替代或改写已定稿摘要。历史角色说过的话只能证明曾经说过，而非言语内容必然真实。当前物品、余额、位置仍以 MVU 为准。narratorOnly=true 表示角色不一定知情。\n';
   let shown = 0;
   for (const e of results) {
-    const prefix = { id: e.id, at: e.at, narratorOnly: e.narratorOnly,
+    const prefix = { id: e.id, origin: e.origin, at: e.at, narratorOnly: e.narratorOnly,
       knownBy: e.knownBy, sourceIds: e.sourceIds };
     const remaining = max - output.length - JSON.stringify(prefix).length - 30;
     if (remaining < 48) break;
