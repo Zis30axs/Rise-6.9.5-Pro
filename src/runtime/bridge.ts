@@ -23,6 +23,7 @@ import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { SOCIAL_PERSONALITY, socialSkillOverview } from './social-skills';
+import { protagonistHomeRooms } from './natural-interactions';
 import { diagnosePlayerIllnesses } from './illness';
 import { lawCareerStoryContext } from './law-career';
 import { courtStoryContext } from './courtroom';
@@ -121,11 +122,14 @@ export const STORY_PROTOCOL = [
   MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
-  '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
+  '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包；{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
+  '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
+  '【统一邀约】玩家可以当面或通过短信邀请，提交 {"type":"social_invite","targetId":"目标稳定ID或联系人ID","source":"meeting","locationId":"cafe","day":2,"time":"18:30","message":"下午去咖啡馆坐坐吗？","outcome":"accepted","responseQuote":"对方本轮明确同意的原话"}；此例中的日期地点是格式示例，应根据当前存档实际计划填写。当面来源 meeting 必须现实在场，只有对方确实说出回应时 outcome 才可为 accepted 或 declined 且须提供 responseQuote；否则 pending 且省略 responseQuote。短信来源 source="sms"，只能给已有联系人，必须 outcome="pending" 且省略 responseQuote，程序真实发送邀请短信并保留等待状态，对方以后通过短信回复独立作决定。手机窗口和剧情自由输入共用真实联系人、时间、地点与回执，不因未打开面板而失效。对于尚未确定时间地点的邀约先自然商量，不凭空生成已确认行程。',
+  '【虚拟游戏充值】玩家明确要给世界内玩的电子游戏充值或买游戏月卡、游戏币时，若游戏、内容和应付日元金额已确定，使用 {"type":"game_topup","game":"游戏名","benefit":"实际获得的游戏内礼包或虚拟货币","amountYen":500}，金额由 Appie Pay 真实扣除并生成可追溯的消费权益记录；此示例不是统一定价。游戏充值不同于给人物转账，也不是现实世界的支付或第三方游戏联动。缺少实际价格或玩家只在询问充值规则、没有确认购买时，应先询价或询问，不能凭空收费；余额不足绝不能叙述为充值成功，不用 activity 或 transfer 冒充游戏消费。获得的虚拟权益以 saved gamePurchases 为准，不得编造实际外部平台账户有变化。',
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
   '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；除祥子与素世外，其他主角必须选修音乐专业才能预约开办 Livehouse 和创建乐队。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
@@ -153,7 +157,7 @@ export const STORY_PROTOCOL = [
   '状态中的 locationDetails 和 scene 是本轮行动前的权威位置及环境，覆盖旧正文中的地点；若world_actions包含travel则正文遵循依次移动后的实际位置。scene.outdoors为true时当前仍在户外，门前不等于进店，附近地标不代表已经到达。',
   'scene.outdoors为false时当前在指定房间；未离开前不得把室外行人、道路或天空当作室内现场。scene.lastInteraction 是已经结算的活动，只承接不重做。进入和离开使用travel指向房间或父地点，不得只靠正文更换位置。',
   'scene.nearbyPeople是现场人物，isMain为true或其id已在contacts时使用已确认的姓名、立绘及人物介绍；其他为尚未确认的陌生人。scene.encounter是本轮主动搭话对象，应围绕该对象继续。mainCharacters是当前聊天已保存的主要人物，summary是用户确认的人物介绍，不能重新抽取姓名、外貌或捏造冲突身份。',
-  '陌生人先实际相遇、当面交流。contactProposal 非空时，可由该现场人物在竖线对白里提出加好友或群聊邀请，再输出 <contact_requests>[{"kind":"contact或group","npcId":"现场稳定ID","evidenceId":"current或已给出的对白记录ID","quote":"该NPC逐字说出的联系请求"}]</contact_requests>。每轮最多4项；没有申请时省略。只能引用现场人物及真实对白，不能填写姓名、立绘、亲密度、玩家同意或任意状态字段。群邀请仅由已保存的魔裁联系人提出。申请等待玩家在手机确认，尚未接受的对象不能写入 phone_messages。不要自动相识、默认加好友、默认入群或替玩家决定重大剧情。',
+  '陌生人先实际相遇、当面交流。若 NPC 主动申请联系人或群聊，contactProposal 非空时，可由该现场人物在竖线对白里提出加好友或群聊邀请，再输出 <contact_requests>[{"kind":"contact或group","npcId":"现场稳定ID","evidenceId":"current或已给出的对白记录ID","quote":"该NPC逐字说出的联系请求"}]</contact_requests>。每轮最多4项；没有申请时省略。只能引用现场人物及真实对白，不能填写姓名、立绘、亲密度、玩家同意或任意状态字段。群邀请仅由已保存的魔裁联系人提出。申请等待玩家在手机确认，尚未接受的对象不能写入 phone_messages。不要自动相识、默认加好友、默认入群或替玩家决定重大剧情。',
   `story 为 1–${STATE_LIMITS.storyText} 字纯文本。phone_messages 为数组，最多 ${STATE_LIMITS.phoneEvents} 条，每条仅含 npcId 和 text；text 为 1–${STATE_LIMITS.messageText} 字纯文本，npcId 必须逐字使用状态 contacts 中已有的 id。`,
   '只有本轮剧情中 NPC 确实通过手机给玩家发送了新消息，才放入 phone_messages；当面说话、内心活动、未发送的想法和既有消息都不产生新消息。不需要每轮或每人都发消息，没有新消息时返回空数组。',
   'story 与 phone_messages 中的新消息保持一致；消息的已读标记由玩家阅读行为决定，不能把已发出或提及消息当作玩家已经阅读。',
@@ -358,6 +362,11 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const summary = {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
+        home: { roomId: protagonistHomeRooms[activeProtagonist(snapshot)] },
+        socialInvitations: (snapshot.protagonists?.socialInvitations ?? [])
+          .filter(row => row.owner === activeProtagonist(snapshot)).slice(-18),
+        gamePurchases: (snapshot.protagonists?.gamePurchases ?? [])
+          .filter(row => row.owner === activeProtagonist(snapshot)).slice(-12),
         narrative,
         worldContinuity: omniscientContinuityContext(snapshot),
         otherSideOpportunity: otherSidePromptContext(snapshot),
