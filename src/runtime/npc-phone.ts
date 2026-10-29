@@ -3,6 +3,7 @@ import { isProtagonistPerson, PROTAGONIST_PERSON_IDS, PROTAGONISTS, type Protago
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
 import { getInteriorPeople, getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
+import { agendaTargetResident, residentSocialAgendaPresence } from './social-agenda';
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentGroupById, residentGroupForNpc, residentPresence, WATANARE_GROUP_ID, WATANARE_GROUP_NAME, WATANARE_QUINTET_IDS } from './npc-cast';
 
@@ -381,6 +382,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   const actorId = source.responderId!, resident = residentById(actorId), contact = contactFor(s, source.owner, actorId);
   const meeting = social.meetings.find(m => m.owner === source.owner && m.npcId === actorId);
   const presence = residentPresence(actorId, s.clock);
+  const privateAppointment = residentSocialAgendaPresence(s,actorId);
   const residentAnchor = scenePersonAnchors.find(a => a.id === presence?.anchorId);
   const residentArea = residentAnchor ? getSceneArea(residentAnchor.x, residentAnchor.z) : null;
   let promptBudget = 24000;
@@ -402,9 +404,18 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
     sender: { id: source.owner, name: protagonistNames[source.owner] },
     message: source, clock: s.clock, minute: gameMinute(s),
     invitation: s.protagonists?.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,
-    location: presence ? { ...presence, locationId: residentArea ? sceneLocationId(residentArea.id) : presence.locationId,
-      position: residentAnchor ? { x:residentAnchor.x+.6,z:residentAnchor.z+.6 } : null }
+    location: privateAppointment
+      ? { locationId:privateAppointment.phase==='present'?privateAppointment.locationId:null,
+        destinationId:privateAppointment.locationId,
+        activity:privateAppointment.phase==='present'?'已经抵达约定地点':'正在赴约途中或已经离开',
+        available:privateAppointment.phase==='present', position:null }
+      : presence ? { ...presence, locationId: residentArea ? sceneLocationId(residentArea.id) : presence.locationId,
+        position: residentAnchor ? { x:residentAnchor.x+.6,z:residentAnchor.z+.6 } : null }
       : { locationId: anchor?.id ?? null, activity: '未记录当前行程', available: null },
+    privateAppointments:(s.protagonists?.socialInvitations??[])
+      .filter(row=>agendaTargetResident(s,row)===actorId)
+      .slice(-8).map(row=>({id:row.id,agreedDay:row.day,agreedTime:row.time,
+        locationId:row.locationId,status:row.status,agenda:row.agenda??null})),
     // Only this NPC's face-to-face words and this one thread. No global story,
     // weekly summary, player journal, other protagonist, or other NPC's DM.
     knownDialogue: social.evidence.filter(e => e.owner === source.owner && e.npcId === actorId).slice(-12)
