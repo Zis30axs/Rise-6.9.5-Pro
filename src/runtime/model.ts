@@ -1,5 +1,5 @@
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
-import { commitNpcDialogue, recordNpcEncounter } from './npc-phone';
+import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
@@ -24,6 +24,7 @@ import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransi
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
+import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordGamePurchases, recordSocialInvitations } from './natural-interactions';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
@@ -752,6 +753,35 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   };
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
+      case 'go_home': {
+        const owner = activeProtagonist(worldAuthority ?? next);
+        next = reduceLegacyState(next, { type: 'novel_travel', locationId: protagonistHomeRooms[owner] });
+        break;
+      }
+      case 'exchange_contact': {
+        const point = worldScenePosition(next);
+        const people = worldScenePeople({ ...next, protagonists: worldAuthority?.protagonists });
+        const person = people.find(item => item.id === action.npcId && !item.protagonistId);
+        if (!point || !person || Math.hypot(point.x - person.x, point.z - person.z) > SCENE_ENCOUNTER_DISTANCE)
+          throw new Error('必须与对方实际相遇并获得同意才能交换联系方式。');
+        if (next.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id))
+          throw new Error('双方已经交换联系方式。');
+        if (next.contacts.length >= CONTACT_PROFILE_LIMITS.contacts) throw new Error('联系人已满。');
+        if (next.contacts.some(contact => contact.name.trim() === person.name.trim())) throw new Error('已有同名联系人。');
+        next.contacts.push({ id: person.id, sourcePersonId: person.id, name: person.name,
+          portraitId: person.portraitId, summary: person.description.slice(0, 2000), isMain: true,
+          tag: '当面结识', affinity: 0, status: '已交换联系方式' });
+        note(next, `与${person.name}交换联系方式。`);
+        break;
+      }
+      case 'game_topup': {
+        if (next.player.balance < action.amountYen) throw new Error(`账户余额不足，无法为${action.game}消费 ${action.amountYen} 日元。`);
+        next.player.balance -= action.amountYen;
+        note(next, `为${action.game}支付 ${action.amountYen} 日元，获得虚拟权益：${action.benefit}。`);
+        break;
+      }
+      case 'send_sms':
+      case 'social_invite': break;
       case 'court_docket':
       case 'court_special':
       case 'court_open':
