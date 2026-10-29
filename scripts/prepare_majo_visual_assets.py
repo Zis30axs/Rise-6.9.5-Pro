@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Extract verified runtime art from the PR #16 handoff packs.
 
-The original ZIP packs stay the source of truth. This script only materializes
-exact Emma expression WebPs and compressed runtime scene derivatives. Missing
-or unconfirmed source art is never fabricated or assigned to a character.
+The original ZIP packs stay the source of truth. This script materializes
+exact Emma expression WebPs and compressed runtime scene derivatives, and
+registers Margo's already committed AVIF sprites without re-encoding them.
+Missing or unconfirmed source art is never fabricated or assigned to a character.
 """
 from __future__ import annotations
 
@@ -13,8 +14,6 @@ import io
 import json
 from pathlib import Path
 import zipfile
-
-from PIL import Image, features
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'assets/majo-runtime'
@@ -47,7 +46,69 @@ def verified(archive: Path, member: str, expected_sha: str, expected_bytes: int)
     return data
 
 
+MARGO_SPRITES = (
+    ('neutral', 'characters/majo-margo/neutral.avif'),
+    ('happy', 'characters/majo-margo/happy.avif'),
+    ('shy', 'characters/majo-margo/shy.avif'),
+    ('angry', 'characters/majo-margo/extras/angry.avif'),
+    ('surprised', 'characters/majo-margo/extras/surprised.avif'),
+)
+MARGO_ALPHA_URN = b'urn:mpeg:mpegB:cicp:systems:auxiliary:alpha'
+
+
+def avif_ispe_sizes(data: bytes, label: str) -> list[tuple[int, int]]:
+    if len(data) < 12 or data[4:12] != b'ftypavif':
+        raise ValueError(f'Expected AVIF: {label}')
+    sizes: list[tuple[int, int]] = []
+    start = 0
+    while True:
+        index = data.find(b'ispe', start)
+        if index < 0:
+            break
+        payload = data[index + 4:index + 16]
+        if len(payload) < 12:
+            raise ValueError(f'Truncated AVIF ispe: {label}')
+        sizes.append((int.from_bytes(payload[4:8], 'big'), int.from_bytes(payload[8:12], 'big')))
+        start = index + 4
+    if not sizes:
+        raise ValueError(f'AVIF is missing ispe: {label}')
+    return sizes
+
+
+def margo_runtime_assets() -> list[tuple[dict, bytes]]:
+    """Committed Margo sprites. They are not regenerated from the cutout packs."""
+    assets: list[tuple[dict, bytes]] = []
+    for emotion, relative in MARGO_SPRITES:
+        path = OUT / relative
+        data = path.read_bytes()
+        sizes = avif_ispe_sizes(data, relative)
+        if any(size != (768, 1024) for size in sizes):
+            raise ValueError(f'Margo sprite dimensions changed: {relative}')
+        if MARGO_ALPHA_URN not in data:
+            raise ValueError(f'Margo sprite is missing its alpha plane: {relative}')
+        assets.append(({
+            'id': f'characters/majo-margo/{emotion}',
+            'category': 'character-sheet',
+            'personId': 'majo-margo',
+            'tier': 'semi-main',
+            'targetExpressions': 3,
+            'emotion': emotion,
+            'file': relative,
+            'mime': 'image/avif',
+            'bytes': len(data),
+            'sha256': sha256(data),
+            'width': 768,
+            'height': 1024,
+            'alpha': True,
+            'encoding': 'committed-avif-768x1024',
+            'presentation': 'sprite',
+            'userConfirmed': True,
+        }, data))
+    return assets
+
+
 def scene_derivative(data: bytes, label: str) -> tuple[bytes, dict]:
+    from PIL import Image, features
     if not features.check('webp'):
         raise RuntimeError('Pillow was built without WebP support')
     with Image.open(io.BytesIO(data)) as opened:
@@ -81,6 +142,7 @@ def prepare(check_only: bool = False) -> dict:
     cutouts = json.loads(CUTOUTS.read_text(encoding='utf-8'))
     if cutouts.get('schema') != 'unread-city-majo-character-cutouts-v1':
         raise ValueError('Unknown character cutout schema')
+    from PIL import Image
     for asset in cutouts['assets']:
         path = OUT / asset['file']
         data = path.read_bytes()
@@ -100,6 +162,10 @@ def prepare(check_only: bool = False) -> dict:
             'sourceBytes': asset['sourceBytes'], 'userConfirmed': True,
         })
         outputs.append((path, data))
+
+    for row, data in margo_runtime_assets():
+        rows.append(row)
+        outputs.append((OUT / row['file'], data))
 
     for asset in emma_source['assets']:
         person = asset.get('personId')
@@ -146,6 +212,7 @@ def prepare(check_only: bool = False) -> dict:
             'characterAssignments': 'assets/majo-runtime/character-sheet-assignments.json',
             'characterCutouts': 'assets/majo-runtime/character-cutouts.json',
             'yukiSource': 'assets/majo-cast/character-source-sheets-20261023-yuki.json',
+            'margoSprites': 'assets/majo-runtime/characters/majo-margo',
         },
         'notes': [
             'Runtime derivatives only; original ZIP packs remain the authoritative handoff.',
@@ -153,6 +220,7 @@ def prepare(check_only: bool = False) -> dict:
             'Six user-confirmed 2026-10-22 three-panel sheets use skytnt/anime-seg and 2x upscaled transparent WebPs.',
             'Third panel of the first six sheets is mapped to shy; Yuki\'s third panel to thinking; these labels are provisional.',
             'Yuki\'s 2026-10-23 white-backdrop native-resolution 512x1024 transparent PNGs use connected foreground matte, not anime-seg.',
+            'Margo\'s committed 768x1024 AVIF sprites stay as-is: neutral, happy, shy, plus extras angry and surprised. Missing emotions use her neutral sprite.',
         ],
         'assets': rows,
     }
