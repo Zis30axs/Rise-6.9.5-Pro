@@ -45,8 +45,6 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     return invalid('每轮最多一次社交技能练习');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'exchange_contact').length > 1)
     return invalid('每轮最多直接交换一位新联系人的号码');
-  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'game_topup').length > 1)
-    return invalid('每轮只能完成一笔游戏消费');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
@@ -83,11 +81,6 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if (typeof item.targetId !== 'string' || !state.contacts.some(row => row.id === item.targetId || row.sourcePersonId === item.targetId) && !justExchanged)
           return invalid(`${path} 短信收件人需要已有联系方式`);
         return { type: 'send_sms', targetId: item.targetId, text: text(item.text, 1000, `${path} 短信正文`) };
-      }
-      case 'game_topup': {
-        const item = record(raw, ['type', 'game', 'benefit', 'amountYen'], path);
-        return { type: 'game_topup', game: text(item.game, 80, `${path} 游戏`), benefit: text(item.benefit, 100, `${path} 虚拟权益`),
-          amountYen: number(item.amountYen, 1, 100000, `${path} 日元金额`) };
       }
       case 'social_invite': {
         const hasResponse = Object.hasOwn(raw, 'responseQuote');
