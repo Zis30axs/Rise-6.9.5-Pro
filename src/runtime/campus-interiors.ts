@@ -82,7 +82,7 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
     interactions: [
       { id: 'margo-cafe-menu', label: '看看今日菜单', description: '看看玛格写下的饮品与甜点菜单，不自动点单或领取物品。',
-        x: 0, z: -1.8, minutes: 0, energyDelta: 0, result: '看了看柜台上的今日菜单，没有点单或取走物品。', prompt: '你已看过玛格咖啡馆的菜单，没有消费或领取物品；饮品与甜点仍须按地点服务结算。' },
+        x: 0, z: -1.8, minutes: 0, energyDelta: 0, result: '看了看柜台上的今日菜单，没有点单或取走物品。', prompt: '你已看过玛格咖啡馆的菜单，没有点单或取走物品。若要买杯装饮品，须使用菜单中的 buy 放入背包，不能凭正文凭空获得。' },
       { id: 'margo-cafe-window-seat', label: '在窗边坐一会儿', description: '安静坐 15 分钟，恢复至多 3 点精力；不会自动获得餐点。',
         x: -3.2, z: 1, minutes: 15, energyDelta: 3, result: '在玛格咖啡馆窗边坐了一会儿，看着露台与街道。', prompt: '你已在玛格咖啡馆窗边坐了十五分钟，程序已推进时间并恢复至多三点精力；没有自动消费、领取餐点或改变人际关系。' },
       { id: 'margo-cafe-cup-display', label: '看看杯具陈列', description: '观察柜台旁的杯具与咖啡器具，不进入工作区或取用店内物品。',

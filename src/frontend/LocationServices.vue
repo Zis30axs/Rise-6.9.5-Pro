@@ -8,6 +8,9 @@ import { formatGameNumber } from './format-game-number';
 import { completeLocationService, packageLocationService, serviceEffects as effects, signedServiceEffect as signed } from './location-service-action';
 import type { ShellActions, ShellModel } from './types';
 import { MARGO_CAFE_ROOM_ID } from '../runtime/margo-cafe-venue';
+import { atMargoCafe, getCafeMenu } from '../runtime/margo-cafe-menu';
+import StoreProductImage from './StoreProductImage.vue';
+import { runInteraction } from './interaction-action';
 import { LAW_OFFICE_ID } from '../runtime/law-career';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
@@ -16,6 +19,7 @@ const status = computed(() => getLocationStatus(props.model.state.locationId, pr
 const place = computed(() => locations.find(item => item.id === props.model.state.locationId));
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
 const services = computed(() => getLocationServices(props.model.state).map(service => ({ service, quote: getLocationServiceQuote(props.model.state, service.id), takeaway: getTakeawayQuote(props.model.state, service.id) })));
+const cafeMenu = computed(() => atMargoCafe(props.model.state) ? getCafeMenu(props.model.state) : []);
 const storeAvailable = computed(() => getStoreAvailability(props.model.state).available);
 const atBookshop = computed(() => !props.model.state.interior && props.model.state.locationId === 'bookshop');
 const receipt = ref('');
@@ -24,7 +28,7 @@ const revealingJob = ref<string | null>(null);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
   if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
-  if (room.value?.id === MARGO_CAFE_ROOM_ID) return '可以向在场的店主与来客打招呼，点一杯饮品，或在窗边坐一会儿。';
+  if (room.value?.id === MARGO_CAFE_ROOM_ID || atMargoCafe(props.model.state)) return '可以向在场的店主与来客打招呼，从菜单买一杯带走，或在窗边坐一会儿。';
   if (room.value) return '上方可直接选择房间里的学习、整理与休息，也可在 3D 中靠近桌椅、书架或床铺探索。';
   if (storeAvailable.value) return '在店门前打开货架选购，购买的商品放入背包，使用时才结算效果。';
   if (atBookshop.value) return '可选择本专业学科巩固，也可探索其他专业；选科后查看耗时与学习代价。';
@@ -33,6 +37,19 @@ const guidance = computed(() => {
   return '这里可以停留、观察环境，或打开地图继续探索。此处暂未提供可结算的消费或活动。';
 });
 
+async function buyCafeDrink(itemId: string) {
+  const entry = getCafeMenu(props.model.state).find(row => row.purchaseId === itemId);
+  if (props.model.busy || !entry || entry.soldOut || entry.blockedReason) return;
+  receipt.value = '';
+  attempted.value = true;
+  if (!await runInteraction(props.model, props.actions, { type: 'buy_item', itemId, quantity: 1 })) return;
+  attempted.value = false;
+  receipt.value = entry.kind === 'emma'
+    ? `粉樱热可可已放入背包。玛格说：菜单上没有这杯。甜度我压过了，别告诉别人我偏心。`
+    : entry.kind === 'daily'
+      ? `今日特调「${entry.name}」已放入背包。`
+      : `${entry.name}已放入背包。`;
+}
 async function useService(serviceId: string) {
   const quote = getLocationServiceQuote(props.model.state, serviceId);
   if (props.model.busy || !quote.service) return;
@@ -78,6 +95,18 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
     <p v-if="status && !status.isOpen" class="location-closed-note" data-location-closed>此刻暂停服务，距离开放还有 {{ status.minutesUntilOpen }} 分钟。可先去其他地点。</p>
     <p v-if="receipt" class="location-service-receipt" data-location-service-receipt role="status">{{ receipt }}</p>
     <p v-if="attempted && model.notice" class="location-service-error" data-location-service-error role="alert">{{ model.notice }}<span>本次活动尚未保存，可以重试。</span></p>
+    <section v-if="cafeMenu.length" class="location-cafe-menu" data-cafe-menu aria-label="玛格咖啡馆菜单">
+      <h3>今日菜单</h3>
+      <div class="location-cafe-grid">
+        <article v-for="entry in cafeMenu" :key="entry.purchaseId" class="location-service-card cafe-drink-card" :data-cafe-drink="entry.purchaseId" :data-cafe-kind="entry.kind" :data-cafe-sold-out="entry.soldOut ? 'yes' : 'no'">
+          <div class="cafe-drink-heading"><StoreProductImage :item-id="entry.itemId" :name="entry.name" /><div><small>{{ entry.kind === 'daily' ? '每日特调' : entry.kind === 'emma' ? '只做给艾玛' : '杯装' }}</small><h3>{{ entry.name }}</h3></div><strong>¥{{ formatGameNumber(entry.price) }}</strong></div>
+          <p>{{ entry.description }}</p>
+          <p v-if="entry.soldOut" class="location-service-blocked" data-cafe-sold-out-note>今日特调已经卖完了。</p>
+          <p v-else-if="entry.blockedReason" class="location-service-blocked">{{ entry.blockedReason }}</p>
+          <button type="button" :data-buy-cafe-drink="entry.purchaseId" :disabled="model.busy || entry.soldOut || !!entry.blockedReason" @click="buyCafeDrink(entry.purchaseId)">{{ entry.soldOut ? '今日已售罄' : '买一杯带走' }} <span aria-hidden="true">↗</span></button>
+        </article>
+      </div>
+    </section>
     <div v-if="services.length" class="location-service-list">
       <article v-for="{ service, quote, takeaway } in services" :key="service.id" class="location-service-card" :data-location-service="service.id">
         <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>

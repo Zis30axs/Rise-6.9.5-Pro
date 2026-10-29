@@ -1,6 +1,7 @@
 import type { WorldAction, WorldState } from '../frontend/types';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { getStoreItem, INVENTORY_ITEM_LIMIT } from './convenience-store';
+import { cafeSpecialIds } from './margo-cafe-menu';
 import { INTERACTION_EVENT_MAX_DAILY_OFFERS } from './interaction-event-rate';
 import { MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID, isMargoCafeOpen } from './margo-cafe-venue';
 import { residentById, residentPresence } from './npc-cast';
@@ -14,11 +15,19 @@ export interface MargoCafeReceipt {
   giverId: string;
   itemId: string;
 }
+/** One row per protagonist: the latest daily-special cup, replaced on a later day. */
+export interface MargoCafeSpecialPurchase {
+  owner: ProtagonistId;
+  day: number;
+  itemId: string;
+}
 export interface MargoCafeState {
   version: 1;
   receipts: MargoCafeReceipt[];
   /** Exists only in a prepared interaction; accept and decline both clear it. */
   pending?: MargoCafeReceipt;
+  /** Absent on older saves. Empty means nobody has bought a daily special yet. */
+  specials?: MargoCafeSpecialPurchase[];
 }
 export interface MargoCafeOffer extends MargoCafeReceipt {
   giverName: string;
@@ -38,6 +47,10 @@ const ownerOf = (state: WorldState): ProtagonistId => state.protagonists?.accoun
 const minuteOf = (clock: WorldState['clock']) => (clock.day - 1) * 1440 + clock.hour * 60 + clock.minute;
 const receiptId = (row: Omit<MargoCafeReceipt, 'id' | 'itemId'>) => `margo-cafe:${row.owner}:${row.day}:${row.at}:${row.giverId}`;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+const withSpecials = (state: WorldState, base: Pick<MargoCafeState, 'receipts' | 'pending'>): MargoCafeState => {
+  const specials = state.margoCafeDaily?.specials;
+  return { version: 1, receipts: base.receipts, ...(base.pending ? { pending: base.pending } : {}), ...(specials?.length ? { specials: clone(specials) } : {}) };
+};
 const isCafe = (state: WorldState) => state.locationId === MARGO_CAFE_ROOM_ID && state.interior?.roomId === MARGO_CAFE_ROOM_ID && isMargoCafeOpen(state.clock);
 const ownReceipt = (state: WorldState) => state.margoCafeDaily?.receipts.find(row => row.owner === ownerOf(state));
 const alreadyClaimed = (state: WorldState) => ownReceipt(state)?.day === state.clock.day;
@@ -111,13 +124,13 @@ export function stageMargoCafeOffer(state: WorldState, offer: MargoCafeOffer): W
   const expected = getMargoCafeOffer(state, { type: 'wait', minutes: 1 });
   if (!expected || expected.id !== offer.id || expected.itemId !== offer.itemId) throw new Error('咖啡馆赠礼选择已失效。');
   const { id, owner, day, at, giverId, itemId } = expected;
-  return { ...state, margoCafeDaily: { version: 1, receipts: clone(state.margoCafeDaily?.receipts ?? []), pending: { id, owner, day, at, giverId, itemId } } };
+  return { ...state, margoCafeDaily: withSpecials(state, { receipts: clone(state.margoCafeDaily?.receipts ?? []), pending: { id, owner, day, at, giverId, itemId } }) };
 }
 
 /** Declining keeps the shared cooldown stamp but never leaves a claimable token. */
 export function dismissMargoCafeOffer(state: WorldState): WorldState {
   if (!state.margoCafeDaily?.pending) return state;
-  return { ...state, margoCafeDaily: { version: 1, receipts: clone(state.margoCafeDaily.receipts) } };
+  return { ...state, margoCafeDaily: withSpecials(state, { receipts: clone(state.margoCafeDaily.receipts) }) };
 }
 
 /** Internal action only: neither item IDs nor quantities come from model output. */
@@ -132,7 +145,7 @@ export function applyMargoCafeGift(state: WorldState, offerId: string): WorldSta
   const inventory = next.inventory.find(row => row.itemId === expected.itemId);
   if (inventory) inventory.quantity++;
   else next.inventory.push({ itemId: expected.itemId, quantity: 1 });
-  next.margoCafeDaily = { version: 1, receipts: [...(next.margoCafeDaily?.receipts ?? []).filter(row => row.owner !== expected.owner), { ...pending }] };
+  next.margoCafeDaily = withSpecials(next, { receipts: [...(next.margoCafeDaily?.receipts ?? []).filter(row => row.owner !== expected.owner), { ...pending }] });
   const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
   next.story = [...next.story, { id: expected.id, role: 'assistant' as const, text: expected.text, participantIds: [expected.giverId] }].slice(-40);
   const entries = [...next.journal, { id: `${expected.id}:receipt`, text: `在玛格咖啡馆接受${expected.giverName}的赠礼：${expected.itemName} ×1，已放入背包。`, at }];
@@ -155,7 +168,7 @@ export function parseMargoCafeState(value: unknown, clock: WorldState['clock']):
     if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).some(key => !fields.includes(key))) return fail();
     return raw as Record<string, unknown>;
   };
-  const state = exact(value, ['version', 'receipts', 'pending']);
+  const state = exact(value, ['version', 'receipts', 'pending', 'specials']);
   if (state.version !== 1 || !Array.isArray(state.receipts) || state.receipts.length > PROTAGONISTS.length) return fail();
   const parseReceipt = (raw: unknown): MargoCafeReceipt => {
     const row = exact(raw, ['id', 'owner', 'day', 'at', 'giverId', 'itemId']);
@@ -172,5 +185,14 @@ export function parseMargoCafeState(value: unknown, clock: WorldState['clock']):
   if (new Set(receipts.map(row => row.owner)).size !== receipts.length) return fail();
   const pending = Object.hasOwn(state, 'pending') ? parseReceipt(state.pending) : undefined;
   if (pending && (pending.at !== minuteOf(clock) || pending.day !== clock.day || receipts.some(row => row.owner === pending.owner && row.day >= pending.day))) return fail();
-  return { version: 1, receipts, ...(pending ? { pending } : {}) };
+  const parseSpecial = (raw: unknown): MargoCafeSpecialPurchase => {
+    const row = exact(raw, ['owner', 'day', 'itemId']);
+    if (typeof row.owner !== 'string' || !PROTAGONISTS.includes(row.owner as ProtagonistId) || !Number.isSafeInteger(row.day)) return fail();
+    const day = row.day as number, owner = row.owner as ProtagonistId;
+    if (day < 1 || day > clock.day || typeof row.itemId !== 'string' || !cafeSpecialIds.has(row.itemId)) return fail();
+    return { owner, day, itemId: row.itemId };
+  };
+  const specials = Object.hasOwn(state, 'specials') ? (Array.isArray(state.specials) && state.specials.length <= PROTAGONISTS.length ? state.specials.map(parseSpecial) : fail()) : undefined;
+  if (specials && new Set(specials.map(row => row.owner)).size !== specials.length) return fail();
+  return { version: 1, receipts, ...(pending ? { pending } : {}), ...(specials?.length ? { specials } : {}) };
 }

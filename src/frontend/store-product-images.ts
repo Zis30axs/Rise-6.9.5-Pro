@@ -11,12 +11,14 @@ import drinkPremium from '../../assets/store-products/lossless/drink-premium.web
 import cigaretteBasic from '../../assets/store-products/lossless/cigarette-basic.webp?inline';
 import cigaretteStandard from '../../assets/store-products/lossless/cigarette-standard.webp?inline';
 import cigarettePremium from '../../assets/store-products/lossless/cigarette-premium.webp?inline';
+import { cafeProductImages } from './cafe-product-images';
 
 const images = Object.freeze({
   'meal-basic': mealBasic, 'meal-standard': mealStandard, 'meal-premium': mealPremium,
   'snack-basic': snackBasic, 'snack-standard': snackStandard, 'snack-premium': snackPremium,
   'drink-basic': drinkBasic, 'drink-standard': drinkStandard, 'drink-premium': drinkPremium,
   'cigarette-basic': cigaretteBasic, 'cigarette-standard': cigaretteStandard, 'cigarette-premium': cigarettePremium,
+  ...cafeProductImages,
 });
 
 /** Never construct a URL or accept a path from dialogue, save data or item names. */
