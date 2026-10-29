@@ -472,7 +472,7 @@ export function mountShell(
         // partial failure resumes without replaying any completed messages.
         if (reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('短信回复包含了额外行动');
         const replied=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
-        const answered=applySocialInvitationReply(replied,messageId,reply.inviteDecision,reply.phoneDecision === 'silence' ? null : reply.text);
+        const answered=applySocialInvitationReply(replied,messageId,reply.inviteDecision,reply.phoneDecision === 'silence' ? null : reply.text,reply.inviteAgenda);
         // The SMS and its optional off-screen novel share a single persisted
         // snapshot. A failed scene validation never publishes a partial reply.
         const savedReplyId = npc
