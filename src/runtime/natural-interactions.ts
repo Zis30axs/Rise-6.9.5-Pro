@@ -119,7 +119,7 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
   if (!state.protagonists || accepted.length > 3) throw new Error('每轮最多三项邀约，且需要当前主角');
   const next: WorldState = JSON.parse(JSON.stringify(state));
   const owner = next.protagonists!.accounts.active;
-  const rows = next.protagonists!.socialInvitations ?? [];
+  const rows = next.protagonists!.socialInvitations ?? (next.protagonists!.socialInvitations = []);
   for (const [index, action] of actions.entries()) {
     if (action.type !== 'social_invite') continue;
     const id = turnId + ':invite:' + index;
