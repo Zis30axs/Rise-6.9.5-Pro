@@ -21,10 +21,10 @@ export function memoryArchiveSafe(scope: string): boolean {
   return !!scope && !reconciling.has(scope) && !unsafeScopes.has(scope);
 }
 
-type IngestAck = (keys: ReadonlySet<string>) => void;
+type IngestAck = (texts: ReadonlyMap<string, string>) => void;
 function ackSources(sources: MemorySource[], callback?: IngestAck): void {
   if (!callback || !sources.length) return;
-  try { callback(new Set(sources.map(s => s.key))); }
+  try { callback(new Map(sources.map(s => [s.key, s.text]))); }
   catch { /* The persisted outbox is replayed on next load. */ }
 }
 
