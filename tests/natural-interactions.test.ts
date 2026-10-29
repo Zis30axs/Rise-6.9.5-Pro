@@ -46,6 +46,23 @@ describe('自然输入与面板操作共用真实状态', () => {
     });
   });
 
+  it('自由文本日常活动的精力、精神、压力和健康由 LLM 行动字段经 MVU 实际结算', () => {
+    const before = world();
+    const action: StoryAction = {
+      type: 'activity', label: '整理房间里的杂物', minutes: 30,
+      effects: { energy: -6, morale: 2, stress: -3, health: 1, balance: 0, satiety: 0, foodEnergy: 0 },
+    };
+    const after = outcome(before, '整理房间。', [action], 'narrative-effects');
+    expect(after.player.energy).toBe(before.player.energy - 6);
+    expect(after.player.morale).toBe(before.player.morale + 2);
+    expect(after.player.stress).toBe(before.player.stress - 3);
+    expect(after.player.health).toBe(before.player.health + 1);
+    expect((after.clock.day - before.clock.day) * 1440 + (after.clock.hour - before.clock.hour) * 60 +
+      after.clock.minute - before.clock.minute).toBe(30);
+    expect(after.journal.some(row => row.text.includes('整理房间里的杂物'))).toBe(true);
+    expect(parseState(JSON.parse(JSON.stringify(after)))).toEqual(after);
+  });
+
   it('游戏充值属于通用消费，余额、Appie Pay 流水和日志真实变化', () => {
     const before = world();
     const action = spend('在虚构手游购买月卡', 500);
