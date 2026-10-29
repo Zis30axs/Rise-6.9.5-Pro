@@ -77,13 +77,13 @@ describe('memory Sidecar: synchronous durable overflow journal', () => {
     const scope = scopeName(), original = many(scope, 190);
     let committed = appendSavedMemoryOutbox({}, scope, original, 2, 5);
     const first = recoverSavedMemoryOutbox(committed, scope);
-    const half = new Set(first.sources.filter((_, i) => i % 2 === 0).map(s => s.key));
+    const half = new Map(first.sources.filter((_, i) => i % 2 === 0).map(s => [s.key, s.text]));
     const before = committed;
     committed = acknowledgeSavedMemoryOutbox(committed, scope, half);
     releaseAcknowledgedMemorySpills(before, committed, scope);
     expect(new Set(recoverSavedMemoryOutbox(committed, scope).sources.map(s => s.key)))
       .toEqual(new Set(first.sources.filter(s => !half.has(s.key)).map(s => s.key)));
-    const all = new Set(recoverSavedMemoryOutbox(committed, scope).sources.map(s => s.key));
+    const all = new Map(recoverSavedMemoryOutbox(committed, scope).sources.map(s => [s.key, s.text]));
     const after = acknowledgeSavedMemoryOutbox(committed, scope, all);
     releaseAcknowledgedMemorySpills(committed, after, scope);
     expect(recoverSavedMemoryOutbox(after, scope).sources).toHaveLength(0);
@@ -101,10 +101,19 @@ describe('memory Sidecar: synchronous durable overflow journal', () => {
       throw new Error('QuotaExceededError');
     } };
     vi.stubGlobal('localStorage', quota);
-    const ack = acknowledgeSavedMemoryOutbox(saved, scope, new Set([spilled[0].key]));
+    const ack = acknowledgeSavedMemoryOutbox(saved, scope, new Map([[spilled[0].key, spilled[0].text]]));
     const recovered = recoverSavedMemoryOutbox(ack, scope);
     // It is okay to replay the already-ingested row: ingestSources is idempotent.
     expect(recovered.sources.some(s => s.key === spilled[1].key)).toBe(true);
+  });
+
+  it('rejects a delayed ACK for the same key with different corrected prose', () => {
+    const scope = scopeName(), old = source(scope, 'story:soyo:same-id', 2, 5,
+      'soyo', '先前错误文本');
+    const current = appendSavedMemoryOutbox({}, scope, [old], 2, 5);
+    const incorrectReceipt = new Map([[old.key, '修订后的文本']]);
+    expect(acknowledgeSavedMemoryOutbox(current, scope, incorrectReceipt)).toBe(current);
+    expect(recoverSavedMemoryOutbox(current, scope).sources).toEqual([old]);
   });
 
   it('cannot silently lose overflow when localStorage is disabled or quota-exhausted', () => {
@@ -180,8 +189,8 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     let committed = appendSavedMemoryOutbox({}, scope, items, 2, 5);
     const ingest = vi.mocked(archive.ingestSources);
     ingest.mockRejectedValueOnce(new Error('transaction aborted'));
-    const acknowledge = vi.fn((keys: ReadonlySet<string>) => {
-      const next = acknowledgeSavedMemoryOutbox(committed, scope, keys);
+    const acknowledge = vi.fn((texts: ReadonlyMap<string, string>) => {
+      const next = acknowledgeSavedMemoryOutbox(committed, scope, texts);
       releaseAcknowledgedMemorySpills(committed, next, scope);
       committed = next;
     });
