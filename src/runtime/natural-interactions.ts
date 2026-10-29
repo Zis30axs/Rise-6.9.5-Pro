@@ -26,6 +26,7 @@ export interface SocialInvitation {
   id: string;
   owner: ProtagonistId;
   targetId: string;
+  targetName: string;
   source: 'meeting' | 'sms';
   locationId: string;
   day: number;
@@ -94,7 +95,8 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
   const used = new Set<string>();
   return raw.map((value, index) => {
     const path = '邀约 ' + (index + 1);
-    const r = record(value, ['id','owner','targetId','source','locationId','day','time','message','status','createdAt','messageId','response'], path);
+    const hasTargetName = !!value && typeof value === 'object' && Object.hasOwn(value, 'targetName');
+    const r = record(value, ['id','owner','targetId',...(hasTargetName ? ['targetName'] : []),'source','locationId','day','time','message','status','createdAt','messageId','response'], path);
     const id = str(r.id, 128, path + ' ID');
     if (!ID_RE.test(id) || used.has(id)) return invalid(path + '重复 ID');
     used.add(id);
@@ -111,7 +113,7 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
     if (r.source === 'sms' && messageId === null) return invalid(path + '缺少短信引用');
     if (r.response !== null) str(r.response, 500, path + '回应');
     return {
-      id, owner: actor(r.owner), targetId,
+      id, owner: actor(r.owner), targetId, targetName: hasTargetName ? str(r.targetName, 80, path + '姓名') : targetId,
       source: r.source, locationId, day: num(r.day, 1, 365000, path + '游戏日'), time,
       message: str(r.message, 500, path + '邀约内容'), status: r.status,
       createdAt: num(r.createdAt, 0, now, path + '创建时间'),
@@ -149,7 +151,7 @@ export function recordGamePurchases(state: WorldState, actions: readonly StoryAc
 }
 
 /** Caller sends the SMS through the same phone transaction as manual sending. */
-export function recordSocialInvitations(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
+export function recordSocialInvitations(state: WorldState, actions: readonly StoryAction[], turnId: string, resolveName: (id: string) => string | null = () => null): WorldState {
   const accepted = actions.filter((action): action is Extract<StoryAction, { type: 'social_invite' }> => action.type === 'social_invite');
   if (!accepted.length) return state;
   if (!state.protagonists || accepted.length > 3) throw new Error('每轮最多三项邀约，且需要当前主角');
@@ -166,7 +168,7 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
     const whenMinute = (action.day - 1) * 1440 + Number(action.time.slice(0, 2)) * 60 + Number(action.time.slice(3));
     if (whenMinute <= nowMinute(next)) throw new Error('预定的邀约时间已经过去了。');
     rows.push({
-      id, owner, targetId: action.targetId, source: action.source,
+      id, owner, targetId: action.targetId, targetName: (contact?.name ?? resolveName(action.targetId) ?? action.targetId).slice(0, 80), source: action.source,
       locationId: action.locationId, day: action.day, time: action.time, message: action.message,
       status: action.outcome, createdAt: nowMinute(next),
       messageId: action.source === 'sms' ? narrativeMessageId(turnId, index, toProtagonist) : null,
