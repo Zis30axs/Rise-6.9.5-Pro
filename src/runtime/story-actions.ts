@@ -4,6 +4,7 @@ import { PROTAGONISTS } from './dual-protagonists';
 import { sceneLocationId } from './scene-context';
 import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
+import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
@@ -38,6 +39,8 @@ function destination(value: unknown, path: string): string {
 /** A narrow action language; no dynamic keys, arbitrary object patches, or executable model data. */
 export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
+  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_skill').length > 1)
+    return invalid('每轮最多一次社交技能练习');
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
     /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
     .map(item => String((item as Record<string,unknown>).type));
@@ -115,6 +118,16 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const item = record(raw, ['type', 'npcId', 'delta', 'reason'], path);
         if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
         return { type: 'relationship', npcId: item.npcId, delta: number(item.delta, -STORY_ACTION_LIMITS.relationshipDelta, STORY_ACTION_LIMITS.relationshipDelta, `${path} 关系变化`), reason: text(item.reason, 240, `${path} 关系依据`) };
+      }
+      case 'social_skill': {
+        const hasNpcId = Object.hasOwn(raw, 'npcId');
+        const item = record(raw, ['type', 'skillId', 'deviation', 'reason', ...(hasNpcId ? ['npcId'] : [])], path);
+        if (!isSocialSkillId(item.skillId)) return invalid(`${path} 技能类型`);
+        if (hasNpcId && (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)))
+          return invalid(`${path} 联系人`);
+        return { type: 'social_skill', skillId: item.skillId,
+          deviation: number(item.deviation, 0, 3, `${path} 人格偏离程度`) as SocialDeviation,
+          reason: text(item.reason, 240, `${path} 本轮练习依据`), ...(hasNpcId ? { npcId: item.npcId as string } : {}) };
       }
       case 'court_docket': {
         const item = record(raw, ['type','offers'],path);
