@@ -1,5 +1,5 @@
 import type { StoryAction, WorldState } from '../frontend/types';
-import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
+import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, type ProtagonistId } from './dual-protagonists';
 import { campusInteriors } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { sceneLocationId } from './scene-context';
@@ -106,16 +106,16 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
     if (!PLACE_IDS.has(locationId)) return invalid(path + '地点不存在');
     const time = str(r.time, 5, path + '时间');
     if (!TIME_RE.test(time)) return invalid(path + '时间格式');
-    if (r.messageId !== null && (r.source !== 'sms' || !ID_RE.test(str(r.messageId, 128, path + '短信 ID'))))
-      return invalid(path + '短信引用');
-    if (r.source === 'sms' && r.messageId === null) return invalid(path + '缺少短信引用');
+    const messageId = r.messageId === null ? null : str(r.messageId, 128, path + '短信 ID');
+    if (messageId !== null && (r.source !== 'sms' || !ID_RE.test(messageId))) return invalid(path + '短信引用');
+    if (r.source === 'sms' && messageId === null) return invalid(path + '缺少短信引用');
     if (r.response !== null) str(r.response, 500, path + '回应');
     return {
       id, owner: actor(r.owner), targetId,
       source: r.source, locationId, day: num(r.day, 1, 365000, path + '游戏日'), time,
       message: str(r.message, 500, path + '邀约内容'), status: r.status,
       createdAt: num(r.createdAt, 0, now, path + '创建时间'),
-      messageId: r.messageId, response: r.response as string | null,
+      messageId, response: r.response as string | null,
     };
   });
 }
@@ -160,7 +160,10 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
     const id = turnId + ':invite:' + index;
     if (rows.some(row => row.id === id)) continue;
     const contact = next.contacts.find(row => row.id === action.targetId || row.sourcePersonId === action.targetId);
-    const toProtagonist = !!contact && /^protagonist-(?:soyo|sakiko|emma|renako)$/.test(contact.id);
+    const toProtagonist = !!contact && PROTAGONISTS.some(id => contact.id === 'protagonist-' + id ||
+      !!PROTAGONIST_PERSON_IDS[id] && (contact.id === PROTAGONIST_PERSON_IDS[id] || contact.sourcePersonId === PROTAGONIST_PERSON_IDS[id]));
+    const whenMinute = (action.day - 1) * 1440 + Number(action.time.slice(0, 2)) * 60 + Number(action.time.slice(3));
+    if (whenMinute <= nowMinute(next)) throw new Error('预定的邀约时间已经过去了。');
     rows.push({
       id, owner, targetId: action.targetId, source: action.source,
       locationId: action.locationId, day: action.day, time: action.time, message: action.message,
