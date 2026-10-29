@@ -5,6 +5,8 @@ import { sceneLocationId } from './scene-context';
 import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
+import { worldScenePeople, worldScenePosition } from './world-presence';
+import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
@@ -41,6 +43,12 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_skill').length > 1)
     return invalid('每轮最多一次社交技能练习');
+  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'exchange_contact').length > 1)
+    return invalid('每轮最多直接交换一位新联系人的号码');
+  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'game_topup').length > 1)
+    return invalid('每轮只能完成一笔游戏消费');
+  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
+    return invalid('每轮最多三项邀约');
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
     /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
     .map(item => String((item as Record<string,unknown>).type));
@@ -53,6 +61,62 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
     switch ((raw as Record<string, unknown>).type) {
+      case 'go_home': {
+        record(raw, ['type'], path);
+        return { type: 'go_home' };
+      }
+      case 'exchange_contact': {
+        const item = record(raw, ['type', 'npcId', 'consentQuote'], path);
+        if (typeof item.npcId !== 'string') return invalid(`${path} 新联系人身份`);
+        const position = worldScenePosition(state);
+        const person = worldScenePeople(state).find(row => row.id === item.npcId && !row.protagonistId);
+        if (!position || !person || Math.hypot(position.x - person.x, position.z - person.z) > 7)
+          return invalid(`${path} 双方必须实际见面`);
+        if (state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id))
+          return invalid(`${path} 已经交换过联系方式`);
+        return { type: 'exchange_contact', npcId: person.id, consentQuote: text(item.consentQuote, 300, `${path} 对方的确认`) };
+      }
+      case 'send_sms': {
+        const item = record(raw, ['type', 'targetId', 'text'], path);
+        if (typeof item.targetId !== 'string' || !state.contacts.some(row => row.id === item.targetId || row.sourcePersonId === item.targetId))
+          return invalid(`${path} 短信收件人需要已有联系方式`);
+        return { type: 'send_sms', targetId: item.targetId, text: text(item.text, 1000, `${path} 短信正文`) };
+      }
+      case 'game_topup': {
+        const item = record(raw, ['type', 'game', 'benefit', 'amountYen'], path);
+        return { type: 'game_topup', game: text(item.game, 80, `${path} 游戏`), benefit: text(item.benefit, 100, `${path} 虚拟权益`),
+          amountYen: number(item.amountYen, 1, 100000, `${path} 日元金额`) };
+      }
+      case 'social_invite': {
+        const hasResponse = Object.hasOwn(raw, 'responseQuote');
+        const item = record(raw, ['type', 'targetId', 'source', 'locationId', 'day', 'time', 'message', 'outcome', ...(hasResponse ? ['responseQuote'] : [])], path);
+        if (item.source !== 'meeting' && item.source !== 'sms') return invalid(`${path} 邀约渠道`);
+        if (!['pending', 'accepted', 'declined'].includes(String(item.outcome))) return invalid(`${path} 邀约状态`);
+        const targetId = typeof item.targetId === 'string' ? item.targetId : '';
+        const contact = state.contacts.find(row => row.id === targetId || row.sourcePersonId === targetId);
+        if (item.source === 'sms') {
+          if (!contact || item.outcome !== 'pending' || hasResponse) return invalid(`${path} 短信邀约先等待对方回复`);
+        } else {
+          const position = worldScenePosition(state);
+          const person = worldScenePeople(state).find(row => row.id === (contact?.sourcePersonId ?? targetId) || row.contactId === targetId);
+          const counterpart = person?.protagonistId ? personState(state, person.protagonistId) : null;
+          if (!position || !person || Math.hypot(position.x - person.x, position.z - person.z) > 7 ||
+            (counterpart && (counterpart.locationId !== state.locationId || counterpart.interior?.roomId !== state.interior?.roomId)))
+            return invalid(`${path} 当面邀约必须双方实际在场`);
+          if (item.outcome !== 'pending' && !hasResponse || item.outcome === 'pending' && hasResponse)
+            return invalid(`${path} 邀约回应证据`);
+        }
+        if (typeof item.locationId !== 'string') return invalid(`${path} 邀约地点`);
+        const date = number(item.day, state.clock.day, Math.min(365000, state.clock.day + 90), `${path} 日期`);
+        const time = text(item.time, 5, `${path} 时间`);
+        if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return invalid(`${path} 时间格式`);
+        const minute = Number(time.slice(0,2)) * 60 + Number(time.slice(3));
+        if (date === state.clock.day && minute <= state.clock.hour * 60 + state.clock.minute) return invalid(`${path} 约定时间已过`);
+        return { type: 'social_invite', targetId: contact?.id ?? targetId,
+          source: item.source, locationId: destination(item.locationId, `${path} 邀约地点`), day: date, time,
+          message: text(item.message, 500, `${path} 邀约内容`), outcome: item.outcome as 'pending' | 'accepted' | 'declined',
+          ...(hasResponse ? { responseQuote: text(item.responseQuote, 300, `${path} 回应原话`) } : {}) };
+      }
       case 'travel': {
         const item = record(raw, ['type', 'locationId'], path);
         return { type: 'travel', locationId: destination(item.locationId, `${path} 地点`) };
