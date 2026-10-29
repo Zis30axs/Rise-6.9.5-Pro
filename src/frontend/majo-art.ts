@@ -35,6 +35,8 @@ import hannaShy from '../../assets/majo-runtime/characters/majo-hanna/shy.webp?i
 import margoNeutral from '../../assets/majo-runtime/characters/majo-margo/neutral.avif?inline';
 import margoHappy from '../../assets/majo-runtime/characters/majo-margo/happy.avif?inline';
 import margoShy from '../../assets/majo-runtime/characters/majo-margo/shy.avif?inline';
+import margoAngry from '../../assets/majo-runtime/characters/majo-margo/extras/angry.avif?inline';
+import margoSurprised from '../../assets/majo-runtime/characters/majo-margo/extras/surprised.avif?inline';
 import yukiNeutral from '../../assets/majo-runtime/characters/majo-yuki/neutral.png?inline';
 import yukiHappy from '../../assets/majo-runtime/characters/majo-yuki/happy.png?inline';
 import yukiThinking from '../../assets/majo-runtime/characters/majo-yuki/thinking.png?inline';
@@ -107,8 +109,11 @@ export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = O
     expressions: Object.freeze({ neutral: yukiNeutral, happy: yukiHappy, thinking: yukiThinking }),
   }),
   'majo-margo': Object.freeze({
-    personId: 'majo-margo', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 3,
-    width: 768, height: 1024, expressions: semiMainExpressions(margoNeutral, margoHappy, margoShy),
+    personId: 'majo-margo', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 5,
+    width: 768, height: 1024,
+    expressions: Object.freeze({
+      neutral: margoNeutral, happy: margoHappy, shy: margoShy, angry: margoAngry, surprised: margoSurprised,
+    }),
   }),
 });
 
@@ -195,7 +200,7 @@ export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '金发黑色蕾丝开衫', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '蓝发贝雷帽格裙', expressions: 3, complete: true, note: '用户确认身份（消息写作“橘雪梨”，稳定 ID 仍为 majo-sherry）；已抠图并 2× 放大。' },
   { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '紫黑哥特和风', expressions: 3, complete: true, note: '已接入三表情。' },
+  { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '紫黑哥特和风', expressions: 5, complete: true, note: '已接入五张透明立绘：平静、开心、害羞、生气、惊讶。难过、思考、严肃、安心使用本人平静立绘。' },
   { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },

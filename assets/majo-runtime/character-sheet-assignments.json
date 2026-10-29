@@ -65,6 +65,12 @@
       ],
       "cutoutMethod": "white-backdrop-connected-flood-matte",
       "note": "月代雪源图不属于首批六张 anime-seg 图集，其第三格对应思考。"
+    },
+    {
+      "personId": "majo-margo",
+      "sourceId": "characters/majo-margo",
+      "panelExpressions": ["neutral", "happy", "shy", "angry", "surprised"],
+      "note": "宝生玛格的 768×1024 AVIF 直接登记。平静、开心、害羞在人物目录，生气、惊讶在 extras。没有独立源 ZIP。难过、思考、严肃、安心使用本人平静立绘。"
     }
   ]
 }
