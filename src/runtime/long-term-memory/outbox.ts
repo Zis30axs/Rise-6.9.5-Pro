@@ -181,11 +181,22 @@ export function acknowledgeSavedMemoryOutbox(vars: Record<string, unknown>,
   scope: string, ingestedKeys: ReadonlySet<string>): Record<string, unknown> {
   const current = readSavedMemoryOutbox(vars, scope);
   const sources = current.sources.filter(s => !ingestedKeys.has(s.key));
-  const spillIds = (current.spillIds ?? []).filter(id => {
+  const spillIds: string[] = [];
+  for (const id of current.spillIds ?? []) {
     const page = readSpill(scope, id);
-    return !page || !page.every(s => ingestedKeys.has(s.key));
-  });
-  if (sources.length === current.sources.length && spillIds.length === (current.spillIds ?? []).length) return vars;
+    if (!page) { spillIds.push(id); continue; }
+    const pending = page.filter(source => !ingestedKeys.has(source.key));
+    if (pending.length === page.length) { spillIds.push(id); continue; }
+    if (!pending.length) continue;
+    // A partly acknowledged page gets a new, smaller durable page before
+    // the old reference is retired. If quota rejects that write, retain the
+    // entire old page for an idempotent replay, never lose pending rows.
+    const replacement = spillPage(scope, pending);
+    spillIds.push(replacement ?? id);
+  }
+  if (sources.length === current.sources.length
+    && spillIds.every((id, i) => id === current.spillIds?.[i])
+    && spillIds.length === (current.spillIds ?? []).length) return vars;
   return { ...vars, [MEMORY_OUTBOX_KEY]: {
     version: 1, sources, overflowCount: current.overflowCount, spillIds,
   } satisfies SavedMemoryOutbox };
