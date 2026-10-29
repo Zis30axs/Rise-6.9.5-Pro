@@ -74,6 +74,11 @@ export async function ingestSources(sources: MemorySource[]): Promise<void> {
     request.onsuccess = () => {
       const existing = request.result as MemorySource | undefined;
       if (!existing) store.put(source);
+      else if (existing.text !== source.text) {
+        // A reused ID with different prose belongs to a divergent branch.
+        // Never silently acknowledge it against an older canonical source.
+        tx.abort();
+      }
     };
   }
   await done;
