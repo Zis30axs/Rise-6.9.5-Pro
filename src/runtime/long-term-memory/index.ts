@@ -23,6 +23,13 @@ function trackedIngest(scope: string, sources: MemorySource[]): Promise<void> {
 }
 const unsafeScopes = new Set<string>();
 const outboxWarnings = new Map<string, number>();
+const archiveErrors = new Map<string, string>();
+function archiveError(error: unknown): string {
+  return (error instanceof Error ? error.message : '未知存储错误').slice(0, 200);
+}
+export function memoryArchiveError(scope: string): string {
+  return archiveErrors.get(scope) ?? '';
+}
 
 export function memoryOutboxWarning(scope: string): number {
   return outboxWarnings.get(scope) ?? 0;
@@ -75,6 +82,7 @@ export function memoryBootstrap(scope: string, state: WorldState,
         // A successful reconciliation also retires proven-invalid branch
         // receipts; no source is acknowledged before the transaction completes.
         ackSources(recovered, onIngest);
+        archiveErrors.delete(scope);
         // Another save may already have begun a newer reconciliation.
         if (reconciling.get(scope) === running) {
           unsafeScopes.delete(scope);
@@ -83,7 +91,7 @@ export function memoryBootstrap(scope: string, state: WorldState,
         }
         return true;
       })
-      .catch(() => false)
+      .catch(error => { archiveErrors.set(scope, archiveError(error)); return false; })
       .finally(() => { if (reconciling.get(scope) === running) reconciling.delete(scope); });
     reconciling.set(scope, running);
   } catch { /* Failed optional backfill must not block gameplay. */ }
@@ -104,9 +112,13 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
         // A rewind may have started while this transaction was in flight.
         // Text-matched receipts prevent clearing corrected sources.
         ackSources(sources, onIngest);
+        archiveErrors.delete(scope);
         if (!memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
           scheduleMemoryWork(scope, []);
-      } catch { /* Keep the synchronous chat outbox for recovery. */ }
+      } catch (error) {
+        archiveErrors.set(scope, archiveError(error));
+        /* Keep the synchronous chat outbox for recovery. */
+      }
     };
     if (pending) void pending.then(archive);
     else void archive(true);
