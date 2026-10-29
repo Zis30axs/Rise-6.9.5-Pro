@@ -1604,7 +1604,8 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
   const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
   const purchases = recordGamePurchases(withSkills, actions, turnId);
   const sent = commitNarrativeMessaging(purchases, actions, turnId);
-  const invited = recordSocialInvitations(sent, actions, turnId);
+  const invited = recordSocialInvitations(sent, actions, turnId,
+    id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(invited, actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
@@ -1629,7 +1630,8 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
   const purchased = recordGamePurchases(withSkills, narrativeActions, ids.assistantId);
   const sent = commitNarrativeMessaging(purchased, narrativeActions, ids.assistantId);
-  const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId);
+  const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
+    id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(invited, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
