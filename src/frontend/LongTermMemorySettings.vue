@@ -5,7 +5,7 @@ import type { MemorySettings } from '../runtime/long-term-memory/settings';
 import { exportMemory, importMemory, rebuildMemoryEntityIndex, rows } from '../runtime/long-term-memory/storage';
 import type { MemoryEvent } from '../runtime/long-term-memory/types';
 import { memoryStatus, pauseMemoryWork, runMemoryNow } from '../runtime/long-term-memory/scheduler';
-import { memoryArchiveSafe, memoryOutboxWarning } from '../runtime/long-term-memory';
+import { memoryArchiveError, memoryArchiveSafe, memoryOutboxWarning } from '../runtime/long-term-memory';
 
 const props = defineProps<{ scope: string }>();
 const settings = ref<MemorySettings>(loadMemorySettings());
@@ -14,6 +14,7 @@ const embeddingKey = ref(memoryApiKey('embedding'));
 const notice = ref('');
 const working = ref(false);
 const outboxOverflow = ref(0);
+const archiveFailure = ref('');
 const history = ref<MemoryEvent[]>([]);
 const search = ref('');
 const editId = ref('');
@@ -24,6 +25,7 @@ async function refresh() {
   try {
     status.value = await memoryStatus(props.scope);
     outboxOverflow.value = memoryOutboxWarning(props.scope);
+    archiveFailure.value = memoryArchiveError(props.scope);
   }
   catch { status.value = null; }
 }
@@ -146,6 +148,7 @@ onMounted(() => { void refresh(); });
       <label>单批输出预算（Token）<input v-model.number="settings.outputBudget" type="number" min="200" max="4000" step="100" /></label>
       <p v-if="status" class="uc-narrative-note">已归档 {{ status.sources }} 条来源 · 已整理 {{ status.events }} 条事件 · 待处理 {{ status.pending }} 批 · 累计费用估算 USD {{ status.costUsd.toFixed(4) }}</p>
       <p v-if="outboxOverflow" class="uc-narrative-note" role="alert">长期记忆归档异常：至少 {{ outboxOverflow }} 条来源未能暂存，或有待办页无法读取。请检查浏览器剩余存储空间、重新进入聊天重试归档。数据库备份仅包含已成功归档的内容。</p>
+      <p v-if="archiveFailure" class="uc-narrative-note" role="alert">原始剧情归档尚未完成：{{ archiveFailure }}。待归档来源将保留并在重新进入聊天后重播；请检查存储配额。</p>
       <p v-if="status?.lastError" class="uc-narrative-note" role="status">最近一次整理失败：{{ status.lastError }}。重新整理可能产生新的 API 费用。</p>
       <p v-else-if="!status" class="uc-narrative-note">记忆数据库尚未就绪，普通剧情不受影响。</p>
       <div class="uc-narrative-buttons">
