@@ -217,6 +217,19 @@ export function isFutureMemory(row: { turn: number; at: number },
   cutoff: { turn: number; at: number }): boolean {
   return row.turn > cutoff.turn || row.at > cutoff.at;
 }
+/** Missing older dialogue is normal after prompt pruning, not rollback proof. */
+export function hasConfirmedSameTurnDivergence(
+  archived: readonly MemorySource[], saved: readonly MemorySource[],
+  cutoff: { turn: number; at: number }): boolean {
+  if (cutoff.turn <= 0) return false;
+  const retained = new Map(saved.filter(s =>
+    (s.id.startsWith('story:') || s.id.startsWith('input:')) && s.turn === cutoff.turn)
+    .map(s => [s.key, s.text]));
+  return archived.some(source =>
+    source.turn === cutoff.turn && source.at <= cutoff.at
+    && (source.id.startsWith('story:') || source.id.startsWith('input:'))
+    && retained.has(source.key) && retained.get(source.key) !== source.text);
+}
 export async function pruneFutureMemory(scope: string,
   cutoff: { turn: number; at: number }, savedSources: readonly MemorySource[] = []): Promise<number> {
   const [sources, events, jobs, vectors, links, metaRows] = await Promise.all([
@@ -229,12 +242,7 @@ export async function pruneFutureMemory(scope: string,
   // different plots. Check the retained latest-turn prose IDs and their exact
   // text, not merely game time. An absent row may simply have been context-
   // pruned; absence is NOT proof of a different timeline.
-  const current = new Map(savedSources.filter(s =>
-    (s.id.startsWith('story:') || s.id.startsWith('input:')) && s.turn === cutoff.turn)
-    .map(s => [s.key, s.text]));
-  const sameTurnDivergence = cutoff.turn > 0 && sources.some(s =>
-    s.turn === cutoff.turn && (s.id.startsWith('story:') || s.id.startsWith('input:'))
-    && s.at <= cutoff.at && current.has(s.key) && current.get(s.key) !== s.text);
+  const sameTurnDivergence = hasConfirmedSameTurnDivergence(sources, savedSources, cutoff);
   const oldSources = sources.filter(s =>
     isFutureMemory(s, cutoff) || (sameTurnDivergence && s.turn >= cutoff.turn));
   const oldEvents = events.filter(e =>
