@@ -23,6 +23,7 @@ import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
+import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
@@ -851,10 +852,17 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'relationship': {
         const contact = next.contacts.find(contact => contact.id === action.npcId)!;
         const before = contact.affinity;
-        contact.affinity = Math.max(-100, Math.min(100, contact.affinity + action.delta));
+        // An effortful, out-of-character reply can still succeed, but requires
+        // more work for the same positive rapport. Negative fallout is not softened.
+        const effort = validated.find(item => item.type === 'social_skill' && item.npcId === action.npcId);
+        const multiplier = effort && effort.type === 'social_skill'
+          ? socialSkillQuote(worldAuthority ?? state, activeProtagonist(worldAuthority ?? state), effort.skillId, effort.deviation).positiveMultiplier : 1;
+        const change = action.delta > 0 ? Math.round(action.delta * multiplier) : action.delta;
+        contact.affinity = Math.max(-100, Math.min(100, contact.affinity + change));
         note(next, `${contact.name}的关系变化 ${contact.affinity - before >= 0 ? '+' : ''}${contact.affinity - before}：${action.reason}`);
         break;
       }
+      case 'social_skill': break;
       case 'activity': {
         const before = { ...next.player };
         if (action.effects.balance < 0 && next.player.balance < -action.effects.balance) throw new Error(`余额不足，${action.label}需要 ${-action.effects.balance} 日元。`);
@@ -1509,12 +1517,15 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     ? recordNpcEncounter(candidate, action.personId) : candidate);
 }
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
-  const before = parseState(state);
+  const parsed = parseState(state);
+  const before = actions.some(action => action.type === 'social_skill') ? enableProtagonists(parsed) : parsed;
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(clearDepartedProtagonistEncounters(after), actions, turnId), actions, turnId));
+  const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withSkills, actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
-  const before = parseState(state);
+  const parsed = parseState(state);
+  const before = result.worldActions?.some(action => action.type === 'social_skill') ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
@@ -1529,7 +1540,8 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
-  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(finished, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? [], ids.assistantId);
+  const withSkills = applySocialSkillTurn(finished, legacyResult.worldActions ?? [], ids.assistantId);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withSkills, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? [], ids.assistantId);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
