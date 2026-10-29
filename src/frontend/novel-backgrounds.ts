@@ -15,6 +15,7 @@ import livehouseBg from '../../assets/backgrounds/livehouse.webp?inline';
 import ktvBg from '../../assets/backgrounds/ktv.webp?inline';
 import mlmOfficeBg from '../../assets/backgrounds/mlm-office.webp?inline';
 import constructionDayBg from '../../assets/backgrounds/construction-day.avif?inline';
+import courtHearingBg from '../../assets/backgrounds/court-hearing-day.avif?inline';
 import legalOfficeDayBg from '../../assets/backgrounds/legal-office-day.avif?inline';
 import legalOfficeNightBg from '../../assets/backgrounds/legal-office-night.avif?inline';
 import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
@@ -111,6 +112,9 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
   }
   // This locally supplied construction photo depicts daylight in every game-time phase.
   if (locationId === 'construction-site') return { id: 'construction-site-day', src: constructionDayBg,
+    phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
+  // One indoor courtroom photograph. Dusk and night keep the same picture and only use the existing shade.
+  if (locationId === 'court-hearing') return { id: 'court-hearing-day', src: courtHearingBg,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
   const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
   if (authored) return { id: `majo-${locationId}`, src: authored.src, phase: novelBackgroundPhase(hour), imagePhase: authored.imagePhase, source: 'majo-art' };

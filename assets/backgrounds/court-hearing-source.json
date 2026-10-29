@@ -1,0 +1,27 @@
+{
+  "id": "court-hearing-day",
+  "locationId": "court-hearing",
+  "source": {
+    "kind": "user-provided-image",
+    "mime": "image/jpeg",
+    "width": 1500,
+    "height": 845,
+    "bytes": 306677,
+    "sha256": "ad213f4f7ad02df842b60c5d68c8d4f94078034436adf53468259df34555c066"
+  },
+  "derived": {
+    "file": "court-hearing-day.avif",
+    "mime": "image/avif",
+    "width": 1500,
+    "height": 845,
+    "bytes": 42894,
+    "sha256": "85f39b96e75ac4810a440689202cd2c58c2c93e0676ab5a4c7b0e27acaa3c709"
+  },
+  "imagePhase": "day",
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59 (day image)",
+    "night": "19:00-05:59 (day image, existing shade)"
+  },
+  "target": "novel mode court-hearing only"
+}
