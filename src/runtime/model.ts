@@ -24,7 +24,7 @@ import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransi
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
-import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordGamePurchases, recordSocialInvitations } from './natural-interactions';
+import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordSocialInvitations } from './natural-interactions';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
@@ -772,12 +772,6 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
           portraitId: person.portraitId, summary: person.description.slice(0, 2000), isMain: true,
           tag: '当面结识', affinity: 0, status: '已交换联系方式' });
         note(next, `与${person.name}交换联系方式。`);
-        break;
-      }
-      case 'game_topup': {
-        if (next.player.balance < action.amountYen) throw new Error(`账户余额不足，无法为${action.game}消费 ${action.amountYen} 日元。`);
-        next.player.balance -= action.amountYen;
-        note(next, `为${action.game}支付 ${action.amountYen} 日元，获得虚拟权益：${action.benefit}。`);
         break;
       }
       case 'send_sms':
@@ -1598,19 +1592,18 @@ function commitNarrativeMessaging(state: WorldState, actions: readonly StoryActi
 
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const parsed = parseState(state);
-  const needsWorld = actions.some(action => ['social_skill','game_topup','social_invite','send_sms','exchange_contact'].includes(action.type));
+  const needsWorld = actions.some(action => ['social_skill','social_invite','send_sms','exchange_contact'].includes(action.type));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
   const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
-  const purchases = recordGamePurchases(withSkills, actions, turnId);
-  const sent = commitNarrativeMessaging(purchases, actions, turnId);
+  const sent = commitNarrativeMessaging(withSkills, actions, turnId);
   const invited = recordSocialInvitations(sent, actions, turnId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(invited, actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
-  const needsWorld = result.worldActions?.some(action => ['social_skill','game_topup','social_invite','send_sms','exchange_contact'].includes(action.type));
+  const needsWorld = result.worldActions?.some(action => ['social_skill','social_invite','send_sms','exchange_contact'].includes(action.type));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
@@ -1628,8 +1621,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
   const narrativeActions = legacyResult.worldActions ?? [];
   const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
-  const purchased = recordGamePurchases(withSkills, narrativeActions, ids.assistantId);
-  const sent = commitNarrativeMessaging(purchased, narrativeActions, ids.assistantId);
+  const sent = commitNarrativeMessaging(withSkills, narrativeActions, ids.assistantId);
   const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(invited, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId);
