@@ -68,6 +68,11 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
   const recipients=worldMessageRecipients(data);
   const chosen=recipients.some(row=>row.key===recipient) ? recipient : recipients[0]?.key || '';
   const requests=(data.npcPhone?.requests || []).filter(r=>r.status==='pending');
+  // Show a real phone notification in the message center, not a forged SMS.
+  const reminders=(data.notifications||[]).filter(n=>!n.read&&String(n.id).startsWith('social:')).slice(-3).reverse();
+  const reminderHTML=reminders.length?'<section class="uc-requests" role="status" aria-label="见面提醒"><strong>约定提醒</strong>'
+    +reminders.map(n=>'<article><p>'+esc(n.text)+'</p><small>'+esc(time(n.at))+'</small></article>').join('')
+    +'</section>':'';
   const reqHTML=requests.length ? '<section class="uc-requests" aria-label="联系申请"><strong>联系申请</strong>'
     + requests.map(r=>'<article><strong>'+esc(r.name)+(r.kind==='group'?'邀请你加入群聊':'请求交换联系方式')
       + '</strong><p>'+esc(r.quote)+'</p><div class="actions">'
@@ -86,7 +91,7 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     }).join('');
     return {recipient:chosen,replyId:null,html:CHAT_STYLE+heading('消息','','Messages')
       + '<div class="uc-phone-header"><small>'+esc(data.name)+' · '+esc(time(data.now))
-      + '</small></div>'+reqHTML
+      + '</small></div>'+reqHTML+reminderHTML
       + btn('open-bands','我的乐队 · 名册与邀请','secondary')
       + '<div class="conv-list uc-conv-list" role="list">'+(list||'<p class="chat-empty">暂无可联系的角色</p>')+'</div>'};
   }
