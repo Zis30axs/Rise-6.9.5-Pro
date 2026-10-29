@@ -106,7 +106,6 @@ export function parseSocialAgenda(raw: unknown, invite: SocialInvitation, now: n
     return {kind:row.kind as AgendaStepKind,at:row.at,detail:fieldText(row.detail,160),done:row.done};
   });
   checkSteps(steps,invite);
-  if(steps.some(s=>s.done&&s.at>now)) return fail('未来步骤被提前执行');
   if(!Array.isArray(value.events) || value.events.length>48) return fail('事件上限');
   const events:AgendaEvent[]=value.events.map(item=>{
     const row=fields(item,['id','at','kind','detail','narrated']);
@@ -116,6 +115,8 @@ export function parseSocialAgenda(raw: unknown, invite: SocialInvitation, now: n
       detail:fieldText(row.detail,240),narrated:row.narrated};
   });
   if(new Set(events.map(e=>e.id)).size!==events.length) return fail('重复事件');
+  if(steps.some(s=>s.done && s.at>now && !events.some(e=>e.kind===s.kind && e.at<=now)))
+    return fail('尚未执行的未来步骤不能提前结算');
   return {revision:value.revision as number,status:value.status as SocialAgenda['status'],
     rationale:fieldText(value.rationale,240),triggers,steps,events};
 }
@@ -225,15 +226,63 @@ export function settleSocialAgendas(before:WorldState,state:WorldState):void {
   if(!state.protagonists)return;
   const start=socialMinute(before),end=socialMinute(state);
   if(end<=start)return;
+  const locationOf=(world:WorldState,owner:ProtagonistId):string=>{
+    const p=world.protagonists!;
+    if(p.accounts.active===owner)return world.locationId;
+    const other=PROTAGONISTS.filter(id=>id!==p.accounts.active);
+    return (other[0]===owner?p.inactive:other[1]===owner?p.third:p.fourth).locationId;
+  };
   for(const invitation of state.protagonists.socialInvitations ?? []){
     const plan=invitation.agenda;
     if(invitation.status!=='accepted'||!plan)continue;
-    const due=agreedMinute(invitation);
+    const due=agreedMinute(invitation),who=agendaTargetProtagonist(state,invitation);
     if(plan.status==='scheduled'){
+      const background=who?state.protagonists.backgroundLife?.people[who]:undefined;
+      const depart=plan.steps.find(step=>step.kind==='depart')!;
+      const arrival=plan.steps.find(step=>step.kind==='arrive')!;
+      const leaving=plan.steps.find(step=>step.kind==='leave')!;
+      const travels=background?.events.filter(e=>e.kind==='travel')??[];
+      const arrived=travels.find(e=>e.at>=depart.at&&e.at<=end&&e.text.includes('约好的见面'));
+      const returned=travels.find(e=>e.at>=leaving.at&&e.at<=end&&e.text.includes('约定结束后离开'));
+      const pending=background?.pending;
+      const outward=pending?.calendarKey.startsWith('agenda:'+invitation.id+':')?pending:null;
+      const homeward=pending?.calendarKey.startsWith('agenda-return:'+invitation.id+':')?pending:null;
       for(const step of plan.steps){
-        if(step.done||step.at<=start||step.at>end)continue;
-        step.done=true;
-        event(plan,invitation.id,step.at,step.kind,step.detail);
+        if(step.done)continue;
+        if(!who){
+          if(step.at<=start||step.at>end)continue;
+          step.done=true;
+          event(plan,invitation.id,step.at,step.kind,step.detail);
+          continue;
+        }
+        if(step.kind==='prepare'){
+          if(step.at>start&&step.at<=end){
+            step.done=true;
+            event(plan,invitation.id,step.at,step.kind,step.detail);
+          }
+          continue;
+        }
+        if(step.kind==='depart' && (outward||arrived)){
+          const started=outward?.start??Number(arrived?.id.split(':')[2]);
+          if(Number.isSafeInteger(started)&&started<=end){
+            step.done=true;
+            event(plan,invitation.id,started,'depart',step.detail);
+          }
+        }else if(step.kind==='arrive'){
+          const actual=arrived?.at ??
+            (locationOf(before,who)===invitation.locationId&&locationOf(state,who)===invitation.locationId
+              &&step.at<=end?step.at:undefined);
+          if(actual!==undefined&&actual<=end){
+            step.done=true;
+            event(plan,invitation.id,actual,'arrive',step.detail);
+          }
+        }else if(step.kind==='leave' && (homeward||returned)){
+          const actual=homeward?.start??Number(returned?.id.split(':')[2]);
+          if(Number.isSafeInteger(actual)&&actual<=end){
+            step.done=true;
+            event(plan,invitation.id,actual,'leave',step.detail);
+          }
+        }
       }
     }
     if(start<due&&due<=end){
