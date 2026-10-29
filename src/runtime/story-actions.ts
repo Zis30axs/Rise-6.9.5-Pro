@@ -130,9 +130,9 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if((decision==='plan'||decision==='revise')!==hasAgenda) return invalid(`${path} 计划字段`);
         const triggerId=text(item.triggerId,128,`${path} 变更原因 ID`);
         const reason=text(item.reason,240,`${path} 具体依据`);
-        return {type:'social_agenda',invitationId,decision,triggerId,reason,
-          ...(hasAgenda?{agenda:parseAgendaDraft(item.agenda,invitation,socialMinute(state),
-            decision==='revise'?(invitation.agenda?.steps.filter(step=>step.done)??[]):[]):} :{})};
+        return { type:'social_agenda', invitationId, decision, triggerId, reason,
+          ...(hasAgenda ? { agenda: parseAgendaDraft(item.agenda, invitation, socialMinute(state),
+            decision==='revise' ? (invitation.agenda?.steps.filter(step=>step.done) ?? []) : []) } : {}) };
       }
       case 'travel': {
         const item = record(raw, ['type', 'locationId'], path);
