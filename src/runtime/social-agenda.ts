@@ -176,8 +176,8 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
   for(const action of actions){
     if(action.type!=='social_agenda') continue;
     const invite=next.protagonists?.socialInvitations?.find(row=>row.id===action.invitationId);
-    if(!invite||invite.status!=='accepted'||invite.owner!==next.protagonists?.accounts.active)
-      return fail('必须由邀约发起方在已确认的邀约上调整计划');
+    if(!invite||invite.status!=='accepted'||agendaTargetProtagonist(next,invite)===next.protagonists?.accounts.active)
+      return fail('不得替玩家控制的主角修改私人决定，且邀约必须真实已确认');
     if(action.decision==='plan'){
       if(invite.agenda||action.triggerId!==invite.id||!action.agenda)return fail('初次计划的来源');
       startSocialAgenda(next,invite,action.agenda);
