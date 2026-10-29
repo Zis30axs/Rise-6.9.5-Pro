@@ -7,7 +7,7 @@ import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-ca
 import { weeklyMemoryContext } from './weekly-memory';
 import { memoryBootstrap, memoryCommitted, memoryPromptContext, reportMemoryOutboxWarning } from './long-term-memory';
 import { collectCommittedSources } from './long-term-memory/source';
-import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, readSavedMemoryOutbox, outboxOverflowCount } from './long-term-memory/outbox';
+import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, recoverSavedMemoryOutbox, releaseAcknowledgedMemorySpills, outboxOverflowCount } from './long-term-memory/outbox';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
 import { pauseMemoryWork } from './long-term-memory/scheduler';
@@ -233,6 +233,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (updated === current) return;
       // No await between reading current variables and replacing only the outbox.
       api.replaceVariables(updated, { type: 'chat' });
+      releaseAcknowledgedMemorySpills(current, updated, ownerSession);
     } catch { /* Replay the outbox on the next load. */ }
   };
   const instanceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -271,7 +272,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const state = !Object.prototype.hasOwnProperty.call(variables, 'unread_city')
         ? createInitialState() : parseState(variables.unread_city);
       committedSnapshot = structuredClone(state);
-      const outbox = readSavedMemoryOutbox(variables, ownerSession,
+      const outbox = recoverSavedMemoryOutbox(variables, ownerSession,
         state.protagonists?.narrativeTurn ?? 0,
         (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute);
       reportMemoryOutboxWarning(ownerSession, outbox.overflowCount);
@@ -293,10 +294,14 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         try { sources = collectCommittedSources(ownerSession, before, snapshot); }
         catch { sources = []; }
       }
-      const nextVariables = appendSavedMemoryOutbox(variables, ownerSession, sources);
+      const nextVariables = appendSavedMemoryOutbox(variables, ownerSession, sources,
+        snapshot.protagonists?.narrativeTurn ?? 0,
+        (snapshot.clock.day - 1) * 1440 + snapshot.clock.hour * 60 + snapshot.clock.minute);
       // No await between session check and synchronous TH variable replacement.
       assertOwner();
       api.replaceVariables({ ...nextVariables, unread_city: snapshot }, { type: 'chat' });
+      // Reclaim only pages removed by this successful synchronous save.
+      releaseAcknowledgedMemorySpills(variables, nextVariables, ownerSession);
       reportMemoryOutboxWarning(ownerSession, outboxOverflowCount(nextVariables, ownerSession));
       committedSnapshot = structuredClone(snapshot);
       if (before) memoryCommitted(ownerSession, before, snapshot, sources, acknowledgeMemory);
