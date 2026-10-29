@@ -35,6 +35,7 @@ export function openMemoryDb(): Promise<IDBDatabase> {
     request.onsuccess = () => {
       const db = request.result;
       db.onversionchange = () => { db.close(); cached = null; };
+      db.onclose = () => { cached = null; };
       resolve(db);
     };
     request.onerror = () => { cached = null; reject(request.error ?? new Error('无法打开长期记忆库')); };
@@ -226,13 +227,14 @@ export async function pruneFutureMemory(scope: string,
   ]);
   // Two saves with the same day and narrative turn may belong to completely
   // different plots. Check the retained latest-turn prose IDs and their exact
-  // text, not merely game time. Do not extrapolate from older pruned stories.
+  // text, not merely game time. An absent row may simply have been context-
+  // pruned; absence is NOT proof of a different timeline.
   const current = new Map(savedSources.filter(s =>
     (s.id.startsWith('story:') || s.id.startsWith('input:')) && s.turn === cutoff.turn)
     .map(s => [s.key, s.text]));
   const sameTurnDivergence = cutoff.turn > 0 && sources.some(s =>
     s.turn === cutoff.turn && (s.id.startsWith('story:') || s.id.startsWith('input:'))
-    && s.at <= cutoff.at && (current.size > 0 && current.get(s.key) !== s.text));
+    && s.at <= cutoff.at && current.has(s.key) && current.get(s.key) !== s.text);
   const oldSources = sources.filter(s =>
     isFutureMemory(s, cutoff) || (sameTurnDivergence && s.turn >= cutoff.turn));
   const oldEvents = events.filter(e =>
