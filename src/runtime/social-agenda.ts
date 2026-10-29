@@ -154,6 +154,7 @@ function checkConflict(state:WorldState,invite:SocialInvitation,steps:AgendaStep
 function event(plan:SocialAgenda,invitationId:string,at:number,kind:AgendaEvent['kind'],detail:string){
   const id=invitationId+':agenda:'+plan.revision+':'+kind+':'+at;
   if(!plan.events.some(e=>e.id===id)) plan.events.push({id,at,kind,detail:detail.slice(0,240),narrated:false});
+  plan.events.sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
   plan.events=plan.events.slice(-48);
 }
 export function startSocialAgenda(state:WorldState,invite:SocialInvitation,raw:SocialAgendaDraft):void {
@@ -169,7 +170,7 @@ function hasEvidence(state:WorldState,invitation:SocialInvitation,source:string)
   if(state.protagonists?.npcPhone?.messages.some(row=>row.id===source)) return true;
   return !!invitation.agenda?.events.some(row=>row.id===source&&row.at<=socialMinute(state));
 }
-export function applySocialAgendaActions(state:WorldState,actions:readonly StoryAction[]):WorldState {
+export function applySocialAgendaActions(state:WorldState,actions:readonly StoryAction[],turnId:string):WorldState {
   if(!actions.some(action=>action.type==='social_agenda')) return state;
   const next=copy(state),now=socialMinute(next);
   for(const action of actions){
@@ -182,8 +183,9 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
       startSocialAgenda(next,invite,action.agenda);
       continue;
     }
+    const trigger=action.triggerId==='current'?turnId:action.triggerId;
     const plan=invite.agenda;
-    if(!plan||plan.status!=='scheduled'||plan.triggers.includes(action.triggerId)||!hasEvidence(next,invite,action.triggerId))
+    if(!plan||plan.status!=='scheduled'||plan.triggers.includes(trigger)||!hasEvidence(next,invite,trigger))
       return fail('变更必须具有已保存的新事件依据');
     if(plan.triggers.length>=24||plan.revision>=100)return fail('重规划次数已满');
     if(action.decision==='revise'){
@@ -200,7 +202,7 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
       plan.rationale=fieldText(action.reason,240);
     }else return fail('不支持的决定');
     plan.revision++;
-    plan.triggers.push(validId(action.triggerId));
+    plan.triggers.push(validId(trigger));
     event(plan,invite.id,now,'change','赴约者对原定计划作出了新的决定');
   }
   next.protagonists!.revision++;
@@ -254,7 +256,10 @@ export function residentSocialAgendaPresence(state:WorldState,residentId:string)
       if(now<arrival.at)return {phase:'travel' as const,locationId:invitation.locationId,detail:'行程已有变动'};
       continue;
     }
-    if(leaving.done||now>=leaving.at)continue;
+    if(leaving.done||now>=leaving.at){
+      if(now<leaving.at+30)return {phase:'travel' as const,locationId:invitation.locationId,detail:'已经离开约定地点'};
+      continue;
+    }
     if(arrival.done&&now>=arrival.at)return {phase:'present' as const,locationId:invitation.locationId,detail:'按约定来到这里'};
     if(now<arrival.at)return {phase:'travel' as const,locationId:invitation.locationId,detail:'正在赴约途中'};
   }
@@ -279,7 +284,8 @@ export function acknowledgeAgendaNarration(snapshot:WorldState,saved:WorldState)
   if(!snapshot.protagonists||!saved.protagonists)return;
   const owner=snapshot.protagonists.accounts.active;
   const known=new Map((snapshot.protagonists.socialInvitations??[])
-    .filter(i=>i.owner===owner).map(i=>[i.id,new Set(i.agenda?.events.filter(e=>!e.narrated).map(e=>e.id)??[])]));
+    .filter(i=>i.owner===owner||agendaTargetProtagonist(snapshot,i)===owner)
+    .map(i=>[i.id,new Set(i.agenda?.events.filter(e=>!e.narrated).map(e=>e.id)??[])]));
   for(const invite of saved.protagonists.socialInvitations ?? []){
     for(const entry of invite.agenda?.events??[]){
       if(known.get(invite.id)?.has(entry.id))entry.narrated=true;
