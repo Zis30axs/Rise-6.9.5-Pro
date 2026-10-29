@@ -129,7 +129,7 @@ export const STORY_PROTOCOL = [
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
   '【统一邀约】玩家可以当面或通过短信邀请，提交 {"type":"social_invite","targetId":"目标稳定ID或联系人ID","source":"meeting","locationId":"cafe","day":2,"time":"18:30","message":"下午去咖啡馆坐坐吗？","outcome":"accepted","responseQuote":"对方本轮明确同意的原话"}；此例中的日期地点是格式示例，应根据当前存档实际计划填写。当面来源 meeting 必须现实在场，只有对方确实说出回应时 outcome 才可为 accepted 或 declined 且须提供 responseQuote；否则 pending 且省略 responseQuote。短信来源 source="sms"，只能给已有联系人，必须 outcome="pending" 且省略 responseQuote，程序真实发送邀请短信并保留等待状态，对方以后通过短信回复独立作决定。手机窗口和剧情自由输入共用真实联系人、时间、地点与回执，不因未打开面板而失效。对于尚未确定时间地点的邀约先自然商量，不凭空生成已确认行程。',
-  '【虚拟游戏充值】玩家明确要给世界内玩的电子游戏充值或买游戏月卡、游戏币时，若游戏、内容和应付日元金额已确定，使用 {"type":"game_topup","game":"游戏名","benefit":"实际获得的游戏内礼包或虚拟货币","amountYen":500}，金额由 Appie Pay 真实扣除并生成可追溯的消费权益记录；此示例不是统一定价。游戏充值不同于给人物转账，也不是现实世界的支付或第三方游戏联动。缺少实际价格或玩家只在询问充值规则、没有确认购买时，应先询价或询问，不能凭空收费；余额不足绝不能叙述为充值成功，不用 activity 或 transfer 冒充游戏消费。获得的虚拟权益以 saved gamePurchases 为准，不得编造实际外部平台账户有变化。',
+  '【通用消费】玩家明确花钱办理未单独建模的生活事务（例如给虚构手游充值、捐款、打赏、支付临时杂费），直接使用现有 activity 的 effects.balance 负数，label 交代实际付款和结果、minutes 写真实所需时间（最少1分钟），其他effects按实际情况填写或为0。程序通过统一余额和 Appie Pay 流水扣款、记录活动，不为每一种花钱方式创建独立 action 或专属消费系统。只有真实成交才扣款，问价、打算买、尚未确认金额时不结算；不得虚构玩家未同意的价格、绕过余额检查。已有 buy/service/pack/transfer、法院费用等专属结算仍必须使用原规则，不能借 activity 重复收费或规避商品库存、营业时间、双方转账。消费所得游戏虚拟内容可以按剧情叙述和现有日志保存，但不得冒充已被独立数值系统验证的库存、外部账户或第三方服务权益。',
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
   '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；除祥子与素世外，其他主角必须选修音乐专业才能预约开办 Livehouse 和创建乐队。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
@@ -365,8 +365,6 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         home: { roomId: protagonistHomeRooms[activeProtagonist(snapshot)] },
         socialInvitations: (snapshot.protagonists?.socialInvitations ?? [])
           .filter(row => row.owner === activeProtagonist(snapshot)).slice(-18),
-        gamePurchases: (snapshot.protagonists?.gamePurchases ?? [])
-          .filter(row => row.owner === activeProtagonist(snapshot)).slice(-12),
         narrative,
         worldContinuity: omniscientContinuityContext(snapshot),
         otherSideOpportunity: otherSidePromptContext(snapshot),
