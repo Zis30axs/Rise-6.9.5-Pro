@@ -6,7 +6,6 @@ import { downtownArtPack } from './generated/downtown-art';
 import { getDowntownArtBackground, nearToyokawaEntrance, type DowntownArtPack } from './downtown-art-runtime';
 
 const props = defineProps<{ locationId: string; hour: number; scene?: { x: number; z: number } | null; artPack?: DowntownArtPack }>();
-const court = computed(() => props.locationId === 'court-hearing');
 const legacy = computed(() => getNovelBackground(props.locationId, props.hour));
 const desired = computed(() => getDowntownArtBackground(props.artPack ?? downtownArtPack, {
   locationId: props.locationId, phase: novelBackgroundPhase(props.hour),
@@ -30,15 +29,14 @@ function onImageError(event: Event) {
   <div
     class="novel-backdrop"
     :data-novel-background="locationId"
-    :data-background-id="court ? 'court-hearing' : background.id"
+    :data-background-id="background.id"
     :data-background-phase="background.phase"
     :data-background-image-phase="background.imagePhase"
-    :data-background-status="court ? 'built-in' : imageFailed ? 'fallback' : 'image'"
-    :data-background-source="court ? 'courtroom' : usingArt ? 'downtown-art' : legacy.source"
+    :data-background-status="imageFailed ? 'fallback' : 'image'"
+    :data-background-source="usingArt ? 'downtown-art' : legacy.source"
     aria-hidden="true"
   >
-    <div v-if="court" class="courtroom-background"><div class="courtroom-background__pillars"/><div class="courtroom-background__emblem"/><div class="courtroom-background__bench"/><div class="courtroom-background__desks"/><div class="courtroom-background__floor"/></div>
-    <img v-else-if="!imageFailed" :key="background.id" class="novel-backdrop__image" :src="background.src" alt="" draggable="false" @error="onImageError">
+    <img v-if="!imageFailed" :key="background.id" class="novel-backdrop__image" :src="background.src" alt="" draggable="false" @error="onImageError">
     <div class="novel-backdrop__shade" />
   </div>
 </template>

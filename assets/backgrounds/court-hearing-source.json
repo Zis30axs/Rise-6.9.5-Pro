@@ -1,0 +1,23 @@
+{
+  "id": "court-hearing-day",
+  "locationId": "court-hearing",
+  "source": {
+    "kind": "user-provided-image",
+    "mime": "image/jpeg",
+    "width": 1500,
+    "height": 845,
+    "bytes": 306677,
+    "sha256": "ad213f4f7ad02df842b60c5d68c8d4f94078034436adf53468259df34555c066"
+  },
+  "derived": {
+    "file": "court-hearing.avif",
+    "mime": "image/avif",
+    "width": 1280,
+    "height": 722,
+    "bytes": 41037,
+    "sha256": "c30ed7c06c5342a11a5398c842d0fd9c03b98201b03d12f56f04c67a574145b5",
+    "encoding": "libaom-av1 still-picture crf 18, scaled to 1280 wide"
+  },
+  "imagePhase": "day",
+  "note": "Single indoor photograph. Every game-time phase uses this frame; there is no night variant."
+}
