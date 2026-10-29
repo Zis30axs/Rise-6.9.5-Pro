@@ -1577,7 +1577,8 @@ function commitNarrativeMessaging(state: WorldState, actions: readonly StoryActi
     const contact = next.contacts.find(row => row.id === targetId || row.sourcePersonId === targetId);
     if (!contact) throw new Error('必须先交换联系方式才能发送短信。');
     const owner = activeProtagonist(next);
-    const receiver = PROTAGONISTS.find(id => contact.id === 'protagonist-' + id);
+    const receiver = PROTAGONISTS.find(id => contact.id === 'protagonist-' + id ||
+      contact.id === protagonistSceneId(id) || contact.sourcePersonId === protagonistSceneId(id));
     const requestId = narrativeOperationId(turnId, index);
     if (receiver) {
       const messageId = narrativeMessageId(turnId, index, true);
