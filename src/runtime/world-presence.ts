@@ -8,6 +8,7 @@ import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
 import { isNpcUnderCourtRestriction } from './court-legal-effects';
+import { residentSocialAgendaPresence } from './social-agenda';
 
 export interface WorldScenePerson extends ScenePerson {
   protagonistId?: ProtagonistId;
@@ -133,6 +134,33 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
         contactId: contact?.id ?? null, isMain: contact?.isMain ?? false,
       });
     }
+  }
+
+  // Private, committed meeting itineraries take precedence over authored
+  // resident routines and temporary off-screen hints. Neither the planned
+  // departure nor a missed meeting teleports a resident into the room.
+  if (state.protagonists) for (const resident of allResidentCast) {
+    if (hidden.includes(resident.id) || courtSummoned.has(resident.id)) continue;
+    const agenda = residentSocialAgendaPresence(state,resident.id);
+    if (!agenda) continue;
+    for (let i=people.length-1;i>=0;i--) if(people[i]?.id===resident.id) people.splice(i,1);
+    if (agenda.phase!=='present') continue;
+    const room=getCampusInterior(agenda.locationId);
+    if (state.interior ? !room || state.interior.roomId!==room.id :
+      !!room || !scene || sceneLocationId(scene.areaId)!==agenda.locationId) continue;
+    const roomAnchor=room ? getInteriorPeopleForValidation(room.id).find(person=>person.id===resident.id)
+      ??{x:room.spawn.x,z:room.spawn.z}:null;
+    const outdoorAnchor=!room?scenePersonAnchors.find(anchor=>{
+      const area=getSceneArea(anchor.x,anchor.z);
+      return area && sceneLocationId(area.id)===agenda.locationId && anchor.id===resident.id;
+    })??sceneLandmarks.find(row=>sceneLocationId(row.id)===agenda.locationId):null;
+    const anchor=roomAnchor??outdoorAnchor;
+    if(!anchor)continue;
+    const contact=state.contacts.find(row=>row.id===resident.id||row.sourcePersonId===resident.id);
+    people.push({id:resident.id,name:contact?.name??resident.name,candidateName:resident.name,
+      identity:'常驻居民',tags:['常驻人物'],description:agenda.detail,
+      x:anchor.x,z:anchor.z,color:0x859c6d,portraitId:contact?.portraitId??characterForPerson(resident.id),
+      contactId:contact?.id??null,isMain:contact?.isMain??false});
   }
   if (!state.protagonists) return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
   // A formal summons supersedes other playable characters' ordinary scene
