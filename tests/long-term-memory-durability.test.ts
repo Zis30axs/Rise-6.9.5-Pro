@@ -6,6 +6,7 @@ import {
 } from '../src/runtime/long-term-memory/outbox';
 import type { MemorySource } from '../src/runtime/long-term-memory/types';
 import { createInitialState } from '../src/runtime/model';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
 import * as archive from '../src/runtime/long-term-memory/storage';
 import { memoryBootstrap, memoryArchiveSafe } from '../src/runtime/long-term-memory';
 import { searchMemory } from '../src/runtime/long-term-memory/retrieval';
@@ -184,7 +185,9 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
       releaseAcknowledgedMemorySpills(committed, next, scope);
       committed = next;
     });
-    const state = createInitialState();
+    const state = enableProtagonists(createInitialState());
+    state.protagonists!.narrativeTurn = 2;
+    state.clock.day = 1; state.clock.hour = 0; state.clock.minute = 5;
     memoryBootstrap(scope, state, recoverSavedMemoryOutbox(committed, scope).sources, acknowledge);
     await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(memoryArchiveSafe(scope)).toBe(false));
@@ -204,8 +207,8 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     const committed = appendSavedMemoryOutbox({}, scope, items, 2, 5);
     const archiveRows = recoverSavedMemoryOutbox(committed, scope).sources;
     const persisted = new Map(archiveRows.map(row => [row.key, row]));
-    vi.mocked(archive.rows).mockImplementation(async (table) =>
-      table === 'sources' ? [...persisted.values()] : []);
+    vi.mocked(archive.rows).mockImplementation(async <T>(table: string): Promise<T[]> =>
+      (table === 'sources' ? [...persisted.values()] : []) as T[]);
     const trimmedGameState = createInitialState();
     trimmedGameState.story = [];
     expect(trimmedGameState.story).toHaveLength(0);
