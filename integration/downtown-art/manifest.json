@@ -161,6 +161,84 @@
       ]
     },
     {
+      "id": "mutsumi_uniform_neutral",
+      "path": "characters/mutsumi/uniform/neutral.webp",
+      "sha256": "2d6be09bfc329e3a41768085e3712a693c3e00857d465b8c9ecc95a794f4075e",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside",
+      "path": "characters/mutsumi/uniform/neutral-aside.webp",
+      "sha256": "30e42ca8d8f8338518426d26ed126e6b4634db3d9daaa65f67253cb4567eeae0",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside_2",
+      "path": "characters/mutsumi/uniform/neutral-aside-2.webp",
+      "sha256": "6d4048370d560a4e433913fadfc48f2c79587200386f750e16c6795c77a2889d",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "mutsumi_uniform_smile",
+      "path": "characters/mutsumi/uniform/smile.webp",
+      "sha256": "96b4559ec34ddf4123de1931417530c6699727660705fc8a0919c789f58ffb9b",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "mutsumi_uniform_shy",
+      "path": "characters/mutsumi/uniform/shy.webp",
+      "sha256": "7f32628ad736ad78204678a3dd3e5b632171787a5ae8369cbec0f50039e3281e",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "mutsumi_uniform_surprised",
+      "path": "characters/mutsumi/uniform/surprised.webp",
+      "sha256": "41b5113dc671fad1c79bcad618b46b0d7ee77c4e42582ddd65933f797b945c80",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "backgrounds/toyokawa_mansion_day.webp",
       "sha256": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",

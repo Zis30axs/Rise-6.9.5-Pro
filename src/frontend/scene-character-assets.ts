@@ -3,7 +3,14 @@ import { readLocalAssetBytes } from './local-asset-buffer';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { isScenePositionWalkable, type SceneMovementWorld } from './scene-movement';
+import { downtownArtPack } from './generated/downtown-art';
+import { getMutsumiArt } from './downtown-art-runtime';
 export { characterForPerson } from './character-appearance';
+
+/** 若叶睦 / 睦 / Mutsumi select her school-uniform standing art. Other names stay on their existing models. */
+export function resolveSceneCharacterArt(name: string, expression?: unknown) {
+  return getMutsumiArt(downtownArtPack, { speaker: name, expression });
+}
 
 export const characterModelIds = ['soyo', 'deepseek', 'xiaoyang', 'claude'] as const;
 export type CharacterModelId = typeof characterModelIds[number];

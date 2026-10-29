@@ -24,6 +24,26 @@
     "downtownCameraAndBuildingsConsistent": true,
     "textAndUiAbsent": true
   },
+  "mutsumi": {
+    "reviewedOn": "2026-10-29",
+    "count": 6,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "identityConsistent": true,
+    "poses": ["neutral", "neutral-aside", "neutral-aside-2", "smile", "shy", "surprised"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "surprised",
+      "troubled": "shy",
+      "annoyed": "neutral-aside",
+      "sad": "neutral-aside-2"
+    },
+    "fullHeadHandsAndBothShoes": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -113,6 +133,36 @@
     {
       "id": "downtown_night",
       "sha256": "5939c833cb116e4a3e361e32553dc53635e414ffd7ea0c13fe2200fb1e5c48cb",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_neutral",
+      "sha256": "2d6be09bfc329e3a41768085e3712a693c3e00857d465b8c9ecc95a794f4075e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside",
+      "sha256": "30e42ca8d8f8338518426d26ed126e6b4634db3d9daaa65f67253cb4567eeae0",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside_2",
+      "sha256": "6d4048370d560a4e433913fadfc48f2c79587200386f750e16c6795c77a2889d",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_smile",
+      "sha256": "96b4559ec34ddf4123de1931417530c6699727660705fc8a0919c789f58ffb9b",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_shy",
+      "sha256": "7f32628ad736ad78204678a3dd3e5b632171787a5ae8369cbec0f50039e3281e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "mutsumi_uniform_surprised",
+      "sha256": "41b5113dc671fad1c79bcad618b46b0d7ee77c4e42582ddd65933f797b945c80",
       "visuallyReviewed": true
     }
   ],

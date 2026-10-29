@@ -133,6 +133,72 @@
       "sha256": "6b7550378e159093487b0d387d5fc8d0c2d50bb80184955beb0fcf0beaac3f0d"
     },
     {
+      "id": "mutsumi_uniform_neutral",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-neutral.png",
+      "size": [
+        509,
+        2157
+      ],
+      "bytes": 801658,
+      "sha256": "f6466f1550f76f45ad0fd50a751f0f55315076f7130c8a30c1956bdd1ce785db",
+      "origin": "user-provided"
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-neutral-aside.png",
+      "size": [
+        503,
+        2151
+      ],
+      "bytes": 732635,
+      "sha256": "c71de3f369058d22cfc35c2f6fb7ddf13e9f646ff6e2669769076173f8d84619",
+      "origin": "user-provided"
+    },
+    {
+      "id": "mutsumi_uniform_neutral_aside_2",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-neutral-aside-2.png",
+      "size": [
+        483,
+        2134
+      ],
+      "bytes": 685390,
+      "sha256": "f752033f14b13f49bc55c9d995fa03a4bf148d031b20a4769433bc8535402263",
+      "origin": "user-provided"
+    },
+    {
+      "id": "mutsumi_uniform_smile",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-smile.png",
+      "size": [
+        499,
+        2142
+      ],
+      "bytes": 809305,
+      "sha256": "ef874a260cb531859e8f774b152c048bbdc1b7d4fbc4f9547034c432586bfa82",
+      "origin": "user-provided"
+    },
+    {
+      "id": "mutsumi_uniform_shy",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-shy.png",
+      "size": [
+        536,
+        2114
+      ],
+      "bytes": 817160,
+      "sha256": "69bff3f3d814a774ffd1507959c60d6b5b77e5de84ef414950ac7bf0bad8c988",
+      "origin": "user-provided"
+    },
+    {
+      "id": "mutsumi_uniform_surprised",
+      "path": "assets/downtown-art/sources/mutsumi-uniform-surprised.png",
+      "size": [
+        546,
+        2123
+      ],
+      "bytes": 804871,
+      "sha256": "b3cdebd42ade14088e7148d8dbcaa6962281ac3e5a34f3eee37096c4fccdec7e",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [

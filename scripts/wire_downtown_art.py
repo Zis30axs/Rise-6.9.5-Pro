@@ -6,13 +6,18 @@ from pathlib import Path
 def wire(text: str) -> str:
     replacements = [
         ('<NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" />',
-         '<NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />'),
+         '<NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />',
+         '<NovelBackdrop ', ':scene="model.state.scene"'),
         ('<NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" />',
-         '<NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />'),
+         '<NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="novelSegment.emotion" :active="!activeWindow" :location-id="model.state.locationId" />',
+         '<NovelNpcPortrait ', ':location-id="model.state.locationId"'),
     ]
     result = text
-    for old, new in replacements:
+    for old, new, tag, marker in replacements:
         if result.count(new) == 1 and old not in result:
+            continue
+        # Later novel markup already passes the same prop. Leave those attributes in place.
+        if old not in result and new not in result and sum(tag in line and marker in line for line in result.splitlines()) == 1:
             continue
         if result.count(old) != 1 or new in result:
             raise ValueError('App.vue changed concurrently; inspect before wiring artwork')
