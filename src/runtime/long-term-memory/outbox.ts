@@ -205,9 +205,11 @@ export function appendSavedMemoryOutbox(vars: Record<string, unknown>, scope: st
 
 /** Remove receipts only when the entire page was confirmed by IndexedDB. */
 export function acknowledgeSavedMemoryOutbox(vars: Record<string, unknown>,
-  scope: string, ingestedKeys: ReadonlySet<string>): Record<string, unknown> {
+  scope: string, ingested: ReadonlyMap<string, string>): Record<string, unknown> {
   const current = readSavedMemoryOutbox(vars, scope);
-  const sources = current.sources.filter(s => !ingestedKeys.has(s.key));
+  // Late ACKs from an earlier timeline may have reused the same stable ID.
+  const confirmed = (s: MemorySource) => ingested.get(s.key) === s.text;
+  const sources = current.sources.filter(s => !confirmed(s));
   const spillIds: string[] = [];
   const spillLimits: NonNullable<SavedMemoryOutbox['spillLimits']> = {};
   for (const id of current.spillIds ?? []) {
@@ -217,7 +219,7 @@ export function acknowledgeSavedMemoryOutbox(vars: Record<string, unknown>,
     const page = readSpill(scope, id);
     if (!page) { spillIds.push(id); spillLimits[id] = bound; continue; }
     const live = page.filter(source => eligible(source, scope, bound.turn, bound.at));
-    const pending = live.filter(source => !ingestedKeys.has(source.key));
+    const pending = live.filter(source => !confirmed(source));
     if (!pending.length) continue;
     if (pending.length === page.length) {
       spillIds.push(id); spillLimits[id] = bound; continue;
