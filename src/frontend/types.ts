@@ -222,6 +222,12 @@ export interface Location {
 
 /** Validated narrative output. IDs, timestamps and read state are assigned by the runtime. */
 export type StoryAction =
+  | { type: 'go_home' }
+  | { type: 'exchange_contact'; npcId: string; consentQuote: string }
+  | { type: 'send_sms'; targetId: string; text: string }
+  | { type: 'game_topup'; game: string; benefit: string; amountYen: number }
+  | { type: 'social_invite'; targetId: string; source: 'meeting' | 'sms'; locationId: string; day: number; time: string; message: string;
+      outcome: 'pending' | 'accepted' | 'declined'; responseQuote?: string }
   | { type: 'travel'; locationId: string }
   | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
   | { type: 'service'; serviceId: string }
