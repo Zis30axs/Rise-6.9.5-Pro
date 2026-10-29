@@ -3,6 +3,7 @@ import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, type ProtagonistId } from './dual
 import { campusInteriors } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { sceneLocationId } from './scene-context';
+import { residentById } from './npc-cast';
 import { parseSocialAgenda, startSocialAgenda, type SocialAgenda, type SocialAgendaDraft } from './social-agenda';
 
 /** "Go home" follows the selected character, not the shared outdoor housing district. */
@@ -130,7 +131,7 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
     const whenMinute = (action.day - 1) * 1440 + Number(action.time.slice(0, 2)) * 60 + Number(action.time.slice(3));
     if (whenMinute <= nowMinute(next)) throw new Error('预定的邀约时间已经过去了。');
     const invitation: SocialInvitation = {
-      id, owner, targetId: action.targetId, targetName: (contact?.name ?? resolveName(action.targetId) ?? action.targetId).slice(0, 80), source: action.source,
+      id, owner, targetId: action.targetId, targetName: (contact?.name ?? resolveName(action.targetId) ?? residentById(action.targetId)?.name ?? action.targetId).slice(0, 80), source: action.source,
       locationId: action.locationId, day: action.day, time: action.time, message: action.message,
       status: action.outcome, createdAt: nowMinute(next),
       messageId: action.source === 'sms' ? narrativeMessageId(turnId, index, toProtagonist) : null,
