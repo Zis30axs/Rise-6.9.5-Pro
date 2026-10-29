@@ -96,6 +96,8 @@ await window.__unreadCityAgent.newGame();
 
 ## 已运行的示例
 
-`agent-edition/emma-play.spec.ts` 会选择素世的专业、切换到艾玛、为艾玛选择法学，然后连续处理拒绝的错误回复、睡眠跨日、前往律师事务所、职业登记、今日委托、与橘雪莉交谈、手机消息、地图、自习和学习、便利店购买并食用。运行记录写到 `agent-edition/records/emma-play.json`。失败时会另外写下 `emma-play-failure.json`，里面有操作、上游原文、状态和日志。
+`agent-edition/emma-play.spec.ts` 会选择素世的专业、切换到艾玛、为艾玛选择法学，然后连续处理拒绝的错误回复、睡眠跨日、前往律师事务所、职业登记、今日委托、与橘雪莉交谈、手机消息、地图、自习和学习、便利店购买并食用。运行记录写到 `agent-edition/records/emma-play.json`。
 
-不合协议的原文应被整轮拒绝，不能据此放宽游戏规则。
+`agent-edition/gaps.spec.ts` 覆盖手机内部操作、主动短信和自由庭审。手机源码不在本仓库。脚本会按 `integration/embedded-phone-source/manifest.json` 的提交 `24295193aa1adff606edcd4e63c8b07923533f2b` 克隆公开仓库 `Zis30axs/ST-iPhonie`，应用同目录补丁，再构建。产物写到被忽略的 `src/frontend/generated/`。记录在 `records/phone-contacts.json`、`records/autonomous-sms.json` 和 `records/courtroom.json`。
+
+如果本地还没有手机产物，`node agent-edition/prepare-phone.mjs` 会先准备源码再构建。已有正式产物时不会覆盖。占位模块不能代替真实手机。不合协议的原文应被整轮拒绝。

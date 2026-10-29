@@ -1,0 +1,1802 @@
+{
+  "phoneModule": "existing",
+  "errors": [],
+  "steps": [
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我在原地再等一百分钟。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>"
+    },
+    {
+      "op": "inject",
+      "rawText": "<autonomous_sms>{\"id\":\"auto:soyo:1940\",\"text\":\"丰川祥子这边没有急事，只是想问你今晚是否还方便。\"}</autonomous_sms>"
+    }
+  ],
+  "turns": [
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 80,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 70,
+        "foodEnergy": 1200,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 1,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 19,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 92,
+        "balance": 6560,
+        "health": 90,
+        "stress": 19,
+        "morale": 76,
+        "satiety": 63,
+        "foodEnergy": 1000,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "energy": {
+          "before": 80,
+          "after": 92
+        },
+        "stress": {
+          "before": 25,
+          "after": 19
+        },
+        "morale": {
+          "before": 70,
+          "after": 76
+        },
+        "satiety": {
+          "before": 70,
+          "after": 63
+        },
+        "foodEnergy": {
+          "before": 1200,
+          "after": 1000
+        },
+        "storyCount": {
+          "before": 1,
+          "after": 3
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 17,
+            "minute": 20
+          },
+          "after": {
+            "day": 1,
+            "hour": 19,
+            "minute": 0
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 19,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 92,
+        "balance": 6560,
+        "health": 90,
+        "stress": 19,
+        "morale": 76,
+        "satiety": 63,
+        "foodEnergy": 1000,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 20,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 13,
+        "morale": 82,
+        "satiety": 57,
+        "foodEnergy": 800,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "energy": {
+          "before": 92,
+          "after": 100
+        },
+        "stress": {
+          "before": 19,
+          "after": 13
+        },
+        "morale": {
+          "before": 76,
+          "after": 82
+        },
+        "satiety": {
+          "before": 63,
+          "after": 57
+        },
+        "foodEnergy": {
+          "before": 1000,
+          "after": 800
+        },
+        "storyCount": {
+          "before": 3,
+          "after": 5
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 19,
+            "minute": 0
+          },
+          "after": {
+            "day": 1,
+            "hour": 20,
+            "minute": 40
+          }
+        },
+        "phone": {
+          "before": [],
+          "after": [
+            {
+              "npcId": "protagonist-sakiko",
+              "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+              "read": false
+            }
+          ]
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 20,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 13,
+        "morale": 82,
+        "satiety": 57,
+        "foodEnergy": 800,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 22,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 7,
+        "morale": 88,
+        "satiety": 50,
+        "foodEnergy": 600,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 7,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "stress": {
+          "before": 13,
+          "after": 7
+        },
+        "morale": {
+          "before": 82,
+          "after": 88
+        },
+        "satiety": {
+          "before": 57,
+          "after": 50
+        },
+        "foodEnergy": {
+          "before": 800,
+          "after": 600
+        },
+        "storyCount": {
+          "before": 5,
+          "after": 7
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 20,
+            "minute": 40
+          },
+          "after": {
+            "day": 1,
+            "hour": 22,
+            "minute": 20
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 22,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 7,
+        "morale": 88,
+        "satiety": 50,
+        "foodEnergy": 600,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 7,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 0,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 1,
+        "morale": 94,
+        "satiety": 43,
+        "foodEnergy": 400,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 9,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "stress": {
+          "before": 7,
+          "after": 1
+        },
+        "morale": {
+          "before": 88,
+          "after": 94
+        },
+        "satiety": {
+          "before": 50,
+          "after": 43
+        },
+        "foodEnergy": {
+          "before": 600,
+          "after": 400
+        },
+        "storyCount": {
+          "before": 7,
+          "after": 9
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 22,
+            "minute": 20
+          },
+          "after": {
+            "day": 2,
+            "hour": 0,
+            "minute": 0
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 0,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 1,
+        "morale": 94,
+        "satiety": 43,
+        "foodEnergy": 400,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 9,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 1,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 37,
+        "foodEnergy": 200,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 11,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "stress": {
+          "before": 1,
+          "after": 0
+        },
+        "morale": {
+          "before": 94,
+          "after": 100
+        },
+        "satiety": {
+          "before": 43,
+          "after": 37
+        },
+        "foodEnergy": {
+          "before": 400,
+          "after": 200
+        },
+        "storyCount": {
+          "before": 9,
+          "after": 11
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 0,
+            "minute": 0
+          },
+          "after": {
+            "day": 2,
+            "hour": 1,
+            "minute": 40
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 1,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 37,
+        "foodEnergy": 200,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 11,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 3,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 30,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 13,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "satiety": {
+          "before": 37,
+          "after": 30
+        },
+        "foodEnergy": {
+          "before": 200,
+          "after": 0
+        },
+        "storyCount": {
+          "before": 11,
+          "after": 13
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 1,
+            "minute": 40
+          },
+          "after": {
+            "day": 2,
+            "hour": 3,
+            "minute": 20
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 3,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 30,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 13,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 5,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 23,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 15,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "satiety": {
+          "before": 30,
+          "after": 23
+        },
+        "storyCount": {
+          "before": 13,
+          "after": 15
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 3,
+            "minute": 20
+          },
+          "after": {
+            "day": 2,
+            "hour": 5,
+            "minute": 0
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 5,
+          "minute": 0
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 23,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 15,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 6,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 17,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 17,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "satiety": {
+          "before": 23,
+          "after": 17
+        },
+        "storyCount": {
+          "before": 15,
+          "after": 17
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 5,
+            "minute": 0
+          },
+          "after": {
+            "day": 2,
+            "hour": 6,
+            "minute": 40
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>时间安静地过去，长崎素世没有离开原地。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"wait\",\"minutes\":100}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 6,
+          "minute": 40
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 17,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 17,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 8,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 10,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 19,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "satiety": {
+          "before": 17,
+          "after": 10
+        },
+        "storyCount": {
+          "before": 17,
+          "after": 19
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 6,
+            "minute": 40
+          },
+          "after": {
+            "day": 2,
+            "hour": 8,
+            "minute": 20
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<autonomous_sms>{\"id\":\"auto:soyo:1940\",\"text\":\"丰川祥子这边没有急事，只是想问你今晚是否还方便。\"}</autonomous_sms>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 8,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 10,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 19,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 2,
+          "hour": 8,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 6560,
+        "health": 90,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 10,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+            "read": false
+          },
+          {
+            "npcId": "protagonist-sakiko",
+            "text": "丰川祥子这边没有急事，只是想问你今晚是否还方便。",
+            "read": false
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 19,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          },
+          {
+            "role": "user",
+            "text": "我在原地再等一百分钟。"
+          },
+          {
+            "role": "assistant",
+            "text": "时间安静地过去，长崎素世没有离开原地。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "phone": {
+          "before": [
+            {
+              "npcId": "protagonist-sakiko",
+              "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+              "read": false
+            }
+          ],
+          "after": [
+            {
+              "npcId": "protagonist-sakiko",
+              "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+              "read": false
+            },
+            {
+              "npcId": "protagonist-sakiko",
+              "text": "丰川祥子这边没有急事，只是想问你今晚是否还方便。",
+              "read": false
+            }
+          ]
+        }
+      },
+      "rejected": false
+    }
+  ],
+  "raw": "<autonomous_sms>{\"id\":\"auto:soyo:1940\",\"text\":\"丰川祥子这边没有急事，只是想问你今晚是否还方便。\"}</autonomous_sms>",
+  "phone": [
+    {
+      "npcId": "protagonist-sakiko",
+      "text": "我会先处理自己的安排。若有需要协调的事，请给我留言。",
+      "read": false
+    },
+    {
+      "npcId": "protagonist-sakiko",
+      "text": "丰川祥子这边没有急事，只是想问你今晚是否还方便。",
+      "read": false
+    }
+  ],
+  "clock": {
+    "day": 2,
+    "hour": 8,
+    "minute": 20
+  }
+}

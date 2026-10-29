@@ -206,13 +206,14 @@ export class AgentSession {
     this.turns.push(turn);
     return turn;
   }
-  private async drain(after: Summary, notice: string) {
+  private async drain(after: Summary, notice: string, followup?: (pending: PendingView) => string | null) {
     const extra = [];
     for (let index = 0; index < 3; index += 1) {
       const existing = await this.pending();
       const pending = existing ?? await this.waitPending(2200, notice, true);
       if (!pending) break;
-      const turn = await this.deliver(this.silence(pending), after, notice);
+      const custom = followup?.(pending);
+      const turn = await this.deliver(custom ?? this.silence(pending), after, notice);
       extra.push(turn);
       after = turn.after;
       notice = turn.notice;
@@ -220,16 +221,28 @@ export class AgentSession {
     return extra;
   }
 
+  readState() { return call<Record<string, unknown>>(this.page, 'readState'); }
+
   /** Type a player line, inject one upstream reply, then answer any real follow-up generation. */
-  async play(text: string, reply: string | ((pending: PendingView) => string)) {
+  async play(text: string, reply: string | ((pending: PendingView) => string), options?: { followup?: (pending: PendingView) => string | null }) {
     const before = await this.summary();
     const noticeBefore = (await this.status()).notice;
     await this.playerSay(text);
     const pending = await this.waitPending(20_000, noticeBefore);
     const raw = typeof reply === 'function' ? reply(pending) : reply;
     const turn = await this.deliver(raw, before, noticeBefore);
+    const followups = await this.drain(turn.after, turn.notice, options?.followup);
+    return { ...turn, pending, followups };
+  }
+  /** The game has already asked for an upstream reply, for example after a phone button. */
+  async answerPending(reply: string | ((pending: PendingView) => string)) {
+    const before = await this.summary();
+    const noticeBefore = (await this.status()).notice;
+    const pending = await this.waitPending(30_000, noticeBefore);
+    const raw = typeof reply === 'function' ? reply(pending) : reply;
+    const turn = await this.deliver(raw, before, noticeBefore);
     const followups = await this.drain(turn.after, turn.notice);
-    return { ...turn, followups };
+    return { ...turn, pending, followups };
   }
   async playRejected(text: string, rawText: string) {
     const before = await this.summary();

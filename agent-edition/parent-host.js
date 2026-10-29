@@ -15,7 +15,7 @@
     extensionSettings: {},
     name1: '我',
     name2: '未读之城',
-    eventTypes: {},
+    eventTypes: Object.fromEntries(['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'MESSAGE_SWIPED', 'MESSAGE_EDITED', 'MESSAGE_DELETED', 'MESSAGE_UPDATED', 'CHARACTER_MESSAGE_RENDERED', 'GENERATION_AFTER_COMMANDS'].map(name => [name, name])),
     getCurrentChatId() { return ctx.chatId; },
     setExtensionPrompt() {},
     updateMessageBlock() {},
