@@ -11,6 +11,8 @@ import { isJapanesePublicHoliday } from './japan-calendar-events';
 import { applyStoryActions, getNovelTravelQuote, reduceState } from './model';
 import { activeProtagonist, gameMinute, legacyView, otherProtagonist, otherProtagonists, personalState, personState, protagonistNearby, protagonistNames, protagonistsNearby, reduceProtagonistAction, settlePhoneTime, type PersonalState, type PhoneCommand } from './protagonist-world';
 import { protagonistSceneId, protagonistsInTalkingRange } from './world-presence';
+import { agendaTargetProtagonist } from './social-agenda';
+import { protagonistHomeRooms } from './natural-interactions';
 export { protagonistsNearby } from './protagonist-world';
 
 export type BackgroundEventKind = 'routine' | 'rest' | 'meal' | 'travel' | 'study' | 'calendar' | 'order' | 'message' | 'decision';
@@ -167,7 +169,7 @@ export function suspendBackgroundActivity(state: WorldState, owner: ProtagonistI
   p.pending = null; p.nextDecisionAt = nextQuarter(at);
 }
 
-interface Appointment { key: string; title: string; locationId: string; start: number; duration: number; source: 'calendar' | 'schedule' | 'academic'; subjectId?: string; shared: boolean }
+interface Appointment { key: string; title: string; locationId: string; start: number; duration: number; source: 'calendar' | 'schedule' | 'academic'; subjectId?: string; shared: boolean; departAt?: number }
 function appointments(state: WorldState, owner: ProtagonistId, at: number): Appointment[] {
   const p = state.protagonists!;
   const personal = personState(state, owner), day = Math.floor(at / 1440), others = otherProtagonists(owner);
@@ -184,7 +186,26 @@ function appointments(state: WorldState, owner: ProtagonistId, at: number): Appo
   const academic: Appointment[] = getAcademicTimetable(personal.academics).filter(slot => hasStartedAcademicWeek(day + 1) && !isJapanesePublicHoliday(day + 1) && slot.weekday === gameWeekday(day + 1)).map(slot => ({
     key: `academic:${slot.id}:${day}`, title: slot.subjectName, locationId: slot.locationId, start: day * 1440 + toMinutes(slot.start), duration: toMinutes(slot.end) - toMinutes(slot.start), source: 'academic', subjectId: slot.subjectId, shared: false,
   }));
-  return [...calendar, ...schedule, ...academic].sort((a, b) => a.start - b.start || a.key.localeCompare(b.key));
+  // Existing playable-background planner follows the invited protagonist's
+  // saved intention. Two ordinary travel appointments reuse its route quote,
+  // wallet checks, nutrition settlement and recorded arrival, not a teleport.
+  const social:Appointment[]=(state.protagonists?.socialInvitations??[])
+    .filter(row=>row.status==='accepted' && row.agenda?.status==='scheduled' &&
+      agendaTargetProtagonist(state,row)===owner)
+    .flatMap(row=>{
+      const depart=row.agenda!.steps.find(step=>step.kind==='depart')!;
+      const arrive=row.agenda!.steps.find(step=>step.kind==='arrive')!;
+      const leave=row.agenda!.steps.find(step=>step.kind==='leave')!;
+      const meeting:Appointment={key:'agenda:'+row.id+':'+row.agenda!.revision,
+        title:'与'+protagonistNames[row.owner]+'约好的见面',
+        locationId:row.locationId,start:arrive.at,duration:Math.max(1,leave.at-arrive.at),
+        source:'calendar',shared:false,departAt:depart.at};
+      const returning:Appointment={key:'agenda-return:'+row.id+':'+row.agenda!.revision,
+        title:'约定结束后离开',locationId:protagonistHomeRooms[owner],
+        start:leave.at,duration:120,source:'calendar',shared:false,departAt:leave.at};
+      return [meeting,returning];
+    });
+  return [...calendar, ...schedule, ...social, ...academic].sort((a, b) => a.start - b.start || a.key.localeCompare(b.key));
 }
 
 /** Use the existing authoritative phone command reducer as the actual owner, then restore the foreground projection. */
@@ -348,7 +369,9 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
 
   if (personState(state, owner).player.satiety <= 20 && nourish()) return;
   const personal = personState(state, owner);
-  const appointment = appointments(state, owner, at).find(event => !life.calendarSeen.includes(event.key) && event.start <= at + 90);
+  const appointment = appointments(state, owner, at).find(event =>
+    !life.calendarSeen.includes(event.key) &&
+    (event.start <= at + 90 || event.departAt!==undefined && event.departAt <= at + 90));
   if (appointment) {
     const critical = /和解|决裂|告白|分手|结婚|离婚|退学|签约|辞职|借款|贷款|重大|争执/.test(appointment.title);
     if ((appointment.shared || critical) && at >= appointment.start) {
@@ -358,7 +381,8 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
     }
     if (!appointment.shared && !critical && at < appointment.start + appointment.duration && personal.locationId !== appointment.locationId) {
       const view = ownedView(state, owner, at), quote = getNovelTravelQuote(view, appointment.locationId);
-      if (at >= appointment.start - quote.minutes) {
+      const departureAt=appointment.departAt??appointment.start-quote.minutes;
+      if (at >= departureAt) {
         if (quote.blockedReason || quote.minutes <= 0) {
           seen(appointment.key);
           record(state, owner, { id: id('calendar'), at, kind: 'decision', text: `日程「${appointment.title}」的出行暂缓：${quote.blockedReason ?? '当前路线需要本人处理'}。` });
@@ -369,7 +393,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
         return;
       }
       // Do not start a thirty-minute filler activity across the planned departure.
-      life.nextDecisionAt = Math.min(nextQuarter(at), Math.max(at + 1, appointment.start - quote.minutes));
+      life.nextDecisionAt = Math.min(nextQuarter(at), Math.max(at + 1, departureAt));
       return;
     } else if (at >= appointment.start) {
       seen(appointment.key);
