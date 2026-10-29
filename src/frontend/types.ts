@@ -226,7 +226,10 @@ export type StoryAction =
   | { type: 'exchange_contact'; npcId: string; consentQuote: string }
   | { type: 'send_sms'; targetId: string; text: string }
   | { type: 'social_invite'; targetId: string; source: 'meeting' | 'sms'; locationId: string; day: number; time: string; message: string;
-      outcome: 'pending' | 'accepted' | 'declined'; responseQuote?: string }
+      outcome: 'pending' | 'accepted' | 'declined'; responseQuote?: string;
+      agenda?: import('../runtime/social-agenda').SocialAgendaDraft }
+  | { type: 'social_agenda'; invitationId: string; decision: 'plan' | 'revise' | 'cancel' | 'no_show';
+      triggerId: string; reason: string; agenda?: import('../runtime/social-agenda').SocialAgendaDraft }
   | { type: 'travel'; locationId: string }
   | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
   | { type: 'service'; serviceId: string }
@@ -280,6 +283,8 @@ export interface GeneratedStory {
   phoneDecision?: 'silence';
   /** An NPC/other-protagonist SMS may decide one previously sent invitation. */
   inviteDecision?: import('../runtime/natural-interactions').SocialInvitationDecision;
+  /** A recipient's planned actions are committed together with acceptance. */
+  inviteAgenda?: import('../runtime/social-agenda').SocialAgendaDraft;
   /** Optional off-screen novel passage accompanying a manually requested SMS reply. */
   phoneSceneText?: string;
   autonomousSmsText?: string | null;
