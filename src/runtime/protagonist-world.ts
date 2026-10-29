@@ -13,6 +13,7 @@ import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, su
 import { residentById } from './npc-cast';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 import { createSocialSkills, parseSocialSkills, type SocialSkillState } from './social-skills';
+import { parseGamePurchases, parseSocialInvitations, type GamePurchase, type SocialInvitation } from './natural-interactions';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -68,6 +69,10 @@ export interface ProtagonistWorld {
   weeklyMemory?: WeeklyMemory;
   /** Four independent skill tracks, kept outside the legacy personal-save projection. */
   socialSkills?: SocialSkillState;
+  /** Fictional purchases are paid through the existing Appie Pay ledger. */
+  gamePurchases?: GamePurchase[];
+  /** Shared invitation history, scoped by sender and message identity. */
+  socialInvitations?: SocialInvitation[];
 }
 export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -187,7 +192,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('gamePurchases'),...optional('socialInvitations')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -309,6 +314,8 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy,!hasThird||!hasFourth) : initializeBackgroundLife({...base,schema_version:'1.13.0',protagonists:result});
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   result.socialSkills = Object.hasOwn(p,'socialSkills') ? parseSocialSkills(p.socialSkills) : createSocialSkills();
+  if (Object.hasOwn(p, 'gamePurchases')) result.gamePurchases = parseGamePurchases(p.gamePurchases, gameMinute(base));
+  if (Object.hasOwn(p, 'socialInvitations')) result.socialInvitations = parseSocialInvitations(p.socialInvitations, gameMinute(base));
   return result;
 }
 function isKnownLocation(locationId: string): boolean {
