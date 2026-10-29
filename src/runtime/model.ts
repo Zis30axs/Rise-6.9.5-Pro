@@ -932,6 +932,7 @@ function commitLegacyStoryTurn(
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
   const reply = validateGeneratedStory(result, worldAuthority?.protagonists ? { ...next, protagonists:worldAuthority.protagonists } : next);
+  verifySocialConsentEvidence(worldAuthority ?? next, reply);
   // Leave room for the stable message suffix within the 128-char save ID limit.
   const validId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
   if (!ids || !validId(ids.userId) || !validId(ids.assistantId) || ids.userId === ids.assistantId) throw new Error('剧情记录 ID 无效；本轮未写入。');
@@ -1546,16 +1547,69 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
   return parseState(action.type === 'encounter' && !(candidate.protagonists && isProtagonistEncounter(action.personId))
     ? recordNpcEncounter(candidate, action.personId) : candidate);
 }
+/** Verify the actual NPC reply by identity and exact spoken line, not a text keyword heuristic. */
+function verifySocialConsentEvidence(state: WorldState, reply: GeneratedStory): void {
+  const proofActions = (reply.worldActions ?? []).filter(action => action.type === 'exchange_contact' ||
+    action.type === 'social_invite' && action.source === 'meeting' && action.outcome !== 'pending');
+  if (!proofActions.length) return;
+  const people = worldScenePeople(state);
+  const dialogue = parseNovelDialogue(reply.text);
+  for (const action of proofActions) {
+    const who = action.type === 'exchange_contact' ? action.npcId : action.targetId;
+    const contact = state.contacts.find(row => row.id === who || row.sourcePersonId === who);
+    const person = people.find(row => row.id === (contact?.sourcePersonId ?? who) || row.contactId === who);
+    const statement = action.type === 'exchange_contact' ? action.consentQuote : action.responseQuote;
+    if (!person || !statement || !dialogue.some(line =>
+      (line.speaker === person.name || line.speaker === person.candidateName) &&
+      line.text.trim() === statement.trim())) {
+      throw new Error('交换联系方式或当面邀约缺少对方本轮明确说出的回应；本轮没有修改状态。');
+    }
+  }
+}
+
+/** Free-text messages use the same canonical phone actions as the manual phone UI. */
+function commitNarrativeMessaging(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
+  let next = state;
+  for (const [index, action] of actions.entries()) {
+    const targetId = action.type === 'send_sms' ? action.targetId : action.type === 'social_invite' && action.source === 'sms' ? action.targetId : null;
+    if (!targetId) continue;
+    const text = action.type === 'send_sms' ? action.text : action.type === 'social_invite' ? action.message : '';
+    const contact = next.contacts.find(row => row.id === targetId || row.sourcePersonId === targetId);
+    if (!contact) throw new Error('必须先交换联系方式才能发送短信。');
+    const owner = activeProtagonist(next);
+    const receiver = PROTAGONISTS.find(id => contact.id === 'protagonist-' + id);
+    const requestId = narrativeOperationId(turnId, index);
+    if (receiver) {
+      const messageId = narrativeMessageId(turnId, index, true);
+      if (next.protagonists?.conversations?.some(row => row.id === messageId)) continue;
+      next = reduceProtagonistAction(next, { type: 'phone_app', requestId, owner,
+        command: { type: 'send_message', to: receiver, text } });
+    } else {
+      const messageId = narrativeMessageId(turnId, index, false);
+      if (next.protagonists?.npcPhone?.messages.some(row => row.id === messageId)) continue;
+      const outgoing: WorldState = JSON.parse(JSON.stringify(next));
+      applyNpcPhoneCommand(outgoing, owner, { type: 'send_npc_message', npcId: contact.sourcePersonId ?? contact.id, text }, requestId);
+      next = outgoing;
+    }
+  }
+  return next;
+}
+
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
   const parsed = parseState(state);
-  const before = actions.some(action => action.type === 'social_skill') ? enableProtagonists(parsed) : parsed;
+  const needsWorld = actions.some(action => ['social_skill','game_topup','social_invite','send_sms','exchange_contact'].includes(action.type));
+  const before = needsWorld ? enableProtagonists(parsed) : parsed;
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
   const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withSkills, actions, turnId), actions, turnId));
+  const purchases = recordGamePurchases(withSkills, actions, turnId);
+  const sent = commitNarrativeMessaging(purchases, actions, turnId);
+  const invited = recordSocialInvitations(sent, actions, turnId);
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(invited, actions, turnId), actions, turnId));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
-  const before = result.worldActions?.some(action => action.type === 'social_skill') ? enableProtagonists(parsed) : parsed;
+  const needsWorld = result.worldActions?.some(action => ['social_skill','game_topup','social_invite','send_sms','exchange_contact'].includes(action.type));
+  const before = needsWorld ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
   // validated omniscient report to the dual-protagonist candidate snapshot.
@@ -1570,8 +1624,12 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
-  const withSkills = applySocialSkillTurn(finished, legacyResult.worldActions ?? [], ids.assistantId);
-  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withSkills, legacyResult.worldActions ?? [], ids.assistantId), legacyResult.worldActions ?? [], ids.assistantId);
+  const narrativeActions = legacyResult.worldActions ?? [];
+  const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
+  const purchased = recordGamePurchases(withSkills, narrativeActions, ids.assistantId);
+  const sent = commitNarrativeMessaging(purchased, narrativeActions, ids.assistantId);
+  const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(invited, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
