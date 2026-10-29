@@ -3,6 +3,8 @@ import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, type ProtagonistId } from './dual
 import { campusInteriors } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { sceneLocationId } from './scene-context';
+import { residentById } from './npc-cast';
+import { parseSocialAgenda, startSocialAgenda, type SocialAgenda, type SocialAgendaDraft } from './social-agenda';
 
 /** "Go home" follows the selected character, not the shared outdoor housing district. */
 export const protagonistHomeRooms: Readonly<Record<ProtagonistId, string>> = Object.freeze({
@@ -27,6 +29,8 @@ export interface SocialInvitation {
   createdAt: number;
   messageId: string | null;
   response: string | null;
+  /** Optional for old saves created before NPC schedules were supported. */
+  agenda?: SocialAgenda;
 }
 
 const invitationLimit = 120;
@@ -66,7 +70,8 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
   return raw.map((value, index) => {
     const path = '邀约 ' + (index + 1);
     const hasTargetName = !!value && typeof value === 'object' && Object.hasOwn(value, 'targetName');
-    const r = record(value, ['id','owner','targetId',...(hasTargetName ? ['targetName'] : []),'source','locationId','day','time','message','status','createdAt','messageId','response'], path);
+    const hasAgenda = !!value && typeof value === 'object' && Object.hasOwn(value, 'agenda');
+    const r = record(value, ['id','owner','targetId',...(hasTargetName ? ['targetName'] : []),'source','locationId','day','time','message','status','createdAt','messageId','response',...(hasAgenda ? ['agenda'] : [])], path);
     const id = str(r.id, 128, path + ' ID');
     if (!ID_RE.test(id) || used.has(id)) return invalid(path + '重复 ID');
     used.add(id);
@@ -82,13 +87,18 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
     if (messageId !== null && (r.source !== 'sms' || !ID_RE.test(messageId))) return invalid(path + '短信引用');
     if (r.source === 'sms' && messageId === null) return invalid(path + '缺少短信引用');
     if (r.response !== null) str(r.response, 500, path + '回应');
-    return {
+    const item: SocialInvitation = {
       id, owner: actor(r.owner), targetId, targetName: hasTargetName ? str(r.targetName, 80, path + '姓名') : targetId,
       source: r.source, locationId, day: num(r.day, 1, 365000, path + '游戏日'), time,
       message: str(r.message, 500, path + '邀约内容'), status: r.status,
       createdAt: num(r.createdAt, 0, now, path + '创建时间'),
       messageId, response: r.response as string | null,
     };
+    if (hasAgenda) {
+      if (item.status !== 'accepted') return invalid(path + '未确认的邀约不能拥有私人赴约日程');
+      item.agenda = parseSocialAgenda(r.agenda,item,now);
+    }
+    return item;
   });
 }
 
@@ -110,7 +120,7 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
   if (!state.protagonists || accepted.length > 3) throw new Error('每轮最多三项邀约，且需要当前主角');
   const next: WorldState = JSON.parse(JSON.stringify(state));
   const owner = next.protagonists!.accounts.active;
-  const rows = next.protagonists!.socialInvitations ?? [];
+  const rows = next.protagonists!.socialInvitations ?? (next.protagonists!.socialInvitations = []);
   for (const [index, action] of actions.entries()) {
     if (action.type !== 'social_invite') continue;
     const id = turnId + ':invite:' + index;
@@ -120,13 +130,15 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
       !!PROTAGONIST_PERSON_IDS[id] && (contact.id === PROTAGONIST_PERSON_IDS[id] || contact.sourcePersonId === PROTAGONIST_PERSON_IDS[id]));
     const whenMinute = (action.day - 1) * 1440 + Number(action.time.slice(0, 2)) * 60 + Number(action.time.slice(3));
     if (whenMinute <= nowMinute(next)) throw new Error('预定的邀约时间已经过去了。');
-    rows.push({
-      id, owner, targetId: action.targetId, targetName: (contact?.name ?? resolveName(action.targetId) ?? action.targetId).slice(0, 80), source: action.source,
+    const invitation: SocialInvitation = {
+      id, owner, targetId: action.targetId, targetName: (contact?.name ?? resolveName(action.targetId) ?? residentById(action.targetId)?.name ?? action.targetId).slice(0, 80), source: action.source,
       locationId: action.locationId, day: action.day, time: action.time, message: action.message,
       status: action.outcome, createdAt: nowMinute(next),
       messageId: action.source === 'sms' ? narrativeMessageId(turnId, index, toProtagonist) : null,
       response: action.source === 'meeting' ? action.responseQuote ?? null : null,
-    });
+    };
+    if (action.outcome === 'accepted' && action.agenda) startSocialAgenda(next,invitation,action.agenda);
+    rows.push(invitation);
   }
   next.protagonists!.socialInvitations = rows.slice(-invitationLimit);
   next.protagonists!.revision++;
@@ -135,12 +147,16 @@ export function recordSocialInvitations(state: WorldState, actions: readonly Sto
 
 /** Apply an NPC/other-protagonist decision only to the invitation sent in this thread. */
 export function applySocialInvitationReply(state: WorldState, messageId: string,
-  decision: SocialInvitationDecision | undefined, response: string | null): WorldState {
-  if (!decision) return state;
+  decision: SocialInvitationDecision | undefined, response: string | null, agenda?: SocialAgendaDraft): WorldState {
+  if (!decision) { if (agenda) throw new Error('未作出同意决定不能保存赴约日程'); return state; }
   const next: WorldState = JSON.parse(JSON.stringify(state));
   const invitation = next.protagonists?.socialInvitations?.find(row => row.messageId === messageId);
   if (!invitation || invitation.status !== 'pending' || response === null) throw new Error('邀约回应没有对应的待处理消息');
-  if (decision === 'accepted') invitation.status = 'accepted';
+  if (agenda && decision !== 'accepted') throw new Error('拒绝和暂缓邀约时不能设定赴约日程');
+  if (decision === 'accepted') {
+    invitation.status = 'accepted';
+    if (agenda) startSocialAgenda(next,invitation,agenda);
+  }
   if (decision === 'declined') invitation.status = 'declined';
   invitation.response = response.slice(0, 500);
   next.protagonists!.revision++;
