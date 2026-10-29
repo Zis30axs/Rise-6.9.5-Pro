@@ -44,7 +44,7 @@ def verify() -> dict:
         assets = manifest['assets']
         keys = {x['sha256'] for x in assets}
         if not expected.issubset(keys):
-            raise ValueError('One or more of the 18 approved images were not externalized')
+            raise ValueError('One or more approved downtown-art images were not externalized')
         if len(assets) != report['assets']:
             raise ValueError('ZIP asset count does not match report')
         if set(zip_file.namelist()) != {'manifest.json', *(x['path'] for x in assets)}:

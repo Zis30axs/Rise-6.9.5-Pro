@@ -1,7 +1,10 @@
-"""Derive aligned production WebPs from the 18 preserved Sunburst PNGs.
+"""Derive aligned production WebPs from preserved downtown-art PNGs.
 
 Never approves artwork. Review remains a separate visual decision. Source PNGs
 are unchanged; only low-alpha fringe noise is removed before sprite alignment.
+Sakiko and the backgrounds stay on their approved bytes when this Pillow build
+cannot reproduce them and the recorded source hash is unchanged. Mutsumi's
+school-uniform poses are derived with the same sprite alignment.
 """
 from __future__ import annotations
 import argparse
@@ -10,7 +13,7 @@ from io import BytesIO
 import json
 from pathlib import Path
 from PIL import Image, ImageFilter, ImageOps
-from verify_downtown_art import SPRITES, BACKGROUNDS
+from verify_downtown_art import BACKGROUNDS, MUTSUMI_POSES, SPRITES
 
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE / 'assets/downtown-art'
@@ -19,17 +22,43 @@ CANVAS = (768, 1344)
 ANCHOR = (384, 1280)
 
 
+def ensure_mutsumi_entries(manifest: dict) -> None:
+    present = {item['id'] for item in manifest['assets']}
+    missing = []
+    for pose in MUTSUMI_POSES:
+        key = f'mutsumi_uniform_{pose}'
+        if key in present:
+            continue
+        missing.append({
+            'id': key,
+            'path': f"characters/mutsumi/uniform/{pose.replace('_', '-')}.webp",
+            'sha256': '',
+            'size': list(CANVAS),
+            'anchor': list(ANCHOR),
+        })
+    if not missing:
+        return
+    index = next(i for i, item in enumerate(manifest['assets']) if item['id'] in BACKGROUNDS)
+    manifest['assets'][index:index] = missing
+
+
 def prepare(check=False):
     manifest = json.loads(MANIFEST.read_text(encoding='utf-8'))
+    sources_path = BASE / 'integration/downtown-art/sources.json'
+    previous_sources = {item['id']: item for item in json.loads(sources_path.read_text(encoding='utf-8'))['sources']}
+    previous_assets = {item['id']: dict(item) for item in manifest['assets']}
+    ensure_mutsumi_entries(manifest)
     if {item['id'] for item in manifest['assets']} != SPRITES | BACKGROUNDS:
         raise ValueError('Unexpected production image matrix')
-    pending, sources = [], []
+    pending, sources, kept = [], [], []
     for item in manifest['assets']:
         key = item['id']
         source = ROOT / 'sources' / (key.replace('_', '-') + '.png')
         target = (ROOT / item['path']).resolve()
         if not target.is_relative_to(ROOT.resolve()) or target.suffix != '.webp':
             raise ValueError('Production path outside WebP asset root')
+        source_bytes = source.read_bytes()
+        source_sha = hashlib.sha256(source_bytes).hexdigest()
         with Image.open(source) as image:
             image.load()
             original_size = list(image.size)
@@ -61,14 +90,29 @@ def prepare(check=False):
             data = stream.getvalue()
             item['size'] = list(image.size)
             item['sha256'] = hashlib.sha256(data).hexdigest()
-            if check and (not target.is_file() or target.read_bytes() != data):
-                raise ValueError('Derived asset differs: ' + key)
-            pending.append((target, data))
-            sources.append({'id': key, 'path': source.relative_to(BASE).as_posix(),
-                            'size': original_size, 'bytes': source.stat().st_size,
-                            'sha256': hashlib.sha256(source.read_bytes()).hexdigest()})
+        previous = previous_assets.get(key)
+        recorded_source = previous_sources.get(key)
+        if previous and recorded_source and recorded_source.get('sha256') == source_sha and target.is_file():
+            approved = target.read_bytes()
+            if hashlib.sha256(approved).hexdigest() == previous.get('sha256') and approved != data:
+                data = approved
+                item['sha256'] = previous['sha256']
+                item['size'] = previous['size']
+                if 'anchor' in previous:
+                    item['anchor'] = previous['anchor']
+                kept.append(key)
+        if check and (not target.is_file() or target.read_bytes() != data):
+            raise ValueError('Derived asset differs: ' + key)
+        pending.append((target, data, key not in kept))
+        record = {'id': key, 'path': source.relative_to(BASE).as_posix(),
+                  'size': original_size, 'bytes': len(source_bytes), 'sha256': source_sha}
+        if key.startswith('mutsumi_'):
+            record['origin'] = 'user-provided'
+        sources.append(record)
     if not check:
-        for target, data in pending:
+        for target, data, write in pending:
+            if not write:
+                continue
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
         MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
@@ -76,9 +120,9 @@ def prepare(check=False):
                   'spriteCanvas': list(CANVAS), 'anchor': list(ANCHOR),
                   'spriteEncoding': 'lossless WebP after documented alpha cleanup and alignment',
                   'backgroundEncoding': '1536x864 WebP quality 90', 'sources': sources}
-        (BASE / 'integration/downtown-art/sources.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
-    print(json.dumps({'derivedAssets': len(pending), 'assetBytes': sum(len(data) for _, data in pending),
-                      'reviewStatus': manifest['reviewStatus'], 'checkOnly': check}))
+        sources_path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'derivedAssets': len(pending), 'assetBytes': sum(len(data) for _, data, _ in pending),
+                      'keptApprovedAssets': len(kept), 'reviewStatus': manifest['reviewStatus'], 'checkOnly': check}))
 
 
 if __name__ == '__main__':

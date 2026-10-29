@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed validation for the 12-sprite / 6-background release.
+"""Fail-closed validation for the downtown sprite and background release.
 
 Requires Pillow for image decoding. Never treats a contact sheet, a filename,
 or an old card's size as evidence that the new assets are embedded.
@@ -17,9 +17,13 @@ import zlib
 LIMIT = 50_000_000
 MAX_METADATA = 160 * 1024 * 1024
 EXPRESSIONS = ('neutral', 'smile', 'troubled', 'surprised', 'annoyed', 'sad')
-SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
+SAKIKO_SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
+MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 'surprised')
+MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
+SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES
 BACKGROUNDS = {'toyokawa_mansion_day', 'toyokawa_mansion_dusk', 'toyokawa_mansion_night',
                'toyokawa_living_room', 'downtown_day', 'downtown_night'}
+EXPECTED_ASSETS = SPRITES | BACKGROUNDS
 IMAGE_URL = re.compile(r'data:image/(?:webp|png|jpeg);base64,([A-Za-z0-9+/]+={0,2})')
 
 
@@ -36,12 +40,12 @@ def validate_assets(root: Path, manifest_path: Path) -> dict:
     if manifest.get('reviewStatus') != 'approved':
         fail('Artwork is not reviewed: concept sheets are not runtime sprites')
     entries = manifest.get('assets')
-    if not isinstance(entries, list) or len(entries) != 18:
-        fail('Exactly 12 sprites and 6 backgrounds are required')
+    if not isinstance(entries, list) or len(entries) != len(EXPECTED_ASSETS):
+        fail(f'Exactly {len(SPRITES)} sprites and {len(BACKGROUNDS)} backgrounds are required')
     if any(not isinstance(entry, dict) for entry in entries):
         fail('Invalid asset entry')
     ids = [entry.get('id') for entry in entries]
-    if any(not isinstance(key, str) for key in ids) or len(set(ids)) != 18 or set(ids) != SPRITES | BACKGROUNDS:
+    if any(not isinstance(key, str) for key in ids) or len(set(ids)) != len(EXPECTED_ASSETS) or set(ids) != EXPECTED_ASSETS:
         fail('Missing, extra or duplicated outfit/expression/background IDs')
     files, hashes, dimensions, sprite_sizes, anchors = set(), set(), [], set(), set()
     for entry in entries:
@@ -86,7 +90,7 @@ def validate_assets(root: Path, manifest_path: Path) -> dict:
             dimensions.append({'id': key, 'path': name, 'size': [w, h], 'sha256': digest,
                                'bytes': path.stat().st_size})
     if len(sprite_sizes) != 1 or len(anchors) != 1:
-        fail('All twelve sprites must share canvas dimensions and alignment anchor')
+        fail('All sprites must share canvas dimensions and alignment anchor')
     return {'status': 'assets-verified', 'assetCount': len(entries), 'assets': dimensions,
             'assetBytes': sum(item['bytes'] for item in dimensions),
             'visualReview': 'manifest approval required; not inferred from filenames or tests'}

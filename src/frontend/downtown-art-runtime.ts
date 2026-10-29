@@ -1,8 +1,9 @@
+import { selectMutsumiSprite, type MutsumiOutfit, type MutsumiPose, type MutsumiSpriteId } from './mutsumi-art-policy';
 import { selectSakikoSprite, type SakikoSpriteId, type SakikoOutfit, type SakikoExpression } from './sakiko-art-policy';
 
 export type ArtPhase = 'day' | 'dusk' | 'night';
 export type DowntownBackgroundId = 'toyokawa_mansion_day' | 'toyokawa_mansion_dusk' | 'toyokawa_mansion_night' | 'toyokawa_living_room' | 'downtown_day' | 'downtown_night';
-export type DowntownArtId = SakikoSpriteId | DowntownBackgroundId;
+export type DowntownArtId = SakikoSpriteId | MutsumiSpriteId | DowntownBackgroundId;
 export interface DowntownArtAsset {
   readonly id: DowntownArtId;
   readonly src: string;
@@ -38,6 +39,17 @@ export function getSakikoArt(pack: DowntownArtPack, options: {
   // A missing emotion may use the SAME outfit's neutral frame, never a different dress.
   const neutral = asset(pack, `sakiko_${selection.outfit}_neutral`);
   return neutral ? { ...neutral, outfit: selection.outfit, expression: 'neutral' } : null;
+}
+
+export function getMutsumiArt(pack: DowntownArtPack, options: {
+  speaker: unknown; expression: unknown;
+}): (DowntownArtAsset & { outfit: MutsumiOutfit; expression: SakikoExpression; pose: MutsumiPose }) | null {
+  const selection = selectMutsumiSprite(options);
+  if (!selection) return null;
+  const exact = asset(pack, selection.id);
+  if (exact) return { ...exact, outfit: selection.outfit, expression: selection.expression, pose: selection.pose };
+  const neutral = asset(pack, 'mutsumi_uniform_neutral');
+  return neutral ? { ...neutral, outfit: 'uniform', expression: 'neutral', pose: 'neutral' } : null;
 }
 
 export function nearToyokawaEntrance(
