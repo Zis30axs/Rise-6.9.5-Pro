@@ -216,7 +216,7 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
 }
 function notify(state:WorldState,owner:ProtagonistId,invitation:SocialInvitation,at:number){
   const list=state.protagonists!.devices[owner].notifications;
-  const id=receiptId(invitation.id,'due');
+  const id='social:'+receiptId(invitation.id,'due');
   if(list.some(item=>item.id===id))return;
   if(list.length>=200){
     const firstRead=list.findIndex(item=>item.read);
