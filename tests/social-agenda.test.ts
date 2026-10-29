@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { applyStoryActions, commitStoryTurn, createInitialState, parseState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
-import { parseAgendaDraft, residentSocialAgendaPresence, socialMinute, startSocialAgenda, type SocialAgendaDraft } from '../src/runtime/social-agenda';
+import { applySocialAgendaActions, parseAgendaDraft, residentSocialAgendaPresence, socialMinute, startSocialAgenda, type SocialAgendaDraft } from '../src/runtime/social-agenda';
 import type { SocialInvitation } from '../src/runtime/natural-interactions';
 
 const plan: SocialAgendaDraft = {
@@ -68,7 +68,20 @@ describe('NPC 自主赴约日程（不启动模型）',()=>{
     expect(()=>parseAgendaDraft({rationale:'逆向移动',steps:[...plan.steps].reverse()},original,socialMinute(state))).toThrow();
     expect(()=>parseAgendaDraft({...plan,steps:plan.steps.map(s=>({...s,day:1}))},original,socialMinute(state))).toThrow();
   });
-  it('正文快捷前往与消息通知都复用现有前端',()=>{
+  it('同一个居民不能同时准备两场会冲突的邀约，连往返行程也会占时间',()=>{
+    const state=start();
+    const first=state.protagonists!.socialInvitations![0]!;
+    const second:SocialInvitation={...first,id:'test-invite-2',time:'20:10',agenda:undefined};
+    state.protagonists!.socialInvitations!.push(second);
+    expect(()=>startSocialAgenda(state,second,plan)).toThrow(/同时有两项赴约/);
+  });
+  it('模型不能用随意编造的旧事件重规划，已保存承诺保持不变',()=>{
+    const state=start(),id=state.protagonists!.socialInvitations![0]!.id;
+    expect(()=>applySocialAgendaActions(state,[{type:'social_agenda',invitationId:id,decision:'no_show',
+      triggerId:'unsaved-and-unrelated',reason:'随便改个决定'}],'attempt')).toThrow(/新事件依据/);
+    expect(state.protagonists!.socialInvitations![0]!.agenda!.status).toBe('scheduled');
+  });
+    it('正文快捷前往与消息通知都复用现有前端',()=>{
     const app=readFileSync(resolve(process.cwd(),'src/frontend/App.vue'),'utf8');
     const messenger=readFileSync(resolve(process.cwd(),'integration/dual-protagonists/phone-messenger.js'),'utf8');
     expect(app).toContain('data-meeting-invite');
