@@ -22,6 +22,7 @@ import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
+import { SOCIAL_PERSONALITY, socialSkillOverview } from './social-skills';
 import { diagnosePlayerIllnesses } from './illness';
 import { lawCareerStoryContext } from './law-career';
 import { courtStoryContext } from './courtroom';
@@ -128,11 +129,12 @@ export const STORY_PROTOCOL = [
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
   '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；除祥子与素世外，其他主角必须选修音乐专业才能预约开办 Livehouse 和创建乐队。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
+  '【社交练习】本游戏有独立于专业学业的六种可成长社交能力：perception察言观色、empathy共情倾听、expression坦诚表达、persuasion说服交涉、organizing活动组织、mediation冲突调解。MBTI仅代表倾向，不是禁止选择的规则。同一轮玩家真正主动参与有意义的人际互动、实际尝试一项能力时，最多输出一个世界行动：{"type":"social_skill","skillId":"expression","deviation":2,"reason":"本轮具体沟通依据","npcId":"既有联系人精确ID"}。skillId必须六选一；deviation为整数0（自然）、1（稍有违和）、2（明显不习惯）、3（极其违背惯常表达），由人物底色、经历和语境判断，不能只凭MBTI四个字母。npcId仅在确为当前已存联系人时添加，否则完全省略。只有真实互动才给练习，普通寒暄、观察、系统自动短信、只打开菜单、重复同一段话均不得刷技能；程序按等级结算人格偏离的额外精力与压力并增加有限经验。若与同一npcId的relationship配合，程序只折减正向好感收益，不弱化负面后果。不得同时以activity重复收取人格成本，亦不得为了技能成长杜撰互动、NPC同意或人物到场。',
   '目录外的合理日常行动如洗澡、做家务、兼职，可使用{"type":"activity","label":"本次活动","minutes":30,"effects":{"energy":-5,"morale":3,"stress":-2,"health":0,"balance":0,"satiety":0,"foodEnergy":0}}。minutes为整数1–10080；七个effects字段必须齐全、无变化填0；除balance整数±100000、foodEnergy整数±20000外其余整数±100。收入支出及身心变化须与行动相符，余额不得为负；时间带来的正常饱腹和能量消耗由程序自动计算，不再手动重扣。不能用activity绕过已配置服务的收费、库存、闭店或学习规则，不能凭空增加物品或学习点。',
   `角色之间的资金往来必须使用显式转账行动：{"type":"transfer","from":"付款方ID","to":"收款方ID","cents":5000,"reason":"本轮转账依据"}。from和to逐字使用主角ID或contacts里的联系人ID，两者不能相同；cents为整数1–${STORY_ACTION_LIMITS.transferCents}（单笔最高十万日元），程序双边同时扣款与入账，总金额守恒。只有本轮明确发生金钱交付时才转账；他人给玩家的钱不得用activity的balance冒充，必须走transfer。付款方余额不足时整轮不保存，转账前先核对。`,
   'journal 和 scene.lastInteraction 中已经结算的活动只作为完成后的事实承接；使用保存的实际时长和结果，不重复结算、不重抽时长，也不擅自追加一段活动。',
   '余额、背包数量、健康、精神、压力、饱腹和食物能量由行动规则结算。叙事可描写本轮world_actions的实际过程与结束状态；已有journal只承接，不能重复扣钱、消耗物品或加减数值。对随机学习、交通结果不要预先编造精确点数或时长，下轮以保存记录为准。',
-  'player.morale是0–100的游戏精神状态，越高表示越有精神；stress越高表示压力越大。学习消耗精力和精神、增加压力；整理、浏览书架及休息也有已由程序结算的身心变化，以journal和当前状态为准，不再加减。聊天、观察和点击推进已有剧情不消耗精力或精神。',
+  'player.morale是0–100的游戏精神状态，越高表示越有精神；stress越高表示压力越大。学习消耗精力和精神、增加压力；整理、浏览书架及休息也有已由程序结算的身心变化，以journal和当前状态为准，不再加减。普通闲聊、观察和点击推进已有剧情不消耗精力或精神；真实费力社交可由明确的social_skill行动额外结算精力和压力，不可在activity中重复扣除。',
   'academics 是已确认的专业及多科学习进度；subjects 各有独立学习点、阶段与目标，timetable 是每周课程表，不等于已经出勤或学完。学习时由玩家选科，围绕 lastGain 中已完成的科目和实际结果承接叙事，不替玩家换科或虚构提升。教室只学本专业；图书馆学习、选书阅读和书店阅读可选其他专业科目。本专业每分钟1点；跨科由程序一次抽取灵感（25%，点数×1.5、额外精神+3压力−2）、困惑（25%，点数×0.5、额外精力−3精神−4压力+5）或普通（50%）。这些修正叠加常规学习消耗，实际数值以lastGain保存的净变化为准。',
   'lastGain 是最近一次已保存的学习历史，只承接不重抽、不重复奖励。旧记录新增字段为null表示当时没有这些信息，不推断随机结果。普通对话、观察、整理、十分钟浏览书架和完成日程不增加学习点；打开课表、选科或切换场景也不会学习。阶段目标是游戏进度，不代表考试成绩、学位或现实资格。academics 为null时尚未选择，不代设专业或补发历史点数。',
   'travel沿用纯小说路线：基础精力消耗为原路线的0.1倍，再由出发时健康、饱腹和压力调整。精力不足不会阻止场景切换，只扣到0；学习、整理等耗能交互仍受资源限制。父地点与对应房间进出不重复计算长途旅行。',
@@ -366,6 +368,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         todayOccasions: gameCalendarOccasions(snapshot.clock.day),
         upcomingOccasions: upcomingGameCalendarOccasions(snapshot.clock.day, 14).slice(0, 8),
         location: snapshot.locationId, player: snapshot.player,
+        socialSkills: { personality: SOCIAL_PERSONALITY[activeProtagonist(snapshot)],
+          abilities: socialSkillOverview(snapshot, activeProtagonist(snapshot))
+            .map(({ id, label, level }) => ({ id, label, level })) },
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
         courtroom: courtStoryContext(snapshot),
