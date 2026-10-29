@@ -5,8 +5,7 @@ import { collectCommittedSources, collectExistingSources } from './source';
 import type { MemorySource } from './types';
 import { searchMemory } from './retrieval';
 import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork, memoryIsPaused, memoryPauseVersion } from './scheduler';
-import { ingestSources } from './storage';
-import { pruneFutureMemory } from './storage';
+import { ingestSources, rows, pruneFutureMemory, hasConfirmedSameTurnDivergence } from './storage';
 
 const reconciling = new Map<string, Promise<boolean>>();
 const unsafeScopes = new Set<string>();
@@ -38,10 +37,24 @@ export function memoryBootstrap(scope: string, state: WorldState,
     const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
       at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
     const sources = collectExistingSources(scope, state);
-    const running = idle.then(() => pruneFutureMemory(scope, cutoff, sources))
-      .then(async () => {
-        const deduplicated = [...new Map([...recovered, ...sources].map(s => [s.key, s])).values()];
+    const running = idle.then(async () => {
+        // Retained story windows are incomplete. A missing key is not
+        // divergence, but a retained key with different prose proves it.
+        const archived = await rows<MemorySource>('sources', scope);
+        const diverged = hasConfirmedSameTurnDivergence(archived, sources, cutoff)
+          || hasConfirmedSameTurnDivergence(recovered, sources, cutoff);
+        await pruneFutureMemory(scope, cutoff, sources);
+        // The discarded same-turn tail must not be ingested right back into
+        // the archive by replaying an old outbox after rollback.
+        return [...new Map([
+          ...recovered.filter(s => !diverged || s.turn < cutoff.turn),
+          ...sources,
+        ].map(s => [s.key, s])).values()];
+      })
+      .then(async deduplicated => {
         await ingestSources(deduplicated);
+        // A successful reconciliation also retires proven-invalid branch
+        // receipts; no source is acknowledged before the transaction completes.
         ackSources(recovered, onIngest);
         unsafeScopes.delete(scope);
         // A retired chat must not restart background paid requests.
