@@ -169,11 +169,10 @@ export function startSocialAgenda(state:WorldState,invite:SocialInvitation,raw:S
   checkConflict(state,invite,plan.steps);
   invite.agenda=plan;
 }
-function hasEvidence(state:WorldState,invitation:SocialInvitation,source:string):boolean {
-  if(state.story.some(row=>row.id===source&&row.role==='assistant')) return true;
-  if(state.journal.some(row=>row.id===source)) return true;
-  if(state.protagonists?.conversations?.some(row=>row.id===source)) return true;
-  if(state.protagonists?.npcPhone?.messages.some(row=>row.id===source)) return true;
+function hasEvidence(state:WorldState,invitation:SocialInvitation,source:string,turnId:string):boolean {
+  // Only the actually committed current story or a saved itinerary event can
+  // justify an autonomous change; an unrelated old text must not be replayed.
+  if(source===turnId)return state.story.some(row=>row.id===turnId&&row.role==='assistant');
   return !!invitation.agenda?.events.some(row=>row.id===source&&row.at<=socialMinute(state));
 }
 export function applySocialAgendaActions(state:WorldState,actions:readonly StoryAction[],turnId:string):WorldState {
@@ -191,7 +190,7 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
     }
     const trigger=action.triggerId==='current'?turnId:action.triggerId;
     const plan=invite.agenda;
-    if(!plan||plan.status!=='scheduled'||plan.triggers.includes(trigger)||!hasEvidence(next,invite,trigger))
+    if(!plan||plan.status!=='scheduled'||plan.triggers.includes(trigger)||!hasEvidence(next,invite,trigger,turnId))
       return fail('变更必须具有已保存的新事件依据');
     if(plan.triggers.length>=24||plan.revision>=100)return fail('重规划次数已满');
     if(action.decision==='revise'){
