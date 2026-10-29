@@ -279,6 +279,8 @@ export interface GeneratedStory {
   worldActions?: StoryAction[];
   contactRequests?: import('../runtime/npc-phone').ContactProposal[];
   phoneDecision?: 'silence';
+  /** An NPC/other-protagonist SMS may decide one previously sent invitation. */
+  inviteDecision?: import('../runtime/natural-interactions').SocialInvitationDecision;
   /** Optional off-screen novel passage accompanying a manually requested SMS reply. */
   phoneSceneText?: string;
   autonomousSmsText?: string | null;
