@@ -152,8 +152,13 @@ function checkConflict(state:WorldState,invite:SocialInvitation,steps:AgendaStep
   if(protagonist && state.protagonists?.devices[protagonist].calendar.some(c=>arrive<c.start+c.duration&&c.start<leave))
     return fail('赴约和对方手机日历冲突');
 }
+function receiptId(invitationId:string,suffix:string):string {
+  let hash=2166136261;
+  for(const ch of invitationId)hash=Math.imul(hash^ch.charCodeAt(0),16777619);
+  return invitationId.slice(0,60)+':ag:'+ (hash>>>0).toString(16)+':'+suffix;
+}
 function event(plan:SocialAgenda,invitationId:string,at:number,kind:AgendaEvent['kind'],detail:string){
-  const id=invitationId+':agenda:'+plan.revision+':'+kind+':'+at;
+  const id=receiptId(invitationId,plan.revision+':'+kind+':'+at);
   if(!plan.events.some(e=>e.id===id)) plan.events.push({id,at,kind,detail:detail.slice(0,240),narrated:false});
   plan.events.sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
   plan.events=plan.events.slice(-48);
@@ -211,7 +216,7 @@ export function applySocialAgendaActions(state:WorldState,actions:readonly Story
 }
 function notify(state:WorldState,owner:ProtagonistId,invitation:SocialInvitation,at:number){
   const list=state.protagonists!.devices[owner].notifications;
-  const id='social:'+invitation.id+':due';
+  const id=receiptId(invitation.id,'due');
   if(list.some(item=>item.id===id))return;
   if(list.length>=200){
     const firstRead=list.findIndex(item=>item.read);
