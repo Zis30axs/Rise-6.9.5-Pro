@@ -235,6 +235,7 @@ export type StoryAction =
   | { type: 'schedule'; title: string; locationId: string; time: string }
   | { type: 'complete_schedule'; id: string }
   | { type: 'relationship'; npcId: string; delta: number; reason: string }
+  | { type: 'social_skill'; skillId: import('../runtime/social-skills').SocialSkillId; deviation: import('../runtime/social-skills').SocialDeviation; reason: string; npcId?: string }
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }
   | { type: 'court_docket'; offers: import('../runtime/courtroom').CourtOffer[] }
   | { type: 'court_special'; offer: import('../runtime/courtroom').CourtOffer }
