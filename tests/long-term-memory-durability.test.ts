@@ -256,7 +256,7 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     state.story = [{ id: 'rewritten', role: 'assistant', text: '修正的本轮真实对白。' }];
     const old = source(scope, 'story:soyo:rewritten', 3, 30, 'soyo', '旧分支错误对白。');
     const written: MemorySource[][] = [];
-    vi.mocked(archive.rows).mockResolvedValue([old]);
+    vi.mocked(archive.rows).mockImplementation(async <T>(): Promise<T[]> => [old] as T[]);
     vi.mocked(archive.ingestSources).mockImplementation(async batch => { written.push(batch); });
     const acknowledged = vi.fn();
     memoryBootstrap(scope, state, [old], acknowledged);
