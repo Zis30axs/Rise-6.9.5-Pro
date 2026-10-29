@@ -157,7 +157,7 @@ export const STORY_PROTOCOL = [
   '状态中的 locationDetails 和 scene 是本轮行动前的权威位置及环境，覆盖旧正文中的地点；若world_actions包含travel则正文遵循依次移动后的实际位置。scene.outdoors为true时当前仍在户外，门前不等于进店，附近地标不代表已经到达。',
   'scene.outdoors为false时当前在指定房间；未离开前不得把室外行人、道路或天空当作室内现场。scene.lastInteraction 是已经结算的活动，只承接不重做。进入和离开使用travel指向房间或父地点，不得只靠正文更换位置。',
   'scene.nearbyPeople是现场人物，isMain为true或其id已在contacts时使用已确认的姓名、立绘及人物介绍；其他为尚未确认的陌生人。scene.encounter是本轮主动搭话对象，应围绕该对象继续。mainCharacters是当前聊天已保存的主要人物，summary是用户确认的人物介绍，不能重新抽取姓名、外貌或捏造冲突身份。',
-  '陌生人先实际相遇、当面交流。若 NPC 主动申请联系人或群聊，contactProposal 非空时，可由该现场人物在竖线对白里提出加好友或群聊邀请，再输出 <contact_requests>[{"kind":"contact或group","npcId":"现场稳定ID","evidenceId":"current或已给出的对白记录ID","quote":"该NPC逐字说出的联系请求"}]</contact_requests>。每轮最多4项；没有申请时省略。只能引用现场人物及真实对白，不能填写姓名、立绘、亲密度、玩家同意或任意状态字段。群邀请仅由已保存的魔裁联系人提出。申请等待玩家在手机确认，尚未接受的对象不能写入 phone_messages。不要自动相识、默认加好友、默认入群或替玩家决定重大剧情。',
+  '陌生人先实际相遇、当面交流。若 NPC 主动申请联系人或群聊，contactProposal 非空时，可由该现场人物在竖线对白里提出加好友或群聊邀请，再输出 <contact_requests>[{"kind":"contact或group","npcId":"现场稳定ID","evidenceId":"current或已给出的对白记录ID","quote":"该NPC逐字说出的联系请求"}]</contact_requests>。每轮最多4项；没有申请时省略。只能引用现场人物及真实对白，不能填写姓名、立绘、亲密度、玩家同意或任意状态字段。群邀请仅由已保存、且属于固定群的联系人提出，包括魔裁、芦谷五人组、MyGO!!!!! 与 Ave Mujica。申请等待玩家在手机确认，尚未接受的对象不能写入 phone_messages。不要自动相识、默认加好友、默认入群或替玩家决定重大剧情。',
   `story 为 1–${STATE_LIMITS.storyText} 字纯文本。phone_messages 为数组，最多 ${STATE_LIMITS.phoneEvents} 条，每条仅含 npcId 和 text；text 为 1–${STATE_LIMITS.messageText} 字纯文本，npcId 必须逐字使用状态 contacts 中已有的 id。`,
   '只有本轮剧情中 NPC 确实通过手机给玩家发送了新消息，才放入 phone_messages；当面说话、内心活动、未发送的想法和既有消息都不产生新消息。不需要每轮或每人都发消息，没有新消息时返回空数组。',
   'story 与 phone_messages 中的新消息保持一致；消息的已读标记由玩家阅读行为决定，不能把已发出或提及消息当作玩家已经阅读。',

@@ -1,6 +1,6 @@
 import type { CharacterContact } from '../frontend/types';
 import { characterForPerson } from '../frontend/character-appearance';
-import { residentCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
+import { bangResidentCast, residentCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
 
 /** Already exchanged numbers during CRYCHIC, not a first-encounter unlock. */
 export function knownProtagonistContact(id: 'soyo' | 'sakiko', name: string): CharacterContact {
@@ -35,4 +35,35 @@ export function renakoInitialFriendContacts(): CharacterContact[] {
     affinity: 0, status: '已互加好友',
     portraitId: characterForPerson(person.id), sourcePersonId: person.id, isMain: true,
   }));
+}
+
+const bandContact = (id: string, tag: string): CharacterContact => {
+  const person = bangResidentCast.find(row => row.id === id);
+  if (!person) throw new Error('乐队常驻人物缺失：' + id);
+  return {
+    id: person.id, name: person.name, tag, summary: person.publicProfile,
+    affinity: 0, status: '已互加好友',
+    portraitId: characterForPerson(person.id), sourcePersonId: person.id, isMain: true,
+  };
+};
+
+/** Soyo already plays in MyGO!!!!! and kept Mutsumi from CRYCHIC. */
+export function soyoInitialBandContacts(): CharacterContact[] {
+  return [
+    bandContact('bang-tomori', 'MyGO!!!!! · 乐队'),
+    bandContact('bang-anon', 'MyGO!!!!! · 乐队'),
+    bandContact('bang-taki', 'MyGO!!!!! · 乐队'),
+    bandContact('bang-rana', 'MyGO!!!!! · 乐队'),
+    bandContact('bang-mutsumi', '月之森同窗 · CRYCHIC 旧友'),
+  ];
+}
+
+/** Sakiko already plays in Ave Mujica. Other bands are not preloaded onto her phone. */
+export function sakikoInitialBandContacts(): CharacterContact[] {
+  return [
+    bandContact('bang-mutsumi', 'Ave Mujica · 乐队'),
+    bandContact('bang-uika', 'Ave Mujica · 乐队'),
+    bandContact('bang-umiri', 'Ave Mujica · 乐队'),
+    bandContact('bang-nyamu', 'Ave Mujica · 乐队'),
+  ];
 }

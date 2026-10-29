@@ -285,7 +285,7 @@ export function commitNpcDialogue(before: WorldState, after: WorldState, input: 
     if (proposal.kind === 'contact' ? !/(联系|手机|号码|好友|短信|账号|連絡|電話|contact|phone)/i.test(proposal.quote)
       : !/(群聊|群里|入群|进群|加群|group)/i.test(proposal.quote)) return fail('对白没有提出相应联系请求');
     const targetGroup = proposal.kind === 'group' ? residentGroupForNpc(proposal.npcId) : undefined;
-    if (proposal.kind === 'group' && (!targetGroup || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已认识的魔裁或五人组联系人');
+    if (proposal.kind === 'group' && (!targetGroup || !contactFor(s, who, proposal.npcId))) return fail('邀请人须是已保存的群成员联系人');
     const requestId = turnId + ':contact:' + index;
     const duplicate = social.requests.find(q => q.id === requestId);
     if (duplicate) {

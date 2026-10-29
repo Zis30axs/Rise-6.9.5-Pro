@@ -167,6 +167,15 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       contactId: null, isMain: false,
     }] : [];
   }
+  if (roomId === 'livehouse') {
+    const taki = allResidentCast.find(row => row.id === 'bang-taki');
+    return taki ? [{
+      id: taki.id, name: taki.name, candidateName: taki.name,
+      identity: 'Live House 工作人员', tags: ['常驻人物', '乐队'],
+      description: taki.publicProfile, x: 2.2, z: 1.6, color: 0x859c6d,
+      portraitId: characterForPerson(taki.id), contactId: null, isMain: false,
+    }] : [];
+  }
   if (WATANARE_INTERIOR_HOMES.has(roomId)) {
     return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
