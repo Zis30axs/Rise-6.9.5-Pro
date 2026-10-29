@@ -228,6 +228,27 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
       && row.origin === 'raw')).toBe(true);
   });
 
+  it('keeps finalized canonical summaries ahead of processed raw evidence', async () => {
+    const scope = scopeName();
+    const raw = { ...source(scope, 'story:soyo:blue-crane', 2, 5,
+      'soyo', '素世把蓝色纸鹤藏在书架背面。'), processed: true };
+    const canonical = {
+      scope, key: JSON.stringify([scope, 'event:crane']), id: 'event:crane',
+      sourceIds: [raw.id], kind: 'item' as const,
+      summary: '素世把蓝色纸鹤藏在书架背面。',
+      at: 5, turn: 2, participants: ['soyo'], knownBy: [],
+      entities: ['蓝色纸鹤'], keywords: ['纸鹤', '书架'], importance: 5,
+      visibility: 'narrator' as const,
+    };
+    vi.mocked(archive.rows).mockImplementation(async <T>(table: string): Promise<T[]> =>
+      (table === 'sources' ? [raw] : table === 'events' ? [canonical] : []) as T[]);
+    const results = await searchMemory(scope, '蓝色纸鹤 书架', 'soyo', 5,
+      { narrator: true, limit: 4, maxTurn: 2 });
+    expect(results.map(row => row.origin)).toContain('canonical');
+    expect(results.map(row => row.origin)).toContain('raw');
+    expect(results.find(row => row.id === canonical.id)?.text).toBe(canonical.summary);
+  });
+
   it('waits for an in-flight source transaction before pruning a committed rollback', async () => {
     const scope = scopeName(), before = enableProtagonists(createInitialState());
     const after = structuredClone(before);
