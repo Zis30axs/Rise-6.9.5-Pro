@@ -344,8 +344,8 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   const elapsed=gameMinute(after)-gameMinute(before);
   if (elapsed < 0) fail('世界时钟不能倒退');
   const next={...after,schema_version:'1.13.0' as const,protagonists:p};
-  settleSocialAgendas(before,next);
   settleBackgroundLife(before,next);
+  settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);
   settleWeeklyMemory(next);
