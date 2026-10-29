@@ -14,6 +14,7 @@ import { residentById } from './npc-cast';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
 import { createSocialSkills, parseSocialSkills, type SocialSkillState } from './social-skills';
 import { parseSocialInvitations, type SocialInvitation } from './natural-interactions';
+import { settleSocialAgendas } from './social-agenda';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -344,6 +345,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   if (elapsed < 0) fail('世界时钟不能倒退');
   const next={...after,schema_version:'1.13.0' as const,protagonists:p};
   settleBackgroundLife(before,next);
+  settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);
   settleWeeklyMemory(next);
