@@ -1,6 +1,6 @@
 import type { WorldState } from '../frontend/types';
 import type { SocialInvitationDecision } from './natural-interactions';
-import type { SocialAgendaDraft } from './social-agenda';
+import { agendaTargetProtagonist, type SocialAgendaDraft } from './social-agenda';
 import { getSceneContext } from './scene-context';
 import { activeProtagonist, gameMinute, otherProtagonist, personState, protagonistNames, type ProtagonistTextMessage } from './protagonist-world';
 import { gameCalendar } from './game-calendar';
@@ -62,6 +62,10 @@ export function phoneReplyContext(state: WorldState, messageId: string) {
     scene: getSceneContext(person.scene, person.interior, person.contacts),
     calendar: p!.devices[actor].calendar,
     pendingActivity: p!.backgroundLife?.people[actor].pending ?? null,
+    privateAppointments:(p!.socialInvitations??[])
+      .filter(row=>row.owner===actor||agendaTargetProtagonist(state,row)===actor).slice(-8)
+      .map(row=>({id:row.id,agreedDay:row.day,agreedTime:row.time,locationId:row.locationId,
+        status:row.status,agenda:row.agenda??null})),
     ownRecentLife: backgroundLifeSummary(state, actor),
     ownJournal: selectPromptJournal(person.journal),
     ownStory: selectPromptStory(person.story),
