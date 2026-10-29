@@ -9,7 +9,7 @@ import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { locationServiceCatalog } from './location-services';
-import { parseAgendaDraft, socialMinute } from './social-agenda';
+import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
@@ -124,7 +124,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const invitationId=text(item.invitationId,128,`${path} 邀约 ID`);
         const invitation=state.protagonists?.socialInvitations?.find(row=>row.id===invitationId);
         if(!invitation||invitation.status!=='accepted') return invalid(`${path} 只允许修改真实已同意的邀约`);
-        if(invitation.owner!==state.protagonists?.accounts.active) return invalid(`${path} 不属于当前主角的邀约`);
+        if(agendaTargetProtagonist(state,invitation)===state.protagonists?.accounts.active) return invalid(`${path} 不能替当前玩家控制的主角更改私人决定`);
         if(!['plan','revise','cancel','no_show'].includes(String(item.decision))) return invalid(`${path} 计划决定`);
         const decision=item.decision as 'plan'|'revise'|'cancel'|'no_show';
         if((decision==='plan'||decision==='revise')!==hasAgenda) return invalid(`${path} 计划字段`);
