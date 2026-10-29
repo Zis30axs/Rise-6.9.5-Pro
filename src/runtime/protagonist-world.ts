@@ -12,6 +12,7 @@ import { TOKYO_DELIVERY_FEE, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { initializeBackgroundLife, parseBackgroundLife, settleBackgroundLife, suspendBackgroundActivity, type BackgroundLife } from './background-life';
 import { residentById } from './npc-cast';
 import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settleWeeklyMemory, type WeeklyMemory } from './weekly-memory';
+import { createSocialSkills, parseSocialSkills, type SocialSkillState } from './social-skills';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -65,6 +66,8 @@ export interface ProtagonistWorld {
   backgroundLife?: BackgroundLife;
   /** Seven-game-day extractive memories, never a replacement for live state. */
   weeklyMemory?: WeeklyMemory;
+  /** Four independent skill tracks, kept outside the legacy personal-save projection. */
+  socialSkills?: SocialSkillState;
 }
 export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -155,6 +158,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     }
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
+    p.socialSkills ??= createSocialSkills();
     return next;
   }
   const point = sceneLandmarks.find(x => x.id === 'downtown')!;
@@ -167,7 +171,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     contacts: [knownProtagonistContact('soyo', protagonistNames.soyo)], phone: [], schedule: [], journal: [protagonistOpeningJournal('sakiko', s.clock)],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: protagonistOpening('sakiko', s.clock) }],
   };
-  const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s), fourth: renakoPersonalState(s),
+  const next: WorldState = { ...clone(s), schema_version: '1.13.0', protagonists: { revision: 0, inactive, third: emmaPersonalState(s), fourth: renakoPersonalState(s), socialSkills: createSocialSkills(),
     accounts: makeDualLedger(money(s.player.balance), SAKIKO_START_CENTS, EMMA_START_CENTS, RENAKO_START_CENTS),
     devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
@@ -183,7 +187,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -304,6 +308,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   if (Object.hasOwn(p, 'npcPhone')) result.npcPhone = parseNpcPhone(p.npcPhone, {...base, schema_version:'1.13.0', protagonists:result});
   result.backgroundLife = Object.hasOwn(p,'backgroundLife') ? parseBackgroundLife(p.backgroundLife,base,parseLegacy,!hasThird||!hasFourth) : initializeBackgroundLife({...base,schema_version:'1.13.0',protagonists:result});
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
+  result.socialSkills = Object.hasOwn(p,'socialSkills') ? parseSocialSkills(p.socialSkills) : createSocialSkills();
   return result;
 }
 function isKnownLocation(locationId: string): boolean {
