@@ -25,6 +25,8 @@ export interface SavedMemoryOutbox {
   overflowCount: number;
   /** References travel with WorldState; page bodies never enter the game save. */
   spillIds?: string[];
+  /** Monotonic per-page rollback cutoffs. Old branches must never reappear. */
+  spillLimits?: Record<string, { turn: number; at: number }>;
 }
 interface SpillPage {
   version: 1;
@@ -96,8 +98,19 @@ export function readSavedMemoryOutbox(vars: Record<string, unknown>, scope: stri
     ? Math.max(0, Math.min(Number(value.overflowCount), Number.MAX_SAFE_INTEGER)) : 0;
   const spillIds = Array.isArray(value.spillIds) ? [...new Set(value.spillIds.slice(0, MAX_SPILL_REFS)
     .filter(validId))] : [];
+  const rawLimits = value.spillLimits && typeof value.spillLimits === 'object' && !Array.isArray(value.spillLimits)
+    ? value.spillLimits as Record<string, unknown> : {};
+  const spillLimits: NonNullable<SavedMemoryOutbox['spillLimits']> = {};
+  for (const id of spillIds) {
+    const bound = Object.hasOwn(rawLimits, id) ? rawLimits[id] : null;
+    if (!bound || typeof bound !== 'object' || Array.isArray(bound)) continue;
+    const limit = bound as Record<string, unknown>;
+    if (Number.isSafeInteger(limit.turn) && Number(limit.turn) >= 0
+      && Number.isSafeInteger(limit.at) && Number(limit.at) >= 0)
+      spillLimits[id] = { turn: Number(limit.turn), at: Number(limit.at) };
+  }
   return {
-    version: 1, overflowCount, spillIds,
+    version: 1, overflowCount, spillIds, spillLimits,
     sources: value.sources.slice(0, MAX_OUTBOX_SOURCES)
       .filter(s => eligible(s, scope, maxTurn, maxMinute)) as MemorySource[],
   };
@@ -112,8 +125,12 @@ export function recoverSavedMemoryOutbox(vars: Record<string, unknown>, scope: s
   for (const id of outbox.spillIds ?? []) {
     const page = readSpill(scope, id);
     if (!page) { missing++; continue; }
+    const bound = outbox.spillLimits?.[id];
     for (const source of page) {
-      if (eligible(source, scope, maxTurn, maxMinute) && !sources.has(source.key))
+      if (eligible(source, scope,
+        Math.min(maxTurn, bound?.turn ?? Number.MAX_SAFE_INTEGER),
+        Math.min(maxMinute, bound?.at ?? Number.MAX_SAFE_INTEGER))
+        && !sources.has(source.key))
         sources.set(source.key, source);
     }
   }
@@ -128,16 +145,24 @@ export function appendSavedMemoryOutbox(vars: Record<string, unknown>, scope: st
   maxMinute = Number.MAX_SAFE_INTEGER): Record<string, unknown> {
   if (!additions.length && maxTurn === Number.MAX_SAFE_INTEGER) return vars;
   const current = readSavedMemoryOutbox(vars, scope, maxTurn, maxMinute);
-  const spillIds = (current.spillIds ?? []).filter(id => {
-    const page = readSpill(scope, id);
-    // Preserve missing pages as warnings; do not silently erase their receipts.
-    return !page || page.some(row => eligible(row, scope, maxTurn, maxMinute));
-  });
+  const spillIds: string[] = [];
+  const spillLimits: NonNullable<SavedMemoryOutbox['spillLimits']> = {};
   const known = new Set(current.sources.map(item => item.key));
-  for (const id of spillIds) {
-    for (const row of readSpill(scope, id) ?? []) {
-      if (eligible(row, scope, maxTurn, maxMinute)) known.add(row.key);
-    }
+  for (const id of current.spillIds ?? []) {
+    const previous = current.spillLimits?.[id];
+    // A restored earlier save permanently narrows this page's permitted
+    // timeline, even if storage quota prevents physically rewriting it.
+    const bound = {
+      turn: Math.min(previous?.turn ?? Number.MAX_SAFE_INTEGER, maxTurn),
+      at: Math.min(previous?.at ?? Number.MAX_SAFE_INTEGER, maxMinute),
+    };
+    const page = readSpill(scope, id);
+    const live = page?.filter(row => eligible(row, scope, bound.turn, bound.at));
+    // Preserve missing page receipts so the UI can warn rather than hide loss.
+    if (page && !live?.length) continue;
+    spillIds.push(id);
+    spillLimits[id] = bound;
+    for (const row of live ?? []) known.add(row.key);
   }
   const sources = [...current.sources];
   let chars = sources.reduce((sum, row) => sum + JSON.stringify(row).length, 0);
@@ -159,8 +184,10 @@ export function appendSavedMemoryOutbox(vars: Record<string, unknown>, scope: st
     if (spillIds.length >= MAX_SPILL_REFS) overflowCount += page.length;
     else {
       const id = spillPage(scope, page);
-      if (id) spillIds.push(id);
-      else overflowCount += page.length;
+      if (id) {
+        spillIds.push(id);
+        spillLimits[id] = { turn: maxTurn, at: maxMinute };
+      } else overflowCount += page.length;
     }
     page = []; pageSize = 0;
   };
@@ -172,7 +199,7 @@ export function appendSavedMemoryOutbox(vars: Record<string, unknown>, scope: st
   }
   flush();
   return { ...vars, [MEMORY_OUTBOX_KEY]: {
-    version: 1, sources, overflowCount, spillIds,
+    version: 1, sources, overflowCount, spillIds, spillLimits,
   } satisfies SavedMemoryOutbox };
 }
 
@@ -182,23 +209,31 @@ export function acknowledgeSavedMemoryOutbox(vars: Record<string, unknown>,
   const current = readSavedMemoryOutbox(vars, scope);
   const sources = current.sources.filter(s => !ingestedKeys.has(s.key));
   const spillIds: string[] = [];
+  const spillLimits: NonNullable<SavedMemoryOutbox['spillLimits']> = {};
   for (const id of current.spillIds ?? []) {
+    const bound = current.spillLimits?.[id] ?? {
+      turn: Number.MAX_SAFE_INTEGER, at: Number.MAX_SAFE_INTEGER,
+    };
     const page = readSpill(scope, id);
-    if (!page) { spillIds.push(id); continue; }
-    const pending = page.filter(source => !ingestedKeys.has(source.key));
-    if (pending.length === page.length) { spillIds.push(id); continue; }
+    if (!page) { spillIds.push(id); spillLimits[id] = bound; continue; }
+    const live = page.filter(source => eligible(source, scope, bound.turn, bound.at));
+    const pending = live.filter(source => !ingestedKeys.has(source.key));
     if (!pending.length) continue;
-    // A partly acknowledged page gets a new, smaller durable page before
-    // the old reference is retired. If quota rejects that write, retain the
-    // entire old page for an idempotent replay, never lose pending rows.
+    if (pending.length === page.length) {
+      spillIds.push(id); spillLimits[id] = bound; continue;
+    }
+    // A partially acknowledged or rollback-filtered page is copied before
+    // its old receipt is removed. Quota failure retains the bounded old page.
     const replacement = spillPage(scope, pending);
-    spillIds.push(replacement ?? id);
+    const retained = replacement ?? id;
+    spillIds.push(retained);
+    spillLimits[retained] = bound;
   }
   if (sources.length === current.sources.length
     && spillIds.every((id, i) => id === current.spillIds?.[i])
     && spillIds.length === (current.spillIds ?? []).length) return vars;
   return { ...vars, [MEMORY_OUTBOX_KEY]: {
-    version: 1, sources, overflowCount: current.overflowCount, spillIds,
+    version: 1, sources, overflowCount: current.overflowCount, spillIds, spillLimits,
   } satisfies SavedMemoryOutbox };
 }
 
