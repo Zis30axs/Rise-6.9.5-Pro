@@ -560,7 +560,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           : options?.kind === 'npc_phone_reply'
           ? { text: npcText ?? '', phoneMessages: [], ...(npcText === null ? {phoneDecision:'silence' as const} : {}), ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}), ...(phoneResponse?.inviteDecision ? {inviteDecision:phoneResponse.inviteDecision} : {}), ...(phoneResponse?.inviteAgenda ? {inviteAgenda:phoneResponse.inviteAgenda} : {}) }
           : options?.kind === 'phone_reply'
-          ? { text: phoneResponse!.text!, phoneMessages: [], ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}), ...(phoneResponse?.inviteDecision ? {inviteDecision:phoneResponse.inviteDecision} : {}) }
+          ? { text: phoneResponse!.text!, phoneMessages: [], ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}), ...(phoneResponse?.inviteDecision ? {inviteDecision:phoneResponse.inviteDecision} : {}), ...(phoneResponse?.inviteAgenda ? {inviteAgenda:phoneResponse.inviteAgenda} : {}) }
           : parseGeneratedStory(response, snapshot);
         if (options?.kind === 'contact_introduction' && (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length)) throw new Error('人物简介格式无效，未修改角色或剧情，请重试。');
         if (options?.kind === 'interaction_event' && !reply.worldActions?.length) throw new Error('突发事件缺少实际影响，本次交互和事件均未保存；可以重试，或选择正常完成。');
