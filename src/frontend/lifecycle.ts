@@ -4,6 +4,7 @@ import { createProtagonistSwitchController } from './protagonist-switch';
 import { createWorldPhoneApi } from './world-phone';
 import { applyNpcPhoneReply, npcReplySource } from '../runtime/npc-phone';
 import { applyPhoneReply } from '../runtime/protagonist-world';
+import { applySocialInvitationReply } from '../runtime/natural-interactions';
 import { appendPhoneReplyScene } from '../runtime/phone-scene';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
@@ -470,7 +471,8 @@ export function mountShell(
         // Commit every decision before asking the next group member, so a
         // partial failure resumes without replaying any completed messages.
         if (reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length) throw new Error('短信回复包含了额外行动');
-        const answered=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        const replied=invitation ? applyBandReply(snapshot(),messageId,reply.text,reply.bandDecision!) : npc ? applyNpcPhoneReply(snapshot(),messageId,reply.phoneDecision === 'silence' ? null : reply.text,actorId) : applyPhoneReply(snapshot(),messageId,reply.text);
+        const answered=applySocialInvitationReply(replied,messageId,reply.inviteDecision,reply.phoneDecision === 'silence' ? null : reply.text);
         // The SMS and its optional off-screen novel share a single persisted
         // snapshot. A failed scene validation never publishes a partial reply.
         const savedReplyId = npc
