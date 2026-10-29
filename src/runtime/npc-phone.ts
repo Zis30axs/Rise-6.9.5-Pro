@@ -401,6 +401,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
       worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null },
     sender: { id: source.owner, name: protagonistNames[source.owner] },
     message: source, clock: s.clock, minute: gameMinute(s),
+    invitation: s.protagonists?.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,
     location: presence ? { ...presence, locationId: residentArea ? sceneLocationId(residentArea.id) : presence.locationId,
       position: residentAnchor ? { x:residentAnchor.x+.6,z:residentAnchor.z+.6 } : null }
       : { locationId: anchor?.id ?? null, activity: '未记录当前行程', available: null },
