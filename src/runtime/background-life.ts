@@ -381,7 +381,8 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
     }
     if (!appointment.shared && !critical && at < appointment.start + appointment.duration && personal.locationId !== appointment.locationId) {
       const view = ownedView(state, owner, at), quote = getNovelTravelQuote(view, appointment.locationId);
-      const departureAt=appointment.departAt??appointment.start-quote.minutes;
+      const departureAt=appointment.departAt===undefined ? appointment.start-quote.minutes :
+        Math.max(appointment.departAt,appointment.start-quote.minutes);
       if (at >= departureAt) {
         if (quote.blockedReason || quote.minutes <= 0) {
           seen(appointment.key);
