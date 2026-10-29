@@ -78,7 +78,9 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       }
       case 'send_sms': {
         const item = record(raw, ['type', 'targetId', 'text'], path);
-        if (typeof item.targetId !== 'string' || !state.contacts.some(row => row.id === item.targetId || row.sourcePersonId === item.targetId))
+        const justExchanged = value.slice(0, index).some(prior => !!prior && typeof prior === 'object' &&
+          (prior as Record<string, unknown>).type === 'exchange_contact' && (prior as Record<string, unknown>).npcId === item.targetId);
+        if (typeof item.targetId !== 'string' || !state.contacts.some(row => row.id === item.targetId || row.sourcePersonId === item.targetId) && !justExchanged)
           return invalid(`${path} 短信收件人需要已有联系方式`);
         return { type: 'send_sms', targetId: item.targetId, text: text(item.text, 1000, `${path} 短信正文`) };
       }
@@ -94,8 +96,10 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if (!['pending', 'accepted', 'declined'].includes(String(item.outcome))) return invalid(`${path} 邀约状态`);
         const targetId = typeof item.targetId === 'string' ? item.targetId : '';
         const contact = state.contacts.find(row => row.id === targetId || row.sourcePersonId === targetId);
+        const justExchanged = value.slice(0, index).some(prior => !!prior && typeof prior === 'object' &&
+          (prior as Record<string, unknown>).type === 'exchange_contact' && (prior as Record<string, unknown>).npcId === targetId);
         if (item.source === 'sms') {
-          if (!contact || item.outcome !== 'pending' || hasResponse) return invalid(`${path} 短信邀约先等待对方回复`);
+          if ((!contact && !justExchanged) || item.outcome !== 'pending' || hasResponse) return invalid(`${path} 短信邀约先等待对方回复`);
         } else {
           const position = worldScenePosition(state);
           const person = worldScenePeople(state).find(row => row.id === (contact?.sourcePersonId ?? targetId) || row.contactId === targetId);
