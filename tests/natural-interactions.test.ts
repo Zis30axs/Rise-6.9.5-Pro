@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { worldScenePeople } from '../src/runtime/world-presence';
-import { applySocialInvitationReply, parseGamePurchases, parseSocialInvitations, protagonistHomeRooms } from '../src/runtime/natural-interactions';
+import { applySocialInvitationReply, parseSocialInvitations, protagonistHomeRooms } from '../src/runtime/natural-interactions';
 import { parsePhoneReplyWithScene } from '../src/runtime/phone-reply';
 import type { StoryAction, WorldState } from '../src/frontend/types';
 
@@ -12,6 +12,11 @@ const world = () => parseState(enableProtagonists(createInitialState()));
 const outcome = (state: WorldState, text: string, actions: StoryAction[], key: string) =>
   commitStoryTurn(state, text, { text, phoneMessages: [], worldActions: actions },
     { userId: key + '-user', assistantId: key + '-assistant' });
+const spend = (label: string, amountYen: number): StoryAction => ({
+  type: 'activity', label, minutes: 1,
+  effects: { energy: 0, morale: 0, stress: 0, health: 0,
+    balance: -amountYen, satiety: 0, foodEnergy: 0 },
+});
 const makeMeet = () => {
   const state = world();
   state.locationId = 'promenade';
@@ -41,26 +46,35 @@ describe('自然输入与面板操作共用真实状态', () => {
     });
   });
 
-  it('游戏充值实际扣 Appie Pay，记录买到的虚拟权益且不得重复结算', () => {
+  it('游戏充值属于通用消费，余额、Appie Pay 流水和日志真实变化', () => {
     const before = world();
-    const purchase: StoryAction = { type: 'game_topup', game: '虚构手游', benefit: '月卡', amountYen: 500 };
-    const paid = outcome(before, '买下了这款游戏的月卡。', [purchase], 'game-topup-paid');
+    const action = spend('在虚构手游购买月卡', 500);
+    const paid = outcome(before, '为游戏购买月卡。', [action], 'generic-game-expense');
     expect(paid.player.balance).toBe(before.player.balance - 500);
-    expect(paid.protagonists!.gamePurchases).toMatchObject([{ owner: 'soyo', amountYen: 500, game: '虚构手游', benefit: '月卡' }]);
     expect(paid.protagonists!.accounts.people.soyo.cards.gpt).toBe(before.protagonists!.accounts.people.soyo.cards.gpt - 50000);
+    expect(paid.protagonists!.accounts.ledger.length).toBe(before.protagonists!.accounts.ledger.length + 1);
+    expect(paid.protagonists!.accounts.ledger.some(row => row.deltaCents === -50000)).toBe(true);
+    expect(paid.journal.some(row => row.text.includes('在虚构手游购买月卡'))).toBe(true);
     expect(parseState(JSON.parse(JSON.stringify(paid)))).toEqual(paid);
-    const replay = commitStoryTurn(paid, '买下了这款游戏的月卡。',
-      { text:'买下了这款游戏的月卡。', phoneMessages:[], worldActions:[purchase] },
-      { userId:'game-topup-paid-user', assistantId:'game-topup-paid-assistant' });
+    const replay = commitStoryTurn(paid, '为游戏购买月卡。',
+      { text: '为游戏购买月卡。', phoneMessages: [], worldActions: [action] },
+      { userId: 'generic-game-expense-user', assistantId: 'generic-game-expense-assistant' });
     expect(replay.player.balance).toBe(paid.player.balance);
-    expect(replay.protagonists!.gamePurchases).toHaveLength(1);
+    expect(replay.protagonists!.accounts.ledger).toEqual(paid.protagonists!.accounts.ledger);
   });
 
-  it('充值余额不足时原子拒绝，不生成假消费权益', () => {
+  it('打赏、捐款等其他通用支出复用同一行动，不新增动作类别', () => {
     const before = world();
-    expect(() => outcome(before, '充值高级礼包。',
-      [{ type: 'game_topup', game: '虚构手游', benefit: '豪华礼包', amountYen: 100000 }], 'insufficient-topup')).toThrow();
-    expect(before.protagonists?.gamePurchases).toBeUndefined();
+    const paid = outcome(before, '给街头表演者小费。', [spend('给街头表演者小费', 300)], 'generic-tip');
+    expect(paid.player.balance).toBe(before.player.balance - 300);
+    expect(paid.journal.some(row => row.text.includes('给街头表演者小费'))).toBe(true);
+  });
+
+  it('通用消费余额不足时整轮拒绝，不能只在小说里写支付成功', () => {
+    const before = world();
+    const amount = Math.min(100000, Math.floor(before.player.balance) + 1);
+    expect(() => outcome(before, '购买高级礼包。', [spend('购买高级礼包', amount)], 'insufficient-topup')).toThrow();
+    expect(before.protagonists!.accounts.ledger).toEqual(world().protagonists!.accounts.ledger);
   });
 
   it('当面交换联系方式由真实近距离NPC同意后立即加入，无需先建档', () => {
@@ -134,16 +148,16 @@ describe('自然输入与面板操作共用真实状态', () => {
     const s = world();
     expect(() => outcome(s, '随便发短信。',
       [{ type: 'send_sms', targetId: 'unknown-person', text: '你好！' }], 'stranger-sms')).toThrow();
-    expect(() => outcome(s, '我想充值。',
-      [{ type: 'game_topup', game: '虚构手游', benefit: '钻石', amountYen: -2 }], 'negative-charge')).toThrow();
-    expect(() => parseGamePurchases([{ id: 'bad', owner: 'soyo', game: 'A', benefit: 'B', amountYen: 1, at: -1 }], 30)).toThrow();
+    expect(() => outcome(s, '打算付款。',
+      [spend('金额超出单轮合法范围', 100001)], 'negative-charge')).toThrow();
     expect(() => parseSocialInvitations([{ id: 'bad' }], 30)).toThrow();
   });
 
-  it('状态页显示实际邀约与虚拟购买而非仅正文说明', () => {
+  it('状态页保留邀约入口，消费只使用原有账户和最近变化', () => {
     const panel = readFileSync(resolve(process.cwd(), 'src/frontend/WorldPanels.vue'), 'utf8');
     expect(panel).toContain('data-status-section="social"');
-    expect(panel).toContain('data-status-section="game-purchases"');
+    expect(panel).toContain('data-status-section="recent"');
+    expect(panel).not.toContain('data-status-section="game-purchases"');
     expect(panel).toContain("emit('invite', contact.name)");
   });
 });
