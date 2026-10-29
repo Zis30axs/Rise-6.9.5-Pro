@@ -16,7 +16,7 @@ function selectMajor(id: string) {
   attempted.value = false;
 }
 function confirm() {
-  if (props.model.busy || !major.value) return;
+  if (props.model.busy || props.model.switchingProtagonist || !major.value) return;
   attempted.value = true;
   props.actions.dispatch({ type: 'choose_academics', majorId: majorId.value });
 }
@@ -64,7 +64,7 @@ onMounted(async () => {
       </div>
       <footer class="academic-setup-footer">
         <button type="button" class="academic-exit" @click="actions.exit()">退出酒馆</button>
-        <button type="button" class="academic-confirm" data-academic-confirm :disabled="model.busy || !major" @click="confirm">{{ attempted && model.notice ? '重试保存并开始' : '确认专业并开始' }} <span aria-hidden="true">↗</span></button>
+        <button type="button" class="academic-confirm" data-academic-confirm :disabled="model.busy || model.switchingProtagonist || !major" @click="confirm">{{ attempted && model.notice ? '重试保存并开始' : '确认专业并开始' }} <span aria-hidden="true">↗</span></button>
       </footer>
     </section>
   </div>
