@@ -400,7 +400,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           adjacentLocations: getAdjacentLocations(snapshot),
           // Global IDs stay available without re-uploading every service description,
           // effect and opening-hours snapshot. Local, actionable quotes are below.
-          services: locationServiceCatalog.map(({ id, label, locationIds }) => ({ id, label, locationIds })),
+          services: locationServiceCatalog.filter(service => !service.reveal)
+             .map(({ id, label, locationIds }) => ({ id, label, locationIds })),
           packagingFeePerItem: PACKAGING_FEE,
           storeItems: minimalStore,
           rooms: campusInteriors.map(room => ({ id: room.id, label: room.label, parentLocationId: room.parentLocationId,
@@ -416,6 +417,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           .map(locationId => getLocationStatus(locationId, snapshot.clock)) : [],
         locationServices: getLocationServices(snapshot).map(service => {
           const quote = getLocationServiceQuote(snapshot, service.id);
+          // The narrator knows the published job advert, not the secretly assigned work.
+          if (service.reveal) return { id: service.id, label: service.label, description: service.description };
           return { id: service.id, label: service.label, description: service.description, minutes: quote.minutes,
             price: quote.price, ...(quote.payout ? { payout: quote.payout } : {}), changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason };
         }),
