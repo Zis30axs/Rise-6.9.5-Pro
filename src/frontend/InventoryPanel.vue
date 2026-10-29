@@ -44,7 +44,7 @@ async function useItem(itemId: string) {
         <div class="inventory-use-row"><small v-if="quote.blockedReason" class="inventory-blocked">{{ quote.blockedReason }}</small><small v-else>使用 1 {{ item.useUnit }}</small><button type="button" class="inventory-use" :aria-label="`使用${item.name}`" :disabled="model.busy || !!quote.blockedReason" @click="useItem(item.id)">使用<span aria-hidden="true"> ↗</span></button></div>
       </article>
     </div>
-    <p v-else class="inventory-empty">背包还是空的。可以在便利店购买，或把咖啡、甜点与餐食打包带走。</p>
+    <p v-else class="inventory-empty">背包还是空的。可以在便利店购买，在玛格咖啡馆买一杯带走，或把咖啡、甜点与餐食打包带走。</p>
     <p v-if="entries.length" class="inventory-effect-note">预览已计入使用耗时与状态上下限；数值为 0 时，本次该项状态不变。</p>
   </section>
 </template>

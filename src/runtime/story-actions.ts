@@ -8,6 +8,7 @@ import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
+import { isCafeStoryItem } from './margo-cafe-menu';
 import { locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
@@ -152,7 +153,8 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       case 'pack': {
         const item = record(raw, ['type', 'itemId', 'quantity'], path);
         const product = storeCatalog.find(product => product.id === item.itemId);
-        if (typeof item.itemId !== 'string' || !product || (item.type === 'pack' && product.category === 'cigarette')) return invalid(`${path} 商品`);
+        const cafeCup = item.type === 'buy' && typeof item.itemId === 'string' && isCafeStoryItem(state, item.itemId);
+        if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette'))) return invalid(`${path} 商品`);
         return { type: item.type as 'buy' | 'pack', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) };
       }
       case 'takeaway': {

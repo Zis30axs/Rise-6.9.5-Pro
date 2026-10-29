@@ -12,6 +12,7 @@ import type { AcademicState, GeneratedStory, InteriorPresence, Location, PlayerS
 import { INTERACTION_EVENT_HISTORY_LIMIT } from './interaction-event-rate';
 import { parseAutonomousSmsState } from './autonomous-sms';
 import { applyMargoCafeGift, parseMargoCafeState } from './margo-cafe';
+import { CAFE_EMMA_DRINK_ID, EMMA_CAFE_SERVING_TEXT, getCafePurchaseQuote, rememberCafeSpecial } from './margo-cafe-menu';
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
@@ -802,7 +803,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
       case 'service': next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId }); break;
-      case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }); break;
+      case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }, worldAuthority); break;
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
@@ -1150,6 +1151,25 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     }
     case 'buy_item': {
       if (!Number.isInteger(action.quantity) || action.quantity < 1) throw new Error('购买数量必须是 1–20 的整数。');
+      const buyer = worldAuthority ?? next;
+      const cafeQuote = getCafePurchaseQuote(next, action.itemId, action.quantity, buyer.protagonists?.accounts.active ?? 'soyo');
+      if (cafeQuote.recognized) {
+        if (cafeQuote.blockedReason || !cafeQuote.item || cafeQuote.unitsAdded < 1) throw new Error(cafeQuote.blockedReason ?? '不存在的商品。');
+        const owner = buyer.protagonists?.accounts.active ?? 'soyo';
+        next.player.balance -= cafeQuote.totalPrice;
+        const held = next.inventory.find(entry => entry.itemId === cafeQuote.item!.id);
+        if (held) held.quantity += cafeQuote.unitsAdded;
+        else next.inventory.push({ itemId: cafeQuote.item.id, quantity: cafeQuote.unitsAdded });
+        if (cafeQuote.kind === 'daily') rememberCafeSpecial(next, owner, cafeQuote.item.id);
+        if (cafeQuote.item.id === CAFE_EMMA_DRINK_ID && owner === 'emma') {
+          let sequence = 1;
+          let servingId = `cafe-serve.${owner}.${next.clock.day}.${sequence}`;
+          while (next.story.some(row => row.id === servingId)) servingId = `cafe-serve.${owner}.${next.clock.day}.${++sequence}`;
+          next.story = [...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }].slice(-STATE_LIMITS.story);
+        }
+        note(next, cafeQuote.journal);
+        break;
+      }
       const quote = getPurchaseQuote(next, action.itemId, action.quantity);
       if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
       next.player.balance -= quote.totalPrice;

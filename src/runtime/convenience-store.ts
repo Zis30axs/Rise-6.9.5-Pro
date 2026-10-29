@@ -1,6 +1,7 @@
 import type { PlayerState, WorldState } from '../frontend/types';
 import { adjustEnergy, energyDifference } from './energy';
 import { locationServiceCatalog } from './location-services';
+import { cafeInventoryItems } from './margo-cafe-menu';
 
 export interface StoreItem {
   readonly id: string;
@@ -67,7 +68,7 @@ export function getServiceTakeawayItem(serviceId: string): StoreItem | null {
 }
 
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!)];
+  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems()];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {
