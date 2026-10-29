@@ -39,6 +39,8 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
+import { agreedMinute, socialMinute } from '../runtime/social-agenda';
+import type { SocialInvitation } from '../runtime/natural-interactions';
 import { isCourtInSession } from '../runtime/courtroom';
 import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
@@ -261,6 +263,23 @@ const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhon
 const scenePaused = computed(() => switchingLease.value ? false : !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
 const storyEntries = computed(() => props.model.state.story);
+const dismissedMeetingPrompts = ref<string[]>([]);
+const meetingPrompt = computed(() => {
+  const state=props.model.state, now=socialMinute(state);
+  return (state.protagonists?.socialInvitations ?? []).slice().reverse().find(invite =>
+    invite.owner===currentProtagonist.value && invite.source==='meeting' && invite.status==='accepted' &&
+    !dismissedMeetingPrompts.value.includes(invite.id) &&
+    now>=agreedMinute(invite)-45 && now<=agreedMinute(invite)+180 && state.locationId!==invite.locationId) ?? null;
+});
+function hideMeetingPrompt(id:string){
+  if(!dismissedMeetingPrompts.value.includes(id))dismissedMeetingPrompts.value.push(id);
+}
+async function travelToMeeting(invite:SocialInvitation){
+  if(props.model.busy)return;
+  const destination=novelMode.value?invite.locationId:getCampusInterior(invite.locationId)?.parentLocationId??invite.locationId;
+  if(await runInteraction(props.model,props.actions,{type:novelMode.value?'novel_travel':'travel',locationId:destination}))
+    hideMeetingPrompt(invite.id);
+}
 
 function releasePhone() {
   if (!requestedPhoneSlot) return;
@@ -869,6 +888,12 @@ onBeforeUnmount(() => {
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
       <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
+
+      <section v-if="novelMode && !novelHistory && meetingPrompt" class="novel-appointment-prompt" :data-meeting-invite="meetingPrompt.id" aria-label="今日约定">
+        <p>和{{ meetingPrompt.targetName }}约好了第{{ meetingPrompt.day }}天 {{ meetingPrompt.time }} 见面。</p>
+        <div><button type="button" :disabled="model.busy" @click="travelToMeeting(meetingPrompt)">前往约定地点</button>
+        <button type="button" :disabled="model.busy" @click="hideMeetingPrompt(meetingPrompt.id)">稍后再说</button></div>
+      </section>
       <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :recognizes-speaker="recognizesNovelSpeaker" :focus-target="model.phoneSceneJump" @focus="heldPortrait = $event" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" @switch-side="switchToOtherSide" />
       <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
   :other-side-beats="entry.otherSideBeats" :return-story="entry.returnStory"
@@ -897,3 +922,11 @@ onBeforeUnmount(() => {
 </template>
 
 
+
+<style scoped>
+.novel-appointment-prompt{margin:6px 12px 8px;padding:10px 14px;background:color-mix(in srgb,var(--card,#fff) 88%,#c6a65d);border:1px solid #9d8a6a66;border-radius:12px;box-shadow:0 3px 14px #0001;position:relative;z-index:1}
+.novel-appointment-prompt p{margin:0 0 8px;font-size:13px;line-height:1.45;color:inherit}
+.novel-appointment-prompt div{display:flex;flex-wrap:wrap;gap:9px}
+.novel-appointment-prompt button{border:1px solid #987b5480;border-radius:8px;min-height:36px;padding:6px 12px;background:#b7976c26;color:inherit;cursor:pointer}
+.novel-appointment-prompt button:disabled{opacity:.5;cursor:default}
+</style>
