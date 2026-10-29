@@ -215,7 +215,8 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     const items = [...many(scope, 180), original];
     const committed = appendSavedMemoryOutbox({}, scope, items, 2, 5);
     const archiveRows = recoverSavedMemoryOutbox(committed, scope).sources;
-    const persisted = new Map(archiveRows.map(row => [row.key, row]));
+    // Simulate full extraction: every source is processed, and game story is gone.
+    const persisted = new Map(archiveRows.map(row => [row.key, { ...row, processed: true }]));
     vi.mocked(archive.rows).mockImplementation(async <T>(table: string): Promise<T[]> =>
       (table === 'sources' ? [...persisted.values()] : []) as T[]);
     const trimmedGameState = createInitialState();
@@ -223,7 +224,8 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     expect(trimmedGameState.story).toHaveLength(0);
     const found = await searchMemory(scope, '蓝色纸鹤 书架背面', 'soyo', 50,
       { narrator: true, maxTurn: 2, limit: 8 });
-    expect(found.some(row => row.id === original.id && row.text.includes('书架背面'))).toBe(true);
+    expect(found.some(row => row.id === original.id && row.text.includes('书架背面')
+      && row.origin === 'raw')).toBe(true);
   });
 
   it('waits for an in-flight source transaction before pruning a committed rollback', async () => {
