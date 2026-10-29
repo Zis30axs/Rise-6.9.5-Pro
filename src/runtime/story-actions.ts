@@ -109,7 +109,7 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         if (typeof item.locationId !== 'string') return invalid(`${path} 邀约地点`);
         const date = number(item.day, state.clock.day, Math.min(365000, state.clock.day + 90), `${path} 日期`);
         const time = text(item.time, 5, `${path} 时间`);
-        if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return invalid(`${path} 时间格式`);
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return invalid(`${path} 时间格式`);
         const minute = Number(time.slice(0,2)) * 60 + Number(time.slice(3));
         if (date === state.clock.day && minute <= state.clock.hour * 60 + state.clock.minute) return invalid(`${path} 约定时间已过`);
         return { type: 'social_invite', targetId: contact?.id ?? targetId,
