@@ -18,6 +18,8 @@ import constructionDayBg from '../../assets/backgrounds/construction-day.avif?in
 import courtHearingBg from '../../assets/backgrounds/court-hearing-day.avif?inline';
 import legalOfficeDayBg from '../../assets/backgrounds/legal-office-day.avif?inline';
 import legalOfficeNightBg from '../../assets/backgrounds/legal-office-night.avif?inline';
+import margoCafeDayBg from '../../assets/backgrounds/margo-cafe-day.avif?inline';
+import margoCafeNightBg from '../../assets/backgrounds/margo-cafe-night.avif?inline';
 import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
 import clinicNightBg from '../../assets/backgrounds/clinic-night.webp?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
@@ -63,17 +65,22 @@ export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
 /**
  * Recovered PR #16 art. Interior pictures are fixed-time derivatives, so they
  * report their actual image phase instead of pretending to be day/night variants.
+ * A room may add nightSrc; dusk and night then show that picture.
  */
-const majoBackgrounds: Readonly<Record<string, { src: string; imagePhase: NovelBackgroundPhase }>> = Object.freeze({
+type MajoBackgroundEntry = {
+  src: string;
+  imagePhase: NovelBackgroundPhase;
+  /** Late-day picture. Dusk and night use it and report imagePhase 'night'. */
+  nightSrc?: string;
+};
+const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.freeze({
   'emma-yuki-home': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
   'koko-old-house': { src: majoInteriorArt['koko-old-house'], imagePhase: 'day' },
   'nikaido-house': { src: majoInteriorArt['nikaido-house'], imagePhase: 'day' },
   'anan-noa-milia-home': { src: majoInteriorArt['anan-noa-milia-home'], imagePhase: 'day' },
   'majo-highrise-home': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
   'majo-studio': { src: majoInteriorArt['majo-studio'], imagePhase: 'day' },
-  // Reuse the recovered open-plan room as an indoor illustration until the
-  // cafe has dedicated art; no additional or falsely attributed image asset.
-  'margo-cafe-room': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
+  'margo-cafe-room': { src: margoCafeDayBg, imagePhase: 'day', nightSrc: margoCafeNightBg },
   'amaori-family-home': { src: majoInteriorArt['koko-old-house'], imagePhase: 'day' },
   'ouzuka-residence': { src: majoInteriorArt['nikaido-house'], imagePhase: 'day' },
   'sena-family-home': { src: majoInteriorArt['emma-yuki-home'], imagePhase: 'day' },
@@ -117,7 +124,17 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
   if (locationId === 'court-hearing') return { id: 'court-hearing-day', src: courtHearingBg,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
   const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
-  if (authored) return { id: `majo-${locationId}`, src: authored.src, phase: novelBackgroundPhase(hour), imagePhase: authored.imagePhase, source: 'majo-art' };
+  if (authored) {
+    const phase = novelBackgroundPhase(hour);
+    const nightSrc = phase !== 'day' ? authored.nightSrc : undefined;
+    return {
+      id: nightSrc ? `majo-${locationId}-night` : `majo-${locationId}`,
+      src: nightSrc ?? authored.src,
+      phase,
+      imagePhase: nightSrc ? 'night' : authored.imagePhase,
+      source: 'majo-art',
+    };
+  }
   const family = Object.hasOwn(novelBackgroundLocations, locationId) ? novelBackgroundLocations[locationId] : 'street';
   const variants = backgrounds[family], phase = novelBackgroundPhase(hour);
   const imagePhase = variants[phase] ? phase : 'day';
