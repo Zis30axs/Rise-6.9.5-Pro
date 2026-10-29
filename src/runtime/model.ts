@@ -25,7 +25,7 @@ import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurch
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
 import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordSocialInvitations } from './natural-interactions';
-import { settleSocialAgendas, applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
+import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
