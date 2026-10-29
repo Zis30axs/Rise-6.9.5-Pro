@@ -138,18 +138,19 @@ export function agendaTargetResident(state:WorldState,row:SocialInvitation):stri
   return !agendaTargetProtagonist(state,row)&&residentById(person)?person:null;
 }
 function checkConflict(state:WorldState,invite:SocialInvitation,steps:AgendaStep[]) {
-  const arrive=steps.find(s=>s.kind==='arrive')!.at;
+  // Reserve the entire journey, not merely the minutes spent at the venue.
+  const depart=steps.find(s=>s.kind==='depart')!.at;
   const leave=steps.find(s=>s.kind==='leave')!.at;
   const protagonist=agendaTargetProtagonist(state,invite),resident=agendaTargetResident(state,invite);
   if(!protagonist&&!resident) return fail('赴约人物不属于现有居民');
   for(const other of state.protagonists?.socialInvitations ?? []){
     if(other.id===invite.id||other.status!=='accepted'||other.agenda?.status!=='scheduled') continue;
     if(protagonist?agendaTargetProtagonist(state,other)!==protagonist:agendaTargetResident(state,other)!==resident)continue;
-    const a=other.agenda.steps.find(s=>s.kind==='arrive')!.at;
+    const a=other.agenda.steps.find(s=>s.kind==='depart')!.at;
     const b=other.agenda.steps.find(s=>s.kind==='leave')!.at;
-    if(arrive<b&&a<leave) return fail('同一人物同时有两项赴约');
+    if(depart<b&&a<leave) return fail('同一人物同时有两项赴约');
   }
-  if(protagonist && state.protagonists?.devices[protagonist].calendar.some(c=>arrive<c.start+c.duration&&c.start<leave))
+  if(protagonist && state.protagonists?.devices[protagonist].calendar.some(c=>depart<c.start+c.duration&&c.start<leave))
     return fail('赴约和对方手机日历冲突');
 }
 function receiptId(invitationId:string,suffix:string):string {
