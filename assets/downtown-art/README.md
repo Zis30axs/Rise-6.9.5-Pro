@@ -3,6 +3,7 @@
 2026-10-20，按用户指定的 image2.5sun（接口模型 `gpt-image-2.5-sunburst`）生成。使用用户明确授权的 imagegen CLI/API 备用方式。密钥、接口配置和私人数据不随素材保存。
 
 - `sources/`：18 张独立生成/编辑的原始 PNG，保留原文件，不从概念展示板裁切。常服与室内服分别以中性原图制作五种表情差分；宅邸昏/夜及市中心夜景使用对应白天原图编辑以保留建筑和机位。
+- `sources/mutsumi-uniform-*.png`：2026-10-29 用户提供的若叶睦月之森制服透明底全身原图六张，表情为 neutral、neutral-aside、neutral-aside-2、smile、shy、surprised。字节原样保留，未重编码，尚未派生运行图。
 - `characters/sakiko/{casual,home}/`：两套衣服各六表情，768×1344 RGBA 透明全身 WebP，足部锚点统一为 `[384,1280]`。表情是 neutral、smile、troubled、surprised、annoyed、sad。
 - `backgrounds/`：丰川家昼/昏/夜、会客厅、市中心昼/夜，1536×864。
 
