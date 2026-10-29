@@ -8,6 +8,19 @@ import { scheduleMemoryWork, resumeMemoryWork, pauseMemoryWork, memoryIsPaused, 
 import { ingestSources, rows, pruneFutureMemory, hasConfirmedSameTurnDivergence } from './storage';
 
 const reconciling = new Map<string, Promise<boolean>>();
+// Track the short IDB ingestion transactions as well as model scheduler work.
+// A rollback waits for these writes before pruning the old timeline.
+const ingesting = new Map<string, Promise<void>>();
+function trackedIngest(scope: string, sources: MemorySource[]): Promise<void> {
+  const previous = ingesting.get(scope);
+  const current = (previous?.catch(() => {}) ?? Promise.resolve())
+    .then(() => ingestSources(sources));
+  ingesting.set(scope, current);
+  void current.finally(() => {
+    if (ingesting.get(scope) === current) ingesting.delete(scope);
+  }).catch(() => {});
+  return current;
+}
 const unsafeScopes = new Set<string>();
 const outboxWarnings = new Map<string, number>();
 
@@ -33,7 +46,13 @@ export function memoryBootstrap(scope: string, state: WorldState,
   try {
     if (!loadMemorySettings().enabled) return;
     unsafeScopes.add(scope);
-    const idle = pauseMemoryWork(scope), pauseToken = memoryPauseVersion(scope);
+    const previousReconciliation = reconciling.get(scope);
+    const priorIngest = ingesting.get(scope);
+    const idle = Promise.all([
+      pauseMemoryWork(scope),
+      previousReconciliation?.catch(() => false) ?? Promise.resolve(true),
+      priorIngest?.catch(() => {}) ?? Promise.resolve(),
+    ]), pauseToken = memoryPauseVersion(scope);
     const cutoff = { turn: state.protagonists?.narrativeTurn ?? 0,
       at: (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute };
     const sources = collectExistingSources(scope, state);
@@ -52,13 +71,16 @@ export function memoryBootstrap(scope: string, state: WorldState,
         ].map(s => [s.key, s])).values()];
       })
       .then(async deduplicated => {
-        await ingestSources(deduplicated);
+        await trackedIngest(scope, deduplicated);
         // A successful reconciliation also retires proven-invalid branch
         // receipts; no source is acknowledged before the transaction completes.
         ackSources(recovered, onIngest);
-        unsafeScopes.delete(scope);
-        // A retired chat must not restart background paid requests.
-        if (memoryPauseVersion(scope) === pauseToken) resumeMemoryWork(scope);
+        // Another save may already have begun a newer reconciliation.
+        if (reconciling.get(scope) === running) {
+          unsafeScopes.delete(scope);
+          // A retired chat must not restart background paid requests.
+          if (memoryPauseVersion(scope) === pauseToken) resumeMemoryWork(scope);
+        }
         return true;
       })
       .catch(() => false)
@@ -78,7 +100,9 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
     const archive = async (safe: boolean) => {
       if (!safe || unsafeScopes.has(scope)) return;
       try {
-        await ingestSources(sources);
+        await trackedIngest(scope, sources);
+        // A rewind may have started while this transaction was in flight.
+        // Text-matched receipts prevent clearing corrected sources.
         ackSources(sources, onIngest);
         if (!memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
           scheduleMemoryWork(scope, []);
