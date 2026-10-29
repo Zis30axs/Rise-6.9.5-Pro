@@ -12,15 +12,6 @@ export const protagonistHomeRooms: Readonly<Record<ProtagonistId, string>> = Obj
   renako: 'amaori-family-home',
 });
 
-export interface GamePurchase {
-  id: string;
-  owner: ProtagonistId;
-  game: string;
-  benefit: string;
-  amountYen: number;
-  at: number;
-}
-
 export type SocialInvitationDecision = 'accepted' | 'declined' | 'deferred';
 export interface SocialInvitation {
   id: string;
@@ -38,7 +29,6 @@ export interface SocialInvitation {
   response: string | null;
 }
 
-const purchaseLimit = 200;
 const invitationLimit = 120;
 const ID_RE = /^[A-Za-z0-9][\w.:-]{0,127}$/;
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -68,26 +58,6 @@ function str(value: unknown, length: number, message: string): string {
 function actor(value: unknown): ProtagonistId {
   if (!PROTAGONISTS.includes(value as ProtagonistId)) return invalid('主角 ID');
   return value as ProtagonistId;
-}
-
-/** Only in-universe Appie Pay expenses: no external payment or real-game receipt is implied. */
-export function parseGamePurchases(raw: unknown, now: number): GamePurchase[] {
-  if (!Array.isArray(raw) || raw.length > purchaseLimit) return invalid('游戏消费数量');
-  const used = new Set<string>();
-  return raw.map((value, index) => {
-    const path = '游戏消费 ' + (index + 1);
-    const r = record(value, ['id', 'owner', 'game', 'benefit', 'amountYen', 'at'], path);
-    const id = str(r.id, 128, path + ' ID');
-    if (!ID_RE.test(id) || used.has(id)) return invalid(path + '重复 ID');
-    used.add(id);
-    return {
-      id, owner: actor(r.owner),
-      game: str(r.game, 80, path + '游戏'),
-      benefit: str(r.benefit, 100, path + '虚拟权益'),
-      amountYen: num(r.amountYen, 1, 100_000, path + '金额'),
-      at: num(r.at, 0, now, path + '时间'),
-    };
-  });
 }
 
 export function parseSocialInvitations(raw: unknown, now: number): SocialInvitation[] {
@@ -131,23 +101,6 @@ export function narrativeOperationId(turnId: string, index: number): string {
 export function narrativeMessageId(turnId: string, index: number, toProtagonist: boolean): string {
   const id = narrativeOperationId(turnId, index);
   return (toProtagonist ? 'dual:' : 'npc:') + id;
-}
-
-/** Money has already been debited by the authoritative legacy reducer. */
-export function recordGamePurchases(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
-  const purchases = actions.filter((action): action is Extract<StoryAction, { type: 'game_topup' }> => action.type === 'game_topup');
-  if (!purchases.length) return state;
-  if (!state.protagonists || purchases.length !== 1) throw new Error('游戏消费必须由当前主角单笔结算');
-  const next: WorldState = JSON.parse(JSON.stringify(state));
-  const owner = next.protagonists!.accounts.active;
-  const row = purchases[0]!;
-  const id = turnId + ':game-topup';
-  const saved = next.protagonists!.gamePurchases ?? [];
-  if (saved.some(item => item.id === id)) return next;
-  saved.push({ id, owner, game: row.game, benefit: row.benefit, amountYen: row.amountYen, at: nowMinute(next) });
-  next.protagonists!.gamePurchases = saved.slice(-purchaseLimit);
-  next.protagonists!.revision++;
-  return next;
 }
 
 /** Caller sends the SMS through the same phone transaction as manual sending. */
