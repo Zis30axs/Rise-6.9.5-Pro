@@ -62,7 +62,6 @@ const invitations = computed(() => (props.model.state.protagonists?.socialInvita
 const gamePurchases = computed(() => (props.model.state.protagonists?.gamePurchases ?? [])
   .filter(item => item.owner === protagonist.value).slice(-8).reverse());
 const socialContacts = computed(() => props.model.state.contacts.slice(0, 12));
-const contactName = (id: string) => props.model.state.contacts.find(c => c.id === id || c.sourcePersonId === id)?.name ?? id;
 const invitationStatus = (status: string) => ({ accepted: '已约定', declined: '已婉拒', pending: '待回应' }[status] ?? '待回应');
 const lifeRecap = computed(() => protagonistRecap(props.model.state));
 const lawProgress = computed(() => lawOwner(props.model.state));
@@ -177,7 +176,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-section" data-status-section="social" aria-label="社交与邀约">
         <div class="wp-heading"><h2>社交与邀约</h2><small>相遇、联系和约定</small></div>
         <div class="wp-social-contacts"><button v-for="contact in socialContacts" :key="contact.id" type="button" class="wp-secondary" :disabled="model.busy" :data-invite-contact="contact.id" @click="emit('invite', contact.name)">邀请{{ contact.name }}</button></div>
-        <div v-if="invitations.length" class="wp-journal-list"><article v-for="invite in invitations" :key="invite.id" class="wp-journal-entry" :data-invitation="invite.id"><time>{{ invite.day }} 日 · {{ invite.time }} · {{ invitationStatus(invite.status) }}</time><p>{{ contactName(invite.targetId) }} · {{ invite.message }}</p><small>{{ locationName(invite.locationId) }}</small></article></div>
+        <div v-if="invitations.length" class="wp-journal-list"><article v-for="invite in invitations" :key="invite.id" class="wp-journal-entry" :data-invitation="invite.id"><time>{{ invite.day }} 日 · {{ invite.time }} · {{ invitationStatus(invite.status) }}</time><p>{{ invite.targetName }} · {{ invite.message }}</p><small>{{ locationName(invite.locationId) }}</small></article></div>
         <p v-else class="wp-footnote">暂时没有约好的活动。路上偶遇或给朋友发短信，都可以自然提出邀请。</p>
       </section>
       <section class="wp-status-section" data-status-section="illness" aria-label="身体健康与不适"><div class="wp-heading"><h2>身体健康与不适</h2><small>{{ activeIllnesses.length ? '当前体感异常' : '状态平稳' }}</small></div><div v-if="activeIllnesses.length" class="wp-illness-list"><article v-for="illness in activeIllnesses" :key="illness.id" class="wp-illness-card" :class="'wp-severity-' + illness.severity" :data-illness="illness.id"><div class="wp-illness-header"><h3>{{ illness.name }}</h3><span class="wp-illness-badge">{{ illness.severityLabel }}</span></div><p class="wp-illness-desc">{{ illness.description }}</p><div class="wp-illness-symptoms"><span v-for="symptom in illness.symptoms" :key="symptom" class="wp-symptom-tag">{{ symptom }}</span></div><p class="wp-illness-remedy">调理建议：{{ illness.remedyHint }}</p></article></div><p v-else class="wp-health-healthy">身体状况良好，暂无明显不适。规律作息与充足饮食有助于保持健康。</p></section>
