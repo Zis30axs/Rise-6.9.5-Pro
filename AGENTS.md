@@ -9,3 +9,19 @@
 开始工作前，先读取本仓库的 `DeepSeek.md`、`CODEX.md` 和 `README.md`；涉及手机、酒馆助手或跨仓库联动时，再读取 `integration/extensions.json`。
 
 `CODEX.md` 的“已确认的手机联动方向”及“最新决定：TauriTavern 内嵌手机”记录用户已确定的工程决策。最新决定优先于历史的“手机单独安装、不打包进 PNG”：手机源码在独立私有仓库维护，白名单构建产物进入同一酒馆助手脚本和角色卡 PNG；酒馆助手仍需安装与授权。后续开发持续区分实现、待验证能力和历史验收，不将桌面或模拟测试写成手机 TauriTavern 真机已通过。
+
+## 自测试（默认不做）
+
+默认不要用 Agent Edition 自测。只有用户明确要求自测、自导自演或跑 Agent Edition 时才做。
+
+用户要求后，用 `agent-edition/` 打开真实 Lite 前端：自己写玩家发言，也自己写上游回复，再用 `injectReply` 把原文交给现有解析、变量更新、存档和渲染。启动：
+
+```bash
+npx playwright test --config agent-edition/playwright.config.ts
+```
+
+或先 `npx vite --host 127.0.0.1 --port 5191 --strictPort`，打开 `http://127.0.0.1:5191/agent-edition/agent.html?run=local&presentation=novel`，通过 `window.__unreadCityAgent` 操作。详细步骤见 `agent-edition/README.md`。
+
+- 不得启动 GitHub Actions 或任何 CI。
+- 不得用简化解析器，也不得直接改 MVU 假装回复已经处理。
+- 发现问题后记录操作、原始上游回复、关键状态和日志，只修确认存在的代码问题，并用同一段对话回归。不得为迁就错误输入改游戏规则。
