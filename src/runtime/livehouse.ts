@@ -264,9 +264,13 @@ export function applyBandReply(state: WorldState, messageId: string, reply: stri
 export function livehousePhoneView(s: WorldState, owner: ProtagonistId) {
   const registry = s.livehouse ?? empty(), personId = musicPersonId(owner);
   const bands = registry.bands.filter(b => b.members.some(m => m.personId === personId));
+  // A new save can request a story before the protagonist world is created.
+  // Other people's majors do not exist yet, so there is nobody to invite.
+  const contacts = s.protagonists ? personState(s, owner).contacts.flatMap(c => {
+    const actor = c.id.startsWith('protagonist-') ? c.id.slice(12) as ProtagonistId : protagonistForPerson(c.sourcePersonId ?? c.id);
+    return !actor || actor !== owner && PROTAGONISTS.includes(actor) && personState(s, actor).academics?.majorId === 'music'
+      ? [{ id: c.id, name: c.name }] : [];
+  }) : [];
   return { bands: bands.map(b => ({ ...b, members: b.members.map(m => ({ ...m, profile: registry.profiles.find(p => p.personId === m.personId) })) })), bookings: registry.bookings.filter(b => bands.some(band => band.id === b.bandId)), invitations: registry.invitations.filter(i => i.from === owner || i.personId === personId).map(i => ({ ...i, bandName: registry.bands.find(b => b.id === i.bandId)?.name })),
-    contacts: personState(s, owner).contacts.filter(c => {
-      const actor = c.id.startsWith('protagonist-') ? c.id.slice(12) as ProtagonistId : protagonistForPerson(c.sourcePersonId ?? c.id);
-      return !actor || actor !== owner && PROTAGONISTS.includes(actor) && personState(s, actor).academics?.majorId === 'music';
-    }).map(c => ({ id: c.id, name: c.name })) };
+    contacts };
 }

@@ -12,6 +12,12 @@ type HelperWindow = Window & {
   eventOn?: (event: string, callback: () => void) => unknown;
   eventRemoveListener?: (event: string, callback: () => void) => void;
   getButtonEvent?: (name: string) => string;
+  /** Set only by agent-edition/helper.html before this script loads. */
+  __unreadCityAgentHook?: (api: {
+    getShell(): ShellHandle | undefined;
+    close(): void;
+    open(): void;
+  }) => void;
 };
 
 function bootstrap() {
@@ -75,6 +81,11 @@ function bootstrap() {
       if (!exitedDuringMount) {
         viewport = bindShellViewport(host, viewportCss);
         shell = mounted;
+        // Dev-only. The player bundle never sets this hook, and it adds no UI.
+        if (!demo && typeof owner.__unreadCityAgentHook === 'function') {
+          try { owner.__unreadCityAgentHook({ getShell: () => shell, close: restore, open }); }
+          catch (error) { console.error('[UnreadCity] agent hook', error); }
+        }
       }
     } catch (error) {
       viewport?.dispose();

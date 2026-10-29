@@ -1,0 +1,687 @@
+{
+  "phoneModule": "existing",
+  "errors": [],
+  "steps": [
+    {
+      "op": "say",
+      "text": "我去玛格咖啡馆。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"travel\",\"locationId\":\"margo-cafe-room\"}]</world_actions>"
+    },
+    {
+      "op": "clickRole",
+      "name": "地点"
+    },
+    {
+      "op": "say",
+      "text": "我和宝生玛格打个招呼。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|</story>\n<phone_messages>[]</phone_messages>\n<contact_requests>[{\"kind\":\"contact\",\"npcId\":\"majo-margo\",\"evidenceId\":\"current\",\"quote\":\"要不要交换联系方式，加个好友？\"}]</contact_requests>"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>宝生玛格经营街边咖啡馆，说话从容，眼下和素世只是刚认识，还没有更私密的交往。</story>\n<phone_messages>[]</phone_messages>"
+    },
+    {
+      "op": "inject",
+      "rawText": "<phone_reply>{\"messageId\":\"npc:ed08b5ca-3748-4e59-8730-d4a2dbf9e42f\",\"text\":\"宝生玛格收到了。我先把手头的事做完，晚点再聊。\"}</phone_reply>"
+    }
+  ],
+  "turns": [
+    {
+      "rawText": "<story>傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"travel\",\"locationId\":\"margo-cafe-room\"}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 20
+        },
+        "locationId": "gate",
+        "interior": null,
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 80,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 70,
+        "foodEnergy": 1200,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 1,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          },
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "locationId": {
+          "before": "gate",
+          "after": "margo-cafe-room"
+        },
+        "interior": {
+          "before": null,
+          "after": "margo-cafe-room"
+        },
+        "energy": {
+          "before": 80,
+          "after": 79.64
+        },
+        "satiety": {
+          "before": 70,
+          "after": 68
+        },
+        "foodEnergy": {
+          "before": 1200,
+          "after": 1140
+        },
+        "storyCount": {
+          "before": 1,
+          "after": 3
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 17,
+            "minute": 20
+          },
+          "after": {
+            "day": 1,
+            "hour": 17,
+            "minute": 50
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|</story>\n<phone_messages>[]</phone_messages>\n<contact_requests>[{\"kind\":\"contact\",\"npcId\":\"majo-margo\",\"evidenceId\":\"current\",\"quote\":\"要不要交换联系方式，加个好友？\"}]</contact_requests>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。校园南门。\n\n晚夏的空气还滞留着散不去的余热。长崎素世在高田校园的南门外停下脚步，抬手扶正了肩上的贝斯包。\n\n排练室里嘈杂的余音似乎还粘在耳膜上——爱音生疏的和弦、立希不耐烦的催促，还有那股总是缺了点什么的喧闹。其实也并不算讨厌，只是每当热闹散去、独自一人走在归途上时，心底那块空落落的角落就会不合时宜地泛起微酸。那些已经走散的旧友、再也回不去的晴朗午后，就像背带勒在肩膀上的重量一样，明明已经习惯了，却依然清晰得让人心烦。\n\n她的指尖无意识地摩挲了一下背带边缘，很快又轻轻吸了口气，将眼底那一丝倦意重新藏回温和得体的微笑后面。\n\n路口的信号灯刚刚变绿，沿街的人群慢慢散去。是直接回那间空旷得有些冷清的公寓、点开吵闹的乐队群组看一眼，还是干脆谁也不理、顺着晚风一个人走走——接下来该怎么打发这段傍晚，她还没有拿定主意。"
+          },
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          },
+          {
+            "role": "user",
+            "text": "我和宝生玛格打个招呼。"
+          },
+          {
+            "role": "assistant",
+            "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "storyCount": {
+          "before": 3,
+          "after": 5
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>宝生玛格经营街边咖啡馆，说话从容，眼下和素世只是刚认识，还没有更私密的交往。</story>\n<phone_messages>[]</phone_messages>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          },
+          {
+            "role": "user",
+            "text": "我和宝生玛格打个招呼。"
+          },
+          {
+            "role": "assistant",
+            "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          },
+          {
+            "role": "user",
+            "text": "我和宝生玛格打个招呼。"
+          },
+          {
+            "role": "assistant",
+            "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {},
+      "rejected": false
+    },
+    {
+      "rawText": "<phone_reply>{\"messageId\":\"npc:ed08b5ca-3748-4e59-8730-d4a2dbf9e42f\",\"text\":\"宝生玛格收到了。我先把手头的事做完，晚点再聊。\"}</phone_reply>",
+      "notice": "",
+      "before": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          },
+          {
+            "role": "user",
+            "text": "我和宝生玛格打个招呼。"
+          },
+          {
+            "role": "assistant",
+            "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "soyo",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 50
+        },
+        "locationId": "margo-cafe-room",
+        "interior": "margo-cafe-room",
+        "majorId": "computer-science",
+        "subjects": [
+          {
+            "subjectId": "cs-programming",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-algorithms",
+            "points": 0
+          },
+          {
+            "subjectId": "cs-networks",
+            "points": 0
+          }
+        ],
+        "energy": 79.64,
+        "balance": 6560,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 68,
+        "foodEnergy": 1140,
+        "inventory": [],
+        "phone": [
+          {
+            "npcId": "majo-margo",
+            "text": "宝生玛格收到了。我先把手头的事做完，晚点再聊。",
+            "read": true
+          }
+        ],
+        "affinities": [
+          {
+            "id": "protagonist-sakiko",
+            "name": "丰川祥子",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去玛格咖啡馆。"
+          },
+          {
+            "role": "assistant",
+            "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+          },
+          {
+            "role": "user",
+            "text": "我和宝生玛格打个招呼。"
+          },
+          {
+            "role": "assistant",
+            "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "phone": {
+          "before": [],
+          "after": [
+            {
+              "npcId": "majo-margo",
+              "text": "宝生玛格收到了。我先把手头的事做完，晚点再聊。",
+              "read": true
+            }
+          ]
+        }
+      },
+      "rejected": false
+    }
+  ],
+  "summary": {
+    "protagonist": "soyo",
+    "clock": {
+      "day": 1,
+      "hour": 17,
+      "minute": 50
+    },
+    "locationId": "margo-cafe-room",
+    "interior": "margo-cafe-room",
+    "majorId": "computer-science",
+    "subjects": [
+      {
+        "subjectId": "cs-programming",
+        "points": 0
+      },
+      {
+        "subjectId": "cs-algorithms",
+        "points": 0
+      },
+      {
+        "subjectId": "cs-networks",
+        "points": 0
+      }
+    ],
+    "energy": 79.64,
+    "balance": 6560,
+    "health": 90,
+    "stress": 25,
+    "morale": 70,
+    "satiety": 68,
+    "foodEnergy": 1140,
+    "inventory": [],
+    "phone": [
+      {
+        "npcId": "majo-margo",
+        "text": "宝生玛格收到了。我先把手头的事做完，晚点再聊。",
+        "read": true
+      }
+    ],
+    "affinities": [
+      {
+        "id": "protagonist-sakiko",
+        "name": "丰川祥子",
+        "affinity": 0
+      },
+      {
+        "id": "majo-margo",
+        "name": "宝生玛格",
+        "affinity": 0
+      }
+    ],
+    "storyCount": 5,
+    "storyTail": [
+      {
+        "role": "user",
+        "text": "我去玛格咖啡馆。"
+      },
+      {
+        "role": "assistant",
+        "text": "傍晚的街边还亮着。长崎素世推开玛格咖啡馆的门，柜台后有咖啡的气味。\n\n|长崎素世|平静|我进来坐一下。|"
+      },
+      {
+        "role": "user",
+        "text": "我和宝生玛格打个招呼。"
+      },
+      {
+        "role": "assistant",
+        "text": "宝生玛格把杯子放下，语气仍旧从容。\n\n|宝生玛格|开心|要不要交换联系方式，加个好友？|\n|长崎素世|平静|可以，我看看手机。|"
+      }
+    ],
+    "enrolled": false,
+    "qualification": "unqualified",
+    "boardTitles": []
+  }
+}

@@ -4,6 +4,14 @@ import type { MemoryEntity, MemoryEntityLink, MemoryEvent, MemoryJob, MemorySour
 const DB_NAME = 'unread-city-memory-v1';
 type Table = 'sources' | 'events' | 'entities' | 'entity_links' | 'vectors' | 'jobs' | 'metadata';
 let cached: Promise<IDBDatabase> | null = null;
+let cachedName = '';
+
+/** Agent Edition may name an isolated database before the shell loads. Any other value keeps the player database. */
+function memoryDatabaseName(): string {
+  const custom = (globalThis as { __unreadCityMemoryDb?: unknown }).__unreadCityMemoryDb;
+  if (typeof custom === 'string' && /^unread-city-agent-[a-z0-9-]{1,48}$/.test(custom)) return custom;
+  return DB_NAME;
+}
 
 function requested<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -19,10 +27,12 @@ function completed(transaction: IDBTransaction): Promise<void> {
   });
 }
 export function openMemoryDb(): Promise<IDBDatabase> {
-  if (cached) return cached;
+  const name = memoryDatabaseName();
+  if (cached && cachedName === name) return cached;
   if (!('indexedDB' in globalThis)) return Promise.reject(new Error('当前设备不支持 IndexedDB'));
+  cachedName = name;
   cached = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(name, 1);
     request.onupgradeneeded = () => {
       const db = request.result;
       for (const table of ['sources', 'events', 'entities', 'entity_links', 'vectors', 'jobs', 'metadata'] as Table[]) {
@@ -34,11 +44,11 @@ export function openMemoryDb(): Promise<IDBDatabase> {
     };
     request.onsuccess = () => {
       const db = request.result;
-      db.onversionchange = () => { db.close(); cached = null; };
+      db.onversionchange = () => { db.close(); cached = null; cachedName = ''; };
       resolve(db);
     };
-    request.onerror = () => { cached = null; reject(request.error ?? new Error('无法打开长期记忆库')); };
-    request.onblocked = () => { cached = null; reject(new Error('长期记忆库暂时被另一窗口占用')); };
+    request.onerror = () => { cached = null; cachedName = ''; reject(request.error ?? new Error('无法打开长期记忆库')); };
+    request.onblocked = () => { cached = null; cachedName = ''; reject(new Error('长期记忆库暂时被另一窗口占用')); };
   });
   return cached;
 }

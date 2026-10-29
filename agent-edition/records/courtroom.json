@@ -1,0 +1,1740 @@
+{
+  "phoneModule": "existing",
+  "errors": [],
+  "steps": [
+    {
+      "op": "select",
+      "selector": "[data-protagonist-select]",
+      "value": "emma"
+    },
+    {
+      "op": "say",
+      "text": "我先睡到明天早上。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>樱羽艾玛决定先休息，明天再去事务所。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"sleep\",\"minutes\":940}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我去枫庭律师事务所。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>樱羽艾玛走进枫庭律师事务所。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"travel\",\"locationId\":\"legal-office\"}]</world_actions>"
+    },
+    {
+      "op": "clickRole",
+      "name": "地点"
+    },
+    {
+      "op": "click",
+      "selector": "[data-court-docket]"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>樱羽艾玛先看完今天的委托目录。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_docket\",\"offers\":[{\"id\":\"docket-2-a\",\"category\":\"civil\",\"title\":\"雨天打翻的画具\",\"client\":\"临时委托人\",\"summary\":\"只包含当事人已经说明的经过。\",\"difficulty\":\"easy\",\"rewardYen\":6000,\"experience\":80,\"preset\":false},{\"id\":\"docket-2-b\",\"category\":\"minor-criminal\",\"title\":\"钥匙扣与监控空档\",\"client\":\"临时委托人\",\"summary\":\"只包含当事人已经说明的经过。\",\"difficulty\":\"easy\",\"rewardYen\":6000,\"experience\":80,\"preset\":false}]}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我根据已经提交的证据问一句。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_step\",\"key\":\"testimony-1\",\"kind\":\"testimony\",\"summary\":\"当事人确认了停业通知书的内容。\"}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我请求法庭根据现有证据结案。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>樱羽艾玛只依据已提交的「停业通知书」「送达回执」「提交记录」说明结论，没有引入卷宗以外的事实。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_finish\",\"verdict\":\"win\",\"summary\":\"法庭采信已提交的停业通知书、送达回执、提交记录，委托成立。\"}]</world_actions>"
+    },
+    {
+      "op": "say",
+      "text": "我想用同样的结论再结一次案。"
+    },
+    {
+      "op": "inject",
+      "rawText": "<story>樱羽艾玛想再宣布一次同样的结论。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_finish\",\"verdict\":\"win\",\"summary\":\"重复宣布同一结论。\"}]</world_actions>"
+    }
+  ],
+  "turns": [
+    {
+      "rawText": "<story>樱羽艾玛决定先休息，明天再去事务所。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"rest\",\"kind\":\"sleep\",\"minutes\":940}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 1,
+          "hour": 17,
+          "minute": 20
+        },
+        "locationId": "home",
+        "interior": null,
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 80,
+        "balance": 12000,
+        "health": 90,
+        "stress": 25,
+        "morale": 70,
+        "satiety": 70,
+        "foodEnergy": 1200,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 1,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。杂司谷住宅区。\n\n公寓楼旁有晚风吹过，樱羽艾玛连忙抬手按住头顶的黑色贝雷帽。\n\n街道上有行人谈笑着擦肩而过，不远处传来便利店开门的电子音。牢屋敷里那场漫长而冰冷的审判早已成为了过去，如今她和月代雪就生活在这片再普通不过的街区里。只是偶尔被风吹起衣角、听见身后传来的脚步声时，她还是会有一瞬间的恍惚——紧接着，一种近乎奢侈的庆幸感便会涌上心头，让她觉得眼前这份平淡的安稳是如此难能可贵。\n\n只要一想起雪，再想起希罗，心里最柔软的地方就像被温水轻轻浸过一样，连嘴角都不自觉地向上扬了一点。\n\n艾玛抬头望向公寓的窗户，还不知道雪此刻是否已经在家。是现在就上楼推开家门、顺着街道再散会儿步，还是先为自己安排些别的小事——毕竟在这样和平的傍晚里，无论做什么都还来得及。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 0
+        },
+        "locationId": "home",
+        "interior": null,
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 12000,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 7,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。杂司谷住宅区。\n\n公寓楼旁有晚风吹过，樱羽艾玛连忙抬手按住头顶的黑色贝雷帽。\n\n街道上有行人谈笑着擦肩而过，不远处传来便利店开门的电子音。牢屋敷里那场漫长而冰冷的审判早已成为了过去，如今她和月代雪就生活在这片再普通不过的街区里。只是偶尔被风吹起衣角、听见身后传来的脚步声时，她还是会有一瞬间的恍惚——紧接着，一种近乎奢侈的庆幸感便会涌上心头，让她觉得眼前这份平淡的安稳是如此难能可贵。\n\n只要一想起雪，再想起希罗，心里最柔软的地方就像被温水轻轻浸过一样，连嘴角都不自觉地向上扬了一点。\n\n艾玛抬头望向公寓的窗户，还不知道雪此刻是否已经在家。是现在就上楼推开家门、顺着街道再散会儿步，还是先为自己安排些别的小事——毕竟在这样和平的傍晚里，无论做什么都还来得及。"
+          },
+          {
+            "role": "user",
+            "text": "我先睡到明天早上。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛决定先休息，明天再去事务所。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "energy": {
+          "before": 80,
+          "after": 100
+        },
+        "health": {
+          "before": 90,
+          "after": 97
+        },
+        "stress": {
+          "before": 25,
+          "after": 0
+        },
+        "morale": {
+          "before": 70,
+          "after": 100
+        },
+        "satiety": {
+          "before": 70,
+          "after": 7
+        },
+        "foodEnergy": {
+          "before": 1200,
+          "after": 0
+        },
+        "storyCount": {
+          "before": 1,
+          "after": 3
+        },
+        "clock": {
+          "before": {
+            "day": 1,
+            "hour": 17,
+            "minute": 20
+          },
+          "after": {
+            "day": 2,
+            "hour": 9,
+            "minute": 0
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>樱羽艾玛走进枫庭律师事务所。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"travel\",\"locationId\":\"legal-office\"}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 0
+        },
+        "locationId": "home",
+        "interior": null,
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 12000,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 7,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 3,
+        "storyTail": [
+          {
+            "role": "assistant",
+            "text": "2025年8月28日，周四，17:20。杂司谷住宅区。\n\n公寓楼旁有晚风吹过，樱羽艾玛连忙抬手按住头顶的黑色贝雷帽。\n\n街道上有行人谈笑着擦肩而过，不远处传来便利店开门的电子音。牢屋敷里那场漫长而冰冷的审判早已成为了过去，如今她和月代雪就生活在这片再普通不过的街区里。只是偶尔被风吹起衣角、听见身后传来的脚步声时，她还是会有一瞬间的恍惚——紧接着，一种近乎奢侈的庆幸感便会涌上心头，让她觉得眼前这份平淡的安稳是如此难能可贵。\n\n只要一想起雪，再想起希罗，心里最柔软的地方就像被温水轻轻浸过一样，连嘴角都不自觉地向上扬了一点。\n\n艾玛抬头望向公寓的窗户，还不知道雪此刻是否已经在家。是现在就上楼推开家门、顺着街道再散会儿步，还是先为自己安排些别的小事——毕竟在这样和平的傍晚里，无论做什么都还来得及。"
+          },
+          {
+            "role": "user",
+            "text": "我先睡到明天早上。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛决定先休息，明天再去事务所。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 32
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 5,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我先睡到明天早上。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛决定先休息，明天再去事务所。"
+          },
+          {
+            "role": "user",
+            "text": "我去枫庭律师事务所。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛走进枫庭律师事务所。"
+          }
+        ],
+        "enrolled": false,
+        "qualification": "unqualified",
+        "boardTitles": []
+      },
+      "diff": {
+        "locationId": {
+          "before": "home",
+          "after": "legal-office"
+        },
+        "interior": {
+          "before": null,
+          "after": "legal-office"
+        },
+        "balance": {
+          "before": 12000,
+          "after": 11600
+        },
+        "satiety": {
+          "before": 7,
+          "after": 5
+        },
+        "storyCount": {
+          "before": 3,
+          "after": 5
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 9,
+            "minute": 0
+          },
+          "after": {
+            "day": 2,
+            "hour": 9,
+            "minute": 32
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>樱羽艾玛先看完今天的委托目录。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_docket\",\"offers\":[{\"id\":\"docket-2-a\",\"category\":\"civil\",\"title\":\"雨天打翻的画具\",\"client\":\"临时委托人\",\"summary\":\"只包含当事人已经说明的经过。\",\"difficulty\":\"easy\",\"rewardYen\":6000,\"experience\":80,\"preset\":false},{\"id\":\"docket-2-b\",\"category\":\"minor-criminal\",\"title\":\"钥匙扣与监控空档\",\"client\":\"临时委托人\",\"summary\":\"只包含当事人已经说明的经过。\",\"difficulty\":\"easy\",\"rewardYen\":6000,\"experience\":80,\"preset\":false}]}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 32
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 5,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 5,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我先睡到明天早上。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛决定先休息，明天再去事务所。"
+          },
+          {
+            "role": "user",
+            "text": "我去枫庭律师事务所。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛走进枫庭律师事务所。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": []
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 32
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 5,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 7,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去枫庭律师事务所。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛走进枫庭律师事务所。"
+          },
+          {
+            "role": "user",
+            "text": "请让我看看今天枫庭律师事务所的委托目录。我想先挑选一份合适的案件，不急着开庭。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛先看完今天的委托目录。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "diff": {
+        "storyCount": {
+          "before": 5,
+          "after": 7
+        },
+        "boardTitles": {
+          "before": [],
+          "after": [
+            "咖啡馆的停业通知",
+            "雨天打翻的画具",
+            "钥匙扣与监控空档"
+          ]
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_step\",\"key\":\"testimony-1\",\"kind\":\"testimony\",\"summary\":\"当事人确认了停业通知书的内容。\"}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 42
+        },
+        "locationId": "court-hearing",
+        "interior": "court-hearing",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 5,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 7,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我去枫庭律师事务所。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛走进枫庭律师事务所。"
+          },
+          {
+            "role": "user",
+            "text": "请让我看看今天枫庭律师事务所的委托目录。我想先挑选一份合适的案件，不急着开庭。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛先看完今天的委托目录。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 47
+        },
+        "locationId": "court-hearing",
+        "interior": "court-hearing",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 4,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 9,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "请让我看看今天枫庭律师事务所的委托目录。我想先挑选一份合适的案件，不急着开庭。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛先看完今天的委托目录。"
+          },
+          {
+            "role": "user",
+            "text": "我根据已经提交的证据问一句。"
+          },
+          {
+            "role": "assistant",
+            "text": "庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "diff": {
+        "satiety": {
+          "before": 5,
+          "after": 4
+        },
+        "storyCount": {
+          "before": 7,
+          "after": 9
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 9,
+            "minute": 42
+          },
+          "after": {
+            "day": 2,
+            "hour": 9,
+            "minute": 47
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>樱羽艾玛只依据已提交的「停业通知书」「送达回执」「提交记录」说明结论，没有引入卷宗以外的事实。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_finish\",\"verdict\":\"win\",\"summary\":\"法庭采信已提交的停业通知书、送达回执、提交记录，委托成立。\"}]</world_actions>",
+      "notice": "",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 47
+        },
+        "locationId": "court-hearing",
+        "interior": "court-hearing",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 11600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 4,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 9,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "请让我看看今天枫庭律师事务所的委托目录。我想先挑选一份合适的案件，不急着开庭。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛先看完今天的委托目录。"
+          },
+          {
+            "role": "user",
+            "text": "我根据已经提交的证据问一句。"
+          },
+          {
+            "role": "assistant",
+            "text": "庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 57
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 26600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 4,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 11,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我根据已经提交的证据问一句。"
+          },
+          {
+            "role": "assistant",
+            "text": "庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。"
+          },
+          {
+            "role": "user",
+            "text": "我请求法庭根据现有证据结案。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛只依据已提交的「停业通知书」「送达回执」「提交记录」说明结论，没有引入卷宗以外的事实。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "diff": {
+        "locationId": {
+          "before": "court-hearing",
+          "after": "legal-office"
+        },
+        "interior": {
+          "before": "court-hearing",
+          "after": "legal-office"
+        },
+        "balance": {
+          "before": 11600,
+          "after": 26600
+        },
+        "storyCount": {
+          "before": 9,
+          "after": 11
+        },
+        "clock": {
+          "before": {
+            "day": 2,
+            "hour": 9,
+            "minute": 47
+          },
+          "after": {
+            "day": 2,
+            "hour": 9,
+            "minute": 57
+          }
+        }
+      },
+      "rejected": false
+    },
+    {
+      "rawText": "<story>樱羽艾玛想再宣布一次同样的结论。</story>\n<phone_messages>[]</phone_messages>\n<world_actions>[{\"type\":\"court_finish\",\"verdict\":\"win\",\"summary\":\"重复宣布同一结论。\"}]</world_actions>",
+      "notice": "法庭存档或行动无效：当前没有进行中的庭审",
+      "before": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 57
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 26600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 4,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 11,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我根据已经提交的证据问一句。"
+          },
+          {
+            "role": "assistant",
+            "text": "庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。"
+          },
+          {
+            "role": "user",
+            "text": "我请求法庭根据现有证据结案。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛只依据已提交的「停业通知书」「送达回执」「提交记录」说明结论，没有引入卷宗以外的事实。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "after": {
+        "protagonist": "emma",
+        "clock": {
+          "day": 2,
+          "hour": 9,
+          "minute": 57
+        },
+        "locationId": "legal-office",
+        "interior": "legal-office",
+        "majorId": "law",
+        "subjects": [
+          {
+            "subjectId": "law-foundations",
+            "points": 0
+          },
+          {
+            "subjectId": "law-evidence",
+            "points": 0
+          },
+          {
+            "subjectId": "law-advocacy",
+            "points": 0
+          }
+        ],
+        "energy": 100,
+        "balance": 26600,
+        "health": 97,
+        "stress": 0,
+        "morale": 100,
+        "satiety": 4,
+        "foodEnergy": 0,
+        "inventory": [],
+        "phone": [],
+        "affinities": [
+          {
+            "id": "majo-hiro",
+            "name": "二阶堂希罗",
+            "affinity": 0
+          },
+          {
+            "id": "majo-anan",
+            "name": "夏目安安",
+            "affinity": 0
+          },
+          {
+            "id": "majo-noa",
+            "name": "城崎诺亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-leia",
+            "name": "莲见蕾雅",
+            "affinity": 0
+          },
+          {
+            "id": "majo-milia",
+            "name": "佐伯米莉亚",
+            "affinity": 0
+          },
+          {
+            "id": "majo-margo",
+            "name": "宝生玛格",
+            "affinity": 0
+          },
+          {
+            "id": "majo-nanoka",
+            "name": "黑部奈叶香",
+            "affinity": 0
+          },
+          {
+            "id": "majo-arisa",
+            "name": "紫藤亚里沙",
+            "affinity": 0
+          },
+          {
+            "id": "majo-sherry",
+            "name": "橘雪莉",
+            "affinity": 0
+          },
+          {
+            "id": "majo-hanna",
+            "name": "远野汉娜",
+            "affinity": 0
+          },
+          {
+            "id": "majo-koko",
+            "name": "泽渡可可",
+            "affinity": 0
+          },
+          {
+            "id": "majo-meruru",
+            "name": "冰上梅露露",
+            "affinity": 0
+          },
+          {
+            "id": "majo-yuki",
+            "name": "月代雪",
+            "affinity": 0
+          }
+        ],
+        "storyCount": 11,
+        "storyTail": [
+          {
+            "role": "user",
+            "text": "我根据已经提交的证据问一句。"
+          },
+          {
+            "role": "assistant",
+            "text": "庭上只讨论已经提交的材料。樱羽艾玛提到「停业通知书」。"
+          },
+          {
+            "role": "user",
+            "text": "我请求法庭根据现有证据结案。"
+          },
+          {
+            "role": "assistant",
+            "text": "樱羽艾玛只依据已提交的「停业通知书」「送达回执」「提交记录」说明结论，没有引入卷宗以外的事实。"
+          }
+        ],
+        "enrolled": true,
+        "qualification": "student",
+        "boardTitles": [
+          "咖啡馆的停业通知",
+          "雨天打翻的画具",
+          "钥匙扣与监控空档"
+        ]
+      },
+      "diff": {},
+      "rejected": true
+    }
+  ],
+  "evidence": [
+    "停业通知书",
+    "送达回执",
+    "提交记录"
+  ],
+  "reward": 15000,
+  "opened": {
+    "day": 2,
+    "hour": 9,
+    "minute": 42
+  },
+  "finished": {
+    "day": 2,
+    "hour": 9,
+    "minute": 57
+  },
+  "balanceBefore": 11600,
+  "balanceAfter": 26600
+}
