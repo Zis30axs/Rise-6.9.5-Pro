@@ -41,3 +41,9 @@
 按游戏小时选图：06:00–16:59 白天，17:00–18:59 暮色时沿用白天图（`imagePhase=day`），19:00–05:59 切换真正的夜景（`imagePhase=night`）。只替换 `legal-office` 的小说背景，不改律师职业流程、案件结算、地点开放时间、在场人物与 3D 场景。详细来源哈希、文件尺寸和衍生图校验见 [legal-office-source.json](backgrounds/legal-office-source.json)。
 
 本地浏览器单独渲染背景元素，在 1440×900、1280×800、390×844、320×568 四种视口、共 20 组时段组合下，检查 AVIF 解码、昼夜显示与横向溢出，均通过。验证范围仅为静态背景预览；没有运行完整应用或 TauriTavern 真机验收，未触发 CI。
+
+## 新宿地方裁判所法庭背景（2026-10-29）
+
+用户提供一张日本法庭内景 JPEG（文件实测 1500×845、306677 字节、SHA-256 `ad213f4f7ad02df842b60c5d68c8d4f94078034436adf53468259df34555c066`；对话里的约 1024×577 与此文件同宽高比）。画面为法官席、桐花纹章、日本国旗、两侧当事人席与前方旁听席。压缩衍生图 `backgrounds/court-hearing-day.avif` 保持 1500×845，AVIF 42894 字节，SHA-256 `85f39b96e75ac4810a440689202cd2c58c2c93e0676ab5a4c7b0e27acaa3c709`。通过固定 `?inline` 引用打包，不访问外部图片地址。
+
+此前小说模式在 `court-hearing` 使用纯 CSS 几何法庭，不读取图片；`getNovelBackground('court-hearing')` 因未登记而落到街道系列，只被主角切换预加载使用。现在两处都改为这张内景。图像实际时段恒为室内照明，傍晚和夜间仅沿用已有遮罩，不另绘夜景。事务所 `legal-office`、商业区和其他地点的选图不变。3D 漫游的程序化室内几何不使用这张照片。来源记录见 [court-hearing-source.json](backgrounds/court-hearing-source.json)。
