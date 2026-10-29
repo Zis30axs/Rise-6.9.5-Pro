@@ -8,7 +8,7 @@ import type { MemorySource } from '../src/runtime/long-term-memory/types';
 import { createInitialState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import * as archive from '../src/runtime/long-term-memory/storage';
-import { memoryBootstrap, memoryArchiveSafe } from '../src/runtime/long-term-memory';
+import { memoryBootstrap, memoryCommitted, memoryArchiveSafe } from '../src/runtime/long-term-memory';
 import { searchMemory } from '../src/runtime/long-term-memory/retrieval';
 
 vi.mock('../src/runtime/long-term-memory/storage', async importOriginal => {
@@ -73,7 +73,7 @@ describe('memory Sidecar: synchronous durable overflow journal', () => {
     expect(recovered.overflowCount).toBe(0);
   });
 
-  it('keeps the old page on partial acknowledgement if the replacement page cannot be saved', () => {
+  it('replaces partially acknowledged pages and releases only confirmed entries', () => {
     const scope = scopeName(), original = many(scope, 190);
     let committed = appendSavedMemoryOutbox({}, scope, original, 2, 5);
     const first = recoverSavedMemoryOutbox(committed, scope);
@@ -224,6 +224,46 @@ describe('memory Sidecar: failed IndexedDB writes and pruned-history retrieval',
     const found = await searchMemory(scope, '蓝色纸鹤 书架背面', 'soyo', 50,
       { narrator: true, maxTurn: 2, limit: 8 });
     expect(found.some(row => row.id === original.id && row.text.includes('书架背面'))).toBe(true);
+  });
+
+  it('waits for an in-flight source transaction before pruning a committed rollback', async () => {
+    const scope = scopeName(), before = enableProtagonists(createInitialState());
+    const after = structuredClone(before);
+    after.protagonists!.narrativeTurn = 3;
+    after.clock.day = 1; after.clock.hour = 0; after.clock.minute = 30;
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const ingest = vi.mocked(archive.ingestSources);
+    ingest.mockImplementationOnce(() => gate).mockResolvedValue(undefined);
+    memoryCommitted(scope, before, after,
+      [source(scope, 'story:soyo:inflight', 3, 30)]);
+    await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(1));
+    const rewound = enableProtagonists(createInitialState());
+    rewound.protagonists!.narrativeTurn = 2;
+    rewound.clock.day = 1; rewound.clock.hour = 0; rewound.clock.minute = 5;
+    memoryBootstrap(scope, rewound, []);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(archive.pruneFutureMemory).not.toHaveBeenCalled();
+    release();
+    await vi.waitFor(() => expect(archive.pruneFutureMemory).toHaveBeenCalledTimes(1));
+  });
+
+  it('never reimports old same-turn prose after a confirmed rewrite', async () => {
+    const scope = scopeName(), state = enableProtagonists(createInitialState());
+    state.protagonists!.narrativeTurn = 3;
+    state.clock.day = 1; state.clock.hour = 0; state.clock.minute = 30;
+    state.story = [{ id: 'rewritten', role: 'assistant', text: '修正的本轮真实对白。' }];
+    const old = source(scope, 'story:soyo:rewritten', 3, 30, 'soyo', '旧分支错误对白。');
+    const written: MemorySource[][] = [];
+    vi.mocked(archive.rows).mockResolvedValue([old]);
+    vi.mocked(archive.ingestSources).mockImplementation(async batch => { written.push(batch); });
+    const acknowledged = vi.fn();
+    memoryBootstrap(scope, state, [old], acknowledged);
+    await vi.waitFor(() => expect(acknowledged).toHaveBeenCalledTimes(1));
+    expect(written.length).toBe(1);
+    expect(written[0].some(row => row.key === old.key && row.text === old.text)).toBe(false);
+    expect(written[0].some(row => row.key === old.key && row.text === '修正的本轮真实对白。')).toBe(true);
   });
 
   it('requires text evidence to declare same-turn divergence, not a missing pruned source', () => {
