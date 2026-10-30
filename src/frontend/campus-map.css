@@ -38,3 +38,19 @@
 .world-map .cms-person-detail { position:absolute; z-index:9; bottom:10px; left:10px; display:flex; flex-direction:column; gap:2px; min-width:128px; max-width:calc(100% - 20px); padding:9px 30px 9px 10px; border:1px solid #8ea68d; border-radius:8px; background:#f9f4e4; box-shadow:0 4px 12px #253e3e55; color:#2f5040; font-size:12px; }
 .world-map .cms-person-detail small { color:#53705d; }
 .world-map .cms-person-detail button { position:absolute; right:0; top:0; width:30px; min-height:36px; font-size:20px; color:#496353; }
+
+
+/* Tokyo sandbox UI is part of shell.css: the packaged character card has no external stylesheet. */
+.world-map .tokyo-sandbox-scene { position:absolute; inset:0; overflow:hidden; }
+.world-map .tokyo-sandbox-canvas { display:block; width:100%; height:100%; pointer-events:none; }
+.world-map .tokyo-sandbox-pin,
+.world-map .tokyo-sandbox-caption {
+  position:absolute; z-index:2; transform:translate(-50%,-50%);
+  max-width:110px; min-height:44px; padding:6px 8px; border-radius:8px;
+  font:600 11px/1.3 system-ui,sans-serif; text-align:center;
+  background:rgba(248,249,239,.92); color:#3f4c42;
+  border:1px solid rgba(58,82,63,.35); box-shadow:0 1px 6px #0003;
+}
+.world-map .tokyo-sandbox-pin { cursor:pointer; touch-action:none; }
+.world-map .tokyo-sandbox-pin.selected { outline:2px solid #ab6754; outline-offset:1px; }
+.world-map .tokyo-sandbox-caption { opacity:.88; pointer-events:none; }
