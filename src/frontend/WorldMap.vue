@@ -8,6 +8,7 @@ import { worldScenePeople, worldScenePosition } from '../runtime/world-presence'
 import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
+import { pickCitySandbox } from './city-sandbox';
 import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CampusMapScene from './CampusMapScene.vue';
@@ -48,7 +49,6 @@ const atlasScene = ref<{
 const size = ref({ width: 620, height: 420 });
 const scale = computed(() => 2 ** -depth.value * focusZoom.value);
 const smooth = (value: number) => { const t = Math.min(1, Math.max(0, value)); return t * t * (3 - 2 * t); };
-const rise = computed(() => 1);
 const localOpacity = computed(() => 1 - smooth(depth.value - 1));
 const pan = ref({ x: 0, y: 0 });
 const TOKYO_REGION_ID = mapData.subdivisions.features.find(item => item.properties.countryId === TOKYO_COUNTRY_ID && TOKYO_REGION_NAME.test(item.properties.name))?.properties.id ?? '';
@@ -278,7 +278,7 @@ function pointerDown(event: PointerEvent) {
   event.preventDefault(); event.stopPropagation(); stopAnimation(); viewport.value.focus({ preventScroll: true });
   if (!pointers.size) {
     const target = event.target as Element;
-    tapTarget = target.closest('[data-map-target]')?.getAttribute('data-map-target') ?? (geographicLayer.value ? atlasScene.value?.pickAt(event.clientX, event.clientY) : undefined);
+    tapTarget = target.closest('[data-map-target]')?.getAttribute('data-map-target') ?? (geographicLayer.value ? atlasScene.value?.pickAt(event.clientX, event.clientY) : pickCitySandbox(viewport.value, event.clientX, event.clientY));
     gestureMoved = false; gestureHadMultiple = false;
   } else { gestureHadMultiple = true; tapTarget = undefined; }
   pointers.set(event.pointerId, pointerPoint(event));
@@ -384,13 +384,13 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
     <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
     <div class="wm-layout">
       <div class="wm-map-column">
-        <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
+        <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage" :style="transform">
             <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="district" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
-              <CampusMapScene :scope="detailDistrict ?? 'campus'" :disabled-ids="localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id)" :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="currentMapPosition" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
+              <CampusMapScene :scope="detailDistrict ?? 'campus'" :live="localLayer" :hour="model.state.clock.hour" :disabled-ids="localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id)" :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="currentMapPosition" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
             </div>
             <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
-              <CampusMapScene scope="city" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
+              <CampusMapScene scope="city" :live="layer === 'city'" :hour="model.state.clock.hour" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />

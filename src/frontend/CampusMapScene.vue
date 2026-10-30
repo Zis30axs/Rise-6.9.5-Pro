@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import LocalMapGeometry from './LocalMapGeometry.vue';
 import { districtMapPlaces, mapDistricts } from './map-districts';
@@ -7,7 +7,8 @@ import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { campusInteriors } from '../runtime/campus-interiors';
 import { transitStops } from '../runtime/transit';
-import { createCampusMapProjection, mapBounds, mapDistrictLabels, mapLocationPoint, type CampusMapScope, type MapPoint } from './campus-map-layout';
+import { createCampusMapProjection, districtChipMetrics, mapBounds, mapDistrictLabels, mapLocationPoint, placeDistrictChips, screenBuildingBoxes, separatePoints, visibleMapBuildings, type CampusMapScope, type MapPoint } from './campus-map-layout';
+import { bindCitySandboxPick, createCitySandbox, type CitySandboxHandle } from './city-sandbox';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
 type MapPerson = { contactId: string; name: string; personId?: string; portraitId?: CharacterPortraitId; protagonistId?: ProtagonistId; place?: { id: string }; position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo' };
@@ -15,9 +16,18 @@ const props = withDefaults(defineProps<{
   width: number; height: number; locationId: string; busy: boolean;
   roadEvents: MapEvent[]; people: MapPerson[]; bearing?: number; viewScale?: number;
   scope?: CampusMapScope; disabledIds?: string[]; position?: { x: number; z: number } | null; selectedId?: string; playerName?: string; playerId?: ProtagonistId;
-}>(), { bearing: 0, viewScale: 1, scope: 'campus', selectedId: '', disabledIds: () => [] });
+  live?: boolean; hour?: number;
+}>(), { bearing: 0, viewScale: 1, scope: 'campus', selectedId: '', disabledIds: () => [], live: true, hour: 15 });
 const emit = defineEmits<{ travel: [locationId: string]; select: [districtId: string]; event: [eventId: string]; scale: [scale: { metersPerPixel: number }] }>();
+const root = ref<HTMLElement>();
+const canvas = ref<HTMLCanvasElement>();
+const rendererMode = ref<'svg' | 'webgl'>('svg');
 const selectedPersonId = ref('');
+let sandbox: CitySandboxHandle | null = null;
+let reducedMotion = false;
+let observing: IntersectionObserver | undefined;
+let motionQuery: MediaQueryList | undefined;
+function motionChanged(event: MediaQueryListEvent) { reducedMotion = event.matches; syncSandbox(); }
 const projection = computed(() => createCampusMapProjection(props.width, props.height, props.bearing, props.scope));
 const bounds = computed(() => mapBounds(props.scope));
 const metersPerPixel = computed(() => projection.value.metersPerPixel / Math.max(.01, props.viewScale));
@@ -39,55 +49,105 @@ const markers = computed(() => {
 const showExtraMarkers = computed(() => props.width >= 330 && props.height >= 300);
 const extraMarkers = computed(() => {
   if (!showExtraMarkers.value) return [];
-  const size = 44, gap = 2;
-  type Box = { x: number; y: number; w: number; h: number };
-  const overlaps = (a: Box, b: Box) => a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
-  const boxes: Box[] = markers.value.map(marker => ({ x: marker.label.x - markerWidth.value / 2, y: marker.label.y, w: markerWidth.value, h: 44 }));
-  const offsets = [[0, 0], [0, -54], [0, 54], [-58, 0], [58, 0], [-58, -54], [58, -54], [-58, 54], [58, 54], [0, -108], [0, 108], [-116, 0], [116, 0], [-116, 54], [116, 54], [-58, 108], [58, 108], [0, -162], [0, 162]];
-  return destinations.value.map((place, index) => ({ place, index })).filter(({ place }) => !primaryIds.value.includes(place.id)).flatMap(({ place, index }) => {
+  const pending = destinations.value.map((place, index) => ({ place, index })).filter(({ place }) => !primaryIds.value.includes(place.id)).flatMap(({ place, index }) => {
     const point = mapLocationPoint(place.id);
-    if (!point) return [];
-    const anchor = project(point.x, point.z);
-    const spot = offsets.map(([dx, dy]) => ({ x: anchor.x + dx, y: anchor.y + dy }))
-      .find(candidate => candidate.x >= size / 2 + 4 && candidate.x <= props.width - size / 2 - 4 && candidate.y >= size / 2 + 4 && candidate.y <= props.height - size / 2 - 4 && !boxes.some(box => overlaps(box, { x: candidate.x - size / 2, y: candidate.y - size / 2, w: size, h: size })));
+    return point ? [{ ...place, index, anchor: project(point.x, point.z) }] : [];
+  });
+  const placed = separatePoints(pending.map(place => place.anchor), props.width, props.height, 44);
+  return pending.flatMap((place, index) => {
+    const spot = placed[index];
     if (!spot) return [];
-    boxes.push({ x: spot.x - size / 2, y: spot.y - size / 2, w: size, h: size });
-    const moved = Math.hypot(spot.x - anchor.x, spot.y - anchor.y) > 2;
-    return [{ ...place, index, anchor, point: spot, leader: moved ? points([anchor, spot]) : '' }];
+    return [{ ...place, point: spot, leader: spot.moved ? points([place.anchor, spot]) : '' }];
   });
 });
-const districts = computed(() => mapDistrictLabels(mapDistricts.map(item => ({ ...item, anchor: project(item.x, item.z) })), props.width, props.height));
+const chip = computed(() => districtChipMetrics(props.width, props.viewScale));
+const districts = computed(() => placeDistrictChips(
+  mapDistricts.map(item => ({ ...item, anchor: project(item.x, item.z) })),
+  screenBuildingBoxes(visibleMapBuildings('city'), project),
+  props.width,
+  props.height,
+  chip.value,
+));
+const districtStyle = (point: MapPoint) => ({
+  left: `${point.x}px`, top: `${point.y}px`,
+  fontSize: `${chip.value.font}px`,
+  padding: `1px ${chip.value.padX}px`,
+  transform: `translate(-50%, -50%) scale(${chip.value.layoutScale})`,
+});
 const player = computed(() => {
   const point = props.position ?? mapLocationPoint(props.locationId);
   if (!point || point.x < bounds.value.minX || point.x > bounds.value.maxX || point.z < bounds.value.minZ || point.z > bounds.value.maxZ) return undefined;
   return project(point.x, point.z, 1);
 });
 const peoplePositions = computed(() => {
-  const occupied = player.value ? [player.value] : [];
-  return props.people.flatMap(person => {
+  const visible = props.people.flatMap(person => {
     const location = person.position ?? (person.place ? mapLocationPoint(person.place.id) : null);
     if (!location || location.x < bounds.value.minX || location.x > bounds.value.maxX || location.z < bounds.value.minZ || location.z > bounds.value.maxZ) return [];
-    const anchor = project(location.x, location.z, 13);
-    // Co-located people need separate hit areas; leaders retain their real map position.
-    const offsets = [[0, 0], [-46, 0], [46, 0], [0, -46], [0, 46], [-46, -46], [46, -46], [-46, 46], [46, 46], [-92, 0], [92, 0]];
-    const candidates = offsets.map(([x, y]) => ({ x: Math.max(22, Math.min(props.width - 22, anchor.x + x)), y: Math.max(22, Math.min(props.height - 22, anchor.y + y)) }));
-    const point = candidates.find(candidate => occupied.every(other => Math.hypot(candidate.x - other.x, candidate.y - other.y) >= 44)) ?? anchor;
-    occupied.push(point);
-    return [{ ...person, anchor, point, leader: Math.hypot(point.x - anchor.x, point.y - anchor.y) > 2 ? points([anchor, point]) : '' }];
+    return [{ ...person, anchor: project(location.x, location.z, 13) }];
+  });
+  const seeds = player.value ? [player.value, ...visible.map(person => person.anchor)] : visible.map(person => person.anchor);
+  const placed = separatePoints(seeds, props.width, props.height, 44).slice(player.value ? 1 : 0);
+  return visible.map((person, index) => {
+    const point = placed[index] ?? person.anchor;
+    return { ...person, point, leader: Math.hypot(point.x - person.anchor.x, point.y - person.anchor.y) > 2 ? points([person.anchor, point]) : '' };
   });
 });
 const selectedPerson = computed(() => props.people.find(person => person.contactId === selectedPersonId.value));
 const stops = computed(() => transitStops.filter(stop => props.scope === 'city' || stop.id === (props.scope === 'campus' ? 'campus' : props.scope)).map(stop => ({ ...stop, anchor: project(stop.x, stop.z) })));
 const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.y}px` });
+
+function syncSandbox() {
+  sandbox?.setView({
+    width: props.width, height: props.height, bearing: props.bearing, scope: props.scope,
+    viewScale: props.viewScale, hour: props.hour, selectedId: props.selectedId, reducedMotion,
+  });
+}
+function releaseSandbox() {
+  observing?.disconnect();
+  observing = undefined;
+  sandbox?.dispose();
+  sandbox = null;
+  rendererMode.value = 'svg';
+}
+function mountSandbox() {
+  if (!props.live || sandbox || !canvas.value || !root.value) return;
+  const created = createCitySandbox(canvas.value);
+  if (!created) { rendererMode.value = 'svg'; return; }
+  sandbox = created;
+  rendererMode.value = 'webgl';
+  bindCitySandboxPick(root.value, (x, y) => sandbox?.pick(x, y));
+  const owner = root.value.ownerDocument.defaultView;
+  if (owner?.IntersectionObserver) {
+    observing = new owner.IntersectionObserver(entries => {
+      const visible = entries.some(entry => entry.isIntersecting);
+      if (!visible) sandbox?.stop();
+      else { syncSandbox(); sandbox?.start(); }
+    });
+    observing.observe(root.value);
+  }
+  syncSandbox();
+  sandbox.start();
+}
+onMounted(() => {
+  const owner = root.value?.ownerDocument.defaultView;
+  motionQuery = owner?.matchMedia('(prefers-reduced-motion: reduce)');
+  reducedMotion = motionQuery?.matches ?? false;
+  motionQuery?.addEventListener('change', motionChanged);
+  if (props.live) mountSandbox();
+});
+watch(() => props.live, live => { if (live) void nextTick(mountSandbox); else releaseSandbox(); });
+watch(() => [props.width, props.height, props.bearing, props.scope, props.viewScale, props.hour, props.selectedId], syncSandbox);
+onBeforeUnmount(() => { motionQuery?.removeEventListener('change', motionChanged); releaseSandbox(); });
 </script>
 
 <template>
-  <div class="campus-map-scene is-raised" data-campus-map-scene :data-map-scope="scope" :data-campus-bearing="bearing.toFixed(3)" :data-campus-meters-per-pixel="metersPerPixel.toFixed(4)" data-campus-progress="1.000" data-map-rise="1.000">
-    <LocalMapGeometry :width="width" :height="height" :scope="scope" :bearing="bearing" />
+  <div ref="root" class="campus-map-scene is-raised" :class="{ 'is-webgl': rendererMode === 'webgl' }" data-campus-map-scene :data-map-scope="scope" :data-campus-bearing="bearing.toFixed(3)" :data-campus-meters-per-pixel="metersPerPixel.toFixed(4)" :data-sandbox-renderer="rendererMode" :data-sandbox-live="live && rendererMode === 'webgl' ? 'true' : 'false'">
+    <canvas v-if="live" ref="canvas" class="cms-canvas" aria-hidden="true" />
+    <LocalMapGeometry v-if="rendererMode !== 'webgl'" :width="width" :height="height" :scope="scope" :bearing="bearing" />
     <svg class="cms-geometry cms-labels" :viewBox="`0 0 ${Math.max(1, width)} ${Math.max(1, height)}`" aria-hidden="true">
       <g v-for="stop in stops" :key="stop.id" :data-transit-stop="stop.id"><circle :cx="stop.anchor.x" :cy="stop.anchor.y" r="4" fill="#e5bc6a" stroke="#fff7d9"/><text :x="stop.anchor.x + 6" :y="stop.anchor.y + 3" class="cms-stop-label">站</text></g>
       <g v-if="scope !== 'city'"><polyline v-for="marker in markers" :key="marker.id" :points="marker.leader" fill="none" stroke="#7c8c70" stroke-width="1" opacity=".75"/><polyline v-for="place in extraMarkers.filter(item => item.leader)" :key="'extra-' + place.id" :points="place.leader" fill="none" stroke="#7c8c70" stroke-width=".8" stroke-dasharray="2 2"/></g>
-      <g v-else><polyline v-for="district in districts" :key="district.id" :points="points([district.anchor, district.label])" fill="none" stroke="#7c8c70" stroke-width="1"/></g>
+      <g v-else><polyline v-for="district in districts.filter(item => item.visible && Math.hypot(item.label.x - item.anchor.x, item.label.y - item.anchor.y) > 10)" :key="district.id" :points="points([district.anchor, district.label])" fill="none" stroke="#7c8c70" stroke-width="1" opacity=".45"/></g>
       <g v-if="scope !== 'city'"><polyline v-for="person in peoplePositions.filter(item => item.leader)" :key="person.contactId" :points="person.leader" fill="none" stroke="#806393" stroke-width="1.2"/></g>
     </svg>
     <template v-if="scope !== 'city'">
@@ -97,6 +157,6 @@ const markerStyle = (point: MapPoint) => ({ left: `${point.x}px`, top: `${point.
       <button v-for="person in peoplePositions" :key="person.contactId" type="button" class="cms-avatar-pin cms-avatar-person" :class="{ selected: selectedPersonId === person.contactId }" :style="markerStyle(person.point)" :data-map-person-id="person.contactId" :title="person.name" :aria-label="'查看人物：' + person.name" :aria-pressed="selectedPersonId === person.contactId" @click="selectedPersonId = selectedPersonId === person.contactId ? '' : person.contactId"><MapCharacterAvatar :name="person.name" :person-id="person.personId" :portrait-id="person.portraitId" :protagonist-id="person.protagonistId" /></button>
       <div v-if="selectedPerson" class="cms-person-detail" role="status"><strong>{{ selectedPerson.name }}</strong><small>{{ selectedPerson.source === 'protagonist' ? '另一主角 · 她在这里' : selectedPerson.source === 'scene' ? '现场人物' : '演示定位' }}</small><button type="button" aria-label="关闭人物信息" @click="selectedPersonId = ''">×</button></div>
     </template>
-    <button v-for="district in scope === 'city' ? districts : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="markerStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.shortName }}</button>
+    <button v-for="district in scope === 'city' ? districts.filter(item => item.visible) : []" :key="district.id" type="button" class="cms-district-pin" :class="{ selected: district.id === selectedId }" :style="districtStyle(district.label)" :data-map-target="'city:' + district.id" @click="emit('select', district.id)">{{ district.shortName }}</button>
   </div>
 </template>

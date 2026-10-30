@@ -55,7 +55,7 @@ describe('mandatory visual novel speaker and emotion tags', () => {
     expect(bridge).toContain('STORY_PROTOCOL');
     expect(bridge).toContain('CHARACTER_SPEECH_FINAL_CHECK');
     expect(bridge).toContain('in_chat');
-    expect(bridge).toContain('requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt');
+    expect(bridge).toContain('requestStoryFromCustomApi(storyApi, inputPrompt, instructions, controller!.signal)');
     expect(bridge).toContain("options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL");
     expect(bridge).toContain("options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL");
     expect(bridge).toContain("options?.kind === 'interaction_event' ?");

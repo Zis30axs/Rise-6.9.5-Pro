@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { createCampusMapProjection, mapAreas, mapBounds, mapPaths, visibleMapBuildings, type CampusMapScope, type MapCameraView, type MapPoint } from './campus-map-layout';
+import { takaoPeak, takaoRing, worldSites } from './world-layout';
 
 const props = withDefaults(defineProps<{ width: number; height: number; scope?: CampusMapScope; bearing?: number; cameraView?: MapCameraView }>(), { scope: 'city', bearing: 0 });
 const clipId = 'map-ground-' + useId();
@@ -16,6 +17,13 @@ const paths = computed(() => mapPaths.flatMap(path => {
   return x2 > x1 && z2 > z1 ? [{ ...path, x1, z1, width: x2 - x1, depth: z2 - z1 }] : [];
 }));
 const areas = computed(() => mapAreas.filter(area => area.maxX >= bounds.value.minX && area.minX <= bounds.value.maxX && area.maxZ >= bounds.value.minZ && area.minZ <= bounds.value.maxZ));
+const sites = worldSites;
+const mountainRings = computed(() => [1, 0.72, 0.46].map((scale, index) => ({
+  points: takaoRing(scale).map(point => `${point.x.toFixed(1)},${point.z.toFixed(1)}`).join(' '),
+  fill: ['#789e70', '#638b59', '#507746'][index],
+  opacity: [0.65, 0.78, 0.9][index],
+})));
+const showMountain = computed(() => props.scope === 'city' || props.scope === 'takao-mountain');
 const buildings = computed(() => visibleMapBuildings(props.scope).map(building => {
   const { x, z, width, depth, height } = building;
   const x1 = x - width / 2, x2 = x + width / 2, z1 = z - depth / 2, z2 = z + depth / 2;
@@ -35,9 +43,9 @@ const buildings = computed(() => visibleMapBuildings(props.scope).map(building =
     <g :transform="groundTransform" :clip-path="`url(#${clipId})`">
       <rect :x="bounds.minX" :y="bounds.minZ" :width="bounds.maxX - bounds.minX" :height="bounds.maxZ - bounds.minZ" fill="#c4d1b4" stroke="#8ca083"/>
       <rect v-for="area in areas" :key="area.id" :x="area.minX" :y="area.minZ" :width="area.maxX - area.minX" :height="area.maxZ - area.minZ" :fill="area.id === 'city-park' ? '#8eaf86' : area.id === 'neighborhood' ? '#cbbda2' : '#d4d9bf'" rx="3"/>
-      <rect x="22" y="74" width="43" height="15" fill="#90af86" rx="4"/>
-      <ellipse cx="46" cy="-11" rx="17" ry="23" fill="#b78c76"/>
-      <ellipse cx="46" cy="-11" rx="14" ry="20" fill="#90ac80" stroke="#e9e1c9" stroke-width=".5"/>
+      <rect :x="sites.pocketPark.x" :y="sites.pocketPark.z" :width="sites.pocketPark.width" :height="sites.pocketPark.depth" fill="#90af86" rx="4"/>
+      <ellipse :cx="sites.sports.x" :cy="sites.sports.z" :rx="sites.sports.rx" :ry="sites.sports.ry" fill="#b78c76"/>
+      <ellipse :cx="sites.sports.x" :cy="sites.sports.z" :rx="sites.sports.rx * 0.82" :ry="sites.sports.ry * 0.86" fill="#90ac80" stroke="#e9e1c9" stroke-width=".5"/>
       <rect x="35" y="-27" width="22" height="32" fill="none" stroke="#eee7cf" stroke-width=".4"/>
       <rect v-for="(path, index) in paths" :key="index" :x="path.x1" :y="path.z1" :width="path.width" :height="path.depth" :fill="path.kind === 'road' ? '#7d8c85' : '#eee2c7'"/>
       <g data-map-worksite>
@@ -46,17 +54,13 @@ const buildings = computed(() => visibleMapBuildings(props.scope).map(building =
         <rect x="-59" y="67" width="14" height="10" fill="none" stroke="#776d5d" stroke-width="1" stroke-dasharray="2 1"/>
         <text x="-52" y="64.5" text-anchor="middle" font-size="3" fill="#715139">工地</text>
       </g>
-      <ellipse cx="179" cy="-192" rx="23" ry="12" fill="#82adb0" stroke="#bacbb1" stroke-width="2"/>
-      <g data-map-mountain v-if="scope === 'city' || scope === 'takao-mountain'">
-        <polygon points="-85,-135 -40,-230 40,-230 85,-135" fill="#789e70" opacity=".65"/>
-        <polygon points="-65,-145 -25,-220 25,-220 65,-145" fill="#638b59" opacity=".75"/>
-        <polygon points="-40,-165 0,-218 40,-165" fill="#507746" opacity=".88"/>
+      <ellipse :cx="sites.lake.x" :cy="sites.lake.z" :rx="sites.lake.rx" :ry="sites.lake.ry" fill="#82adb0" stroke="#bacbb1" stroke-width="2"/>
+      <g data-map-mountain v-if="showMountain">
+        <polygon v-for="(ring, index) in mountainRings" :key="index" :points="ring.points" :fill="ring.fill" :opacity="ring.opacity"/>
         <path d="M0 -155 Q -30 -168 -35 -185 T 0 -200 T 25 -215" fill="none" stroke="#dfd4b6" stroke-width="2.5" stroke-dasharray="3 1.5"/>
-        <line x1="-25" y1="-155" x2="0" y2="-192" stroke="#5b6e5c" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <line x1="-25" y1="-155" :x2="takaoPeak.x" :y2="takaoPeak.z" stroke="#5b6e5c" stroke-width="1.2" stroke-dasharray="4 2"/>
         <ellipse cx="45" cy="-155" rx="8" ry="5" fill="#78a0a8" opacity=".85" stroke="#b4c7b0" stroke-width=".8"/>
-        <text x="25" y="-218" text-anchor="middle" class="cms-ground-label">▲ 高尾山顶 599m</text>
-        <text x="45" y="-146" text-anchor="middle" class="cms-ground-label">♨ 极乐汤温泉</text>
-        <text x="-35" y="-176" text-anchor="middle" class="cms-ground-label">山间茶屋</text>
+        <text :x="takaoPeak.x + 10" :y="takaoPeak.z - 8" text-anchor="middle" class="cms-ground-label">高尾山顶</text>
       </g>
       <path d="M-70 27H-6M6 27H70" fill="none" stroke="#83947d" stroke-width="1"/>
       <text x="46" y="-10" text-anchor="middle" class="cms-ground-label">运动场</text>

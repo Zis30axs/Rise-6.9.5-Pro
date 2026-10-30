@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import type { SceneMovementWorld } from './scene-movement';
 import { sceneBounds, scenePaths } from './scene-layout';
+import { buildingBaseY, cityGrove, takaoElevation, worldBuildings, type WorldBuilding } from './world-layout';
+import { createTakaoGeometry } from './takao-geometry';
 
 export type SceneAction = 'phone' | 'map' | 'observe' | 'rest' | 'schedule';
 export interface SceneHotspot {
@@ -88,6 +90,11 @@ export const streetRoutes: Record<string, StreetNode[]> = {
     { label: 'Live House 门前广场', position: [-155, 1.7, -135], yaw: 0 },
     { label: 'KTV 娱乐城门前', position: [-205, 1.7, -135], yaw: 0 },
     { label: '启航商贸写字楼门前', position: [-150, 1.7, -170], yaw: 0 },
+  ],
+  'takao-mountain': [
+    { label: '高尾山接驳站', position: [0, 1.7, -175], yaw: 0 },
+    { label: '登山步道', position: [-20, 1.7, -185], yaw: 0 },
+    { label: '山顶展望台前', position: [25, 1.7, -206], yaw: 0 },
   ],
 };
 
@@ -181,7 +188,7 @@ export function createCampusWorld(scene: THREE.Scene) {
   // The courtyard extends beyond the camera, so it feels like a place rather than a model on a base.
   box(sceneBounds.maxX - sceneBounds.minX, 0.5, sceneBounds.maxZ - sceneBounds.minZ, palette.grass,
     (sceneBounds.minX + sceneBounds.maxX) / 2, -0.3, (sceneBounds.minZ + sceneBounds.maxZ) / 2);
-  for (const path of scenePaths) box(path.width, 0.035, path.depth, path.kind === 'road' ? palette.asphalt : palette.path, path.x, path.kind === 'road' ? -0.015 : 0.006, path.z);
+  for (const path of scenePaths) box(path.width, 0.035, path.depth, path.kind === 'road' ? palette.asphalt : palette.path, path.x, (path.kind === 'road' ? -0.015 : 0.006) + takaoElevation(path.x, path.z), path.z);
   for (let i = 0; i < 20; i++) {
     box(0.06, 0.052, 1.5, palette.stone, -2.5, 0.015, i * 2.4 - 6);
     box(0.06, 0.052, 1.5, palette.stone, 2.5, 0.015, i * 2.4 - 6);
@@ -209,7 +216,17 @@ export function createCampusWorld(scene: THREE.Scene) {
     }
     return group;
   };
-  const library = build(0, -14, 25, 10.2, 7, 3, 12);
+  const buildingById = new Map(worldBuildings.map(item => [item.id, item]));
+  const facadeMaterial = (building: WorldBuilding) => building.facade === 'cafe' ? material(0xc49776) : palette[building.facade];
+  const place = (id: string) => {
+    const spec = buildingById.get(id);
+    if (!spec) throw new Error(`缺少建筑 ${id}`);
+    const group = build(spec.x, spec.z, spec.width, spec.height, spec.depth, spec.floors, spec.columns, facadeMaterial(spec), spec.id);
+    group.position.y = buildingBaseY(spec);
+    if (spec.rotationY) group.rotation.y = spec.rotationY;
+    return group;
+  };
+  const library = place('building:0:-14');
   tag(library, 'observe');
   // Central portico and steps.
   box(6.6, 0.22, 4, palette.stone, 0, 0.1, -9.1);
@@ -222,8 +239,8 @@ export function createCampusWorld(scene: THREE.Scene) {
   box(7.2, 0.35, 2.3, palette.trim, 0, 4.6, -9.9);
   for (const x of [-2.9, 2.9]) { cylinder(0.2, 0.24, 4.2, palette.trim, x, 2.3, -9.2); solidCircle(`portico-column:${x}`, x, -9.2, 0.24); }
   box(0.08, 3.4, 0.3, palette.gold, 0, 2.25, -10.1);
-  build(-18, -10, 7.5, 13.5, 12, 5, 4, palette.stone);
-  build(18, -12, 8, 8.6, 11, 3, 5);
+  place('building:-18:-10');
+  place('building:18:-12');
   // The original gate remains on the connected campus-to-neighborhood walking spine.
   for (const x of [-5, 5]) { box(1, 4.6, 1, palette.stone, x, 2.3, 27); box(1.3, 0.35, 1.3, palette.trim, x, 4.7, 27); solidBox(`gate-pillar:${x}`, x, 27, 1, 1); }
   box(11.4, 0.45, 0.9, palette.trim, 0, 4.8, 27);
@@ -232,7 +249,7 @@ export function createCampusWorld(scene: THREE.Scene) {
     for (const sign of [-1, 1]) { box(0.1, 1.45, 0.1, palette.roof, xx * sign, 0.75, 27); box(1.5, 0.07, 0.1, palette.roof, xx * sign, 1.3, 27); solidBox(`gate-fence:${xx * sign}`, xx * sign, 27, 1.5, 0.1); }
   }
   // Café, striped awning and terrace.
-  const cafe = build(14, -2.6, 7, 4, 5, 1, 4, material(0xc49776));
+  const cafe = place('building:14:-2.6');
   tag(cafe, 'phone');
   const awning = box(7.5, 0.18, 2, palette.roof, 14, 2.8, 0.6);
   awning.rotation.x = 0.08;
@@ -249,7 +266,7 @@ export function createCampusWorld(scene: THREE.Scene) {
 
   function tree(x: number, z: number, scale: number, colorIndex: number) {
     const group = new THREE.Group();
-    group.position.set(x, 0, z);
+    group.position.set(x, takaoElevation(x, z), z);
     world.add(group);
     group.scale.setScalar(scale);
     const trunk = box(0.32, 3.4, 0.32, palette.wood, 0, 1.7, 0, group);
@@ -297,13 +314,13 @@ export function createCampusWorld(scene: THREE.Scene) {
   box(0.47, 0.7, 0.2, material(0xb7d8b3, { emissive: 0x96c8aa, emissiveIntensity: 0.25 }), 0, 1.98, 0.03, phone);
 
   // North teaching court and west residential court are connected by the campus walking loop.
-  build(0, -46, 32, 12.4, 12, 4, 10, palette.stone, 'teaching-building');
+  place('building:teaching-building');
   box(30, 0.04, 11, palette.path, 0, 0.015, -34.5);
   box(9, 3.2, 0.16, palette.glass, 0, 1.8, -39.93);
   box(12, 0.3, 2.8, palette.trim, 0, 3.8, -39);
   for (const x of [-5.5, 5.5]) { cylinder(0.16, 0.19, 3.6, palette.stone, x, 1.8, -38.7); solidCircle(`teaching-column:${x}`, x, -38.7, 0.19); }
-  build(-49, -18, 18, 13.8, 20, 5, 6, palette.brick, 'residence-building');
-  build(-49, -44, 18, 10.8, 10, 4, 6, palette.facade, 'residence-north-building');
+  place('building:residence-building');
+  place('building:residence-north-building');
   box(5, 3.3, 0.16, palette.glass, -49, 1.8, -7.93);
   box(7, 0.23, 2, palette.trim, -49, 3.8, -7.3);
   // Bicycle racks remain outside the open front walk.
@@ -356,9 +373,11 @@ export function createCampusWorld(scene: THREE.Scene) {
     for (let light = 0; light < 3; light++) box(0.2, 0.18, 0.04, [palette.shopRed, palette.gold, palette.shopGreen][light], x, 3.28 - light * 0.28, z + 0.18);
   }
 
-  const storefront = (x: number, width: number, height: number, color: THREE.MeshStandardMaterial, id: string) => {
-    const building = build(x, 65, width, height, 12, 2, Math.round(width / 2.6), palette.stone, id);
-    building.rotation.y = Math.PI;
+  const storefront = (id: string, color: THREE.Material) => {
+    const spec = buildingById.get(id);
+    if (!spec) throw new Error(`缺少建筑 ${id}`);
+    const building = place(id);
+    const { x, width } = spec;
     box(width - 0.5, 0.9, 0.2, color, x, 3.45, 58.82);
     box(width - 0.8, 2.3, 0.16, palette.glass, x, 1.35, 58.88);
     box(1.6, 2.4, 0.19, palette.dark, x, 1.3, 58.75);
@@ -367,9 +386,9 @@ export function createCampusWorld(scene: THREE.Scene) {
     box(width + 0.3, 0.16, 1.9, color, x, 3, 58.2);
     return building;
   };
-  storefront(-22, 18, 8.7, palette.shopRed, 'shop-book');
-  storefront(21, 16, 7.2, palette.shopGreen, 'shop-convenience');
-  storefront(48, 19, 8.2, palette.wood, 'shop-cafe');
+  storefront('building:shop-book', palette.shopRed);
+  storefront('building:shop-convenience', palette.shopGreen);
+  storefront('building:shop-cafe', palette.wood);
   // Books, grocery stripe and a cup silhouette distinguish the local shop fronts without textures.
   for (let index = 0; index < 7; index++) box(0.27, 0.62 + index % 3 * 0.09, 0.12, [palette.trim, palette.gold, palette.brick][index % 3], -28 + index * 0.34, 1.35, 58.72);
   for (let index = 0; index < 9; index++) box(0.7, 0.18, 1.95, index % 2 ? palette.trim : palette.shopGreen, 14.6 + index * 1.6, 3.02, 58.2);
@@ -441,24 +460,26 @@ export function createCampusWorld(scene: THREE.Scene) {
   // Three outdoor destination blocks share the city roads and remain genuinely walkable.
   // These are illustrative residential buildings, not facts about the player's real home or family.
   box(96, 0.028, 48, palette.path, -194, 0.008, 177);
-  build(-192, 117, 26, 13.8, 18, 5, 8, palette.brick, 'home-apartment');
-  build(-226, 178, 20, 10.8, 24, 4, 6, palette.facade, 'home-west-apartment');
-  build(-163, 181, 19, 13.8, 25, 5, 6, palette.stone, 'home-east-apartment');
+  place('building:home-apartment');
+  place('building:home-west-apartment');
+  place('building:home-east-apartment');
   box(6, 3.1, 0.17, palette.glass, -192, 1.7, 126.1);
   box(8, 0.25, 2.4, palette.trim, -192, 3.8, 127);
   box(29, 0.035, 25, palette.grass, -194, 0.035, 179);
   for (const [x, z] of [[-215, 157], [-210, 198], [-175, 199], [-154, 132], [-236, 132]]) tree(x, z, 1.45, 1);
 
   box(103, 0.035, 22, palette.path, 188, 0.015, 125);
-  for (const [x, width, color] of [[151, 20, palette.shopGreen], [178, 23, palette.shopRed], [210, 28, palette.wood]] as const) {
-    build(x, 111, width, 9.2, 15, 3, Math.round(width / 3), palette.stone, `commercial-shop:${x}`);
+  for (const [x, , color] of [[151, 20, palette.shopGreen], [178, 23, palette.shopRed], [210, 28, palette.wood]] as const) {
+    const spec = buildingById.get(`building:commercial-shop:${x}`)!;
+    place(spec.id);
+    const width = spec.width;
     box(width - 1, 2.8, 0.15, palette.glass, x, 1.55, 118.65);
     box(width + 0.5, 0.22, 3.2, color, x, 3.3, 120);
     box(width - 1, 0.9, 0.16, color, x, 4.2, 118.8);
     solidBox(`commercial-shop-front:${x}`, x, 118.65, width, 0.2);
   }
   for (const [x, z] of [[143, 132], [226, 133], [220, 181], [144, 180]]) tree(x, z, 1.5, 0);
-  build(216, 184, 28, 14, 20, 5, 8, palette.brick, 'commercial-corner');
+  place('building:commercial-corner');
   for (const x of [151, 211]) {
     box(4.4, 0.16, 0.75, palette.wood, x, 0.78, 130);
     box(4.4, 0.9, 0.13, palette.wood, x, 1.13, 130.45);
@@ -467,10 +488,10 @@ export function createCampusWorld(scene: THREE.Scene) {
 
   // Downtown and the Toyokawa residence use procedural geometry; no duplicate texture bundle.
   box(188, 0.026, 38, palette.path, 0, 0.008, 217);
-  build(-78, 226, 22, 16.2, 22, 5, 8, palette.stone, 'downtown-office-west');
-  build(-82, 157, 22, 18.6, 17, 6, 6, palette.facade, 'downtown-office-south');
-  build(87, 226, 17, 13.2, 18, 4, 6, palette.brick, 'downtown-shop-east');
-  const residence = build(50, 235, 24, 12.8, 20, 4, 7, palette.facade, 'toyokawa-residence');
+  place('building:downtown-office-west');
+  place('building:downtown-office-south');
+  place('building:downtown-shop-east');
+  const residence = place('building:toyokawa-residence');
   box(25, 0.35, 2.5, palette.trim, 50, 4.3, 224.9);
   box(4.4, 3.2, 0.16, palette.glass, 50, 1.9, 224.85);
   solidBox('toyokawa-exterior-door', 50, 224.85, 4.4, 0.16);
@@ -478,7 +499,7 @@ export function createCampusWorld(scene: THREE.Scene) {
   for (const [x, z] of [[-99, 244], [-60, 245], [94, 243], [15, 238], [-42, 225]]) tree(x, z, 1.35, Math.abs(x) % 4);
   box(114, 0.025, 92, palette.grass, 188, 0, -160);
   // Reapply the park avenue above its turf; the lake has a real collision shore.
-  for (const path of scenePaths.filter(path => path.z < -100)) box(path.width, 0.035, path.depth, path.kind === 'road' ? palette.asphalt : palette.path, path.x, path.kind === 'road' ? 0.005 : 0.025, path.z);
+  for (const path of scenePaths.filter(path => path.z < -100)) box(path.width, 0.035, path.depth, path.kind === 'road' ? palette.asphalt : palette.path, path.x, (path.kind === 'road' ? 0.005 : 0.025) + takaoElevation(path.x, path.z), path.z);
   const lake = mesh(unitDisc, material(0x6d999b, { roughness: 0.32, metalness: 0.18 }), 179, 0.05, -192);
   lake.rotation.x = -Math.PI / 2; lake.scale.set(23, 12, 1);
   // Walkers keep clear of the water even where the visual bank is gently curved.
@@ -508,10 +529,19 @@ export function createCampusWorld(scene: THREE.Scene) {
   };
   cityShelter('home', -180, 150); cityShelter('commercial', 180, 150); cityShelter('city-park', 180, -150);
   cityShelter('downtown', -20, 185); cityShelter('grand-commercial', -180, -150);
-  build(-180, -175, 32, 16.5, 22, 5, 8, palette.facade, 'grand-mall');
-  build(-155, -135, 26, 14.2, 20, 4, 6, palette.brick, 'livehouse');
-  build(-205, -135, 24, 12.8, 18, 4, 6, palette.shopRed, 'ktv');
-  build(-150, -180, 20, 22.0, 20, 7, 5, palette.stone, 'grand-tower');
+  place('building:grand-mall');
+  place('building:livehouse');
+  place('building:ktv');
+  place('building:grand-tower');
+  for (const spec of worldBuildings) if (spec.id.startsWith('building:takao')) place(spec.id);
+  const hill = material(0xffffff, { vertexColors: true });
+  mesh(createTakaoGeometry(), hill, 0, 0, 0);
+  for (const grove of cityGrove()) if (grove.x > -100 && grove.x < 100 && grove.z < -120) tree(grove.x, grove.z, grove.scale, grove.tint);
+  const step = 10;
+  for (let x = -46; x <= 62; x += step) for (let z = -258; z <= -150; z += step) {
+    const height = takaoElevation(x, z);
+    if (height > 0.35) movementWorld.surfaces.push({ minX: x - step / 2, maxX: x + step / 2, minZ: z - step / 2, maxZ: z + step / 2, height });
+  }
   for (const [x, z] of [[-180, 141], [180, 141], [180, -159], [-20, 176], [-180, -141]]) {
     for (let dx = -53; dx <= 53; dx += 7) if (Math.abs(dx) > 9) box(3.5, 0.025, 0.12, palette.roadPaint, x + dx, 0.035, z);
     for (let dz = -4; dz <= 4; dz += 1.1) box(3, 0.025, 0.5, palette.roadPaint, x - 14, 0.035, z + dz);

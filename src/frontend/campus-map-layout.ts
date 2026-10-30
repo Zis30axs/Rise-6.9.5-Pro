@@ -1,4 +1,5 @@
 import { sceneAreas, sceneLandmarks, scenePaths } from './scene-layout';
+import { buildingBaseY, takaoPeak, takaoRing, worldBuildings } from './world-layout';
 import { campusInteriors } from '../runtime/campus-interiors';
 import { districtBounds, campusDetailBounds, type LocalMapScope } from './map-districts';
 
@@ -11,40 +12,7 @@ export const mapBounds = districtBounds;
 export const mapPaths = scenePaths;
 export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain'].includes(area.id));
 export const mapLandmarks = sceneLandmarks;
-
-// Major building footprints mirror the outdoor scene. A regression compares
-// these with its real colliders so future scene edits cannot silently drift.
-export const mapBuildings: readonly MapBuilding[] = [
-  { id: 'building:0:-14', x: 0, z: -14, width: 25, depth: 7, height: 10.2, color: '#839583' },
-  { id: 'building:-18:-10', x: -18, z: -10, width: 7.5, depth: 12, height: 13.5, color: '#b7ac8b' },
-  { id: 'building:18:-12', x: 18, z: -12, width: 8, depth: 11, height: 8.6, color: '#a4b4a2' },
-  { id: 'building:14:-2.6', x: 14, z: -2.6, width: 7, depth: 5, height: 4, color: '#b97e5b' },
-  { id: 'building:teaching-building', x: 0, z: -46, width: 32, depth: 12, height: 12.4, color: '#9ba68f' },
-  { id: 'building:residence-building', x: -49, z: -18, width: 18, depth: 20, height: 13.8, color: '#ad846c' },
-  { id: 'building:residence-north-building', x: -49, z: -44, width: 18, depth: 10, height: 10.8, color: '#9ba9a0' },
-  { id: 'building:shop-book', x: -22, z: 65, width: 18, depth: 12, height: 8.7, color: '#aa726d' },
-  { id: 'building:shop-convenience', x: 21, z: 65, width: 16, depth: 12, height: 7.2, color: '#709d8b' },
-  { id: 'building:shop-cafe', x: 48, z: 65, width: 19, depth: 12, height: 8.2, color: '#a38365' },
-  { id: 'building:home-apartment', x: -192, z: 117, width: 26, depth: 18, height: 13.8, color: '#aa8770' },
-  { id: 'building:home-west-apartment', x: -226, z: 178, width: 20, depth: 24, height: 10.8, color: '#9ba9a0' },
-  { id: 'building:home-east-apartment', x: -163, z: 181, width: 19, depth: 25, height: 13.8, color: '#ada58c' },
-  { id: 'building:commercial-shop:151', x: 151, z: 111, width: 20, depth: 15, height: 9.2, color: '#709d8b' },
-  { id: 'building:commercial-shop:178', x: 178, z: 111, width: 23, depth: 15, height: 9.2, color: '#aa726d' },
-  { id: 'building:commercial-shop:210', x: 210, z: 111, width: 28, depth: 15, height: 9.2, color: '#a38365' },
-  { id: 'building:commercial-corner', x: 216, z: 184, width: 28, depth: 20, height: 14, color: '#ad846c' },
-  { id: 'building:downtown-office-west', x: -78, z: 226, width: 22, depth: 22, height: 16.2, color: '#ada58c' },
-  { id: 'building:downtown-office-south', x: -82, z: 157, width: 22, depth: 17, height: 18.6, color: '#9ba9a0' },
-  { id: 'building:downtown-shop-east', x: 87, z: 226, width: 17, depth: 18, height: 13.2, color: '#aa8770' },
-  { id: 'building:toyokawa-residence', x: 50, z: 235, width: 24, depth: 20, height: 12.8, color: '#b7ac8b' },
-  { id: 'building:grand-mall', x: -180, z: -175, width: 32, depth: 22, height: 16.5, color: '#8a7d93' },
-  { id: 'building:livehouse', x: -155, z: -135, width: 26, depth: 20, height: 14.2, color: '#9d708b' },
-  { id: 'building:ktv', x: -205, z: -135, width: 24, depth: 18, height: 12.8, color: '#aa726d' },
-  { id: 'building:grand-tower', x: -150, z: -180, width: 20, depth: 20, height: 22.0, color: '#708b9d' },
-  { id: 'building:takao-station', x: -25, z: -155, width: 22, depth: 16, height: 8.5, color: '#7a8c7b' },
-  { id: 'building:takao-onsen', x: 45, z: -155, width: 24, depth: 18, height: 10.8, color: '#9c6f5a' },
-  { id: 'building:takao-teahouse', x: -35, z: -185, width: 16, depth: 14, height: 7.2, color: '#aa7a59' },
-  { id: 'building:takao-summit', x: 25, z: -215, width: 22, depth: 18, height: 12.0, color: '#688d77' },
-];
+export const mapBuildings: readonly MapBuilding[] = worldBuildings;
 
 const aliases: Record<string, string> = { gate: 'south-gate', cafe: 'campus-cafe', dorm: 'residences' };
 export function mapLocationPoint(locationId: string): { x: number; z: number } | undefined {
@@ -60,20 +28,152 @@ export function visibleMapBuildings(scope: CampusMapScope): readonly MapBuilding
 
 /** Keep touch targets apart and choose short leaders as the map rotates. */
 export function mapDistrictLabels<T extends { anchor: MapPoint }>(items: readonly T[], width: number, height: number): (T & { label: MapPoint })[] {
-  // On 240px-wide city maps, five 104px labels need two columns and three rows.
-  const lastRow = height - 48;
-  const rows = items.length > 4 ? [28, (28 + lastRow) / 2, lastRow] : [28, lastRow];
-  const slots = [56, width - 56].flatMap(x => rows.map(y => ({ x, y })));
-  let best: MapPoint[] = [], bestDistance = Infinity;
-  const assign = (labels: MapPoint[], remaining: MapPoint[], distance: number) => {
-    if (labels.length === items.length) { if (distance < bestDistance) { best = labels; bestDistance = distance; } return; }
-    remaining.forEach((slot, index) => {
-      const anchor = items[labels.length].anchor;
-      assign([...labels, slot], remaining.filter((_, i) => i !== index), distance + Math.hypot(slot.x - anchor.x, slot.y - anchor.y));
-    });
-  };
-  assign([], slots, 0);
+  // Six campus pins stay on the historical two-column, three-row frame.
+  // Seven city districts need a fourth row; the old search had only six slots and dropped them onto their anchors.
+  const columns = [56, Math.max(56, width - 56)];
+  const rowCount = Math.max(items.length > 4 ? 3 : 2, Math.ceil(items.length / columns.length));
+  const rows = rowCount <= 3
+    ? (rowCount === 2 ? [28, height - 48] : [28, (28 + height - 48) / 2, height - 48])
+    : Array.from({ length: rowCount }, (_, index) => 26 + (Math.max(26, height - 52) - 26) * index / (rowCount - 1));
+  const slots = columns.flatMap(x => rows.map(y => ({ x, y })));
+  let best: MapPoint[] = [];
+  if (items.length <= 6 && slots.length <= 6) {
+    let bestDistance = Infinity;
+    const assign = (labels: MapPoint[], remaining: MapPoint[], distance: number) => {
+      if (labels.length === items.length) { if (distance < bestDistance) { best = labels; bestDistance = distance; } return; }
+      remaining.forEach((slot, index) => {
+        const anchor = items[labels.length].anchor;
+        assign([...labels, slot], remaining.filter((_, slotIndex) => slotIndex !== index), distance + Math.hypot(slot.x - anchor.x, slot.y - anchor.y));
+      });
+    };
+    assign([], slots, 0);
+  } else {
+    const used = new Set<number>();
+    const labels = items.map(item => item.anchor);
+    const pending = items.map((_, index) => index);
+    while (pending.length && used.size < slots.length) {
+      let choice = pending[0];
+      let slotIndex = slots.findIndex((_, index) => !used.has(index));
+      let distance = Infinity;
+      for (const itemIndex of pending) for (let index = 0; index < slots.length; index++) {
+        if (used.has(index)) continue;
+        const next = Math.hypot(slots[index].x - items[itemIndex].anchor.x, slots[index].y - items[itemIndex].anchor.y);
+        if (next < distance) { distance = next; choice = itemIndex; slotIndex = index; }
+      }
+      used.add(slotIndex);
+      labels[choice] = slots[slotIndex];
+      pending.splice(pending.indexOf(choice), 1);
+    }
+    best = labels;
+  }
   return items.map((item, index) => ({ ...item, label: best[index] ?? item.anchor }));
+}
+
+export interface DistrictChipMetrics {
+  font: number;
+  height: number;
+  padX: number;
+  /** Compensates the map's CSS zoom, then lets the chip grow only a little as you zoom in. */
+  layoutScale: number;
+  show: boolean;
+}
+
+/** City-overview chips stay small. Below this zoom they hide so the buildings stay readable. */
+export function districtChipMetrics(viewportWidth: number, viewScale: number): DistrictChipMetrics {
+  const zoom = Math.min(4, Math.max(0.45, Number.isFinite(viewScale) ? viewScale : 1));
+  const narrow = viewportWidth < 480;
+  const font = narrow ? 9 : 10;
+  const height = narrow ? 16 : 18;
+  const padX = narrow ? 4 : 5;
+  const screenFactor = Math.min(1.08, Math.max(0.7, 0.9 + 0.16 * Math.log2(zoom)));
+  return { font, height, padX, layoutScale: screenFactor / zoom, show: zoom >= 0.8 };
+}
+
+export function districtChipWidth(text: string, metrics: Pick<DistrictChipMetrics, 'font' | 'padX' | 'layoutScale'>) {
+  return Math.ceil([...text].length * metrics.font * metrics.layoutScale + metrics.padX * 2 * metrics.layoutScale);
+}
+
+export interface ScreenBox { x: number; y: number; w: number; h: number }
+
+/** Screen rectangle of an extruded footprint, used so a chip can step off the roof. */
+export function screenBuildingBoxes(buildings: readonly MapBuilding[], project: (x: number, z: number, elevation?: number) => MapPoint, pad = 4): ScreenBox[] {
+  return buildings.map(building => {
+    const xs = [building.x - building.width / 2, building.x + building.width / 2];
+    const zs = [building.z - building.depth / 2, building.z + building.depth / 2];
+    const points = xs.flatMap(x => zs.flatMap(z => [project(x, z, 0), project(x, z, building.height)]));
+    const minX = Math.min(...points.map(point => point.x)) - pad;
+    const maxX = Math.max(...points.map(point => point.x)) + pad;
+    const minY = Math.min(...points.map(point => point.y)) - pad;
+    const maxY = Math.max(...points.map(point => point.y)) + pad;
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  });
+}
+
+function boxesOverlap(a: ScreenBox, b: ScreenBox) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/** Small chips near each district. A chip that would cover a building or another chip is omitted. */
+export function placeDistrictChips<T extends { anchor: MapPoint; shortName: string }>(
+  items: readonly T[],
+  obstacles: readonly ScreenBox[],
+  width: number,
+  height: number,
+  metrics: DistrictChipMetrics,
+): (T & { label: MapPoint; visible: boolean; chipWidth: number; chipHeight: number })[] {
+  if (!metrics.show) return items.map(item => ({ ...item, label: item.anchor, visible: false, chipWidth: 0, chipHeight: 0 }));
+  const placed: ScreenBox[] = [];
+  const chipHeight = metrics.height * metrics.layoutScale;
+  return items.map(item => {
+    const chipWidth = districtChipWidth(item.shortName, metrics);
+    const offsets: [number, number][] = [[0, -(chipHeight + 10)]];
+    for (let ring = 1; ring <= 6; ring++) {
+      const step = ring * (chipHeight + 8);
+      offsets.push([0, -step], [0, step], [step * 1.6, -chipHeight], [-step * 1.6, -chipHeight], [step, step * 0.6], [-step, step * 0.6]);
+    }
+    const spot = offsets.map(([dx, dy]) => ({ x: item.anchor.x + dx, y: item.anchor.y + dy })).find(center => {
+      const box = { x: center.x - chipWidth / 2, y: center.y - chipHeight / 2, w: chipWidth, h: chipHeight };
+      const inside = box.x >= 4 && box.y >= 4 && box.x + box.w <= width - 4 && box.y + box.h <= height - 4;
+      return inside && !placed.some(other => boxesOverlap(box, other)) && !obstacles.some(other => boxesOverlap(box, other));
+    });
+    if (!spot) return { ...item, label: item.anchor, visible: false, chipWidth, chipHeight };
+    placed.push({ x: spot.x - chipWidth / 2, y: spot.y - chipHeight / 2, w: chipWidth, h: chipHeight });
+    return { ...item, label: spot, visible: true, chipWidth, chipHeight };
+  });
+}
+
+/** Place round touch targets with a coarse grid so each candidate is not compared with every previous box. */
+export function separatePoints(anchors: readonly MapPoint[], width: number, height: number, diameter = 44): { x: number; y: number; moved: boolean }[] {
+  const placed: MapPoint[] = [];
+  const cell = Math.max(8, diameter);
+  const grid = new Map<string, number[]>();
+  const blocked = (x: number, y: number) => {
+    const cx = Math.floor(x / cell);
+    const cy = Math.floor(y / cell);
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+      const bucket = grid.get(`${cx + ox}:${cy + oy}`);
+      if (!bucket) continue;
+      for (const index of bucket) if (Math.hypot(placed[index].x - x, placed[index].y - y) < diameter - 0.5) return true;
+    }
+    return false;
+  };
+  const offsets: [number, number][] = [[0, 0]];
+  for (let ring = 1; ring <= 5; ring++) {
+    const step = ring * (diameter + 2);
+    offsets.push([0, -step], [0, step], [-step, 0], [step, 0], [-step, -step], [step, -step], [-step, step], [step, step]);
+  }
+  return anchors.map(anchor => {
+    const spot = offsets.map(([dx, dy]) => ({ x: anchor.x + dx, y: anchor.y + dy }))
+      .find(candidate => candidate.x >= diameter / 2 && candidate.x <= width - diameter / 2 && candidate.y >= diameter / 2 && candidate.y <= height - diameter / 2 && !blocked(candidate.x, candidate.y))
+      ?? { x: Math.max(diameter / 2, Math.min(width - diameter / 2, anchor.x)), y: Math.max(diameter / 2, Math.min(height - diameter / 2, anchor.y)) };
+    const index = placed.length;
+    placed.push(spot);
+    const key = `${Math.floor(spot.x / cell)}:${Math.floor(spot.y / cell)}`;
+    const bucket = grid.get(key);
+    if (bucket) bucket.push(index);
+    else grid.set(key, [index]);
+    return { ...spot, moved: Math.hypot(spot.x - anchor.x, spot.y - anchor.y) > 2 };
+  });
 }
 
 /** One fixed oblique projection for the slab, roads, buildings and live pins. */
@@ -87,7 +187,11 @@ export function createCampusMapProjection(width: number, height: number, bearing
   const raw = (x: number, z: number, elevation = 0): MapPoint => ({ x: cos * x - sin * z, y: (sin * x + cos * z) * compression - elevation });
   const corners = [bounds.minX, bounds.maxX].flatMap(x => [bounds.minZ, bounds.maxZ].flatMap(z => [raw(x, z), raw(x, z, -4)]));
   for (const building of visibleMapBuildings(scope)) for (const x of [building.x - building.width / 2, building.x + building.width / 2]) {
-    for (const z of [building.z - building.depth / 2, building.z + building.depth / 2]) corners.push(raw(x, z, building.height));
+    for (const z of [building.z - building.depth / 2, building.z + building.depth / 2]) corners.push(raw(x, z, building.height + buildingBaseY(building)));
+  }
+  if (scope === 'city' || scope === 'takao-mountain') {
+    corners.push(raw(takaoPeak.x, takaoPeak.z, takaoPeak.height));
+    for (const point of takaoRing(1, 8)) corners.push(raw(point.x, point.z));
   }
   const minX = Math.min(...corners.map(point => point.x)), maxX = Math.max(...corners.map(point => point.x));
   const minY = Math.min(...corners.map(point => point.y)), maxY = Math.max(...corners.map(point => point.y));
@@ -95,6 +199,6 @@ export function createCampusMapProjection(width: number, height: number, bearing
   const a = cos * unit, b = sin * unit * compression, c = -sin * unit, d = cos * unit * compression;
   const e = view.center ? width / 2 - a * view.center.x - c * view.center.z : width / 2 - (minX + maxX) * unit / 2;
   const f = view.center ? height / 2 - b * view.center.x - d * view.center.z : height / 2 - (minY + maxY) * unit / 2;
-  return { unit, a, b, c, d, e, f, metersPerPixel: Math.hypot(d, b) / Math.abs(a * d - b * c),
+  return { unit, a, b, c, d, e, f, compression, elevationScale, metersPerPixel: Math.hypot(d, b) / Math.abs(a * d - b * c),
     project: (x: number, z: number, elevation = 0): MapPoint => ({ x: a * x + c * z + e, y: b * x + d * z + f - elevation * unit * elevationScale }) };
 }

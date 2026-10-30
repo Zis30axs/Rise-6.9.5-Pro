@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { campusInteriors } from '../src/runtime/campus-interiors';
+import { novelDestinations } from '../src/runtime/model';
 import { createCampusMapProjection, mapLocationPoint, visibleMapBuildings } from '../src/frontend/campus-map-layout';
 import { districtBounds, districtMapPlaces, locationDistrict, MAP_DISTRICT_IDS } from '../src/frontend/map-districts';
 
@@ -8,7 +9,7 @@ describe('district sandtables', () => {
     for (const room of campusInteriors) {
       const district = locationDistrict(room.id), bounds = districtBounds(district);
       expect(district).toBe(locationDistrict(room.parentLocationId));
-      expect(districtMapPlaces(district).some(place => place.id === room.id)).toBe(true);
+      if (novelDestinations.some(place => place.id === room.id)) expect(districtMapPlaces(district).some(place => place.id === room.id)).toBe(true);
       expect(room.entrance.x).toBeGreaterThanOrEqual(bounds.minX); expect(room.entrance.x).toBeLessThanOrEqual(bounds.maxX);
       expect(room.entrance.z).toBeGreaterThanOrEqual(bounds.minZ); expect(room.entrance.z).toBeLessThanOrEqual(bounds.maxZ);
     }

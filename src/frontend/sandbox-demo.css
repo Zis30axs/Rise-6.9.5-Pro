@@ -1,0 +1,19 @@
+html, body { margin: 0; height: 100%; background: #163028; }
+body { font: 15px/1.45 "PingFang SC", "Microsoft YaHei", sans-serif; color: #e7efe4; }
+.sandbox-demo { min-height: 100%; display: flex; flex-direction: column; }
+.sandbox-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 14px; }
+.sandbox-bar h1 { margin: 0; font-size: 18px; font-weight: 560; }
+.sandbox-bar p { margin: 0; color: #c5d4c4; font-size: 13px; }
+.sandbox-bar label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.sandbox-bar input[type="range"] { width: min(220px, 42vw); }
+.sandbox-bar button, .sandbox-tools button { min-height: 44px; padding: 0 12px; border: 1px solid rgba(232, 214, 170, .45); border-radius: 8px; background: rgba(244, 236, 214, .08); color: #f4e7c8; font: inherit; cursor: pointer; }
+.sandbox-tools { display: flex; gap: 6px; }
+.sandbox-tools button { min-width: 44px; padding: 0; font-size: 18px; }
+.sandbox-map { flex: 1; min-height: 0; padding: 0 12px 12px; }
+.sandbox-map .wm-viewport { height: calc(100vh - 78px); min-height: 280px; }
+@media (max-width: 480px) {
+  .sandbox-bar { gap: 8px; padding: 8px 10px; }
+  .sandbox-bar h1 { font-size: 16px; }
+  .sandbox-map { padding: 0 8px 8px; }
+  .sandbox-map .wm-viewport { height: calc(100vh - 118px); }
+}
