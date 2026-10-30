@@ -207,8 +207,7 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
           // A new normal story finished while an earlier memory worker was busy.
           // Recheck its now-eligible logs without waiting for another story.
           wakeup(scope, 1000);
-          return;
-        }
+        } else {
         const jobs = await rows<MemoryJob>('jobs', scope);
         const active = jobs.filter(j => j.state === 'pending' || j.state === 'working');
         if (active.length) {
@@ -225,6 +224,7 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
               .some(s => !s.processed && s.turn <= through && !failed.has(s.id));
             if (unfinished) wakeup(scope, 1000);
           }
+        }
         }
       } catch { /* Persistence failure has no impact on gameplay. */ }
     }
