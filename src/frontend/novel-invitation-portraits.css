@@ -14,6 +14,9 @@
   overflow: hidden;
   pointer-events: none;
 }
+.uc-shell[data-layout-edit=true] .novel-invitation-portraits { pointer-events: auto; }
+.uc-shell[data-layout-edit=true] .novel-invitation-portraits__side > .novel-npc-portrait,
+.uc-shell[data-layout-edit=true] .novel-invitation-portraits__side > .soyo-live2d { pointer-events: none; }
 .novel-invitation-portraits__side {
   position: relative;
   min-width: 0;
