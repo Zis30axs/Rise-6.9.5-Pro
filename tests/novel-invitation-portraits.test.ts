@@ -151,8 +151,8 @@ describe('面对面邀约双立绘（真实场景，不调整日程）', () => {
     const dialogue=readFileSync(resolve(process.cwd(),'src/frontend/NovelDialogue.vue'),'utf8');
     const layout=readFileSync(resolve(process.cwd(),'src/frontend/shell-layout.ts'),'utf8');
     const css=readFileSync(resolve(process.cwd(),'src/frontend/novel-invitation-portraits.css'),'utf8');
-    expect(app).toContain('<NovelInvitationPortraits v-if="visibleInvitationPortraitPair');
-    expect(app).toContain('!visibleInvitationPortraitPair');
+    expect(app).toContain('<NovelInvitationPortraits v-if="visibleInvitationStage');
+    expect(app).toContain('!visibleInvitationStage');
     expect(dialogue).toContain('novelInvitationPortraitFocus');
     expect(layout).toContain("return 'invitation-portraits'");
     expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
