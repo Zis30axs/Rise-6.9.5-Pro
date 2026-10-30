@@ -45,6 +45,7 @@
 .wordmark span { display:block; margin-top:6px; font-family:"Microsoft YaHei",sans-serif; font-size:10px; letter-spacing:.14em; color:#d6ddc8; }
 .topbar-world { display:flex; gap:10px; flex-wrap:wrap; align-items:center; color:#eee7d2; font-size:12px; padding-top:2px; }
 .topbar-world time { font-variant-numeric:tabular-nums; color:#ffe3a9; }
+.chrome-weather { white-space:nowrap; letter-spacing:0; }
 .chrome-dot { opacity:.6; }
 .host-actions { display:flex; gap:14px; align-items:center; margin-left:auto; white-space:nowrap; }
 .uc-shell .host-actions button { min-height:40px; padding:5px 0; color:#e1e7d8; font-size:11px; }

@@ -138,6 +138,8 @@ export interface WorldState {
   /** Persistent world currency; absent only in pre-Tokyo saves. */
   currency?: 'JPY';
   schema_version: '1.11.0' | '1.12.0' | '1.13.0';
+  /** Shared daily forecast. Old saves receive it from the civil date on load. */
+  weather?: import('../runtime/weather').WeatherState;
   /** Added lazily when a dual-protagonist feature is first used. */
   protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };

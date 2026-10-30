@@ -39,9 +39,18 @@ export function gamePhoneClockFromSnapshot(raw: unknown): GamePhoneClockReading 
   if (date.toISOString().slice(0, 10) !== iso || date.getUTCHours() !== hour || date.getUTCMinutes() !== minute) return null;
   return {
     time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-    label: `${date.getUTCMonth() + 1}月${date.getUTCDate()}日星期${WEEKDAYS[date.getUTCDay()]}`,
+    label: `${date.getUTCMonth() + 1}月${date.getUTCDate()}日星期${WEEKDAYS[date.getUTCDay()]}${weatherClockSuffix((raw as Record<string, unknown>).weather)}`,
     date,
   };
+}
+
+/** Optional forecast from the world-phone snapshot. A missing or odd value leaves the date unchanged. */
+function weatherClockSuffix(weather: unknown): string {
+  if (!weather || typeof weather !== 'object') return '';
+  const { label, icon } = weather as Record<string, unknown>;
+  if (typeof label !== 'string' || !/^[\u4e00-\u9fff]{1,4}$/.test(label)) return '';
+  const mark = typeof icon === 'string' && icon.length > 0 && icon.length <= 8 ? icon : '';
+  return ` ${mark}${label}`;
 }
 
 /** Read the current chat's authoritative clock; absent/mismatched sessions are blank. */

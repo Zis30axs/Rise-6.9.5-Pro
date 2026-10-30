@@ -1,6 +1,7 @@
 import type { PlayerState, WorldState } from '../frontend/types';
 import { advancePlayerNutrition, getServiceTakeawayItem, INVENTORY_ITEM_LIMIT, MAX_PURCHASE_QUANTITY, PACKAGING_FEE } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
+import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthExposure, resolveWeather } from './weather';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
@@ -169,6 +170,8 @@ export interface LocationServiceQuote {
   payout: number;
   playerAfter: PlayerState;
   changes: LocationServiceEffects & { balance: number };
+  /** Empty unless this outdoor job rolled a chill or heatstroke. */
+  weatherLog: string;
   blockedReason: string | null;
 }
 
@@ -200,19 +203,28 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
   }
   if (!blockedReason && state.player.balance < price) blockedReason = `余额不足，这项活动需要 ${price} 日元。`;
   if (!blockedReason && state.player.balance + payout - price > 20_000_000) blockedReason = '余额已接近上限，暂时无法领取这笔工资。';
-  if (!blockedReason && service && energyUnits(state.player.energy) < energyUnits(-service.effects.energy)) {
-    blockedReason = `精力不足，这项活动需要 ${-service.effects.energy} 点精力。`;
+  const outdoor = !state.interior && venues.some(venue => venue.locationId === state.locationId && venue.outdoor);
+  const weatherDrain = service ? outdoorExertionDrain(resolveWeather(state).id, outdoor, service.effects.energy) : 0;
+  const neededEnergy = service ? Math.max(0, -service.effects.energy) + weatherDrain : 0;
+  if (!blockedReason && neededEnergy > 0 && energyUnits(state.player.energy) < energyUnits(neededEnergy)) {
+    blockedReason = `精力不足，这项活动需要 ${neededEnergy} 点精力。`;
   }
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
   const playerAfter = blockedReason ? { ...state.player } : advancePlayerNutrition(state.player, state.clock, minutes);
+  let weatherLog = '';
   if (service && !blockedReason) {
     playerAfter.balance += payout - price;
-    playerAfter.energy = adjustEnergy(playerAfter.energy, service.effects.energy);
+    playerAfter.energy = adjustEnergy(playerAfter.energy, service.effects.energy - weatherDrain);
     for (const key of ['morale', 'health', 'stress', 'satiety'] as const) {
       playerAfter[key] = Math.min(100, Math.max(0, playerAfter[key] + service.effects[key]));
     }
     playerAfter.foodEnergy = Math.min(3000, Math.max(0, playerAfter.foodEnergy + service.effects.foodEnergy));
+    if (outdoor && service.effects.energy < 0) {
+      const exposed = applyOutdoorHealth(playerAfter, outdoorHealthExposure(resolveWeather(state), exposureSeed(state.clock, 'service', `${service.id}@${state.locationId}`)));
+      playerAfter.health = exposed.player.health;
+      weatherLog = exposed.log;
+    }
   }
   const changes = {
     energy: energyDifference(playerAfter.energy, state.player.energy),
@@ -223,5 +235,5 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     foodEnergy: playerAfter.foodEnergy - state.player.foodEnergy,
     balance: playerAfter.balance - state.player.balance,
   };
-  return { service, minutes, price, payout, playerAfter, changes, blockedReason };
+  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason };
 }

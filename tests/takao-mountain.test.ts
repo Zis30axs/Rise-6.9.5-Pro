@@ -5,6 +5,7 @@ import { campusInteriors, getCampusInterior } from '../src/runtime/campus-interi
 import { getTransitRoutes, isFarTransitLocation, requiresTransitReturn, transitStops } from '../src/runtime/transit';
 import { getLocationServiceQuote, locationServiceCatalog, venues } from '../src/runtime/location-services';
 import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
+import { exposureSeed, outdoorHealthExposure, resolveWeather } from '../src/runtime/weather';
 import rawTakaoWorldbook from '../src/worldbook/takao-mountain.json';
 
 describe('takao mountain sandbox & activities', () => {
@@ -98,7 +99,8 @@ describe('takao mountain sandbox & activities', () => {
     const hikeExecuted = reduceState(baseState, { type: 'location_service', serviceId: 'takao-hiking' });
     expect(hikeExecuted.journal.at(-1)?.text).toContain('登山步道健行');
     expect(hikeExecuted.player.stress).toBe(15); // 50 - 35
-    expect(hikeExecuted.player.health).toBe(68); // 60 + 8
+    const hikeExposure = outdoorHealthExposure(resolveWeather(baseState), exposureSeed(baseState.clock, 'service', 'takao-hiking@takao-mountain'));
+    expect(hikeExecuted.player.health).toBe(68 + hikeExposure.healthDelta);
 
     // 2. Observation deck (free, scenic relaxation)
     const viewQuote = getLocationServiceQuote(baseState, 'takao-observation');
