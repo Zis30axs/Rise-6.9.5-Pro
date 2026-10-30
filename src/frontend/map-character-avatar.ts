@@ -2,11 +2,12 @@ import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getSakikoArt, getTakiArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getRaanaArt, getSakikoArt, getTakiArt } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
+import { isRaanaSpeaker } from './raana-art-policy';
 import { isTakiSpeaker } from './taki-art-policy';
-import { majoExpressionFor } from './majo-art';
+import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
@@ -41,6 +42,13 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
     const src = majoExpressionFor(person.personId, 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
+  if (!person.protagonistId) {
+    const byName = resolveMajoSpeaker(person.name);
+    if (byName) {
+      const src = majoExpressionFor(byName, 'neutral');
+      if (src) return { kind: 'sprite', src };
+    }
+  }
   if (person.personId?.startsWith('watanare-')) {
     const src = watanareExpressionFor(person.personId, 'neutral');
     return src ? { kind: 'sprite', src } : null;
@@ -51,6 +59,10 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
   }
   if (!person.protagonistId && (isAnonSpeaker(person.name) || isAnonSpeaker(person.personId ?? ''))) {
     const art = getAnonArt(downtownArtPack, { speaker: person.name || person.personId, expression: 'neutral' });
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isRaanaSpeaker(person.name) || isRaanaSpeaker(person.personId ?? ''))) {
+    const art = getRaanaArt(downtownArtPack, { speaker: person.name || person.personId, expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   if (!person.protagonistId && (isTakiSpeaker(person.name) || isTakiSpeaker(person.personId ?? ''))) {

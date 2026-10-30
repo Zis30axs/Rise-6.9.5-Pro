@@ -22,9 +22,11 @@ MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 
 MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
 ANON_POSES = ('shy', 'smile', 'confident', 'wave', 'surprised', 'cheerful')
 ANON_SPRITES = {f'anon_uniform_{pose}' for pose in ANON_POSES}
+RAANA_POSES = ('neutral', 'smile', 'crossed', 'wave', 'hips')
+RAANA_SPRITES = {f'raana_uniform_{pose}' for pose in RAANA_POSES}
 TAKI_POSES = ('neutral', 'crossed', 'drumsticks', 'embarrassed')
 TAKI_SPRITES = {f'taki_uniform_{pose}' for pose in TAKI_POSES}
-SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | TAKI_SPRITES
+SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | RAANA_SPRITES | TAKI_SPRITES
 BACKGROUNDS = {'toyokawa_mansion_day', 'toyokawa_mansion_dusk', 'toyokawa_mansion_night',
                'toyokawa_living_room', 'downtown_day', 'downtown_night'}
 EXPECTED_ASSETS = SPRITES | BACKGROUNDS

@@ -156,6 +156,24 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
   },
   {
+    id: 'nanoka-honoka-home', label: '黑部姐妹的家', parentLocationId: 'home',
+    description: '杂司谷住宅区的黑部家公寓，奈叶香和已大学毕业的姐姐穗奈香住在这里。客厅连着厨房与书架，走廊通向她们各自的卧室。',
+    entrance: { x: -203, z: 130, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'kurobe-living-sofa', kind: 'bed', minX: -5.3, maxX: -2.6, minZ: -3.7, maxZ: -2.1 },
+      { id: 'kurobe-kitchen', kind: 'shelf', minX: 3.4, maxX: 5.5, minZ: -4.5, maxZ: -2.8 },
+      { id: 'kurobe-table', kind: 'desk', minX: -0.5, maxX: 1.8, minZ: -1.1, maxZ: 0.5 },
+    ],
+    interactions: [
+      { id: 'kurobe-living-room', label: '在客厅坐一会儿', description: '在客厅坐15分钟，恢复至多3点精力；不自动让任何住户到场。',
+        x: -3.2, z: 0.8, minutes: 15, energyDelta: 3, result: '在黑部家的客厅休息了十五分钟。',
+        prompt: '你在黑部姐妹家客厅休息了十五分钟，游戏已推进时间并恢复至多三点精力。住户是否在家以真实日程为准；不擅自获得她们的秘密。' },
+      { id: 'kurobe-bookshelf', label: '看看书架', description: '看看公共书架，不擅自翻看姐妹的私人文件。',
+        x: 3.3, z: 0.8, minutes: 0, energyDelta: 0, result: '看了看公共书架，没有动用私人资料。',
+        prompt: '你只是浏览了黑部家客厅的公共书架，没有擅自查看奈叶香或穗奈香的私人文件，也没有获得额外情报。' },
+    ],
+  },
+  {
     id: 'emma-yuki-home', label: '艾玛与月代雪的家', parentLocationId: 'home',
     description: '两人共同居住的现代公寓客餐厅。料理台、沙发与阅读角在同一空间。',
     entrance: { x: -190, z: 130, yaw: 0 }, bounds, spawn,

@@ -1,0 +1,181 @@
+{
+  "cutouts": {
+    "arisa": {
+      "height": 935,
+      "outfit": "casual",
+      "personId": "majo-arisa",
+      "poses": {
+        "neutral": {
+          "emotion": "neutral",
+          "png": "assets/majo-runtime/sources/arisa-casual-neutral.png",
+          "pngBytes": 287311,
+          "pngSha": "ef008cf0504dcc7a06d11fcc89189a4020dd5577aa5139e6452e8f596fe29990",
+          "webp": "assets/majo-runtime/characters/majo-arisa/neutral.webp",
+          "webpBytes": 54702,
+          "webpSha": "defbc222748d6b66535da692fa1b55426ecab3a340e098557f6fa2c984d3cf76",
+          "x": 8,
+          "y": 6
+        },
+        "smile": {
+          "emotion": "happy",
+          "png": "assets/majo-runtime/sources/arisa-casual-smile.png",
+          "pngBytes": 300370,
+          "pngSha": "a7a55cb415eb37f38fe12c3013ec0e5ac787266cb60f4f6c071f2406d00a06ea",
+          "webp": "assets/majo-runtime/characters/majo-arisa/happy.webp",
+          "webpBytes": 58186,
+          "webpSha": "15a0fa7be98dc6ea8a69bdc2a1f8b080732ddf4b424eb0426a9506c87a3a80ad",
+          "x": 13,
+          "y": 17
+        },
+        "thinking": {
+          "emotion": "thinking",
+          "png": "assets/majo-runtime/sources/arisa-casual-thinking.png",
+          "pngBytes": 279418,
+          "pngSha": "a6f739b47d853999048ed1e97ebe5ff58b35f51e344e640782c1cb55ab068e8e",
+          "webp": "assets/majo-runtime/characters/majo-arisa/thinking.webp",
+          "webpBytes": 53708,
+          "webpSha": "2bafce9e4f02ff3bb1775e60fe83253359ddea700615b02fbbfbbbe2dff41f35",
+          "x": 50,
+          "y": 17
+        }
+      },
+      "width": 377
+    },
+    "milia": {
+      "height": 976,
+      "outfit": "casual",
+      "personId": "majo-milia",
+      "poses": {
+        "neutral": {
+          "emotion": "neutral",
+          "png": "assets/majo-runtime/sources/milia-casual-neutral.png",
+          "pngBytes": 352091,
+          "pngSha": "a0f8cc1e3f85dd8121ba8be6a4d196e1545ddda4b36b92a42ef8c7c648a46ff0",
+          "webp": "assets/majo-runtime/characters/majo-milia/casual/neutral.webp",
+          "webpBytes": 70652,
+          "webpSha": "4e025b0567d30d4d7b01765ae2de7837a8703b034602645a8bfddf23fe836457",
+          "x": 38,
+          "y": 7
+        },
+        "smile": {
+          "emotion": "happy",
+          "png": "assets/majo-runtime/sources/milia-casual-smile.png",
+          "pngBytes": 371124,
+          "pngSha": "49cff90397217c062a35b5096cd9c5522a1d14fd59c97194f3103c70588ced19",
+          "webp": "assets/majo-runtime/characters/majo-milia/casual/happy.webp",
+          "webpBytes": 77298,
+          "webpSha": "3664e2c86b505f58d38b27658dbf2825d60cd9551196903b6fb8e831adf26b01",
+          "x": 8,
+          "y": 8
+        },
+        "thinking": {
+          "emotion": "thinking",
+          "png": "assets/majo-runtime/sources/milia-casual-thinking.png",
+          "pngBytes": 336414,
+          "pngSha": "0df9ca56bcb7b6750e9dc1b9ccb4d66a6a359dcf24b509d51fbc8e70192e8ebb",
+          "webp": "assets/majo-runtime/characters/majo-milia/casual/thinking.webp",
+          "webpBytes": 66490,
+          "webpSha": "6053330506b0b9849b6b5f9eb2872eb9be44a16de6c0fd71ac54a2122e08050b",
+          "x": 57,
+          "y": 6
+        }
+      },
+      "width": 398
+    },
+    "nanoka": {
+      "height": 960,
+      "outfit": "casual",
+      "personId": "majo-nanoka",
+      "poses": {
+        "neutral": {
+          "emotion": "neutral",
+          "png": "assets/majo-runtime/sources/nanoka-casual-neutral.png",
+          "pngBytes": 294887,
+          "pngSha": "f02a70d237435a2f18eafd681b0f6118283022293f1030497e0261dae7696412",
+          "webp": "assets/majo-runtime/characters/majo-nanoka/neutral.webp",
+          "webpBytes": 64720,
+          "webpSha": "5ce92bfe2b3ffec5166b7ed5a662bbe935e8fb5322b75035c901fcdb215202fc",
+          "x": 13,
+          "y": 6
+        },
+        "smile": {
+          "emotion": "happy",
+          "png": "assets/majo-runtime/sources/nanoka-casual-smile.png",
+          "pngBytes": 305652,
+          "pngSha": "a01c1179c0be2dcd06c834eb57cac5ab05b67bae1809a6988bb05080e1f6c6f1",
+          "webp": "assets/majo-runtime/characters/majo-nanoka/happy.webp",
+          "webpBytes": 68700,
+          "webpSha": "4f9be7c73c795d8a7f47029dc5c2596ec0d411b3a2ee668f774fda076be98c00",
+          "x": 20,
+          "y": 8
+        },
+        "thinking": {
+          "emotion": "thinking",
+          "png": "assets/majo-runtime/sources/nanoka-casual-thinking.png",
+          "pngBytes": 300703,
+          "pngSha": "f60ad69694c1988f5d559696182425de7851cde59e2eb738d43fbfb5b6316e52",
+          "webp": "assets/majo-runtime/characters/majo-nanoka/thinking.webp",
+          "webpBytes": 65624,
+          "webpSha": "f255a2c039f87640fff5bb03e3e6563402cc776912b1216410c27d3793284c85",
+          "x": 8,
+          "y": 12
+        }
+      },
+      "width": 396
+    }
+  },
+  "notes": [
+    "原图为用户提供的 1500x1000 JPEG，黑底，从左到右三个全身姿态。字节原样保存在 assets/majo-cast/sources/20261030/。",
+    "透明 PNG 在 assets/majo-runtime/sources/，标记为用户提供原图经 isnet-anime 抠图后的溯源文件，不直接打进前端。",
+    "黑部奈叶香：平静 / 闭眼笑手贴胸口 / 托腮思考。紫藤亚里沙：双手插袋平静 / 闭眼手靠脸 / 抱臂手贴口罩。佐伯米莉亚：握包带平静 / 笑着伸手 / 食指抵唇思考。",
+    "游戏表情 neutral、surprised、sad 用平静姿态；smile 用第二姿态；troubled、annoyed 用第三姿态。",
+    "佐伯米莉亚的世界书现用立绘就是这套奶白色绞花开衫。新常服是默认立绘。早先 anime-seg 的 neutral/happy/shy 仍留在 characters/majo-milia/，不删除。"
+  ],
+  "panelOrder": [
+    "neutral",
+    "smile",
+    "thinking"
+  ],
+  "schema": "unread-city-majo-character-source-sheet-v1",
+  "sheets": [
+    {
+      "bytes": 209329,
+      "file": "assets/majo-cast/sources/20261030/nanoka-sheet.jpg",
+      "height": 1000,
+      "id": "characters/source-sheets/20261030-nanoka",
+      "mime": "image/jpeg",
+      "personId": "majo-nanoka",
+      "provenance": "user-provided chat attachment 2026-10-30",
+      "sha256": "48092ff6185e92f790646a369903d9714a3f9b22b0878da7bbf2f56ecdee70ef",
+      "userProvided": true,
+      "width": 1500
+    },
+    {
+      "bytes": 224963,
+      "file": "assets/majo-cast/sources/20261030/arisa-sheet.jpg",
+      "height": 1000,
+      "id": "characters/source-sheets/20261030-arisa",
+      "mime": "image/jpeg",
+      "personId": "majo-arisa",
+      "provenance": "user-provided chat attachment 2026-10-30",
+      "sha256": "645083ce21e49c7984ccb1372c1e0bc8c0a8d53fe416b44cb7bf76fdc9c79da6",
+      "userProvided": true,
+      "width": 1500
+    },
+    {
+      "bytes": 275924,
+      "file": "assets/majo-cast/sources/20261030/milia-sheet.jpg",
+      "height": 1000,
+      "id": "characters/source-sheets/20261030-milia",
+      "mime": "image/jpeg",
+      "personId": "majo-milia",
+      "provenance": "user-provided chat attachment 2026-10-30",
+      "sha256": "bd4cefb64e53e3b560201db5c03dffd74434134bc0999d8f3fe03786498d05a5",
+      "userProvided": true,
+      "width": 1500
+    }
+  ],
+  "source": "user-provided chat attachment 2026-10-30",
+  "stage": "runtime-casual-three-pose-sprites",
+  "userProvided": true
+}
