@@ -83,7 +83,6 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
       return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
     });
   if (!pending.length) return;
-  const latestTurn = Math.max(...pending.map(s => s.turn));
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
   const dueThrough = await meta(scope, 'dueThrough');
   // Preserve fixed 20-turn checkpoints; >75 unsummarized journals may archive
