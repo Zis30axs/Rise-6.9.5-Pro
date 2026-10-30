@@ -863,9 +863,11 @@ onBeforeUnmount(() => {
     <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage"
       :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
       :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode && !visibleInvitationStage"
+    <!-- Preserve the original v-if/v-else-if scene switch. An inactive
+         single-person Live2D remains mounted while the paired stage is shown. -->
+    <SoyoLive2D v-if="novelMode"
       :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
-      :active="!activeWindow && readingMode !== 'expanded'" />
+      :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
