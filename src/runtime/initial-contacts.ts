@@ -13,9 +13,9 @@ export function knownProtagonistContact(id: 'soyo' | 'sakiko', name: string): Ch
   };
 }
 
-/** Emma already knows the other 12 residents and Yuki at game start. */
+/** Emma already knows the original prisoners and Yuki; the former guard Honoka is not an automatic phone friend. */
 export function emmaInitialFriendContacts(): CharacterContact[] {
-  return residentCast.filter(person => person.id !== 'majo-emma').map(person => ({
+  return residentCast.filter(person => person.id !== 'majo-emma' && person.id !== 'majo-honoka').map(person => ({
     id: person.id, name: person.name,
     tag: person.id === 'majo-yuki' ? '挚友 · 同住' : '牢屋敷旧识 · 手机好友',
     summary: person.profile.split('\n')[0]?.slice(0, 500) || person.publicProfile,

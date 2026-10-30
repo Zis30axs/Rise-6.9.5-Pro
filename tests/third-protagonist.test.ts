@@ -49,7 +49,7 @@ describe('third protagonist accounts and timeline', () => {
     expect(switched.journal[0]).toEqual(emma.journal[0]);
     expect(personState(switched, 'soyo').story[0].text).toBe(soyo.story[0].text);
     expect(switched.contacts.map(contact => contact.id).sort()).toEqual(
-      residentCast.filter(person => person.id !== 'majo-emma').map(person => person.id).sort()
+      residentCast.filter(person => person.id !== 'majo-emma' && person.id !== 'majo-honoka').map(person => person.id).sort()
     );
   });
 
@@ -112,7 +112,7 @@ describe('third protagonist accounts and timeline', () => {
     expect(personState(state, 'sakiko').phone).toEqual([]);
 
     const emma = personState(state, 'emma');
-    const expected = residentCast.filter(person => person.id !== 'majo-emma').map(person => person.id).sort();
+    const expected = residentCast.filter(person => person.id !== 'majo-emma' && person.id !== 'majo-honoka').map(person => person.id).sort();
     expect(expected).toHaveLength(13);
     expect(emma.contacts.map(contact => contact.id).sort()).toEqual(expected);
     expect(emma.contacts.every(contact => contact.sourcePersonId === contact.id && contact.isMain)).toBe(true);

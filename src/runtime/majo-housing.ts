@@ -58,6 +58,11 @@ export const majoHousings: readonly MajoHousing[] = Object.freeze([
     interiorId: 'anan-noa-milia-home', district: 'older-apartment-courtyard', parentLocationId: 'junction', districtArt: true,
   },
   {
+    id: 'nanoka-honoka-home', type: 'shared-apartment', label: '黑部姐妹的家',
+    description: '杂司谷住宅区的黑部家公寓，奈叶香与已大学毕业的姐姐穗奈香共同生活；两人各有卧室，共用客厅、厨房与书架。',
+    interiorId: 'nanoka-honoka-home', district: 'old-town-lowrise', parentLocationId: 'home', districtArt: true,
+  },
+  {
     id: 'sherry-hanna-home', type: 'riverfront-highrise', label: '雪莉与汉娜的住处',
     description: '神田川沿岸高层住宅的客餐厅，落地窗外是河岸步道。',
     interiorId: 'majo-highrise-home', district: 'riverfront-highrise-district', parentLocationId: 'commercial', districtArt: true,
@@ -137,6 +142,8 @@ export const allHousings: readonly MajoHousing[] = Object.freeze([...majoHousing
 const housingByPerson: Readonly<Record<string, string>> = Object.freeze({
   'majo-emma': 'emma-yuki-home',
   'majo-yuki': 'emma-yuki-home',
+  'majo-nanoka': 'nanoka-honoka-home',
+  'majo-honoka': 'nanoka-honoka-home',
   'majo-koko': 'koko-old-house',
   'majo-hiro': 'nikaido-house',
   'majo-anan': 'anan-noa-milia-home',

@@ -126,6 +126,8 @@ const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
   '橘雪莉': 'majo-sherry', '橘雪梨': 'majo-sherry', '雪莉': 'majo-sherry', '雪梨': 'majo-sherry',
   '远野汉娜': 'majo-hanna', '汉娜': 'majo-hanna',
   '宝生玛格': 'majo-margo', '玛格': 'majo-margo',
+  '黑部奈叶香': 'majo-nanoka', '奈叶香': 'majo-nanoka',
+  '黑部穗奈香': 'majo-honoka', '穗奈香': 'majo-honoka', '黑部穗乃香': 'majo-honoka', '穗乃香': 'majo-honoka',
   '月代雪': 'majo-yuki',
 });
 
@@ -165,6 +167,7 @@ export const majoInteriorArt: Readonly<Record<string, string>> = Object.freeze({
   'koko-old-house': olderFamily,
   'emma-yuki-home': modernOpen,
   'anan-noa-milia-home': sharedLiving,
+  'nanoka-honoka-home': sharedLiving,
   'majo-studio': studio,
 });
 
@@ -202,6 +205,7 @@ export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '紫黑哥特和风', expressions: 5, complete: true, note: '已接入五张透明立绘：平静、开心、害羞、生气、惊讶。难过、思考、严肃、安心使用本人平静立绘。' },
   { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-honoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '大学毕业、与奈叶香同居的常驻NPC；专属透明立绘未提交，沿用通用立绘。' },
   { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
