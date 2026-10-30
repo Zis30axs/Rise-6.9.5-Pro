@@ -1,7 +1,7 @@
 import type { PlayerState, WorldState } from '../frontend/types';
 import { advancePlayerNutrition, getServiceTakeawayItem, INVENTORY_ITEM_LIMIT, MAX_PURCHASE_QUANTITY, PACKAGING_FEE } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
-import { outdoorExertionDrain, resolveWeather } from './weather';
+import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthExposure, resolveWeather } from './weather';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
@@ -170,6 +170,8 @@ export interface LocationServiceQuote {
   payout: number;
   playerAfter: PlayerState;
   changes: LocationServiceEffects & { balance: number };
+  /** Empty unless this outdoor job rolled a chill or heatstroke. */
+  weatherLog: string;
   blockedReason: string | null;
 }
 
@@ -210,6 +212,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
   const playerAfter = blockedReason ? { ...state.player } : advancePlayerNutrition(state.player, state.clock, minutes);
+  let weatherLog = '';
   if (service && !blockedReason) {
     playerAfter.balance += payout - price;
     playerAfter.energy = adjustEnergy(playerAfter.energy, service.effects.energy - weatherDrain);
@@ -217,6 +220,11 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
       playerAfter[key] = Math.min(100, Math.max(0, playerAfter[key] + service.effects[key]));
     }
     playerAfter.foodEnergy = Math.min(3000, Math.max(0, playerAfter.foodEnergy + service.effects.foodEnergy));
+    if (outdoor && service.effects.energy < 0) {
+      const exposed = applyOutdoorHealth(playerAfter, outdoorHealthExposure(resolveWeather(state), exposureSeed(state.clock, 'service', `${service.id}@${state.locationId}`)));
+      playerAfter.health = exposed.player.health;
+      weatherLog = exposed.log;
+    }
   }
   const changes = {
     energy: energyDifference(playerAfter.energy, state.player.energy),
@@ -227,5 +235,5 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     foodEnergy: playerAfter.foodEnergy - state.player.foodEnergy,
     balance: playerAfter.balance - state.player.balance,
   };
-  return { service, minutes, price, payout, playerAfter, changes, blockedReason };
+  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason };
 }

@@ -24,7 +24,7 @@ import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
-import { applyWeatherForElapsedDays, dailyEnergyAfter, outdoorEnergyDrain, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
+import { applyOutdoorHealth, applyWeatherForElapsedDays, dailyEnergyAfter, exposureSeed, outdoorEnergyDrain, outdoorHealthExposure, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
 import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordSocialInvitations } from './natural-interactions';
 import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
@@ -199,6 +199,11 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       energy: dailyEnergyAfter(adjustEnergy(departure.energy, -quote.energyCost), state.clock.day, traveledDay),
       balance: departure.balance - quote.fare,
     };
+    if (!quote.blockedReason) {
+      const exposed = applyOutdoorHealth(next.player, outdoorHealthExposure(resolveWeather(state), exposureSeed(state.clock, 'travel', `${state.locationId}>${locationId}`)));
+      next.player = exposed.player;
+      if (exposed.log) note(next, exposed.log);
+    }
   } catch (error) {
     quote.blockedReason = error instanceof Error ? error.message : '无法规划本次出行。';
   }
@@ -1295,7 +1300,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         const stableId = `fengjin-counseling:${owner}:week-${week}`;
         note(next, `在${status.label}风堇的谈心调理，无需付款，耗时 ${quote.minutes} 分钟。风堇带着妈妈般无微不至的包容与温柔倾听抚慰你的疲惫与烦恼，重压烟消云散。精力恢复至 100，压力已清空为 0。${transitionNote}`, stableId);
       } else {
-        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.completionDescription ?? quote.service.description}${activityChangeNote(before, next.player)}${transitionNote}`);
+        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.completionDescription ?? quote.service.description}${activityChangeNote(before, next.player)}${quote.weatherLog ? ` ${quote.weatherLog}` : ''}${transitionNote}`);
       }
       break;
     }
@@ -1347,10 +1352,14 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.player.energy < 5) throw new Error('精力不足，请先等待休息。');
       const outlook = getRouteOutlook(next, action.locationId);
       const minutes = 15 + outlook.extraMinutes;
-      const weatherDrain = outdoorEnergyDrain(resolveWeather(next).id);
+      const weather = resolveWeather(next);
+      const exposure = outdoorHealthExposure(weather, exposureSeed(next.clock, 'travel', `${next.locationId}>${action.locationId}`));
+      const weatherDrain = outdoorEnergyDrain(weather.id);
       advance(next, minutes); next.player.energy = adjustEnergy(next.player.energy, -(5 + weatherDrain)); next.locationId = action.locationId; next.scene = null;
+      const exposed = applyOutdoorHealth(next.player, exposure);
+      next.player = exposed.player;
       const eventNote = outlook.event ? `途中遇到${outlook.event.title}，额外停留 ${outlook.extraMinutes} 分钟。${outlook.event.description}` : '';
-      note(next, `前往${locations.find(location => location.id === action.locationId)!.name}，步行耗时 ${minutes} 分钟。${eventNote}`);
+      note(next, `前往${locations.find(location => location.id === action.locationId)!.name}，步行耗时 ${minutes} 分钟。${eventNote}${exposed.log ? ` ${exposed.log}` : ''}`);
       break;
     }
     case 'ride_transit': {

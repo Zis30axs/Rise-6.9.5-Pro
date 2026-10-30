@@ -23,23 +23,30 @@ export interface WeatherEffect {
   /** Applied once for each newly entered game day. */
   readonly dailyMorale: number;
   readonly dailyEnergy: number;
-  /** Deterministic chance, on that day, of a small health loss. Feeds the existing cold check. */
-  readonly illnessChance: number;
-  readonly illnessHealthDelta: number;
+  readonly dailyHealth: number;
+  /**
+   * Chance on each outdoor trip or outdoor exertion. The roll ignores current
+   * health, so a well person can still lose health. Crossing below 40 still
+   * uses the existing cold diagnosis.
+   */
+  readonly outdoorHealthChance: number;
+  readonly outdoorHealthDelta: number;
+  /** Journal phrase when the outdoor health roll hits. */
+  readonly outdoorHealthNote: string;
 }
 
 /**
  * Single effect table. Outdoor drain hits travel and outdoor work.
- * A new sunny day adds a little morale and energy. Snow can nudge health
- * down so the existing cold diagnosis (health below 40) is slightly easier to reach.
+ * A new sunny day restores a little morale, energy and health.
+ * Rain, storms, snow and heat can lower health on outdoor trips and work.
  */
 export const WEATHER_EFFECTS: Readonly<Record<WeatherId, WeatherEffect>> = Object.freeze({
-  sunny: { id: 'sunny', label: '晴', icon: '☀️', summary: '今日晴朗，出门会觉得轻松一些。', outdoorEnergyDrain: 0, dailyMorale: 2, dailyEnergy: 1, illnessChance: 0, illnessHealthDelta: 0 },
-  cloudy: { id: 'cloudy', label: '多云', icon: '☁️', summary: '今日多云，体感平常。', outdoorEnergyDrain: 0, dailyMorale: 0, dailyEnergy: 0, illnessChance: 0, illnessHealthDelta: 0 },
-  rain: { id: 'rain', label: '雨', icon: '🌧️', summary: '今日有雨，外出宜避雨。', outdoorEnergyDrain: 0, dailyMorale: 0, dailyEnergy: 0, illnessChance: 0, illnessHealthDelta: 0 },
-  storm: { id: 'storm', label: '暴雨', icon: '⛈️', summary: '今日暴雨，户外行动和赶路会更耗精力。', outdoorEnergyDrain: 3, dailyMorale: 0, dailyEnergy: 0, illnessChance: 0, illnessHealthDelta: 0 },
-  snow: { id: 'snow', label: '雪', icon: '❄️', summary: '今日降雪，在户外久留容易受凉。', outdoorEnergyDrain: 1, dailyMorale: 0, dailyEnergy: 0, illnessChance: 0.2, illnessHealthDelta: -2 },
-  hot: { id: 'hot', label: '炎热', icon: '🥵', summary: '今日炎热，户外行动和赶路会更耗精力。', outdoorEnergyDrain: 3, dailyMorale: 0, dailyEnergy: 0, illnessChance: 0, illnessHealthDelta: 0 },
+  sunny: { id: 'sunny', label: '晴', icon: '☀️', summary: '今日晴朗，出门会觉得轻松一些。', outdoorEnergyDrain: 0, dailyMorale: 2, dailyEnergy: 1, dailyHealth: 1, outdoorHealthChance: 0, outdoorHealthDelta: 0, outdoorHealthNote: '' },
+  cloudy: { id: 'cloudy', label: '多云', icon: '☁️', summary: '今日多云，体感平常。', outdoorEnergyDrain: 0, dailyMorale: 0, dailyEnergy: 0, dailyHealth: 0, outdoorHealthChance: 0, outdoorHealthDelta: 0, outdoorHealthNote: '' },
+  rain: { id: 'rain', label: '雨', icon: '🌧️', summary: '今日有雨，在户外逗留容易着凉。', outdoorEnergyDrain: 0, dailyMorale: 0, dailyEnergy: 0, dailyHealth: 0, outdoorHealthChance: 0.1, outdoorHealthDelta: -2, outdoorHealthNote: '淋雨着凉' },
+  storm: { id: 'storm', label: '暴雨', icon: '⛈️', summary: '今日暴雨，户外行动和赶路会更耗精力，也更容易着凉。', outdoorEnergyDrain: 3, dailyMorale: 0, dailyEnergy: 0, dailyHealth: 0, outdoorHealthChance: 0.25, outdoorHealthDelta: -2, outdoorHealthNote: '暴雨着凉' },
+  snow: { id: 'snow', label: '雪', icon: '❄️', summary: '今日降雪，在户外久留容易受凉。', outdoorEnergyDrain: 1, dailyMorale: 0, dailyEnergy: 0, dailyHealth: 0, outdoorHealthChance: 0.2, outdoorHealthDelta: -2, outdoorHealthNote: '风雪着凉' },
+  hot: { id: 'hot', label: '炎热', icon: '🥵', summary: '今日炎热，户外久留会更耗精力，也有中暑的可能。', outdoorEnergyDrain: 3, dailyMorale: 0, dailyEnergy: 0, dailyHealth: 0, outdoorHealthChance: 0.2, outdoorHealthDelta: -3, outdoorHealthNote: '中暑' },
 });
 
 /**
@@ -110,24 +117,50 @@ export function weatherNarrative(weather: WeatherState) {
   return { id: row.id, day: weather.day, label: row.label, icon: row.icon, summary: row.summary };
 }
 
-/** Unit interval in [0, 1), stable for a game day. */
-export function coldExposureRoll(day: number): number {
-  return hashString(`unread-city-weather-cold-v1|${gameDateISO(day)}`) / 4294967296;
+/** Stable seed for one outdoor trip or outdoor job. Same inputs always reroll the same way. */
+export function exposureSeed(clock: { day: number; hour: number; minute: number }, kind: string, place: string): string {
+  return `${clock.day}|${clock.hour}|${clock.minute}|${kind}|${place}`;
+}
+
+export interface OutdoorHealthExposure {
+  healthDelta: number;
+  note: string;
+}
+
+/** FNV sample in [0, 1), matching the other weather hashes. Does not read current health. */
+export function exposureRoll(weather: WeatherState, seed: string): number {
+  return hashString(`unread-city-weather-exposure-v1|${gameDateISO(weather.day)}|${weather.id}|${seed}`) / 4294967296;
+}
+
+/** Health loss for one outdoor trip or outdoor exertion. A miss returns a zero delta. */
+export function outdoorHealthExposure(weather: WeatherState, seed: string): OutdoorHealthExposure {
+  const effects = WEATHER_EFFECTS[weather.id];
+  if (effects.outdoorHealthChance <= 0 || !effects.outdoorHealthDelta) return { healthDelta: 0, note: '' };
+  if (exposureRoll(weather, seed) >= effects.outdoorHealthChance) return { healthDelta: 0, note: '' };
+  return { healthDelta: effects.outdoorHealthDelta, note: effects.outdoorHealthNote };
 }
 
 function clampStat(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
-/** One day's mood, energy and cold nudge. Does not invent a separate weather stat. */
+/** Apply a rolled health change. The phrase is empty when health cannot move further. */
+export function applyOutdoorHealth(player: PlayerState, exposure: OutdoorHealthExposure): { player: PlayerState; log: string } {
+  if (!exposure.healthDelta || !exposure.note) return { player, log: '' };
+  const health = clampStat(player.health + exposure.healthDelta);
+  const actual = health - player.health;
+  if (!actual) return { player, log: '' };
+  return { player: { ...player, health }, log: `${exposure.note}，健康${actual}。` };
+}
+
+/** One new day's mood, energy and sunny health. Outdoor chills are settled on the trip itself. */
 export function applyDailyWeatherEffects(player: PlayerState, weather: WeatherState): PlayerState {
   const effects = WEATHER_EFFECTS[weather.id];
-  const chilled = effects.illnessChance > 0 && coldExposureRoll(weather.day) < effects.illnessChance;
   return {
     ...player,
     morale: clampStat(player.morale + effects.dailyMorale),
     energy: adjustEnergy(player.energy, effects.dailyEnergy),
-    health: chilled ? clampStat(player.health + effects.illnessHealthDelta) : player.health,
+    health: clampStat(player.health + effects.dailyHealth),
   };
 }
 
