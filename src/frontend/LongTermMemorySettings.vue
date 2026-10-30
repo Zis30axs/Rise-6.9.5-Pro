@@ -111,13 +111,13 @@ onMounted(() => { void refresh(); });
     <div class="uc-memory-settings-content">
       <label class="uc-memory-row"><input v-model="settings.enabled" type="checkbox" data-memory-enabled /> 启用长期记忆旁路</label>
       <label class="uc-memory-row"><input v-model="settings.passive" type="checkbox" /> 自动注入相关往事</label>
-      <label>整理间隔（已保存的小说楼数，5–100）
-        <input v-model.number="settings.interval" type="number" min="5" max="100" step="1" data-memory-interval />
+      <label>整理间隔（已保存的小说楼数，20–100）
+        <input v-model.number="settings.interval" type="number" min="20" max="100" step="1" data-memory-interval />
       </label>
       <div class="uc-narrative-buttons">
-        <button v-for="preset in [10, 20, 30]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
+        <button v-for="preset in [20, 30, 40]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
       </div>
-      <label class="uc-memory-row"><input v-model="settings.important" type="checkbox" data-memory-important /> 重大剧情提前整理</label>
+      <p class="uc-narrative-note">默认每 20 楼整理此前尚未归档的全部历史来源，固定在第 20、40、60 楼；如果在此之前累计超过 75 条新日志，也会提前整理。75 条及以下不会单独触发总结；重大剧情不再绕过该限制。原始证据会持续安全保存。</p>
       <label>主模型检索方式
         <select v-model="settings.protocol" data-memory-protocol>
           <option value="tools">原生 Tools</option><option value="tags">兼容标签</option>
