@@ -1,7 +1,7 @@
 import type { WorldState } from './types';
 import type { SocialInvitation } from '../runtime/natural-interactions';
-import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
-import { protagonistSceneId, worldScenePosition, type WorldScenePerson } from '../runtime/world-presence';
+import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
+import { protagonistSceneId, worldScenePosition, worldScenePresence, type WorldScenePerson } from '../runtime/world-presence';
 import { agendaTargetProtagonist, agendaTargetResident, agreedMinute, socialMinute } from '../runtime/social-agenda';
 import { residentById } from '../runtime/npc-cast';
 import { SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
@@ -74,16 +74,26 @@ function nearPlayer(state: WorldState, person: WorldScenePerson): boolean {
   const at = worldScenePosition(state);
   return !!at && Math.hypot(person.x - at.x, person.z - at.z) <= SCENE_ENCOUNTER_DISTANCE;
 }
+/** Outdoor coordinates can match across districts. Both protagonists need the
+ *  same actual room/area, not merely similar x/z values on separate maps. */
+function presentProtagonist(state: WorldState, other: ProtagonistId): boolean {
+  const person = personState(state, other);
+  const playerRoom = state.interior?.roomId ?? null, otherRoom = person.interior?.roomId ?? null;
+  if (playerRoom || otherRoom) return !!playerRoom && playerRoom === otherRoom;
+  const here = worldScenePresence(state), there = worldScenePresence(person);
+  return person.locationId === state.locationId &&
+    !!here && !!there && here.areaId === there.areaId;
+}
 function actualPartner(state: WorldState, people: readonly WorldScenePerson[],
   invite: SocialInvitation,
   current: ProtagonistId): WorldScenePerson | undefined {
   const targetProtagonist = agendaTargetProtagonist(state, invite);
   if (invite.owner !== current && targetProtagonist !== current) return undefined;
   if (invite.owner !== current) {
-    return people.find(person => person.protagonistId === invite.owner && nearPlayer(state, person));
+    return presentProtagonist(state, invite.owner) ? people.find(person => person.protagonistId === invite.owner && nearPlayer(state, person)) : undefined;
   }
   if (targetProtagonist === current) return undefined; // Never render the player twice.
-  if (targetProtagonist) return people.find(person => person.protagonistId === targetProtagonist && nearPlayer(state, person));
+  if (targetProtagonist) return presentProtagonist(state, targetProtagonist) ? people.find(person => person.protagonistId === targetProtagonist && nearPlayer(state, person)) : undefined;
   const personId = agendaTargetResident(state, invite);
   return people.find(person => (personId ? person.id === personId : person.id === invite.targetId ||
     person.contactId === invite.targetId) && nearPlayer(state, person));
