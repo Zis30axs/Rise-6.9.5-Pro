@@ -132,8 +132,9 @@ function release() {
   scene?.clear();
   scene = undefined;
   camera = undefined;
+  // Dispose resources without forcibly losing the canvas context; this Vue canvas
+  // is reused when the player closes and reopens the city map.
   renderer?.dispose();
-  renderer?.forceContextLoss();
   renderer = undefined;
   status.value = 'idle';
   modelVariant = 'procedural';
