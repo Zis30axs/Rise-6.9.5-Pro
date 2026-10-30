@@ -18,12 +18,15 @@ export function pendingJournalCount(sources: readonly PendingMemoryEvidence[]): 
  * Return an inclusive story-turn boundary for all due unsummarized sources.
  * Null means no model summarization request should be scheduled yet.
  *
- * 0 is the old idle sentinel. For >75 logs at story turn 0, use 1
- * as a positive batch marker until every pending turn-0 source is done.
+ * The >75-log rule is ONLY eligible immediately after a committed
+ * foreground LLM story turn. Ordinary UI actions only append sources, so an
+ * idle player never spends a model call by exceeding the log threshold.
+ * 0 remains the old idle sentinel for unfinished due-batch tracking.
  */
 export function memoryArchiveBoundary(
   pending: readonly PendingMemoryEvidence[], lastScheduledTurn: number,
   dueThrough: number, configuredInterval: number, forced = false,
+  narrativeJustCommitted = false,
 ): number | null {
   if (!pending.length) return null;
   const latestTurn = pending.reduce((latest, source) => Math.max(latest, source.turn), 0);
@@ -31,7 +34,7 @@ export function memoryArchiveBoundary(
   // turns since the last job: an early 76-log archive must not shift floor 20.
   const window = Math.max(MEMORY_MIN_TURN_INTERVAL, configuredInterval);
   const reachedTurns = Math.floor(latestTurn / window) > Math.floor(lastScheduledTurn / window);
-  const exceededJournals = pendingJournalCount(pending) > MEMORY_EARLY_JOURNAL_LIMIT;
+  const exceededJournals = narrativeJustCommitted && pendingJournalCount(pending) > MEMORY_EARLY_JOURNAL_LIMIT;
   if (forced || reachedTurns || exceededJournals) return Math.max(1, dueThrough, latestTurn);
   if (dueThrough > 0 && pending.some(source => source.turn <= dueThrough)) return dueThrough;
   return null;
