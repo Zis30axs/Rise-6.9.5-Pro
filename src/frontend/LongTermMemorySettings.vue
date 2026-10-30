@@ -117,7 +117,7 @@ onMounted(() => { void refresh(); });
       <div class="uc-narrative-buttons">
         <button v-for="preset in [20, 30, 40]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
       </div>
-      <p class="uc-narrative-note">默认每 20 楼整理此前尚未归档的全部历史来源，固定在第 20、40、60 楼；如果在此之前累计超过 75 条新日志，也会提前整理。75 条及以下不会单独触发总结；重大剧情不再绕过该限制。原始证据会持续安全保存。</p>
+      <p class="uc-narrative-note">默认每 20 楼（第 20、40、60 楼）整理此前尚未归档的全部历史来源；若修改间隔，则改按所选楼数的固定倍数整理。提前积累到第 76 条未整理日志也会启动归档。未达到楼数或日志门槛时不要求总结，重大剧情不再单独提前触发。原始证据仍会持续安全保存。</p>
       <label>主模型检索方式
         <select v-model="settings.protocol" data-memory-protocol>
           <option value="tools">原生 Tools</option><option value="tags">兼容标签</option>
