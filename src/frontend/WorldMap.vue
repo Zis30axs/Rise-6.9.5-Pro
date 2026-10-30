@@ -11,6 +11,7 @@ import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CampusMapScene from './CampusMapScene.vue';
+import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
@@ -390,7 +391,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
               <CampusMapScene :scope="detailDistrict ?? 'campus'" :disabled-ids="localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id)" :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="currentMapPosition" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
             </div>
             <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
-              <CampusMapScene scope="city" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :road-events="[]" :people="[]" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
+              <CitySandboxScene :active="depth > 1 && depth < 3" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
