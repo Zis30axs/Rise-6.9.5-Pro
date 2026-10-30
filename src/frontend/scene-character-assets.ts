@@ -4,13 +4,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { isScenePositionWalkable, type SceneMovementWorld } from './scene-movement';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getTakiArt } from './downtown-art-runtime';
 export { characterForPerson } from './character-appearance';
 
-/** Named standing art for 若叶睦 and 千早爱音. Other names stay on their existing models. */
+/** Named standing art for 若叶睦, 千早爱音 and 椎名立希. Other names stay on their existing models. */
 export function resolveSceneCharacterArt(name: string, expression?: unknown) {
   return getMutsumiArt(downtownArtPack, { speaker: name, expression })
-    ?? getAnonArt(downtownArtPack, { speaker: name, expression });
+    ?? getAnonArt(downtownArtPack, { speaker: name, expression })
+    ?? getTakiArt(downtownArtPack, { speaker: name, expression });
 }
 
 export const characterModelIds = ['soyo', 'deepseek', 'xiaoyang', 'claude'] as const;

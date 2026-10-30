@@ -265,6 +265,50 @@
       "origin": "user-provided"
     },
     {
+      "id": "taki_uniform_neutral",
+      "path": "assets/downtown-art/sources/taki-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1363038,
+      "sha256": "02a14f7c43edb872daf5929cdbe6b9ad9d8a2edeb92cc463797869752e1cc5c9",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_crossed",
+      "path": "assets/downtown-art/sources/taki-uniform-crossed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1131554,
+      "sha256": "9a04e5b0401247f077dba6584ddfb57db40fbad5cf2395e033db09a2344a0f19",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_drumsticks",
+      "path": "assets/downtown-art/sources/taki-uniform-drumsticks.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1285550,
+      "sha256": "3a821123301461c12d55ea9964319f870fbf8a3b90d5aa2b4a58e425d4eba1b5",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_embarrassed",
+      "path": "assets/downtown-art/sources/taki-uniform-embarrassed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1278159,
+      "sha256": "b3e73e8b9fbae203063a26438170e192ebd998c0c60ea99907327d5f5d9224bc",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [

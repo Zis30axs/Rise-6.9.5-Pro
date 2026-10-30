@@ -1,10 +1,11 @@
 import { selectAnonSprite, type AnonOutfit, type AnonPose, type AnonSpriteId } from './anon-art-policy';
 import { selectMutsumiSprite, type MutsumiOutfit, type MutsumiPose, type MutsumiSpriteId } from './mutsumi-art-policy';
 import { selectSakikoSprite, type SakikoSpriteId, type SakikoOutfit, type SakikoExpression } from './sakiko-art-policy';
+import { selectTakiSprite, type TakiOutfit, type TakiPose, type TakiSpriteId } from './taki-art-policy';
 
 export type ArtPhase = 'day' | 'dusk' | 'night';
 export type DowntownBackgroundId = 'toyokawa_mansion_day' | 'toyokawa_mansion_dusk' | 'toyokawa_mansion_night' | 'toyokawa_living_room' | 'downtown_day' | 'downtown_night';
-export type DowntownArtId = SakikoSpriteId | MutsumiSpriteId | AnonSpriteId | DowntownBackgroundId;
+export type DowntownArtId = SakikoSpriteId | MutsumiSpriteId | AnonSpriteId | TakiSpriteId | DowntownBackgroundId;
 export interface DowntownArtAsset {
   readonly id: DowntownArtId;
   readonly src: string;
@@ -62,6 +63,17 @@ export function getAnonArt(pack: DowntownArtPack, options: {
   if (exact) return { ...exact, outfit: selection.outfit, expression: selection.expression, pose: selection.pose };
   const calm = asset(pack, 'anon_uniform_smile');
   return calm ? { ...calm, outfit: 'uniform', expression: 'neutral', pose: 'smile' } : null;
+}
+
+export function getTakiArt(pack: DowntownArtPack, options: {
+  speaker: unknown; expression: unknown;
+}): (DowntownArtAsset & { outfit: TakiOutfit; expression: SakikoExpression; pose: TakiPose }) | null {
+  const selection = selectTakiSprite(options);
+  if (!selection) return null;
+  const exact = asset(pack, selection.id);
+  if (exact) return { ...exact, outfit: selection.outfit, expression: selection.expression, pose: selection.pose };
+  const neutral = asset(pack, 'taki_uniform_neutral');
+  return neutral ? { ...neutral, outfit: 'uniform', expression: 'neutral', pose: 'neutral' } : null;
 }
 
 export function nearToyokawaEntrance(

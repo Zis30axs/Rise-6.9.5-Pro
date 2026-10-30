@@ -66,6 +66,29 @@
     "canvas": [768, 1344],
     "anchor": [384, 1280]
   },
+  "taki": {
+    "reviewedOn": "2026-10-30",
+    "count": 4,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "background": "white removed by border-connected near-white flood fill",
+    "identityConsistent": true,
+    "poses": ["neutral", "crossed", "drumsticks", "embarrassed"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "drumsticks",
+      "surprised": "embarrassed",
+      "troubled": "embarrassed",
+      "annoyed": "crossed",
+      "sad": "embarrassed"
+    },
+    "fullHeadHandsAndBothShoes": true,
+    "drumsticksKept": true,
+    "sailorCollarAndCuffsKept": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -215,6 +238,26 @@
     {
       "id": "anon_uniform_cheerful",
       "sha256": "a44baad1e924fec1c8b45f90a98d7da9d7882c957a5dfb7e9c335e63fe1d89dd",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_neutral",
+      "sha256": "8cf25bbd5c4bbd5489523e3d654393e9588f28bf2be4601fbdb23c3e8f2fc77f",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_crossed",
+      "sha256": "6260495c2e8107e8ff19e136b9e0545fea6f05355f49491bb7451b681510de92",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_drumsticks",
+      "sha256": "0ae085cbee83e74459b09669cc821e779df3443835140f6165bcb9e9fdc8f524",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_embarrassed",
+      "sha256": "37d530e98f6cc8de37251fe0a6e4d0eb7b807f1b348f64eb36f81b2853efcf8c",
       "visuallyReviewed": true
     }
   ],
