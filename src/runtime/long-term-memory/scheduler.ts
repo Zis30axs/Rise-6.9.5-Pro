@@ -208,23 +208,23 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
           // Recheck its now-eligible logs without waiting for another story.
           wakeup(scope, 1000);
         } else {
-        const jobs = await rows<MemoryJob>('jobs', scope);
-        const active = jobs.filter(j => j.state === 'pending' || j.state === 'working');
-        if (active.length) {
-          const now = Date.now();
-          const next = Math.min(...active.map(j => j.leaseUntil || now));
-          wakeup(scope, Math.max(100, next - now));
-        } else {
-          // A scheduled window may exceed eight bounded model batches.
-          // Resume the remaining due evidence without requiring another game turn.
-          const through = await meta(scope, 'dueThrough');
-          if (through > 0) {
-            const failed = new Set(jobs.filter(j => j.state === 'failed').flatMap(j => j.sourceIds));
-            const unfinished = (await rows<MemorySource>('sources', scope))
-              .some(s => !s.processed && s.turn <= through && !failed.has(s.id));
-            if (unfinished) wakeup(scope, 1000);
+          const jobs = await rows<MemoryJob>('jobs', scope);
+          const active = jobs.filter(j => j.state === 'pending' || j.state === 'working');
+          if (active.length) {
+            const now = Date.now();
+            const next = Math.min(...active.map(j => j.leaseUntil || now));
+            wakeup(scope, Math.max(100, next - now));
+          } else {
+            // A scheduled window may exceed eight bounded model batches.
+            // Resume the remaining due evidence without requiring another game turn.
+            const through = await meta(scope, 'dueThrough');
+            if (through > 0) {
+              const failed = new Set(jobs.filter(j => j.state === 'failed').flatMap(j => j.sourceIds));
+              const unfinished = (await rows<MemorySource>('sources', scope))
+                .some(s => !s.processed && s.turn <= through && !failed.has(s.id));
+              if (unfinished) wakeup(scope, 1000);
+            }
           }
-        }
         }
       } catch { /* Persistence failure has no impact on gameplay. */ }
     }
