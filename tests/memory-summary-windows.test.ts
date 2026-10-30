@@ -29,17 +29,24 @@ describe('memory summary windows', () => {
     expect(memoryArchiveBoundary([...journals(4, 40), ...story(40)], 20, 0, 20)).toBe(40);
   });
 
-  it('triggers early only after the 75th distinct log', () => {
-    expect(memoryArchiveBoundary(journals(76), 0, 0, 20)).toBe(1);
+  it('does not create an archive job from idle UI actions, even with 76+ logs', () => {
+    expect(memoryArchiveBoundary(journals(76), 0, 0, 20)).toBeNull();
+    expect(memoryArchiveBoundary(journals(96), 0, 0, 20)).toBeNull();
+    expect(memoryArchiveBoundary(journals(76, 12), 0, 0, 20)).toBeNull();
+  });
+
+  it('allows >75 logs to archive only when a normal LLM turn has actually committed', () => {
+    expect(memoryArchiveBoundary(journals(75, 12), 0, 0, 20, false, true)).toBeNull();
+    expect(memoryArchiveBoundary([...journals(76, 12), ...story(12)], 0, 0, 20, false, true)).toBe(12);
     expect(pendingJournalCount([...journals(74), { id: 'journal:emma:long:part:0', kind: 'journal', turn: 0 },
       { id: 'journal:emma:long:part:1', kind: 'journal', turn: 0 }])).toBe(75);
   });
 
   it('keeps the exact twentieth and fortieth floors after early log archives', () => {
-    expect(memoryArchiveBoundary([...journals(76, 12), ...story(12)], 0, 0, 20)).toBe(12);
+    expect(memoryArchiveBoundary([...journals(76, 12), ...story(12)], 0, 0, 20, false, true)).toBe(12);
     expect(memoryArchiveBoundary([...journals(1, 19), ...story(19)], 12, 0, 20)).toBeNull();
     expect(memoryArchiveBoundary([...journals(1, 20), ...story(20)], 12, 0, 20)).toBe(20);
-    expect(memoryArchiveBoundary([...journals(76, 33), ...story(33)], 20, 0, 20)).toBe(33);
+    expect(memoryArchiveBoundary([...journals(76, 33), ...story(33)], 20, 0, 20, false, true)).toBe(33);
     expect(memoryArchiveBoundary([...journals(1, 40), ...story(40)], 33, 0, 20)).toBe(40);
   });
 
