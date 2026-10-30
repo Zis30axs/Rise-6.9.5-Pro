@@ -18,6 +18,7 @@ import { protagonistRecap } from '../runtime/protagonist-narrative';
 import { formatGameDate, formatGameStamp, gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { diagnosePlayerIllnesses } from '../runtime/illness';
+import { resolveWeather, WEATHER_EFFECTS } from '../runtime/weather';
 import { lawCases, lawOwner } from '../runtime/law-career';
 import type { ShellActions, ShellModel } from './types';
 
@@ -31,6 +32,10 @@ const selectedContactId = ref('');
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const civilDay = computed(() => gameCalendar(props.model.state.clock.day));
+const weatherText = computed(() => {
+  const weather = WEATHER_EFFECTS[resolveWeather(props.model.state).id];
+  return `${weather.icon}${weather.label}`;
+});
 const calendarLabel = computed(() => formatGameDate(props.model.state.clock.day));
 const registration = computed(() => registrationNotice(props.model.state.clock.day));
 const todayOccasions = computed(() => gameCalendarOccasions(props.model.state.clock.day));
@@ -130,7 +135,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 
     <template v-else-if="panel === 'schedule'">
       <AcademicTimetable v-if="model.state.academics" :major-id="model.state.academics.majorId" :day="model.state.clock.day" :hour="model.state.clock.hour" :minute="model.state.clock.minute" :busy="model.busy" :current-location-id="model.state.locationId" :travel-label="novelMode ? '前往课程地点' : '前往建筑入口'" :blocked-reason="courseTravelBlocked" @travel="travelToPlan" />
-      <div class="wp-day-summary"><div><h2>{{ calendarLabel }} · {{ civilDay.weekdayLabel }}</h2><p>第 {{ model.state.clock.day }} 天 · {{ time }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
+      <div class="wp-day-summary"><div><h2>{{ calendarLabel }} · {{ civilDay.weekdayLabel }}</h2><p>第 {{ model.state.clock.day }} 天 · {{ time }} · {{ weatherText }} · {{ currentLocation?.name }}</p></div><span class="wp-badge">已完成 {{ completedPlans }} / {{ model.state.schedule.length }} 项</span></div>
       <p v-if="registration && !model.state.academics" class="wp-footnote">{{ registration }}</p>
       <section data-calendar-observances aria-label="游戏节假日与人物生日">
         <div class="wp-heading"><h2>节假日与生日</h2></div>
@@ -167,7 +172,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
           <p v-if="!lifeRecap.length" class="wp-empty">暂时没有新的个人经历。切换视角并推进游戏时间后，你的日常会留在这里。</p>
         </div>
       </details>
-      <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
+      <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · {{ weatherText }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <SocialSkills :state="model.state" />

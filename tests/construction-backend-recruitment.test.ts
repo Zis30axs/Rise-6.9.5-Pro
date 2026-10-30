@@ -4,6 +4,7 @@ import { CONSTRUCTION_BACKEND_JOB_ID, getLocationServiceQuote, getLocationServic
 import { appiePayBalance, PROTAGONISTS } from '../src/runtime/dual-protagonists';
 import { enableProtagonists, personState } from '../src/runtime/protagonist-world';
 import { validateStoryActions } from '../src/runtime/story-actions';
+import { outdoorEnergyDrain, resolveWeather } from '../src/runtime/weather';
 
 function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   let state = enableProtagonists(createInitialState());
@@ -79,7 +80,7 @@ describe('construction backend recruitment twist', () => {
     expect(q.blockedReason).toBeNull();
     expect(q.minutes).toBe(240);
     expect(q.payout).toBe(6800);
-    expect(q.changes.energy).toBe(-75);
+    expect(q.changes.energy).toBe(-75 - outdoorEnergyDrain(resolveWeather(student).id));
     const away = structuredClone(student); away.locationId = 'bookshop';
     expect(getLocationServiceQuote(away, CONSTRUCTION_BACKEND_JOB_ID).blockedReason).toMatch(/当前地点/);
     const early = structuredClone(student); early.clock.hour = 6;
@@ -104,7 +105,7 @@ describe('construction backend recruitment twist', () => {
       const balances = Object.fromEntries(PROTAGONISTS.map(id => [id, appiePayBalance(before.protagonists!.accounts, id)]));
       const next = reduceState(before, { type: 'location_service', serviceId: CONSTRUCTION_BACKEND_JOB_ID });
       expect(next.clock).toEqual({ day: 2, hour: 12, minute: 0 });
-      expect(next.player.energy).toBe(20);
+      expect(next.player.energy).toBe(20 - outdoorEnergyDrain(resolveWeather(before).id));
       expect(next.player.balance - before.player.balance).toBe(6800);
       expect(appiePayBalance(next.protagonists!.accounts, owner) - balances[owner]).toBe(680000);
       expect(next.journal.at(-1)?.text).toContain('领取工资 6800 日元');

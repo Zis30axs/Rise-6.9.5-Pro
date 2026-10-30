@@ -24,6 +24,7 @@ import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
+import { applyWeatherForElapsedDays, dailyEnergyAfter, outdoorEnergyDrain, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
 import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordSocialInvitations } from './natural-interactions';
 import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
@@ -184,13 +185,20 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
     quote.baseEnergyCost = 100 - next.player.energy;
-    quote.calculatedEnergyCost = Math.round(quote.baseEnergyCost * conditionNumerator / 30) / 100;
+    const scaledEnergyCost = Math.round(quote.baseEnergyCost * conditionNumerator / 30) / 100;
+    const weatherDrain = outdoorEnergyDrain(resolveWeather(state).id);
+    quote.calculatedEnergyCost = Math.round((scaledEnergyCost + weatherDrain) * 100) / 100;
     quote.energyCost = Math.min(energyUnits(departure.energy), energyUnits(quote.calculatedEnergyCost)) / 100;
     quote.foodEnergyCost = state.player.foodEnergy - next.player.foodEnergy;
     quote.satietyCost = state.player.satiety - next.player.satiety;
     quote.fare = 1_000_000 - next.player.balance;
     if (departure.balance < quote.fare) quote.blockedReason = `余额不足，本次出行需要 ${quote.fare} 日元。`;
-    next.player = { ...next.player, energy: adjustEnergy(departure.energy, -quote.energyCost), balance: departure.balance - quote.fare };
+    const traveledDay = next.clock.day;
+    next.player = {
+      ...next.player,
+      energy: dailyEnergyAfter(adjustEnergy(departure.energy, -quote.energyCost), state.clock.day, traveledDay),
+      balance: departure.balance - quote.fare,
+    };
   } catch (error) {
     quote.blockedReason = error instanceof Error ? error.message : '无法规划本次出行。';
   }
@@ -233,7 +241,7 @@ export function getRouteOutlook(state: WorldState, targetId: string): RouteOutlo
 export function createInitialState(): WorldState {
   const clock = { day: 1, hour: 17, minute: 20 };
   return {
-    schema_version: '1.11.0', currency: 'JPY', clock, locationId: 'gate', scene: null, interior: null,
+    schema_version: '1.11.0', currency: 'JPY', clock, weather: weatherForDay(clock.day), locationId: 'gate', scene: null, interior: null,
     airTraffic: createAirTrafficState(),
     transit: createTransitState(),
     lawCareer: initialLawCareer(),
@@ -606,13 +614,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasCourtroom = version === '1.11.0' && Object.hasOwn(value, 'courtroom');
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
+  const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -628,10 +637,12 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     }
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
+  const weather = hasWeather ? parseWeather(state.weather, parsedClock.day) : weatherForDay(parsedClock.day);
   const parsedInterior = hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null;
   const result: WorldState = {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
+    weather,
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
@@ -1029,11 +1040,23 @@ function clearIndoorEncounter(state: WorldState) {
     person.id === state.scene!.encounterId && Math.hypot(person.x - state.interior!.x, person.z - state.interior!.z) <= SCENE_ENCOUNTER_DISTANCE)) state.scene.encounterId = null;
 }
 
+function parseWeather(value: unknown, day: number): WeatherState {
+  const row = object(value, ['id', 'day'], 'weather');
+  const savedDay = number(row.day, 'weather.day', 1, 365000);
+  const weatherId = text(row.id, 'weather.id', 16);
+  if (!isWeatherId(weatherId)) return invalid('weather.id');
+  if (savedDay !== day) return weatherForDay(day);
+  return { id: weatherId, day };
+}
+
 function advance(state: WorldState, minutes: number) {
+  const startDay = state.clock.day;
   state.player = advancePlayerNutrition(state.player, state.clock, minutes);
   const next = state.clock.hour * 60 + state.clock.minute + minutes;
   state.clock = { day: state.clock.day + Math.floor(next / 1440), hour: Math.floor(next / 60) % 24, minute: next % 60 };
   if (state.clock.day > 365000) throw new Error('已到达最大天数，无法继续推进。');
+  if (state.clock.day !== startDay || !state.weather || state.weather.day !== state.clock.day) state.weather = weatherForDay(state.clock.day);
+  if (state.clock.day > startDay) state.player = applyWeatherForElapsedDays(state.player, startDay, state.clock.day);
   clearIndoorEncounter(state);
 }
 function note(state: WorldState, message: string, stableId?: string) {
@@ -1209,8 +1232,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const quote = getUseItemQuote(next, action.itemId);
       if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
       const before = { ...next.player };
+      const startDay = next.clock.day;
       advance(next, quote.minutes);
-      next.player = quote.playerAfter;
+      next.player = applyWeatherForElapsedDays(quote.playerAfter, startDay, next.clock.day);
       next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
       const labels = { energy: '精力', health: '健康', morale: '精神', stress: '压力', satiety: '饱腹', foodEnergy: '食物能量' } as const;
       const changes = (Object.keys(labels) as (keyof typeof labels)[]).filter(key => (quote.changes[key] ?? 0) !== 0).map(key => `${labels[key]}${(quote.changes[key] ?? 0) > 0 ? '+' : ''}${quote.changes[key]}${key === 'foodEnergy' ? ' kcal' : ''}`).join('，');
@@ -1254,9 +1278,11 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (quote.blockedReason || !quote.service) throw new Error(quote.blockedReason ?? '不存在的地点活动。');
       const before = { ...next.player };
       const status = getLocationStatus(next.locationId, next.clock)!;
+      const startDay = next.clock.day;
       advance(next, quote.minutes);
       // The quote already includes elapsed nutrition; replace, never apply twice.
-      next.player = quote.playerAfter;
+      // Day-change weather is reapplied because this replacement discards the clock step.
+      next.player = applyWeatherForElapsedDays(quote.playerAfter, startDay, next.clock.day);
       const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
@@ -1321,7 +1347,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.player.energy < 5) throw new Error('精力不足，请先等待休息。');
       const outlook = getRouteOutlook(next, action.locationId);
       const minutes = 15 + outlook.extraMinutes;
-      advance(next, minutes); next.player.energy = adjustEnergy(next.player.energy, -5); next.locationId = action.locationId; next.scene = null;
+      const weatherDrain = outdoorEnergyDrain(resolveWeather(next).id);
+      advance(next, minutes); next.player.energy = adjustEnergy(next.player.energy, -(5 + weatherDrain)); next.locationId = action.locationId; next.scene = null;
       const eventNote = outlook.event ? `途中遇到${outlook.event.title}，额外停留 ${outlook.extraMinutes} 分钟。${outlook.event.description}` : '';
       note(next, `前往${locations.find(location => location.id === action.locationId)!.name}，步行耗时 ${minutes} 分钟。${eventNote}`);
       break;
@@ -1433,8 +1460,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const debuffs = getIllnessDebuffs(next.player);
       const baseRecovery = option.id === 'dorm-rest-long' ? 100 : Math.floor(minutes * 0.4);
       const recovery = Math.max(1, Math.round(baseRecovery * debuffs.bedRestEnergyMultiplier));
+      const startDay = next.clock.day;
       advance(next, minutes);
-      next.player.energy = adjustEnergy(energyBefore, recovery);
+      next.player.energy = dailyEnergyAfter(adjustEnergy(energyBefore, recovery), startDay, next.clock.day);
       applyActivityEffects(next, 'rest', minutes);
       if (option.id === 'dorm-rest-long') {
         next.player.health = Math.min(100, next.player.health + 10);

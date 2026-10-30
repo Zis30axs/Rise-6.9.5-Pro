@@ -26,6 +26,7 @@ import { SOCIAL_PERSONALITY, socialSkillOverview } from './social-skills';
 import { protagonistHomeRooms } from './natural-interactions';
 import { socialAgendaContext } from './social-agenda';
 import { diagnosePlayerIllnesses } from './illness';
+import { resolveWeather, weatherNarrative } from './weather';
 import { lawCareerStoryContext } from './law-career';
 import { courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
@@ -377,6 +378,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         weeklyMemory: weeklyMemoryContext(snapshot),
         ...(retrievedMemory ? { retrievedMemory } : {}),
         clock: snapshot.clock, calendarDate: gameCalendar(snapshot.clock.day),
+        weather: weatherNarrative(resolveWeather(snapshot)),
         reporting: registrationNotice(snapshot.clock.day), coursesStarted: hasStartedAcademicWeek(snapshot.clock.day),
         todayOccasions: gameCalendarOccasions(snapshot.clock.day),
         upcomingOccasions: upcomingGameCalendarOccasions(snapshot.clock.day, 14).slice(0, 8),
@@ -486,7 +488,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         : '【旁线机会未触发】本轮禁止输出 <otherside>、<story_continue> 标签，不得在当前主角的正文写出“与此同时”已改变其他人物位置、余额或实际发生的行为；全知信息仅能作为背景事实引用。';
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
       const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${sideInstruction}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
-      const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。四位主角（长崎素世、丰川祥子、樱羽艾玛、甘织玲奈子）校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。四位主角均非在读高中生；此安排不代表所有配角同校或同年级；四主角具体院校名称与正式学籍尚未确认，原作时期的学校、年级、制服与同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
+      const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。weather 是今日东京的权威天气，正文里的天空、出行与体感必须与它一致，不得另写矛盾的天气。四位主角（长崎素世、丰川祥子、樱羽艾玛、甘织玲奈子）校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。四位主角均非在读高中生；此安排不代表所有配角同校或同年级；四主角具体院校名称与正式学籍尚未确认，原作时期的学校、年级、制服与同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       // Bookend the full instruction with the tagged-envelope rule, and repeat
       // the same non-negotiable format at the end of the actual user turn.

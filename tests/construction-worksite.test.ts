@@ -7,6 +7,7 @@ import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { mapLocationPoint } from '../src/frontend/campus-map-layout';
 import { districtMapPlaces } from '../src/frontend/map-districts';
 import { getSceneArea } from '../src/runtime/scene-context';
+import { outdoorEnergyDrain, resolveWeather } from '../src/runtime/weather';
 
 function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   let state = enableProtagonists(createInitialState());
@@ -58,7 +59,7 @@ describe('south gate construction site', () => {
       const beforeAccount = appiePayBalance(before.protagonists!.accounts, owner);
       const next = reduceState(before, { type: 'location_service', serviceId: 'construction-clear' });
       expect(next.clock).toEqual({ day: 2, hour: 10, minute: 0 });
-      expect(next.player.energy).toBe(55);
+      expect(next.player.energy).toBe(55 - outdoorEnergyDrain(resolveWeather(before).id));
       expect(next.player.balance - before.player.balance).toBe(3200);
       expect(appiePayBalance(next.protagonists!.accounts, owner) - beforeAccount).toBe(320000);
       expect(next.journal.at(-1)?.text).toContain('领取工资 3200 日元');
@@ -74,7 +75,7 @@ describe('south gate construction site', () => {
     const before = atSite();
     const next = reduceState(before, { type: 'location_service', serviceId: 'construction-carry' });
     expect(next.clock).toEqual({ day: 2, hour: 12, minute: 0 });
-    expect(next.player.energy).toBe(20);
+    expect(next.player.energy).toBe(20 - outdoorEnergyDrain(resolveWeather(before).id));
     expect(next.player.balance - before.player.balance).toBe(6800);
     const afterClosing = structuredClone(before); afterClosing.clock.hour = 17;
     expect(() => reduceState(afterClosing, { type: 'location_service', serviceId: 'construction-carry' })).toThrow();

@@ -9,6 +9,7 @@ import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
 import { isNpcUnderCourtRestriction } from './court-legal-effects';
 import { residentSocialAgendaPresence } from './social-agenda';
+import { resolveWeather, weatherNarrative } from './weather';
 
 export interface WorldScenePerson extends ScenePerson {
   protagonistId?: ProtagonistId;
@@ -204,7 +205,9 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
 
 /** Rendering, talk targeting and model context share the same saved population. */
 export function worldSceneContext(state: WorldState) {
-  return getSceneContext(worldScenePresence(state), state.interior, state.contacts, state.clock, [], worldScenePeople(state));
+  const scene = getSceneContext(worldScenePresence(state), state.interior, state.contacts, state.clock, [], worldScenePeople(state));
+  if (!scene) return null;
+  return { ...scene, weather: weatherNarrative(resolveWeather(state)) };
 }
 
 /** Hearing a nearby conversation does not confer physical access to another phone. */

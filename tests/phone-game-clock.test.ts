@@ -63,7 +63,9 @@ describe('embedded phone fictional time source', () => {
     expect(readGamePhoneClock(child)?.time).toBe('17:20');
     active = snapshot('emma', 2, 0, 5);
     expect(readGamePhoneClock(child)).toMatchObject({ time: '00:05', label: '8月29日星期五' });
-    expect(read).toHaveBeenCalledTimes(2);
+    active = { ...snapshot('emma', 2, 0, 5), weather: { id: 'sunny', label: '晴', icon: '☀️' } } as ReturnType<typeof snapshot> & { weather: { id: string; label: string; icon: string } };
+    expect(readGamePhoneClock(child)?.label).toBe('8月29日星期五 ☀️晴');
+    expect(read).toHaveBeenCalledTimes(3);
   });
 
   it('does not expose host device time when disconnected or blocked by a chat switch', () => {
