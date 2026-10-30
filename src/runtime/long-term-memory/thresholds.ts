@@ -27,8 +27,10 @@ export function memoryArchiveBoundary(
 ): number | null {
   if (!pending.length) return null;
   const latestTurn = pending.reduce((latest, source) => Math.max(latest, source.turn), 0);
-  const reachedTurns = latestTurn - lastScheduledTurn >=
-    Math.max(MEMORY_MIN_TURN_INTERVAL, configuredInterval);
+  // Count fixed story-floor checkpoints (20, 40, 60...) instead of elapsed
+  // turns since the last job: an early 76-log archive must not shift floor 20.
+  const window = Math.max(MEMORY_MIN_TURN_INTERVAL, configuredInterval);
+  const reachedTurns = Math.floor(latestTurn / window) > Math.floor(lastScheduledTurn / window);
   const exceededJournals = pendingJournalCount(pending) > MEMORY_EARLY_JOURNAL_LIMIT;
   if (forced || reachedTurns || exceededJournals) return Math.max(1, dueThrough, latestTurn);
   if (dueThrough > 0 && pending.some(source => source.turn <= dueThrough)) return dueThrough;
