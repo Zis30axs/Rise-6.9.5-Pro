@@ -3,7 +3,7 @@ import { loadMemorySettings } from './settings';
 import { approximateTokens, requestEmbedding, requestMemoryJson } from './providers';
 import { memoryExtractionInput, memoryExtractionPrompt, parseExtraction } from './extractor';
 import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, recordPaidJobResponse, resetFailedJobs, rows, saveEmbeddingWithCharge } from './storage';
-import { importantCandidate } from './source';
+import { memoryArchiveBoundary } from './thresholds';
 import { memoryKey } from './types';
 import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
 
@@ -86,21 +86,20 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
   const latestTurn = Math.max(...pending.map(s => s.turn));
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
   const dueThrough = await meta(scope, 'dueThrough');
-  const important = settings.important && pending.some(s => importantCandidate(s.text));
-  const due = pending.some(s => s.turn <= dueThrough);
-  if (!forced && latestTurn - lastScheduled < settings.interval && !important && !due) return;
-  const schedulingThrough = forced || important || latestTurn - lastScheduled >= settings.interval
-    ? latestTurn : dueThrough;
+  // Preserve fixed 20-turn checkpoints; >75 unsummarized journals may archive
+  // earlier, but major plot keywords alone must not schedule a summary.
+  const schedulingThrough = memoryArchiveBoundary(pending, lastScheduled, dueThrough, settings.interval, forced);
+  if (schedulingThrough === null) return;
   if (schedulingThrough > dueThrough) await setMeta(scope, 'dueThrough', schedulingThrough);
   const eligible = pending.filter(s => s.turn <= schedulingThrough);
   const selected = chunk(eligible, settings.inputBudget);
   if (!selected.length) return;
   const id = 'job:' + selected[0].id + ':' + selected[selected.length - 1].id;
   const job: MemoryJob = { key: memoryKey(scope, id), scope, id,
-    sourceIds: selected.map(s => s.id), toTurn: latestTurn,
+    sourceIds: selected.map(s => s.id), toTurn: Math.max(...selected.map(s => s.turn)),
     state: 'pending', attempts: 0, leaseUntil: 0, error: '', createdAt: Date.now() };
   await put('jobs', job);
-  await setMeta(scope, 'lastScheduledTurn', latestTurn);
+  await setMeta(scope, 'lastScheduledTurn', Math.max(lastScheduled, schedulingThrough));
 }
 async function remainingBudget(scope: string, settings: MemorySettings, extra: number): Promise<boolean> {
   if (settings.budgetUsd <= 0) return true;
