@@ -20,7 +20,9 @@ EXPRESSIONS = ('neutral', 'smile', 'troubled', 'surprised', 'annoyed', 'sad')
 SAKIKO_SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
 MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 'surprised')
 MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
-SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES
+ANON_POSES = ('shy', 'smile', 'confident', 'wave', 'surprised', 'cheerful')
+ANON_SPRITES = {f'anon_uniform_{pose}' for pose in ANON_POSES}
+SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES
 BACKGROUNDS = {'toyokawa_mansion_day', 'toyokawa_mansion_dusk', 'toyokawa_mansion_night',
                'toyokawa_living_room', 'downtown_day', 'downtown_night'}
 EXPECTED_ASSETS = SPRITES | BACKGROUNDS
