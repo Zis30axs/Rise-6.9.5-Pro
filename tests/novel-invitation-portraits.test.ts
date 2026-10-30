@@ -153,6 +153,9 @@ describe('面对面邀约双立绘（真实场景，不调整日程）', () => {
     const css=readFileSync(resolve(process.cwd(),'src/frontend/novel-invitation-portraits.css'),'utf8');
     expect(app).toContain('<NovelInvitationPortraits v-if="visibleInvitationStage');
     expect(app).toContain('!visibleInvitationStage');
+    // The original novel/3D conditional chain must not turn on 3D behind a double portrait.
+    expect(app).toContain('<SoyoLive2D v-if="novelMode"');
+    expect(app).toContain('v-else-if="model.state.interior"');
     expect(dialogue).toContain('novelInvitationPortraitFocus');
     expect(layout).toContain("return 'invitation-portraits'");
     expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
