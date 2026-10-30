@@ -2,9 +2,10 @@ import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getSakikoArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getRaanaArt, getSakikoArt } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
+import { isRaanaSpeaker } from './raana-art-policy';
 import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
@@ -57,6 +58,10 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
   }
   if (!person.protagonistId && (isAnonSpeaker(person.name) || isAnonSpeaker(person.personId ?? ''))) {
     const art = getAnonArt(downtownArtPack, { speaker: person.name || person.personId, expression: 'neutral' });
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isRaanaSpeaker(person.name) || isRaanaSpeaker(person.personId ?? ''))) {
+    const art = getRaanaArt(downtownArtPack, { speaker: person.name || person.personId, expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   const atlas = person.portraitId && Object.hasOwn(novelNpcAtlases, person.portraitId)

@@ -66,6 +66,28 @@
     "canvas": [768, 1344],
     "anchor": [384, 1280]
   },
+  "raana": {
+    "reviewedOn": "2026-10-30",
+    "count": 5,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "identityConsistent": true,
+    "poses": ["neutral", "smile", "crossed", "wave", "hips"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "neutral",
+      "troubled": "crossed",
+      "annoyed": "hips",
+      "sad": "crossed"
+    },
+    "waveKeptAsPose": true,
+    "fullHeadHandsAndBothShoes": true,
+    "raisedArmAndWidePosesInsideCanvas": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -215,6 +237,31 @@
     {
       "id": "anon_uniform_cheerful",
       "sha256": "a44baad1e924fec1c8b45f90a98d7da9d7882c957a5dfb7e9c335e63fe1d89dd",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_neutral",
+      "sha256": "e9a154a547c2973e8c2cda0533bad73bed78fb5936aead93bf40bff345ad056e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_smile",
+      "sha256": "59dec0addb8f25543ca65d5024ff316eae77d53c3e51d18600fe8339e661bfb7",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_crossed",
+      "sha256": "927bf3b75509274e00c41708101fe451014d8c7eccaf27aa3c50854fec582f2c",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_wave",
+      "sha256": "de57cde4e1e335bcbbef25a9391383ba187f6d64e9df92970eb222e0328cd938",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_hips",
+      "sha256": "9ecf314719b3374ea3c28249739fbc49aabd98405f57fcae44e501a86eb1d97d",
       "visuallyReviewed": true
     }
   ],
