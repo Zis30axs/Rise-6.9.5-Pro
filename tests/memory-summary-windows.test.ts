@@ -35,6 +35,14 @@ describe('memory summary windows', () => {
       { id: 'journal:emma:long:part:1', kind: 'journal', turn: 0 }])).toBe(75);
   });
 
+  it('keeps the exact twentieth and fortieth floors after early log archives', () => {
+    expect(memoryArchiveBoundary([...journals(76, 12), ...story(12)], 0, 0, 20)).toBe(12);
+    expect(memoryArchiveBoundary([...journals(1, 19), ...story(19)], 12, 0, 20)).toBeNull();
+    expect(memoryArchiveBoundary([...journals(1, 20), ...story(20)], 12, 0, 20)).toBe(20);
+    expect(memoryArchiveBoundary([...journals(76, 33), ...story(33)], 20, 0, 20)).toBe(33);
+    expect(memoryArchiveBoundary([...journals(1, 40), ...story(40)], 33, 0, 20)).toBe(40);
+  });
+
   it('drains a previously scheduled batch without creating unrelated early work', () => {
     expect(memoryArchiveBoundary(journals(25), 0, 1, 20)).toBe(1);
     expect(memoryArchiveBoundary(journals(3, 21), 20, 20, 20)).toBeNull();
