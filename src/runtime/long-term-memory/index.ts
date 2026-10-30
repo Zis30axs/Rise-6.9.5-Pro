@@ -68,7 +68,8 @@ export function memoryCommitted(scope: string, before: WorldState, after: WorldS
         await ingestSources(sources);
         ackSources(sources, onIngest);
         if (!memoryIsPaused(scope) && memoryPauseVersion(scope) === pauseToken)
-          scheduleMemoryWork(scope, []);
+          scheduleMemoryWork(scope, [],
+            (after.protagonists?.narrativeTurn ?? 0) > (before.protagonists?.narrativeTurn ?? 0));
       } catch { /* Keep the synchronous chat outbox for recovery. */ }
     };
     if (pending) void pending.then(archive);
