@@ -221,6 +221,7 @@ def prepare(check_only: bool = False) -> dict:
             'Third panel of the first six sheets is mapped to shy; Yuki\'s third panel to thinking; these labels are provisional.',
             'Yuki\'s 2026-10-23 white-backdrop native-resolution 512x1024 transparent PNGs use connected foreground matte, not anime-seg.',
             'Margo\'s committed 768x1024 AVIF sprites stay as-is: neutral, happy, shy, plus extras angry and surprised. Missing emotions use her neutral sprite.',
+            '2026-10-30 用户提供的奈叶香、亚里沙与米莉亚常服三联用 rembg isnet-anime 抠图，只在模型不确信时清除与边缘相连的近黑背景。米莉亚这套是当前默认立绘，早先 anime-seg 三张仍登记在人物目录。',
         ],
         'assets': rows,
     }

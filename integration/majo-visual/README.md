@@ -8,7 +8,7 @@
 
 - **樱羽艾玛（`majo-emma`）**：九种表情 `neutral / happy / sad / angry / surprised / shy / thinking / serious / relieved` 已从 `assets/majo-emma/packs/` 解出并接入小说模式透明立绘（`src/frontend/NovelNpcPortrait.vue`）。选择顺序是**先人物身份、再情绪**：只有说话人稳定匹配 `艾玛 / 樱羽艾玛` 时才使用这套立绘，未知姓名不会借用。
 - **六名半主要角色**：用户于 2026-10-22 确认「1 希罗、2 诺亚、3 米莉亚、4 安安、5 橘雪莉（消息写作橘雪梨）、6 远野汉娜」。六张三姿态图集用 Apache-2.0 的 `skytnt/anime-seg` ONNX 模型逐格抠图，再用预乘 alpha 的 LANCZOS **放大 2×**，输出 1024×2048 透明立绘，按 `majo-hiro / majo-noa / majo-milia / majo-anan / majo-sherry / majo-hanna` 接入。每人三格按 `neutral / happy / shy` 初版映射；第三姿态的「害羞」是画面判定，不是原画师正式命名。
-- **缺失情绪回退**：半主要角色没有的六种情绪（难过/生气/惊讶/思考/严肃/安心）**返回同一人物的 `neutral` 平常立绘**，不会退回通用立绘，也不会借用别人的脸。只有完全未登记的角色（可可、玛格、奈叶香、亚里沙、梅露露、蕾雅、月代雪）继续使用通用立绘。
+- **缺失情绪回退**：半主要角色没有的情绪返回同一人物的平常立绘，不会退回通用立绘，也不会借用别人的脸。奈叶香、亚里沙，以及米莉亚 2026-10-30 的常服默认立绘，把 smile 映到开心姿态、troubled 与 annoyed 映到思考姿态、surprised 与 sad 映到平静姿态。仍未登记专属立绘的是可可、梅露露、蕾雅。
 - 情绪仍来自既有 `|角色名|情绪|台词|` 对白协议，经 `src/frontend/novel-npc-emotions.ts` 白名单映射；没有新增协议字段或模型权限。
 - 素世继续使用既有 Live2D；祥子继续使用既有差分立绘。本轮没有重绘或替换她们。
 

@@ -5,7 +5,7 @@ import { downtownArtPack } from './generated/downtown-art';
 import { getAnonArt, getMutsumiArt, getSakikoArt } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
-import { majoExpressionFor } from './majo-art';
+import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
@@ -39,6 +39,13 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
   if (person.personId?.startsWith('majo-')) {
     const src = majoExpressionFor(person.personId, 'neutral');
     return src ? { kind: 'sprite', src } : null;
+  }
+  if (!person.protagonistId) {
+    const byName = resolveMajoSpeaker(person.name);
+    if (byName) {
+      const src = majoExpressionFor(byName, 'neutral');
+      if (src) return { kind: 'sprite', src };
+    }
   }
   if (person.personId?.startsWith('watanare-')) {
     const src = watanareExpressionFor(person.personId, 'neutral');
