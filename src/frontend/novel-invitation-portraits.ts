@@ -110,7 +110,7 @@ export function resolveNovelInvitationPortraitPair(state: WorldState,
     const agenda = invite.agenda;
     const leave = agenda?.steps.find(step => step.kind === 'leave');
     const formallyMeeting = invite.status === 'accepted' &&
-      (!agenda || (agenda.status === 'scheduled' && !leave?.done)) &&
+      (!agenda || (agenda.status === 'scheduled' && !leave?.done && now < (leave?.at ?? due + 240))) &&
       (agenda ? !!agenda.steps.find(step => step.kind === 'arrive')?.done
         : now >= due - 180 && now <= due + 240) &&
       (state.interior?.roomId ?? state.locationId) === invite.locationId &&
