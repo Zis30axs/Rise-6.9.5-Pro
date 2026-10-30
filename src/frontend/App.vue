@@ -14,6 +14,7 @@ import type { SwitchSceneHandle } from './switch-camera';
 import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
 import { isSoyoSpeaker } from './live2d-soyo-assets';
 import { isSakikoSpeaker } from './sakiko-art-policy';
+import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { resolveMajoSpeaker } from './majo-art';
 import { resolveWatanareSpeaker } from './watanare-art';
@@ -170,7 +171,7 @@ const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? hel
 const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
 function recognizesNovelSpeaker(speaker: string): boolean {
-  return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || isMutsumiSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
+  return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || isMutsumiSpeaker(speaker) || isAnonSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
     || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
       contacts: props.model.state.contacts,
       scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],

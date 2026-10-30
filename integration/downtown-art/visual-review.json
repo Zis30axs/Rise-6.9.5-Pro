@@ -44,6 +44,28 @@
     "canvas": [768, 1344],
     "anchor": [384, 1280]
   },
+  "anon": {
+    "reviewedOn": "2026-10-30",
+    "count": 6,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "identityConsistent": true,
+    "poses": ["shy", "smile", "confident", "wave", "surprised", "cheerful"],
+    "expressionPose": {
+      "neutral": "smile",
+      "smile": "cheerful",
+      "surprised": "surprised",
+      "troubled": "shy",
+      "annoyed": "confident",
+      "sad": "shy"
+    },
+    "waveKeptAsPose": true,
+    "fullHeadHandsAndBothShoes": true,
+    "raisedArmAndWidePosesInsideCanvas": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -163,6 +185,36 @@
     {
       "id": "mutsumi_uniform_surprised",
       "sha256": "41b5113dc671fad1c79bcad618b46b0d7ee77c4e42582ddd65933f797b945c80",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_shy",
+      "sha256": "a0a1fe6b73d4a4f8b65666167caa3646aea5d3c359cba1951dfe53906efd6048",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_smile",
+      "sha256": "8b896b021ecdb7f75d8aa3eed20ad170c4b0e3b18d3b9b0f88d42dedb8f65058",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_confident",
+      "sha256": "7d5516df3f11c159cc7690365d7ce4bda335af7645307cd1a8862aa5f763f7fe",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_wave",
+      "sha256": "fa675e7009f0e076cb590b4efcba5503f5e26aed75c4a64f08885cecf0b0f76d",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_surprised",
+      "sha256": "c222140ba8a76783a0e721e919c8fde7a09fee3f22ecaf1d8f9a1b423a4c81d2",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "anon_uniform_cheerful",
+      "sha256": "a44baad1e924fec1c8b45f90a98d7da9d7882c957a5dfb7e9c335e63fe1d89dd",
       "visuallyReviewed": true
     }
   ],

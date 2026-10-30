@@ -3,8 +3,8 @@
 Never approves artwork. Review remains a separate visual decision. Source PNGs
 are unchanged; only low-alpha fringe noise is removed before sprite alignment.
 Sakiko and the backgrounds stay on their approved bytes when this Pillow build
-cannot reproduce them and the recorded source hash is unchanged. Mutsumi's
-school-uniform poses are derived with the same sprite alignment.
+cannot reproduce them and the recorded source hash is unchanged. Mutsumi and
+Anon's school-uniform poses are derived with the same sprite alignment.
 """
 from __future__ import annotations
 import argparse
@@ -13,7 +13,7 @@ from io import BytesIO
 import json
 from pathlib import Path
 from PIL import Image, ImageFilter, ImageOps
-from verify_downtown_art import BACKGROUNDS, MUTSUMI_POSES, SPRITES
+from verify_downtown_art import ANON_POSES, BACKGROUNDS, MUTSUMI_POSES, SPRITES
 
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE / 'assets/downtown-art'
@@ -22,20 +22,21 @@ CANVAS = (768, 1344)
 ANCHOR = (384, 1280)
 
 
-def ensure_mutsumi_entries(manifest: dict) -> None:
+def ensure_uniform_entries(manifest: dict) -> None:
     present = {item['id'] for item in manifest['assets']}
     missing = []
-    for pose in MUTSUMI_POSES:
-        key = f'mutsumi_uniform_{pose}'
-        if key in present:
-            continue
-        missing.append({
-            'id': key,
-            'path': f"characters/mutsumi/uniform/{pose.replace('_', '-')}.webp",
-            'sha256': '',
-            'size': list(CANVAS),
-            'anchor': list(ANCHOR),
-        })
+    for character, poses in (('mutsumi', MUTSUMI_POSES), ('anon', ANON_POSES)):
+        for pose in poses:
+            key = f'{character}_uniform_{pose}'
+            if key in present:
+                continue
+            missing.append({
+                'id': key,
+                'path': f"characters/{character}/uniform/{pose.replace('_', '-')}.webp",
+                'sha256': '',
+                'size': list(CANVAS),
+                'anchor': list(ANCHOR),
+            })
     if not missing:
         return
     index = next(i for i, item in enumerate(manifest['assets']) if item['id'] in BACKGROUNDS)
@@ -47,7 +48,7 @@ def prepare(check=False):
     sources_path = BASE / 'integration/downtown-art/sources.json'
     previous_sources = {item['id']: item for item in json.loads(sources_path.read_text(encoding='utf-8'))['sources']}
     previous_assets = {item['id']: dict(item) for item in manifest['assets']}
-    ensure_mutsumi_entries(manifest)
+    ensure_uniform_entries(manifest)
     if {item['id'] for item in manifest['assets']} != SPRITES | BACKGROUNDS:
         raise ValueError('Unexpected production image matrix')
     pending, sources, kept = [], [], []
@@ -106,7 +107,7 @@ def prepare(check=False):
         pending.append((target, data, key not in kept))
         record = {'id': key, 'path': source.relative_to(BASE).as_posix(),
                   'size': original_size, 'bytes': len(source_bytes), 'sha256': source_sha}
-        if key.startswith('mutsumi_'):
+        if key.startswith('mutsumi_') or key.startswith('anon_'):
             record['origin'] = 'user-provided'
         sources.append(record)
     if not check:

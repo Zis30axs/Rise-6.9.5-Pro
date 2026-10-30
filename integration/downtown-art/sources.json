@@ -199,6 +199,72 @@
       "origin": "user-provided"
     },
     {
+      "id": "anon_uniform_shy",
+      "path": "assets/downtown-art/sources/anon-uniform-shy.png",
+      "size": [
+        668,
+        2168
+      ],
+      "bytes": 1201082,
+      "sha256": "f6d59c4b7d514b94eac48277a47496600060ac7b70249eae519751511f0b157a",
+      "origin": "user-provided"
+    },
+    {
+      "id": "anon_uniform_smile",
+      "path": "assets/downtown-art/sources/anon-uniform-smile.png",
+      "size": [
+        633,
+        2164
+      ],
+      "bytes": 1107260,
+      "sha256": "bb48df86f01f9bf08386af843e0e4fa294ceb0570e470d0c52768deeb69e49fb",
+      "origin": "user-provided"
+    },
+    {
+      "id": "anon_uniform_confident",
+      "path": "assets/downtown-art/sources/anon-uniform-confident.png",
+      "size": [
+        815,
+        2182
+      ],
+      "bytes": 1282643,
+      "sha256": "155856aaa69d5d058cb352532d60bf2a0942bf14a06e5297156052c3a31c6b18",
+      "origin": "user-provided"
+    },
+    {
+      "id": "anon_uniform_wave",
+      "path": "assets/downtown-art/sources/anon-uniform-wave.png",
+      "size": [
+        856,
+        2169
+      ],
+      "bytes": 1068550,
+      "sha256": "789f3036a7e8420efb37e9e8674bd6a5b6cb65a102e43c074f48d8a5f456da39",
+      "origin": "user-provided"
+    },
+    {
+      "id": "anon_uniform_surprised",
+      "path": "assets/downtown-art/sources/anon-uniform-surprised.png",
+      "size": [
+        810,
+        2135
+      ],
+      "bytes": 1300619,
+      "sha256": "094db92f867841a28e421e368bbf9bdeedfe125d02453cb2fa63ba0d2f0c683b",
+      "origin": "user-provided"
+    },
+    {
+      "id": "anon_uniform_cheerful",
+      "path": "assets/downtown-art/sources/anon-uniform-cheerful.png",
+      "size": [
+        918,
+        2174
+      ],
+      "bytes": 1362512,
+      "sha256": "df82ff1ffb82f56f62d0e65b80aa04a8655379ba2ef28531e81660c9e5b619b5",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [
