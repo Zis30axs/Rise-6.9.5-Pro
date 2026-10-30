@@ -23,6 +23,7 @@ const emit = defineEmits<{ select: [district: MapDistrictId]; scale: [value: { m
 // Deliberately optional: the binary is distributed locally with the offline resource pack.
 // Without the binary, build a geometric city from the same bundled JSON.
 const bundledModels = import.meta.glob<string>('../../assets/models/unread-city-tokyo-sandbox.glb', {
+  eager: true,
   query: '?inline',
   import: 'default',
 });
@@ -204,7 +205,7 @@ async function load() {
   try {
     if (asset) {
       try {
-        const inline = await asset();
+        const inline = asset;
         const bytes = await readLocalAssetBytes(inline, 10_000_000, 'Invalid bundled Tokyo sandbox');
         checkLocalGlb(bytes);
         const manager = new THREE.LoadingManager();
@@ -271,17 +272,3 @@ onBeforeUnmount(release);
   </div>
 </template>
 
-<style scoped>
-.tokyo-sandbox-scene { position: absolute; inset: 0; overflow: hidden; }
-.tokyo-sandbox-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
-.tokyo-sandbox-pin, .tokyo-sandbox-caption {
-  position: absolute; transform: translate(-50%, -50%); z-index: 2;
-  max-width: 110px; padding: 5px 8px; border-radius: 8px;
-  font: 600 11px/1.3 system-ui, sans-serif; text-align: center;
-  background: rgba(248, 249, 239, .92); color: #3f4c42;
-  border: 1px solid rgba(58, 82, 63, .35); box-shadow: 0 1px 6px #0003;
-}
-.tokyo-sandbox-pin { cursor: pointer; }
-.tokyo-sandbox-pin.selected { outline: 2px solid #ab6754; outline-offset: 1px; }
-.tokyo-sandbox-caption { opacity: .88; pointer-events: none; }
-</style>
