@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ select: [district: MapDistrictId]; scale: [value: { metersPerPixel: number }] }>();
 
 // Deliberately optional: the binary is distributed locally with the offline resource pack.
-// Until installed, the existing city SVG remains the functional fallback.
+// Without the binary, build a geometric city from the same bundled JSON.
 const bundledModels = import.meta.glob<string>('../../assets/models/unread-city-tokyo-sandbox.glb', {
   query: '?inline',
   import: 'default',
@@ -34,6 +34,7 @@ let renderer: THREE.WebGLRenderer | undefined;
 let scene: THREE.Scene | undefined;
 let camera: THREE.OrthographicCamera | undefined;
 let model: THREE.Group | undefined;
+let modelVariant: 'glb' | 'procedural' = 'procedural';
 let epoch = 0;
 const cityBounds = {
   minX: Math.min(...sandboxData.districts.map(d => d.minX)),
@@ -42,6 +43,63 @@ const cityBounds = {
   maxZ: Math.max(...sandboxData.districts.map(d => d.maxZ)),
 };
 const center = new THREE.Vector3((cityBounds.minX + cityBounds.maxX) / 2, 0, (cityBounds.minZ + cityBounds.maxZ) / 2);
+
+/**
+ * A lightweight geometric version of the supplied city layout. It also makes the
+ * city map usable when the optional offline GLB is not installed.
+ * This is display-only: saved movement, NPC presence and travel rules stay authoritative.
+ */
+function makeProceduralCity(): THREE.Group {
+  const root = new THREE.Group();
+  root.name = 'tokyo-sandbox-layout';
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(680, 680),
+    new THREE.MeshStandardMaterial({ color: '#9fb4a5', roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -2.2;
+  root.add(ground);
+  const slab = (w: number, h: number, d: number, x: number, y: number, z: number, color: string | number) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: .92 }));
+    mesh.position.set(x, y, z);
+    root.add(mesh);
+    return mesh;
+  };
+  // The supplied rectangles are intentionally scenic, not district membership checks.
+  for (const district of sandboxData.districts) {
+    const color = new THREE.Color(district.color);
+    color.lerp(new THREE.Color('#b6c6b4'), .52);
+    slab(district.maxX - district.minX, .15, district.maxZ - district.minZ,
+      (district.minX + district.maxX) / 2, -1.65, (district.minZ + district.maxZ) / 2, color.getHex());
+  }
+  for (const road of sandboxData.roads) {
+    const lane = slab(road.width, .12, road.depth, road.x, -.92, road.z,
+      road.kind === 'road' ? '#556a70' : '#e4d7bc');
+    lane.rotation.y = road.rotationY ?? 0;
+  }
+  for (const building of sandboxData.buildings) {
+    slab(building.width, building.height, building.depth,
+      building.x, building.height / 2, building.z, building.color);
+    if (building.roofType === 'pitched' || building.roofType === 'japanese' || building.roofType === 'mansion') {
+      const roof = new THREE.Mesh(
+        new THREE.ConeGeometry(Math.max(building.width, building.depth) * .65, 4, 4),
+        new THREE.MeshStandardMaterial({ color: '#6d6962', roughness: .94 }));
+      roof.rotation.y = Math.PI / 4;
+      roof.position.set(building.x, building.height + 1.8, building.z);
+      root.add(roof);
+    }
+  }
+  const peaks = [
+    [sandboxData.mountains.x, sandboxData.mountains.z, sandboxData.mountains.height],
+    [sandboxData.mountains.x - 43, sandboxData.mountains.z + 18, sandboxData.mountains.height * .65],
+    [sandboxData.mountains.x + 43, sandboxData.mountains.z + 8, sandboxData.mountains.height * .78],
+  ];
+  for (const [x, z, height] of peaks) {
+    const mountain = new THREE.Mesh(new THREE.ConeGeometry(37, height, 7),
+      new THREE.MeshStandardMaterial({ color: '#55785a', roughness: 1, flatShading: true }));
+    mountain.position.set(x, height / 2 - 1, z);
+    root.add(mountain);
+  }
+  return root;
+}
 
 function disposeModel(root: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>();
@@ -77,6 +135,7 @@ function release() {
   renderer?.forceContextLoss();
   renderer = undefined;
   status.value = 'idle';
+  modelVariant = 'procedural';
 }
 
 function checkLocalGlb(bytes: Uint8Array<ArrayBuffer>) {
@@ -139,20 +198,30 @@ function render() {
 async function load() {
   if (!props.active || !canvas.value || renderer || status.value === 'loading') return;
   const asset = Object.values(bundledModels)[0];
-  if (!asset) { status.value = 'fallback'; return; }
   const request = ++epoch;
   status.value = 'loading';
   let pending: THREE.Group | undefined;
   try {
-    const inline = await asset();
-    const bytes = await readLocalAssetBytes(inline, 10_000_000, 'Invalid bundled Tokyo sandbox');
-    checkLocalGlb(bytes);
-    const manager = new THREE.LoadingManager();
-    manager.setURLModifier(url => {
-      if (!url.startsWith('blob:')) throw new Error('External model resource blocked');
-      return url;
-    });
-    pending = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
+    if (asset) {
+      try {
+        const inline = await asset();
+        const bytes = await readLocalAssetBytes(inline, 10_000_000, 'Invalid bundled Tokyo sandbox');
+        checkLocalGlb(bytes);
+        const manager = new THREE.LoadingManager();
+        manager.setURLModifier(url => {
+          if (!url.startsWith('blob:')) throw new Error('External model resource blocked');
+          return url;
+        });
+        pending = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
+        modelVariant = 'glb';
+      } catch {
+        pending = makeProceduralCity();
+        modelVariant = 'procedural';
+      }
+    } else {
+      pending = makeProceduralCity();
+      modelVariant = 'procedural';
+    }
     if (request !== epoch || !props.active) { disposeModel(pending); return; }
     model = pending;
     pending = undefined;
@@ -184,7 +253,7 @@ onBeforeUnmount(release);
 </script>
 
 <template>
-  <div class="tokyo-sandbox-scene" :data-tokyo-sandbox-status="status">
+  <div class="tokyo-sandbox-scene" :data-tokyo-sandbox-status="status" :data-tokyo-sandbox-model="modelVariant">
     <canvas ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
     <CampusMapScene v-if="status !== 'ready'" scope="city" :width="width" :height="height"
       :bearing="bearing" :view-scale="viewScale" :location-id="locationId" :position="position"
