@@ -113,7 +113,7 @@ describe('面对面邀约双立绘（真实场景，不调整日程）', () => {
     other.scene={areaId:'promenade',x:-1,z:15,yaw:0,seed:'other-city',encounterId:null};
     expect(resolveNovelInvitationPortraitPair(state,[guest])).toBeNull();
     other.locationId='promenade';
-    other.scene.areaId='campus';
+    other.scene={...other.scene!,areaId:'campus'};
     expect(resolveNovelInvitationPortraitPair(state,[guest])).toBeNull();
   });
   it('阅读游标分别保留两人已说的表情，旁白两侧暗化，倒放无未来表情', () => {
