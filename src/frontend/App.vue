@@ -154,13 +154,13 @@ const invitationPortraitFocus = ref<NovelInvitationPortraitFocus | null>(null);
 /** A saved invitation alone is not enough: the live scene and the currently read
  *  line must both concern the co-present pair. Older entries cannot borrow
  *  the future/current world's presence to display people in their past. */
-const visibleInvitationPortraitPair = computed(() => {
+const visibleInvitationStage = computed(() => {
   const pair = invitationPortraitPair.value, focus = invitationPortraitFocus.value;
   return novelMode.value && !novelHistory.value && !activeWindow.value &&
     pair && focus?.invitationId === pair.invitationId &&
     focus.entryId === (props.model.state.story.at(-1)?.id ?? '') &&
     focus.viewpoint === protagonistNames[currentProtagonist.value] &&
-    !focus.unrelatedSpeaker ? pair : null;
+    !focus.unrelatedSpeaker ? { pair, focus } : null;
 });
 const encounterPerson = computed(() => {
   const position = worldScenePosition(props.model.state);
@@ -857,13 +857,13 @@ onBeforeUnmount(() => {
     </div>
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
-    <NovelInvitationPortraits v-if="visibleInvitationPortraitPair && invitationPortraitFocus"
-      :pair="visibleInvitationPortraitPair" :focus="invitationPortraitFocus"
+    <NovelInvitationPortraits v-if="visibleInvitationStage"
+      :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"
       :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
-    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationPortraitPair"
+    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage"
       :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
       :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode && !visibleInvitationPortraitPair"
+    <SoyoLive2D v-if="novelMode && !visibleInvitationStage"
       :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
       :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
