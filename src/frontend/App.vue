@@ -6,6 +6,7 @@ import NovelBackdrop from './NovelBackdrop.vue';
 import NovelDialogue from './NovelDialogue.vue';
 import StoryEntryContent from './StoryEntryContent.vue';
 import NovelNpcPortrait from './NovelNpcPortrait.vue';
+import NovelInvitationPortraits from './NovelInvitationPortraits.vue';
 import SoyoLive2D from './SoyoLive2D.vue';
 import ProtagonistPhonePose from './ProtagonistPhonePose.vue';
 import ProtagonistSwitchOverlay from './ProtagonistSwitchOverlay.vue';
@@ -21,6 +22,7 @@ import { resolveWatanareSpeaker } from './watanare-art';
 import { resolveFengjinSpeaker } from './fengjin-art';
 import { hasProtagonistPhonePose } from './protagonist-phone-art';
 import { type NovelSegment } from './novel-dialogue';
+import { resolveNovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
 import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
 import WorldPanels from './WorldPanels.vue';
@@ -147,6 +149,19 @@ const portraitPeople = computed(() => {
   return getScenePeople({ x: 0, z: 18, yaw: 0, areaId: 'promenade', seed, encounterId: null }, props.model.state.contacts, props.model.state.clock, hiddenProtagonistPersons(props.model.state));
 });
 const scenePeople = computed(() => worldScenePeople(props.model.state));
+const invitationPortraitPair = computed(() => resolveNovelInvitationPortraitPair(props.model.state, scenePeople.value));
+const invitationPortraitFocus = ref<NovelInvitationPortraitFocus | null>(null);
+/** A saved invitation alone is not enough: the live scene and the currently read
+ *  line must both concern the co-present pair. Older entries cannot borrow
+ *  the future/current world's presence to display people in their past. */
+const visibleInvitationPortraitPair = computed(() => {
+  const pair = invitationPortraitPair.value, focus = invitationPortraitFocus.value;
+  return novelMode.value && !novelHistory.value && !activeWindow.value &&
+    pair && focus?.invitationId === pair.invitationId &&
+    focus.entryId === (props.model.state.story.at(-1)?.id ?? '') &&
+    focus.viewpoint === protagonistNames[currentProtagonist.value] &&
+    !focus.unrelatedSpeaker ? pair : null;
+});
 const encounterPerson = computed(() => {
   const position = worldScenePosition(props.model.state);
   if (!position) return null;
@@ -842,8 +857,15 @@ onBeforeUnmount(() => {
     </div>
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
-    <NovelNpcPortrait v-if="novelMode || encounterPerson" :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion" :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
-    <SoyoLive2D v-if="novelMode" :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed" :active="!activeWindow && readingMode !== 'expanded'" />
+    <NovelInvitationPortraits v-if="visibleInvitationPortraitPair && invitationPortraitFocus"
+      :pair="visibleInvitationPortraitPair" :focus="invitationPortraitFocus"
+      :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
+    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationPortraitPair"
+      :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
+      :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
+    <SoyoLive2D v-if="novelMode && !visibleInvitationPortraitPair"
+      :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
+      :active="!activeWindow && readingMode !== 'expanded'" />
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
@@ -896,7 +918,13 @@ onBeforeUnmount(() => {
         <div><button type="button" :disabled="model.busy" @click="travelToMeeting(meetingPrompt)">前往约定地点</button>
         <button type="button" :disabled="model.busy" @click="hideMeetingPrompt(meetingPrompt.id)">稍后再说</button></div>
       </section>
-      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :recognizes-speaker="recognizesNovelSpeaker" :focus-target="model.phoneSceneJump" @focus="heldPortrait = $event" :active="novelMode && !novelHistory" :entries="model.state.story" :busy="model.busy" @segment="novelSegment = $event" @history="readEarlier" @switch-side="switchToOtherSide" />
+      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]"
+        :recognizes-speaker="recognizesNovelSpeaker" :invitation-pair="invitationPortraitPair"
+        :focus-target="model.phoneSceneJump" @focus="heldPortrait = $event"
+        @invitation-focus="invitationPortraitFocus = $event"
+        :active="novelMode && !novelHistory" :entries="model.state.story"
+        :busy="model.busy" @segment="novelSegment = $event"
+        @history="readEarlier" @switch-side="switchToOtherSide" />
       <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
   :other-side-beats="entry.otherSideBeats" :return-story="entry.returnStory"
   @segment="readDialogueSegment" @switch-side="switchToOtherSide" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
