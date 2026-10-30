@@ -945,7 +945,7 @@
       "floors": 3,
       "color": "#b86b52",
       "roofType": "pitched",
-      "sign": "AMEYOKO アメ横"
+      "sign": "AMEYOKO 阿美横丁"
     },
     {
       "id": "building:downtown-office-west",
@@ -1121,7 +1121,7 @@
       "floors": 4,
       "color": "#efe7d6",
       "roofType": "tsukinomori",
-      "sign": "TSUKINOMORI 月ノ森女子学園"
+      "sign": "TSUKINOMORI 月之森女子学园"
     }
   ],
   "roads": [
