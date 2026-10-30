@@ -2,7 +2,7 @@ import type { MemorySource } from './types';
 
 /** Keep 75 new operation logs without requesting an archival summary. */
 export const MEMORY_EARLY_JOURNAL_LIMIT = 75;
-/** The narrative archive cycle cannot run before 20 committed story turns. */
+/** Normal archival windows are at least 20 saved story turns apart. */
 export const MEMORY_MIN_TURN_INTERVAL = 20;
 
 export type PendingMemoryEvidence = Pick<MemorySource, 'id' | 'kind' | 'turn'>;
