@@ -4,9 +4,10 @@ import { novelNpcAtlases } from './novel-npc-atlases';
 import { resolveNovelNpcEmotion } from './novel-npc-emotions';
 import type { NovelNpcPortraitId } from './novel-npc-portraits';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getSakikoArt, type DowntownArtPack } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getRaanaArt, getSakikoArt, type DowntownArtPack } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
+import { isRaanaSpeaker } from './raana-art-policy';
 import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
 import { resolveMajoExpressionPortrait } from './majo-art';
 import { resolveWatanareExpressionPortrait } from './watanare-art';
@@ -21,6 +22,7 @@ const emotion = computed(() => resolveNovelNpcEmotion(props.emotion));
 const isSakiko = computed(() => isSakikoSpeaker(props.speaker));
 const isMutsumi = computed(() => isMutsumiSpeaker(props.speaker));
 const isAnon = computed(() => isAnonSpeaker(props.speaker));
+const isRaana = computed(() => isRaanaSpeaker(props.speaker));
 const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value));
 const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
@@ -31,12 +33,16 @@ const mutsumiSelected = computed(() => getMutsumiArt(props.artPack ?? downtownAr
 const anonSelected = computed(() => getAnonArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion,
 }));
+const raanaSelected = computed(() => getRaanaArt(props.artPack ?? downtownArtPack, {
+  speaker: props.speaker, expression: props.emotion,
+}));
 const failedId = ref('');
-watch(() => selected.value?.src ?? mutsumiSelected.value?.src ?? anonSelected.value?.src, () => { failedId.value = ''; });
+watch(() => selected.value?.src ?? mutsumiSelected.value?.src ?? anonSelected.value?.src ?? raanaSelected.value?.src, () => { failedId.value = ''; });
 const sakiko = computed(() => selected.value && selected.value.id !== failedId.value ? selected.value : null);
 const mutsumi = computed(() => !sakiko.value && mutsumiSelected.value && mutsumiSelected.value.id !== failedId.value ? mutsumiSelected.value : null);
 const anon = computed(() => !sakiko.value && !mutsumi.value && anonSelected.value && anonSelected.value.id !== failedId.value ? anonSelected.value : null);
-const atlas = computed(() => !isSakiko.value && !isMutsumi.value && !isAnon.value && props.portraitId && Object.hasOwn(novelNpcAtlases, props.portraitId)
+const raana = computed(() => !sakiko.value && !mutsumi.value && !anon.value && raanaSelected.value && raanaSelected.value.id !== failedId.value ? raanaSelected.value : null);
+const atlas = computed(() => !isSakiko.value && !isMutsumi.value && !isAnon.value && !isRaana.value && props.portraitId && Object.hasOwn(novelNpcAtlases, props.portraitId)
   ? novelNpcAtlases[props.portraitId] : null);
 const frame = computed(() => atlas.value?.frames[emotion.value] ?? null);
 const viewBox = computed(() => {
@@ -47,7 +53,8 @@ function imageFailed(event: Event) {
   const source = (event.target as HTMLImageElement | null)?.getAttribute('src');
   const current = selected.value?.src === source ? selected.value
     : mutsumiSelected.value?.src === source ? mutsumiSelected.value
-    : anonSelected.value?.src === source ? anonSelected.value : null;
+    : anonSelected.value?.src === source ? anonSelected.value
+    : raanaSelected.value?.src === source ? raanaSelected.value : null;
   if (current) failedId.value = current.id;
 }
 </script>
@@ -76,6 +83,12 @@ function imageFailed(event: Event) {
     :data-anon-outfit="anon.outfit" :data-anon-pose="anon.pose" :data-anon-sprite="anon.id" aria-hidden="true">
     <img :key="anon.id" class="novel-npc-portrait__sprite" :src="anon.src"
       :width="anon.width" :height="anon.height" alt="" draggable="false" @error="imageFailed">
+  </div>
+  <div v-else-if="raana" class="novel-npc-portrait" :class="{ 'is-muted': !active, 'is-dimmed': dimmed }"
+    data-npc-portrait="raana" :data-npc-speaker="speaker" :data-npc-emotion="raana.expression"
+    :data-raana-outfit="raana.outfit" :data-raana-pose="raana.pose" :data-raana-sprite="raana.id" aria-hidden="true">
+    <img :key="raana.id" class="novel-npc-portrait__sprite" :src="raana.src"
+      :width="raana.width" :height="raana.height" alt="" draggable="false" @error="imageFailed">
   </div>
   <div v-else-if="portraitId && atlas && frame" class="novel-npc-portrait" :class="{ 'is-muted': !active, 'is-dimmed': dimmed }"
     :data-npc-portrait="portraitId" :data-npc-speaker="speaker" :data-npc-emotion="emotion" aria-hidden="true">
