@@ -56,7 +56,7 @@ jobs:
           import json
           r=json.load(open('dist/lite-verification.json'))
           assert r['status']=='passed-build-only-not-tested-on-iphone'
-          assert r['approvedNewArtExternalized']==30
+          assert r['approvedNewArtExternalized']==35
           print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts
