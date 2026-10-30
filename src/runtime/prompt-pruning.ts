@@ -5,8 +5,10 @@
  * bounded projection because Tavern mode uses max_chat_history: 0.
  */
 export const PROMPT_CONTEXT_LIMITS = {
-  journalEntries: 7,
-  journalText: 300,
+  // Forward every journal entry retained by WorldState to the narrator.
+  journalEntries: 100,
+  // Do not silently omit the end of a saved action receipt.
+  journalText: 1000,
   storyTurns: 6,
   storyText: 650,
   phoneMessages: 8,
