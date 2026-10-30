@@ -9,6 +9,8 @@ import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types
 
 const workingScopes = new Set<string>();
 const pausedScopes = new Set<string>();
+// Only a newly saved foreground LLM turn can authorize early (>75-log) archiving.
+const narrativeSignals = new Set<string>();
 const activeRequests = new Map<string, AbortController>();
 const activeWorkers = new Map<string, Promise<void>>();
 const pauseVersions = new Map<string, number>();
@@ -33,6 +35,7 @@ export function memoryIsPaused(scope: string): boolean { return pausedScopes.has
 /** Stop optional paid activity immediately without touching gameplay or deleting work. */
 export function pauseMemoryWork(scope: string): Promise<void> {
   pausedScopes.add(scope);
+  narrativeSignals.delete(scope);
   pauseVersions.set(scope, memoryPauseVersion(scope) + 1);
   activeRequests.get(scope)?.abort();
   clearWakeup(scope);
@@ -82,12 +85,16 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
       const rank = (id: string) => id.startsWith('input:') ? 0 : id.startsWith('story:') ? 1 : 2;
       return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
     });
-  if (!pending.length) return;
+  if (!pending.length) { narrativeSignals.delete(scope); return; }
+  // A main-narrative signal is consumed once. Continuation batches instead
+  // depend on persisted dueThrough; reloading cannot create an early trigger.
+  const narrativeJustCommitted = narrativeSignals.delete(scope);
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
   const dueThrough = await meta(scope, 'dueThrough');
   // Preserve fixed 20-turn checkpoints; >75 unsummarized journals may archive
   // earlier, but major plot keywords alone must not schedule a summary.
-  const schedulingThrough = memoryArchiveBoundary(pending, lastScheduled, dueThrough, settings.interval, forced);
+  const schedulingThrough = memoryArchiveBoundary(pending, lastScheduled, dueThrough,
+    settings.interval, forced, narrativeJustCommitted);
   if (schedulingThrough === null) return;
   if (schedulingThrough > dueThrough) await setMeta(scope, 'dueThrough', schedulingThrough);
   const eligible = pending.filter(s => s.turn <= schedulingThrough);
@@ -196,6 +203,12 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
     workingScopes.delete(scope);
     if (!pausedScopes.has(scope) && loadMemorySettings().enabled) {
       try {
+        if (narrativeSignals.has(scope)) {
+          // A new normal story finished while an earlier memory worker was busy.
+          // Recheck its now-eligible logs without waiting for another story.
+          wakeup(scope, 1000);
+          return;
+        }
         const jobs = await rows<MemoryJob>('jobs', scope);
         const active = jobs.filter(j => j.state === 'pending' || j.state === 'working');
         if (active.length) {
@@ -227,9 +240,11 @@ function work(scope: string, settings: MemorySettings): Promise<void> {
   return pending;
 }
 
-export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void {
+export function scheduleMemoryWork(scope: string, sources: MemorySource[],
+  narrativeJustCommitted = false): void {
   const settings = loadMemorySettings();
   if (!settings.enabled) return;
+  if (narrativeJustCommitted) narrativeSignals.add(scope);
   pausedScopes.delete(scope);
   clearWakeup(scope);
   const archived = sources.length ? ingestSources(sources) : Promise.resolve();
