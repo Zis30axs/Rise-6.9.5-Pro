@@ -3,12 +3,13 @@ import { computed, ref, watch } from 'vue';
 import { parseNovelDialogue, type NovelSegment } from './novel-dialogue';
 import { storyDisplayText } from './story-text';
 import { novelPortraitFocus } from './novel-portrait-focus';
+import { novelInvitationPortraitFocus, type NovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
 import { protagonistNames } from '../runtime/protagonist-world';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { WorldState } from './types';
 
-const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean; focusTarget?: { id: string; token: number } }>();
-const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; history: []; switchSide: [target: ProtagonistId] }>();
+const props = defineProps<{ entries: WorldState['story']; busy: boolean; active: boolean; protagonist: string; recognizesSpeaker: (speaker: string) => boolean; invitationPair?: NovelInvitationPortraitPair | null; focusTarget?: { id: string; token: number } }>();
+const emit = defineEmits<{ segment: [segment: NovelSegment]; focus: [focus: { speaker: string; emotion: string; dimmed: boolean }]; invitationFocus: [focus: NovelInvitationPortraitFocus | null]; history: []; switchSide: [target: ProtagonistId] }>();
 type ViewingRow = NovelSegment & { id: string; entryId: string; viewpoint: string; choiceTargets?: ProtagonistId[] };
 const cursor = ref(0);
 const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
@@ -39,6 +40,7 @@ const current = computed(() => rows.value[cursor.value]);
 const sideChoice = computed(() => current.value?.choiceTargets ?? null);
 const canAdvance = computed(() => cursor.value < rows.value.length - 1);
 const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, current.value?.viewpoint ?? props.protagonist, props.recognizesSpeaker));
+const invitationFocus = computed(() => props.invitationPair ? novelInvitationPortraitFocus(rows.value, cursor.value, props.invitationPair) : null);
 watch(() => props.entries.at(-1)?.id, () => {
   const latest = props.entries.at(-1)?.id;
   const start = rows.value.findIndex(row => row.entryId === latest);
@@ -50,8 +52,8 @@ watch(() => props.focusTarget, target => {
   if (start >= 0) cursor.value = start;
 }, { immediate: true });
 let emittedSegment = '';
-watch([current, portraitFocus, () => props.active], ([row, focus, active]) => {
-  if (active) emit('focus', focus);
+watch([current, portraitFocus, invitationFocus, () => props.active], ([row, focus, doubleFocus, active]) => {
+  if (active) { emit('focus', focus); emit('invitationFocus', doubleFocus); }
   if (!active) { emittedSegment = ''; return; }
   if (!row || row.id === emittedSegment) return;
   emittedSegment = row.id;
