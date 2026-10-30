@@ -1,4 +1,5 @@
 import type { WorldState } from './types';
+import type { SocialInvitation } from '../runtime/natural-interactions';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { protagonistSceneId, worldScenePosition, type WorldScenePerson } from '../runtime/world-presence';
 import { agendaTargetProtagonist, agendaTargetResident, agreedMinute, socialMinute } from '../runtime/social-agenda';
@@ -28,6 +29,7 @@ export interface InvitationDialogueRow {
 }
 export interface NovelInvitationPortraitFocus {
   invitationId: string;
+  entryId: string;
   viewpoint: string;
   speaking: 'left' | 'right' | null;
   leftEmotion: string;
@@ -73,7 +75,7 @@ function nearPlayer(state: WorldState, person: WorldScenePerson): boolean {
   return !!at && Math.hypot(person.x - at.x, person.z - at.z) <= SCENE_ENCOUNTER_DISTANCE;
 }
 function actualPartner(state: WorldState, people: readonly WorldScenePerson[],
-  invite: NonNullable<WorldState['protagonists']>['socialInvitations'][number],
+  invite: SocialInvitation,
   current: ProtagonistId): WorldScenePerson | undefined {
   const targetProtagonist = agendaTargetProtagonist(state, invite);
   if (invite.owner !== current && targetProtagonist !== current) return undefined;
@@ -98,7 +100,6 @@ export function resolveNovelInvitationPortraitPair(state: WorldState,
   const invitations = state.protagonists.socialInvitations ?? [];
   for (let index = invitations.length - 1; index >= 0; index--) {
     const invite = invitations[index]!;
-    if (invite.status === 'declined') continue;
     const person = actualPartner(state, scenePeople, invite, current);
     if (!person) continue;
     // The face-to-face exchange can show both participants at the moment it happens,
@@ -109,8 +110,9 @@ export function resolveNovelInvitationPortraitPair(state: WorldState,
     const agenda = invite.agenda;
     const leave = agenda?.steps.find(step => step.kind === 'leave');
     const formallyMeeting = invite.status === 'accepted' &&
-      (!agenda || agenda.status === 'scheduled' && !leave?.done) &&
-      now >= due - 180 && now <= (leave?.at ?? due + 240) &&
+      (!agenda || (agenda.status === 'scheduled' && !leave?.done)) &&
+      (agenda ? !!agenda.steps.find(step => step.kind === 'arrive')?.done
+        : now >= due - 180 && now <= due + 240) &&
       (state.interior?.roomId ?? state.locationId) === invite.locationId &&
       // For scheduled resident NPCs, only a recorded arrival constitutes presence.
       (!agenda || !agendaTargetResident(state, invite) ||
@@ -149,6 +151,6 @@ export function novelInvitationPortraitFocus(rows: readonly InvitationDialogueRo
     if (side === 'left' && !foundLeft) { leftEmotion = row.emotion; foundLeft = true; }
     if (side === 'right' && !foundRight) { rightEmotion = row.emotion; foundRight = true; }
   }
-  return { invitationId: pair.invitationId, viewpoint: current?.viewpoint ?? '',
+  return { invitationId: pair.invitationId, entryId: current?.entryId ?? '', viewpoint: current?.viewpoint ?? '',
     speaking, leftEmotion, rightEmotion, unrelatedSpeaker };
 }
