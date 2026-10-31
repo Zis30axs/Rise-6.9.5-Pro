@@ -6,6 +6,16 @@ import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthEx
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling } from './fengjin-clinic';
+import tokyoSandbox from '../../assets/models/unread-city-tokyo-sandbox-data.json';
+
+export const COURT_OBSERVE_ID = 'court-observe';
+// The newly imported Tokyo sandbox owns the authored observation details.
+const courthouse = tokyoSandbox.landmarks.find(place => place.id === 'courthouse') as {
+  services?: { id: string; label: string; minutes: number; price: number;
+    energyDelta: number; moraleDelta: number; stressDelta: number; result: string }[];
+} | undefined;
+const courtObservation = courthouse?.services?.find(service => service.id === COURT_OBSERVE_ID);
+if (!courtObservation) throw new Error('东京沙盘缺少法院旁听服务');
 
 export const CONSTRUCTION_BACKEND_JOB_ID = 'construction-backend-recruitment';
 // The original 200-yuan pay line is part of the advertisement joke; this shift settles in JPY without conversion.
@@ -40,6 +50,8 @@ export const venues: readonly Venue[] = [
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
   { locationId: 'takao-mountain', label: '高尾山风景区', hoursLabel: '06:00–21:00', opens: 6 * 60, closes: 21 * 60, outdoor: true, description: '近郊名山自然风景名胜，拥有绿荫登山步道、山顶全景展望台、山间老字号茶屋与山麓天然温泉。' },
+  { locationId: 'courthouse', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '新沙盘中的法庭外广场和东侧公开入口。' },
+  { locationId: 'court-hearing', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '公开旁听席与正式审理共用的法庭。不得干预正在进行的案件。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
   { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
@@ -98,6 +110,11 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
 export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
+  { id: COURT_OBSERVE_ID, locationIds: ['court-hearing'], label: courtObservation.label,
+    description: '在公开旁听席安静观看法庭辩论与证据质证，学习法律程序，不介入正式在审案件。',
+    completionDescription: courtObservation.result, minutes: courtObservation.minutes,
+    price: courtObservation.price, effects: effects({ energy: courtObservation.energyDelta,
+      morale: courtObservation.moraleDelta, stress: courtObservation.stressDelta }) },
   { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '点一杯美式咖啡，坐下喝完。', minutes: 10, price: 320, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
   { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '点一杯拿铁，坐下慢慢喝完。', minutes: 15, price: 440, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
   { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '点一杯热茶，坐下歇一会儿。', minutes: 10, price: 240, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
@@ -139,7 +156,7 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
-  return state.interior && state.interior.roomId !== MARGO_CAFE_ROOM_ID ? []
+  return state.interior && ![MARGO_CAFE_ROOM_ID, 'court-hearing'].includes(state.interior.roomId) ? []
     : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
       && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }
@@ -186,6 +203,8 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     : service.id === CONSTRUCTION_BACKEND_JOB_ID && state.academics?.majorId !== 'computer-science' ? '这份招聘只接受计算机专业的应聘者。'
       : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
       : !status ? '当前地点没有已设定的开放安排。' : null;
+  if (!blockedReason && service?.id === COURT_OBSERVE_ID && state.courtroom?.active)
+    blockedReason = '正式庭审正在进行，旁听不能插入玩家案件。';
   if (!blockedReason && (service?.id === 'construction-carry' || service?.id === CONSTRUCTION_BACKEND_JOB_ID)) {
     const debuffs = getIllnessDebuffs(state.player);
     if (debuffs.prohibitHeavyLabor) {

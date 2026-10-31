@@ -83,7 +83,7 @@ export interface AcademicGain {
   at: string;
   /** Null means a 1.9 historical record without outcome evidence. */
   outcome: 'normal' | 'inspiration' | 'confusion' | null;
-  channel: 'classroom' | 'study-room' | 'bookshop' | null;
+  channel: 'classroom' | 'study-room' | 'bookshop' | 'court-hearing' | null;
   interactionId: string | null;
   energyConsumed: number | null;
   moraleChange: number | null;

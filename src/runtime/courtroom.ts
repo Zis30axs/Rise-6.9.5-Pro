@@ -3,6 +3,7 @@ import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames, resolveTransferParty } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
+import { getCampusInterior } from './campus-interiors';
 import { personState } from './protagonist-world';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
@@ -73,11 +74,14 @@ export interface CourtroomState {
   agreements?: CourtAgreement[];
   sanctions?: CourtSanction[];
   careers?: Record<ProtagonistId, CourtCareer>;
+  /** Shared, per-protagonist knowledge earned by observing open hearings. */
+  observationKnowledge?: Record<ProtagonistId, number>;
 }
 export const initialCourtroom = (): CourtroomState => ({
   version: 1, categories: [...DAILY_COURT_CATEGORIES], board: null, special: null, active: null,
   filing: null, results: [], pendingRecaps: {}, serial: 0,
   pendingSettlement:null,agreements:[],sanctions:[],careers:initialCourtCareers(),
+  observationKnowledge: Object.fromEntries(PROTAGONISTS.map(id=>[id,0])) as Record<ProtagonistId,number>,
 });
 export const courtState = (state: Pick<WorldState, 'courtroom'>): CourtroomState => state.courtroom ?? initialCourtroom();
 const error = (message: string): never => { throw new Error('法庭存档或行动无效：' + message); };
@@ -212,7 +216,7 @@ const parseCourtReturn = (raw: unknown): {x:number;z:number;yaw:number} => {
 };
 export function parseCourtroom(value: unknown): CourtroomState {
   const extra = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string,unknown> : {};
-  const extras = ['pendingSettlement','agreements','sanctions','careers'].filter(key=>Object.hasOwn(extra,key));
+  const extras = ['pendingSettlement','agreements','sanctions','careers','observationKnowledge'].filter(key=>Object.hasOwn(extra,key));
   const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial',...extras], '根结构');
   if (root.version !== 1 || !Array.isArray(root.categories) || !root.categories.length || root.categories.length > 4) return error('版本或筛选');
   const categories = root.categories.map(category);
@@ -257,8 +261,13 @@ export function parseCourtroom(value: unknown): CourtroomState {
   const defaults=initialCourtCareers();
   const careers=Object.hasOwn(root,'careers') ? obj(root.careers,[...PROTAGONISTS],'主角律师职业') : defaults;
   const parsedCareers=Object.fromEntries(PROTAGONISTS.map(id=>[id,parseCourtCareer(careers[id])])) as Record<ProtagonistId,CourtCareer>;
+  const rawKnowledge=Object.hasOwn(root,'observationKnowledge')
+    ? obj(root.observationKnowledge,[...PROTAGONISTS],'法庭旁听知识')
+    : Object.fromEntries(PROTAGONISTS.map(id=>[id,0]));
+  const observationKnowledge=Object.fromEntries(PROTAGONISTS.map(id=>[id,
+    whole(rawKnowledge[id],1000000,'法庭旁听知识')])) as Record<ProtagonistId,number>;
   return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
-    serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers };
+    serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers,observationKnowledge };
 }
 const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; respondent: string }> = [
   { category: 'civil', title: '没有归还的定金', client: '租房的大学生', respondent:'房东', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
@@ -293,6 +302,11 @@ const enterHearing = (state: WorldState): void => {
   const active=courtState(state).active;
   if(!active) return error('没有案件可开庭');
   active.returnTo = courtOfficePosition(state);
+  const court = getCampusInterior(COURT_HEARING_ID)!;
+  const entrance = court.entrance;
+  // Formal hearings use the new courthouse exterior, not the old office pose.
+  state.scene = { x: entrance.x, z: entrance.z, yaw: entrance.yaw,
+    areaId: court.parentLocationId, seed: state.scene?.seed ?? 'court-session', encounterId: null };
   state.locationId=COURT_HEARING_ID;
   state.interior={roomId:COURT_HEARING_ID,x:0,z:3.5,yaw:0,
     activityId:null,lastRest:null,lastStudy:null};
@@ -300,6 +314,9 @@ const enterHearing = (state: WorldState): void => {
 const leaveHearing = (state: WorldState, active: CourtCase): void => {
   if(state.locationId !== COURT_HEARING_ID) return;
   const pos=active.returnTo ?? {x:0,z:2,yaw:0};
+  const office = getCampusInterior(LAW_OFFICE_ID)!;
+  state.scene = { x: office.entrance.x, z: office.entrance.z, yaw: office.entrance.yaw,
+    areaId: office.parentLocationId, seed: state.scene?.seed ?? 'court-session', encounterId: null };
   state.locationId=LAW_OFFICE_ID;
   state.interior={roomId:LAW_OFFICE_ID,...pos,activityId:null,lastRest:null,lastStudy:null};
 };
@@ -586,7 +603,13 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     enrollCareer(next,current.careers!,owner);
   } else if (action.phase==='return-office') {
     if(current.active || next.locationId!==COURT_HEARING_ID) return error('当前无法离开法庭');
-    leaveHearing(next,{returnTo:{x:0,z:2,yaw:0}} as CourtCase);
+    // The historic action name is retained for old UI clients, but ordinary
+    // courthouse visitors must never teleport to the lawyer's office.
+    if(next.scene?.areaId!=='courthouse' || next.interior?.roomId!==COURT_HEARING_ID)
+      return error('法院入口与法庭位置不一致');
+    next.locationId='courthouse';
+    next.interior=null;
+    next.scene.encounterId=null;
   } else return error('未知的诉讼操作');
   next.courtroom = parseCourtroom(current);
   return next;
@@ -777,6 +800,7 @@ export function courtStoryContext(state: WorldState) {
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     venue:active ? {id:COURT_HEARING_ID,label:'法庭',returnTo:LAW_OFFICE_ID} : null,
     careers:court.careers,
+    observationKnowledge:court.observationKnowledge?.[owner] ?? 0,
     agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner ||
       court.results.some(r=>r.id===a.caseId && (r.owner===owner || r.lawyer===owner))).slice(-12),
     sanctions:court.sanctions?.filter(row=>state.clock.day>=row.startDay && state.clock.day<=row.endDay),

@@ -8,7 +8,10 @@ describe('district sandtables', () => {
     for (const room of campusInteriors) {
       const district = locationDistrict(room.id), bounds = districtBounds(district);
       expect(district).toBe(locationDistrict(room.parentLocationId));
-      expect(districtMapPlaces(district).some(place => place.id === room.id)).toBe(true);
+      // The new courthouse is one navigable exterior marker: the public room
+      // is entered from its door, never exposed as a duplicate map destination.
+      const destination = room.id === 'court-hearing' ? 'courthouse' : room.id;
+      expect(districtMapPlaces(district).some(place => place.id === destination)).toBe(true);
       expect(room.entrance.x).toBeGreaterThanOrEqual(bounds.minX); expect(room.entrance.x).toBeLessThanOrEqual(bounds.maxX);
       expect(room.entrance.z).toBeGreaterThanOrEqual(bounds.minZ); expect(room.entrance.z).toBeLessThanOrEqual(bounds.maxZ);
     }

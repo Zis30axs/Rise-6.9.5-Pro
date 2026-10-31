@@ -14,7 +14,7 @@ import { runInteraction } from './interaction-action';
 import { LAW_OFFICE_ID } from '../runtime/law-career';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
-const emit = defineEmits<{ map: []; store: []; books: []; activities: []; law: [] }>();
+const emit = defineEmits<{ map: []; store: []; books: []; activities: []; law: []; enter: [roomId: string] }>();
 const status = computed(() => getLocationStatus(props.model.state.locationId, props.model.state.clock));
 const place = computed(() => locations.find(item => item.id === props.model.state.locationId));
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
@@ -28,6 +28,8 @@ const revealingJob = ref<string | null>(null);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
   if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
+  if (room.value?.id === 'court-hearing') return '公开旁听与正式案件共用这一座法庭。旁听按游戏时间结算，不会自动开启委托或触发主模型。';
+  if (!room.value && props.model.state.locationId === 'courthouse') return '已到达沙盘中的审判法庭。开放时可从此入口进入旁听席；正式诉讼仍需先在枫庭律师事务所受理。';
   if (room.value?.id === MARGO_CAFE_ROOM_ID || atMargoCafe(props.model.state)) return '可以向在场的店主与来客打招呼，从菜单买一杯带走，或在窗边坐一会儿。';
   if (room.value) return '上方可直接选择房间里的学习、整理与休息，也可在 3D 中靠近桌椅、书架或床铺探索。';
   if (storeAvailable.value) return '在店门前打开货架选购，购买的商品放入背包，使用时才结算效果。';
@@ -112,6 +114,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
         <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
         <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ service.description }}</p>
         <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
+        <small v-if="service.id === 'court-observe'" class="location-service-duration">旁听见闻 +10 · 已有学业时额外积累法庭论证学习进度（均有上限）</small>
         <p v-if="!quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
         <p v-else-if="quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
         <div v-if="service.reveal && revealingJob === service.id" class="location-service-reveal" :data-job-reveal="service.id" role="group" aria-label="工作安排">
@@ -130,6 +133,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
     <p v-if="services.some(({ service }) => !service.payout)" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。</p>
     <div v-if="guidance" class="location-guidance" data-location-guidance>
       <p>{{ guidance }}</p>
+      <button v-if="!room && model.state.locationId === 'courthouse'" type="button" data-location-court-enter :disabled="model.busy || !status?.isOpen" @click="emit('enter', 'court-hearing')">进入公开法庭 ↗</button>
       <button v-if="room?.id === LAW_OFFICE_ID" type="button" data-location-law :disabled="model.busy" @click="emit('law')">打开案件卷宗 ↗</button>
       <button v-if="storeAvailable" type="button" data-location-store :disabled="model.busy" @click="emit('store')">打开便利店货架 ↗</button>
       <button v-if="atBookshop" type="button" data-location-books :disabled="model.busy || !status?.isOpen" @click="emit('books')">选书阅读 ↗</button>

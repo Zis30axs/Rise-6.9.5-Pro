@@ -21,6 +21,8 @@ export const sceneAreas: SceneArea[] = [
   { id: 'street-cafe', label: '街边咖啡馆', minX: 36, maxX: 61, minZ: 55, maxZ: 73 },
   { id: 'bus-stop', label: '高田接驳站', minX: 37, maxX: 58, minZ: 32, maxZ: 42 },
   { id: 'pocket-park', label: '口袋公园', minX: 22, maxX: 65, minZ: 74, maxZ: 89 },
+  // East-side public entrance of the new Tokyo GLB courthouse at (-38, 94).
+  { id: 'courthouse', label: '审判法庭前广场', minX: -23, maxX: -10, minZ: 87, maxZ: 109 },
   { id: 'junction', label: '南门十字路口', minX: -10, maxX: 10, minZ: 39, maxZ: 59 },
   { id: 'home', label: '杂司谷住宅区', minX: -250, maxX: -150, minZ: 120, maxZ: 210 },
   { id: 'commercial', label: '池袋·东池袋商业区', minX: 130, maxX: 250, minZ: 110, maxZ: 210 },
@@ -48,6 +50,7 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'street-cafe', label: '街边咖啡', x: 48, z: 56.5 },
   { id: 'bus-stop', label: '公交站', x: 47, z: 39.5 },
   { id: 'pocket-park', label: '口袋公园', x: 37, z: 80 },
+  { id: 'courthouse', label: '审判法庭', x: -20, z: 94 },
   { id: 'home', label: '杂司谷接驳站', x: -180, z: 150 },
   { id: 'commercial', label: '池袋接驳站', x: 180, z: 150 },
   { id: 'downtown', label: '目白台接驳站', x: -20, z: 185 },
@@ -93,6 +96,9 @@ export const scenePaths: ScenePath[] = [
   { x: 0, z: -155, width: 80, depth: 5, kind: 'walk' },
   { x: -35, z: -185, width: 30, depth: 5, kind: 'walk' },
   { x: 25, z: -215, width: 40, depth: 5, kind: 'walk' },
+  // Connect the courthouse pedestrian entrance to the existing street grid.
+  { x: 0, z: 92, width: 5, depth: 24, kind: 'walk' },
+  { x: -12, z: 94, width: 24, depth: 5, kind: 'walk' },
   // Campus spine, a complete walking loop, and branches into the destination courtyards.
   { x: 0, z: 12, width: 5.3, depth: 42, kind: 'walk' },
   { x: 0, z: -9.4, width: 23, depth: 4.8, kind: 'walk' },

@@ -416,9 +416,9 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [],
   },
   {
-    id: 'court-hearing', label: '新宿地方裁判所 · 法庭', parentLocationId: 'grand-commercial',
+    id: 'court-hearing', label: '魔女审判最高法庭 · 公开法庭', parentLocationId: 'courthouse',
     description: '地方法院内庄严的公开法庭。正前方是审判席，左右为原告席、被告席与证人席，旁听席排列在后部。书记员记录诉讼进展。人物的身份与证言以真实案卷为准。',
-    entrance: { x: -145, z: -158, yaw: 0 }, bounds, spawn: { x: 0, z: 3.5, yaw: 0 },
+    entrance: { x: -20, z: 94, yaw: -1.571 }, bounds, spawn: { x: 0, z: 3.5, yaw: 0 },
     obstacles: [
       { id: 'court-judge-bench', kind: 'podium', minX: -4.5, maxX: 4.5, minZ: -4.7, maxZ: -3.4 },
       { id: 'court-witness-stand', kind: 'podium', minX: -5.0, maxX: -3.0, minZ: -2.7, maxZ: -1.6 },
