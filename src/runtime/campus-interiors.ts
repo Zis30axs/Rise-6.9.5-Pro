@@ -153,6 +153,7 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: -1.4, z: -2.8, minutes: 0, energyDelta: 0, result: '观察了会客厅里的钢琴，没有触碰琴键。', prompt: '你已在丰川家会客厅观察钢琴，没有演奏或改变物品。请基于在场事实叙述，不虚构祥子在场或家人已同意任何重大决定。' },
       { id: 'toyokawa-room-observe', label: '查看会客厅', description: '观察会客区与书架，不翻找私人信件。',
         x: 3.4, z: 1.4, minutes: 0, energyDelta: 0, result: '看过了会客厅的陈设和书架，未获取私人物品。', prompt: '已观察会客厅，没有自动搜查私人区域、阅读秘密文件或推进家族关系。' },
+      { id: 'toyokawa-kitchen', label: '丰川宅邸厨房', description: '前往宅邸家用厨房选择菜谱，制作料理。', x: 3.6, z: -0.4, minutes: 0, energyDelta: 0, result: '打开丰川宅邸的料理菜单。', prompt: '' },
     ],
   },
   {
@@ -185,8 +186,8 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'emma-home-window', label: '看看窗外', description: '观察窗外街区与室内光线，不消耗时间或精力。',
         x: -5, z: 2.8, minutes: 0, energyDelta: 0, result: '在窗边看了一会儿街区，没有改变位置或时间。', prompt: '你在艾玛与月代雪家的窗边观察街区，没有消耗时间或精力。请基于已保存的在场事实叙述。' },
-      { id: 'emma-home-kitchen', label: '煮点东西', description: '使用料理台 20 分钟，消耗 3 点精力；不会凭空生成食材。',
-        x: 4, z: -1.2, minutes: 20, energyDelta: -3, result: '在料理台前简单煮了点东西，食材仍以背包记录为准。', prompt: '你在料理台前煮了东西，程序已推进 20 分钟并扣除 3 点精力；不自动消耗或生成背包物品。' },
+      { id: 'emma-home-kitchen', label: '烹饪料理', description: '使用料理台选择菜谱与食材，操作指针小游戏后才结算。',
+        x: 4, z: -1.2, minutes: 0, energyDelta: 0, result: '打开厨房菜谱与烹饪表盘。', prompt: '' },
       { id: 'emma-home-sofa', label: '在沙发休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.2, z: -1.2, minutes: 30, energyDelta: 6, result: '在沙发上休息了半小时。', prompt: '你在沙发上休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
@@ -271,8 +272,8 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'studio-window', label: '看看窗外', description: '观察公寓窗外的城市公园方向，不消耗时间或精力。',
         x: -5.2, z: 2.6, minutes: 0, energyDelta: 0, result: '在单身公寓的窗边看了看外头的公园方向。', prompt: '你在单身公寓的窗边观察窗外，没有消耗时间或精力。' },
-      { id: 'studio-kitchen', label: '用厨房', description: '简单使用厨房 15 分钟，消耗 2 点精力；不会凭空生成食材。',
-        x: 4.2, z: -1.6, minutes: 15, energyDelta: -2, result: '在小厨房简单弄了点吃的，食材仍以背包记录为准。', prompt: '你在单身公寓的小厨房忙了十五分钟，程序已扣除 2 点精力；不自动消耗或生成背包物品。' },
+      { id: 'studio-kitchen', label: '烹饪料理', description: '使用小厨房选择菜谱，按料理难度完成指针判定。',
+        x: 4.2, z: -1.6, minutes: 0, energyDelta: 0, result: '打开厨房菜谱与烹饪表盘。', prompt: '' },
       { id: 'studio-rest', label: '在床边休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.8, z: -0.6, minutes: 30, energyDelta: 6, result: '在床边休息了半小时。', prompt: '你在单身公寓的床边休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
