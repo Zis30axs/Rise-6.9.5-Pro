@@ -9,7 +9,7 @@ import { districtMapPlaces, isMapDistrict, type MapDistrictId } from './map-dist
 import { mapLocationPoint, type MapCameraView } from './campus-map-layout';
 import {
   projectOldTokyoPosition, tokyoCityBounds, tokyoDistrictBounds,
-  tokyoDistricts, tokyoLocationPosition, type TokyoScope,
+  tokyoDistricts, tokyoLocationPosition, TOKYO_SANDBOX_MODEL_SHA256, type TokyoScope,
 } from './tokyo-sandbox-map';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { readLocalAssetBytes } from './local-asset-buffer';
@@ -42,7 +42,7 @@ const emit = defineEmits<{
 }>();
 
 // Static import makes a missing source GLB a build error, never a silent empty glob.
-// Lite externalizes this complete data URL into its ONE local IndexedDB-backed ZIP.
+// Lite extracts this data URL into unread-city-tokyo-sandbox.zip, not the main Lite ZIP.
 const canvas = ref<HTMLCanvasElement>();
 const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
 const variant = ref<'glb' | 'procedural'>('glb');
@@ -90,6 +90,11 @@ function release() {
   renderer?.dispose(); renderer = undefined;
   status.value = 'idle';
   selectedPerson.value = '';
+}
+
+async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
 }
 
 function checkGlb(bytes: Uint8Array<ArrayBuffer>) {
@@ -250,6 +255,9 @@ async function load() {
     } else if (bundled) {
       try {
         const bytes = await readLocalAssetBytes(bundled, 10_000_000, 'Invalid offline Tokyo model');
+        if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
+          throw new Error('Tokyo sandbox pack hash mismatch');
+        }
         checkGlb(bytes);
         const manager = new THREE.LoadingManager();
         manager.setURLModifier(url => {

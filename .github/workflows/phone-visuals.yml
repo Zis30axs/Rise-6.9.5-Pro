@@ -78,5 +78,6 @@ jobs:
             dist/phone-visuals-tauri.png
             dist/unread-city-lite-tauri.png
             dist/unread-city-lite-assets.zip
+            dist/unread-city-tokyo-sandbox.zip
             dist/lite-verification.json
             test-results/

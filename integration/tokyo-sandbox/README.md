@@ -3,10 +3,12 @@
 ## 最终发行架构
 
 - **仓库源文件（需要一次性提交）**：`assets/models/unread-city-tokyo-sandbox.glb`
-- **同一份离线资源 ZIP**：`dist/unread-city-lite-assets.zip`
+- **独立沙盘素材包**：`dist/unread-city-tokyo-sandbox.zip`
+- **原有离线资源 ZIP**（不含本 GLB）：`dist/unread-city-lite-assets.zip`
 - **普通 Lite 卡**：`dist/unread-city-lite.png`
 - **Tauri 专用卡**：`dist/unread-city-lite-tauri.png`
-- 不联网，不使用外部 CDN，不生成第二份沙盘 ZIP。
+- 不联网，不使用外部 CDN。沙盘模型不写入主 Lite ZIP，而是沿用同一套 STORE 清单规则单独成包。
+- 登记：`integration/tokyo-sandbox/pack.json`。城市总览与主角切换里的 `CitySandboxScene` 使用这份模型。
 - Su-30SM「45 Blue」继续采用仓库已有的压缩版 `assets/models/ambient-aircraft.glb`，飞机与其他载具控制逻辑不改。
 
 ## 首次安装源模型（只做一次）
@@ -26,8 +28,7 @@ git add assets/models/unread-city-tokyo-sandbox.glb
 git commit -m "assets: add canonical offline Tokyo GLB [skip ci]"
 ```
 
-注意：**这个仓库的 GitHub 文本连接当前不能上传二进制 GLB**。
-本次代码合并并不自动代表模型已被写入 Git；请核对该路径确实存在于仓库树中。
+源文件与其他模型一样作为普通 Git 对象提交，当前仓库没有为 GLB 启用 Git LFS。
 源文件未纳入 Git 之前，构建会明确失败，而不是发布只有简化沙盘的卡。
 
 ## 后续所有常规构建：不再提供素材路径
@@ -40,8 +41,9 @@ npm run build
 
 1. `prebuild` 校验仓库中的固定 GLB 与 SHA-256；
 2. `npm run check` 与 `vite build` 构建原有全量脚本，Vite 静态导入本地 GLB；
-3. `postbuild` 自动执行 `scripts/build_lite_release.py`，从脚本里提取大体积素材，写入原有的一份 `unread-city-lite-assets.zip`，并生成 `unread-city-lite.png`；
-4. Lite ZIP 校验器会核对 GLB 精确哈希、长度、MIME 和 ZIP manifest。
+3. `postbuild` 自动执行 `scripts/build_lite_release.py`，从脚本里提取大体积素材，写入原有的 `unread-city-lite-assets.zip`，并把东京 GLB 单独写入 `unread-city-tokyo-sandbox.zip`，再生成 `unread-city-lite.png`；
+4. 两份 ZIP 都使用未压缩 STORE、`manifest.json` 和 `assets/<SHA-256>`。校验器确认主 ZIP 不含该 GLB，独立包内的哈希、长度和 MIME 与源文件一致。
+5. 角色脚本先按主素材包启动。东京包安装后，`CitySandboxScene` 通过 `__UC_TOKYO_SANDBOX_ASSET__` 读取本地 Blob。未安装时沙盘使用简化外观。
 
 需要同时生成 Tauri 卡并完整校验时，只用：
 
@@ -49,7 +51,7 @@ npm run build
 npm run lite:build
 ```
 
-该命令不再要求输入 GLB 路径，运行后会生成并校验普通 PNG、Tauri PNG 和同一份离线 ZIP；后续重建可直接覆盖已生成的 Tauri 专用产物。
+该命令不再要求输入 GLB 路径，运行后会生成并校验普通 PNG、Tauri PNG、主离线 ZIP 和独立东京沙盘 ZIP；后续重建可直接覆盖已生成的 Tauri 专用产物。
 
 ## 玩法边界
 

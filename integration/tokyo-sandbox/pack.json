@@ -1,0 +1,15 @@
+{
+  "schema": "unread-city-asset-pack-v1",
+  "id": "tokyo-sandbox",
+  "title": "东京沙盘",
+  "archive": "unread-city-tokyo-sandbox.zip",
+  "db": "unread-city-tokyo-sandbox-v1",
+  "manifestSchema": "unread-city-tokyo-sandbox-v1",
+  "loader": "__UC_TOKYO_SANDBOX_ASSET__",
+  "source": "assets/models/unread-city-tokyo-sandbox.glb",
+  "bytes": 6232488,
+  "sha256": "12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb",
+  "mime": ["model/gltf-binary", "application/octet-stream"],
+  "separateFrom": "unread-city-lite-assets.zip",
+  "consumer": "src/frontend/CitySandboxScene.vue"
+}

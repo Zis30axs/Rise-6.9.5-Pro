@@ -5,7 +5,8 @@
 ## 发布物
 
 - unread-city-lite-tauri.png：可导入 TauriTavern 的轻量 Character Card V2 PNG。角色设定、完整世界书、剧情逻辑、内嵌手机运行时保留。
-- unread-city-lite-assets.zip：离线本地资源包，只包含图片、模型、Live2D 等数据，不包含需安装的插件或需要执行的脚本。
+- unread-city-lite-assets.zip：离线本地资源包，只包含图片、模型、Live2D 等数据，不包含需安装的插件或需要执行的脚本。东京沙盘 GLB 不在此包内。
+- unread-city-tokyo-sandbox.zip：东京沙盘模型的独立离线包，清单规则与主素材 ZIP 相同（STORE、`manifest.json`、按 SHA-256 存放）。城市沙盘未安装该包时使用简化外观。
 - lite-verification.json：SHA-256、体积、移出资源数及世界书校验。
 
 轻量卡在 ZIP 尚未安装时不启动游戏前端，而是保留原生角色聊天界面。首次在该卡聊天中执行角色脚本，右上角会显示“📦 安装 Lite 素材 ZIP”。点按钮从 iPhone“文件”中选取配套 ZIP，校验并缓存完成后刷新页面重新进入角色；同源环境后续从 IndexedDB 按 SHA-256 恢复素材 Blob URL，不访问素材服务器。
