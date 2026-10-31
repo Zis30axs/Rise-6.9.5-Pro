@@ -8,12 +8,14 @@ import { getPackItemQuote, getPurchaseQuote, getStoreAvailability, PACKAGING_FEE
 import type { ShellActions, ShellModel } from './types';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
+const emit = defineEmits<{ inviteMeal: [dishId: string, npcId: string] }>();
 const categories: { id: StoreItem['category']; label: string; description: string }[] = [
   { id: 'meal', label: '饭食', description: '带上一份热量，继续今天的行程。' },
   { id: 'snack', label: '零食', description: '课间与路上的小小补给。' },
   { id: 'drink', label: '饮品', description: '在货架前挑一瓶喜欢的饮品。' },
   { id: 'cigarette', label: '香烟', description: '按盒购买，按支使用；效果包含健康损失。' },
   { id: 'medicine', label: '医药', description: '常备非处方药与急救调理品。' },
+  { id: 'ingredient', label: '食材', description: '买进背包，回厨房制作家常料理。食材不能直接食用。' },
 ];
 const tiers: Record<StoreItem['tier'], string> = { basic: '基础款', standard: '标准款', premium: '精选款' };
 const selectedCategory = ref<StoreItem['category']>('meal');
@@ -72,13 +74,13 @@ async function pack(itemId: string) {
         <ul class="store-effects" :aria-label="`${item.name}每${item.useUnit}效果`"><li v-for="effect in effects(item)" :key="effect.key" :class="{ harmful: effect.harmful }">{{ effect.label }} {{ effect.value > 0 ? '+' : '−' }}{{ Math.abs(effect.value) }}</li></ul>
         <p class="store-owned" data-product-owned>背包库存 {{ quote.owned }} {{ item.useUnit }}</p>
         <button type="button" class="store-buy" :aria-label="`购买${item.name}，${quantity}${item.purchaseUnit}`" :disabled="model.busy || !!quote.blockedReason" @click="buy(item.id)"><span>购买 {{ quantity }} {{ item.purchaseUnit }}</span><strong>¥{{ quote.totalPrice.toFixed(2) }}</strong></button>
-        <button v-if="item.category !== 'cigarette'" type="button" class="store-pack" :data-package-item="item.id" :disabled="model.busy || !!packQuote.blockedReason" :title="packQuote.blockedReason ?? `每件加 ¥${PACKAGING_FEE} 打包费，放入背包后可使用或送人`" @click="pack(item.id)"><span>加包装带走 {{ quantity }} {{ item.purchaseUnit }}<small>每件打包费 ¥{{ PACKAGING_FEE }}</small></span><strong>¥{{ packQuote.totalPrice.toFixed(2) }}</strong></button>
+        <button v-if="item.category !== 'cigarette' && item.category !== 'ingredient'" type="button" class="store-pack" :data-package-item="item.id" :disabled="model.busy || !!packQuote.blockedReason" :title="packQuote.blockedReason ?? `每件加 ¥${PACKAGING_FEE} 打包费，放入背包后可使用或送人`" @click="pack(item.id)"><span>加包装带走 {{ quantity }} {{ item.purchaseUnit }}<small>每件打包费 ¥{{ PACKAGING_FEE }}</small></span><strong>¥{{ packQuote.totalPrice.toFixed(2) }}</strong></button>
         <p v-if="quote.blockedReason" class="store-blocked">{{ quote.blockedReason }}</p>
         <p v-else class="store-purchase-hint">放入背包 {{ quote.unitsAdded }} {{ item.useUnit }}</p>
       </article>
     </div>
     <p class="store-note">品牌为虚构设定，档位用于区分商品。标注为游戏中的基础效果；实际变化计入使用耗时与状态上下限。</p>
     <dl class="store-current-stats" aria-label="当前身体状态"><div v-for="stat in currentStats" :key="stat.id"><dt>{{ stat.label }}</dt><dd :data-store-player-stat="stat.id">{{ formatGameNumber(stat.value) }} <small>{{ stat.unit }}</small></dd></div></dl>
-    <InventoryPanel :model="model" :actions="actions" />
+    <InventoryPanel :model="model" :actions="actions" @invite-meal="(dishId, npcId) => emit('inviteMeal', dishId, npcId)" />
   </section>
 </template>
