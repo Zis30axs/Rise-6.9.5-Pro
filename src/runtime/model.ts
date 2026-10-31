@@ -1342,7 +1342,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
             at, outcome: 'normal', channel: 'court-hearing', interactionId: null,
             energyConsumed: Math.max(0, -quote.service.effects.energy),
             moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
-          knowledgeReceipt = `法庭论证学习进度 +${gain} 点。`;
+          knowledgeReceipt += `法庭论证学习进度 +${gain} 点。`;
         }
       }
       const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
