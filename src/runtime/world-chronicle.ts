@@ -4,7 +4,7 @@
  *
  * The event data is offline and immutable. Its publication gate is conservative:
  * - verified instants: at the reported instant (round seconds UP a minute);
- * - an event with an end instant: only after the recorded end;
+ * - timed celestial events begin at their verified START; their phase is explicit;
  * - day-only results with a verified GMT+8 date: no earlier than the NEXT day;
  * - provisional day-only dates: no earlier than TWO days afterward, because
  *   their source day may be one day behind GMT+8.
@@ -41,6 +41,7 @@ interface ChronicleSource {
   dateTimePrecision: string;
   eventAtGMT8?: string;
   eventEndAtGMT8?: string;
+  peakAtGMT8?: string;
   location: string;
   category: string;
   title: string;
@@ -54,6 +55,9 @@ export interface OfferedHistoricalEvent {
   id: string;
   dateGMT8: string;
   availableAtGMT8: string;
+  phase: 'ongoing' | 'occurred';
+  /** A confirmed scheduled end does not imply it has already happened. */
+  endsAtGMT8?: string;
   location: string;
   category: string;
   title: string;
@@ -80,7 +84,6 @@ function instantMinute(stamp: string): number {
 }
 
 function availableMinute(row: ChronicleSource): number {
-  if (row.eventEndAtGMT8) return instantMinute(row.eventEndAtGMT8);
   if (row.eventAtGMT8) return instantMinute(row.eventAtGMT8);
   const offset = row.dateConversionStatus === 'verified_day_no_result_timestamp' ? 1 : 2;
   return dayStartMinute(row.dateGMT8) + offset * MINUTES_PER_DAY;
@@ -136,6 +139,8 @@ export function pendingWorldChronicle(state: Pick<WorldState, 'clock' | 'worldCh
     receipt: { fromMinute: from, throughMinute: now, eventIds: selected.map(row => row.event.id) },
     events: selected.map(({ event, at }) => ({
       id: event.id, dateGMT8: event.dateGMT8, availableAtGMT8: formatMinute(at),
+      phase: event.eventEndAtGMT8 && now < instantMinute(event.eventEndAtGMT8) ? 'ongoing' : 'occurred',
+      ...(event.eventEndAtGMT8 ? { endsAtGMT8: event.eventEndAtGMT8 } : {}),
       location: event.location, category: event.category, title: event.title, fact: event.fact,
       importance: event.priority, narrativeTone: event.narrativeTone,
       npcReactionChance: event.npcReactionChance,
