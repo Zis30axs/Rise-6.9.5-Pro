@@ -33,6 +33,8 @@ import LocationServices from './LocationServices.vue';
 import LawCareerPanel from './LawCareerPanel.vue';
 import PlaceActions from './PlaceActions.vue';
 import LivehousePanel from './LivehousePanel.vue';
+import CookingPanel from './CookingPanel.vue';
+import { COOKING_KITCHENS } from '../runtime/cooking';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
@@ -135,6 +137,7 @@ const draft = ref('');
 const composerError = ref('');
 const walkSyncError = ref(false);
 const bedRestPicker = ref(false);
+const cookingOpen = ref(false);
 const livehouseMode = ref<'register' | 'book' | null>(null);
 const bedRestDialog = ref<HTMLElement>();
 const studyInteractionId = ref('');
@@ -339,6 +342,7 @@ function openWindow(panel: WindowPanel) {
     if (walkSyncError.value) return;
   }
   bedRestPicker.value = false;
+  cookingOpen.value = false;
   bookReadingPicker.value = false;
   studyInteractionId.value = '';
   if (activeWindow.value === panel) { closeWindow(); return; }
@@ -390,6 +394,7 @@ function quickRoomActivity(interactionId: string) {
 }
 async function switchPresentationMode(mode: PresentationMode) {
   if (props.model.busy || mode === presentationMode.value) return;
+  cookingOpen.value = false;
   scene.value?.flushPresence();
   if (walkSyncError.value) return;
   closeWindow(false);
@@ -689,6 +694,10 @@ async function roomInteract(interactionId: string, direct = false) {
   if (!interaction) return;
   if (!approachNovelActivity(interactionId, direct)) return;
   if (direct) closeWindow(false);
+  if (Object.values(COOKING_KITCHENS).includes(interactionId)) {
+    cookingOpen.value = true;
+    return;
+  }
   if (interactionId === 'livehouse-create-band' || interactionId === 'livehouse-booking') {
     livehouseMode.value = interactionId === 'livehouse-create-band' ? 'register' : 'book';
     return;
@@ -794,6 +803,7 @@ function dismissOverlay() {
   if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
+  if (cookingOpen.value) { cookingOpen.value = false; return true; }
   if (studyPickerOpen.value) { closeStudyPicker(); return true; }
   if (livehouseMode.value) { livehouseMode.value = null; return true; }
   if (bedRestPicker.value) { closeBedRestPicker(); return true; }
@@ -872,7 +882,7 @@ onBeforeUnmount(() => {
     <SoyoLive2D v-if="novelMode"
       :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
       :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
-    <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
+    <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || cookingOpen || !!studyInteractionId" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
@@ -889,6 +899,7 @@ onBeforeUnmount(() => {
     <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-book-reading-entry :disabled="model.busy" @click="openBookReading"><span aria-hidden="true">▤</span><span>选书阅读<small>本专业巩固 · 跨专业探索</small></span><span aria-hidden="true">↗</span></button>
     <p v-if="localActivityReceipt && readingMode === 'hidden' && !activeWindow && !bedRestPicker && !studyPickerOpen" class="bed-rest-receipt" data-bed-rest-receipt data-local-activity-receipt role="status">{{ localActivityReceipt }}<small>已保存，无需发送对话。</small></p>
     <LivehousePanel v-if="livehouseMode" :key="currentProtagonist" :model="model" :actions="actions" :mode="livehouseMode" @close="livehouseMode = null" />
+    <CookingPanel v-if="cookingOpen" :key="currentProtagonist" :model="model" :actions="actions" @close="cookingOpen = false" />
     <div v-if="bedRestPicker" class="bed-rest-overlay" @click.self="closeBedRestPicker">
       <section ref="bedRestDialog" class="bed-rest-dialog" role="dialog" aria-modal="true" aria-label="选择休息时长" data-bed-rest-picker @keydown="durationPickerKeydown">
         <header><small>学生宿舍 · 床铺</small><h2>选择休息时长</h2><p>休息恢复精力与精神，并缓解压力。</p></header>
