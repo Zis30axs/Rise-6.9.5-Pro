@@ -4,7 +4,7 @@ import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { worldScenePeople, worldScenePosition } from './world-presence';
 import { getCampusInterior, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { getCookingRecipe, cookingQuality, COOKING_QUALITY_LABEL, type CookingQuality } from './cooking-recipes';
-import { INVENTORY_ITEM_LIMIT, advancePlayerNutrition } from './convenience-store';
+import { INVENTORY_ITEM_LIMIT } from './convenience-store';
 import { adjustEnergy } from './energy';
 
 export interface CookedDish {
@@ -97,7 +97,7 @@ export function cookingSkill(experience: number) {
         : experience < 500 ? { level: 4, label: '擅长料理' }
           : { level: 5, label: '料理达人' };
 }
-export function cookQuote(state: WorldState, recipeId: string) {
+export function cookQuote(state: WorldState, recipeId: string, owner = activeProtagonist(state)) {
   const recipe = getCookingRecipe(recipeId);
   const roomId = state.interior?.roomId ?? '';
   const room = getCampusInterior(roomId);
@@ -105,7 +105,6 @@ export function cookQuote(state: WorldState, recipeId: string) {
   const counts = recipe?.ingredients.map(row => ({
     ...row, owned: state.inventory.find(item => item.itemId === row.itemId)?.quantity ?? 0,
   })) ?? [];
-  const owner = activeProtagonist(state);
   const shelf = (state.cooking ?? createCookingState()).dishes.filter(row => row.owner === owner);
   const emptySlots = shelf.length < MAX_DISHES;
   const enough = counts.every(row => row.owned >= row.quantity);
@@ -126,17 +125,17 @@ function issue(state: WorldState, prefix: 'dish' | 'cooking'): string {
   if (c.serial >= MAX_SERIAL) throw new Error('烹饪记录数量已达到上限。');
   return prefix + '-' + ++c.serial;
 }
-function appendEvent(state: WorldState, kind: CookingEvent['kind'], recipeId: string, quality: CookingQuality) {
-  cooking(state).pending.push({ id: issue(state, 'cooking'), owner: activeProtagonist(state),
+function appendEvent(state: WorldState, owner: ProtagonistId, kind: CookingEvent['kind'], recipeId: string, quality: CookingQuality) {
+  cooking(state).pending.push({ id: issue(state, 'cooking'), owner,
     kind, recipeId, quality, at: minute(state) });
 }
 /** Called only by the authoritative WorldAction reducer. No LLM decisions or requests. */
 export function settleCooking(state: WorldState, recipeId: string, center: number, needle: number,
-  advance: (state: WorldState, minutes: number) => void): { quality: CookingQuality; text: string } {
-  const q = cookQuote(state, recipeId);
+  advance: (state: WorldState, minutes: number) => void,
+  owner: ProtagonistId = activeProtagonist(state)): { quality: CookingQuality; text: string } {
+  const q = cookQuote(state, recipeId, owner);
   if (q.blockedReason || !q.recipe) throw new Error(q.blockedReason ?? '料理无法开始。');
   const quality = cookingQuality(q.recipe.difficulty, center, needle);
-  const owner = activeProtagonist(state);
   advance(state, q.recipe.minutes);
   state.player.energy = adjustEnergy(state.player.energy, -q.recipe.energyCost);
   for (const row of q.recipe.ingredients) state.inventory = state.inventory.flatMap(held =>
@@ -147,14 +146,15 @@ export function settleCooking(state: WorldState, recipeId: string, center: numbe
   c.experience[owner] = Math.min(MAX_EXPERIENCE, c.experience[owner] + xp);
   const id = issue(state, 'dish');
   c.dishes.push({ id, owner, chef: owner, recipeId, quality, servings: q.recipe.servings, at: minute(state) });
-  appendEvent(state, 'cooked', recipeId, quality);
+  appendEvent(state, owner, 'cooked', recipeId, quality);
   return { quality, text: `${protagonistNames[owner]}制作${q.recipe.name}：${COOKING_QUALITY_LABEL[quality]}品质，${q.recipe.servings} 份已放入料理背包；耗时 ${q.recipe.minutes} 分钟，消耗食材和精力，厨艺经验 +${xp}。具体烹饪过程和失败原因尚未叙述，由主 LLM 在下一次正常剧情中描写；不得重复结算。` };
 }
-export function cookedDishQuote(state: WorldState, dishId: string, sharingNpcId?: string) {
-  const owner = activeProtagonist(state);
+export function cookedDishQuote(state: WorldState, dishId: string, sharingNpcId?: string,
+  owner: ProtagonistId = activeProtagonist(state), worldAuthority?: WorldState) {
   const dish = (state.cooking ?? createCookingState()).dishes.find(row => row.id === dishId && row.owner === owner) ?? null;
   const recipe = dish && getCookingRecipe(dish.recipeId);
-  const people = sharingNpcId ? worldScenePeople(state) : [];
+  const people = sharingNpcId ? worldScenePeople(worldAuthority?.protagonists
+    ? { ...state, protagonists: worldAuthority.protagonists } : state) : [];
   const person = sharingNpcId ? people.find(row => (row.id === sharingNpcId || row.contactId === sharingNpcId)
     && !row.protagonistId) ?? null : null;
   const pos = worldScenePosition(state);
@@ -180,18 +180,18 @@ function nourish(player: PlayerState, quality: CookingQuality, kcal: number): vo
 }
 /** Authoritative one-serving consumption, optionally two only after an NPC accepted in prose. */
 export function settleCookedDish(state: WorldState, dishId: string, npcId: string | null,
-  advance: (state: WorldState, minutes: number) => void): string {
-  const q = cookedDishQuote(state, dishId, npcId ?? undefined);
+  advance: (state: WorldState, minutes: number) => void,
+  owner: ProtagonistId = activeProtagonist(state), worldAuthority?: WorldState): string {
+  const q = cookedDishQuote(state, dishId, npcId ?? undefined, owner, worldAuthority);
   if (q.blockedReason || !q.dish || !q.recipe) throw new Error(q.blockedReason ?? '无法享用料理。');
-  const who = activeProtagonist(state);
   advance(state, q.minutes);
   nourish(state.player, q.dish.quality, q.recipe.kcal);
   const dish = cooking(state).dishes.find(row => row.id === dishId)!;
   dish.servings -= npcId ? 2 : 1;
   if (dish.servings <= 0) cooking(state).dishes = cooking(state).dishes.filter(row => row.id !== dishId);
-  if (!npcId) appendEvent(state, 'eaten', q.recipe.id, q.dish.quality);
+  if (!npcId) appendEvent(state, owner, 'eaten', q.recipe.id, q.dish.quality);
   const name = npcId ? q.person?.name : null;
-  return `${protagonistNames[who]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。${name ? '对方是否接受及其具体反应以本轮已发生的对白为准，不能保证好感增加。' : '食用感受由主 LLM 下次正常剧情自由描写。'}` ;
+  return `${protagonistNames[owner]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。${name ? '对方是否接受及其具体反应以本轮已发生的对白为准，不能保证好感增加。' : '食用感受由主 LLM 下次正常剧情自由描写。'}` ;
 }
 /** A successfully persisted foreground story acknowledges only previously seen events. */
 export function acknowledgeCookingNarrative(before: WorldState, after: WorldState): void {
