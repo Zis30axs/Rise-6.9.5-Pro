@@ -576,7 +576,7 @@ export function mountShell(
         // character scene may narrate the evidence but never re-book money,
         // time, contact actions, off-screen events, SMS or any other side effect.
         const safeReply = mode === 'law_narration'
-          ? { text: reply.text, phoneMessages: [] }
+          ? { text: reply.text, phoneMessages: [], worldChronicleReceipt: reply.worldChronicleReceipt }
           : reply;
         const next = commitStoryTurn(snapshot(), trimmed, safeReply, { userId: storyId(), assistantId: storyId() });
         saveWithSms(next);
