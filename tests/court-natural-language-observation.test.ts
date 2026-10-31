@@ -51,6 +51,22 @@ describe('free-text timed courthouse observation', () => {
     expect(state.interior?.roomId).toBe('court-hearing');
   });
 
+  it('can travel to the new courthouse and observe in one model turn without a case', () => {
+    let state = createInitialState();
+    state.clock = { day: 2, hour: 10, minute: 0 };
+    state = enableProtagonists(state);
+    const begin = minutesOf(state.clock);
+    const next = applyStoryActions(state, [
+      { type: 'travel', locationId: 'courthouse' },
+      { ...COURT_OBSERVATION, minutes: 60 },
+    ], 'court-visit-and-hour');
+    expect(next.locationId).toBe('court-hearing');
+    expect(next.interior?.roomId).toBe('court-hearing');
+    expect(minutesOf(next.clock) - begin).toBeGreaterThanOrEqual(60);
+    expect(next.courtroom?.observationKnowledge?.soyo).toBe(20);
+    expect(next.courtroom?.active).toBeNull();
+  });
+
   it('accumulates independent knowledge even for an unregistered major', () => {
     const state = atCourthouse(10, false);
     const next = applyStoryActions(state, [{ ...COURT_OBSERVATION, minutes: 90 }], 'court-unassigned-hour');
