@@ -49,6 +49,14 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     return invalid('每轮最多直接交换一位新联系人的号码');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
+  const courtObservations = value.filter(item => !!item && typeof item === 'object' &&
+    (item as Record<string, unknown>).type === 'service' &&
+    (item as Record<string, unknown>).serviceId === COURT_OBSERVE_ID);
+  if (courtObservations.length > 1) return invalid('本轮法院旁听只能提交一次指定时长，程序会分段结算');
+  if (courtObservations.length && value.some(item => !!item && typeof item === 'object' &&
+    ['rest', 'study', 'activity'].includes(String((item as Record<string, unknown>).type))))
+    return invalid('法院旁听已结算整段时长和学习，不得同轮用休息、学习或通用活动重复计算');
+
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
     /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
     .map(item => String((item as Record<string,unknown>).type));
