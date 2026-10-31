@@ -3,6 +3,7 @@ import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, protagonistNames, resolveTransferParty } from './protagonist-world';
 import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
+import { getCampusInterior } from './campus-interiors';
 import { personState } from './protagonist-world';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
@@ -293,6 +294,11 @@ const enterHearing = (state: WorldState): void => {
   const active=courtState(state).active;
   if(!active) return error('没有案件可开庭');
   active.returnTo = courtOfficePosition(state);
+  const court = getCampusInterior(COURT_HEARING_ID)!;
+  const entrance = court.entrance;
+  // Formal hearings use the new courthouse exterior, not the old office pose.
+  state.scene = { x: entrance.x, z: entrance.z, yaw: entrance.yaw,
+    areaId: court.parentLocationId, seed: state.scene?.seed ?? 'court-session', encounterId: null };
   state.locationId=COURT_HEARING_ID;
   state.interior={roomId:COURT_HEARING_ID,x:0,z:3.5,yaw:0,
     activityId:null,lastRest:null,lastStudy:null};
@@ -300,6 +306,9 @@ const enterHearing = (state: WorldState): void => {
 const leaveHearing = (state: WorldState, active: CourtCase): void => {
   if(state.locationId !== COURT_HEARING_ID) return;
   const pos=active.returnTo ?? {x:0,z:2,yaw:0};
+  const office = getCampusInterior(LAW_OFFICE_ID)!;
+  state.scene = { x: office.entrance.x, z: office.entrance.z, yaw: office.entrance.yaw,
+    areaId: office.parentLocationId, seed: state.scene?.seed ?? 'court-session', encounterId: null };
   state.locationId=LAW_OFFICE_ID;
   state.interior={roomId:LAW_OFFICE_ID,...pos,activityId:null,lastRest:null,lastStudy:null};
 };

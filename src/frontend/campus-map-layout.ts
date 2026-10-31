@@ -25,6 +25,7 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:shop-book', x: -22, z: 65, width: 18, depth: 12, height: 8.7, color: '#aa726d' },
   { id: 'building:shop-convenience', x: 21, z: 65, width: 16, depth: 12, height: 7.2, color: '#709d8b' },
   { id: 'building:shop-cafe', x: 48, z: 65, width: 19, depth: 12, height: 8.2, color: '#a38365' },
+  { id: 'building:supreme-courthouse', x: -38, z: 94, width: 28, depth: 22, height: 15.6, color: '#e6dfd3' },
   { id: 'building:home-apartment', x: -192, z: 117, width: 26, depth: 18, height: 13.8, color: '#aa8770' },
   { id: 'building:home-west-apartment', x: -226, z: 178, width: 20, depth: 24, height: 10.8, color: '#9ba9a0' },
   { id: 'building:home-east-apartment', x: -163, z: 181, width: 19, depth: 25, height: 13.8, color: '#ada58c' },

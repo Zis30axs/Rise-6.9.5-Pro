@@ -66,6 +66,9 @@ export const streetRoutes: Record<string, StreetNode[]> = {
   'pocket-park': [
     { label: '口袋公园', position: [37, 1.7, 76], yaw: 3.141 },
   ],
+  courthouse: [
+    { label: '审判法庭东入口', position: [-20, 1.7, 94], yaw: -1.571 },
+  ],
   home: [
     { label: '住宅区公交站', position: [-180, 1.7, 150], yaw: 0 },
     { label: '家门前庭院', position: [-190, 1.7, 130], yaw: 0 },
@@ -243,6 +246,11 @@ export function createCampusWorld(scene: THREE.Scene) {
     cylinder(0.08, 0.15, 1.1, palette.dark, x, 0.6, z);
     for (const dx of [-1, 1]) { box(0.52, 0.1, 0.55, palette.wood, x + dx, 0.65, z); solidBox(`terrace-chair:${x + dx}:${z}`, x + dx, z, 0.52, 0.55); }
   }
+  // Mirror the authoritative new Tokyo sandbox courthouse in legacy free-walk.
+  build(-38, 94, 28, 15.6, 22, 4, 8, palette.stone, 'supreme-courthouse');
+  box(0.18, 4.2, 3.2, palette.glass, -23.85, 2.25, 94);
+  for (const z of [87, 91, 97, 101]) cylinder(0.22, 0.24, 5, palette.trim, -22.75, 2.5, z);
+  box(6, 0.25, 19, palette.path, -20, 0.045, 94);
   // Skyline remains beyond the playable block, leaving the new north campus open.
   const distantMat = material(0xa4a798);
   for (let i = 0; i < 11; i++) box(7 + i % 3, 10 + i % 4 * 3, 8, distantMat, (i - 5) * 15, 5 + i % 4 * 1.5, -76 - i % 3 * 4);
