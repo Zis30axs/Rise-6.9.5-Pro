@@ -4,7 +4,11 @@ Never approves artwork. Review remains a separate visual decision. Source PNGs
 are unchanged; only low-alpha fringe noise is removed before sprite alignment.
 Sakiko and the backgrounds stay on their approved bytes when this Pillow build
 cannot reproduce them and the recorded source hash is unchanged. Mutsumi, Anon,
-Raana and Taki's school-uniform poses are derived with the same sprite alignment.
+Raana, Taki and Tomori's school-uniform poses are derived with the same sprite
+alignment. After fitting, pixels more than two pixels inside a silhouette are
+forced opaque so cloth does not stay semi-transparent; the outer one to two
+pixels keep their feather. Previously approved bytes are kept when the source
+hash is unchanged.
 """
 from __future__ import annotations
 import argparse
@@ -13,7 +17,7 @@ from io import BytesIO
 import json
 from pathlib import Path
 from PIL import Image, ImageFilter, ImageOps
-from verify_downtown_art import ANON_POSES, BACKGROUNDS, MUTSUMI_POSES, RAANA_POSES, SPRITES, TAKI_POSES
+from verify_downtown_art import ANON_POSES, BACKGROUNDS, MUTSUMI_POSES, RAANA_POSES, SPRITES, TAKI_POSES, TOMORI_POSES
 
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE / 'assets/downtown-art'
@@ -22,10 +26,24 @@ CANVAS = (768, 1344)
 ANCHOR = (384, 1280)
 
 
+def harden_sprite_interior(image: Image.Image) -> Image.Image:
+    """Keep cloth opaque. Only the outer 1-2px may stay feathered.
+
+    A 5x5 minimum is 0 exactly where a transparent pixel is within two pixels.
+    Everywhere else is forced to 255 so skirts, socks and white collars cannot
+    keep a semi-transparent interior after Lanczos fitting.
+    """
+    alpha = image.getchannel('A')
+    core = alpha.filter(ImageFilter.MinFilter(5))
+    mask = core.point(lambda value: 255 if value else 0)
+    image.putalpha(Image.composite(Image.new('L', alpha.size, 255), alpha, mask))
+    return image
+
+
 def ensure_uniform_entries(manifest: dict) -> None:
     present = {item['id'] for item in manifest['assets']}
     missing = []
-    for character, poses in (('mutsumi', MUTSUMI_POSES), ('anon', ANON_POSES), ('raana', RAANA_POSES), ('taki', TAKI_POSES)):
+    for character, poses in (('mutsumi', MUTSUMI_POSES), ('anon', ANON_POSES), ('raana', RAANA_POSES), ('taki', TAKI_POSES), ('tomori', TOMORI_POSES)):
         for pose in poses:
             key = f'{character}_uniform_{pose}'
             if key in present:
@@ -80,6 +98,7 @@ def prepare(check=False):
                 crop = crop.resize((round(crop.width * factor), round(crop.height * factor)), Image.Resampling.LANCZOS)
                 image = Image.new('RGBA', CANVAS)
                 image.alpha_composite(crop, (ANCHOR[0] - crop.width // 2, ANCHOR[1] - crop.height))
+                image = harden_sprite_interior(image)
                 item['anchor'] = list(ANCHOR)
             else:
                 image = ImageOps.fit(image.convert('RGB'), (1536, 864), method=Image.Resampling.LANCZOS)
@@ -107,7 +126,7 @@ def prepare(check=False):
         pending.append((target, data, key not in kept))
         record = {'id': key, 'path': source.relative_to(BASE).as_posix(),
                   'size': original_size, 'bytes': len(source_bytes), 'sha256': source_sha}
-        if key.startswith(('mutsumi_', 'anon_', 'raana_', 'taki_')):
+        if key.startswith(('mutsumi_', 'anon_', 'raana_', 'taki_', 'tomori_')):
             record['origin'] = 'user-provided'
         sources.append(record)
     if not check:

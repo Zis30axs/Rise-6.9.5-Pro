@@ -52,7 +52,9 @@ describe('band residents', () => {
     expect(residentGroupForNpc('majo-hiro')?.id).toBe('majo-circle');
     expect(majoExpressionFor('bang-tomori', 'neutral')).toBeNull();
     const portraitId = characterForPerson('bang-tomori');
-    expect(resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId })?.kind).toBe('atlas');
+    const avatar = resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId });
+    expect(avatar?.kind).toBe('sprite');
+    expect(avatar && 'src' in avatar && avatar.src.startsWith('data:image/webp;base64,')).toBe(true);
   });
 
   it('still lets a new game reduce without treating bandmates as strangers on Soyo phone', () => {

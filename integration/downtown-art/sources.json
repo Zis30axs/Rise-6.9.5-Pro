@@ -364,6 +364,61 @@
       "origin": "user-provided"
     },
     {
+      "id": "tomori_uniform_neutral",
+      "path": "assets/downtown-art/sources/tomori-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1184518,
+      "sha256": "2226b30bf0ce92996608940b1ce1997c192ffa9e61eae66e30f3dcec7849b8b4",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_smile",
+      "path": "assets/downtown-art/sources/tomori-uniform-smile.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1810069,
+      "sha256": "c2e51ce3a0acbe97a50d34441a8af710c5bf9c4a58cad5c50b52e3e9b3269e8c",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_surprised",
+      "path": "assets/downtown-art/sources/tomori-uniform-surprised.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1706142,
+      "sha256": "4def14bda59ca3e98b8916b50f2aa94af530901e3c99eebfd673d05396e8e274",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_sad",
+      "path": "assets/downtown-art/sources/tomori-uniform-sad.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1302248,
+      "sha256": "f859a445e9e0db74bc87f5f8ba9eaf13b935efbccf31d1ff3ae8a627f739f2c3",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_shy",
+      "path": "assets/downtown-art/sources/tomori-uniform-shy.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1722555,
+      "sha256": "09ed5435511c605f8f35a884589f13940a06727ca61b10332ab84076f31ade92",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [

@@ -434,6 +434,71 @@
       ]
     },
     {
+      "id": "tomori_uniform_neutral",
+      "path": "characters/tomori/uniform/neutral.webp",
+      "sha256": "ed45886eab84e983c3b06298963fb21f008e16a740ca13096afcd10f6cbdeb9a",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "tomori_uniform_smile",
+      "path": "characters/tomori/uniform/smile.webp",
+      "sha256": "ca823161267e345c5d8c37d07772966aa920aa26a9cea4c993b5fab15abb723f",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "tomori_uniform_surprised",
+      "path": "characters/tomori/uniform/surprised.webp",
+      "sha256": "d9ea6441e54004d853ec4cb23a3d73d0d46d0fc366e58f7a55f5e6058c126d6e",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "tomori_uniform_sad",
+      "path": "characters/tomori/uniform/sad.webp",
+      "sha256": "b29d94ece3898879b21366dd51de5163096d5060341a799287064e062d603b8e",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "tomori_uniform_shy",
+      "path": "characters/tomori/uniform/shy.webp",
+      "sha256": "4f34c3467fadaf0189b0cf44619a2967614c19760dc473482ce266727f36d868",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "backgrounds/toyokawa_mansion_day.webp",
       "sha256": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",
