@@ -68,7 +68,6 @@ const currentLocation = computed(() => allLocations.find(place => place.id === p
 const currentMapPosition = computed(() => props.model.state.interior
   ? mapLocationPoint(props.model.state.interior.roomId) : worldScenePosition(props.model.state));
 const needsTransitReturn = computed(() => requiresTransitReturn(props.model.state.locationId, props.model.state.scene));
-const transform = computed(() => ({ transform: depth.value > 2 ? 'none' : `translate(${pan.value.x}px, ${pan.value.y}px) scale(${focusZoom.value})` }));
 const localZoomScale = computed(() => depth.value < 0 ? 2 ** -depth.value : 1 - .46 * smooth(depth.value / 2));
 const campusMetersPerPixel = ref(4);
 const cityMetersPerPixel = ref(4);
@@ -382,13 +381,13 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
     <div class="wm-layout">
       <div class="wm-map-column">
         <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
-          <div class="wm-stage" :style="transform">
+          <div class="wm-stage">
             <div v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
               :data-map-plane="localLayer ? 'district' : 'city'"
               :style="{ opacity: 1 - smooth(depth - 2), pointerEvents: geographicLayer ? 'none' : 'auto' }"
               :aria-hidden="geographicLayer" :inert="geographicLayer">
               <CitySandboxScene :scope="detailDistrict ?? 'city'" :active="depth < 3"
-                :bearing="bearing" :view-scale="focusZoom" :width="size.width" :height="size.height"
+                :bearing="bearing" :view-scale="focusZoom" :pan="pan" :width="size.width" :height="size.height"
                 :location-id="model.state.locationId" :position="currentMapPosition"
                 :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))"
                 :selected-id="selectedCity"

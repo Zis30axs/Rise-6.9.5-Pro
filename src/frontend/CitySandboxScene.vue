@@ -8,11 +8,12 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { districtMapPlaces, isMapDistrict, type MapDistrictId } from './map-districts';
 import { mapLocationPoint, type MapCameraView } from './campus-map-layout';
 import {
-  projectOldTokyoPosition, tokyoCityBounds, tokyoDistrictBounds,
+  projectOldTokyoPosition, tokyoDistrictBounds,
   tokyoDistricts, tokyoLocationPosition, TOKYO_SANDBOX_MODEL_SHA256, type TokyoScope,
 } from './tokyo-sandbox-map';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { readLocalAssetBytes } from './local-asset-buffer';
+import { frameTokyoMapCamera } from './tokyo-sandbox-camera';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<{
   disabledIds?: string[];
   playerName?: string; playerId?: ProtagonistId;
   people?: MapPerson[]; roadEvents?: MapEvent[];
+  pan?: { x: number; y: number };
   cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
 }>(), { scope: 'city', position: null, disabledIds: () => [], people: () => [], roadEvents: () => [] });
 const emit = defineEmits<{
@@ -52,10 +54,11 @@ const personPins = ref<PersonPin[]>([]);
 const eventPins = ref<Pin[]>([]);
 const playerPin = ref<Pin | null>(null);
 const selectedPerson = ref('');
+const cameraPosition = ref('');
 let epoch = 0;
 let renderer: THREE.WebGLRenderer | undefined;
 let scene: THREE.Scene | undefined;
-let camera: THREE.OrthographicCamera | undefined;
+let camera: THREE.PerspectiveCamera | undefined;
 let model: THREE.Group | undefined;
 
 function disposeModel(root: THREE.Object3D) {
@@ -90,6 +93,7 @@ function release() {
   renderer?.dispose(); renderer = undefined;
   status.value = 'idle';
   selectedPerson.value = '';
+  cameraPosition.value = '';
 }
 
 async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
@@ -155,28 +159,17 @@ function render() {
   if (!props.active || !renderer || !scene || !camera) return;
   const width = Math.max(1, props.width), height = Math.max(1, props.height);
   const bounds = tokyoDistrictBounds(props.scope);
-  const cameraCenter = props.cameraView?.center ? projectOldTokyoPosition(props.cameraView.center) : null;
-  const cx = cameraCenter?.x ?? (bounds.minX + bounds.maxX) / 2;
-  const cz = cameraCenter?.z ?? (bounds.minZ + bounds.maxZ) / 2;
-  const radiusX = (bounds.maxX - bounds.minX) / 2 + 14;
-  const radiusZ = (bounds.maxZ - bounds.minZ) / 2 + 14;
-  const angle = (props.bearing + 35) * Math.PI / 180;
-  const sine = Math.sin(angle), cosine = Math.cos(angle);
-  const projectedX = Math.abs(cosine) * radiusX + Math.abs(sine) * radiusZ;
-  const projectedDepth = Math.abs(sine) * radiusX + Math.abs(cosine) * radiusZ;
-  // WorldMap already handles drag, wheel zoom and pinch-rotate on the complete stage.
-  // Frame the interactive Tokyo GLB like the former map instead of leaving a large
-  // empty border; scripted protagonist-switch flyovers retain their own zoom.
-  const defaultMapZoom = props.decorative ? 1 : 1.45;
-  const zoom = Math.max(.65, Math.min(12, (props.cameraView?.zoom ?? 1) * defaultMapZoom));
-  const halfHeight = Math.max(32, projectedX / Math.max(.5, width / height), projectedDepth * .85 + 28) * 1.15 / zoom;
-  camera.left = -halfHeight * width / height;
-  camera.right = halfHeight * width / height;
-  camera.top = halfHeight; camera.bottom = -halfHeight;
-  const overhead = Math.max(0, Math.min(1, props.cameraView?.overhead ?? 0));
-  camera.position.set(cx + sine * (800 - overhead * 400), 1200 + overhead * 400, cz + cosine * (800 - overhead * 400));
-  camera.lookAt(cx, 0, cz);
-  camera.near = 1; camera.far = 4000; camera.updateProjectionMatrix();
+  const cameraCenter = props.cameraView?.center ? projectOldTokyoPosition(props.cameraView.center) : undefined;
+  // WorldMap owns input, but the drag/zoom must move this 3D camera rather than
+  // CSS-transforming the whole canvas and leaving its projected pins behind.
+  const mapZoom = Math.max(.65, Math.min(12,
+    (props.cameraView?.zoom ?? props.viewScale) * (props.decorative ? 1 : 1.08)));
+  const metersPerPixel = frameTokyoMapCamera(camera, {
+    bounds, width, height, bearing: props.bearing, zoom: mapZoom,
+    pan: props.pan, center: cameraCenter, overhead: props.cameraView?.overhead,
+    summit: { x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
+  });
+  cameraPosition.value = camera.position.toArray().map(value => value.toFixed(2)).join(',');
   renderer.setPixelRatio(Math.min(1.4, window.devicePixelRatio || 1));
   renderer.setSize(width, height, false);
   renderer.render(scene, camera);
@@ -243,7 +236,7 @@ function render() {
     const p = project(point.x, point.z, 4);
     return p.visible ? [{ id: event.id, name: event.icon, x: p.x, y: p.y }] : [];
   });
-  emit('scale', { metersPerPixel: halfHeight * 2 / height / Math.max(.01, props.viewScale) });
+  emit('scale', { metersPerPixel });
 }
 
 async function load() {
@@ -286,7 +279,7 @@ async function load() {
     scene.add(new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5));
     const sun = new THREE.DirectionalLight(0xffffff, 1.5);
     sun.position.set(-170, 460, 230); scene.add(sun);
-    camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 4000);
+    camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
     renderer = new THREE.WebGLRenderer({ canvas: canvas.value, alpha: true, antialias: true, powerPreference: 'low-power' });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -306,14 +299,15 @@ function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id);
 watch(() => props.active, active => { if (active) void load(); else release(); });
 watch(() => [props.width, props.height, props.bearing, props.viewScale, props.scope,
   props.selectedId, props.locationId, props.position, props.disabledIds,
-  props.people, props.roadEvents, props.cameraView, props.decorative], render);
+  props.people, props.roadEvents, props.pan, props.cameraView, props.decorative], render);
 onMounted(() => { if (props.active) void load(); });
 onBeforeUnmount(release);
 </script>
 
 <template>
   <div class="tokyo-sandbox-scene" :data-tokyo-sandbox-status="status"
-    :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope">
+    :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope"
+    :data-tokyo-camera="cameraPosition">
     <canvas ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，请从右侧地点列表选择目的地。</p>
     <template v-if="status === 'ready'">

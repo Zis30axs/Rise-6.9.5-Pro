@@ -75,9 +75,11 @@ for (const viewport of viewports) {
     await page.getByRole('button', { name: '放大地图', exact: true }).click();
     await page.getByRole('button', { name: '向右旋转地图' }).click();
     const box = (await viewportMap.boundingBox())!;
+    const beforeCamera = await page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene').getAttribute('data-tokyo-camera');
     await page.mouse.move(box.x + box.width * .45, box.y + box.height * .75);
     await page.mouse.down(); await page.mouse.move(box.x + box.width * .45 + 18, box.y + box.height * .75 - 15, { steps: 4 }); await page.mouse.up();
-    const camera = await page.locator('.wm-stage').getAttribute('style');
+    const camera = await page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene').getAttribute('data-tokyo-camera');
+    expect(camera).not.toBe(beforeCamera);
     const scale = await viewportMap.getAttribute('data-map-scale');
     await page.locator('.wm-district-list button').filter({ hasText: '杂司谷' }).click();
     await expect(viewportMap).toHaveAttribute('data-map-depth', '0.000');
@@ -86,7 +88,7 @@ for (const viewport of viewports) {
     await page.locator('[data-map-back]').click();
     await expect(viewportMap).toHaveAttribute('data-map-bearing', '30.000');
     await expect(viewportMap).toHaveAttribute('data-map-scale', scale!);
-    await expect(page.locator('.wm-stage')).toHaveAttribute('style', camera!);
+    await expect(page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene')).toHaveAttribute('data-tokyo-camera', camera!);
     await page.locator('.wm-layers button').filter({ hasText: '所在区域' }).click();
     await expect(map).toHaveAttribute('data-map-layer', 'province');
     await page.locator('.wm-layers button').filter({ hasText: '世界' }).click();
