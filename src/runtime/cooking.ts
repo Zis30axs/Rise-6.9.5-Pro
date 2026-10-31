@@ -105,8 +105,8 @@ export function cookQuote(state: WorldState, recipeId: string, owner = activePro
   const counts = recipe?.ingredients.map(row => ({
     ...row, owned: state.inventory.find(item => item.itemId === row.itemId)?.quantity ?? 0,
   })) ?? [];
-  const shelf = (state.cooking ?? createCookingState()).dishes.filter(row => row.owner === owner);
-  const emptySlots = shelf.length < MAX_DISHES;
+  // The serialized batch limit applies to the shared ledger, not each owner.
+  const emptySlots = (state.cooking?.dishes.length ?? 0) < MAX_DISHES;
   const enough = counts.every(row => row.owned >= row.quantity);
   const clockOverflows = recipe && state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + recipe.minutes) / 1440) > 365000;
   const near = state.interior && interaction && Math.hypot(state.interior.x - interaction.x, state.interior.z - interaction.z) <= INTERIOR_INTERACTION_RANGE;
