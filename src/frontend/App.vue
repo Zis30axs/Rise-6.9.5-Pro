@@ -34,7 +34,8 @@ import LawCareerPanel from './LawCareerPanel.vue';
 import PlaceActions from './PlaceActions.vue';
 import LivehousePanel from './LivehousePanel.vue';
 import CookingPanel from './CookingPanel.vue';
-import { COOKING_KITCHENS } from '../runtime/cooking';
+import { COOKING_KITCHENS, cookedDishQuote } from '../runtime/cooking';
+import { getCookingRecipe } from '../runtime/cooking-recipes';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
@@ -616,6 +617,12 @@ async function prepareAction(text: string) {
   if (readingMode.value === 'hidden') await setReadingMode('compact');
   await nextTick(); composer.value?.focus({ preventScroll: true });
 }
+function prepareMealInvitation(dishId: string, npcId: string) {
+  if (props.model.busy) return;
+  const quote = cookedDishQuote(props.model.state, dishId, npcId);
+  if (quote.blockedReason || !quote.person || !quote.recipe) return;
+  void prepareAction(`我拿出自己做的${quote.recipe.name}（${quote.dish?.quality === 'perfect' ? '完美' : quote.dish?.quality === 'ordinary' ? '普通' : '失败'}品质，共有足够的份数），邀请${quote.person.name}一起享用。请让对方根据性格和在场情况自主回应；只有对方明确接受并亲口说出同意的话，才按既有共餐协议结算两份料理，拒绝则不扣料理，也不预设好感变化。`);
+}
 async function sceneHotspot(action: 'phone' | 'map' | 'observe' | 'rest' | 'schedule') {
   if (props.model.busy) return;
   if (action === 'phone' || action === 'map' || action === 'schedule') openWindow(action);
@@ -956,8 +963,8 @@ onBeforeUnmount(() => {
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>
       <div v-else-if="activeWindow === 'transit'" class="window-content"><TransitPanel :model="model" :stop="nearbyTransitStop" :novel-mode="novelMode" @ride="takeTransit" @approach="approachTransitStop" /></div>
       <div v-else-if="activeWindow === 'law'" class="window-content"><LawCareerPanel :model="model" :actions="actions" @close="closeWindow(false)" /></div>
-      <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
-      <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
+      <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" @invite-meal="prepareMealInvitation" /></div>
+      <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" @invite-meal="prepareMealInvitation" /></div>
       <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invite="name => prepareAction(`邀请${name}：`)" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
