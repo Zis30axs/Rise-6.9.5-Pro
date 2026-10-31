@@ -17,7 +17,7 @@ import { novelNpcAtlases } from './novel-npc-atlases';
 // remains an independent, unchanged source and is used when no crop is installed.
 const croppedHeadshots = import.meta.glob<string>(
   '../../assets/map-avatars/*.svg',
-  { eager: true, query: '?inline', import: 'default' },
+  { eager: true, query: '?offline-map-headshot', import: 'default' },
 );
 const generatedHeadshots = Object.fromEntries(
   Object.entries(croppedHeadshots).map(([path, src]) =>
