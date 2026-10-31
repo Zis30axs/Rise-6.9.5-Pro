@@ -149,6 +149,34 @@ describe('four-viewpoint deterministic cooking settlement', () => {
     expect(() => validateStoryActions([{ type: 'share_meal', dishId: id, npcId: 'majo-yuki', consentQuote: '好。' }], state)).toThrow();
   });
 
+  it('lets Yuki voluntarily share Emma\'s dish only after her exact on-scene acceptance', () => {
+    let state = home('emma');
+    state.clock = { day: state.clock.day, hour: 20, minute: 10 };
+    if (state.protagonists?.backgroundLife) {
+      const current = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
+      state.protagonists.backgroundLife.cursor = current;
+      for (const life of Object.values(state.protagonists.backgroundLife.people))
+        life.nextDecisionAt = Math.max(current, life.nextDecisionAt);
+    }
+    state = parseState(state);
+    state = reduceState(state, { type: 'cook_dish', recipeId: 'fried-rice', dialCenter: 0.5, needle: 0.5 });
+    const dishId = state.cooking!.dishes[0].id;
+    expect(cookedDishQuote(state, dishId, 'majo-yuki').blockedReason).toBeNull();
+    const consent = '好呀，我们一起吃吧。';
+    const action = { type: 'share_meal' as const, dishId, npcId: 'majo-yuki', consentQuote: consent };
+    expect(() => commitStoryTurn(state, '邀请雪吃饭。',
+      { text: '|月代雪|平静|我还不饿呢。|', phoneMessages: [], worldActions: [action] },
+      { userId: 'cook-yuki-refuse-user', assistantId: 'cook-yuki-refuse-assistant' })).toThrow(/缺少/);
+    const accepted = commitStoryTurn(state, '邀请雪吃饭。',
+      { text: '|月代雪|开心|' + consent + '|', phoneMessages: [], worldActions: [action] },
+      { userId: 'cook-yuki-accept-user', assistantId: 'cook-yuki-accept-assistant' });
+    expect(accepted.cooking!.dishes).toHaveLength(0);
+    expect(accepted.journal.at(-1)?.text).toContain('与月代雪共餐');
+    expect(accepted.cooking!.pending).toHaveLength(0);
+    expect(parseState(accepted)).toEqual(accepted);
+    expect(state.cooking!.dishes[0].servings).toBe(2);
+  });
+
   it('migrates legacy saves with no cooking state and rejects malformed saved batches', () => {
     const state = createInitialState();
     delete state.cooking;
