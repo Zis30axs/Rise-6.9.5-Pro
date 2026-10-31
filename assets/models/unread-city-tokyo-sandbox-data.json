@@ -1,0 +1,2153 @@
+{
+  "title": "未读之城 · 3D全景东京城市沙盘数据集",
+  "exportedAt": "2026-10-30T22:28:29.208Z",
+  "currentClock": "17:30",
+  "districts": [
+    {
+      "id": "campus",
+      "name": "高田／西早稻田校园",
+      "shortName": "校园与南门",
+      "description": "高田·西早稻田大学校园、图书馆、教学楼、运动场及南门商业街区。",
+      "x": 0,
+      "z": 10,
+      "minX": -76,
+      "maxX": 76,
+      "minZ": -76,
+      "maxZ": 112,
+      "color": 13621944
+    },
+    {
+      "id": "home",
+      "name": "杂司谷住宅区",
+      "shortName": "杂司谷住宅区",
+      "description": "安静的杂司谷低层住宅街区，甘织家、濑名家、艾玛与月代雪公寓、泽渡家老宅所在地。",
+      "x": -136,
+      "z": 115,
+      "minX": -186,
+      "maxX": -88,
+      "minZ": 54,
+      "maxZ": 186,
+      "color": 13945266
+    },
+    {
+      "id": "commercial",
+      "name": "池袋／东池袋商业区",
+      "shortName": "池袋商业区",
+      "description": "繁华的东池袋商业街、沿街餐饮、雪莉与汉娜滨水高层公寓、琴纱月公寓。",
+      "x": 136,
+      "z": 115,
+      "minX": 88,
+      "maxX": 186,
+      "minZ": 54,
+      "maxZ": 186,
+      "color": 14470068
+    },
+    {
+      "id": "downtown",
+      "name": "目白／目白台住宅区",
+      "shortName": "目白台住宅区",
+      "description": "目白台高地名门宅邸区：丰川家大宅、王冢家豪宅、二阶堂家传统和风宅邸。",
+      "x": 0,
+      "z": 154,
+      "minX": -76,
+      "maxX": 76,
+      "minZ": 124,
+      "maxZ": 186,
+      "color": 13814450
+    },
+    {
+      "id": "city-park",
+      "name": "神田川沿岸绿道",
+      "shortName": "神田川沿岸",
+      "description": "神田川河岸步道、跨河朱红太鼓拱桥、名门「月之森女子学园高等部」校区、室外羽球场与湖畔单身公寓。",
+      "x": 136,
+      "z": -95,
+      "minX": 88,
+      "maxX": 186,
+      "minZ": -186,
+      "maxZ": 42,
+      "color": 11454884
+    },
+    {
+      "id": "grand-commercial",
+      "name": "新宿／大型商业娱乐区",
+      "shortName": "新宿商业区",
+      "description": "汇集大型商厦、Live House 演出现场、KTV 娱乐包厢、枫庭律师事务所与地方裁判所的不夜城。",
+      "x": -136,
+      "z": -95,
+      "minX": -186,
+      "maxX": -88,
+      "minZ": -186,
+      "maxZ": 42,
+      "color": 12958930
+    },
+    {
+      "id": "takao-mountain",
+      "name": "高尾山自然风景区",
+      "shortName": "高尾山风景区",
+      "description": "海拔599米的近郊名山：三峰连绵山脉、表参道石阶鸟居、山顶展望台、十一丁目茶屋、极乐汤露天温泉与登山索道。",
+      "x": 0,
+      "z": -156,
+      "minX": -76,
+      "maxX": 76,
+      "minZ": -235,
+      "maxZ": -88,
+      "color": 10337173
+    },
+    {
+      "id": "market-district",
+      "name": "筑地·阿美横丁市场区",
+      "shortName": "商店街市场区",
+      "description": "东侧扩建的半透明拱廊商店街、筑地水产青果批发馆、红白提灯夜市屋台与生鲜集市。",
+      "x": 214,
+      "z": 52,
+      "minX": 188,
+      "maxX": 252,
+      "minZ": -24,
+      "maxZ": 136,
+      "color": 14205861
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "library",
+      "name": "图书馆",
+      "subtitle": "前庭与钟楼",
+      "district": "campus",
+      "x": 0,
+      "z": -6,
+      "desc": "图书馆前庭的室外台阶和步道；可见图书馆入口、廊柱及两侧树木。",
+      "services": [
+        {
+          "id": "lib-search",
+          "label": "检索借阅学术文献",
+          "minutes": 20,
+          "energyDelta": -3,
+          "moraleDelta": 8,
+          "stressDelta": -4,
+          "price": 0,
+          "result": "在图书馆前庭终端查阅并借阅了最新学术专著。"
+        }
+      ]
+    },
+    {
+      "id": "teaching",
+      "name": "教学楼",
+      "subtitle": "教学楼广场",
+      "district": "campus",
+      "x": 0,
+      "z": -36,
+      "desc": "教学楼前的室外广场；可见教学楼门廊、公告栏与连接校园环路的步道。",
+      "services": [
+        {
+          "id": "teach-board",
+          "label": "浏览社团与演出招新公告",
+          "minutes": 10,
+          "energyDelta": 0,
+          "moraleDelta": 5,
+          "stressDelta": -2,
+          "price": 0,
+          "result": "仔细浏览了教学楼公告栏上的学园祭与乐队演出海报。"
+        }
+      ]
+    },
+    {
+      "id": "dorm",
+      "name": "学生公寓",
+      "subtitle": "宿舍院落",
+      "district": "campus",
+      "x": -49,
+      "z": -5,
+      "desc": "学生公寓外的宿舍院落；可见楼门、停放单车的位置与院落步道。",
+      "services": [
+        {
+          "id": "dorm-yard",
+          "label": "整理单车棚与信箱",
+          "minutes": 10,
+          "energyDelta": 2,
+          "moraleDelta": 4,
+          "stressDelta": -3,
+          "price": 0,
+          "result": "在宿舍院落查看了今日信箱，顺手擦拭了通勤单车。"
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "name": "运动场",
+      "subtitle": "跑道与绿茵球场",
+      "district": "campus",
+      "x": 46,
+      "z": -11,
+      "desc": "室外标准跑道与绿茵足球场，设有看台与夜间球场照明灯塔。",
+      "services": [
+        {
+          "id": "sport-jog",
+          "label": "跑道慢跑 20 分钟",
+          "minutes": 20,
+          "energyDelta": -10,
+          "moraleDelta": 12,
+          "stressDelta": -14,
+          "price": 0,
+          "result": "在标准跑道慢跑五圈，微汗淋漓，身心压力明显减轻。"
+        },
+        {
+          "id": "sport-stretch",
+          "label": "绿茵场边拉伸放松",
+          "minutes": 10,
+          "energyDelta": 3,
+          "moraleDelta": 6,
+          "stressDelta": -6,
+          "price": 0,
+          "result": "在球场边完成了肩颈与腿部拉伸。"
+        }
+      ]
+    },
+    {
+      "id": "cafe",
+      "name": "校园咖啡",
+      "subtitle": "校园咖啡露台",
+      "district": "campus",
+      "x": 14,
+      "z": 0.9,
+      "desc": "校园咖啡店外的遮阳篷露台，飘着现磨美式与抹茶拿铁的香气。",
+      "services": [
+        {
+          "id": "ccafe-americano",
+          "label": "喝一杯冰美式 (¥320)",
+          "minutes": 10,
+          "energyDelta": 18,
+          "moraleDelta": 5,
+          "stressDelta": -4,
+          "price": 320,
+          "result": "在遮阳篷露台喝下冰美式，头脑瞬间清醒。"
+        },
+        {
+          "id": "ccafe-latte",
+          "label": "品尝抹茶拿铁与司康 (¥440)",
+          "minutes": 15,
+          "energyDelta": 16,
+          "moraleDelta": 9,
+          "stressDelta": -8,
+          "price": 440,
+          "result": "享用了绵密的抹茶拿铁与现烤原味司康。"
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "name": "校园南门",
+      "subtitle": "校门与银杏步道",
+      "district": "campus",
+      "x": 0,
+      "z": 29,
+      "desc": "西早稻田校园南门的门柱、围栏与通往十字路口的人行道。",
+      "services": [
+        {
+          "id": "gate-watch",
+          "label": "在校门银杏树下驻足观察",
+          "minutes": 10,
+          "energyDelta": 2,
+          "moraleDelta": 5,
+          "stressDelta": -4,
+          "price": 0,
+          "result": "站在校园南门看着来往的同伴与穿梭巴士。"
+        }
+      ]
+    },
+    {
+      "id": "junction",
+      "name": "十字路口",
+      "subtitle": "斑马线与信号灯",
+      "district": "campus",
+      "x": 0,
+      "z": 48,
+      "desc": "南门十字路口的室外道路；可见斑马线、交通信号灯与两侧商铺。",
+      "services": [
+        {
+          "id": "junc-stroll",
+          "label": "穿过斑马线街拍散步",
+          "minutes": 10,
+          "energyDelta": 0,
+          "moraleDelta": 6,
+          "stressDelta": -4,
+          "price": 0,
+          "result": "伴随清脆的绿灯提示音穿过南门十字路口。"
+        }
+      ]
+    },
+    {
+      "id": "construction-site",
+      "name": "建设工地",
+      "subtitle": "深基坑暗影区与防尘脚手架",
+      "district": "campus",
+      "x": -56,
+      "z": 66,
+      "desc": "设有深基坑井字钢支撑暗影区、防尘密目网脚手架遮蔽廊、履带挖掘机与高空塔吊的大型施工现场。",
+      "services": [
+        {
+          "id": "work-clean",
+          "label": "清理施工场地 (+¥3,200)",
+          "minutes": 120,
+          "energyDelta": -35,
+          "moraleDelta": -2,
+          "stressDelta": 6,
+          "price": -3200,
+          "result": "戴好安全帽清运碎料两小时，当场领到现结工钱 ¥3,200！"
+        },
+        {
+          "id": "work-carry",
+          "label": "搬运建筑材料 (+¥6,800)",
+          "minutes": 240,
+          "energyDelta": -60,
+          "moraleDelta": -4,
+          "stressDelta": 12,
+          "price": -6800,
+          "result": "完成了四小时重体力建材搬运班次，领到丰厚报酬 ¥6,800！"
+        }
+      ]
+    },
+    {
+      "id": "bookshop",
+      "name": "街角书店",
+      "subtitle": "文库本与画册橱窗",
+      "district": "campus",
+      "x": -22,
+      "z": 56.5,
+      "desc": "街角书店门前的室外人行道，陈列着新刊文库本、诗集与画集。",
+      "services": [
+        {
+          "id": "book-read",
+          "label": "翻阅新刊文库本与诗集",
+          "minutes": 20,
+          "energyDelta": -2,
+          "moraleDelta": 10,
+          "stressDelta": -8,
+          "price": 0,
+          "result": "在街角书店安静翻阅了最新上架的文库本与独立诗集。"
+        }
+      ]
+    },
+    {
+      "id": "convenience",
+      "name": "便利店",
+      "subtitle": "24H 街角便利店",
+      "district": "campus",
+      "x": 21,
+      "z": 56.5,
+      "desc": "便利店门前的明亮灯箱与商品橱窗，提供饭团、便当与日常补给。",
+      "services": [
+        {
+          "id": "conv-bento",
+          "label": "购买炭烤鸡肉便当 (¥360)",
+          "minutes": 15,
+          "energyDelta": 28,
+          "moraleDelta": 6,
+          "stressDelta": -6,
+          "price": 360,
+          "result": "购买并享用了热腾腾的炭烤鸡肉便当，体力大增。"
+        },
+        {
+          "id": "conv-soda",
+          "label": "购买冰镇柠檬气泡水 (¥120)",
+          "minutes": 5,
+          "energyDelta": 10,
+          "moraleDelta": 4,
+          "stressDelta": -4,
+          "price": 120,
+          "result": "喝下一瓶冰镇柠檬气泡水，清爽解渴。"
+        }
+      ]
+    },
+    {
+      "id": "street-cafe",
+      "name": "玛格咖啡馆",
+      "subtitle": "街边露台咖啡馆",
+      "district": "campus",
+      "x": 48,
+      "z": 56.5,
+      "desc": "宝生玛格经营的街边咖啡馆门前露台，营业至次日凌晨两点。",
+      "services": [
+        {
+          "id": "scafe-cake",
+          "label": "点一份当日限定草莓塔 (¥360)",
+          "minutes": 15,
+          "energyDelta": 14,
+          "moraleDelta": 12,
+          "stressDelta": -10,
+          "price": 360,
+          "result": "在玛格咖啡馆露台享用了酸甜可口的当日限定草莓塔。"
+        }
+      ]
+    },
+    {
+      "id": "bus-stop",
+      "name": "高田接驳站",
+      "subtitle": "全城穿梭巴士总站",
+      "district": "campus",
+      "x": 47,
+      "z": 39.5,
+      "desc": "高田接驳站的候车亭，可搭乘穿梭巴士前往杂司谷、池袋、目白台、新宿与高尾山。",
+      "services": [
+        {
+          "id": "bus-timetable",
+          "label": "查看全城穿梭巴士时刻表",
+          "minutes": 5,
+          "energyDelta": 0,
+          "moraleDelta": 3,
+          "stressDelta": -2,
+          "price": 0,
+          "result": "确认了前往池袋、新宿与高尾山的直达巴士班次。"
+        }
+      ]
+    },
+    {
+      "id": "pocket-park",
+      "name": "口袋公园",
+      "subtitle": "喷泉、长椅与诊所",
+      "district": "campus",
+      "x": 37,
+      "z": 80,
+      "desc": "南门街区东侧的口袋公园，中央设有石砌喷泉、树荫长椅与风堇医生的全科诊所。",
+      "services": [
+        {
+          "id": "park-bench",
+          "label": "在喷泉长椅吹风小憩",
+          "minutes": 20,
+          "energyDelta": 10,
+          "moraleDelta": 8,
+          "stressDelta": -12,
+          "price": 0,
+          "result": "在口袋公园喷泉旁听着水声小憩片刻。"
+        },
+        {
+          "id": "park-clinic",
+          "label": "风堇医生的谈心调理 (免费)",
+          "minutes": 40,
+          "energyDelta": 50,
+          "moraleDelta": 25,
+          "stressDelta": -50,
+          "price": 0,
+          "result": "在诊所茶歇角与风堇医生温暖交谈，身心重压彻底清零！"
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "name": "杂司谷接驳站",
+      "subtitle": "杂司谷住宅街区",
+      "district": "home",
+      "x": -136,
+      "z": 118,
+      "desc": "杂司谷的室外住宅区，连接甘织家、濑名家、艾玛与雪的家及泽渡家老宅。",
+      "services": [
+        {
+          "id": "home-walk",
+          "label": "沿着杂司谷安静巷道散步",
+          "minutes": 20,
+          "energyDelta": 2,
+          "moraleDelta": 9,
+          "stressDelta": -10,
+          "price": 0,
+          "result": "在夕阳映照的杂司谷低层住宅巷道间悠闲漫步。"
+        }
+      ]
+    },
+    {
+      "id": "commercial",
+      "name": "池袋接驳站",
+      "subtitle": "东池袋商业步行街",
+      "district": "commercial",
+      "x": 136,
+      "z": 118,
+      "desc": "池袋／东池袋的室外步行广场，沿街商铺林立，连接神田川高层公寓。",
+      "services": [
+        {
+          "id": "ike-ramen",
+          "label": "吃一碗沿街豚骨热汤面 (¥420)",
+          "minutes": 20,
+          "energyDelta": 24,
+          "moraleDelta": 10,
+          "stressDelta": -8,
+          "price": 420,
+          "result": "在东池袋街边拉面店吃下一碗浓汤拉面，浑身暖洋洋。"
+        }
+      ]
+    },
+    {
+      "id": "downtown",
+      "name": "目白台接驳站",
+      "subtitle": "目白台高地名门街区",
+      "district": "downtown",
+      "x": 0,
+      "z": 145,
+      "desc": "目白／目白台的林荫大道，通往丰川家、王冢家与二阶堂家宅邸。",
+      "services": [
+        {
+          "id": "dt-avenue",
+          "label": "漫步目白台古典林荫道",
+          "minutes": 15,
+          "energyDelta": 2,
+          "moraleDelta": 8,
+          "stressDelta": -8,
+          "price": 0,
+          "result": "走过目白台静谧的石墙与古典街灯，微风中带着玫瑰香气。"
+        }
+      ]
+    },
+    {
+      "id": "city-park",
+      "name": "神田川绿道站",
+      "subtitle": "神田川河道与跨河拱桥",
+      "district": "city-park",
+      "x": 136,
+      "z": -102,
+      "desc": "神田川沿岸的石砌河堤、跨河朱红太鼓木拱桥与樱花步道。",
+      "services": [
+        {
+          "id": "kanda-walk",
+          "label": "沿神田川樱花绿道漫步",
+          "minutes": 25,
+          "energyDelta": 4,
+          "moraleDelta": 14,
+          "stressDelta": -16,
+          "price": 0,
+          "result": "沿着波光粼粼的神田川河岸散步，心情格外澄澈。"
+        }
+      ]
+    },
+    {
+      "id": "grand-commercial",
+      "name": "新宿商业区站",
+      "subtitle": "大型商厦、Livehouse与律所",
+      "district": "grand-commercial",
+      "x": -136,
+      "z": -82,
+      "desc": "新宿大型商业娱乐区步行广场，霓虹闪烁，汇集Live House、KTV与商务中心。",
+      "services": [
+        {
+          "id": "shinjuku-vinyl",
+          "label": "逛独立乐队黑胶唱片行",
+          "minutes": 20,
+          "energyDelta": -2,
+          "moraleDelta": 14,
+          "stressDelta": -10,
+          "price": 0,
+          "result": "在新宿唱片店试听了地下乐队与古典跨界黑胶唱片。"
+        }
+      ]
+    },
+    {
+      "id": "takao-mountain",
+      "name": "高尾山接驳站",
+      "subtitle": "登山口、缆车站与温泉",
+      "district": "takao-mountain",
+      "x": 0,
+      "z": -108,
+      "desc": "高尾山风景区山麓广场，可见参天杉木、观光缆车起点、表参道鸟居与极乐汤温泉入口。",
+      "services": [
+        {
+          "id": "takao-cable",
+          "label": "搭乘高尾山登山观光缆车 (¥490)",
+          "minutes": 15,
+          "energyDelta": 6,
+          "moraleDelta": 16,
+          "stressDelta": -18,
+          "price": 490,
+          "result": "乘坐登山缆车掠过苍翠古杉林海，远眺关东平原天际线！"
+        },
+        {
+          "id": "takao-hike",
+          "label": "一号自然研究路古杉林健行",
+          "minutes": 40,
+          "energyDelta": -16,
+          "moraleDelta": 22,
+          "stressDelta": -32,
+          "price": 0,
+          "result": "沿百年古杉山道拾级而上，山间清泉与负氧离子令人心旷神怡。"
+        }
+      ]
+    },
+    {
+      "id": "courthouse",
+      "name": "审判法庭",
+      "subtitle": "魔女审判最高裁判所",
+      "district": "campus",
+      "x": -38,
+      "z": 94,
+      "desc": "高耸着古典科林斯石柱廊、三角山花黄金天平徽章与铜绿正义穹顶的最高审判法庭广场。",
+      "services": [
+        {
+          "id": "court-observe",
+          "label": "旁听公开法庭辩论质证",
+          "minutes": 30,
+          "energyDelta": -5,
+          "moraleDelta": 18,
+          "stressDelta": -12,
+          "price": 0,
+          "result": "在庄严的审判法庭旁听了橘雪莉与二阶堂希罗的精彩法庭质证！"
+        }
+      ]
+    },
+    {
+      "id": "bank",
+      "name": "帝国银行",
+      "subtitle": "中央金库与24H金融大厦",
+      "district": "campus",
+      "x": -50,
+      "z": 14,
+      "desc": "花岗岩金库基座、青铜巨柱回廊、黄金货币徽章与武装押运车驻守的帝国中央银行总行。",
+      "services": [
+        {
+          "id": "bank-deposit",
+          "label": "办理定期储蓄与金库托管 (+¥1,200)",
+          "minutes": 20,
+          "energyDelta": -2,
+          "moraleDelta": 10,
+          "stressDelta": -8,
+          "price": -1200,
+          "result": "在帝国中央银行柜台结算了理财分红与兼职利息 ¥1,200！"
+        }
+      ]
+    },
+    {
+      "id": "market",
+      "name": "商店街市场",
+      "subtitle": "阿美横丁拱廊与筑地生鲜集市",
+      "district": "market-district",
+      "x": 214,
+      "z": 52,
+      "desc": "半透明拱廊遮阳天幕投下斑驳阴影，红白提灯高挂，汇集金枪鱼海产冰台、青果摊、章鱼烧与拉面屋台的热闹市集。",
+      "services": [
+        {
+          "id": "market-seafood",
+          "label": "品尝现切金枪鱼海鲜丼 (¥680)",
+          "minutes": 25,
+          "energyDelta": 32,
+          "moraleDelta": 20,
+          "stressDelta": -18,
+          "price": 680,
+          "result": "在拱廊市场水产摊享用了鲜甜肥美的金枪鱼中腹海鲜丼！"
+        },
+        {
+          "id": "market-takoyaki",
+          "label": "买一份现烤章鱼烧与弹珠汽水 (¥350)",
+          "minutes": 15,
+          "energyDelta": 16,
+          "moraleDelta": 14,
+          "stressDelta": -12,
+          "price": 350,
+          "result": "在红白提灯屋台旁吃下热气腾腾的木鱼花章鱼烧！"
+        }
+      ]
+    },
+    {
+      "id": "tsukinomori",
+      "name": "月之森高中",
+      "subtitle": "月之森女子学园高等部 · 钟塔与羽球部",
+      "district": "city-park",
+      "x": 138,
+      "z": -56,
+      "desc": "坐落于神田川樱花绿道与羽球场之间的百年名门女校「月之森女子学园高等部」。拥有新文艺复兴象牙白石本馆、彩绘玻璃玫瑰花窗、八角新月钟塔、玻璃温室音乐沙龙与欧式几何玫瑰庭院，甘织遥奈、鬼瓦星来与长崎素世、若叶睦在此就读。",
+      "services": [
+        {
+          "id": "tsukinomori-badminton",
+          "label": "在月之森羽球场与遥奈切磋双打",
+          "minutes": 30,
+          "energyDelta": -8,
+          "moraleDelta": 22,
+          "stressDelta": -20,
+          "price": 0,
+          "result": "在月之森高等部球场与羽球部王牌甘织遥奈打了场酣畅淋漓的羽毛球赛！"
+        },
+        {
+          "id": "tsukinomori-salon",
+          "label": "在月之森玻璃温室聆听管弦乐排练",
+          "minutes": 25,
+          "energyDelta": 6,
+          "moraleDelta": 18,
+          "stressDelta": -16,
+          "price": 0,
+          "result": "在名门月之森女子学园的玫瑰温室旁聆听了优雅的午后室内乐合奏。"
+        }
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "id": "building:0:-14",
+      "name": "大学中央图书馆",
+      "x": 0,
+      "z": -14,
+      "width": 25,
+      "depth": 8,
+      "height": 11.2,
+      "floors": 3,
+      "color": "#839583",
+      "roofType": "clock",
+      "roomId": "study-room"
+    },
+    {
+      "id": "building:-18:-10",
+      "name": "西学术研究馆",
+      "x": -19,
+      "z": -10,
+      "width": 8.5,
+      "depth": 12,
+      "height": 14.2,
+      "floors": 5,
+      "color": "#b7ac8b",
+      "roofType": "flat"
+    },
+    {
+      "id": "building:18:-12",
+      "name": "东人文讲堂",
+      "x": 19,
+      "z": -12,
+      "width": 8.5,
+      "depth": 11,
+      "height": 9.6,
+      "floors": 3,
+      "color": "#a4b4a2",
+      "roofType": "flat"
+    },
+    {
+      "id": "building:14:-2.6",
+      "name": "校园咖啡馆",
+      "x": 14,
+      "z": -1.5,
+      "width": 7.5,
+      "depth": 5.5,
+      "height": 4.5,
+      "floors": 1,
+      "color": "#c47b54",
+      "roofType": "pitched",
+      "sign": "CAMPUS CAFE"
+    },
+    {
+      "id": "building:teaching-building",
+      "name": "第一综合教学楼",
+      "x": 0,
+      "z": -48,
+      "width": 34,
+      "depth": 12,
+      "height": 13.5,
+      "floors": 4,
+      "color": "#9ba68f",
+      "roofType": "flat",
+      "roomId": "classroom"
+    },
+    {
+      "id": "building:residence-building",
+      "name": "学生公寓南栋",
+      "x": -49,
+      "z": -16,
+      "width": 18,
+      "depth": 20,
+      "height": 14.5,
+      "floors": 5,
+      "color": "#b5846b",
+      "roofType": "flat",
+      "roomId": "dorm-room"
+    },
+    {
+      "id": "building:residence-north-building",
+      "name": "学生公寓北栋",
+      "x": -49,
+      "z": -46,
+      "width": 18,
+      "depth": 11,
+      "height": 11.5,
+      "floors": 4,
+      "color": "#9ba9a0",
+      "roofType": "flat"
+    },
+    {
+      "id": "building:shop-book",
+      "name": "街角书店",
+      "x": -25,
+      "z": 66,
+      "width": 18,
+      "depth": 12,
+      "height": 9.2,
+      "floors": 2,
+      "color": "#b36b64",
+      "roofType": "flat",
+      "sign": "BOOKS"
+    },
+    {
+      "id": "building:shop-convenience",
+      "name": "24H 像素便利店",
+      "x": 20,
+      "z": 66,
+      "width": 17,
+      "depth": 12,
+      "height": 7.8,
+      "floors": 2,
+      "color": "#5c9e89",
+      "roofType": "flat",
+      "sign": "24H MART"
+    },
+    {
+      "id": "building:shop-cafe",
+      "name": "玛格咖啡馆",
+      "x": 48,
+      "z": 66,
+      "width": 19,
+      "depth": 12,
+      "height": 8.6,
+      "floors": 2,
+      "color": "#ad845e",
+      "roofType": "flat",
+      "sign": "MARGO CAFE",
+      "roomId": "margo-cafe-room"
+    },
+    {
+      "id": "building:supreme-courthouse",
+      "name": "魔女审判最高法庭",
+      "x": -38,
+      "z": 94,
+      "width": 28,
+      "depth": 18,
+      "height": 15.6,
+      "floors": 4,
+      "color": "#e6dfd3",
+      "roofType": "courthouse",
+      "sign": "SUPREME COURT 法庭",
+      "roomId": "court-hearing"
+    },
+    {
+      "id": "building:teikoku-bank",
+      "name": "帝国中央银行本馆",
+      "x": -50,
+      "z": 14,
+      "width": 24,
+      "depth": 16,
+      "height": 16.8,
+      "floors": 5,
+      "color": "#d8d2c5",
+      "roofType": "bank",
+      "sign": "TEIKOKU BANK 帝国银行"
+    },
+    {
+      "id": "building:home-apartment",
+      "name": "杂司谷现代公寓",
+      "x": -136,
+      "z": 86,
+      "width": 26,
+      "depth": 16,
+      "height": 14.2,
+      "floors": 5,
+      "color": "#b3886e",
+      "roofType": "flat",
+      "roomId": "emma-yuki-home"
+    },
+    {
+      "id": "building:home-west-apartment",
+      "name": "甘织家与西街住宅",
+      "x": -158,
+      "z": 152,
+      "width": 22,
+      "depth": 22,
+      "height": 11.2,
+      "floors": 4,
+      "color": "#94a89b",
+      "roofType": "pitched",
+      "roomId": "amaori-family-home"
+    },
+    {
+      "id": "building:home-east-apartment",
+      "name": "泽渡老宅与东公寓",
+      "x": -114,
+      "z": 152,
+      "width": 20,
+      "depth": 22,
+      "height": 13.8,
+      "floors": 5,
+      "color": "#b3a78a",
+      "roofType": "flat",
+      "roomId": "koko-old-house"
+    },
+    {
+      "id": "building:commercial-shop:151",
+      "name": "池袋时尚百货西馆",
+      "x": 112,
+      "z": 84,
+      "width": 22,
+      "depth": 15,
+      "height": 11.2,
+      "floors": 3,
+      "color": "#649c89",
+      "roofType": "flat",
+      "sign": "FASHION"
+    },
+    {
+      "id": "building:commercial-shop:178",
+      "name": "东池袋书城与琴家公寓",
+      "x": 138,
+      "z": 84,
+      "width": 22,
+      "depth": 15,
+      "height": 12.2,
+      "floors": 4,
+      "color": "#b36e68",
+      "roofType": "flat",
+      "sign": "MUSIC & ART",
+      "roomId": "koto-apartment"
+    },
+    {
+      "id": "building:commercial-shop:210",
+      "name": "池袋豚骨拉面与美食城",
+      "x": 165,
+      "z": 84,
+      "width": 24,
+      "depth": 15,
+      "height": 10.6,
+      "floors": 3,
+      "color": "#b5885e",
+      "roofType": "flat",
+      "sign": "RAMEN & DINING"
+    },
+    {
+      "id": "building:commercial-corner",
+      "name": "神田川滨水高层公寓",
+      "x": 148,
+      "z": 154,
+      "width": 28,
+      "depth": 20,
+      "height": 21.5,
+      "floors": 7,
+      "color": "#b38268",
+      "roofType": "flat",
+      "roomId": "majo-highrise-home"
+    },
+    {
+      "id": "building:tsukiji-hall",
+      "name": "筑地水产中央批发馆",
+      "x": 222,
+      "z": 10,
+      "width": 26,
+      "depth": 18,
+      "height": 10.5,
+      "floors": 2,
+      "color": "#5c7c8a",
+      "roofType": "japanese",
+      "sign": "TSUKIJI 築地水産"
+    },
+    {
+      "id": "building:ameyoko-center",
+      "name": "阿美横丁物产会馆",
+      "x": 222,
+      "z": 96,
+      "width": 24,
+      "depth": 16,
+      "height": 11.8,
+      "floors": 3,
+      "color": "#b86b52",
+      "roofType": "pitched",
+      "sign": "AMEYOKO 阿美横丁"
+    },
+    {
+      "id": "building:downtown-office-west",
+      "name": "目白台西馆",
+      "x": -52,
+      "z": 162,
+      "width": 20,
+      "depth": 18,
+      "height": 15.2,
+      "floors": 5,
+      "color": "#b0a68c",
+      "roofType": "flat"
+    },
+    {
+      "id": "building:downtown-office-south",
+      "name": "王冢家宅邸 & Queen Rose",
+      "x": -18,
+      "z": 162,
+      "width": 24,
+      "depth": 18,
+      "height": 18.6,
+      "floors": 6,
+      "color": "#8fa69b",
+      "roofType": "mansion",
+      "sign": "QUEEN ROSE",
+      "roomId": "ouzuka-residence"
+    },
+    {
+      "id": "building:toyokawa-residence",
+      "name": "丰川家本宅大邸",
+      "x": 20,
+      "z": 162,
+      "width": 24,
+      "depth": 18,
+      "height": 14.5,
+      "floors": 4,
+      "color": "#bdaf8a",
+      "roofType": "mansion",
+      "sign": "TOYOKAWA",
+      "roomId": "toyokawa-house"
+    },
+    {
+      "id": "building:downtown-shop-east",
+      "name": "二阶堂家武道本宅",
+      "x": 54,
+      "z": 162,
+      "width": 18,
+      "depth": 18,
+      "height": 11.5,
+      "floors": 3,
+      "color": "#8f694d",
+      "roofType": "japanese",
+      "roomId": "nikaido-house"
+    },
+    {
+      "id": "building:grand-mall",
+      "name": "新宿大都会商厦",
+      "x": -156,
+      "z": -138,
+      "width": 30,
+      "depth": 22,
+      "height": 19.5,
+      "floors": 6,
+      "color": "#867694",
+      "roofType": "flat",
+      "sign": "SHINJUKU MALL",
+      "roomId": "mlm-office"
+    },
+    {
+      "id": "building:grand-tower",
+      "name": "新宿政法商务大厦",
+      "x": -116,
+      "z": -138,
+      "width": 22,
+      "depth": 22,
+      "height": 27.5,
+      "floors": 8,
+      "color": "#64859c",
+      "roofType": "helipad",
+      "sign": "LEGAL & COURT",
+      "roomId": "legal-office"
+    },
+    {
+      "id": "building:livehouse",
+      "name": "Live House 演出现场",
+      "x": -116,
+      "z": -38,
+      "width": 26,
+      "depth": 20,
+      "height": 14.8,
+      "floors": 4,
+      "color": "#a3688c",
+      "roofType": "flat",
+      "sign": "LIVE HOUSE RiNG",
+      "roomId": "livehouse"
+    },
+    {
+      "id": "building:ktv",
+      "name": "KTV 霓虹娱乐城",
+      "x": -156,
+      "z": -38,
+      "width": 24,
+      "depth": 18,
+      "height": 13.6,
+      "floors": 4,
+      "color": "#b56964",
+      "roofType": "flat",
+      "sign": "NEON KTV",
+      "roomId": "ktv-lounge"
+    },
+    {
+      "id": "building:takao-station",
+      "name": "高尾山麓缆车站",
+      "x": -26,
+      "z": -116,
+      "width": 20,
+      "depth": 14,
+      "height": 8.8,
+      "floors": 3,
+      "color": "#6e8c74",
+      "roofType": "pitched",
+      "sign": "ROPEWAY"
+    },
+    {
+      "id": "building:takao-onsen",
+      "name": "极乐汤温泉会馆",
+      "x": 38,
+      "z": -116,
+      "width": 24,
+      "depth": 16,
+      "height": 10.8,
+      "floors": 3,
+      "color": "#a36d54",
+      "roofType": "japanese",
+      "sign": "極楽湯 ONSEN",
+      "roomId": "takao-onsen"
+    },
+    {
+      "id": "building:takao-teahouse",
+      "name": "山间十一丁目茶屋",
+      "x": -24,
+      "z": -156,
+      "width": 16,
+      "depth": 14,
+      "height": 7.5,
+      "floors": 2,
+      "color": "#ad7650",
+      "roofType": "japanese",
+      "roomId": "takao-teahouse"
+    },
+    {
+      "id": "building:takao-summit",
+      "name": "高尾山顶展望台",
+      "x": 12,
+      "z": -192,
+      "width": 20,
+      "depth": 16,
+      "height": 12.2,
+      "floors": 3,
+      "color": "#5c8a6e",
+      "roofType": "observatory",
+      "sign": "599M SUMMIT",
+      "roomId": "takao-summit"
+    },
+    {
+      "id": "building:tsukinomori-academy",
+      "name": "月之森女子学园高等部本馆",
+      "x": 138,
+      "z": -74,
+      "width": 34,
+      "depth": 16,
+      "height": 15.2,
+      "floors": 4,
+      "color": "#efe7d6",
+      "roofType": "tsukinomori",
+      "sign": "TSUKINOMORI 月之森女子学园"
+    }
+  ],
+  "roads": [
+    {
+      "x": 3,
+      "z": 48,
+      "width": 378,
+      "depth": 12,
+      "kind": "road"
+    },
+    {
+      "x": -14,
+      "z": 118,
+      "width": 344,
+      "depth": 12,
+      "kind": "road"
+    },
+    {
+      "x": -49,
+      "z": -82,
+      "width": 262,
+      "depth": 12,
+      "kind": "road"
+    },
+    {
+      "x": -82,
+      "z": 22,
+      "width": 12,
+      "depth": 292,
+      "kind": "road"
+    },
+    {
+      "x": 82,
+      "z": -10,
+      "width": 12,
+      "depth": 310,
+      "kind": "road"
+    },
+    {
+      "x": 186,
+      "z": 54,
+      "width": 11,
+      "depth": 156,
+      "kind": "road"
+    },
+    {
+      "x": -124,
+      "z": 130,
+      "width": 92,
+      "depth": 8,
+      "kind": "walk",
+      "rotationY": 0.52
+    },
+    {
+      "x": -128,
+      "z": -38,
+      "width": 96,
+      "depth": 8.5,
+      "kind": "road",
+      "rotationY": -0.46
+    },
+    {
+      "x": 145,
+      "z": 126,
+      "width": 88,
+      "depth": 7.5,
+      "kind": "walk",
+      "rotationY": -0.42
+    },
+    {
+      "x": 136,
+      "z": 20,
+      "width": 64,
+      "depth": 5.5,
+      "kind": "walk",
+      "rotationY": 0.32
+    },
+    {
+      "x": 204,
+      "z": 48,
+      "width": 36,
+      "depth": 14,
+      "kind": "walk"
+    },
+    {
+      "x": 214,
+      "z": 52,
+      "width": 16,
+      "depth": 132,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": 83,
+      "width": 10,
+      "depth": 70,
+      "kind": "road"
+    },
+    {
+      "x": 0,
+      "z": 38.5,
+      "width": 10,
+      "depth": 19,
+      "kind": "road"
+    },
+    {
+      "x": -50,
+      "z": 29,
+      "width": 14,
+      "depth": 22,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": -67,
+      "width": 10,
+      "depth": 30,
+      "kind": "road"
+    },
+    {
+      "x": 0,
+      "z": -96,
+      "width": 10,
+      "depth": 28,
+      "kind": "road"
+    },
+    {
+      "x": -136,
+      "z": -82,
+      "width": 100,
+      "depth": 12,
+      "kind": "road"
+    },
+    {
+      "x": 3,
+      "z": 39.5,
+      "width": 378,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": 3,
+      "z": 56.5,
+      "width": 378,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -14,
+      "z": 109.5,
+      "width": 344,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -14,
+      "z": 126.5,
+      "width": 344,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -49,
+      "z": -73.5,
+      "width": 262,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -49,
+      "z": -90.5,
+      "width": 262,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -73.5,
+      "z": 22,
+      "width": 4.5,
+      "depth": 292,
+      "kind": "walk"
+    },
+    {
+      "x": -90.5,
+      "z": 22,
+      "width": 4.5,
+      "depth": 292,
+      "kind": "walk"
+    },
+    {
+      "x": 73.5,
+      "z": -10,
+      "width": 4.5,
+      "depth": 310,
+      "kind": "walk"
+    },
+    {
+      "x": 90.5,
+      "z": -10,
+      "width": 4.5,
+      "depth": 310,
+      "kind": "walk"
+    },
+    {
+      "x": 110,
+      "z": -50,
+      "width": 56,
+      "depth": 6,
+      "kind": "walk"
+    },
+    {
+      "x": 138,
+      "z": -54,
+      "width": 6.5,
+      "depth": 108,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": 10,
+      "width": 6.5,
+      "depth": 40,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": -9,
+      "width": 64,
+      "depth": 5,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": 10,
+      "width": 66,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -31,
+      "z": -12,
+      "width": 4.5,
+      "depth": 48,
+      "kind": "walk"
+    },
+    {
+      "x": 31,
+      "z": -12,
+      "width": 4.5,
+      "depth": 48,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": -32,
+      "width": 66,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": 37,
+      "z": 82,
+      "width": 68,
+      "depth": 4.5,
+      "kind": "walk"
+    },
+    {
+      "x": -38,
+      "z": 82,
+      "width": 68,
+      "depth": 5.5,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": 144,
+      "width": 138,
+      "depth": 5.5,
+      "kind": "walk"
+    },
+    {
+      "x": -136,
+      "z": 118,
+      "width": 92,
+      "depth": 6,
+      "kind": "walk"
+    },
+    {
+      "x": 136,
+      "z": 118,
+      "width": 92,
+      "depth": 6,
+      "kind": "walk"
+    },
+    {
+      "x": 136,
+      "z": -108,
+      "width": 92,
+      "depth": 5.5,
+      "kind": "walk"
+    },
+    {
+      "x": 136,
+      "z": -142,
+      "width": 92,
+      "depth": 5.5,
+      "kind": "walk"
+    },
+    {
+      "x": 0,
+      "z": -112,
+      "width": 88,
+      "depth": 6,
+      "kind": "walk"
+    }
+  ],
+  "mountains": {
+    "x": 4,
+    "z": -188,
+    "radius": 86,
+    "height": 68
+  },
+  "characters": [
+    {
+      "id": "soyo",
+      "name": "长崎素世",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#9e7b66",
+      "eyeColor": "#6b7fd7",
+      "accessory": "side",
+      "dayLocationId": "tsukinomori",
+      "nightLocationId": "commercial",
+      "homeRoomId": "majo-highrise-home",
+      "roleTitle": "月之森高等部 · MyGO!!!!! 贝斯手",
+      "quote": "「真是的，又在说任性的话了呢。」",
+      "bio": "就读于月之森女子学园高等部，MyGO!!!!! 贝斯手、前 CRYCHIC 成员。温柔得体的淑女微笑下藏着深沉的执念与嘴硬心软。",
+      "index": 0
+    },
+    {
+      "id": "sakiko",
+      "name": "丰川祥子",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#8ab4d6",
+      "eyeColor": "#d9a74a",
+      "accessory": "twintail",
+      "dayLocationId": "downtown",
+      "nightLocationId": "downtown",
+      "homeRoomId": "toyokawa-house",
+      "roleTitle": "Ave Mujica 键盘手 Oblivionis",
+      "quote": "「我绝不会向命运低头，请听我们的音乐吧。」",
+      "bio": "Ave Mujica 键盘手兼发起人 Oblivionis。自尊极强的丰川家大小姐，正学习信任同伴并与本家缓和关系。",
+      "index": 1
+    },
+    {
+      "id": "tomori",
+      "name": "高松灯",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#6e656f",
+      "eyeColor": "#b86b77",
+      "accessory": "short",
+      "dayLocationId": "pocket-park",
+      "nightLocationId": "home",
+      "homeRoomId": "study-room",
+      "roleTitle": "MyGO!!!!! 主唱兼作词",
+      "quote": "「如果能一辈子在一起……我会把这份心情写进歌里。」",
+      "bio": "MyGO!!!!! 主唱兼作词。喜欢收集石头、创可贴与落叶，把难以言说的心意化作呐喊的诗篇。",
+      "index": 2
+    },
+    {
+      "id": "anon",
+      "name": "千早爱音",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#f29cb1",
+      "eyeColor": "#7a8b99",
+      "accessory": "ribbon",
+      "dayLocationId": "street-cafe",
+      "nightLocationId": "commercial",
+      "homeRoomId": "livehouse",
+      "roleTitle": "MyGO!!!!! 吉他手",
+      "quote": "「哼哼，果然还是需要我爱音酱出马对吧！」",
+      "bio": "MyGO!!!!! 节奏吉他手兼运营担当。爱慕虚荣又格外真诚的现充开心果。",
+      "index": 3
+    },
+    {
+      "id": "taki",
+      "name": "椎名立希",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#3a3548",
+      "eyeColor": "#a8587b",
+      "accessory": "mole",
+      "dayLocationId": "grand-commercial",
+      "nightLocationId": "home",
+      "homeRoomId": "livehouse",
+      "roleTitle": "MyGO!!!!! 鼓手兼作曲",
+      "quote": "「哈？别说废话了，快点开始排练！」",
+      "bio": "MyGO!!!!! 鼓手兼作曲，在 Live House 打工。嘴硬心软的凶猫，最重视灯的歌声。",
+      "index": 4
+    },
+    {
+      "id": "rana",
+      "name": "要乐奈",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#dce0e6",
+      "eyeColor": "#eab308",
+      "accessory": "oddeye",
+      "dayLocationId": "street-cafe",
+      "nightLocationId": "city-park",
+      "homeRoomId": "margo-cafe-room",
+      "roleTitle": "MyGO!!!!! 主音吉他手",
+      "quote": "「有趣的女人……我要吃抹茶芭菲。」",
+      "bio": "MyGO!!!!! 主音吉他手。像流浪猫一样随兴来去的天才吉他少女，最喜欢抹茶芭菲。",
+      "index": 5
+    },
+    {
+      "id": "mutsumi",
+      "name": "若叶睦",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#8fa89b",
+      "eyeColor": "#c49a45",
+      "accessory": "calm",
+      "dayLocationId": "tsukinomori",
+      "nightLocationId": "downtown",
+      "homeRoomId": "toyokawa-house",
+      "roleTitle": "月之森高等部 · Ave Mujica 吉他手",
+      "quote": "「……嗯，祥子说得对。」",
+      "bio": "就读于月之森女子学园高等部，Ave Mujica 七弦吉他手 Mortis，祥子的青梅竹马。寡言少语，喜欢在学园花坛照料小黄瓜。",
+      "index": 6
+    },
+    {
+      "id": "uika",
+      "name": "三角初华",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#edd087",
+      "eyeColor": "#7c6eb8",
+      "accessory": "star",
+      "dayLocationId": "grand-commercial",
+      "nightLocationId": "commercial",
+      "homeRoomId": "livehouse",
+      "roleTitle": "Ave Mujica 主唱 Doloris",
+      "quote": "「只要抬头看星星，就会想起和小祥在岛上的夏天。」",
+      "bio": "sumimi 偶像兼 Ave Mujica 主唱吉他手 Doloris。笑容明亮，对祥子怀有深沉的依恋。",
+      "index": 7
+    },
+    {
+      "id": "umiri",
+      "name": "八幡海铃",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#2d3748",
+      "eyeColor": "#4a7c59",
+      "accessory": "cool",
+      "dayLocationId": "grand-commercial",
+      "nightLocationId": "commercial",
+      "homeRoomId": "livehouse",
+      "roleTitle": "Ave Mujica 贝斯手 Timoris",
+      "quote": "「日程表上还有四十五分钟，足够我们合奏两遍。」",
+      "bio": "同时支援三十支乐队的职业级贝斯手、Ave Mujica 成员 Timoris。守时严谨、冷幽默。",
+      "index": 8
+    },
+    {
+      "id": "nyamu",
+      "name": "祐天寺若麦",
+      "group": "bang",
+      "groupLabel": "MyGO / Mujica",
+      "hairColor": "#d6749a",
+      "eyeColor": "#b84a6e",
+      "accessory": "cat",
+      "dayLocationId": "commercial",
+      "nightLocationId": "grand-commercial",
+      "homeRoomId": "ktv-lounge",
+      "roleTitle": "Ave Mujica 鼓手 Amoris",
+      "quote": "「各位喵梦比～今天也在超努力练习架子鼓喵！」",
+      "bio": "美妆视频博主「喵梦」兼 Ave Mujica 鼓手 Amoris。精明努力又充满事业心。",
+      "index": 9
+    },
+    {
+      "id": "majo-emma",
+      "name": "樱羽艾玛",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#f5d0dc",
+      "eyeColor": "#ec6b98",
+      "accessory": "beret",
+      "dayLocationId": "gate",
+      "nightLocationId": "home",
+      "homeRoomId": "emma-yuki-home",
+      "roleTitle": "原囚人658号 · 杂司谷住人",
+      "quote": "「就算会被讨厌……这一次我也绝对不会再逃开了！」",
+      "bio": "原牢屋敷囚人658号，现与挚友月代雪同住杂司谷公寓。真诚敏锐、像小狗一样惹人怜爱。",
+      "index": 10
+    },
+    {
+      "id": "majo-hiro",
+      "name": "二阶堂希罗",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#2b1d28",
+      "eyeColor": "#d9383a",
+      "accessory": "flower",
+      "dayLocationId": "courthouse",
+      "nightLocationId": "downtown",
+      "homeRoomId": "nikaido-house",
+      "roleTitle": "原囚人659号 · 剑道少女",
+      "quote": "「这样不正确。既是原则问题，我便不会退让。」",
+      "bio": "原囚人659号，现居目白台二阶堂家日式宅邸。自律严谨、身穿红枫和服的剑道少女。",
+      "index": 11
+    },
+    {
+      "id": "majo-anan",
+      "name": "夏目安安",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#cbd5e1",
+      "eyeColor": "#9f7aea",
+      "accessory": "ribbon",
+      "dayLocationId": "library",
+      "nightLocationId": "junction",
+      "homeRoomId": "anan-noa-milia-home",
+      "roleTitle": "原囚人660号 · 笔谈画师",
+      "quote": "「（翻开速写本）吾辈……觉得这里的构图还不错。」",
+      "bio": "原囚人660号，怀抱深蓝速写本以笔谈交流的画画少女，自称「吾辈」。",
+      "index": 12
+    },
+    {
+      "id": "majo-noa",
+      "name": "城崎诺亚",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#e2e8f0",
+      "eyeColor": "#f59e0b",
+      "accessory": "beret",
+      "dayLocationId": "pocket-park",
+      "nightLocationId": "junction",
+      "homeRoomId": "anan-noa-milia-home",
+      "roleTitle": "原囚人661号 · 街头艺术家",
+      "quote": "「这里的颜色好漂亮哟♪ 为什么呢～？」",
+      "bio": "原囚人661号，以「气球」之名享誉街头的天才涂鸦艺术家，充满跳跃好奇心。",
+      "index": 13
+    },
+    {
+      "id": "majo-leia",
+      "name": "莲见蕾雅",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#d6b37c",
+      "eyeColor": "#eab308",
+      "accessory": "prince",
+      "dayLocationId": "teaching",
+      "nightLocationId": "downtown",
+      "homeRoomId": "classroom",
+      "roleTitle": "原囚人662号 · 舞台剧演员",
+      "quote": "「请交给我吧，守护大家的笑容也是演员的职责。」",
+      "bio": "原囚人662号，举止优雅带有王子般舞台风度的知名女演员。",
+      "index": 14
+    },
+    {
+      "id": "majo-milia",
+      "name": "佐伯米莉亚",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#f6e05e",
+      "eyeColor": "#667eea",
+      "accessory": "bow",
+      "dayLocationId": "library",
+      "nightLocationId": "junction",
+      "homeRoomId": "anan-noa-milia-home",
+      "roleTitle": "原囚人663号 · 善良辣妹",
+      "quote": "「唉，大叔我是不是又给大家添麻烦了……」",
+      "bio": "原囚人663号，外表亮眼的白系辣妹，内里拘谨善良、自称「大叔」。",
+      "index": 15
+    },
+    {
+      "id": "majo-margo",
+      "name": "宝生玛格",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#3b2847",
+      "eyeColor": "#9f7aea",
+      "accessory": "hat",
+      "dayLocationId": "street-cafe",
+      "nightLocationId": "street-cafe",
+      "homeRoomId": "margo-cafe-room",
+      "roleTitle": "原囚人664号 · 咖啡馆店长",
+      "quote": "「欢迎光临玛格咖啡馆，要来一杯藏着秘密的特调吗？」",
+      "bio": "原囚人664号，如今经营街边的玛格咖啡馆。聪明圆滑、说话半真半假。",
+      "index": 16
+    },
+    {
+      "id": "majo-nanoka",
+      "name": "黑部奈叶香",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#1a202c",
+      "eyeColor": "#718096",
+      "accessory": "beret",
+      "dayLocationId": "junction",
+      "nightLocationId": "courthouse",
+      "homeRoomId": "study-room",
+      "roleTitle": "原囚人665号 · 独行调查者",
+      "quote": "「……只是确认现场情况而已，别误会。」",
+      "bio": "原囚人665号，寡言敏锐、习惯独自调查线索的冷面少女。",
+      "index": 17
+    },
+    {
+      "id": "majo-arisa",
+      "name": "紫藤亚里沙",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#2d1b24",
+      "eyeColor": "#e53e3e",
+      "accessory": "hood",
+      "dayLocationId": "sports",
+      "nightLocationId": "home",
+      "homeRoomId": "margo-cafe-room",
+      "roleTitle": "原囚人666号 · 离家不良少女",
+      "quote": "「哈？我只是刚好路过顺手帮忙而已，少自作多情了！」",
+      "bio": "原囚人666号，红挑染兜帽的不良少女，嘴硬炸毛却暗藏温柔。",
+      "index": 18
+    },
+    {
+      "id": "majo-sherry",
+      "name": "橘雪莉",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#90cdf4",
+      "eyeColor": "#ed8936",
+      "accessory": "beret",
+      "dayLocationId": "courthouse",
+      "nightLocationId": "commercial",
+      "homeRoomId": "legal-office",
+      "roleTitle": "原囚人667号 · 见习名侦探",
+      "quote": "「艾玛桑！汉娜桑！这难道不是超有意思的线索吗？」",
+      "bio": "原囚人667号，自称名侦探的法学见习生，现于枫庭律师事务所实习。",
+      "index": 19
+    },
+    {
+      "id": "majo-hanna",
+      "name": "远野汉娜",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#ecc94b",
+      "eyeColor": "#48bb78",
+      "accessory": "rose",
+      "dayLocationId": "bookshop",
+      "nightLocationId": "commercial",
+      "homeRoomId": "majo-highrise-home",
+      "roleTitle": "原囚人668号 · 洛丽塔淑女",
+      "quote": "「雪莉桑，在大街上大呼小叫实在有失礼数呢！」",
+      "bio": "原囚人668号，身着橄榄绿洛丽塔蓬裙、坚持大小姐仪态的少女，与雪莉同住高层公寓。",
+      "index": 20
+    },
+    {
+      "id": "majo-koko",
+      "name": "泽渡可可",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#1a202c",
+      "eyeColor": "#ed8936",
+      "accessory": "cat",
+      "dayLocationId": "bus-stop",
+      "nightLocationId": "home",
+      "homeRoomId": "koko-old-house",
+      "roleTitle": "原囚人669号 · 猫耳主播",
+      "quote": "「直播间的家人们晚上好！……啧，下播了，累死我了。」",
+      "bio": "原囚人669号，戴着橙黑猫耳耳机的Twiitch人气主播，下播后毒舌傲娇。",
+      "index": 21
+    },
+    {
+      "id": "majo-meruru",
+      "name": "冰上梅露露",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#bee3f8",
+      "eyeColor": "#63b3ed",
+      "accessory": "veil",
+      "dayLocationId": "pocket-park",
+      "nightLocationId": "city-park",
+      "homeRoomId": "majo-studio",
+      "roleTitle": "原囚人670号 · 疗愈看护",
+      "quote": "「对、对不起……如果是我力所能及的事，我一定会努力的。」",
+      "bio": "原囚人670号，温顺易惊、对月代雪怀有深厚依恋的少女。",
+      "index": 22
+    },
+    {
+      "id": "majo-yuki",
+      "name": "月代雪",
+      "group": "majo",
+      "groupLabel": "魔女审判",
+      "hairColor": "#f7fafc",
+      "eyeColor": "#63b3ed",
+      "accessory": "hat",
+      "dayLocationId": "gate",
+      "nightLocationId": "home",
+      "homeRoomId": "emma-yuki-home",
+      "roleTitle": "大魔女 · 艾玛同居挚友",
+      "quote": "「我很高兴……还能在这样温暖的午后，和艾玛一起生活。」",
+      "bio": "大魔女，艾玛与希罗的中学旧友，十四名幸存者中唯一仍保留魔法之人。",
+      "index": 23
+    },
+    {
+      "id": "wata-renako",
+      "name": "甘织玲奈子",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#f4a9c0",
+      "eyeColor": "#9f7aea",
+      "accessory": "clip",
+      "dayLocationId": "gate",
+      "nightLocationId": "home",
+      "homeRoomId": "amaori-family-home",
+      "roleTitle": "芦谷五人组核心 · 主角",
+      "quote": "「等、等一下！那种事怎么可能啦，不行不行绝对不行！」",
+      "bio": "芦谷五人组核心，左耳别着交叉发夹的伪装现充社恐少女，同时与真唯和紫阳花交往中。",
+      "index": 24
+    },
+    {
+      "id": "wata-mai",
+      "name": "王冢真唯",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#f6e05e",
+      "eyeColor": "#4a5568",
+      "accessory": "crown",
+      "dayLocationId": "downtown",
+      "nightLocationId": "downtown",
+      "homeRoomId": "ouzuka-residence",
+      "roleTitle": "Queen Rose继承人 · 完美超人",
+      "quote": "「又在说不行不行了吗？但在我眼里，玲奈子比任何人都耀眼哦。」",
+      "bio": "跨国时尚品牌「Queen Rose」继承人兼超人气名模，在玲奈子面前化身黏人金毛犬。",
+      "index": 25
+    },
+    {
+      "id": "wata-ajisai",
+      "name": "濑名紫阳花",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#fbd38d",
+      "eyeColor": "#d69e2e",
+      "accessory": "braid",
+      "dayLocationId": "street-cafe",
+      "nightLocationId": "home",
+      "homeRoomId": "sena-family-home",
+      "roleTitle": "芦谷的大天使 · 治愈长姐",
+      "quote": "「呐，玲奈酱……今天也可以让我稍微对玲奈酱撒会儿娇吗？」",
+      "bio": "被誉为「芦谷的大天使」的治愈系长姐，与真唯一同是玲奈子的恋人。",
+      "index": 26
+    },
+    {
+      "id": "wata-satsuki",
+      "name": "琴纱月",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#1a202c",
+      "eyeColor": "#4a5568",
+      "accessory": "book",
+      "dayLocationId": "library",
+      "nightLocationId": "commercial",
+      "homeRoomId": "koto-apartment",
+      "roleTitle": "文学系冰山毒舌才女",
+      "quote": "「哼，甘织，你脑子里的杂音吵得我连书都翻不下去了。」",
+      "bio": "年级第二的毒舌文学才女、真唯的青梅竹马宿敌，嘴硬心软。",
+      "index": 27
+    },
+    {
+      "id": "wata-kaho",
+      "name": "小柳香穗",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#63b3ed",
+      "eyeColor": "#48bb78",
+      "accessory": "bun",
+      "dayLocationId": "bookshop",
+      "nightLocationId": "junction",
+      "homeRoomId": "koyanagi-home",
+      "roleTitle": "芦谷的妹妹 · 硬核Cosplayer",
+      "quote": "「玲奈蹦～今天的现充营业额度已经耗尽啦，快陪我试新Cos服！」",
+      "bio": "水蓝短发丸子头的「芦谷的妹妹」、硬核Cosplayer兼真唯狂热单推人。",
+      "index": 28
+    },
+    {
+      "id": "wata-haruna",
+      "name": "甘织遥奈",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#f687b3",
+      "eyeColor": "#d53f8c",
+      "accessory": "pony",
+      "dayLocationId": "tsukinomori",
+      "nightLocationId": "home",
+      "homeRoomId": "amaori-family-home",
+      "roleTitle": "玲奈子的妹妹 · 月之森羽球部王牌",
+      "quote": "「老姐，出门前先把穿搭拍给我检查！」",
+      "bio": "就读于月之森女子学园高等部的玲奈子亲妹妹、羽毛球部王牌，亲手帮老姐完成现充出道特训的真·阳角姐控。",
+      "index": 29
+    },
+    {
+      "id": "wata-miyoko",
+      "name": "甘织美代子",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#fbb6ce",
+      "eyeColor": "#b83280",
+      "accessory": "smile",
+      "dayLocationId": "convenience",
+      "nightLocationId": "home",
+      "homeRoomId": "amaori-family-home",
+      "roleTitle": "甘织家温柔母亲",
+      "quote": "「欢迎来家里玩呀，今晚要不要留下来一起吃晚饭？」",
+      "bio": "玲奈子与遥奈的母亲，温柔包容，总用热腾腾的饭菜守护全家人。",
+      "index": 30
+    },
+    {
+      "id": "wata-hiroki",
+      "name": "濑名广树",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#b7791f",
+      "eyeColor": "#d69e2e",
+      "accessory": "cap",
+      "dayLocationId": "pocket-park",
+      "nightLocationId": "home",
+      "homeRoomId": "sena-family-home",
+      "roleTitle": "紫阳花的大弟 · 游戏迷",
+      "quote": "「玲奈子姐姐超厉害！再来带我打一局嘛！」",
+      "bio": "紫阳花的小学三年级大弟，崇拜游戏操作封神的玲奈子。",
+      "index": 31
+    },
+    {
+      "id": "wata-kippei",
+      "name": "濑名桔平",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#d69e2e",
+      "eyeColor": "#b7791f",
+      "accessory": "cute",
+      "dayLocationId": "pocket-park",
+      "nightLocationId": "home",
+      "homeRoomId": "sena-family-home",
+      "roleTitle": "紫阳花的小弟 · 撒娇鬼",
+      "quote": "「玲奈子姐姐～帮我过这一关嘛！」",
+      "bio": "紫阳花粘人可爱的小学一年级小弟，最爱吃姐姐做的甜口咖喱。",
+      "index": 32
+    },
+    {
+      "id": "wata-kmom",
+      "name": "琴之母",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#2d3748",
+      "eyeColor": "#805ad5",
+      "accessory": "mole",
+      "dayLocationId": "commercial",
+      "nightLocationId": "commercial",
+      "homeRoomId": "koto-apartment",
+      "roleTitle": "纱月的单亲母亲",
+      "quote": "「哎呀，我们家不坦率的纱月又承蒙小玲奈子照顾了呢。」",
+      "bio": "琴纱月年轻艳丽的单亲母亲，洒脱通透，喜欢逗弄害羞的玲奈子与纱月。",
+      "index": 33
+    },
+    {
+      "id": "wata-hitoe",
+      "name": "花取单衣",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#1a202c",
+      "eyeColor": "#718096",
+      "accessory": "suit",
+      "dayLocationId": "bus-stop",
+      "nightLocationId": "downtown",
+      "homeRoomId": "ouzuka-residence",
+      "roleTitle": "王冢家专职管家兼司机",
+      "quote": "「为真唯大小姐与甘织大人效劳，是在下的分内之事。」",
+      "bio": "王冢家25岁专职管家兼司机，真唯与玲奈子恋情最坚定的幕后支持者。",
+      "index": 34
+    },
+    {
+      "id": "wata-rene",
+      "name": "王冢露涅",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#ecc94b",
+      "eyeColor": "#2c5282",
+      "accessory": "queen",
+      "dayLocationId": "downtown",
+      "nightLocationId": "downtown",
+      "homeRoomId": "ouzuka-residence",
+      "roleTitle": "Queen Rose 女帝社长",
+      "quote": "「想改变王冢家的安排，就拿出配得上这份野心的实绩给我看。」",
+      "bio": "真唯的母亲、「Queen Rose」创始人兼女帝社长，作风凌厉严苛。",
+      "index": 35
+    },
+    {
+      "id": "wata-lucie",
+      "name": "露西·勒费弗尔",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#fef08a",
+      "eyeColor": "#3b82f6",
+      "accessory": "bow",
+      "dayLocationId": "street-cafe",
+      "nightLocationId": "downtown",
+      "homeRoomId": "ouzuka-residence",
+      "roleTitle": "法国贵族模特 · 前婚约者",
+      "quote": "「真唯！还有玲奈子……哼，今天也勉强允许你陪着露西！」",
+      "bio": "法国新锐美少女模特、真唯的前婚约者，高贵又有些娇憨路痴。",
+      "index": 36
+    },
+    {
+      "id": "wata-seira",
+      "name": "鬼瓦星来",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#ed8936",
+      "eyeColor": "#dd6b20",
+      "accessory": "short",
+      "dayLocationId": "tsukinomori",
+      "nightLocationId": "home",
+      "homeRoomId": "koyanagi-home",
+      "roleTitle": "月之森高中生 · 鬼瓦洗衣店看板娘",
+      "quote": "「玲奈子姐！刚熨好的衣服送来啦！」",
+      "bio": "就读于月之森女子学园高等部，鬼瓦洗衣店元气看板娘、遥奈的同班挚友兼香穗的Cosplay后辈。",
+      "index": 37
+    },
+    {
+      "id": "wata-youko",
+      "name": "照泽耀子",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#4a5568",
+      "eyeColor": "#d69e2e",
+      "accessory": "fox",
+      "dayLocationId": "library",
+      "nightLocationId": "city-park",
+      "homeRoomId": "majo-studio",
+      "roleTitle": "校园情报屋 · 少女侦探",
+      "quote": "「哎呀呀，照顾生活不能自理的大小姐还真是全场最辛苦的差事呢。」",
+      "bio": "自称「少女侦探」的校园情报屋，兼任法国大小姐露西的贴身照料人。",
+      "index": 38
+    },
+    {
+      "id": "wata-michiru",
+      "name": "广崎美智留",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#744210",
+      "eyeColor": "#38a169",
+      "accessory": "suit",
+      "dayLocationId": "teaching",
+      "nightLocationId": "city-park",
+      "homeRoomId": "classroom",
+      "roleTitle": "芦谷高中英语教师 · 小美老师",
+      "quote": "「好啦好啦，大家安静一下，要叫我广崎老师！」",
+      "bio": "身材娇小常被误认成学生的爽朗英语老师兼班主任「小美老师」。",
+      "index": 39
+    },
+    {
+      "id": "wata-himiko",
+      "name": "高田卑弥呼",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#d53f8c",
+      "eyeColor": "#805ad5",
+      "accessory": "queen",
+      "dayLocationId": "sports",
+      "nightLocationId": "downtown",
+      "homeRoomId": "ouzuka-residence",
+      "roleTitle": "5déesse 队长 · 永远的第三名",
+      "quote": "「王冢真唯，还有甘织玲奈子——下次胜负我绝不会输！」",
+      "bio": "B组团体「5déesse（五女神）」高傲好胜的队长，永远追赶真唯的第三名。",
+      "index": 40
+    },
+    {
+      "id": "wata-suzuran",
+      "name": "羽贺铃兰",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#cbd5e1",
+      "eyeColor": "#68d391",
+      "accessory": "smile",
+      "dayLocationId": "cafe",
+      "nightLocationId": "home",
+      "homeRoomId": "margo-cafe-room",
+      "roleTitle": "5déesse 温婉调和者",
+      "quote": "「那个……大家能心平气和地聊聊就太好了。」",
+      "bio": "「5déesse」中气质温婉的治愈系少女，善于调和气氛。",
+      "index": 41
+    },
+    {
+      "id": "wata-chizuru",
+      "name": "龟崎千鹤",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#1a202c",
+      "eyeColor": "#3182ce",
+      "accessory": "book",
+      "dayLocationId": "teaching",
+      "nightLocationId": "commercial",
+      "homeRoomId": "study-room",
+      "roleTitle": "5déesse 智囊参谋",
+      "quote": "「数据已经分析完毕，下次测验见分晓。」",
+      "bio": "「5déesse」的冷静智囊参谋，将琴纱月视为必须超越的目标。",
+      "index": 42
+    },
+    {
+      "id": "wata-miki",
+      "name": "根本美纪",
+      "group": "wata",
+      "groupLabel": "渡奈 / 芦谷",
+      "hairColor": "#f6ad55",
+      "eyeColor": "#ed64a6",
+      "accessory": "gyaru",
+      "dayLocationId": "convenience",
+      "nightLocationId": "junction",
+      "homeRoomId": "ktv-lounge",
+      "roleTitle": "5déesse 时尚辣妹",
+      "quote": "「欸欸，听说了吗？刚才商业街那边超热闹的！」",
+      "bio": "「5déesse」中外向时髦的元气辣妹，消息灵通。",
+      "index": 43
+    }
+  ]
+}

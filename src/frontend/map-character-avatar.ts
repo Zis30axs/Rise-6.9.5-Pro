@@ -12,6 +12,42 @@ import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
+
+// Only generated map crops are considered headshots. Other existing full-body art
+// remains an independent, unchanged source and is used when no crop is installed.
+const croppedHeadshots = import.meta.glob<string>(
+  '../../assets/map-avatars/*.svg',
+  { eager: true, query: '?inline', import: 'default' },
+);
+const generatedHeadshots = Object.fromEntries(
+  Object.entries(croppedHeadshots).map(([path, src]) =>
+    [path.slice(path.lastIndexOf('/') + 1).replace(/\.svg$/, ''), src]),
+) as Record<string, string>;
+const personAvatarIds: Readonly<Record<string, string>> = {
+  '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
+  '要乐奈': 'rana', '若叶睦': 'mutsumi',
+  '樱羽艾玛': 'majo-emma', '二阶堂希罗': 'majo-hiro', '夏目安安': 'majo-anan',
+  '城崎诺亚': 'majo-noa', '佐伯米莉亚': 'majo-milia', '宝生玛格': 'majo-margo',
+  '黑部奈叶香': 'majo-nanoka', '紫藤亚里沙': 'majo-arisa',
+  '橘雪莉': 'majo-sherry', '远野汉娜': 'majo-hanna', '月代雪': 'majo-yuki',
+  '甘织玲奈子': 'wata-renako', '王冢真唯': 'wata-mai', '濑名紫阳花': 'wata-ajisai',
+  '琴纱月': 'wata-satsuki', '小柳香穗': 'wata-kaho', '甘织遥奈': 'wata-haruna',
+};
+const protagonistAvatarIds: Readonly<Record<string, string>> = {
+  sakiko: 'sakiko', emma: 'majo-emma', renako: 'wata-renako',
+};
+function headshotFor(person: MapAvatarIdentity): MapAvatarAsset | null {
+  const candidates = [
+    person.personId?.replace(/^watanare-/, 'wata-'),
+    person.protagonistId ? protagonistAvatarIds[person.protagonistId] : undefined,
+    personAvatarIds[person.name],
+  ];
+  for (const id of candidates) {
+    if (id && generatedHeadshots[id]) return { kind: 'headshot', src: generatedHeadshots[id] };
+  }
+  return null;
+}
+
 export interface MapAvatarIdentity {
   name: string;
   personId?: string | null;
@@ -21,10 +57,19 @@ export interface MapAvatarIdentity {
 
 export type MapAvatarAsset =
   | { kind: 'sprite'; src: string }
+  | { kind: 'headshot'; src: string }
   | { kind: 'atlas'; src: string; x: number; y: number; width: number; height: number; atlasWidth: number; atlasHeight: number };
 
 /** Only an identity-confirmed sprite (or that pedestrian's saved generic appearance) may appear as a map avatar. */
-export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarAsset | null {
+export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHeadshot = false): MapAvatarAsset | null {
+  // Preserve Soyo's already authored and approved headshot exactly.
+  if (person.protagonistId === 'soyo' || person.personId === 'soyo' || person.name === '长崎素世') {
+    return { kind: 'headshot', src: soyoHeadshot };
+  }
+  if (!ignoreNewHeadshot) {
+    const crop = headshotFor(person);
+    if (crop) return crop;
+  }
   if (person.protagonistId === 'sakiko') {
     const art = getSakikoArt(downtownArtPack, { speaker: '丰川祥子', expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
@@ -37,7 +82,6 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarA
     const src = watanareExpressionFor('watanare-renako', 'neutral');
     return src ? { kind: 'sprite', src } : null;
   }
-  if (person.protagonistId === 'soyo') return { kind: 'sprite', src: soyoHeadshot };
 
   if (person.personId?.startsWith('majo-')) {
     const src = majoExpressionFor(person.personId, 'neutral');
