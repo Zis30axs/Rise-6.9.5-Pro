@@ -8,6 +8,7 @@ import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
+import { cookedDishQuote } from './cooking';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
@@ -175,6 +176,21 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const item = record(raw, ['type', 'itemId'], path);
         if (typeof item.itemId !== 'string' || !getStoreItem(item.itemId)) return invalid(`${path} 商品`);
         return { type: 'use', itemId: item.itemId };
+      }
+      case 'eat_cooked': {
+        const item = record(raw, ['type', 'dishId'], path);
+        if (typeof item.dishId !== 'string' || cookedDishQuote(state, item.dishId).blockedReason)
+          return invalid(`${path} 料理份数或归属`);
+        return { type: 'eat_cooked', dishId: item.dishId };
+      }
+      case 'share_meal': {
+        const item = record(raw, ['type', 'dishId', 'npcId', 'consentQuote'], path);
+        if (typeof item.dishId !== 'string' || typeof item.npcId !== 'string')
+          return invalid(`${path} 共餐身份`);
+        const quote = cookedDishQuote(state, item.dishId, item.npcId);
+        if (quote.blockedReason || !quote.person) return invalid(`${path} 共餐须有两份料理且 NPC 当面在场`);
+        return { type: 'share_meal', dishId: item.dishId, npcId: quote.person.id,
+          consentQuote: text(item.consentQuote, 300, `${path} NPC 当面同意共餐原话`) };
       }
       case 'interact': {
         const item = record(raw, ['type', 'interactionId'], path);
