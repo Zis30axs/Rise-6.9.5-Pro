@@ -147,7 +147,7 @@ defineExpose({ skip });
       <CitySandboxScene scope="city" :active="true" :width="size.width" :height="size.height"
         :bearing="0" :view-scale="1" :selected-id="''"
         :location-id="lease.source.locationId" :busy="true"
-        :decorative="true" :camera-view="cameraView" />
+        :decorative="true" :preview-only="true" :camera-view="cameraView" />
       <div class="protagonist-switch-reticle" aria-hidden="true"><i/><i/><i/></div>
     </div>
     <div class="protagonist-switch-blackout" aria-hidden="true" :style="{ opacity: blackoutOpacity }"></div>
