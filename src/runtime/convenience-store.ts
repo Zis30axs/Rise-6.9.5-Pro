@@ -99,7 +99,8 @@ export function getPackItemQuote(state: WorldState, itemId: string, quantity = 1
   const packagingFee = Number.isInteger(quantity) && quantity >= 1 && quantity <= MAX_PURCHASE_QUANTITY ? quantity * PACKAGING_FEE : 0;
   const totalPrice = quote.totalPrice + packagingFee;
   let blockedReason = quote.blockedReason;
-  if (quote.item?.category === 'cigarette' || quote.item?.category === 'ingredient') blockedReason = '料理原料不可作为即食食物打包。';
+  if (quote.item?.category === 'cigarette') blockedReason = '只有食物和饮品提供加价打包。';
+  if (quote.item?.category === 'ingredient') blockedReason = '料理食材不可作为即食食物打包。';
   if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 元。`;
   return { ...quote, packagingFee, totalPrice, blockedReason };
 }
