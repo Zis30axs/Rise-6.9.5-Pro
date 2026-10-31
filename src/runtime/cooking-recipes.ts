@@ -60,7 +60,10 @@ export function drawCookingCenter(difficulty: CookingDifficulty, sample: number)
   return margin + sample * (1 - 2 * margin);
 }
 export function cookingQuality(difficulty: CookingDifficulty, center: number, needle: number): CookingQuality {
-  if (![center, needle].every(v => Number.isFinite(v) && v >= 0 && v <= 1)) throw new Error('烹饪指针位置无效');
+  if (![center, needle].every(v => Number.isFinite(v) && v >= 0 && v <= 1) ||
+      center < drawCookingCenter(difficulty, 0) - 1e-8 ||
+      center > drawCookingCenter(difficulty, 1) + 1e-8)
+    throw new Error('烹饪指针位置无效');
   const z = cookingZones(difficulty, center);
   const eps = 1e-8;
   if (needle >= z.perfectStart - eps && needle <= z.perfectEnd + eps) return 'perfect';
