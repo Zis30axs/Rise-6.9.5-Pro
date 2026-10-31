@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
   disabledIds?: string[];
   playerName?: string; playerId?: ProtagonistId;
   people?: MapPerson[]; roadEvents?: MapEvent[];
-  cameraView?: MapCameraView; decorative?: boolean;
+  cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
 }>(), { scope: 'city', position: null, disabledIds: () => [], people: () => [], roadEvents: () => [] });
 const emit = defineEmits<{
   select: [districtId: MapDistrictId];
@@ -247,7 +247,10 @@ async function load() {
   let pending: THREE.Group | undefined;
   try {
     const bundled = Object.values(modelAssets)[0];
-    if (bundled) {
+    if (props.previewOnly) {
+      pending = createGeometricPreview();
+      variant.value = 'procedural';
+    } else if (bundled) {
       try {
         const bytes = await readLocalAssetBytes(bundled, 10_000_000, 'Invalid offline Tokyo model');
         checkGlb(bytes);
