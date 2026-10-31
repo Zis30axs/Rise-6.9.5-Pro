@@ -34,6 +34,7 @@ import { npcProfession } from './npc-professions';
 import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { atMargoCafe, getCafeMenu } from './margo-cafe-menu';
 import { campusInteriors } from './campus-interiors';
+import { cookingNarrativeContext } from './cooking';
 import { getAdjacentLocations } from './location-links';
 import { buildCharacterIntroductionContext } from './character-context';
 import { contactProposalContext, npcPhoneReplyContext } from './npc-phone';
@@ -130,6 +131,8 @@ export const STORY_PROTOCOL = [
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 必须逐字取自 cafeMenu，quantity 为 1–20；cafe-daily-special 是每日特调，每人每天限一杯。咖啡馆购买只放入背包，不自动喝掉，不另加打包费。{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
+  '【烹饪与变量权威】cooking 中 skill、experience、dishes 为当前主角已保存的实际厨艺、成品批次及品质；unreported 是玩家通过厨房按钮已经完成且尚未叙述的操作。若有 unreported，请在本轮正文自然承接并补写具体制作/食用过程，失败料理的具体失败原因由你结合菜谱和人物自由描写，程序不预设原因；不可把失败改写成普通或完美，也不可重新消耗食材、时间、精力或重复授予奖励。每一条都已经由变量系统结算，不能用 activity、interact 或伪造 buy/use 再结算。厨艺与成品品质以 cooking 真实值为准，绝不自行修改数值。',
+  '【料理与共餐】玩家购买 ingredient 类商品后必须到厨房通过指针小游戏实际制作，文本中的普通 interact 或 activity 不能代替小游戏判定；没有已保存的成品就不能吃到料理。若玩家明确食用自己已做的料理，使用 {"type":"eat_cooked","dishId":"cooking.dishes 中的精确 ID"}，一次吃一份且程序结算健康与营养；若已经通过背包按钮食用，则只承接 journal，不再发动作。共餐必须双方在场、成品至少两份且 NPC 真正明确同意，才可使用 {"type":"share_meal","dishId":"精确批次ID","npcId":"附近NPC稳定ID","consentQuote":"NPC本轮直接说出的同意原话"}。必须在本轮 story 里有该 NPC 的逐字、带角色标签的真实回应，不能强迫 NPC 接受；拒绝时省略行动且不消耗两份料理。程序只结算双方共餐事实及玩家营养，不自动提升亲密度；人物的感受、是否接受都由本轮剧情决定。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
   '【统一邀约】玩家可以当面或通过短信邀请，提交 {"type":"social_invite","targetId":"目标稳定ID或联系人ID","source":"meeting","locationId":"cafe","day":2,"time":"18:30","message":"下午去咖啡馆坐坐吗？","outcome":"accepted","responseQuote":"对方本轮明确同意的原话"}；此例中的日期地点是格式示例，应根据当前存档实际计划填写。当面来源 meeting 必须现实在场，只有对方确实说出回应时 outcome 才可为 accepted 或 declined 且须提供 responseQuote；否则 pending 且省略 responseQuote。短信来源 source="sms"，只能给已有联系人，必须 outcome="pending" 且省略 responseQuote，程序真实发送邀请短信并保留等待状态，对方以后通过短信回复独立作决定。手机窗口和剧情自由输入共用真实联系人、时间、地点与回执，不因未打开面板而失效。对于尚未确定时间地点的邀约先自然商量，不凭空生成已确认行程。',
   '【NPC私有赴约专线·最高优先级】双方同意当面邀约时，尽可能在 social_invite 同轮附上 agenda：{"rationale":"NPC自主安排的真实动机","steps":[{"kind":"prepare","day":2,"time":"17:30","detail":"换衣服或整理随身物品"},{"kind":"depart","day":2,"time":"18:00","detail":"出发赴约"},{"kind":"arrive","day":2,"time":"18:45","detail":"实际计划到场"},{"kind":"leave","day":2,"time":"20:00","detail":"决定离开"}]}。日期必须使用本存档的游戏日；day、time 为各步骤的真实计划时间，严格递增且未来可执行。以上不是必须打扮或准时的脚本！由人物性格、近期经历、行程、真实路途决定步骤和时刻；出发到场至少需要现实合理的旅行时长。约定 19:30 并不代表角色一定在 19:30 到场；可以计划 19:45。prepare可写准备礼物的念头，但没有库存和付款动作就不能宣称已购买。NPC可以取消、迟到或爽约，但必须有连续的心理与新事件依据。NPC 的计划不是当前主角的知识。没有清晰确认就不能创建日程。',
@@ -383,6 +386,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         todayOccasions: gameCalendarOccasions(snapshot.clock.day),
         upcomingOccasions: upcomingGameCalendarOccasions(snapshot.clock.day, 14).slice(0, 8),
         location: snapshot.locationId, player: snapshot.player,
+        cooking: cookingNarrativeContext(snapshot),
         socialSkills: { personality: SOCIAL_PERSONALITY[activeProtagonist(snapshot)],
           abilities: socialSkillOverview(snapshot, activeProtagonist(snapshot))
             .map(({ id, label, level }) => ({ id, label, level })) },
