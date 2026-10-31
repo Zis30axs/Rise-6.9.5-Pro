@@ -97,7 +97,7 @@ export function cookingSkill(experience: number) {
         : experience < 500 ? { level: 4, label: '擅长料理' }
           : { level: 5, label: '料理达人' };
 }
-export function cookQuote(state: WorldState, recipeId: string, owner = activeProtagonist(state)) {
+export function cookQuote(state: WorldState, recipeId: string) {
   const recipe = getCookingRecipe(recipeId);
   const roomId = state.interior?.roomId ?? '';
   const room = getCampusInterior(roomId);
@@ -133,7 +133,7 @@ function appendEvent(state: WorldState, owner: ProtagonistId, kind: CookingEvent
 export function settleCooking(state: WorldState, recipeId: string, center: number, needle: number,
   advance: (state: WorldState, minutes: number) => void,
   owner: ProtagonistId = activeProtagonist(state)): { quality: CookingQuality; text: string } {
-  const q = cookQuote(state, recipeId, owner);
+  const q = cookQuote(state, recipeId);
   if (q.blockedReason || !q.recipe) throw new Error(q.blockedReason ?? '料理无法开始。');
   const quality = cookingQuality(q.recipe.difficulty, center, needle);
   advance(state, q.recipe.minutes);
