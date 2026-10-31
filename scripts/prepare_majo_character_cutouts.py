@@ -146,7 +146,7 @@ def main() -> None:
             })
             print(relative.as_posix(), len(encoded))
     # Keep cutouts this anime-seg pass does not regenerate: Yuki's white-backdrop
-    # PNGs, and the 2026-10-30 user-provided casual trio (isnet-anime).
+    # PNGs, the 2026-10-30 casual trio, and Meruru's white-border flood cutouts.
     prior_path = OUT / 'character-cutouts.json'
     prior = json.loads(prior_path.read_text(encoding='utf-8')) if prior_path.is_file() else {}
 
@@ -155,7 +155,7 @@ def main() -> None:
         relative = item.get('file', '')
         if person == 'majo-yuki':
             return True
-        if person in {'majo-nanoka', 'majo-arisa'}:
+        if person in {'majo-nanoka', 'majo-arisa', 'majo-meruru'}:
             return True
         return person == 'majo-milia' and relative.startswith('characters/majo-milia/casual/')
 
@@ -164,6 +164,9 @@ def main() -> None:
         yuki = [item for item in preserved if item.get('personId') == 'majo-yuki']
         if len(yuki) != 3 or {row['emotion'] for row in yuki} != {'neutral', 'happy', 'thinking'}:
             raise SystemExit('Yuki cutout registry must contain three distinct expressions')
+        meruru = [item for item in preserved if item.get('personId') == 'majo-meruru']
+        if meruru and {row['emotion'] for row in meruru} != {'neutral', 'happy', 'shy', 'surprised', 'angry', 'sad'}:
+            raise SystemExit('Meruru cutout registry must contain neutral, happy, shy, surprised, angry and sad')
         for asset in preserved:
             relative = asset['file']
             if asset.get('personId') == 'majo-yuki' and (not relative.startswith('characters/majo-yuki/') or asset['mime'] != 'image/png'):
@@ -193,6 +196,8 @@ def main() -> None:
             manifest['additionalMethod'] = prior['additionalMethod']
         if 'trioMethod' in prior:
             manifest['trioMethod'] = prior['trioMethod']
+        if 'meruruMethod' in prior:
+            manifest['meruruMethod'] = prior['meruruMethod']
     (OUT / 'character-cutouts.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps({'cutouts': len(rows), 'assetBytes': sum(row['bytes'] for row in rows), 'manifestSha256': sha256((OUT / 'character-cutouts.json').read_bytes())}, ensure_ascii=False))
 

@@ -28,7 +28,7 @@ const personAvatarIds: Readonly<Record<string, string>> = {
   '要乐奈': 'rana', '若叶睦': 'mutsumi',
   '樱羽艾玛': 'majo-emma', '二阶堂希罗': 'majo-hiro', '夏目安安': 'majo-anan',
   '城崎诺亚': 'majo-noa', '佐伯米莉亚': 'majo-milia', '宝生玛格': 'majo-margo',
-  '黑部奈叶香': 'majo-nanoka', '紫藤亚里沙': 'majo-arisa',
+  '黑部奈叶香': 'majo-nanoka', '紫藤亚里沙': 'majo-arisa', '冰上梅露露': 'majo-meruru', '梅露露': 'majo-meruru',
   '橘雪莉': 'majo-sherry', '远野汉娜': 'majo-hanna', '月代雪': 'majo-yuki',
   '甘织玲奈子': 'wata-renako', '王冢真唯': 'wata-mai', '濑名紫阳花': 'wata-ajisai',
   '琴纱月': 'wata-satsuki', '小柳香穗': 'wata-kaho', '甘织遥奈': 'wata-haruna',

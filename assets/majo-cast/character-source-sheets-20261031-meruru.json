@@ -1,0 +1,146 @@
+{
+  "confirmedBy": "user-supplied-standing-art",
+  "crop": {
+    "height": 2089,
+    "width": 813,
+    "x": 362,
+    "y": 81
+  },
+  "displayName": "冰上梅露露",
+  "method": "white-border-connected-flood",
+  "outfit": "白头纱十字饰与粉缎带修女裙",
+  "personId": "majo-meruru",
+  "png": {
+    "sad": {
+      "bytes": 1498910,
+      "file": "assets/majo-runtime/sources/meruru-sad.png",
+      "height": 2089,
+      "sha256": "206c375ee23da28064612525f3bcabba3869de97cb516623b134652eb85f81b2",
+      "width": 813
+    },
+    "shy": {
+      "bytes": 1509841,
+      "file": "assets/majo-runtime/sources/meruru-shy.png",
+      "height": 2089,
+      "sha256": "8cf4f71850b50ef838a421f4c3f2385ada3dd28e00cfd8b8a793b4b5e5a6a61d",
+      "width": 813
+    },
+    "smile": {
+      "bytes": 1500195,
+      "file": "assets/majo-runtime/sources/meruru-smile.png",
+      "height": 2089,
+      "sha256": "40e75259c1b9311a688703e2990f2dead9857bdf4771c4f42730ce4abef7ce3e",
+      "width": 813
+    },
+    "surprised": {
+      "bytes": 1501255,
+      "file": "assets/majo-runtime/sources/meruru-surprised.png",
+      "height": 2089,
+      "sha256": "d7df302464d4702c1feb3a5ab3ba989ca102cd2906556125cc9e0c407bc484d3",
+      "width": 813
+    },
+    "troubled": {
+      "bytes": 1506749,
+      "file": "assets/majo-runtime/sources/meruru-troubled.png",
+      "height": 2089,
+      "sha256": "4c0434984203b4bcc7945ea5837129645811c97f7d77dd00668df184da447152",
+      "width": 813
+    }
+  },
+  "runtime": [
+    {
+      "emotion": "neutral",
+      "file": "assets/majo-runtime/characters/majo-meruru/neutral.webp",
+      "pose": "neutral",
+      "sourceKey": "smile"
+    },
+    {
+      "emotion": "happy",
+      "file": "assets/majo-runtime/characters/majo-meruru/happy.webp",
+      "pose": "smile",
+      "sourceKey": "smile"
+    },
+    {
+      "emotion": "shy",
+      "file": "assets/majo-runtime/characters/majo-meruru/shy.webp",
+      "pose": "troubled",
+      "sourceKey": "shy"
+    },
+    {
+      "emotion": "surprised",
+      "file": "assets/majo-runtime/characters/majo-meruru/surprised.webp",
+      "pose": "surprised",
+      "sourceKey": "surprised"
+    },
+    {
+      "emotion": "angry",
+      "file": "assets/majo-runtime/characters/majo-meruru/angry.webp",
+      "pose": "annoyed",
+      "sourceKey": "troubled"
+    },
+    {
+      "emotion": "sad",
+      "file": "assets/majo-runtime/characters/majo-meruru/sad.webp",
+      "pose": "sad",
+      "sourceKey": "sad"
+    }
+  ],
+  "schema": "unread-city-majo-meruru-source-v1",
+  "sources": [
+    {
+      "bytes": 425245,
+      "emotion": "shy",
+      "file": "assets/majo-cast/sources/20261031/meruru-shy.jpg",
+      "height": 2250,
+      "key": "shy",
+      "note": "脸红、含泪、嘴微张，对应害羞与困扰",
+      "pose": "troubled",
+      "sha256": "62ed748e680da9fa59d2e57da3e60895f328f0edf4e9d4e9de45e370f3e60f7f",
+      "width": 1500
+    },
+    {
+      "bytes": 419233,
+      "emotion": "surprised",
+      "file": "assets/majo-cast/sources/20261031/meruru-surprised.jpg",
+      "height": 2250,
+      "key": "surprised",
+      "note": "睁大眼、张嘴，对应惊讶",
+      "pose": "surprised",
+      "sha256": "afde7a4e03b2ef057de404fd2c3e5e4942810e307309be8e93166c5a5a09a376",
+      "width": 1500
+    },
+    {
+      "bytes": 434136,
+      "emotion": "angry",
+      "file": "assets/majo-cast/sources/20261031/meruru-troubled.jpg",
+      "height": 2250,
+      "key": "troubled",
+      "note": "皱眉、嘴微张，对应生气与不悦",
+      "pose": "annoyed",
+      "sha256": "b008b4835b56451d80f0fcfec9042b7c253e3f084e89f0e9bcd883ea1d6c3d0d",
+      "width": 1500
+    },
+    {
+      "bytes": 424130,
+      "emotion": "happy",
+      "file": "assets/majo-cast/sources/20261031/meruru-smile.jpg",
+      "height": 2250,
+      "key": "smile",
+      "note": "闭眼微笑。没有单独的平静脸，平静与开心都用这一张",
+      "pose": "smile",
+      "sha256": "5c1b3a07d7fc5132329ada4063638a0df7fcb3b9f5366231f65d72413ff14ffb",
+      "width": 1500
+    },
+    {
+      "bytes": 420757,
+      "emotion": "sad",
+      "file": "assets/majo-cast/sources/20261031/meruru-sad.jpg",
+      "height": 2250,
+      "key": "sad",
+      "note": "落泪，对应难过",
+      "pose": "sad",
+      "sha256": "b221672fd5323d0d2c7fd9b90975021edce49e5b42b29d53074eda6c87f6023a",
+      "width": 1500
+    }
+  ]
+}

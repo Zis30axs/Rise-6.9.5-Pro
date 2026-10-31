@@ -222,6 +222,7 @@ def prepare(check_only: bool = False) -> dict:
             'Yuki\'s 2026-10-23 white-backdrop native-resolution 512x1024 transparent PNGs use connected foreground matte, not anime-seg.',
             'Margo\'s committed 768x1024 AVIF sprites stay as-is: neutral, happy, shy, plus extras angry and surprised. Missing emotions use her neutral sprite.',
             '2026-10-30 用户提供的奈叶香、亚里沙与米莉亚常服三联用 rembg isnet-anime 抠图，只在模型不确信时清除与边缘相连的近黑背景。米莉亚这套是当前默认立绘，早先 anime-seg 三张仍登记在人物目录。',
+            '2026-10-31 冰上梅露露的白底立绘只清除与画面边缘相连的近白背景。轮廓内保持不透明，外侧一两像素羽化。平静与开心共用闭眼笑。',
         ],
         'assets': rows,
     }
