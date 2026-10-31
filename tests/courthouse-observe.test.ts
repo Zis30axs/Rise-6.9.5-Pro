@@ -89,6 +89,15 @@ describe('new Tokyo courthouse visit, observation and formal trial', () => {
     expect(parseState(state)).toEqual(state);
   });
 
+  it('keeps the legacy return-office command from teleporting public visitors', () => {
+    let state = atCourthouse();
+    state = reduceState(state, { type: 'enter_interior', roomId: 'court-hearing' });
+    state = reduceState(state, { type: 'courtroom', phase: 'return-office' });
+    expect(state.locationId).toBe('courthouse');
+    expect(state.interior).toBeNull();
+    expect(state.scene?.areaId).toBe('courthouse');
+  });
+
   it('rejects observation outside the courtroom and entry after closing', () => {
     const outside = atCourthouse();
     expect(getLocationServiceQuote(outside, COURT_OBSERVE_ID).blockedReason).toBeTruthy();
