@@ -30,7 +30,7 @@ import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordS
 import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
-import { COURT_OBSERVE_ID, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
+import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -471,7 +471,9 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
   const subjectId = id(gain.subjectId, 'academics.lastGain.subjectId');
   const entry = subjects.find(subject => subject.subjectId === subjectId);
-  const minutes = number(gain.minutes, 'academics.lastGain.minutes', 15, 240);
+  const isCourtObservation = !legacy && gain.channel === 'court-hearing';
+  const minutes = number(gain.minutes, 'academics.lastGain.minutes',
+    isCourtObservation ? 1 : 15, isCourtObservation ? COURT_OBSERVE_MAX_MINUTES : 240);
   const points = legacy ? number(gain.points, 'academics.lastGain.points', 0, MAX_ACADEMIC_POINTS) : academicPoints(gain.points, 'academics.lastGain.points');
   const totalPoints = academicPoints(gain.totalPoints, 'academics.lastGain.totalPoints');
   if (!entry || totalPoints !== entry.points || points > totalPoints || (legacy && subjectId !== item.subjectId)) return invalid('academics.lastGain 与学科或实际学习进度不一致');
@@ -490,13 +492,13 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop' && channel !== 'court-hearing') return invalid('academics.lastGain.channel');
   const interactionId = gain.interactionId === null ? null : id(gain.interactionId, 'academics.lastGain.interactionId');
   if (channel === 'court-hearing') {
-    const observe = locationServiceCatalog.find(service => service.id === COURT_OBSERVE_ID)!;
+    const observe = courtObservationServiceForMinutes(minutes);
     const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
     const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
     const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
     // Court observation has its own validated learning yield and fixed cost.
     if (subjectId !== 'law-advocacy' || interactionId !== null || outcome !== 'normal' ||
-      minutes !== observe.minutes || points <= 0 || points > 10 ||
+      minutes !== observe.minutes || points < 0 || points > courtObservationKnowledgeCap(minutes) ||
       energyConsumed !== Math.max(0, -observe.effects.energy) ||
       moraleChange < 0 || moraleChange > observe.effects.morale ||
       stressChange > 0 || stressChange < observe.effects.stress)
@@ -848,8 +850,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
           next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId });
           break;
         }
-        // Natural-language observation shares the same authoritative service
-        // settlement as the public UI; no custom LLM-side knowledge patch.
+        // Same service as the UI, with one real-time settlement for any integer
+        // minute duration. The narrator selects the knowledge gain; the reducer
+        // validates it and the quoted physical costs before saving.
         const court = getCampusInterior('court-hearing')!;
         if (next.locationId === 'courthouse' && !next.interior) {
           if (next.scene && next.scene.areaId !== 'courthouse')
@@ -860,11 +863,10 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         }
         if (next.locationId !== court.id || next.interior?.roomId !== court.id)
           throw new Error('请先前往审判法庭大厅，再进入公开法庭旁听。');
-        // Segment-by-segment validation checks closing time, energy and actual
-        // 30-minute gains. Any failure aborts the entire uncommitted story turn.
-        const sessions = (action.minutes ?? 30) / 30;
-        for (let session = 0; session < sessions; session++)
-          next = reduceLegacyState(next, { type: 'location_service', serviceId: COURT_OBSERVE_ID }, worldAuthority);
+        next = reduceLegacyState(next, {
+          type: 'location_service', serviceId: COURT_OBSERVE_ID,
+          ...(action.minutes !== undefined ? { minutes: action.minutes, knowledgeGain: action.knowledgeGain } : {}),
+        }, worldAuthority);
         break;
       }
       case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }, worldAuthority); break;
@@ -1327,7 +1329,20 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'location_service': {
-      const quote = getLocationServiceQuote(next, action.serviceId, worldAuthority);
+      const customObservation = action.minutes !== undefined || action.knowledgeGain !== undefined;
+      if (action.serviceId !== COURT_OBSERVE_ID && customObservation)
+        throw new Error('普通地点服务不接受自定义时长或知识奖励。');
+      if (action.serviceId === COURT_OBSERVE_ID) {
+        if ((action.minutes === undefined) !== (action.knowledgeGain === undefined))
+          throw new Error('自定义旁听时长必须同时提交知识奖励。');
+        if (action.minutes !== undefined) {
+          courtObservationServiceForMinutes(action.minutes);
+          if (!Number.isSafeInteger(action.knowledgeGain) || action.knowledgeGain! < 0 ||
+            action.knowledgeGain! > courtObservationKnowledgeCap(action.minutes))
+            throw new Error('法院旁听知识奖励不是有效的整数，或超过安全上限。');
+        }
+      }
+      const quote = getLocationServiceQuote(next, action.serviceId, worldAuthority, action.minutes);
       if (quote.blockedReason || !quote.service) throw new Error(quote.blockedReason ?? '不存在的地点活动。');
       const before = { ...next.player };
       const status = getLocationStatus(next.locationId, next.clock)!;
@@ -1341,7 +1356,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         const owner = activeProtagonistId(next, worldAuthority);
         const knowledge = next.courtroom?.observationKnowledge;
         const previous = knowledge?.[owner] ?? 0;
-        const awarded = Math.min(10, 1000000 - previous);
+        const awarded = Math.min(action.knowledgeGain ?? 10, 1000000 - previous);
         if (next.courtroom) {
           next.courtroom.observationKnowledge = {
             ...(knowledge ?? Object.fromEntries(PROTAGONISTS.map(id=>[id,0])) as Record<(typeof PROTAGONISTS)[number],number>),
@@ -1353,7 +1368,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (quote.service.id === COURT_OBSERVE_ID && next.academics) {
         const subjectId = 'law-advocacy';
         let progress = next.academics.subjects.find(entry => entry.subjectId === subjectId);
-        const gain = Math.min(10, MAX_ACADEMIC_POINTS - (progress?.points ?? 0));
+        const gain = Math.min(action.knowledgeGain ?? 10, MAX_ACADEMIC_POINTS - (progress?.points ?? 0));
         if (gain > 0 && (progress || next.academics.subjects.length < 24)) {
           if (!progress) {
             progress = { subjectId, points: 0 };

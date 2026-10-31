@@ -155,6 +155,30 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
+export const COURT_OBSERVE_MAX_MINUTES = 480;
+export const COURT_OBSERVE_MAX_KNOWLEDGE = 100;
+
+/** Upper safety bound only: the story LLM chooses the actual knowledge awarded. */
+export function courtObservationKnowledgeCap(minutes: number): number {
+  return Math.min(minutes, COURT_OBSERVE_MAX_KNOWLEDGE);
+}
+
+/** Reuse the authored 30-minute activity for any integer minute duration.
+ * Effects scale by elapsed time; knowledge does NOT use this formula.
+ * Nonzero costs/benefits have a minimum unit to avoid zero-cost one-minute farming.
+ */
+export function courtObservationServiceForMinutes(minutes: number): LocationService {
+  if (!Number.isSafeInteger(minutes) || minutes < 1 || minutes > COURT_OBSERVE_MAX_MINUTES)
+    throw new Error('法院旁听时长必须是 1–480 分钟的整数。');
+  const base = locationServiceCatalog.find(service => service.id === COURT_OBSERVE_ID)!;
+  if (minutes === base.minutes) return base;
+  const ratio = minutes / base.minutes;
+  const scale = (value: number) => value === 0 ? 0 : Math.sign(value) * Math.max(1, Math.round(Math.abs(value) * ratio));
+  const adjusted = effects(Object.fromEntries(Object.entries(base.effects)
+    .map(([key, value]) => [key, scale(value)])) as Partial<LocationServiceEffects>);
+  return { ...base, minutes, effects: adjusted };
+}
+
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
   return state.interior && ![MARGO_CAFE_ROOM_ID, 'court-hearing'].includes(state.interior.roomId) ? []
     : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
@@ -193,8 +217,10 @@ export interface LocationServiceQuote {
 }
 
 /** Preview is pure and shares authored costs, hours and nutrition with commit. */
-export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState): LocationServiceQuote {
-  const service = locationServiceCatalog.find(item => item.id === serviceId) ?? null;
+export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState, requestedMinutes?: number): LocationServiceQuote {
+  const service = serviceId === COURT_OBSERVE_ID && requestedMinutes !== undefined
+    ? courtObservationServiceForMinutes(requestedMinutes)
+    : locationServiceCatalog.find(item => item.id === serviceId) ?? null;
   const minutes = service?.minutes ?? 0;
   const price = service?.price ?? 0;
   const payout = service?.payout ?? 0;

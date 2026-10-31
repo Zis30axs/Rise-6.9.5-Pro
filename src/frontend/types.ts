@@ -192,7 +192,7 @@ export type WorldAction =
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use_item'; itemId: string }
-  | { type: 'location_service'; serviceId: string }
+  | { type: 'location_service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'fulfill-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
@@ -234,8 +234,8 @@ export type StoryAction =
       triggerId: string; reason: string; agenda?: import('../runtime/social-agenda').SocialAgendaDraft }
   | { type: 'travel'; locationId: string }
   | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
-  // Only court-observe accepts minutes; all other services retain fixed authored durations.
-  | { type: 'service'; serviceId: string; minutes?: number }
+  // Court observation can use any integer duration; the narrator chooses its knowledge grant.
+  | { type: 'service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'buy'; itemId: string; quantity: number }
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }

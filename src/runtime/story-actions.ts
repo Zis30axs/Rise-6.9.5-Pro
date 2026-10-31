@@ -9,7 +9,7 @@ import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { isCafeStoryItem } from './margo-cafe-menu';
-import { COURT_OBSERVE_ID, locationServiceCatalog } from './location-services';
+import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
@@ -154,13 +154,20 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       }
       case 'service': {
         const hasDuration = Object.hasOwn(raw, 'minutes');
-        const item = record(raw, ['type', 'serviceId', ...(hasDuration ? ['minutes'] : [])], path);
-        if (typeof item.serviceId !== 'string' || !locationServiceCatalog.some(service => service.id === item.serviceId && !service.reveal)) return invalid(`${path} 地点服务`);
-        if (hasDuration && item.serviceId !== COURT_OBSERVE_ID) return invalid(`${path} 只有法院旁听支持指定服务时长`);
+        const hasKnowledge = Object.hasOwn(raw, 'knowledgeGain');
+        const item = record(raw, ['type', 'serviceId', ...(hasDuration ? ['minutes'] : []),
+          ...(hasKnowledge ? ['knowledgeGain'] : [])], path);
+        if (typeof item.serviceId !== 'string' ||
+          !locationServiceCatalog.some(service => service.id === item.serviceId && !service.reveal))
+          return invalid(`${path} 地点服务`);
+        if ((hasDuration || hasKnowledge) && item.serviceId !== COURT_OBSERVE_ID)
+          return invalid(`${path} 只有法院旁听支持指定服务时长和知识奖励`);
+        if (hasDuration !== hasKnowledge)
+          return invalid(`${path} 法院旁听指定分钟数时必须同时给出知识奖励`);
         if (!hasDuration) return { type: 'service', serviceId: item.serviceId };
-        const minutes = number(item.minutes, 30, 240, `${path} 旁听分钟数`);
-        if (minutes % 30 !== 0) return invalid(`${path} 法院旁听须以 30 分钟为一段`);
-        return { type: 'service', serviceId: item.serviceId, minutes };
+        const minutes = number(item.minutes, 1, COURT_OBSERVE_MAX_MINUTES, `${path} 旁听分钟数`);
+        const knowledgeGain = number(item.knowledgeGain, 0, courtObservationKnowledgeCap(minutes), `${path} 旁听知识收益`);
+        return { type: 'service', serviceId: item.serviceId, minutes, knowledgeGain };
       }
       case 'buy':
       case 'pack': {
