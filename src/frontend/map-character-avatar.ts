@@ -14,13 +14,13 @@ import { novelNpcAtlases } from './novel-npc-atlases';
 
 // Only generated map crops are considered headshots. Other existing full-body art
 // remains an independent, unchanged source and is used when no crop is installed.
-const croppedHeadshots = import.meta.glob<string>([
-  '../../assets/map-avatars/*.webp',
-  '!../../assets/map-avatars/soyo.webp',
-], { eager: true, query: '?inline', import: 'default' });
+const croppedHeadshots = import.meta.glob<string>(
+  '../../assets/map-avatars/*.svg',
+  { eager: true, query: '?inline', import: 'default' },
+);
 const generatedHeadshots = Object.fromEntries(
   Object.entries(croppedHeadshots).map(([path, src]) =>
-    [path.slice(path.lastIndexOf('/') + 1).replace(/\.webp$/, ''), src]),
+    [path.slice(path.lastIndexOf('/') + 1).replace(/\.svg$/, ''), src]),
 ) as Record<string, string>;
 const personAvatarIds: Readonly<Record<string, string>> = {
   '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
@@ -36,11 +36,15 @@ const protagonistAvatarIds: Readonly<Record<string, string>> = {
   sakiko: 'sakiko', emma: 'majo-emma', renako: 'wata-renako',
 };
 function headshotFor(person: MapAvatarIdentity): MapAvatarAsset | null {
-  const id = person.personId?.replace(/^watanare-/, 'wata-')
-    ?? (person.protagonistId ? protagonistAvatarIds[person.protagonistId] : undefined)
-    ?? personAvatarIds[person.name];
-  const src = id ? generatedHeadshots[id] : null;
-  return src ? { kind: 'headshot', src } : null;
+  const candidates = [
+    person.personId?.replace(/^watanare-/, 'wata-'),
+    person.protagonistId ? protagonistAvatarIds[person.protagonistId] : undefined,
+    personAvatarIds[person.name],
+  ];
+  for (const id of candidates) {
+    if (id && generatedHeadshots[id]) return { kind: 'headshot', src: generatedHeadshots[id] };
+  }
+  return null;
 }
 
 export interface MapAvatarIdentity {
@@ -56,13 +60,15 @@ export type MapAvatarAsset =
   | { kind: 'atlas'; src: string; x: number; y: number; width: number; height: number; atlasWidth: number; atlasHeight: number };
 
 /** Only an identity-confirmed sprite (or that pedestrian's saved generic appearance) may appear as a map avatar. */
-export function resolveMapCharacterAvatar(person: MapAvatarIdentity): MapAvatarAsset | null {
+export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHeadshot = false): MapAvatarAsset | null {
   // Preserve Soyo's already authored and approved headshot exactly.
   if (person.protagonistId === 'soyo' || person.personId === 'soyo' || person.name === '长崎素世') {
     return { kind: 'headshot', src: soyoHeadshot };
   }
-  const crop = headshotFor(person);
-  if (crop) return crop;
+  if (!ignoreNewHeadshot) {
+    const crop = headshotFor(person);
+    if (crop) return crop;
+  }
   if (person.protagonistId === 'sakiko') {
     const art = getSakikoArt(downtownArtPack, { speaker: '丰川祥子', expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
