@@ -1773,12 +1773,15 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
   // A replay is checked against the stored, signed side-effect receipt rather
   // than re-rolling the probability gate against a state that already advanced.
-  const { otherSide: requestedSide, returnStory: requestedReturn, worldChronicleReceipt, ...withoutSide } = result;
+  // The chronicle receipt is supplied by the bridge, not the LLM output
+  // protocol: keep it out of the strict story parser on BOTH commit paths.
+  const { worldChronicleReceipt, ...modelResult } = result;
+  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = modelResult;
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
       ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
-    : validateGeneratedStory(result, before);
+    : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
   const narrativeActions = legacyResult.worldActions ?? [];
