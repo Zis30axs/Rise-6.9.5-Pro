@@ -14,6 +14,10 @@ import {
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { readLocalAssetBytes } from './local-asset-buffer';
 import {
+  applyTokyoCanvasResolution, nativeTokyoCanvasResolution,
+  type TokyoCanvasResolution,
+} from './tokyo-sandbox-resolution';
+import {
   applyTokyoCameraFlight, frameTokyoMapCamera, measureTokyoGroundScale,
   readTokyoCameraPose, type TokyoCameraPose,
 } from './tokyo-sandbox-camera';
@@ -69,6 +73,8 @@ type CameraFlight = {
 let cameraFlight: CameraFlight | undefined;
 let epoch = 0;
 let renderer: THREE.WebGLRenderer | undefined;
+let appliedCanvasResolution: TokyoCanvasResolution | undefined;
+let canvasOwner: Window | undefined;
 let scene: THREE.Scene | undefined;
 let camera: THREE.PerspectiveCamera | undefined;
 let model: THREE.Group | undefined;
@@ -134,6 +140,7 @@ function release() {
   if (model) disposeModel(model);
   model = undefined; scene?.clear(); scene = undefined; camera = undefined;
   renderer?.dispose(); renderer = undefined;
+  appliedCanvasResolution = undefined;
   status.value = 'idle';
   selectedPerson.value = '';
   cameraPosition.value = '';
@@ -228,8 +235,13 @@ function render() {
   }
   const metersPerPixel = measureTokyoGroundScale(camera, width, height);
   cameraPosition.value = camera.position.toArray().map(value => value.toFixed(2)).join(',');
-  renderer.setPixelRatio(Math.min(1.4, window.devicePixelRatio || 1));
-  renderer.setSize(width, height, false);
+  // Keep the native backing resolution in overview, during a camera flight,
+  // and when zoomed in. Only reallocate the WebGL buffer for a real resize or
+  // device-pixel-ratio change, never for a camera gesture or animation frame.
+  const resolution = nativeTokyoCanvasResolution(
+    width, height, canvas.value?.ownerDocument.defaultView?.devicePixelRatio,
+  );
+  appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
   renderer.render(scene, camera);
   if (props.decorative) {
     districtPins.value = []; placePins.value = []; personPins.value = [];
@@ -377,8 +389,18 @@ watch(() => ({
   }
   render();
 });
-onMounted(() => { if (props.active) void load(); });
-onBeforeUnmount(release);
+onMounted(() => {
+  canvasOwner = canvas.value?.ownerDocument.defaultView ?? undefined;
+  // Moving between monitors or changing the browser's display scale may alter
+  // DPR without changing the map panel's CSS dimensions.
+  canvasOwner?.addEventListener('resize', render);
+  if (props.active) void load();
+});
+onBeforeUnmount(() => {
+  canvasOwner?.removeEventListener('resize', render);
+  canvasOwner = undefined;
+  release();
+});
 </script>
 
 <template>

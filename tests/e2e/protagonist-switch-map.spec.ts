@@ -214,3 +214,41 @@ for (const { fallback, viewport } of [
     expect(errors).toEqual([]);
   });
 }
+
+
+test.describe('Tokyo map native HiDPI resolution', () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test('preserves full pixel density at default zoom, close-up and district fly-in', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const { errors } = await mountSwitchHost(page);
+    await page.locator('.tool-dock button').filter({ hasText: '地图' }).click();
+    const scene = page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene');
+    await expect(scene).toHaveAttribute('data-tokyo-sandbox-status', 'ready');
+    const canvas = scene.locator('canvas');
+    const resolution = async () => canvas.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const ratio = element.ownerDocument.defaultView?.devicePixelRatio ?? 1;
+      return { width: (element as HTMLCanvasElement).width, height: (element as HTMLCanvasElement).height,
+        cssWidth: rect.width, cssHeight: rect.height, ratio };
+    });
+    const normal = await resolution();
+    expect(normal.ratio).toBe(2);
+    expect(normal.width).toBeGreaterThanOrEqual(Math.floor(normal.cssWidth * normal.ratio));
+    expect(normal.height).toBeGreaterThanOrEqual(Math.floor(normal.cssHeight * normal.ratio));
+
+    await page.getByRole('button', { name: '放大地图', exact: true }).click();
+    const zoomed = await resolution();
+    expect([zoomed.width, zoomed.height]).toEqual([normal.width, normal.height]);
+
+    await scene.locator('[data-map-target="city:campus"]').click();
+    await expect(scene).toHaveAttribute('data-tokyo-camera-flight', 'idle');
+    const closeUp = await resolution();
+    expect([closeUp.width, closeUp.height]).toEqual([normal.width, normal.height]);
+    await page.locator('[data-map-back]').click();
+    await expect(scene).toHaveAttribute('data-tokyo-camera-flight', 'idle');
+    const returned = await resolution();
+    expect([returned.width, returned.height]).toEqual([normal.width, normal.height]);
+    expect(errors).toEqual([]);
+  });
+});
