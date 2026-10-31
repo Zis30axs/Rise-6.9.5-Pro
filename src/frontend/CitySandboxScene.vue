@@ -164,7 +164,11 @@ function render() {
   const sine = Math.sin(angle), cosine = Math.cos(angle);
   const projectedX = Math.abs(cosine) * radiusX + Math.abs(sine) * radiusZ;
   const projectedDepth = Math.abs(sine) * radiusX + Math.abs(cosine) * radiusZ;
-  const zoom = Math.max(.65, Math.min(12, props.cameraView?.zoom ?? 1));
+  // WorldMap already handles drag, wheel zoom and pinch-rotate on the complete stage.
+  // Frame the interactive Tokyo GLB like the former map instead of leaving a large
+  // empty border; scripted protagonist-switch flyovers retain their own zoom.
+  const defaultMapZoom = props.decorative ? 1 : 1.45;
+  const zoom = Math.max(.65, Math.min(12, (props.cameraView?.zoom ?? 1) * defaultMapZoom));
   const halfHeight = Math.max(32, projectedX / Math.max(.5, width / height), projectedDepth * .85 + 28) * 1.15 / zoom;
   camera.left = -halfHeight * width / height;
   camera.right = halfHeight * width / height;
