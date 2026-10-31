@@ -52,6 +52,12 @@ def build(source: Path, install_only: bool = False, skip_tauri: bool = False) ->
     if install_only:
         print("仅安装模型到源码目录。未调用本地构建或远程 CI。")
         return
+    # Check overwrite conflicts before any build command changes dist artifacts.
+    if not skip_tauri:
+        tauri = ROOT / "dist/unread-city-lite-tauri.png"
+        tauri_report = tauri.with_suffix(".verification.json")
+        if tauri.exists() or tauri_report.exists():
+            raise ValueError("已有同名 Tauri PNG/校验文件。请先移动旧产物再重新构建，避免覆盖。")
     npm = shutil.which("npm.cmd" if sys.platform == "win32" else "npm")
     if not npm:
         raise RuntimeError("无法找到本地 Node/npm")
