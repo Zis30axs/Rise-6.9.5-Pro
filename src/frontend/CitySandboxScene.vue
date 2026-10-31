@@ -6,7 +6,7 @@ import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { districtMapPlaces, isMapDistrict, type MapDistrictId } from './map-districts';
-import { mapLocationPoint } from './campus-map-layout';
+import { mapLocationPoint, type MapCameraView } from './campus-map-layout';
 import {
   projectOldTokyoPosition, tokyoCityBounds, tokyoDistrictBounds,
   tokyoDistricts, tokyoLocationPosition, type TokyoScope,
@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<{
   disabledIds?: string[];
   playerName?: string; playerId?: ProtagonistId;
   people?: MapPerson[]; roadEvents?: MapEvent[];
+  cameraView?: MapCameraView; decorative?: boolean;
 }>(), { scope: 'city', position: null, disabledIds: () => [], people: () => [], roadEvents: () => [] });
 const emit = defineEmits<{
   select: [districtId: MapDistrictId];
@@ -152,24 +153,32 @@ function render() {
   if (!props.active || !renderer || !scene || !camera) return;
   const width = Math.max(1, props.width), height = Math.max(1, props.height);
   const bounds = tokyoDistrictBounds(props.scope);
-  const cx = (bounds.minX + bounds.maxX) / 2;
-  const cz = (bounds.minZ + bounds.maxZ) / 2;
+  const cameraCenter = props.cameraView?.center ? projectOldTokyoPosition(props.cameraView.center) : null;
+  const cx = cameraCenter?.x ?? (bounds.minX + bounds.maxX) / 2;
+  const cz = cameraCenter?.z ?? (bounds.minZ + bounds.maxZ) / 2;
   const radiusX = (bounds.maxX - bounds.minX) / 2 + 14;
   const radiusZ = (bounds.maxZ - bounds.minZ) / 2 + 14;
   const angle = (props.bearing + 35) * Math.PI / 180;
   const sine = Math.sin(angle), cosine = Math.cos(angle);
   const projectedX = Math.abs(cosine) * radiusX + Math.abs(sine) * radiusZ;
   const projectedDepth = Math.abs(sine) * radiusX + Math.abs(cosine) * radiusZ;
-  const halfHeight = Math.max(32, projectedX / Math.max(.5, width / height), projectedDepth * .85 + 28) * 1.15;
+  const zoom = Math.max(.65, Math.min(12, props.cameraView?.zoom ?? 1));
+  const halfHeight = Math.max(32, projectedX / Math.max(.5, width / height), projectedDepth * .85 + 28) * 1.15 / zoom;
   camera.left = -halfHeight * width / height;
   camera.right = halfHeight * width / height;
   camera.top = halfHeight; camera.bottom = -halfHeight;
-  camera.position.set(cx + sine * 800, 1200, cz + cosine * 800);
+  const overhead = Math.max(0, Math.min(1, props.cameraView?.overhead ?? 0));
+  camera.position.set(cx + sine * (800 - overhead * 400), 1200 + overhead * 400, cz + cosine * (800 - overhead * 400));
   camera.lookAt(cx, 0, cz);
   camera.near = 1; camera.far = 4000; camera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(1.4, window.devicePixelRatio || 1));
   renderer.setSize(width, height, false);
   renderer.render(scene, camera);
+  if (props.decorative) {
+    districtPins.value = []; placePins.value = []; personPins.value = [];
+    eventPins.value = []; playerPin.value = null;
+    return;
+  }
 
   function project(x: number, z: number, elevation = 3) {
     const p = new THREE.Vector3(x, elevation, z).project(camera!);
@@ -284,7 +293,8 @@ function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id);
 
 watch(() => props.active, active => { if (active) void load(); else release(); });
 watch(() => [props.width, props.height, props.bearing, props.viewScale, props.scope,
-  props.selectedId, props.locationId, props.position, props.disabledIds, props.people, props.roadEvents], render);
+  props.selectedId, props.locationId, props.position, props.disabledIds,
+  props.people, props.roadEvents, props.cameraView, props.decorative], render);
 onMounted(() => { if (props.active) void load(); });
 onBeforeUnmount(release);
 </script>
