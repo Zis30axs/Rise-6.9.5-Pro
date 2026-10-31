@@ -9,7 +9,7 @@ import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
 import { isCafeStoryItem } from './margo-cafe-menu';
-import { locationServiceCatalog } from './location-services';
+import { COURT_OBSERVE_ID, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
@@ -49,6 +49,14 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     return invalid('每轮最多直接交换一位新联系人的号码');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
+  const courtObservations = value.filter(item => !!item && typeof item === 'object' &&
+    (item as Record<string, unknown>).type === 'service' &&
+    (item as Record<string, unknown>).serviceId === COURT_OBSERVE_ID);
+  if (courtObservations.length > 1) return invalid('本轮法院旁听只能提交一次指定时长，程序会分段结算');
+  if (courtObservations.length && value.some(item => !!item && typeof item === 'object' &&
+    ['rest', 'study', 'activity'].includes(String((item as Record<string, unknown>).type))))
+    return invalid('法院旁听已结算整段时长和学习，不得同轮用休息、学习或通用活动重复计算');
+
   const courtActions = value.filter(item => !!item && typeof item === 'object' &&
     /^court_(?:docket|special|open|quote|step|assist|finish|settlement|fulfill)$/.test(String((item as Record<string,unknown>).type)))
     .map(item => String((item as Record<string,unknown>).type));
@@ -145,9 +153,14 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         return { type: 'rest', kind: item.kind, minutes: number(item.minutes, 1, STORY_ACTION_LIMITS.minutes, `${path} 分钟`) };
       }
       case 'service': {
-        const item = record(raw, ['type', 'serviceId'], path);
+        const hasDuration = Object.hasOwn(raw, 'minutes');
+        const item = record(raw, ['type', 'serviceId', ...(hasDuration ? ['minutes'] : [])], path);
         if (typeof item.serviceId !== 'string' || !locationServiceCatalog.some(service => service.id === item.serviceId && !service.reveal)) return invalid(`${path} 地点服务`);
-        return { type: 'service', serviceId: item.serviceId };
+        if (hasDuration && item.serviceId !== COURT_OBSERVE_ID) return invalid(`${path} 只有法院旁听支持指定服务时长`);
+        if (!hasDuration) return { type: 'service', serviceId: item.serviceId };
+        const minutes = number(item.minutes, 30, 240, `${path} 旁听分钟数`);
+        if (minutes % 30 !== 0) return invalid(`${path} 法院旁听须以 30 分钟为一段`);
+        return { type: 'service', serviceId: item.serviceId, minutes };
       }
       case 'buy':
       case 'pack': {

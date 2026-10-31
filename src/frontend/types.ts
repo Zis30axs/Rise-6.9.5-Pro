@@ -234,7 +234,8 @@ export type StoryAction =
       triggerId: string; reason: string; agenda?: import('../runtime/social-agenda').SocialAgendaDraft }
   | { type: 'travel'; locationId: string }
   | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
-  | { type: 'service'; serviceId: string }
+  // Only court-observe accepts minutes; all other services retain fixed authored durations.
+  | { type: 'service'; serviceId: string; minutes?: number }
   | { type: 'buy'; itemId: string; quantity: number }
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
