@@ -187,7 +187,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-section" data-status-section="recent" aria-label="最近变化"><div class="wp-heading"><h2>最近变化</h2><small>已保存的活动记录</small></div><div class="wp-journal-list"><article v-for="entry in recentChanges" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!recentChanges.length" class="wp-empty">活动完成后会在这里记录实际结果。</p></div></section>
       <section v-if="model.state.courtroom?.observationKnowledge?.[protagonist]" class="wp-status-section" data-status-section="court-observation" aria-label="法庭旁听见闻">
         <div class="wp-heading"><h2>法庭旁听见闻</h2><small>公开庭审知识积累</small></div>
-        <p data-court-observation-total>累计 {{ formatGameNumber(model.state.courtroom.observationKnowledge[protagonist]) }} 点；法学专业的旁听学习进度同时在学业面板中查看。</p>
+        <p data-court-observation-total>累计 {{ formatGameNumber(model.state.courtroom?.observationKnowledge?.[protagonist] ?? 0) }} 点；法学专业的旁听学习进度同时在学业面板中查看。</p>
       </section>
       <AcademicProgress :academics="model.state.academics" />
       <section v-if="lawProgress.active || lawProgress.completedCaseIds.length" class="wp-status-section" data-status-section="law-career" aria-label="律师职业记录">
