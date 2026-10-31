@@ -74,7 +74,7 @@ function dayStartMinute(date: string): number {
 }
 
 function instantMinute(stamp: string): number {
-  const match = /^(\\d{4}-\\d{2}-\\d{2})T([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)\\+08:00$/.exec(stamp);
+  const match = /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\+08:00$/.exec(stamp);
   if (!match) throw new Error('世界纪年表存在非 GMT+8 时间戳');
   return dayStartMinute(match[1]) + Number(match[2]) * 60 + Number(match[3]) + (Number(match[4]) ? 1 : 0);
 }
