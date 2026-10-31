@@ -147,7 +147,7 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
-const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home']);
+const RESIDENTIAL_INTERIOR_HOMES = new Set(['emma-yuki-home', 'amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
