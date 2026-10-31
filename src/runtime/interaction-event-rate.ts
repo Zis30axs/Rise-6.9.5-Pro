@@ -17,7 +17,7 @@ const location = (state: WorldState, action: WorldAction) =>
 /** Use game time, never browser wall time, so refresh and chat switching cannot reset the gate. */
 export function canCheckInteractionEvent(state: WorldState, action: WorldAction): boolean {
   // Dedicated case decisions cannot be interrupted by unrelated random events.
-  if (['law_case', 'cook_dish', 'eat_cooked', 'share_cooked'].includes(action.type)) return false;
+  if (['law_case', 'cook_dish', 'eat_cooked'].includes(action.type)) return false;
   const now = gameMinute(state);
   const actor = owner(state);
   const checks = state.interactionEventRate?.checks ?? [];
