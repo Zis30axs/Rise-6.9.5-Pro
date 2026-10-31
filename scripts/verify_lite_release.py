@@ -7,7 +7,7 @@ from pathlib import Path
 from zipfile import ZipFile
 from build_card import ROOT, IMMERSIVE_SCRIPT_ID
 from card_codec import extract_card
-from build_lite_release import PNG_LIMIT
+from build_lite_release import PNG_LIMIT, TOKYO_SANDBOX_SHA256, TOKYO_SANDBOX_BYTES
 from verify_downtown_art import extract_v2
 
 
@@ -43,6 +43,13 @@ def verify() -> dict:
         manifest = json.loads(manifest_bytes)
         assets = manifest['assets']
         keys = {x['sha256'] for x in assets}
+        tokyo = [asset for asset in assets if asset['sha256'] == TOKYO_SANDBOX_SHA256]
+        if len(tokyo) != 1 or tokyo[0]['bytes'] != TOKYO_SANDBOX_BYTES:
+            raise ValueError('东京 3D 沙盘 GLB 未放入 Lite 资源 ZIP')
+        if tokyo[0]['mime'] not in ('model/gltf-binary', 'application/octet-stream'):
+            raise ValueError('东京 GLB 的 ZIP MIME 不正确')
+        if report.get('tokyoSandboxSha256') != TOKYO_SANDBOX_SHA256 or not report.get('tokyoSandboxExternalized'):
+            raise ValueError('东京沙盘 Lite 打包报告不完整')
         if not expected.issubset(keys):
             raise ValueError('One or more approved downtown-art images were not externalized')
         if len(assets) != report['assets']:
@@ -60,7 +67,9 @@ def verify() -> dict:
             'liteBundleBytes': lite.stat().st_size, 'zipBytes': archive.stat().st_size,
             'zipSha256': sha(archive.read_bytes()), 'externalAssets': report['assets'],
             'approvedNewArtExternalized': len(expected), 'offline': True,
-            'physicalDeviceTested': False}
+            'physicalDeviceTested': False,
+            'tokyoSandboxSha256': TOKYO_SANDBOX_SHA256,
+            'tokyoSandboxIncludedInZip': True}
 
 if __name__ == '__main__':
     result = verify()
