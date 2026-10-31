@@ -35,3 +35,11 @@ py scripts/build_tokyo_lite.py unread-city-tokyo-sandbox-offline-asset-pack.zip
 - `market-district`、法院、银行、月之森高中等新增功能入口仍需独立接入地点/公交通勤/服务结算，现阶段仅展示，不伪造玩法。
 - 这次修改**没有本地完整仓库、没有重新生成完整 Lite PNG + ZIP，也没有执行 Vue 类型检查、Vitest、浏览器验收、iPhone/TauriTavern 真机测试**。模型解码和移动端性能均待实际确认。
 - 用户已禁止主动触发 GitHub Actions/CI，全部提交采用 `[skip ci]`。PR 保持 Draft，未经验证不合并 lite。
+
+## 独立地图头像裁剪（2026-10-31）
+
+- 从仓库现有原图中直接抽取 22 人的头肩构图，分别保存为 `assets/map-avatars/<person-id>.svg`；每份为固定 256×256 视窗，使用嵌入的原始 WebP/PNG/AVIF 字节和 SVG 视窗实现裁剪。**不是新增 AI 绘制或重绘**，也不依赖外部链接。
+- 素世已存在独立 `assets/map-avatars/soyo.webp`，保持原样，没有覆盖。其余 22 个文件均为新路径，原始全身立绘也没有被替换。
+- `map-character-avatar.ts` 在有独立头像时优先使用裁剪结果；`MapCharacterAvatar.vue` 检测到 SVG 图片加载失败时会回退对应人物原来的完整立绘，不使用其他人物的头像。暂无立绘的 21 人仍保留姓名缩写/原有回退。
+- `tests/map-headshots-assets.test.ts` 检查这 22 份 SVG 都含对应原素材的原始二进制，不引用网上素材，并确认素世未被删除。
+- **待实测**：未在本会话运行完整工程 Vite/Vitest 或 iOS WebKit。裁剪位置基于每张原图的尺寸上半部估算，尚未完成 22 人逐张的真机可视验收；若发现个别头部偏离，可调整 SVG 的 `image x/y/width/height` 而不损坏原立绘。大尺寸 SVG 本质上包含原图，能离线加载但不等同于重新编码的 256×256 WebP。
