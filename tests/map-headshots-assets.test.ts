@@ -52,6 +52,10 @@ describe('identity-safe offline map headshots', () => {
     const logic = readFileSync(resolve('src/frontend/map-character-avatar.ts'), 'utf8');
     const component = readFileSync(resolve('src/frontend/MapCharacterAvatar.vue'), 'utf8');
     expect(logic).toContain('assets/map-avatars/*.svg');
+    expect(logic).toContain("query: '?offline-map-headshot'");
+    const vite = readFileSync(resolve('vite.config.ts'), 'utf8');
+    expect(vite).toContain("name: 'unread-city-map-headshot-base64'");
+    expect(vite).toContain("'data:image/svg+xml;base64,'");
     expect(logic).toContain('ignoreNewHeadshot');
     expect(logic).toContain('soyoHeadshot');
     expect(component).toContain('resolveMapCharacterAvatar(props, true)');
