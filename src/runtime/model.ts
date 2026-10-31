@@ -1314,6 +1314,19 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       // Day-change weather is reapplied because this replacement discards the clock step.
       next.player = applyWeatherForElapsedDays(quote.playerAfter, startDay, next.clock.day);
       let knowledgeReceipt = '';
+      if (quote.service.id === COURT_OBSERVE_ID) {
+        const owner = activeProtagonistId(next, worldAuthority);
+        const knowledge = next.courtroom?.observationKnowledge;
+        const previous = knowledge?.[owner] ?? 0;
+        const awarded = Math.min(10, 1000000 - previous);
+        if (next.courtroom) {
+          next.courtroom.observationKnowledge = {
+            ...(knowledge ?? Object.fromEntries(PROTAGONISTS.map(id=>[id,0])) as Record<(typeof PROTAGONISTS)[number],number>),
+            [owner]: previous + awarded,
+          };
+        }
+        knowledgeReceipt = `法庭见闻 +${awarded} 点。`;
+      }
       if (quote.service.id === COURT_OBSERVE_ID && next.academics) {
         const subjectId = 'law-advocacy';
         let progress = next.academics.subjects.find(entry => entry.subjectId === subjectId);

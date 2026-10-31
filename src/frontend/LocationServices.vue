@@ -114,6 +114,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
         <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
         <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ service.description }}</p>
         <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
+        <small v-if="service.id === 'court-observe'" class="location-service-duration">旁听见闻 +10 · 已有学业时额外积累法庭论证学习进度（均有上限）</small>
         <p v-if="!quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
         <p v-else-if="quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
         <div v-if="service.reveal && revealingJob === service.id" class="location-service-reveal" :data-job-reveal="service.id" role="group" aria-label="工作安排">

@@ -74,11 +74,14 @@ export interface CourtroomState {
   agreements?: CourtAgreement[];
   sanctions?: CourtSanction[];
   careers?: Record<ProtagonistId, CourtCareer>;
+  /** Shared, per-protagonist knowledge earned by observing open hearings. */
+  observationKnowledge?: Record<ProtagonistId, number>;
 }
 export const initialCourtroom = (): CourtroomState => ({
   version: 1, categories: [...DAILY_COURT_CATEGORIES], board: null, special: null, active: null,
   filing: null, results: [], pendingRecaps: {}, serial: 0,
   pendingSettlement:null,agreements:[],sanctions:[],careers:initialCourtCareers(),
+  observationKnowledge: Object.fromEntries(PROTAGONISTS.map(id=>[id,0])) as Record<ProtagonistId,number>,
 });
 export const courtState = (state: Pick<WorldState, 'courtroom'>): CourtroomState => state.courtroom ?? initialCourtroom();
 const error = (message: string): never => { throw new Error('法庭存档或行动无效：' + message); };
@@ -213,7 +216,7 @@ const parseCourtReturn = (raw: unknown): {x:number;z:number;yaw:number} => {
 };
 export function parseCourtroom(value: unknown): CourtroomState {
   const extra = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string,unknown> : {};
-  const extras = ['pendingSettlement','agreements','sanctions','careers'].filter(key=>Object.hasOwn(extra,key));
+  const extras = ['pendingSettlement','agreements','sanctions','careers','observationKnowledge'].filter(key=>Object.hasOwn(extra,key));
   const root = obj(value, ['version','categories','board','special','active','filing','results','pendingRecaps','serial',...extras], '根结构');
   if (root.version !== 1 || !Array.isArray(root.categories) || !root.categories.length || root.categories.length > 4) return error('版本或筛选');
   const categories = root.categories.map(category);
@@ -258,8 +261,13 @@ export function parseCourtroom(value: unknown): CourtroomState {
   const defaults=initialCourtCareers();
   const careers=Object.hasOwn(root,'careers') ? obj(root.careers,[...PROTAGONISTS],'主角律师职业') : defaults;
   const parsedCareers=Object.fromEntries(PROTAGONISTS.map(id=>[id,parseCourtCareer(careers[id])])) as Record<ProtagonistId,CourtCareer>;
+  const rawKnowledge=Object.hasOwn(root,'observationKnowledge')
+    ? obj(root.observationKnowledge,[...PROTAGONISTS],'法庭旁听知识')
+    : Object.fromEntries(PROTAGONISTS.map(id=>[id,0]));
+  const observationKnowledge=Object.fromEntries(PROTAGONISTS.map(id=>[id,
+    whole(rawKnowledge[id],1000000,'法庭旁听知识')])) as Record<ProtagonistId,number>;
   return { version: 1, categories, board, special, active, filing: pending, results, pendingRecaps,
-    serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers };
+    serial: whole(root.serial,1000000,'序列号'), pendingSettlement,agreements,sanctions,careers:parsedCareers,observationKnowledge };
 }
 const authored: ReadonlyArray<Omit<CourtOffer, 'id' | 'preset'> & { white: string; evidence: CourtEvidence[]; respondent: string }> = [
   { category: 'civil', title: '没有归还的定金', client: '租房的大学生', respondent:'房东', summary: '房东以房间整修为由没收定金，双方对书面约定有争议。', difficulty:'easy', rewardYen:8000, experience:100,
@@ -786,6 +794,7 @@ export function courtStoryContext(state: WorldState) {
     offerToPrepare: court.board?.day === state.clock.day ? court.board.offers.filter(item => !court.results.some(row => row.id === item.id)) : [],
     venue:active ? {id:COURT_HEARING_ID,label:'法庭',returnTo:LAW_OFFICE_ID} : null,
     careers:court.careers,
+    observationKnowledge:court.observationKnowledge?.[owner] ?? 0,
     agreements:court.agreements?.filter(a=>a.claimant.id===owner || a.defendant.id===owner ||
       court.results.some(r=>r.id===a.caseId && (r.owner===owner || r.lawyer===owner))).slice(-12),
     sanctions:court.sanctions?.filter(row=>state.clock.day>=row.startDay && state.clock.day<=row.endDay),
