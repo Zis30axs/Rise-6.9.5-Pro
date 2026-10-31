@@ -103,6 +103,7 @@ export const campusInteriors: readonly CampusInterior[] = [
       { id: 'dorm-rest', label: '床边休息', description: '休息 30 分钟，恢复 12 点精力。', ...bedRestAnchor, minutes: 30, energyDelta: 12, result: '在宿舍床边休息了半小时。', prompt: '我已经在宿舍床边休息了半小时，程序已推进 30 分钟并恢复至多 12 点精力。请从休息结束的现场继续，不要重复结算。' },
       { id: 'dorm-desk', label: '整理书桌', description: '整理学习用品 20 分钟，精力 -3、压力 -4、精神 +3。', x: 2, z: -2, minutes: 20, energyDelta: -3, result: '在宿舍书桌旁整理了学习用品。', prompt: '我已经整理好宿舍书桌上的学习用品，程序已推进 20 分钟并扣除 3 点精力。请从整理结束后继续，不要重复结算。' },
       { id: 'dorm-wardrobe', label: '看看衣柜', description: '观察衣柜与宿舍陈设，不消耗时间或精力。', x: 3, z: 1.8, minutes: 0, energyDelta: 0, result: '查看了宿舍衣柜与房间陈设，没有取放物品。', prompt: '我已经看过宿舍衣柜与周围陈设，没有取放物品，也未消耗时间或精力。请描写眼前环境，不要自行增加物品或结算。' },
+      { id: 'dorm-kitchen', label: '宿舍小厨房', description: '在宿舍公共料理角选择菜谱，制作真正可以食用的料理。', x: 1.8, z: -1.2, minutes: 0, energyDelta: 0, result: '打开宿舍厨房菜谱。', prompt: '' },
     ],
   },
   {
@@ -294,6 +295,7 @@ export const campusInteriors: readonly CampusInterior[] = [
         x: 1.5, z: -0.4, minutes: 25, energyDelta: 6, result: '在甘织家餐桌旁喝茶休息了一会儿。', prompt: '你在甘织家餐桌旁喝茶休息了二十五分钟，程序已推进 25 分钟并恢复至多 6 点精力。' },
       { id: 'amaori-mirror-check', label: '检查今日穿搭与发夹', description: '在玄关镜前整理发型与交叉发夹，不消耗时间或精力。',
         x: 4, z: -1.4, minutes: 0, energyDelta: 0, result: '在镜前整理了衣领与发夹。', prompt: '你在甘织家镜前检查了穿搭与发夹，未消耗时间或精力。' },
+      { id: 'amaori-kitchen', label: '甘织家厨房', description: '在家中厨房选择菜谱与食材，进行料理判定。', x: 3.6, z: -1.8, minutes: 0, energyDelta: 0, result: '打开甘织家的厨房菜谱。', prompt: '' },
     ],
   },
   {
