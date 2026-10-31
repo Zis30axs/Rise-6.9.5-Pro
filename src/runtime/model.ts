@@ -30,7 +30,7 @@ import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordS
 import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
-import { getLocationServiceQuote, getLocationStatus, getTakeawayQuote } from './location-services';
+import { COURT_OBSERVE_ID, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -58,6 +58,7 @@ export const mapLocations: Location[] = [
   { id: 'convenience', name: '便利店', subtitle: '便利店门前', description: `【示例场景】${sceneEnvironments.convenience}`, x: 21, y: 56.5 },
   { id: 'street-cafe', name: '街边咖啡馆', subtitle: '街边露台', description: `【示例场景】${sceneEnvironments['street-cafe']}`, x: 48, y: 56.5 },
   { id: 'pocket-park', name: '口袋公园', subtitle: '步道、长椅与小喷泉', description: `【示例场景】${sceneEnvironments['pocket-park']}`, x: 37, y: 80 },
+  { id: 'courthouse', name: '审判法庭', subtitle: '魔女审判最高裁判所 · 公开入口', description: `【示例场景】${sceneEnvironments.courthouse}`, x: -20, y: 94 },
   { id: 'bus-stop', name: '南门交通站', subtitle: '候车棚与公交线路入口', description: `【示例场景】${sceneEnvironments['bus-stop']}`, x: 47, y: 39.5 },
 ];
 export const locations: Location[] = [
@@ -486,8 +487,23 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const outcome = gain.outcome;
   if (outcome !== 'normal' && outcome !== 'inspiration' && outcome !== 'confusion') return invalid('academics.lastGain.outcome');
   const channel = gain.channel;
-  if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop') return invalid('academics.lastGain.channel');
+  if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop' && channel !== 'court-hearing') return invalid('academics.lastGain.channel');
   const interactionId = gain.interactionId === null ? null : id(gain.interactionId, 'academics.lastGain.interactionId');
+  if (channel === 'court-hearing') {
+    const observe = locationServiceCatalog.find(service => service.id === COURT_OBSERVE_ID)!;
+    const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
+    const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
+    const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
+    // Court observation has its own validated learning yield and fixed cost.
+    if (subjectId !== 'law-advocacy' || interactionId !== null || outcome !== 'normal' ||
+      minutes !== observe.minutes || points <= 0 || points > 10 ||
+      energyConsumed !== Math.max(0, -observe.effects.energy) ||
+      moraleChange < 0 || moraleChange > observe.effects.morale ||
+      stressChange > 0 || stressChange < observe.effects.stress)
+      return invalid('academics.lastGain 法庭旁听记录不一致');
+    return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at,
+      outcome, channel, interactionId, energyConsumed, moraleChange, stressChange }, ...correctionField };
+  }
   if (channel === 'bookshop' ? interactionId !== null : !getCampusInterior(channel)!.interactions.some(item => item.id === interactionId && isStudyInteraction(item.id))) return invalid('academics.lastGain.interactionId');
   const crossMajor = !getAcademicSubject(majorId, subjectId);
   if ((!crossMajor && outcome !== 'normal') || (crossMajor && channel === 'classroom')) return invalid('academics.lastGain 学习渠道或结果不一致');
@@ -734,6 +750,15 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   if (version === '1.0.0' && !['gate', 'library', 'cafe', 'dorm'].includes(result.locationId)) return invalid('1.0.0 locationId');
   if (!hasInterior && getCampusInterior(result.locationId)) return invalid('旧版 locationId');
   if (!hasTransit && (isFarTransitLocation(result.locationId) || (result.scene && (result.scene.x < -70 || result.scene.x > 70 || result.scene.z < -60 || result.scene.z > 90)))) return invalid('旧版 scene 或 locationId 超出原范围');
+  // Preserve a legitimate pre-Tokyo hearing save. Only the authentic old
+  // courtroom exterior is relocated, not arbitrary malformed locations.
+  if (result.interior?.roomId === 'court-hearing' && result.courtroom?.active &&
+    result.scene?.areaId === 'grand-commercial' &&
+    Math.hypot(result.scene.x + 145, result.scene.z + 158) <= INTERIOR_ENTRANCE_RANGE) {
+    const courtEntrance = getCampusInterior('court-hearing')!.entrance;
+    result.scene = { ...sceneCoordinates(courtEntrance.x, courtEntrance.z, courtEntrance.yaw),
+      seed: result.scene.seed, encounterId: null };
+  }
   if (result.interior) {
     const room = getCampusInterior(result.interior.roomId)!;
     if (result.locationId !== room.id || !result.scene || sceneLocationId(result.scene.areaId) !== room.parentLocationId
@@ -1288,6 +1313,25 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       // The quote already includes elapsed nutrition; replace, never apply twice.
       // Day-change weather is reapplied because this replacement discards the clock step.
       next.player = applyWeatherForElapsedDays(quote.playerAfter, startDay, next.clock.day);
+      let knowledgeReceipt = '';
+      if (quote.service.id === COURT_OBSERVE_ID && next.academics) {
+        const subjectId = 'law-advocacy';
+        let progress = next.academics.subjects.find(entry => entry.subjectId === subjectId);
+        const gain = Math.min(10, MAX_ACADEMIC_POINTS - (progress?.points ?? 0));
+        if (gain > 0 && (progress || next.academics.subjects.length < 24)) {
+          if (!progress) {
+            progress = { subjectId, points: 0 };
+            next.academics.subjects.push(progress);
+          }
+          progress.points += gain;
+          const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
+          next.academics.lastGain = { subjectId, minutes: quote.minutes, points: gain, totalPoints: progress.points,
+            at, outcome: 'normal', channel: 'court-hearing', interactionId: null,
+            energyConsumed: Math.max(0, -quote.service.effects.energy),
+            moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
+          knowledgeReceipt = `法庭论证学习进度 +${gain} 点。`;
+        }
+      }
       const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
@@ -1300,7 +1344,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         const stableId = `fengjin-counseling:${owner}:week-${week}`;
         note(next, `在${status.label}风堇的谈心调理，无需付款，耗时 ${quote.minutes} 分钟。风堇带着妈妈般无微不至的包容与温柔倾听抚慰你的疲惫与烦恼，重压烟消云散。精力恢复至 100，压力已清空为 0。${transitionNote}`, stableId);
       } else {
-        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.completionDescription ?? quote.service.description}${activityChangeNote(before, next.player)}${quote.weatherLog ? ` ${quote.weatherLog}` : ''}${transitionNote}`);
+        note(next, `在${status.label}${quote.service.label}，${settlement}，耗时 ${quote.minutes} 分钟。${quote.service.completionDescription ?? quote.service.description}${knowledgeReceipt}${activityChangeNote(before, next.player)}${quote.weatherLog ? ` ${quote.weatherLog}` : ''}${transitionNote}`);
       }
       break;
     }
@@ -1388,7 +1432,10 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.interior) throw new Error('请先离开当前房间。');
       const room = getCampusInterior(action.roomId);
       if (!room) throw new Error('不存在的室内地点。');
-      if (room.id === 'court-hearing') throw new Error('法庭仅在正式庭审期间开放，不能自行进入。');
+      if (room.id === 'court-hearing') {
+        if (next.courtroom?.active) throw new Error('正式庭审进行中，旁听入口暂不可用。');
+        if (!getLocationStatus(room.id, next.clock)?.isOpen) throw new Error('法院旁听席开放时间为 09:00–17:00。');
+      }
       if (room.id === MARGO_CAFE_ROOM_ID && !getLocationStatus(MARGO_CAFE_LOCATION_ID, next.clock)?.isOpen) throw new Error('玛格的咖啡馆已打烊，营业时间 10:00–次日 02:00。');
       if (!next.scene || next.locationId !== room.parentLocationId || Math.hypot(next.scene.x - room.entrance.x, next.scene.z - room.entrance.z) > INTERIOR_ENTRANCE_RANGE) throw new Error('请先走到建筑入口附近，再进入室内。');
       next.interior = { roomId: room.id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
