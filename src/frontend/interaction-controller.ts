@@ -2,6 +2,7 @@ import type { WorldAction, WorldState } from './types';
 import { acknowledgePhoneRead, locations, parseState } from '../runtime/model';
 import { bedRestOptions, campusInteriors } from '../runtime/campus-interiors';
 import { getStoreItem } from '../runtime/convenience-store';
+import { getCookingRecipe } from '../runtime/cooking-recipes';
 import { CAFE_DAILY_SPECIAL_ID } from '../runtime/margo-cafe-menu';
 import { locationServiceCatalog } from '../runtime/location-services';
 import { lawCases } from '../runtime/law-career';
@@ -24,6 +25,9 @@ export function interactionLabel(action: WorldAction): string {
     case 'buy_item': return `购买${getStoreItem(action.itemId)?.name ?? (action.itemId === CAFE_DAILY_SPECIAL_ID ? '每日特调' : '商品')}`;
     case 'pack_item': return `打包${getStoreItem(action.itemId)?.name ?? '商品'}`;
     case 'use_item': return `使用${getStoreItem(action.itemId)?.name ?? '物品'}`;
+    case 'cook_dish': return `烹饪${getCookingRecipe(action.recipeId)?.name ?? '料理'}`;
+    case 'eat_cooked': return '享用自制料理';
+    case 'share_cooked': return '共同享用料理';
     case 'gift_item': return `赠送${getStoreItem(action.itemId)?.name ?? '物品'}`;
     case 'novel_travel':
     case 'travel': return `前往${locations.find(item => item.id === action.locationId)?.name ?? '目的地'}`;
