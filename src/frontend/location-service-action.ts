@@ -25,7 +25,10 @@ export async function completeLocationService(model: ShellModel, actions: ShellA
     .map(key => `${labels[key]} ${signedServiceEffect(Number((saved.player[key] - before.player[key]).toFixed(2)))}${key === 'foodEnergy' ? ' kcal' : ''}`).join(' · ');
   const time = `${String(saved.clock.hour).padStart(2, '0')}:${String(saved.clock.minute).padStart(2, '0')}`;
   const balance = Number((saved.player.balance - before.player.balance).toFixed(2));
-  return `${quote.service.label}已完成 · 本次共 ${absoluteMinutes(saved.clock) - absoluteMinutes(before.clock)} 分钟 · 第 ${saved.clock.day} 天 ${time}${balance ? ` · ${quote.payout ? '工资' : '余额'} ${signedServiceEffect(balance)} 元` : ''}${changes ? ` · ${changes}` : ''}。已保存；后续事件见正文与状态。`;
+  const actor = saved.protagonists?.accounts.active ?? 'soyo';
+  const learned = serviceId === 'court-observe'
+    ? (saved.courtroom?.observationKnowledge?.[actor] ?? 0) - (before.courtroom?.observationKnowledge?.[actor] ?? 0) : 0;
+  return `${quote.service.label}已完成 · 本次共 ${absoluteMinutes(saved.clock) - absoluteMinutes(before.clock)} 分钟 · 第 ${saved.clock.day} 天 ${time}${balance ? ` · ${quote.payout ? '工资' : '余额'} ${signedServiceEffect(balance)} 元` : ''}${changes ? ` · ${changes}` : ''}${serviceId === 'court-observe' ? ` · 法庭见闻 +${learned}` : ''}。已保存；后续事件见正文与状态。`;
 }
 
 export async function packageLocationService(model: ShellModel, actions: ShellActions, serviceId: string): Promise<string | null> {
