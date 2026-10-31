@@ -24,7 +24,7 @@ const generatedHeadshots = Object.fromEntries(
     [path.slice(path.lastIndexOf('/') + 1).replace(/\.svg$/, ''), src]),
 ) as Record<string, string>;
 const personAvatarIds: Readonly<Record<string, string>> = {
-  '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
+  '高松灯': 'tomori', '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
   '要乐奈': 'rana', '若叶睦': 'mutsumi',
   '樱羽艾玛': 'majo-emma', '二阶堂希罗': 'majo-hiro', '夏目安安': 'majo-anan',
   '城崎诺亚': 'majo-noa', '佐伯米莉亚': 'majo-milia', '宝生玛格': 'majo-margo',
