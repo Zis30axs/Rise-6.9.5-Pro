@@ -265,6 +265,105 @@
       "origin": "user-provided"
     },
     {
+      "id": "raana_uniform_neutral",
+      "path": "assets/downtown-art/sources/raana-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1232982,
+      "sha256": "d3a12bb94c5d3cc184de1ccc676199801a7d08afbb12bb236bbea6f49ff59ce8",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_smile",
+      "path": "assets/downtown-art/sources/raana-uniform-smile.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1056408,
+      "sha256": "6a715e4a42f3ce21ab062abcf94bf0440f345afe8d64f4230185be7f93e097fa",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_crossed",
+      "path": "assets/downtown-art/sources/raana-uniform-crossed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1164982,
+      "sha256": "8fa3903c4327a7d237db7988adf1ae4d66859a0c10f36d058c471d47b90452fa",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_wave",
+      "path": "assets/downtown-art/sources/raana-uniform-wave.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1177513,
+      "sha256": "6a0e038a0597486bfbadbaf3d0df32fe0fe25973e977ee3bfd01fbb9ba41f76a",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_hips",
+      "path": "assets/downtown-art/sources/raana-uniform-hips.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1298348,
+      "sha256": "c39eafcbc51a41f0bb5502e06aeadc2ddedc6c37b2f0f9e2d0e67cc7e6232666",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_neutral",
+      "path": "assets/downtown-art/sources/taki-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1363038,
+      "sha256": "02a14f7c43edb872daf5929cdbe6b9ad9d8a2edeb92cc463797869752e1cc5c9",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_crossed",
+      "path": "assets/downtown-art/sources/taki-uniform-crossed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1131554,
+      "sha256": "9a04e5b0401247f077dba6584ddfb57db40fbad5cf2395e033db09a2344a0f19",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_drumsticks",
+      "path": "assets/downtown-art/sources/taki-uniform-drumsticks.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1285550,
+      "sha256": "3a821123301461c12d55ea9964319f870fbf8a3b90d5aa2b4a58e425d4eba1b5",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_embarrassed",
+      "path": "assets/downtown-art/sources/taki-uniform-embarrassed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1278159,
+      "sha256": "b3e73e8b9fbae203063a26438170e192ebd998c0c60ea99907327d5f5d9224bc",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [

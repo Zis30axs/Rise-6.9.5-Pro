@@ -51,7 +51,7 @@
   ],
   "missingCharacters": [
     "majo-emma 已有九表情，不在三姿态映射中",
-    "majo-koko、majo-nanoka、majo-arisa、majo-meruru、majo-leia 仍未接入确认身份的专属立绘"
+    "majo-koko、majo-meruru、majo-leia 仍未接入确认身份的专属立绘"
   ],
   "subsequentConfirmedSources": [
     {
@@ -71,6 +71,36 @@
       "sourceId": "characters/majo-margo",
       "panelExpressions": ["neutral", "happy", "shy", "angry", "surprised"],
       "note": "宝生玛格的 768×1024 AVIF 直接登记。平静、开心、害羞在人物目录，生气、惊讶在 extras。没有独立源 ZIP。难过、思考、严肃、安心使用本人平静立绘。"
+    },
+    {
+      "personId": "majo-nanoka",
+      "sourceId": "characters/source-sheets/20261030-nanoka",
+      "sourceManifest": "assets/majo-cast/character-source-sheets-20261030-trio.json",
+      "outfit": "casual",
+      "panelExpressions": ["neutral", "happy", "thinking"],
+      "cutoutMethod": "rembg-isnet-anime-border-constrained",
+      "userProvided": true,
+      "note": "2026-10-30 用户提供黑底三联。从左到右为平静、闭眼笑、托腮思考。当前默认立绘。"
+    },
+    {
+      "personId": "majo-arisa",
+      "sourceId": "characters/source-sheets/20261030-arisa",
+      "sourceManifest": "assets/majo-cast/character-source-sheets-20261030-trio.json",
+      "outfit": "casual",
+      "panelExpressions": ["neutral", "happy", "thinking"],
+      "cutoutMethod": "rembg-isnet-anime-border-constrained",
+      "userProvided": true,
+      "note": "2026-10-30 用户提供黑底三联。从左到右为插袋平静、闭眼手靠脸、抱臂贴口罩。当前默认立绘。"
+    },
+    {
+      "personId": "majo-milia",
+      "sourceId": "characters/source-sheets/20261030-milia",
+      "sourceManifest": "assets/majo-cast/character-source-sheets-20261030-trio.json",
+      "outfit": "casual",
+      "panelExpressions": ["neutral", "happy", "thinking"],
+      "cutoutMethod": "rembg-isnet-anime-border-constrained",
+      "userProvided": true,
+      "note": "2026-10-30 用户提供的奶白色绞花开衫三联与世界书现用立绘一致，作为默认。早先 anime-seg 三张保留在 characters/majo-milia/，不删除。"
     }
   ]
 }
