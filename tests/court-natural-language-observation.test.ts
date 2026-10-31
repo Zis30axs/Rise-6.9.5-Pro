@@ -91,6 +91,22 @@ describe('free-text timed courthouse observation', () => {
     expect(() => validateStoryActions([{ type: 'service', serviceId: 'court-observe', minutes: 60, arbitrary: true }], state)).toThrow();
   });
 
+  it('rejects duplicate court blocks and conflicting timed actions in one response', () => {
+    const state = atCourthouse();
+    expect(() => validateStoryActions([
+      { ...COURT_OBSERVATION, minutes: 60 },
+      { ...COURT_OBSERVATION, minutes: 30 },
+    ], state)).toThrow(/只能提交一次/);
+    expect(() => validateStoryActions([
+      { ...COURT_OBSERVATION, minutes: 60 },
+      { type: 'rest', kind: 'wait', minutes: 60 },
+    ], state)).toThrow(/重复计算/);
+    expect(() => validateStoryActions([
+      { ...COURT_OBSERVATION, minutes: 60 },
+      { type: 'study', subjectId: 'law-advocacy', minutes: 60 },
+    ], state)).toThrow(/重复计算/);
+  });
+
   it('never partially credits a requested hour if closing time interrupts it', () => {
     const state = atCourthouse(16);
     expect(getLocationServiceQuote(state, 'court-observe').blockedReason).toBeTruthy();
