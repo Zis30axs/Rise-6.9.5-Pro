@@ -10,7 +10,6 @@ import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
-import CampusMapScene from './CampusMapScene.vue';
 import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
 import { formatGameNumber } from './format-game-number';
@@ -50,7 +49,6 @@ const size = ref({ width: 620, height: 420 });
 const scale = computed(() => 2 ** -depth.value * focusZoom.value);
 const smooth = (value: number) => { const t = Math.min(1, Math.max(0, value)); return t * t * (3 - 2 * t); };
 const rise = computed(() => 1);
-const localOpacity = computed(() => 1 - smooth(depth.value - 1));
 const pan = ref({ x: 0, y: 0 });
 const TOKYO_REGION_ID = mapData.subdivisions.features.find(item => item.properties.countryId === TOKYO_COUNTRY_ID && TOKYO_REGION_NAME.test(item.properties.name))?.properties.id ?? '';
 const countryId = ref(TOKYO_COUNTRY_ID);
@@ -72,7 +70,6 @@ const currentMapPosition = computed(() => props.model.state.interior
 const needsTransitReturn = computed(() => requiresTransitReturn(props.model.state.locationId, props.model.state.scene));
 const transform = computed(() => ({ transform: depth.value > 2 ? 'none' : `translate(${pan.value.x}px, ${pan.value.y}px) scale(${focusZoom.value})` }));
 const localZoomScale = computed(() => depth.value < 0 ? 2 ** -depth.value : 1 - .46 * smooth(depth.value / 2));
-const localDisplayScale = computed(() => localZoomScale.value * focusZoom.value);
 const campusMetersPerPixel = ref(4);
 const cityMetersPerPixel = ref(4);
 const localScale = computed(() => {
@@ -81,11 +78,6 @@ const localScale = computed(() => {
   const meters = [1, 2, 5, 10].map(n => n * unit).find(n => n >= target) ?? unit * 10;
   return { width: meters / metersPerPixel, label: meters >= 1000 ? `${meters / 1000} km` : `${Math.round(meters)} m` };
 });
-const localStyle = computed(() => ({ opacity: localOpacity.value, transform: `scale(${localZoomScale.value})`, pointerEvents: localLayer.value ? 'auto' as const : 'none' as const }));
-function planeStyle(index: number) {
-  const delta = depth.value - index;
-  return { opacity: 1 - smooth(Math.abs(delta)), transform: `scale(${1 - delta * .26})`, pointerEvents: layerIndex.value === index ? 'auto' as const : 'none' as const };
-}
 const atlasStyle = computed(() => ({ opacity: smooth(depth.value - 2), pointerEvents: geographicLayer.value ? 'auto' as const : 'none' as const }));
 const currentCountry = computed(() => mapData.countries.features.find(item => item.properties.id === countryId.value));
 const currentRegion = computed(() => mapData.subdivisions.features.find(item => item.properties.id === regionId.value && item.properties.countryId === countryId.value));
@@ -387,11 +379,22 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
       <div class="wm-map-column">
         <div ref="viewport" class="wm-viewport" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage" :style="transform">
-            <div v-show="depth < 2" class="wm-plane wm-local-plane" data-map-plane="district" :style="localStyle" :aria-hidden="!localLayer" :inert="!localLayer">
-              <CampusMapScene :scope="detailDistrict ?? 'campus'" :disabled-ids="localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id)" :bearing="bearing" :view-scale="localDisplayScale" @scale="campusMetersPerPixel = $event.metersPerPixel" :width="size.width" :height="size.height" :location-id="model.state.locationId" :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))" :position="currentMapPosition" :player-name="protagonistNames[activeProtagonist(model.state)]" :player-id="activeProtagonist(model.state)" :road-events="roadEvents" :people="visiblePeople" @travel="travelTo" @event="activeEventId = activeEventId === $event ? '' : $event" />
-            </div>
-            <div v-show="depth > 1 && depth < 3" class="wm-plane wm-city-board" data-map-plane="city" :style="planeStyle(2)" :aria-hidden="layer !== 'city'" :inert="layer !== 'city'">
-              <CitySandboxScene :active="depth > 1 && depth < 3" :bearing="bearing" :view-scale="focusZoom * Math.max(.1, 1 - (depth - 2) * .26)" :width="size.width" :height="size.height" :location-id="model.state.locationId" :position="currentMapPosition" :busy="model.busy" :selected-id="selectedCity" @select="enterDistrict($event)" @scale="cityMetersPerPixel = $event.metersPerPixel" />
+            <div v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
+              :data-map-plane="localLayer ? 'district' : 'city'"
+              :style="{ opacity: 1 - smooth(depth - 2), pointerEvents: geographicLayer ? 'none' : 'auto' }"
+              :aria-hidden="geographicLayer" :inert="geographicLayer">
+              <CitySandboxScene :scope="detailDistrict ?? 'city'" :active="depth < 3"
+                :bearing="bearing" :view-scale="focusZoom" :width="size.width" :height="size.height"
+                :location-id="model.state.locationId" :position="currentMapPosition"
+                :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))"
+                :selected-id="selectedCity"
+                :disabled-ids="localLayer ? localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id) : []"
+                :player-name="protagonistNames[activeProtagonist(model.state)]"
+                :player-id="activeProtagonist(model.state)"
+                :people="localLayer ? visiblePeople : []" :road-events="localLayer ? roadEvents : []"
+                @select="enterDistrict($event)" @travel="travelTo($event)"
+                @event="activeEventId = activeEventId === $event ? '' : $event"
+                @scale="localLayer ? campusMetersPerPixel = $event.metersPerPixel : cityMetersPerPixel = $event.metersPerPixel" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
