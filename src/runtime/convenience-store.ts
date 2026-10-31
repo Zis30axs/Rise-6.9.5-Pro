@@ -2,13 +2,14 @@ import type { PlayerState, WorldState } from '../frontend/types';
 import { adjustEnergy, energyDifference } from './energy';
 import { locationServiceCatalog } from './location-services';
 import { cafeInventoryItems } from './margo-cafe-menu';
+import { COOKING_INGREDIENTS } from './cooking-recipes';
 
 export interface StoreItem {
   readonly id: string;
   readonly name: string;
   readonly brand: string;
   readonly tier: 'basic' | 'standard' | 'premium';
-  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine';
+  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine' | 'ingredient';
   readonly price: number;
   readonly packSize: number;
   readonly purchaseUnit: string;
@@ -36,6 +37,11 @@ export const storeCatalog: readonly StoreItem[] = Object.freeze([
   { id: 'medicine-gastro', name: '温和健胃整肠片', brand: '健宁', tier: 'standard', category: 'medicine', price: 420, packSize: 4, purchaseUnit: '盒', useUnit: '片', kcal: 20, useMinutes: 3, effects: { energy: 10, health: 20, satiety: 15, stress: -6, morale: 4 } },
   { id: 'medicine-soothe', name: '草本安神舒压水', brand: '清心堂', tier: 'standard', category: 'medicine', price: 560, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 25, useMinutes: 4, effects: { energy: 8, health: 10, stress: -35, satiety: 0, morale: 25 } },
   { id: 'medicine-vitality', name: '医用营养机能饮', brand: '力维他', tier: 'standard', category: 'medicine', price: 320, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 150, useMinutes: 2, effects: { energy: 28, health: 15, stress: -8, satiety: 8, morale: 6 } },
+  ...COOKING_INGREDIENTS.map(item => ({
+    ...item, brand: '料理食材', tier: 'basic' as const, category: 'ingredient' as const,
+    packSize: 1, purchaseUnit: '份', useUnit: '份', kcal: 0, useMinutes: 0,
+    effects: { energy: 0, satiety: 0, stress: 0, health: 0, morale: 0 },
+  })),
 ].map(item => Object.freeze({ ...item, effects: Object.freeze(item.effects) })) as StoreItem[]);
 
 export const MAX_PURCHASE_QUANTITY = 20;
@@ -93,7 +99,7 @@ export function getPackItemQuote(state: WorldState, itemId: string, quantity = 1
   const packagingFee = Number.isInteger(quantity) && quantity >= 1 && quantity <= MAX_PURCHASE_QUANTITY ? quantity * PACKAGING_FEE : 0;
   const totalPrice = quote.totalPrice + packagingFee;
   let blockedReason = quote.blockedReason;
-  if (quote.item?.category === 'cigarette') blockedReason = '只有食物和饮品提供加价打包。';
+  if (quote.item?.category === 'cigarette' || quote.item?.category === 'ingredient') blockedReason = '料理原料不可作为即食食物打包。';
   if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 元。`;
   return { ...quote, packagingFee, totalPrice, blockedReason };
 }
@@ -110,6 +116,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。' : null;
+  if (item?.category === 'ingredient') blockedReason = '这是烹饪食材，请到厨房选择菜谱使用。';
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
