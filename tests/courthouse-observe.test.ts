@@ -8,17 +8,19 @@ import { tokyoLocationPosition } from '../src/frontend/tokyo-sandbox-map';
 import data from '../assets/models/unread-city-tokyo-sandbox-data.json';
 
 function atCourthouse(hour = 10, academia = true) {
-  let state = enableProtagonists(createInitialState());
+  let state = createInitialState();
   state.clock = { day: 2, hour, minute: 0 };
+  state = enableProtagonists(state);
   if (academia) state = reduceState(state, { type: 'choose_academics', majorId: 'law' });
   state = reduceState(state, { type: 'novel_travel', locationId: 'courthouse' });
   return state;
 }
 
 function inOffice() {
-  let state = enableProtagonists(createInitialState());
-  const office = getCampusInterior('legal-office')!;
+  let state = createInitialState();
   state.clock = { day: 2, hour: 9, minute: 0 };
+  state = enableProtagonists(state);
+  const office = getCampusInterior('legal-office')!;
   state.locationId = office.id;
   state.scene = { ...office.entrance, areaId: office.parentLocationId, seed: 'court-observe-tests', encounterId: null };
   state.interior = { roomId: office.id, x: 0, z: 2, yaw: 0, activityId: null, lastRest: null, lastStudy: null };
