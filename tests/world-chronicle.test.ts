@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameDayFromISO } from '../src/runtime/game-calendar';
 import { acknowledgeWorldChronicle, pendingWorldChronicle } from '../src/runtime/world-chronicle';
-import { createInitialState, parseState } from '../src/runtime/model';
+import { commitStoryTurn, createInitialState, parseState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import type { WorldState } from '../src/frontend/types';
 
@@ -51,6 +51,26 @@ describe('GMT+8 real-world chronicle', () => {
     })).toThrow(/回执/);
     // A canceled or failed request does not change the original state.
     expect(pendingWorldChronicle(world)?.receipt.eventIds).toEqual(offered.receipt.eventIds);
+  });
+
+  it('validates bridge-only metadata outside the strict LLM response parser', () => {
+    const initial = at('2025-09-08', 3, 0, minuteAt('2025-09-07', 23, 59));
+    const injected = pendingWorldChronicle(initial)!;
+    // This is a real novel submission: the model itself produces no receipt.
+    const turn = commitStoryTurn(initial, '看一下刚刚的新闻。', {
+      text: '窗边的手机屏幕显示了刚结束的月食新闻。',
+      phoneMessages: [],
+      worldChronicleReceipt: injected.receipt,
+    }, { userId: 'history:user:1', assistantId: 'history:assistant:1' });
+    expect(turn.worldChronicle?.handledThroughMinute).toBe(injected.receipt.throughMinute);
+    expect(pendingWorldChronicle(turn)).toBeNull();
+
+    // The entire validated turn is atomic: tampered receipts reject the turn.
+    expect(() => commitStoryTurn(initial, '看一下刚刚的新闻。', {
+      text: '窗边的手机屏幕显示了刚结束的月食新闻。',
+      phoneMessages: [],
+      worldChronicleReceipt: { ...injected.receipt, eventIds: [] },
+    }, { userId: 'history:user:2', assistantId: 'history:assistant:2' })).toThrow(/回执/);
   });
 
   it('keeps the timeline shared, optional and compatible with historical saves', () => {
