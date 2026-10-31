@@ -1,4 +1,5 @@
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
+import { createCookingState, parseCookingState, settleCooking, settleCookedDish, acknowledgeCookingNarrative, COOKING_KITCHENS } from './cooking';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
@@ -252,6 +253,7 @@ export function createInitialState(): WorldState {
     lawCareer: initialLawCareer(),
     courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
+    cooking: createCookingState(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [],
     academics: null,
@@ -618,6 +620,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasLawCareer = version === '1.11.0' && Object.hasOwn(value, 'lawCareer');
   const hasCourtroom = version === '1.11.0' && Object.hasOwn(value, 'courtroom');
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
+  const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
@@ -626,7 +629,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -660,6 +663,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     lawCareer: hasLawCareer ? parseLawCareerState(state.lawCareer) : initialLawCareer(),
     courtroom: hasCourtroom ? parseCourtroom(state.courtroom) : initialCourtroom(),
     npcProfessions: hasNpcProfessions ? parseNpcProfessions(state.npcProfessions) : initialNpcProfessions(),
+    cooking: hasCooking ? parseCookingState(state.cooking, (parsedClock.day - 1) * 1440 + parsedClock.hour * 60 + parsedClock.minute) : createCookingState(),
     ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
@@ -824,6 +828,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
       case 'use': next = reduceLegacyState(next, { type: 'use_item', itemId: action.itemId }); break;
+      case 'eat_cooked': next = reduceLegacyState(next, { type: 'eat_cooked', dishId: action.dishId }); break;
+      case 'share_meal': next = reduceLegacyState(next, { type: 'share_cooked', dishId: action.dishId, npcId: action.npcId }); break;
       case 'interact':
         if (action.interactionId === 'dorm-rest' || isStudyInteraction(action.interactionId)) throw new Error('休息或学习请使用包含明确分钟数的剧情行动。');
         next = reduceLegacyState(next, { type: 'novel_approach', interactionId: action.interactionId });
@@ -1233,6 +1239,19 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       note(next, `将${item.name} ${action.quantity} ${item.useUnit}送给${contact.name}，关系 +${contact.affinity - before}。${action.reason.trim()}`);
       break;
     }
+    case 'cook_dish': {
+      const outcome = settleCooking(next, action.recipeId, action.dialCenter, action.needle, advance);
+      note(next, outcome.text);
+      break;
+    }
+    case 'eat_cooked': {
+      note(next, settleCookedDish(next, action.dishId, null, advance));
+      break;
+    }
+    case 'share_cooked': {
+      note(next, settleCookedDish(next, action.dishId, action.npcId, advance));
+      break;
+    }
     case 'use_item': {
       const quote = getUseItemQuote(next, action.itemId);
       if (quote.blockedReason || !quote.item) throw new Error(quote.blockedReason ?? '不存在的商品。');
@@ -1414,6 +1433,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     }
     case 'interior_interact': {
       if (!next.interior) throw new Error('请先进入室内。');
+      if (Object.values(COOKING_KITCHENS).includes(action.interactionId))
+        throw new Error('请打开厨房料理面板选择菜谱与指针判定，不重复执行旧版装饰互动。');
       const room = getCampusInterior(next.interior.roomId)!;
       const interaction = room.interactions.find(item => item.id === action.interactionId);
       if (!interaction) throw new Error('这项交互不属于当前房间。');
@@ -1692,6 +1713,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   acknowledgeAgendaNarration(before,next);
+  acknowledgeCookingNarrative(before, next);
   return parseState(next);
 }
 
