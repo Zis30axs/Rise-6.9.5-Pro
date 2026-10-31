@@ -172,6 +172,10 @@ async function travelTo(id: string) {
   if (saved && props.novelMode) emit('travelled');
 }
 
+function setTokyoMapScale(value: { metersPerPixel: number }) {
+  if (detailDistrict.value) campusMetersPerPixel.value = value.metersPerPixel;
+  else cityMetersPerPixel.value = value.metersPerPixel;
+}
 let observer: ResizeObserver | undefined;
 let owner: (Window & typeof globalThis) | null = null;
 let frame = 0;
@@ -394,7 +398,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
                 :people="localLayer ? visiblePeople : []" :road-events="localLayer ? roadEvents : []"
                 @select="enterDistrict($event)" @travel="travelTo($event)"
                 @event="activeEventId = activeEventId === $event ? '' : $event"
-                @scale="localLayer ? campusMetersPerPixel = $event.metersPerPixel : cityMetersPerPixel = $event.metersPerPixel" />
+                @scale="setTokyoMapScale" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
