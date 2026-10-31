@@ -829,7 +829,10 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
       case 'use': next = reduceLegacyState(next, { type: 'use_item', itemId: action.itemId }); break;
       case 'eat_cooked': next = reduceLegacyState(next, { type: 'eat_cooked', dishId: action.dishId }, worldAuthority); break;
-      case 'share_meal': next = reduceLegacyState(next, { type: 'share_cooked', dishId: action.dishId, npcId: action.npcId }, worldAuthority); break;
+      case 'share_meal':
+        note(next, settleCookedDish(next, action.dishId, action.npcId, advance,
+          activeProtagonist(worldAuthority ?? next), worldAuthority));
+        break;
       case 'interact':
         if (action.interactionId === 'dorm-rest' || isStudyInteraction(action.interactionId)) throw new Error('休息或学习请使用包含明确分钟数的剧情行动。');
         next = reduceLegacyState(next, { type: 'novel_approach', interactionId: action.interactionId });
@@ -1246,10 +1249,6 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     }
     case 'eat_cooked': {
       note(next, settleCookedDish(next, action.dishId, null, advance, activeProtagonist(worldAuthority ?? next), worldAuthority));
-      break;
-    }
-    case 'share_cooked': {
-      note(next, settleCookedDish(next, action.dishId, action.npcId, advance, activeProtagonist(worldAuthority ?? next), worldAuthority));
       break;
     }
     case 'use_item': {
