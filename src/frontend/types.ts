@@ -196,7 +196,6 @@ export type WorldAction =
   | { type: 'use_item'; itemId: string }
   | { type: 'cook_dish'; recipeId: string; dialCenter: number; needle: number }
   | { type: 'eat_cooked'; dishId: string }
-  | { type: 'share_cooked'; dishId: string; npcId: string }
   | { type: 'location_service'; serviceId: string }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'fulfill-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
