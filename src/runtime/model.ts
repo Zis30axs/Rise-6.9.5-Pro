@@ -843,7 +843,30 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         break;
       }
       case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
-      case 'service': next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId }); break;
+      case 'service': {
+        if (action.serviceId !== COURT_OBSERVE_ID) {
+          next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId });
+          break;
+        }
+        // Natural-language observation shares the same authoritative service
+        // settlement as the public UI; no custom LLM-side knowledge patch.
+        const court = getCampusInterior('court-hearing')!;
+        if (next.locationId === 'courthouse' && !next.interior) {
+          if (next.scene && next.scene.areaId !== 'courthouse')
+            throw new Error('当前不在法院入口，无法直接进入旁听席。');
+          next.scene = { ...sceneCoordinates(court.entrance.x, court.entrance.z, court.entrance.yaw),
+            seed: next.scene?.seed ?? 'court-observation', encounterId: null };
+          next = reduceLegacyState(next, { type: 'enter_interior', roomId: court.id }, worldAuthority);
+        }
+        if (next.locationId !== court.id || next.interior?.roomId !== court.id)
+          throw new Error('请先前往审判法庭大厅，再进入公开法庭旁听。');
+        // Segment-by-segment validation checks closing time, energy and actual
+        // 30-minute gains. Any failure aborts the entire uncommitted story turn.
+        const sessions = (action.minutes ?? 30) / 30;
+        for (let session = 0; session < sessions; session++)
+          next = reduceLegacyState(next, { type: 'location_service', serviceId: COURT_OBSERVE_ID }, worldAuthority);
+        break;
+      }
       case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }, worldAuthority); break;
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;

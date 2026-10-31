@@ -31,7 +31,7 @@ import { lawCareerStoryContext } from './law-career';
 import { courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
 import { npcProfession } from './npc-professions';
-import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
+import { COURT_OBSERVE_ID, getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { atMargoCafe, getCafeMenu } from './margo-cafe-menu';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -128,6 +128,7 @@ export const STORY_PROTOCOL = [
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
+  '【法院大厅旁听·自然语言行动】当玩家已位于 courthouse（法院入口/大厅）或 court-hearing（公开法庭），并明确提出“旁听60min”“旁听1小时”“听庭两小时”等已经决定执行的行动，必须提交 <world_actions>[{"type":"service","serviceId":"court-observe","minutes":60}]</world_actions>（一小时示例），不能只在正文宣称已旁听。minutes 是整数分钟，支持 30、60、90、120、150、180、210、240；未填写则默认30。程序自动从 courthouse 走入公开法庭，分段完成每30分钟的正式服务结算，真实推进时钟并积累法庭见闻及符合条件的学业进度；LLM不得自行决定知识增量，不得另加 rest、study、activity、第二次 service 或直接修改存档以免重复结算。公开旁听不创建 courtroom.active 案件，不进行诉讼、判决、律师收费；正在正式开庭时禁止旁听。只在明确行动时提交；询问、假设、否定、回忆不结算。距17:00闭庭时长不足、未到09:00、精力不足或当前不在法院且未要求前往时，说明无法完整完成，不能用其他行动绕过。玩家明确要求从其他地点去法院旁听时，可先 travel 到 courthouse，再使用上述 service；不可直接 travel 到 court-hearing。若服务无法执行，整轮不得写成已经完成旁听。',
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 必须逐字取自 cafeMenu，quantity 为 1–20；cafe-daily-special 是每日特调，每人每天限一杯。咖啡馆购买只放入背包，不自动喝掉，不另加打包费。{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
@@ -389,6 +390,20 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
         courtroom: courtStoryContext(snapshot),
+        // Available even at the courtyard entrance before locationServices
+        // exposes the indoor hearing-room service.
+        courtObservation: snapshot.locationId === 'courthouse' || snapshot.locationId === 'court-hearing' ? {
+          serviceId: COURT_OBSERVE_ID,
+          currentVenue: snapshot.locationId,
+          minutesPerSession: 30,
+          allowedTotalMinutes: [30, 60, 90, 120, 150, 180, 210, 240],
+          openHours: '09:00–17:00',
+          openNow: getLocationStatus('court-hearing', snapshot.clock)?.isOpen ?? false,
+          minutesUntilClose: getLocationStatus('court-hearing', snapshot.clock)?.minutesUntilClose ?? 0,
+          formalTrialActive: !!snapshot.courtroom?.active,
+          knowledgePerSession: 10,
+          energyCostPerSession: 5,
+        } : null,
         // Playable protagonists have their own academics: never overwrite it
         // with a stale NPC lore record in the model context.
         residentProfessions: allResidentCast.flatMap(person => {
