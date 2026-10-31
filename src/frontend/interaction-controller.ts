@@ -27,7 +27,6 @@ export function interactionLabel(action: WorldAction): string {
     case 'use_item': return `使用${getStoreItem(action.itemId)?.name ?? '物品'}`;
     case 'cook_dish': return `烹饪${getCookingRecipe(action.recipeId)?.name ?? '料理'}`;
     case 'eat_cooked': return '享用自制料理';
-    case 'share_cooked': return '共同享用料理';
     case 'gift_item': return `赠送${getStoreItem(action.itemId)?.name ?? '物品'}`;
     case 'novel_travel':
     case 'travel': return `前往${locations.find(item => item.id === action.locationId)?.name ?? '目的地'}`;
