@@ -17,12 +17,14 @@ function minuteAt(iso: string, hour = 0, minute = 0): number {
 }
 
 describe('GMT+8 real-world chronicle', () => {
-  it('does not leak a total lunar eclipse result before the verified end minute', () => {
+  it('makes an astronomical event available at its verified start, not before', () => {
     const through = minuteAt('2025-09-07', 23, 59);
-    const before = pendingWorldChronicle(at('2025-09-08', 2, 52, through));
-    expect(before).toBeNull();
-    const after = pendingWorldChronicle(at('2025-09-08', 2, 53, through));
-    expect(after?.receipt.eventIds).toContain('real-20250908-003');
+    expect(pendingWorldChronicle(at('2025-09-08', 1, 29, through))).toBeNull();
+    const during = pendingWorldChronicle(at('2025-09-08', 1, 30, through));
+    expect(during?.receipt.eventIds).toContain('real-20250908-003');
+    expect(during?.events.find(e => e.id === 'real-20250908-003')?.phase).toBe('ongoing');
+    const completed = pendingWorldChronicle(at('2025-09-08', 2, 53, through));
+    expect(completed?.events.find(e => e.id === 'real-20250908-003')?.phase).toBe('occurred');
   });
 
   it('conservatively delays provisional day-only events without treating 00:00 as publication', () => {
