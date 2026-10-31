@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { frameTokyoMapCamera, type TokyoMapCameraFrame } from '../src/frontend/tokyo-sandbox-camera';
+import {
+  applyTokyoCameraFlight, frameTokyoMapCamera, readTokyoCameraPose,
+  type TokyoMapCameraFrame,
+} from '../src/frontend/tokyo-sandbox-camera';
 
 const frame: TokyoMapCameraFrame = {
   bounds: { minX: -186, maxX: 252, minZ: -235, maxZ: 186 },
@@ -49,6 +52,29 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(camera.position.distanceTo(beforeYaw)).toBeGreaterThan(30);
   });
 
+  it('flies the same 3D camera towards a clicked district landmark instead of cropping pixels', () => {
+    const overview = new THREE.PerspectiveCamera();
+    frameTokyoMapCamera(overview, frame);
+    const from = readTokyoCameraPose(overview);
+    const detail = new THREE.PerspectiveCamera();
+    frameTokyoMapCamera(detail, {
+      ...frame, bounds: { minX: -186, maxX: -88, minZ: 54, maxZ: 186 },
+      center: { x: -136, z: 115 },
+    });
+    const to = readTokyoCameraPose(detail);
+    const visited = new THREE.Vector3(-136, 0, 115);
+    expect(to.position.distanceTo(visited)).toBeLessThan(from.position.distanceTo(visited));
+    const midpoint = new THREE.PerspectiveCamera(50, frame.width / frame.height, .25, 6500);
+    midpoint.updateProjectionMatrix();
+    applyTokyoCameraFlight(midpoint, from, to, .5);
+    expect(midpoint.position.distanceTo(from.position)).toBeGreaterThan(10);
+    expect(midpoint.position.distanceTo(to.position)).toBeGreaterThan(10);
+    const point = new THREE.Vector3(-126, 0, 115);
+    const imageSize = (camera: THREE.PerspectiveCamera) =>
+      point.clone().project(camera).distanceTo(visited.clone().project(camera));
+    expect(imageSize(detail)).toBeGreaterThan(imageSize(overview));
+  });
+
   it('routes the existing pan and pinch values into the GLB camera, not DOM transforms', () => {
     const world = readFileSync('src/frontend/WorldMap.vue', 'utf8');
     const scene = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
@@ -58,5 +84,9 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(world).not.toContain('class="wm-stage" :style="transform"');
     expect(scene).toContain('frameTokyoMapCamera(camera, {');
     expect(scene).toContain('THREE.PerspectiveCamera');
+    expect(scene).toContain('beginCameraFlight()');
+    expect(scene).toContain('applyTokyoCameraFlight(camera, flight.from, targetPose, eased)');
+    expect(scene).toContain("scene.add(model)");
+    expect(scene).toContain("cameraFlying ? 'flying' : 'idle'");
   });
 });

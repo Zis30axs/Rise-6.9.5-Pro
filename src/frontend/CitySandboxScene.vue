@@ -13,7 +13,10 @@ import {
 } from './tokyo-sandbox-map';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { readLocalAssetBytes } from './local-asset-buffer';
-import { frameTokyoMapCamera } from './tokyo-sandbox-camera';
+import {
+  applyTokyoCameraFlight, frameTokyoMapCamera, measureTokyoGroundScale,
+  readTokyoCameraPose, type TokyoCameraPose,
+} from './tokyo-sandbox-camera';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
@@ -55,6 +58,15 @@ const eventPins = ref<Pin[]>([]);
 const playerPin = ref<Pin | null>(null);
 const selectedPerson = ref('');
 const cameraPosition = ref('');
+const cameraFlying = ref(false);
+type CameraFlight = {
+  from: TokyoCameraPose;
+  started: number;
+  duration: number;
+  frame: number;
+  owner: Window;
+};
+let cameraFlight: CameraFlight | undefined;
 let epoch = 0;
 let renderer: THREE.WebGLRenderer | undefined;
 let scene: THREE.Scene | undefined;
@@ -84,7 +96,38 @@ function disposeModel(root: THREE.Object3D) {
   root.removeFromParent();
 }
 
+function stopCameraFlight() {
+  const previous = cameraFlight;
+  cameraFlight = undefined;
+  if (previous?.frame) previous.owner.cancelAnimationFrame(previous.frame);
+  cameraFlying.value = false;
+}
+
+function beginCameraFlight() {
+  stopCameraFlight();
+  const owner = canvas.value?.ownerDocument.defaultView;
+  if (!camera || !renderer || !props.active || props.decorative || !owner ||
+      owner.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const flight: CameraFlight = {
+    from: readTokyoCameraPose(camera),
+    started: owner.performance.now(),
+    duration: 440,
+    frame: 0,
+    owner,
+  };
+  cameraFlight = flight;
+  cameraFlying.value = true;
+  const step = () => {
+    flight.frame = 0;
+    if (cameraFlight !== flight) return;
+    render();
+    if (cameraFlight === flight) flight.frame = owner.requestAnimationFrame(step);
+  };
+  flight.frame = owner.requestAnimationFrame(step);
+}
+
 function release() {
+  stopCameraFlight();
   epoch++;
   districtPins.value = []; placePins.value = []; personPins.value = [];
   eventPins.value = []; playerPin.value = null;
@@ -159,16 +202,31 @@ function render() {
   if (!props.active || !renderer || !scene || !camera) return;
   const width = Math.max(1, props.width), height = Math.max(1, props.height);
   const bounds = tokyoDistrictBounds(props.scope);
-  const cameraCenter = props.cameraView?.center ? projectOldTokyoPosition(props.cameraView.center) : undefined;
+  const chosenDistrict = props.scope === 'city'
+    ? undefined : tokyoDistricts.find(district => district.id === props.scope);
+  const cameraCenter = props.cameraView?.center
+    ? projectOldTokyoPosition(props.cameraView.center)
+    : chosenDistrict ? { x: chosenDistrict.x, z: chosenDistrict.z } : undefined;
   // WorldMap owns input, but the drag/zoom must move this 3D camera rather than
   // CSS-transforming the whole canvas and leaving its projected pins behind.
   const mapZoom = Math.max(.65, Math.min(12,
     (props.cameraView?.zoom ?? props.viewScale) * (props.decorative ? 1 : 1.08)));
-  const metersPerPixel = frameTokyoMapCamera(camera, {
+  frameTokyoMapCamera(camera, {
     bounds, width, height, bearing: props.bearing, zoom: mapZoom,
     pan: props.pan, center: cameraCenter, overhead: props.cameraView?.overhead,
     summit: { x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
   });
+  const flight = cameraFlight;
+  if (flight) {
+    const elapsed = (flight.owner.performance.now() - flight.started) / flight.duration;
+    const progress = Math.min(1, Math.max(0, elapsed));
+    if (progress < 1) {
+      const targetPose = readTokyoCameraPose(camera);
+      const eased = 1 - (1 - progress) ** 3;
+      applyTokyoCameraFlight(camera, flight.from, targetPose, eased);
+    } else stopCameraFlight();
+  }
+  const metersPerPixel = measureTokyoGroundScale(camera, width, height);
   cameraPosition.value = camera.position.toArray().map(value => value.toFixed(2)).join(',');
   renderer.setPixelRatio(Math.min(1.4, window.devicePixelRatio || 1));
   renderer.setSize(width, height, false);
@@ -297,9 +355,28 @@ async function load() {
 function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id); }
 
 watch(() => props.active, active => { if (active) void load(); else release(); });
-watch(() => [props.width, props.height, props.bearing, props.viewScale, props.scope,
-  props.selectedId, props.locationId, props.position, props.disabledIds,
-  props.people, props.roadEvents, props.pan, props.cameraView, props.decorative], render);
+watch(() => ({
+  scope: props.scope, width: props.width, height: props.height,
+  bearing: props.bearing, zoom: props.viewScale,
+  panX: props.pan?.x ?? 0, panY: props.pan?.y ?? 0,
+  selectedId: props.selectedId, locationId: props.locationId, position: props.position,
+  disabledIds: props.disabledIds, playerId: props.playerId, playerName: props.playerName,
+  people: props.people, roadEvents: props.roadEvents,
+  cameraView: props.cameraView, decorative: props.decorative,
+}), (next, previous) => {
+  if (next.scope !== previous.scope) {
+    // Same GLB, same WebGL canvas; change the 3D camera to visit the landmark.
+    beginCameraFlight();
+  } else if (cameraFlight &&
+    (next.width !== previous.width || next.height !== previous.height ||
+     next.bearing !== previous.bearing || next.zoom !== previous.zoom ||
+     next.panX !== previous.panX || next.panY !== previous.panY ||
+     next.cameraView !== previous.cameraView)) {
+    // A new user gesture supersedes a scripted camera flight.
+    stopCameraFlight();
+  }
+  render();
+});
 onMounted(() => { if (props.active) void load(); });
 onBeforeUnmount(release);
 </script>
@@ -307,7 +384,7 @@ onBeforeUnmount(release);
 <template>
   <div class="tokyo-sandbox-scene" :data-tokyo-sandbox-status="status"
     :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope"
-    :data-tokyo-camera="cameraPosition">
+    :data-tokyo-camera="cameraPosition" :data-tokyo-camera-flight="cameraFlying ? 'flying' : 'idle'">
     <canvas ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，请从右侧地点列表选择目的地。</p>
     <template v-if="status === 'ready'">

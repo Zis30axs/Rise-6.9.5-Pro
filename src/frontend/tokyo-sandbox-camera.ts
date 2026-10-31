@@ -48,6 +48,8 @@ export function frameTokyoMapCamera(camera: THREE.PerspectiveCamera, frame: Toky
 
   // Fit ground corners and the visible skyline without selecting the huge
   // background slab as the camera target. Never fake zoom with CSS scaling.
+  const target = frame.center
+    ? new THREE.Vector3(frame.center.x, 0, frame.center.z) : sourceCentre.clone();
   const points: THREE.Vector3[] = [];
   for (const x of [bounds.minX, bounds.maxX]) for (const z of [bounds.minZ, bounds.maxZ]) {
     points.push(new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 18, z));
@@ -61,15 +63,13 @@ export function frameTokyoMapCamera(camera: THREE.PerspectiveCamera, frame: Toky
   const halfHorizontal = halfVertical * camera.aspect;
   let fitDistance = 20;
   for (const point of points) {
-    const offset = point.sub(sourceCentre);
+    const offset = point.sub(target);
     const requiredX = Math.abs(offset.dot(right)) / (halfHorizontal * .91);
     const requiredY = Math.abs(offset.dot(up)) / (halfVertical * .88);
     fitDistance = Math.max(fitDistance, offset.dot(eye) + Math.max(requiredX, requiredY));
   }
 
   const zoom = Math.max(.65, Math.min(12, Number.isFinite(frame.zoom) ? frame.zoom : 1));
-  const target = frame.center
-    ? new THREE.Vector3(frame.center.x, 0, frame.center.z) : sourceCentre.clone();
   camera.position.copy(target).addScaledVector(eye, fitDistance / zoom);
   camera.lookAt(target);
   camera.updateMatrixWorld(true);
@@ -86,9 +86,38 @@ export function frameTokyoMapCamera(camera: THREE.PerspectiveCamera, frame: Toky
     }
   }
 
-  // Real ground-plane scale for the existing map scale bar.
+  return measureTokyoGroundScale(camera, width, height);
+}
+
+/** The map scale bar samples the current camera, including in-flight frames. */
+export function measureTokyoGroundScale(camera: THREE.PerspectiveCamera, width: number, height: number): number {
   const step = Math.max(1, Math.min(30, height / 5));
   const a = groundAt(camera, width, height, 0, 0);
   const b = groundAt(camera, width, height, 0, step);
   return a && b ? Math.max(.001, a.distanceTo(b) / step) : 4;
+}
+
+export interface TokyoCameraPose {
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+}
+
+/** Centre-ray ground target, rather than a screen crop or a CSS translation. */
+export function readTokyoCameraPose(camera: THREE.PerspectiveCamera): TokyoCameraPose {
+  camera.updateMatrixWorld(true);
+  const direction = camera.getWorldDirection(new THREE.Vector3());
+  const distance = direction.y < -1e-6 ? -camera.position.y / direction.y : 0;
+  const target = camera.position.clone().addScaledVector(direction, Math.max(0, distance));
+  target.y = 0;
+  return { position: camera.position.clone(), target };
+}
+
+/** Interpolate actual camera poses for a city-to-landmark fly-in and its return. */
+export function applyTokyoCameraFlight(
+  camera: THREE.PerspectiveCamera, from: TokyoCameraPose, to: TokyoCameraPose, fraction: number,
+): void {
+  const t = Math.min(1, Math.max(0, fraction));
+  camera.position.copy(from.position).lerp(to.position, t);
+  camera.lookAt(from.target.clone().lerp(to.target, t));
+  camera.updateMatrixWorld(true);
 }

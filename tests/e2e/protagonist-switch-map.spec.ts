@@ -56,10 +56,16 @@ for (const viewport of viewports) {
     await page.screenshot({ path: `${out}/${size}-city.png` });
     const mapSaves = (await counts(helper)).saves;
     for (const id of ['campus', 'home', 'commercial', 'downtown', 'city-park']) {
+      const tokyo = page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene');
+      const canvas = await tokyo.locator('canvas').elementHandle();
+      const before = await tokyo.getAttribute('data-tokyo-camera');
       await page.locator(`[data-map-plane="city"] [data-map-target="city:${id}"]`).click();
       await expect(map).toHaveAttribute('data-map-layer', 'district');
       await expect(map).toHaveAttribute('data-map-district', id);
       await expect(viewportMap).toHaveAttribute('data-map-depth', '0.000');
+      await expect(tokyo).toHaveAttribute('data-tokyo-camera-flight', 'idle');
+      expect(await tokyo.getAttribute('data-tokyo-camera')).not.toBe(before);
+      expect(await tokyo.locator('canvas').evaluate((node, original) => node === original, canvas)).toBe(true);
       await expect(page.locator('[data-map-back]')).toBeVisible();
       if (id !== 'campus') await expect(page.locator('[data-destination="library"]')).toHaveCount(0);
       await noOverflow(page);
@@ -68,6 +74,8 @@ for (const viewport of viewports) {
       await last.scrollIntoViewIfNeeded(); await expect(last).toBeVisible();
       await page.locator('[data-map-back]').click();
       await expect(map).toHaveAttribute('data-map-layer', 'city');
+      await expect(tokyo).toHaveAttribute('data-tokyo-camera-flight', 'idle');
+      await expect(tokyo).toHaveAttribute('data-tokyo-camera', before!);
     }
     expect((await counts(helper)).saves).toBe(mapSaves);
 
@@ -86,6 +94,8 @@ for (const viewport of viewports) {
     await page.getByRole('button', { name: '向左旋转地图' }).click();
     await page.getByRole('button', { name: '缩小地图', exact: true }).click();
     await page.locator('[data-map-back]').click();
+    await expect(page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene'))
+      .toHaveAttribute('data-tokyo-camera-flight', 'idle');
     await expect(viewportMap).toHaveAttribute('data-map-bearing', '30.000');
     await expect(viewportMap).toHaveAttribute('data-map-scale', scale!);
     await expect(page.locator('.world-map[data-map-layer] .tokyo-sandbox-scene')).toHaveAttribute('data-tokyo-camera', camera!);
