@@ -162,6 +162,8 @@ export interface WorldState {
   courtroom?: import('../runtime/courtroom').CourtroomState;
   /** Shared NPC major / career records, excluding controlled protagonists. */
   npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
+  /** Four-person cooking skill, owned dish batches and unscripted receipts. */
+  cooking?: import('../runtime/cooking').CookingState;
   /** Shared counseling records with Dr. Fengjin; weekly per protagonist. */
   fengjinClinic?: import('../runtime/fengjin-clinic').FengjinClinicState;
   player: PlayerState;
@@ -192,6 +194,9 @@ export type WorldAction =
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use_item'; itemId: string }
+  | { type: 'cook_dish'; recipeId: string; dialCenter: number; needle: number }
+  | { type: 'eat_cooked'; dishId: string }
+  | { type: 'share_cooked'; dishId: string; npcId: string }
   | { type: 'location_service'; serviceId: string }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'fulfill-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
@@ -240,6 +245,8 @@ export type StoryAction =
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use'; itemId: string }
+  | { type: 'eat_cooked'; dishId: string }
+  | { type: 'share_meal'; dishId: string; npcId: string; consentQuote: string }
   | { type: 'interact'; interactionId: string }
   | { type: 'study'; subjectId: string; minutes: number }
   | { type: 'schedule'; title: string; locationId: string; time: string }
