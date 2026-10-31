@@ -35,7 +35,6 @@ import PlaceActions from './PlaceActions.vue';
 import LivehousePanel from './LivehousePanel.vue';
 import CookingPanel from './CookingPanel.vue';
 import { COOKING_KITCHENS, cookedDishQuote } from '../runtime/cooking';
-import { getCookingRecipe } from '../runtime/cooking-recipes';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
