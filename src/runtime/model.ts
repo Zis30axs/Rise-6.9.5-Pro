@@ -1624,19 +1624,20 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
 /** Verify the actual NPC reply by identity and exact spoken line, not a text keyword heuristic. */
 function verifySocialConsentEvidence(state: WorldState, reply: GeneratedStory): void {
   const proofActions = (reply.worldActions ?? []).filter(action => action.type === 'exchange_contact' ||
+    action.type === 'share_meal' ||
     action.type === 'social_invite' && action.source === 'meeting' && action.outcome !== 'pending');
   if (!proofActions.length) return;
   const people = worldScenePeople(state);
   const dialogue = parseNovelDialogue(reply.text);
   for (const action of proofActions) {
-    const who = action.type === 'exchange_contact' ? action.npcId : action.targetId;
+    const who = action.type === 'exchange_contact' || action.type === 'share_meal' ? action.npcId : action.targetId;
     const contact = state.contacts.find(row => row.id === who || row.sourcePersonId === who);
     const person = people.find(row => row.id === (contact?.sourcePersonId ?? who) || row.contactId === who);
-    const statement = action.type === 'exchange_contact' ? action.consentQuote : action.responseQuote;
+    const statement = action.type === 'exchange_contact' || action.type === 'share_meal' ? action.consentQuote : action.responseQuote;
     if (!person || !statement || !dialogue.some(line =>
       (line.speaker === person.name || line.speaker === person.candidateName) &&
       line.text.trim() === statement.trim())) {
-      throw new Error('交换联系方式或当面邀约缺少对方本轮明确说出的回应；本轮没有修改状态。');
+      throw new Error('交换联系方式、当面邀约或共餐缺少对方本轮明确说出的同意原话；本轮没有修改状态。');
     }
   }
 }
