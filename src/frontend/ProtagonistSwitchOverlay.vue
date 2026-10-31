@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import LocalMapGeometry from './LocalMapGeometry.vue';
+import CitySandboxScene from './CitySandboxScene.vue';
 import { protagonistNames } from '../runtime/protagonist-world';
 import { getCampusInterior } from '../runtime/campus-interiors';
 import { getNovelBackground, novelBackgroundPhase } from './novel-backgrounds';
@@ -144,7 +144,10 @@ defineExpose({ skip });
 <template>
   <section ref="root" class="protagonist-switch-overlay" :class="{ 'is-night': hour < 6 || hour >= 20 }" data-protagonist-switch :data-switch-phase="phase" :data-switch-progress="progress.toFixed(3)" :data-switch-from="lease.source.protagonist" :data-switch-to="lease.target.protagonist" :data-switch-committed="committed" aria-label="角色切换">
     <div class="protagonist-switch-map world-map" :style="{ opacity: mapOpacity }">
-      <LocalMapGeometry :width="size.width" :height="size.height" scope="city" :camera-view="cameraView" />
+      <CitySandboxScene scope="city" :active="true" :width="size.width" :height="size.height"
+        :bearing="0" :view-scale="1" :selected-id="''"
+        :location-id="lease.source.locationId" :busy="true"
+        :decorative="true" :camera-view="cameraView" />
       <div class="protagonist-switch-reticle" aria-hidden="true"><i/><i/><i/></div>
     </div>
     <div class="protagonist-switch-blackout" aria-hidden="true" :style="{ opacity: blackoutOpacity }"></div>
