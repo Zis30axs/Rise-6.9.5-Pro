@@ -147,7 +147,7 @@ export function settleCooking(state: WorldState, recipeId: string, center: numbe
   const id = issue(state, 'dish');
   c.dishes.push({ id, owner, chef: owner, recipeId, quality, servings: q.recipe.servings, at: minute(state) });
   appendEvent(state, owner, 'cooked', recipeId, quality);
-  return { quality, text: `${protagonistNames[owner]}制作${q.recipe.name}：${COOKING_QUALITY_LABEL[quality]}品质，${q.recipe.servings} 份已放入料理背包；耗时 ${q.recipe.minutes} 分钟，消耗食材和精力，厨艺经验 +${xp}。具体烹饪过程和失败原因尚未叙述，由主 LLM 在下一次正常剧情中描写；不得重复结算。` };
+  return { quality, text: `${protagonistNames[owner]}制作${q.recipe.name}：${COOKING_QUALITY_LABEL[quality]}品质，${q.recipe.servings} 份已放入料理背包；耗时 ${q.recipe.minutes} 分钟，消耗食材和精力，厨艺经验 +${xp}。` };
 }
 export function cookedDishQuote(state: WorldState, dishId: string, sharingNpcId?: string,
   owner: ProtagonistId = activeProtagonist(state), worldAuthority?: WorldState) {
@@ -191,7 +191,7 @@ export function settleCookedDish(state: WorldState, dishId: string, npcId: strin
   if (dish.servings <= 0) cooking(state).dishes = cooking(state).dishes.filter(row => row.id !== dishId);
   if (!npcId) appendEvent(state, owner, 'eaten', q.recipe.id, q.dish.quality);
   const name = npcId ? q.person?.name : null;
-  return `${protagonistNames[owner]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。${name ? '对方是否接受及其具体反应以本轮已发生的对白为准，不能保证好感增加。' : '食用感受由主 LLM 下次正常剧情自由描写。'}` ;
+  return `${protagonistNames[owner]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。${name ? '' : ''}` ;
 }
 /** A successfully persisted foreground story acknowledges only previously seen events. */
 export function acknowledgeCookingNarrative(before: WorldState, after: WorldState): void {
