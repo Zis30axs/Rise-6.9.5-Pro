@@ -693,7 +693,8 @@ async function leaveInterior() {
   else { await nextTick(); if (!unmounting) scene.value?.focus(); }
 }
 async function roomInteract(interactionId: string, direct = false) {
-  if (props.model.busy || !props.model.state.academics) return;
+  if (props.model.busy ||
+      (!props.model.state.academics && !Object.values(COOKING_KITCHENS).includes(interactionId))) return;
   scene.value?.flushPresence();
   if (walkSyncError.value) return;
   const interaction = currentRoom.value?.interactions.find(item => item.id === interactionId);
