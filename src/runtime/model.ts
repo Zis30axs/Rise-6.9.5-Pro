@@ -39,6 +39,7 @@ import { initialLawCareer, parseLawCareerState, quoteLawCase, settleLawCase } fr
 import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengjinCounseling } from './fengjin-clinic';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
+import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -598,10 +599,11 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     const source = value as Record<string, unknown>;
     const hasYen = Object.hasOwn(source, 'currency');
     if (hasYen && source.currency !== 'JPY') return invalid('currency');
-    const { protagonists, currency: _currency, ...rest } = source;
+    const { protagonists, currency: _currency, worldChronicle: worldChronicleRaw, ...rest } = source;
     // Parse all existing ledgers in their previous units before converting once.
     const base = parseStateCore({ ...rest, currency: 'JPY', schema_version: '1.11.0' }, deferProtagonists);
     const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
+      ...(Object.hasOwn(source, 'worldChronicle') ? { worldChronicle: parseWorldChronicleState(worldChronicleRaw) } : {}),
       protagonists: parseProtagonists(protagonists, base, value => parseStateCore(value, deferProtagonists), !hasYen) };
     if (!hasYen) {
       migrateHistoricalMoney(state);
@@ -638,13 +640,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
+  const hasWorldChronicle = version === '1.11.0' && Object.hasOwn(value, 'worldChronicle');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -666,6 +669,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     weather,
+    ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
@@ -1769,7 +1773,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
   // A replay is checked against the stored, signed side-effect receipt rather
   // than re-rolling the probability gate against a state that already advanced.
-  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = result;
+  const { otherSide: requestedSide, returnStory: requestedReturn, worldChronicleReceipt, ...withoutSide } = result;
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
@@ -1790,7 +1794,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   acknowledgeAgendaNarration(before,next);
-  return parseState(next);
+  return parseState(acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt));
 }
 
 
