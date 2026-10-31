@@ -191,7 +191,7 @@ export function settleCookedDish(state: WorldState, dishId: string, npcId: strin
   if (dish.servings <= 0) cooking(state).dishes = cooking(state).dishes.filter(row => row.id !== dishId);
   if (!npcId) appendEvent(state, owner, 'eaten', q.recipe.id, q.dish.quality);
   const name = npcId ? q.person?.name : null;
-  return `${protagonistNames[owner]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。${name ? '' : ''}` ;
+  return `${protagonistNames[owner]}${name ? '与' + name + '共餐' : '食用'}${q.recipe.name}（${COOKING_QUALITY_LABEL[q.dish.quality]}品质），消耗 ${npcId ? 2 : 1} 份，耗时 ${q.minutes} 分钟；营养与身心变化已结算。`;
 }
 /** A successfully persisted foreground story acknowledges only previously seen events. */
 export function acknowledgeCookingNarrative(before: WorldState, after: WorldState): void {
