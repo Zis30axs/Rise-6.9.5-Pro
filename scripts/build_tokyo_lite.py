@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build Lite PNG + its ONE matching offline ZIP including the new Tokyo GLB.
+"""Build the regular Lite PNG + its ONE matching offline asset ZIP.
 
-No CI/Actions, network downloads, or Agent Edition execution.
-The source GLB is staged locally from the user's original offline file/ZIP.
-The original global character card source and existing ZIP assets remain intact.
+No extra GLB input is needed: the canonical source lives at assets/models/.
+The first build produces the Lite card + ZIP; this command also produces the
+optional Tauri import PNG and validates the final offline package.
+No network downloads, CI, or GitHub Actions.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -23,15 +25,21 @@ def run(*args: str) -> None:
     subprocess.run(list(args), cwd=ROOT, check=True)
 
 
-def ensure_tokyo_model(source: Path) -> None:
-    binary = read_model(source)
+def ensure_tokyo_model(source: Path | None = None) -> None:
     destination = ROOT / MODEL_RELATIVE
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if not destination.is_file() or destination.read_bytes() != binary:
-        destination.write_bytes(binary)
-    print(f"已安装东京沙盘源模型：{MODEL_RELATIVE} ({len(binary):,} bytes)")
-    # Preserve the curated Chinese runtime data in git. The original ZIP's
-    # data JSON is reference material and must not overwrite existing world rules.
+    if source is not None:
+        binary = read_model(source)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.is_file() or destination.read_bytes() != binary:
+            destination.write_bytes(binary)
+        print(f"一次性导入东京沙盘 GLB：{MODEL_RELATIVE} ({len(binary):,} bytes)")
+    # The normal workflow never reads a manual path or fetches an asset.
+    if not destination.is_file():
+        raise ValueError(
+            f"缺少仓库固定源模型 {MODEL_RELATIVE}。"
+            "请一次性添加并 git add/commit 此 GLB；后续构建无需再提供文件。"
+        )
+    read_model(destination)
 
 
 def check_zip() -> None:
@@ -44,53 +52,57 @@ def check_zip() -> None:
         match = [row for row in rows if row["sha256"] == EXPECTED_SHA256]
         if len(match) != 1 or hashlib.sha256(bundle.read(match[0]["path"])).hexdigest() != EXPECTED_SHA256:
             raise ValueError("Lite ZIP 中的东京沙盘模型缺失或校验失败")
-    print(f"已核实：东京 GLB 位于 Lite ZIP 的 assets/{EXPECTED_SHA256}")
+    print(f"已核实：东京 GLB 位于原 Lite ZIP 的 assets/{EXPECTED_SHA256}")
 
 
-def build(source: Path, install_only: bool = False, skip_tauri: bool = False) -> None:
+def build(source: Path | None = None, install_only: bool = False, skip_tauri: bool = False) -> None:
     ensure_tokyo_model(source)
     if install_only:
-        print("仅安装模型到源码目录。未调用本地构建或远程 CI。")
+        print("已核实仓库固定源模型；未执行构建。")
         return
-    # Check overwrite conflicts before any build command changes dist artifacts.
-    if not skip_tauri:
-        tauri = ROOT / "dist/unread-city-lite-tauri.png"
-        tauri_report = tauri.with_suffix(".verification.json")
-        if tauri.exists() or tauri_report.exists():
-            raise ValueError("已有同名 Tauri PNG/校验文件。请先移动旧产物再重新构建，避免覆盖。")
     npm = shutil.which("npm.cmd" if sys.platform == "win32" else "npm")
     if not npm:
         raise RuntimeError("无法找到本地 Node/npm")
+
+    # package.json prebuild verifies the canonical model; postbuild creates
+    # the ONE Lite ZIP and canonical PNG automatically, even on plain npm build.
     run(npm, "run", "build")
-    run(sys.executable, "scripts/build_lite_release.py")
     check_zip()
-    run(sys.executable, "scripts/build_lite_card.py")
+
     if not skip_tauri:
-        tauri = ROOT / "dist/unread-city-lite-tauri.png"
-        report = tauri.with_suffix(".verification.json")
-        if tauri.exists() or report.exists():
-            raise ValueError("已有同名 Tauri PNG/校验文件。请先移动旧产物再重新构建，避免覆盖。")
+        dist = ROOT / "dist"
+        dist.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(prefix="tokyo-tauri-", suffix=".png", dir=dist, delete=True) as f:
+            temporary = Path(f.name)
         run(sys.executable, "scripts/build_tauri_import_card.py",
-            "--source", "dist/unread-city-lite.png", "--output", "dist/unread-city-lite-tauri.png")
+            "--source", "dist/unread-city-lite.png", "--output", str(temporary))
+        # Generated Tauri artifacts are replaced only AFTER successful conversion.
+        temporary.replace(dist / "unread-city-lite-tauri.png")
+        temporary.with_suffix(".verification.json").replace(dist / "unread-city-lite-tauri.verification.json")
         run(sys.executable, "scripts/verify_lite_release.py")
-    print("Lite 离线沙盘已纳入原资源 ZIP：dist/unread-city-lite-assets.zip")
-    print("角色卡：dist/unread-city-lite.png")
+
+    print("Lite 角色卡：dist/unread-city-lite.png")
+    print("Lite 离线资源 ZIP：dist/unread-city-lite-assets.zip")
     if not skip_tauri:
-        print("Tauri 版角色卡：dist/unread-city-lite-tauri.png")
-    print("请配套导入这一版 PNG 和 ZIP；不要搭配旧版资源包。")
+        print("Tauri 导入卡：dist/unread-city-lite-tauri.png")
+    print("后续构建自动使用仓库内的同一份东京 GLB，不再要求手动指定模型文件。")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("asset", type=Path, help="用户提供的 GLB 或东京沙盘资源 ZIP")
-    parser.add_argument("--install-only", action="store_true", help="只验证并复制 GLB，不打包")
-    parser.add_argument("--skip-tauri", action="store_true", help="只构建普通 Lite PNG 与 ZIP")
+    parser.add_argument("asset", type=Path, nargs="?", default=None,
+        help="仅首次导入时可选：原始东京 GLB 或离线素材 ZIP。正常构建不填。")
+    parser.add_argument("--install-only", action="store_true",
+        help="仅一次性导入/校验原始 GLB，不构建")
+    parser.add_argument("--skip-tauri", action="store_true",
+        help="只构建普通 Lite PNG 与原资源 ZIP")
     args = parser.parse_args()
     try:
-        build(args.asset.resolve(), args.install_only, args.skip_tauri)
+        build(args.asset.resolve() if args.asset else None, args.install_only, args.skip_tauri)
         return 0
-    except (OSError, RuntimeError, ValueError, KeyError, zipfile.BadZipFile, subprocess.CalledProcessError) as error:
-        print("东京沙盘 Lite 构建失败：" + str(error), file=sys.stderr)
+    except (OSError, RuntimeError, ValueError, KeyError, zipfile.BadZipFile,
+            subprocess.CalledProcessError) as error:
+        print("Lite 离线沙盘构建失败：" + str(error), file=sys.stderr)
         return 1
 
 

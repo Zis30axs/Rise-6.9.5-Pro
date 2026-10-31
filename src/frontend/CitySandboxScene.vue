@@ -13,6 +13,7 @@ import {
 } from './tokyo-sandbox-map';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { readLocalAssetBytes } from './local-asset-buffer';
+import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
 type MapPerson = {
@@ -40,12 +41,8 @@ const emit = defineEmits<{
   scale: [value: { metersPerPixel: number }];
 }>();
 
-// Static eager import is essential: Lite's ZIP externalizer replaces the complete
-// Base64 data URL inside the single IIFE with its verified local IndexedDB Blob URL.
-// The finished card never loads a second script or requests a remote model.
-const modelAssets = import.meta.glob<string>('../../assets/models/unread-city-tokyo-sandbox.glb', {
-  eager: true, query: '?inline', import: 'default',
-});
+// Static import makes a missing source GLB a build error, never a silent empty glob.
+// Lite externalizes this complete data URL into its ONE local IndexedDB-backed ZIP.
 const canvas = ref<HTMLCanvasElement>();
 const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
 const variant = ref<'glb' | 'procedural'>('glb');
@@ -246,7 +243,7 @@ async function load() {
   status.value = 'loading';
   let pending: THREE.Group | undefined;
   try {
-    const bundled = Object.values(modelAssets)[0];
+    const bundled = tokyoModelAsset;
     if (props.previewOnly) {
       pending = createGeometricPreview();
       variant.value = 'procedural';
