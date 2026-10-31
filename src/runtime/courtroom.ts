@@ -603,7 +603,13 @@ export function courtAction(state: WorldState, action: Extract<WorldAction,{type
     enrollCareer(next,current.careers!,owner);
   } else if (action.phase==='return-office') {
     if(current.active || next.locationId!==COURT_HEARING_ID) return error('当前无法离开法庭');
-    leaveHearing(next,{returnTo:{x:0,z:2,yaw:0}} as CourtCase);
+    // The historic action name is retained for old UI clients, but ordinary
+    // courthouse visitors must never teleport to the lawyer's office.
+    if(next.scene?.areaId!=='courthouse' || next.interior?.roomId!==COURT_HEARING_ID)
+      return error('法院入口与法庭位置不一致');
+    next.locationId='courthouse';
+    next.interior=null;
+    next.scene.encounterId=null;
   } else return error('未知的诉讼操作');
   next.courtroom = parseCourtroom(current);
   return next;
