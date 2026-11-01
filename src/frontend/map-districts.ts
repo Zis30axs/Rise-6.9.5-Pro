@@ -11,7 +11,7 @@ export const mapDistricts = [
   { id: 'campus', name: '高田／西早稻田校园', shortName: '校园与南门', description: '校园、南门街区与周边现有地点。', x: 0, z: 15 },
   { id: 'home', name: '杂司谷住宅区', shortName: '杂司谷住宅区', description: '住宅街、家园与杂司谷接驳站。', x: -180, z: 150 },
   { id: 'commercial', name: '池袋／东池袋', shortName: '池袋商业区', description: '商业街、居民住处与池袋接驳站。', x: 180, z: 150 },
-  { id: 'downtown', name: '目白／目白台', shortName: '目白台住宅区', description: '丰川家、二阶堂家与目白台接驳站。', x: -20, z: 185 },
+  { id: 'downtown', name: '目白／目白台', shortName: '目白台豪华住宅区', description: '高密度豪华住宅塔楼群、长崎家高层公寓、丰川家、王冢家、二阶堂家与目白台接驳站。', x: -20, z: 185 },
   { id: 'city-park', name: '神田川沿岸绿道', shortName: '神田川沿岸', description: '河岸绿道、公园、住处与接驳站。', x: 180, z: -150 },
   { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House、KTV 娱乐中心与商务写字楼的繁华都会沙盘。', x: -180, z: -150 },
   { id: 'takao-mountain', name: '高尾山自然风景区', shortName: '高尾山风景区', description: '青翠秀美的近郊名山沙盘，包含登山步道、观景展望台、山麓温泉与观光索道。', x: 0, z: -175 },

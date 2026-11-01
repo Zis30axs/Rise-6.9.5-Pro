@@ -15,6 +15,82 @@ export const SOCIAL_SKILLS: readonly { id: SocialSkillId; label: string; descrip
   { id: 'mediation', label: '冲突调解', description: '在争执与误会中寻找沟通的余地。' },
 ];
 
+export const SKILL_STAGE_TITLES = ['初试啼声', '略显青涩', '游刃有余', '熟稔洞察', '炉火纯青'] as const;
+
+export const SOCIAL_SKILL_DETAILS: Record<SocialSkillId, {
+  tagline: string;
+  themeColor: string;
+  application: string;
+  personalityTraits: Record<ProtagonistId, string>;
+}> = {
+  perception: {
+    tagline: '捕捉言外之意与情绪微妙流转',
+    themeColor: '#38bdf8',
+    application: '在初次结识或微妙交谈中识别对方的情绪走向与真实意图，减少试探成本。',
+    personalityTraits: {
+      soyo: '【本能习惯】从小敏锐捕捉家庭与周遭氛围变化，习惯率先顾及他人情绪。',
+      sakiko: '【审视洞察】快速评判他人的动机与价值，更注重目标效率而非情绪起伏。',
+      emma: '【直觉敏锐】能深刻感知他人内心的痛苦与善意，但容易因外界紧张而内耗。',
+      renako: '【雷达全开】作为常年紧绷的假现充，对周遭气氛与他人的眼神过于敏感。',
+    },
+  },
+  empathy: {
+    tagline: '倾听心事，给予真诚宽慰与陪伴',
+    themeColor: '#a78bfa',
+    application: '让倾诉者放下防线，在沉重心事或情绪低落时带来温暖，稳固深度羁绊。',
+    personalityTraits: {
+      soyo: '【体贴包容】善于作为温柔倾听者，但常因过度代入他人难过而暗自压抑。',
+      sakiko: '【克制疏离】习惯收起共情，理智压倒感性，较少向他人展示温柔与脆弱。',
+      emma: '【灵魂共鸣】拥有极为纯粹深沉的共情能力，能无条件接纳受伤的灵魂。',
+      renako: '【感同身受】能深切理解落寞者与边缘人的心境，愿意真诚陪伴他人。',
+    },
+  },
+  expression: {
+    tagline: '跨越心防，清晰传递真实心声',
+    themeColor: '#f43f5e',
+    application: '说清内心的真实诉求与情感边界，打破猜忌与算计，建立真正坦率的关系。',
+    personalityTraits: {
+      soyo: '【沉重阻碍】不愿露出脆弱与算计，吐露真实心声对她而言是极大的心理考验。',
+      sakiko: '【强硬直率】表达指令清晰坚定，但对自身的贫困与家庭伤痛筑有高高的心墙。',
+      emma: '【真诚渴望】努力将心中的善意与坚持传达给同伴，但在高压场合略显拘谨。',
+      renako: '【步步维艰】在现充面具与死宅本心间拉扯，每一次说真话都心跳加速。',
+    },
+  },
+  persuasion: {
+    tagline: '求同存异，在分歧中赢得认可',
+    themeColor: '#f59e0b',
+    application: '在观点分歧与诉求冲突中找到共赢方案，在商定安排与重要决策中获得支持。',
+    personalityTraits: {
+      soyo: '【委婉迂回】擅长用体贴周全的提议引导对方，面对强硬冲突时倾向退让。',
+      sakiko: '【极具气场】拥有强大的号召力与雄辩能力，能清晰勾勒宏大愿景并打动同伴。',
+      emma: '【以心换心】不擅长利益算计，倾向用真挚情感与共同信念去感召他人。',
+      renako: '【勉力支撑】容易在强势对象面前妥协退缩，需要极大勇气才能坚持己见。',
+    },
+  },
+  organizing: {
+    tagline: '统筹多方，张罗行程与相聚时光',
+    themeColor: '#10b981',
+    application: '协调邀约时间、会面地点与多边关系，在聚会活动与日常相约中发挥枢纽作用。',
+    personalityTraits: {
+      soyo: '【从容自得】协调场地、准备茶歇与安排排练游刃有余，乐于成为凝聚大家的纽带。',
+      sakiko: '【统帅全局】天生的组织核心，严密把控排练日程、人员分工与运作节奏。',
+      emma: '【不擅繁琐】更喜欢安静专注的单独交流，面对复杂多边聚会容易耗尽精力。',
+      renako: '【电量告急】张罗聚会对内向社恐是巨大消耗，事后需要长时间独处回血。',
+    },
+  },
+  mediation: {
+    tagline: '平息争端，化解误会与针锋相对',
+    themeColor: '#6366f1',
+    application: '化解剑拔弩张的紧张局面与误会隔阂，平息争吵，寻找彼此退让与理解的契机。',
+    personalityTraits: {
+      soyo: '【心力交瘁】极度害怕关系破裂，在尖锐对立面前容易感到无助与窒息。',
+      sakiko: '【决断主导】习惯以效率和平息事态为先，不擅长安抚细腻微妙的情绪创伤。',
+      emma: '【至关重要】在人际与纷争中坚守公允与谅解，拼尽全力化解隔阂。',
+      renako: '【慌乱劝架】害怕气氛冰冷，会手忙脚乱地当和事佬，尽力维护大家的关系。',
+    },
+  },
+};
+
 export const SOCIAL_PERSONALITY: Readonly<Record<ProtagonistId, string>> = {
   soyo: 'ISFJ', sakiko: 'ENTJ', emma: 'INFP', renako: 'INFP',
 };
@@ -113,8 +189,23 @@ export function socialSkillOverview(state: WorldState, owner: ProtagonistId) {
     const level = socialSkillLevel(xp);
     const start = LEVEL_XP[level - 1]!;
     const target = level === 5 ? null : LEVEL_XP[level]!;
-    return { ...skill, xp, level, remaining: target === null ? 0 : target - xp,
-      percent: target === null ? 100 : Math.round(100 * (xp - start) / (target - start)) };
+    const details = SOCIAL_SKILL_DETAILS[skill.id];
+    const mitigation = Math.floor((level - 1) / 2);
+    const nextMitigation = level < 5 ? Math.floor(level / 2) : mitigation;
+    return {
+      ...skill,
+      xp,
+      level,
+      remaining: target === null ? 0 : target - xp,
+      percent: target === null ? 100 : Math.round(100 * (xp - start) / (target - start)),
+      stageTitle: SKILL_STAGE_TITLES[level - 1],
+      tagline: details?.tagline ?? skill.description,
+      themeColor: details?.themeColor ?? '#9c79a8',
+      application: details?.application ?? '',
+      trait: details?.personalityTraits[owner] ?? '',
+      mitigation,
+      nextMitigation,
+    };
   });
 }
 export function socialSkillQuote(state: WorldState, owner: ProtagonistId, skillId: SocialSkillId, deviation: SocialDeviation) {

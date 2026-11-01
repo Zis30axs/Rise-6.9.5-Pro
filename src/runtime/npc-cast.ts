@@ -25,8 +25,9 @@ function mapWorldbookResidents(entries: typeof lore.entries) {
 export const residentCast = mapWorldbookResidents(lore.entries);
 export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries as typeof lore.entries);
 /** MyGO!!!!! and Ave Mujica members registered on the existing canon worldbook. Soyo and Sakiko stay protagonists. */
-export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId) as typeof lore.entries);
-export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast]);
+export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId?.startsWith('bang-')) as typeof lore.entries);
+export const bangFamilyCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId && !entry.extensions.personId.startsWith('bang-')) as typeof lore.entries);
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast]);
 
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
@@ -64,6 +65,35 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   // Sherry's legal track is fixed. During office hours she is available to
   // investigate cases with Emma, rather than disappearing into a generic NPC shift.
   // Canon places Taki's job at the live house. The existing interior is that workplace.
+  if (id === 'nagasaki-mother') {
+    const morningHome = minute >= 7 * 60 && minute < 9 * 60 + 30;
+    const eveningHome = minute >= 17 * 60 + 30 && minute < 23 * 60 + 30;
+    const afternoonOut = minute >= 14 * 60 && minute < 17 * 60 + 30;
+    if (morningHome || eveningHome) {
+      return {
+        anchorId: null, locationId: 'soyo-house',
+        activity: morningHome
+          ? '在开放式厨房冲泡晨间咖啡、确认今日行程，并在餐桌上为素世留好便签'
+          : '下班归家后在客餐厅小憩饮茶，温和地关心素世的日常生活',
+        available: true,
+        housing: housing?.id ?? 'soyo-house', district: housing?.district ?? 'traditional-downtown', outfit: residentOutfit(id),
+      };
+    }
+    if (afternoonOut) {
+      return {
+        anchorId: person.anchor, locationId: person.anchor,
+        activity: '在街区处理商务会面与日常采买',
+        available: true,
+        housing: housing?.id ?? 'soyo-house', district: housing?.district ?? 'traditional-downtown', outfit: residentOutfit(id),
+      };
+    }
+    return {
+      anchorId: null, locationId: 'soyo-house',
+      activity: minute >= 9 * 60 + 30 && minute < 14 * 60 ? '在公司处理繁忙的商务工作' : '在卧室休息',
+      available: false,
+      housing: housing?.id ?? 'soyo-house', district: housing?.district ?? 'traditional-downtown', outfit: residentOutfit(id),
+    };
+  }
   if (id === 'bang-taki' && minute >= 16 * 60 && minute < 22 * 60) return {
     anchorId: null, locationId: 'livehouse',
     activity: '在 Live House 打工并整理鼓组', available: true,

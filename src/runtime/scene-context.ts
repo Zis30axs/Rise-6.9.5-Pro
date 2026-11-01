@@ -44,7 +44,7 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
   neighborhood: '高田校园南门街区的室外公共空间；可见商铺、道路与通向公交站和公园的人行道。',
   home: '杂司谷的室外住宅区；可见住宅楼、街边树木和杂司谷接驳站，尚未进入家中。',
   commercial: '池袋／东池袋的室外步行广场；可见商场店面、街道和池袋接驳站，尚未进入商场。',
-  downtown: '目白／目白台的街道与步行空间；可见目白台接驳站、商店和丰川家的外部建筑。丰川家私人区域并非公共场所，尚未进入。',
+  downtown: '目白／目白台的豪华住宅大道与高密度高层公寓街区；可见目白台接驳站、喷泉广场、林立的豪华高层住宅塔楼、长崎家高层公寓，以及丰川家、王冢家与二阶堂家的外部宅邸。',
   'city-park': '神田川沿岸的室外绿地与步道；可见树木、休憩区域和神田川绿道站。',
   'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、写字楼商务中心、Live House 入口与 KTV 娱乐城，尚未进入店内。',
   'takao-mountain': '高尾山风景区的室外山麓山道与接驳广场；可见参天杉木、登山步道起点、观光缆车站、极乐汤温泉入口与远处重叠的苍翠山峰。',
@@ -148,7 +148,7 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
-const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home']);
+const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home', 'soyo-house']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],

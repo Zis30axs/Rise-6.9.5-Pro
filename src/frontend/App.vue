@@ -215,7 +215,7 @@ const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'map', title: '地图', path: 'm3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2ZM9 3v16M15 5v16' },
   { id: 'location', title: '地点', path: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z' },
   { id: 'schedule', title: '日程', path: 'M4 5h16v16H4ZM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 18h2' },
-  { id: 'invitations', title: '邀约簿', path: 'M4 4h16v17H4ZM8 2v4M16 2v4M4 9h16M8 13h8M8 17h5' },
+  { id: 'invitations', title: '邀约簿', path: 'M3 9l9 6 9-6M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M3 19l6-5M21 19l-6-5M5 9V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4M9 7h6' },
   { id: 'inventory', title: '背包', path: 'M8 6V4a4 4 0 0 1 8 0v2M6 6h12a2 2 0 0 1 2 2v13H4V8a2 2 0 0 1 2-2ZM7 13h10v6H7ZM8 9h8' },
   { id: 'status', title: '状态', path: 'M5 3h14v18H5ZM9 7h6M9 11h6M9 15h3M3 7h4M3 15h4' },
 ];
@@ -957,7 +957,7 @@ onBeforeUnmount(() => {
         <div><button type="button" :disabled="model.busy" @click="travelToMeeting(meetingPrompt)">前往约定地点</button>
         <button type="button" :disabled="model.busy" @click="hideMeetingPrompt(meetingPrompt.id)">稍后再说</button></div>
       </section>
-      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]"
+      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :protagonist-id="currentProtagonist" :memory-scope="model.memoryScope"
         :recognizes-speaker="recognizesNovelSpeaker" :invitation-pair="invitationPortraitPair"
         :focus-target="model.phoneSceneJump" @focus="heldPortrait = $event"
         @invitation-focus="invitationPortraitFocus = $event"

@@ -60,7 +60,7 @@ export function getTransitRoutes(stopId: string, vehicleId: TransitVehicleId = '
 /** Novel-mode route planning chooses the rail-linked journey for Mejiro. */
 export function selectTravelVehicle(originLocationId: string, destinationLocationId: string, requested?: string): string {
   if (requested) return requested;
-  const downtown = (id: string) => id === 'downtown' || id === 'toyokawa-house';
+  const downtown = (id: string) => id === 'downtown' || id === 'toyokawa-house' || id === 'soyo-house' || id === 'ouzuka-residence' || id === 'nikaido-house';
   return downtown(originLocationId) || downtown(destinationLocationId) ? 'zbd04a' : 'btr82a';
 }
 

@@ -81,6 +81,11 @@ export const watanareHousings: readonly MajoHousing[] = Object.freeze([
     interiorId: 'amaori-family-home', district: 'old-town-lowrise', parentLocationId: 'home', districtArt: true,
   },
   {
+    id: 'soyo-house', type: 'riverfront-highrise', label: '长崎家高层公寓',
+    description: '目白台与池袋交界高地的豪华高层塔楼公寓复式户；配有挑高落地窗、开放式料理岛台与厨房、原木餐桌和贝斯练习角，长崎素世与母亲长崎夫人居住于此。',
+    interiorId: 'soyo-house', district: 'traditional-downtown', parentLocationId: 'downtown', districtArt: true,
+  },
+  {
     id: 'ouzuka-residence', type: 'traditional-courtyard', label: '王冢家宅邸',
     description: '目白台高地的王冢家豪宅，配有宽敞的西式会客室、私人庭院与试衣间；王冢真唯、母亲王冢露涅、专职管家花取单衣居住于此，露西来日期间亦下榻于宅邸客房。',
     interiorId: 'ouzuka-residence', district: 'traditional-downtown', parentLocationId: 'downtown', districtArt: false,
@@ -171,6 +176,7 @@ const housingByPerson: Readonly<Record<string, string>> = Object.freeze({
   'watanare-suzuran': 'haga-residence',
   'watanare-chizuru': 'kamezaki-residence',
   'watanare-miki': 'nemoto-residence',
+  'nagasaki-mother': 'soyo-house',
 });
 
 /** Stable outfit descriptors used by schedules and prompts; not a claim of complete art. */

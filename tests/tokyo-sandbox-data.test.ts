@@ -16,7 +16,7 @@ describe('offline Tokyo sandbox metadata', () => {
   it('has valid landmarks, building IDs and roads', () => {
     expect(sandbox.landmarks).toHaveLength(23);
     expect(landmarkIds.size).toBe(23);
-    expect(new Set(sandbox.buildings.map(building => building.id)).size).toBe(34);
+    expect(new Set(sandbox.buildings.map(building => building.id)).size).toBe(48);
     expect(sandbox.roads).toHaveLength(44);
     for (const landmark of sandbox.landmarks) {
       expect(districtIds.has(landmark.district)).toBe(true);

@@ -53,7 +53,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
-  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'mlm-office': 'commercial',
+  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'soyo-house': 'bedroom', 'mlm-office': 'commercial',
   clinic: 'commercial', 'clinic-room': 'commercial',
 });
 
@@ -79,6 +79,7 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
   'nikaido-house': { src: majoInteriorArt['nikaido-house'], imagePhase: 'day' },
   'anan-noa-milia-home': { src: majoInteriorArt['anan-noa-milia-home'], imagePhase: 'day' },
   'majo-highrise-home': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
+  'soyo-house': { src: majoInteriorArt['majo-highrise-home'], imagePhase: 'dusk' },
   'majo-studio': { src: majoInteriorArt['majo-studio'], imagePhase: 'day' },
   'margo-cafe-room': { src: margoCafeDayBg, imagePhase: 'day', nightSrc: margoCafeNightBg },
   'amaori-family-home': { src: majoInteriorArt['koko-old-house'], imagePhase: 'day' },

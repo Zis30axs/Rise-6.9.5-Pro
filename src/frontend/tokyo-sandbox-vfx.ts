@@ -716,6 +716,236 @@ export function createTokyoSandboxVfx(
   heliGroup.add(fuselage, cockpit, tailBoom, mainRotor, heliSearchlight, heliStrobe);
   root.add(heliGroup);
 
+  // 6b. Mejirodai Opulent High-Density Luxury Residential Towers & Royal Fountain Boulevard (目白台高密度豪宅塔楼群与皇家喷泉大道)
+  const mejirodaiGroup = new THREE.Group();
+  mejirodaiGroup.name = 'mejirodai-luxury-residences';
+
+  const marblePaveMat = new THREE.MeshStandardMaterial({ color: '#f3ede2', roughness: 0.35, metalness: 0.12 });
+  const goldTrimMat = new THREE.MeshStandardMaterial({
+    color: '#eab308',
+    emissive: '#ca8a04',
+    emissiveIntensity: 0.28,
+    roughness: 0.25,
+    metalness: 0.78,
+  });
+  emissiveEntries.push({ material: goldTrimMat, baseEmissive: new THREE.Color('#ca8a04'), isNightWindow: false });
+
+  const hedgeMat = new THREE.MeshStandardMaterial({ color: '#15803d', roughness: 0.75, metalness: 0.05 });
+  const roseBloomMat = new THREE.MeshStandardMaterial({
+    color: '#fb7185',
+    emissive: '#e11d48',
+    emissiveIntensity: 0.18,
+    roughness: 0.5,
+  });
+  const lobbyGlassMat = new THREE.MeshStandardMaterial({
+    color: '#fef3c7',
+    emissive: '#f59e0b',
+    emissiveIntensity: 0.65,
+    roughness: 0.18,
+    metalness: 0.25,
+  });
+  emissiveEntries.push({ material: lobbyGlassMat, baseEmissive: new THREE.Color('#f59e0b'), isNightWindow: false });
+
+  const warmWinMat = new THREE.MeshStandardMaterial({
+    color: '#fffbeb',
+    emissive: '#fbbf24',
+    emissiveIntensity: 0.55,
+    roughness: 0.2,
+    metalness: 0.3,
+  });
+  emissiveEntries.push({ material: warmWinMat, baseEmissive: new THREE.Color('#fbbf24'), isNightWindow: true });
+
+  const champagneWinMat = new THREE.MeshStandardMaterial({
+    color: '#f0f9ff',
+    emissive: '#fde68a',
+    emissiveIntensity: 0.48,
+    roughness: 0.18,
+    metalness: 0.4,
+  });
+  emissiveEntries.push({ material: champagneWinMat, baseEmissive: new THREE.Color('#fde68a'), isNightWindow: true });
+
+  const balconyGlassMat = new THREE.MeshStandardMaterial({
+    color: '#bae6fd',
+    roughness: 0.15,
+    metalness: 0.65,
+    transparent: true,
+    opacity: 0.65,
+  });
+
+  // Grand Central Boulevard & Tiered Marble Fountain at (0, 150)
+  const boulevardPlinth = new THREE.Mesh(new THREE.BoxGeometry(15.5, 0.12, 42), marblePaveMat);
+  boulevardPlinth.position.set(0, 0.06, 151);
+  const boulevardGoldBorderL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.15, 42), goldTrimMat);
+  boulevardGoldBorderL.position.set(-7.6, 0.08, 151);
+  const boulevardGoldBorderR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.15, 42), goldTrimMat);
+  boulevardGoldBorderR.position.set(7.6, 0.08, 151);
+  mejirodaiGroup.add(boulevardPlinth, boulevardGoldBorderL, boulevardGoldBorderR);
+
+  const fountainGroup = new THREE.Group();
+  fountainGroup.position.set(0, 0.1, 151);
+  const basinOuter = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.7, 0.72, 24), marblePaveMat);
+  basinOuter.position.y = 0.36;
+  const basinGoldRim = new THREE.Mesh(new THREE.TorusGeometry(4.45, 0.14, 10, 28), goldTrimMat);
+  basinGoldRim.rotation.x = Math.PI / 2;
+  basinGoldRim.position.y = 0.72;
+  const fountainWaterMat = new THREE.MeshStandardMaterial({
+    color: '#38bdf8',
+    emissive: '#0284c7',
+    emissiveIntensity: 0.35,
+    roughness: 0.08,
+    metalness: 0.55,
+  });
+  waterMaterials.push(fountainWaterMat);
+  const basinWater = new THREE.Mesh(new THREE.CylinderGeometry(4.15, 4.15, 0.55, 24), fountainWaterMat);
+  basinWater.position.y = 0.38;
+  const midBowl = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 1.3, 1.35, 20), marblePaveMat);
+  midBowl.position.y = 1.15;
+  const topSpire = new THREE.Mesh(new THREE.ConeGeometry(0.65, 2.8, 16), goldTrimMat);
+  topSpire.position.y = 2.85;
+  fountainGroup.add(basinOuter, basinGoldRim, basinWater, midBowl, topSpire);
+  mejirodaiGroup.add(fountainGroup);
+
+  // Symmetrical Rose Parterres & Boulevard Lamps along the Mejirodai Plaza
+  const poleGeom = new THREE.CylinderGeometry(0.1, 0.14, 4.6, 8);
+  const poleMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.4, metalness: 0.7 });
+  for (const side of [-1, 1]) {
+    for (const zPos of [135, 143, 159, 167]) {
+      const parterre = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 5.2), hedgeMat);
+      parterre.position.set(side * 6.1, 0.28, zPos);
+      const roses = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.24, 4.4), roseBloomMat);
+      roses.position.set(side * 6.1, 0.62, zPos);
+      const bPole = new THREE.Mesh(poleGeom, poleMat);
+      bPole.position.set(side * 7.8, 2.3, zPos);
+      mejirodaiGroup.add(parterre, roses, bPole);
+
+      const bBulb = new THREE.Mesh(bulbGeom, lampBulbMat);
+      bBulb.position.set(side * 7.8, 4.65, zPos);
+      const bPool = new THREE.Mesh(poolGeom, lampPoolMat);
+      bPool.position.set(side * 7.8, 0.14, zPos);
+      lampGroup.add(bBulb, bPool);
+    }
+  }
+
+  // High-Density Luxury Residential Towers Specification
+  const mejirodaiTowers: {
+    x: number;
+    z: number;
+    w: number;
+    d: number;
+    h: number;
+    floors: number;
+    bodyColor: string;
+    crownStyle: 'penthouse' | 'spire' | 'twin-crest' | 'mansard';
+  }[] = [
+    // Front Boulevard Row (z = 139)
+    { x: -60, z: 139, w: 13.5, d: 11.5, h: 22.0, floors: 7, bodyColor: '#e8dec8', crownStyle: 'spire' },
+    { x: -38, z: 139, w: 14.8, d: 12.6, h: 29.5, floors: 10, bodyColor: '#f5efe2', crownStyle: 'penthouse' }, // Soyo's Luxury High-Rise
+    { x: -18, z: 139, w: 12.6, d: 11.0, h: 19.5, floors: 6, bodyColor: '#dfd5c3', crownStyle: 'mansard' },
+    { x: 18, z: 139, w: 12.6, d: 11.0, h: 19.5, floors: 6, bodyColor: '#dfd5c3', crownStyle: 'mansard' },
+    { x: 38, z: 139, w: 14.5, d: 12.4, h: 25.0, floors: 8, bodyColor: '#efe4d4', crownStyle: 'penthouse' },
+    { x: 60, z: 139, w: 13.5, d: 11.5, h: 21.0, floors: 7, bodyColor: '#e4d9c5', crownStyle: 'spire' },
+    // Middle Row Slender High-Rise Infill (z = 162, between existing mansions)
+    { x: -36, z: 162, w: 9.2, d: 13.6, h: 26.0, floors: 9, bodyColor: '#dce5df', crownStyle: 'spire' },
+    { x: 38.5, z: 162, w: 9.6, d: 13.6, h: 25.0, floors: 8, bodyColor: '#ebe0ce', crownStyle: 'spire' },
+    // North Skyline High-Rise Row (z = 179)
+    { x: -60, z: 179, w: 14.6, d: 10.2, h: 24.5, floors: 8, bodyColor: '#e6dcc8', crownStyle: 'mansard' },
+    { x: -38, z: 179, w: 15.6, d: 10.8, h: 28.0, floors: 9, bodyColor: '#f0e9da', crownStyle: 'penthouse' },
+    { x: -14, z: 179, w: 16.2, d: 10.8, h: 33.0, floors: 11, bodyColor: '#f7f2e7', crownStyle: 'twin-crest' },
+    { x: 14, z: 179, w: 16.2, d: 10.8, h: 31.5, floors: 10, bodyColor: '#f7f2e7', crownStyle: 'twin-crest' },
+    { x: 38, z: 179, w: 15.6, d: 10.8, h: 27.0, floors: 9, bodyColor: '#ede3d2', crownStyle: 'penthouse' },
+    { x: 60, z: 179, w: 14.6, d: 10.2, h: 23.5, floors: 8, bodyColor: '#e2d7c3', crownStyle: 'mansard' },
+  ];
+
+  for (let idx = 0; idx < mejirodaiTowers.length; idx++) {
+    const t = mejirodaiTowers[idx]!;
+    const tower = new THREE.Group();
+    tower.position.set(t.x, 0, t.z);
+
+    const facadeMat = new THREE.MeshStandardMaterial({
+      color: t.bodyColor,
+      roughness: 0.42,
+      metalness: 0.18,
+    });
+    const podiumMat = new THREE.MeshStandardMaterial({
+      color: '#cbd5e1',
+      roughness: 0.38,
+      metalness: 0.25,
+    });
+
+    // 1) Grand Podium & Illuminated Lobby
+    const podiumH = 3.2;
+    const podium = new THREE.Mesh(new THREE.BoxGeometry(t.w + 0.8, podiumH, t.d + 0.8), podiumMat);
+    podium.position.y = podiumH / 2;
+    const lobbyGlass = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.58, podiumH * 0.72, t.d + 0.92), lobbyGlassMat);
+    lobbyGlass.position.y = podiumH * 0.42;
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.68, 0.28, t.d + 1.8), goldTrimMat);
+    canopy.position.y = podiumH * 0.88;
+    tower.add(podium, lobbyGlass, canopy);
+
+    // 2) Main High-Density Residential Shaft
+    const shaftH = t.h - podiumH;
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(t.w, shaftH, t.d), facadeMat);
+    shaft.position.y = podiumH + shaftH / 2;
+    tower.add(shaft);
+
+    // 3) Vertical Golden Architectural Fins
+    for (const fx of [-t.w * 0.46, -t.w * 0.16, t.w * 0.16, t.w * 0.46]) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.26, shaftH + 0.6, t.d + 0.24), goldTrimMat);
+      fin.position.set(fx, podiumH + shaftH / 2, 0);
+      tower.add(fin);
+    }
+
+    // 4) High-Density Illuminated Apartment Window Bands & Glass Balconies
+    const winMat = idx % 2 === 0 ? warmWinMat : champagneWinMat;
+    const stepH = shaftH / t.floors;
+    for (let f = 0; f < t.floors; f++) {
+      const fy = podiumH + (f + 0.55) * stepH;
+      const winBandFB = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.84, stepH * 0.46, t.d + 0.14), winMat);
+      winBandFB.position.y = fy;
+      const winBandLR = new THREE.Mesh(new THREE.BoxGeometry(t.w + 0.14, stepH * 0.46, t.d * 0.82), winMat);
+      winBandLR.position.y = fy;
+      tower.add(winBandFB, winBandLR);
+
+      if (f % 2 === 1) {
+        const balcony = new THREE.Mesh(new THREE.BoxGeometry(t.w + 0.56, 0.2, t.d + 0.56), balconyGlassMat);
+        balcony.position.y = fy - stepH * 0.26;
+        tower.add(balcony);
+      }
+    }
+
+    // 5) Opulent Rooftop Penthouse, Sky-Garden & Golden Crown
+    const roofY = t.h;
+    const cornice = new THREE.Mesh(new THREE.BoxGeometry(t.w + 0.7, 0.42, t.d + 0.7), goldTrimMat);
+    cornice.position.y = roofY + 0.21;
+    const skyGarden = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.86, 0.35, t.d * 0.86), hedgeMat);
+    skyGarden.position.y = roofY + 0.45;
+    const penthouse = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.62, 2.8, t.d * 0.62), facadeMat);
+    penthouse.position.y = roofY + 1.8;
+    const penthouseWin = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.64, 1.5, t.d * 0.64), lobbyGlassMat);
+    penthouseWin.position.y = roofY + 1.85;
+    tower.add(cornice, skyGarden, penthouse, penthouseWin);
+
+    if (t.crownStyle === 'penthouse' || t.crownStyle === 'twin-crest') {
+      const crownFrame = new THREE.Mesh(new THREE.BoxGeometry(t.w * 0.68, 0.35, t.d * 0.68), goldTrimMat);
+      crownFrame.position.y = roofY + 3.35;
+      tower.add(crownFrame);
+    }
+    if (t.crownStyle === 'spire' || t.crownStyle === 'twin-crest') {
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(0.55, 4.8, 12), goldTrimMat);
+      spire.position.y = roofY + 5.4;
+      tower.add(spire);
+    }
+    if (t.crownStyle === 'mansard') {
+      const mansard = new THREE.Mesh(new THREE.ConeGeometry(t.w * 0.48, 3.2, 4), podiumMat);
+      mansard.rotation.y = Math.PI / 4;
+      mansard.position.y = roofY + 3.8;
+      tower.add(mansard);
+    }
+
+    mejirodaiGroup.add(tower);
+  }
+  root.add(mejirodaiGroup);
+
   // 7. Skyscraper Rooftop Sky-Searchlights (城市天际线体积探照光束)
   const searchlights: SearchlightBeam[] = [];
   const beamAnchors = [

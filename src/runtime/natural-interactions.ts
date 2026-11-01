@@ -8,7 +8,7 @@ import { parseSocialAgenda, startSocialAgenda, type SocialAgenda, type SocialAge
 
 /** "Go home" follows the selected character, not the shared outdoor housing district. */
 export const protagonistHomeRooms: Readonly<Record<ProtagonistId, string>> = Object.freeze({
-  soyo: 'dorm-room',
+  soyo: 'soyo-house',
   sakiko: 'toyokawa-house',
   emma: 'emma-yuki-home',
   renako: 'amaori-family-home',
