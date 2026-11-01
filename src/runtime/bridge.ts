@@ -21,6 +21,7 @@ import { applyMandatoryStoryTagContract } from './story-tag-contract';
 import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
+import { cookingLlmPayload } from './cooking';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { SOCIAL_PERSONALITY, socialSkillOverview } from './social-skills';
 import { protagonistHomeRooms } from './natural-interactions';
@@ -144,6 +145,7 @@ export const STORY_PROTOCOL = [
   '目录外的合理日常行动如洗澡、做家务、兼职，可使用{"type":"activity","label":"本次活动","minutes":30,"effects":{"energy":-5,"morale":3,"stress":-2,"health":0,"balance":0,"satiety":0,"foodEnergy":0}}。minutes为整数1–10080；七个effects字段必须齐全、无变化填0；除balance整数±100000、foodEnergy整数±20000外其余整数±100。收入支出及身心变化须与行动相符，余额不得为负；时间带来的正常饱腹和能量消耗由程序自动计算，不再手动重扣。不能用activity绕过已配置服务的收费、库存、闭店或学习规则，不能凭空增加物品或学习点。',
   `角色之间的资金往来必须使用显式转账行动：{"type":"transfer","from":"付款方ID","to":"收款方ID","cents":5000,"reason":"本轮转账依据"}。from和to逐字使用主角ID或contacts里的联系人ID，两者不能相同；cents为整数1–${STORY_ACTION_LIMITS.transferCents}（单笔最高十万日元），程序双边同时扣款与入账，总金额守恒。只有本轮明确发生金钱交付时才转账；他人给玩家的钱不得用activity的balance冒充，必须走transfer。付款方余额不足时整轮不保存，转账前先核对。`,
   'journal 和 scene.lastInteraction 中已经结算的活动只作为完成后的事实承接；使用保存的实际时长和结果，不重复结算、不重抽时长，也不擅自追加一段活动。',
+  'cooking 若出现，只是已经发生的下厨事实：菜名、难度、完美或普通或失败料理、指针停点和偏向、偏离多少、用过的食材、谁在哪间厨房、当时的时刻。按眼前的场景和人物性格写过程和反应。这些数量已经记下，不要再买、再吃、再赠或用活动去改背包和时钟。',
   '余额、背包数量、健康、精神、压力、饱腹和食物能量由行动规则结算。叙事可描写本轮world_actions的实际过程与结束状态；已有journal只承接，不能重复扣钱、消耗物品或加减数值。对随机学习、交通结果不要预先编造精确点数或时长，下轮以保存记录为准。',
   'player.morale是0–100的游戏精神状态，越高表示越有精神；stress越高表示压力越大。学习消耗精力和精神、增加压力；整理、浏览书架及休息也有已由程序结算的身心变化，以journal和当前状态为准，不再加减。普通闲聊、观察和点击推进已有剧情不消耗精力或精神；真实费力社交可由明确的social_skill行动额外结算精力和压力，不可在activity中重复扣除。',
   'academics 是已确认的专业及多科学习进度；subjects 各有独立学习点、阶段与目标，timetable 是每周课程表，不等于已经出勤或学完。学习时由玩家选科，围绕 lastGain 中已完成的科目和实际结果承接叙事，不替玩家换科或虚构提升。教室只学本专业；图书馆学习、选书阅读和书店阅读可选其他专业科目。本专业每分钟1点；跨科由程序一次抽取灵感（25%，点数×1.5、额外精神+3压力−2）、困惑（25%，点数×0.5、额外精力−3精神−4压力+5）或普通（50%）。这些修正叠加常规学习消耗，实际数值以lastGain保存的净变化为准。',
@@ -363,6 +365,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
       const narrative = narrativeContext(snapshot);
+      const cooking = cookingLlmPayload(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
       const minimalStore = storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category }));
@@ -374,6 +377,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         socialInvitations: (snapshot.protagonists?.socialInvitations ?? [])
           .filter(row => row.owner === activeProtagonist(snapshot)).slice(-18),
         narrative,
+        ...(cooking ? { cooking } : {}),
         worldContinuity: omniscientContinuityContext(snapshot),
         otherSideOpportunity: otherSidePromptContext(snapshot),
         weeklyMemory: weeklyMemoryContext(snapshot),

@@ -185,8 +185,6 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'emma-home-window', label: '看看窗外', description: '观察窗外街区与室内光线，不消耗时间或精力。',
         x: -5, z: 2.8, minutes: 0, energyDelta: 0, result: '在窗边看了一会儿街区，没有改变位置或时间。', prompt: '你在艾玛与月代雪家的窗边观察街区，没有消耗时间或精力。请基于已保存的在场事实叙述。' },
-      { id: 'emma-home-kitchen', label: '煮点东西', description: '使用料理台 20 分钟，消耗 3 点精力；不会凭空生成食材。',
-        x: 4, z: -1.2, minutes: 20, energyDelta: -3, result: '在料理台前简单煮了点东西，食材仍以背包记录为准。', prompt: '你在料理台前煮了东西，程序已推进 20 分钟并扣除 3 点精力；不自动消耗或生成背包物品。' },
       { id: 'emma-home-sofa', label: '在沙发休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.2, z: -1.2, minutes: 30, energyDelta: 6, result: '在沙发上休息了半小时。', prompt: '你在沙发上休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
@@ -271,8 +269,6 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'studio-window', label: '看看窗外', description: '观察公寓窗外的城市公园方向，不消耗时间或精力。',
         x: -5.2, z: 2.6, minutes: 0, energyDelta: 0, result: '在单身公寓的窗边看了看外头的公园方向。', prompt: '你在单身公寓的窗边观察窗外，没有消耗时间或精力。' },
-      { id: 'studio-kitchen', label: '用厨房', description: '简单使用厨房 15 分钟，消耗 2 点精力；不会凭空生成食材。',
-        x: 4.2, z: -1.6, minutes: 15, energyDelta: -2, result: '在小厨房简单弄了点吃的，食材仍以背包记录为准。', prompt: '你在单身公寓的小厨房忙了十五分钟，程序已扣除 2 点精力；不自动消耗或生成背包物品。' },
       { id: 'studio-rest', label: '在床边休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.8, z: -0.6, minutes: 30, energyDelta: 6, result: '在床边休息了半小时。', prompt: '你在单身公寓的床边休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
