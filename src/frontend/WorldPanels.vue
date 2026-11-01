@@ -4,6 +4,7 @@ import WorldMap from './WorldMap.vue';
 import StoryEngineSettings from './StoryEngineSettings.vue';
 import AcademicProgress from './AcademicProgress.vue';
 import SocialSkills from './SocialSkills.vue';
+import { invitationCards } from './invitation-book';
 import AcademicCorrection from './AcademicCorrection.vue';
 import AcademicTimetable from './AcademicTimetable.vue';
 import { formatGameNumber } from './format-game-number';
@@ -24,7 +25,7 @@ import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean }>();
-const emit = defineEmits<{ compose: [name: string]; invite: [name: string]; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
+const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
 const labels: Record<Panel, string> = {
   phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记',
 };
@@ -62,10 +63,7 @@ const mindStats = computed(() => [
 ]);
 const recentChanges = computed(() => props.model.state.journal.slice(-5).reverse());
 const protagonist = computed(() => activeProtagonist(props.model.state));
-const invitations = computed(() => (props.model.state.protagonists?.socialInvitations ?? [])
-  .filter(item => item.owner === protagonist.value).slice(-12).reverse());
-const socialContacts = computed(() => props.model.state.contacts.slice(0, 12));
-const invitationStatus = (status: string) => ({ accepted: '已约定', declined: '已婉拒', pending: '待回应' }[status] ?? '待回应');
+const invitations = computed(() => invitationCards(props.model.state));
 const lifeRecap = computed(() => protagonistRecap(props.model.state));
 const lawProgress = computed(() => lawOwner(props.model.state));
 const inventoryCount = computed(() => props.model.state.inventory.reduce((sum, item) => sum + item.quantity, 0));
@@ -178,9 +176,8 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <SocialSkills :state="model.state" />
       <section class="wp-status-section" data-status-section="social" aria-label="社交与邀约">
         <div class="wp-heading"><h2>社交与邀约</h2><small>相遇、联系和约定</small></div>
-        <div class="wp-social-contacts"><button v-for="contact in socialContacts" :key="contact.id" type="button" class="wp-secondary" :disabled="model.busy" :data-invite-contact="contact.id" @click="emit('invite', contact.name)">邀请{{ contact.name }}</button></div>
-        <div v-if="invitations.length" class="wp-journal-list"><article v-for="invite in invitations" :key="invite.id" class="wp-journal-entry" :data-invitation="invite.id"><time>{{ invite.day }} 日 · {{ invite.time }} · {{ invitationStatus(invite.status) }}</time><p>{{ invite.targetName }} · {{ invite.message }}</p><small>{{ locationName(invite.locationId) }}</small></article></div>
-        <p v-else class="wp-footnote">暂时没有约好的活动。路上偶遇或给朋友发短信，都可以自然提出邀请。</p>
+        <p class="wp-footnote">{{ invitations.length ? `邀约簿里记着 ${invitations.length} 份邀请与约定。` : '给想见的人留一句邀请，记下下一次见面的时间。' }}</p>
+        <button type="button" class="wp-secondary" data-status-open-invitations @click="emit('invitations')">打开邀约簿 ↗</button>
       </section>
       <section class="wp-status-section" data-status-section="illness" aria-label="身体健康与不适"><div class="wp-heading"><h2>身体健康与不适</h2><small>{{ activeIllnesses.length ? '当前体感异常' : '状态平稳' }}</small></div><div v-if="activeIllnesses.length" class="wp-illness-list"><article v-for="illness in activeIllnesses" :key="illness.id" class="wp-illness-card" :class="'wp-severity-' + illness.severity" :data-illness="illness.id"><div class="wp-illness-header"><h3>{{ illness.name }}</h3><span class="wp-illness-badge">{{ illness.severityLabel }}</span></div><p class="wp-illness-desc">{{ illness.description }}</p><div class="wp-illness-symptoms"><span v-for="symptom in illness.symptoms" :key="symptom" class="wp-symptom-tag">{{ symptom }}</span></div><p class="wp-illness-remedy">调理建议：{{ illness.remedyHint }}</p></article></div><p v-else class="wp-health-healthy">身体状况良好，暂无明显不适。规律作息与充足饮食有助于保持健康。</p></section>
       <section class="wp-status-section" data-status-section="resources" aria-label="账户与携带物品"><div class="wp-heading"><h2>账户与携带物品</h2></div><div class="wp-resources"><article class="wp-resource"><h2>Appie Pay</h2><p class="wp-footnote">余额、银行卡与交易流水在手机中查看。</p><button type="button" class="wp-text-button" @click="emit('phone')">打开手机 ↗</button></article><article class="wp-resource"><h2>随身携带</h2><p class="wp-resource-value">{{ model.state.inventory.length }}<small>种 · {{ inventoryCount }} 份／件</small></p><button type="button" class="wp-text-button" data-status-open-inventory @click="emit('inventory')">打开背包 ↗</button></article></div><button v-if="storeAvailability.available" type="button" class="wp-secondary wp-store-entry" data-open-store :disabled="model.busy" @click="emit('store')">逛便利店 ↗</button></section>
@@ -207,8 +204,6 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 </template>
 
 <style scoped>
- .wp-social-contacts { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
- .wp-social-contacts button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 [data-testid="protagonist-recap"] > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
 [data-testid="protagonist-recap"] .wp-journal-entry p { overflow-wrap: anywhere; }
 .wp-illness-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
@@ -224,4 +219,5 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 .wp-symptom-tag { font-size: 0.72rem; padding: 1px 6px; border-radius: 10px; background: rgba(0, 0, 0, 0.06); }
 .wp-health-healthy { color: #15803d; font-size: 0.88rem; padding: 8px 0; }
 </style>
+
 

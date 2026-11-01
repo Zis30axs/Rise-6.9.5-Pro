@@ -175,6 +175,8 @@ describe('自然输入与面板操作共用真实状态', () => {
     expect(panel).toContain('data-status-section="social"');
     expect(panel).toContain('data-status-section="recent"');
     expect(panel).not.toContain('data-status-section="game-purchases"');
-    expect(panel).toContain("emit('invite', contact.name)");
+    expect(panel).toContain("emit('invitations')");
+    expect(panel).toContain('data-status-open-invitations');
   });
 });
+

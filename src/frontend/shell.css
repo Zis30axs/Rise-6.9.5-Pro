@@ -17,6 +17,7 @@
 @import './place-actions.css';
 @import './interaction-overlay.css';
 @import './social-interaction.css';
+@import './invitation-book.css';
 @import './story-engine-settings.css';
 @import './protagonist-switch.css';
 :host { all:initial; color-scheme:dark; }
@@ -283,3 +284,11 @@
 .court-switch-actions button{min-height:46px;padding:10px;border:1px solid #c2b8ca;border-radius:9px;color:inherit;background:#62566e;cursor:pointer}
 .court-switch-actions button:first-child{background:transparent}
 .court-switch-actions button:focus-visible{outline:3px solid #dec1ff;outline-offset:2px}
+
+
+/* Seven shortcuts remain reachable on the 320px baseline. */
+@media(max-width:760px) {
+  .tool-dock { width:min(370px,calc(100% - 16px)); gap:0; justify-content:space-between; }
+  .uc-shell .tool-dock button { flex:1; width:auto; min-width:0; padding:5px 2px; }
+  .uc-shell .tool-dock .phone-launcher { flex:1.4; width:auto; }
+}
