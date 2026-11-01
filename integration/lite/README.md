@@ -5,8 +5,7 @@
 ## 发布物
 
 - unread-city-lite-tauri.png：可导入 TauriTavern 的轻量 Character Card V2 PNG。角色设定、完整世界书、剧情逻辑、内嵌手机运行时保留。
-- unread-city-lite-assets.zip：离线本地资源包，只包含图片、模型、Live2D 等数据，不包含需安装的插件或需要执行的脚本。东京沙盘 GLB 不在此包内。
-- unread-city-tokyo-sandbox.zip：东京沙盘模型的独立离线包，清单规则与主素材 ZIP 相同（STORE、`manifest.json`、按 SHA-256 存放）。城市沙盘未安装该包时使用简化外观。
+- unread-city-lite-assets.zip：离线本地资源包，只包含图片、模型（含东京 3D 沙盘）、Live2D 等数据，不包含需安装的插件或需要执行的脚本。
 - lite-verification.json：SHA-256、体积、移出资源数及世界书校验。
 
 轻量卡在 ZIP 尚未安装时不启动游戏前端，而是保留原生角色聊天界面。首次在该卡聊天中执行角色脚本，右上角会显示“📦 安装 Lite 素材 ZIP”。点按钮从 iPhone“文件”中选取配套 ZIP，校验并缓存完成后刷新页面重新进入角色；同源环境后续从 IndexedDB 按 SHA-256 恢复素材 Blob URL，不访问素材服务器。
@@ -48,7 +47,3 @@ GitHub Actions 的 .github/workflows/lite-prerelease.yml 在 push lite 分支时
 - 只把静态资源文本移出 IIFE 并在导入后替换成 Blob URL，不执行 ZIP 内容；Lite 分支已适配人物/车辆/飞机 GLB 与素世 Live2D 的本地 Blob URL 读取。仍须在 iPhone 上验证实际渲染。
 - PR #4 尚未完成全部视觉与模拟需求：双主角手机只有不同配色，银行卡使用 CSS，应用仍是通用占位图标；祥子没有独立 3D 主角模型。后台自主日程、LLM 手机补充、完整知情边界、全部旧笔记／相册设备分区等仍待后续实现。
 - 本次仅纠正 RC2 的发布说明，不修改已发布的 PNG、ZIP、校验文件、标签或已有存档。游戏原有模型调用流程不被扩展为在线素材下载。
-
-## RC2 修复：丰川家会客厅 / 祥子立绘
-
-main 和 lite 原本使用相同的 toyokawa_living_room.webp（相同 Git Blob SHA 和清单 SHA-256），但 RC1 外挂 ZIP 加载后将素材地址变成 blob: URL，旧的运行时 PNG/WebP 校验只接受 data: URL，导致会客厅错误回退到默认 bedroom-day 背景，且祥子立绘也受影响。RC2 仅在 Lite 分支接受 SHA-verified ZIP 安装后恢复的本地 Blob 图片地址，保留不受信任 URL 拦截和素材字段校验。新增对应回归测试。RC1 保持可下载，用于回退或对比。

@@ -1,31 +1,21 @@
 /* Lite asset loader. ZIP entries are verified data, never executable scripts.
-   Core pack: unread-city-lite-assets.zip
-   Tokyo sandbox pack: unread-city-tokyo-sandbox.zip
-   Both use the same STORE manifest rules. The sandbox model is its own archive. */
+   Core pack: unread-city-lite-assets.zip (includes Tokyo 3D sandbox model).
+   Uses standard STORE manifest rules. */
 const __UC_LITE_ENTRIES__ = __UC_LITE_ASSET_LIST__;
 const __UC_LITE_PACK_SHA__ = __UC_LITE_PACK_DIGEST__;
 const __UC_LITE_DB_NAME__ = 'unread-city-lite-assets-v1';
 const __UC_LITE_URLS__ = new Map();
-const __UC_TOKYO_ENTRIES__ = __UC_TOKYO_SANDBOX_ASSET_LIST__;
-const __UC_TOKYO_PACK_SHA__ = __UC_TOKYO_SANDBOX_PACK_DIGEST__;
-const __UC_TOKYO_DB_NAME__ = 'unread-city-tokyo-sandbox-v1';
-const __UC_TOKYO_URLS__ = new Map();
 const __UC_LITE_FALLBACK_IMAGE__ = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 const __UC_CORE_PACK__ = {
   db: __UC_LITE_DB_NAME__, sha: __UC_LITE_PACK_SHA__, entries: __UC_LITE_ENTRIES__, urls: __UC_LITE_URLS__,
   buttonId: 'unread-city-lite-import', label: '📦 安装 Lite 素材 ZIP',
   title: '只接受本卡匹配的本地 ZIP；无网络请求。', top: '12px', width: '190px', accept: '.zip,application/zip',
 };
-const __UC_TOKYO_PACK__ = {
-  db: __UC_TOKYO_DB_NAME__, sha: __UC_TOKYO_PACK_SHA__, entries: __UC_TOKYO_ENTRIES__, urls: __UC_TOKYO_URLS__,
-  buttonId: 'unread-city-tokyo-sandbox-import', label: '📦 安装东京沙盘素材',
-  title: '城市沙盘模型。只接受与本卡匹配的本地素材包，不联网。', top: '64px', width: '210px', accept: 'application/zip',
-};
 function __UC_LITE_ASSET__(sha, mime) {
   return __UC_LITE_URLS__.get(sha) || (mime.startsWith('image/') ? __UC_LITE_FALLBACK_IMAGE__ : 'data:application/octet-stream;base64,');
 }
 function __UC_TOKYO_SANDBOX_ASSET__(sha, mime) {
-  return __UC_TOKYO_URLS__.get(sha) || (mime.startsWith('image/') ? __UC_LITE_FALLBACK_IMAGE__ : 'data:application/octet-stream;base64,');
+  return __UC_LITE_ASSET__(sha, mime);
 }
 function __ucLiteRequest(request) {
   return new Promise((resolve, reject) => {
@@ -172,7 +162,31 @@ function __ucPackButton(pack, installed) {
   button.style.cssText = 'position:fixed;right:12px;top:' + pack.top + ';z-index:2147483646;background:#173b50;color:white;border:1px solid #abd3e3;border-radius:10px;padding:9px 11px;font:13px system-ui;max-width:' + pack.width + ';';
   const input = host.createElement('input');
   input.type = 'file'; input.accept = pack.accept; input.hidden = true;
-  button.addEventListener('click', () => input.click());
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    try {
+      if (typeof fetch === 'function') {
+        button.textContent = '正在自动导入...';
+        const resp = await fetch('/unread-city-lite-assets.zip');
+        if (resp.ok) {
+          const blob = await resp.blob();
+          await __ucPackImport(blob, pack, msg => { button.textContent = msg; });
+          const ok = await __ucPackHydrate(pack);
+          if (ok) {
+            button.textContent = '已安装完成';
+            button.remove();
+            input.remove();
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[UnreadCity Lite] 自动导入失败，改用手动选择文件：', e);
+    }
+    button.disabled = false;
+    button.textContent = pack.label;
+    input.click();
+  });
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     if (!file) return;
@@ -192,15 +206,23 @@ function __ucPackButton(pack, installed) {
   window.addEventListener('pagehide', () => { button.remove(); input.remove(); }, {once: true});
 }
 async function __uc_lite_init__() {
-  const installed = await __ucPackHydrate(__UC_CORE_PACK__);
+  let installed = await __ucPackHydrate(__UC_CORE_PACK__);
+  if (!installed && typeof fetch === 'function') {
+    try {
+      const resp = await fetch('/unread-city-lite-assets.zip');
+      if (resp.ok) {
+        const blob = await resp.blob();
+        await __ucPackImport(blob, __UC_CORE_PACK__, () => {});
+        installed = await __ucPackHydrate(__UC_CORE_PACK__);
+      }
+    } catch (e) {
+      console.warn('[UnreadCity Lite] 本地自动载入失败，保留手动按钮：', e);
+    }
+  }
   __ucPackButton(__UC_CORE_PACK__, installed);
-  const sandbox = await __ucPackHydrate(__UC_TOKYO_PACK__);
-  __ucPackButton(__UC_TOKYO_PACK__, sandbox);
   window.addEventListener('pagehide', () => {
     for (const url of __UC_LITE_URLS__.values()) URL.revokeObjectURL(url);
     __UC_LITE_URLS__.clear();
-    for (const url of __UC_TOKYO_URLS__.values()) URL.revokeObjectURL(url);
-    __UC_TOKYO_URLS__.clear();
   }, {once: true});
   return installed;
 }

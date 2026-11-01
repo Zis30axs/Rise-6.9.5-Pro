@@ -749,7 +749,7 @@ export function deliverCourtRecap(state: WorldState): WorldState {
  * exactly one recorded judgment term. A narrative phrase without a matching
  * transfer cannot change obligation status.
  */
-export function acknowledgeCourtTransfers(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
+export function acknowledgeCourtTransfers(state: WorldState, actions: readonly StoryAction[], turnId: string, priorState?: WorldState): WorldState {
   const transfers=actions.filter((action): action is Extract<StoryAction,{type:'transfer'}>=>action.type==='transfer');
   for(const [index,transfer] of transfers.entries()){
     if(!transfer.reason.startsWith('court-obligation:')) continue;
@@ -771,9 +771,9 @@ export function acknowledgeCourtTransfers(state: WorldState, actions: readonly S
       // A committed story may be processed again with exactly the same turn id.
       // Only the matching double-entry receipt authorizes an idempotent replay.
       const key='wa:'+turnId+':t'+index;
-      const receipt=state.protagonists?.accounts.ledger.some(row=>
+      const receipt=(priorState ?? state).protagonists?.accounts.ledger.some(row=>
         row.id.startsWith(key+':out') || row.id===key+':in') ||
-        state.journal.some(row=>row.id===key+':journal');
+        (priorState ?? state).journal.some(row=>row.id===key+':journal');
       if(!receipt) return error('同一笔法律付款不可重复履行');
       continue;
     }

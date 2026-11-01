@@ -934,7 +934,7 @@ onBeforeUnmount(() => {
       <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
 
       <section v-if="novelMode && !novelHistory && meetingPrompt" class="novel-appointment-prompt" :data-meeting-invite="meetingPrompt.id" aria-label="今日约定">
-        <p>和{{ meetingPrompt.owner === currentProtagonist ? meetingPrompt.targetName : protagonistNames[meetingPrompt.owner] }}约在{{ meetingPrompt.day === model.state.clock.day ? '今天' : '第'+meetingPrompt.day+'天' }} {{ meetingPrompt.time }}，地点是{{ getCampusInterior(meetingPrompt.locationId)?.label ?? locations.find(place => place.id === meetingPrompt.locationId)?.name ?? '约定地点' }}。</p>
+        <p>和{{ meetingPrompt.owner === currentProtagonist ? meetingPrompt.targetName : protagonistNames[meetingPrompt.owner] }}约在{{ meetingPrompt.day === model.state.clock.day ? '今天' : '第'+meetingPrompt.day+'天' }} {{ meetingPrompt.time }}，地点是{{ getCampusInterior(meetingPrompt.locationId)?.label ?? locations.find(place => place.id === meetingPrompt?.locationId)?.name ?? '约定地点' }}。</p>
         <div><button type="button" :disabled="model.busy" @click="travelToMeeting(meetingPrompt)">前往约定地点</button>
         <button type="button" :disabled="model.busy" @click="hideMeetingPrompt(meetingPrompt.id)">稍后再说</button></div>
       </section>

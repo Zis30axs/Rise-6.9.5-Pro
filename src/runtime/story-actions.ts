@@ -175,7 +175,9 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
         const product = storeCatalog.find(product => product.id === item.itemId);
         const cafeCup = item.type === 'buy' && typeof item.itemId === 'string' && isCafeStoryItem(state, item.itemId);
         if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette' || product.category === 'ingredient'))) return invalid(`${path} 商品`);
-        return { type: item.type as 'buy' | 'pack', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) };
+        return item.type === 'buy'
+          ? { type: 'buy', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) }
+          : { type: 'pack', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) };
       }
       case 'takeaway': {
         const item = record(raw, ['type', 'serviceId', 'quantity'], path);

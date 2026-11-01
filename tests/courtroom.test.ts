@@ -14,7 +14,7 @@ function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   state.clock = { day: 2, hour: 9, minute: 0 };
   state.locationId = room.id;
   state.scene = {
-    x: room.entrance.x, z: room.entrance.z, yaw: room.entrance.y,
+    x: room.entrance.x, z: room.entrance.z, yaw: room.entrance.yaw,
     areaId: room.parentLocationId, seed: 'court-test', encounterId: null,
   };
   state.interior = { roomId: room.id, x: 0, z: 2, yaw: 0,

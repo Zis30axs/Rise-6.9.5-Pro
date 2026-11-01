@@ -5,6 +5,9 @@ import {
   applyTokyoCameraFlight, frameTokyoMapCamera, readTokyoCameraPose,
   type TokyoMapCameraFrame,
 } from '../src/frontend/tokyo-sandbox-camera';
+import {
+  createTokyoSandboxVfx, resolveTokyoAtmosphere,
+} from '../src/frontend/tokyo-sandbox-vfx';
 
 const frame: TokyoMapCameraFrame = {
   bounds: { minX: -186, maxX: 252, minZ: -235, maxZ: 186 },
@@ -37,6 +40,28 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(camera.position.distanceTo(eyeBefore)).toBeGreaterThan(0);
     expect(after.x).toBeGreaterThan(before.x);
     expect(after.y).toBeLessThan(before.y);
+  });
+
+  it('keeps camera distance steady across 360-degree rotation and handles large vertical pans without horizon snap', () => {
+    const camera = new THREE.PerspectiveCamera();
+    const target = new THREE.Vector3(
+      (frame.bounds.minX + frame.bounds.maxX) / 2,
+      0,
+      (frame.bounds.minZ + frame.bounds.maxZ) / 2,
+    );
+    frameTokyoMapCamera(camera, frame);
+    const baseDist = camera.position.distanceTo(target);
+    for (const bearing of [15, 45, 90, 135, 180, 255, 315]) {
+      frameTokyoMapCamera(camera, { ...frame, bearing });
+      expect(camera.position.distanceTo(target)).toBeCloseTo(baseDist, 4);
+    }
+
+    // Large vertical pans near or beyond viewport height must translate linearly, never snap to zero
+    frameTokyoMapCamera(camera, { ...frame, pan: { x: 0, y: -150 } });
+    const poseMid = readTokyoCameraPose(camera);
+    frameTokyoMapCamera(camera, { ...frame, pan: { x: 0, y: -300 } });
+    const poseFar = readTokyoCameraPose(camera);
+    expect(poseFar.target.distanceTo(target)).toBeGreaterThan(poseMid.target.distanceTo(target));
   });
 
   it('moves the camera closer for zoom and around the city for rotation', () => {
@@ -75,7 +100,7 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(imageSize(detail)).toBeGreaterThan(imageSize(overview));
   });
 
-  it('routes the existing pan and pinch values into the GLB camera, not DOM transforms', () => {
+  it('routes the existing pan and pinch values into the GLB camera, not DOM transforms, and animates the Su-30SM2', () => {
     const world = readFileSync('src/frontend/WorldMap.vue', 'utf8');
     const scene = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
     expect(world).toContain(':pan="pan"');
@@ -88,5 +113,38 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(scene).toContain('applyTokyoCameraFlight(camera, flight.from, targetPose, eased)');
     expect(scene).toContain("scene.add(model)");
     expect(scene).toContain("cameraFlying ? 'flying' : 'idle'");
+    expect(scene).toContain('bindDynamicSceneNodes(model)');
+    expect(scene).toContain('updateSu30Pose(su30State, nowMs)');
+    expect(scene).toContain('createTokyoSandboxVfx(');
+    expect(scene).toContain('Math.atan2(route.dirX * v.lane, route.dirZ * v.lane)');
+    expect(scene).toContain('loadSharedTokyoGlb(');
+    expect(scene).toContain('persistentSandboxRuntime');
+    expect(scene).toContain('prewarmPersistentSandboxGpu(');
+    expect(scene).toContain('attachPersistentRuntime(');
+  });
+
+  it('resolves atmosphere presets by game clock and drives Su-30SM2 supersonic VFX and flares', () => {
+    expect(resolveTokyoAtmosphere('auto', 9 * 60).preset).toBe('day');
+    expect(resolveTokyoAtmosphere('auto', 17 * 60 + 30).preset).toBe('dusk');
+    expect(resolveTokyoAtmosphere('auto', 21 * 60).preset).toBe('night');
+    expect(resolveTokyoAtmosphere('auto', 1 * 60).preset).toBe('cyber');
+    expect(resolveTokyoAtmosphere('cyber', 10 * 60).preset).toBe('cyber');
+
+    const scene = new THREE.Scene();
+    const model = new THREE.Group();
+    const su30 = new THREE.Group();
+    su30.position.set(58, 52, 82);
+    model.add(su30);
+    scene.add(model);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    const mockRenderer = { toneMappingExposure: 1, shadowMap: { enabled: false, type: THREE.PCFSoftShadowMap } } as unknown as THREE.WebGLRenderer;
+
+    const vfx = createTokyoSandboxVfx(scene, mockRenderer, model, hemi, sun);
+    expect(vfx.setAtmosphere('night').preset).toBe('night');
+    vfx.triggerSu30Flares(su30);
+    vfx.update(0.05, 1000, su30, { x: 0, z: 18 }, { x: -136, z: 118 });
+    expect(su30.children.some(c => c.name === 'su30-local-vfx')).toBe(true);
+    vfx.dispose();
   });
 });

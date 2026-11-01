@@ -30,12 +30,20 @@ const blackoutOpacity = computed(() => phase.value === 'waiting' ? 1
 const mapOpacity = computed(() => phase.value === 'ascent' ? switchEase((progress.value - .2) / .6)
   : phase.value === 'descent' ? 1 - switchEase((progress.value - .35) / .65)
   : phase.value === 'fade' ? 1 - progress.value : 1);
+const switchBearing = computed(() => {
+  const t = switchEase(progress.value);
+  return phase.value === 'ascent' ? -10 + 10 * t
+    : phase.value === 'traverse' ? 16 * t
+    : phase.value === 'descent' ? 16 * (1 - t) : 0;
+});
 const cameraView = computed(() => {
   const t = switchEase(progress.value);
   const center = phase.value === 'ascent' ? source : phase.value === 'traverse'
     ? { x: source.x + (target.x - source.x) * t, z: source.z + (target.z - source.z) * t } : committed.value ? target : source;
-  const zoom = phase.value === 'ascent' ? 6 - 4.2 * t : phase.value === 'descent' ? 1.8 + 4.2 * t : 1.8;
-  return { center, zoom, overhead: 1 };
+  const zoom = phase.value === 'ascent' ? 5.6 - 3.8 * t : phase.value === 'descent' ? 1.8 + 3.8 * t : 1.8;
+  const overhead = phase.value === 'ascent' ? -0.12 + 0.50 * t
+    : phase.value === 'descent' ? 0.38 - 0.50 * t : 0.38;
+  return { center, zoom, overhead };
 });
 
 function cancelFrame() {
@@ -145,9 +153,10 @@ defineExpose({ skip });
   <section ref="root" class="protagonist-switch-overlay" :class="{ 'is-night': hour < 6 || hour >= 20 }" data-protagonist-switch :data-switch-phase="phase" :data-switch-progress="progress.toFixed(3)" :data-switch-from="lease.source.protagonist" :data-switch-to="lease.target.protagonist" :data-switch-committed="committed" aria-label="角色切换">
     <div class="protagonist-switch-map world-map" :style="{ opacity: mapOpacity }">
       <CitySandboxScene scope="city" :active="true" :width="size.width" :height="size.height"
-        :bearing="0" :view-scale="1" :selected-id="''"
+        :bearing="switchBearing" :view-scale="1" :selected-id="''"
         :location-id="lease.source.locationId" :busy="true"
-        :decorative="true" :preview-only="true" :camera-view="cameraView" />
+        :clock-minutes="hour * 60"
+        :decorative="true" :camera-view="cameraView" />
       <div class="protagonist-switch-reticle" aria-hidden="true"><i/><i/><i/></div>
     </div>
     <div class="protagonist-switch-blackout" aria-hidden="true" :style="{ opacity: blackoutOpacity }"></div>

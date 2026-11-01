@@ -243,8 +243,8 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
             <h3>{{ special.title }}</h3>
             <p>{{ special.summary }}</p>
             <small>委托人：{{ special.client }} · 报酬 ¥{{ formatGameNumber(special.rewardYen) }}</small>
-            <button type="button" :disabled="model.busy || working || court.results.some(row=>row.id===special.id)" @click="accept(special)">
-              {{ court.results.some(row=>row.id===special.id)?'已结案':'承接特殊委托' }}
+            <button type="button" :disabled="model.busy || working || court.results.some(row=>row.id===special?.id)" @click="accept(special)">
+              {{ court.results.some(row=>row.id===special?.id)?'已结案':'承接特殊委托' }}
             </button>
           </article>
           <button v-else type="button" data-court-special-request :disabled="model.busy || working" @click="requestSpecial">查看特殊委托</button>

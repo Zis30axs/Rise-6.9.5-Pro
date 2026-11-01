@@ -37,15 +37,27 @@ function ringArea(ring: Position[]) {
   return Math.abs(total);
 }
 
+const primaryBoundsCache = new WeakMap<AtlasFeature, AtlasBounds>();
+const allPartsBoundsCache = new WeakMap<AtlasFeature, AtlasBounds>();
+
 export function featureBounds(feature?: AtlasFeature, allParts = false): AtlasBounds {
   if (!feature) return { x: 0, z: -9, width: 360, height: 162 };
+  const cache = allParts ? allPartsBoundsCache : primaryBoundsCache;
+  const cached = cache.get(feature);
+  if (cached) return cached;
   // Focus the largest land mass, so overseas islands cannot make a country unreadable.
   const parts = polygons(feature).map(polygon => polygon[0]);
   const ring = allParts || feature.properties.id === 'CHN' ? parts.flat() : parts.sort((a, b) => ringArea(b) - ringArea(a))[0];
-  if (!ring?.length) return { x: 0, z: 0, width: 10, height: 10 };
+  if (!ring?.length) {
+    const fallback = { x: 0, z: 0, width: 10, height: 10 };
+    cache.set(feature, fallback);
+    return fallback;
+  }
   let minX = Infinity; let maxX = -Infinity; let minY = Infinity; let maxY = -Infinity;
   for (const [x, y] of ring) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-  return { x: (minX + maxX) / 2, z: -(minY + maxY) / 2 * LAT_STRETCH, width: Math.max(.25, maxX - minX), height: Math.max(.25, (maxY - minY) * LAT_STRETCH) };
+  const result = { x: (minX + maxX) / 2, z: -(minY + maxY) / 2 * LAT_STRETCH, width: Math.max(.25, maxX - minX), height: Math.max(.25, (maxY - minY) * LAT_STRETCH) };
+  cache.set(feature, result);
+  return result;
 }
 
 export function landGeometry(feature: AtlasFeature, heightOffset = 0, subdivide = true) {

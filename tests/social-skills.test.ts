@@ -92,7 +92,7 @@ describe('社交 Skills：存档、四主角隔离、正负好感和结算', () 
     expect(() => applyStoryActions(world, [practice('unknown', 2)], 'skill-invalid-id')).toThrow();
     expect(() => applyStoryActions(world, [practice('expression', 4)], 'skill-invalid-degree')).toThrow();
     expect(() => applyStoryActions(world, [practice(), practice()], 'skill-duplicate')).toThrow();
-    expect(() => applyStoryActions(world, [{ ...practice(), secret: 999 } as StoryAction], 'skill-extra')).toThrow();
+    expect(() => applyStoryActions(world, [{ ...practice(), secret: 999 } as unknown as StoryAction], 'skill-extra')).toThrow();
   });
 
   it('状态面板入口与内容在代码层独立存在', () => {

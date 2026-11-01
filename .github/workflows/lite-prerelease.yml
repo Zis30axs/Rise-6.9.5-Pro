@@ -57,9 +57,9 @@ jobs:
           r=json.load(open('dist/lite-verification.json'))
           assert r['status']=='passed-build-only-not-tested-on-iphone'
           assert r['approvedNewArtExternalized']==39
-          assert r['tokyoSandboxSeparatePack'] is True and r['tokyoSandboxInCoreZip'] is False
-          assert r['tokyoSandboxArchive']=='unread-city-tokyo-sandbox.zip'
-          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources;',r['tokyoSandboxZipBytes'],'tokyo sandbox ZIP bytes')
+          assert r['tokyoSandboxSeparatePack'] is False and r['tokyoSandboxInCoreZip'] is True
+          assert r['tokyoSandboxArchive']=='unread-city-lite-assets.zip'
+          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts
         uses: actions/upload-artifact@v4
@@ -69,7 +69,6 @@ jobs:
             dist/unread-city-lite-tauri.png
             dist/unread-city-lite-tauri.verification.json
             dist/unread-city-lite-assets.zip
-            dist/unread-city-tokyo-sandbox.zip
             dist/lite-verification.json
             dist/lite-assets-report.json
           if-no-files-found: error
@@ -106,14 +105,12 @@ jobs:
               '## 使用说明',
               '- `unread-city-lite-tauri.png`：导入 TauriTavern 的 Character Card V2 PNG。',
               '- `unread-city-lite-assets.zip`：配套离线 ZIP，不是联网下载；不要当角色卡导入。',
-              '- `unread-city-tokyo-sandbox.zip`：东京沙盘独立素材包，不在主 ZIP 内。',
               '- `lite-verification.json` / `lite-assets-report.json`：构建校验。',
-              '进入角色聊天后点“安装 Lite 素材 ZIP”，选取文件，安装后刷新。城市沙盘再安装东京沙盘素材包。',
+              '进入角色聊天后点“安装 Lite 素材 ZIP”，选取文件，安装后刷新。',
               '',
               '## 校验',
               f"- PNG: {info['liteCardBytes']} bytes，SHA-256 `{info['liteCardSha256']}`",
               f"- ZIP: {info['zipBytes']} bytes，SHA-256 `{info['zipSha256']}`",
-              f"- 东京沙盘 ZIP: {info['tokyoSandboxZipBytes']} bytes，SHA-256 `{info['tokyoSandboxZipSha256']}`",
               f"- 离线资源：{info['externalAssets']} 项；离线：{info['offline']}",
               '',
               '**边界：**构建验证通过，不等于已在 iPhone / TauriTavern 真机验收。',
@@ -124,7 +121,6 @@ jobs:
           gh release create "$RELEASE_TAG" \
             dist/unread-city-lite-tauri.png \
             dist/unread-city-lite-assets.zip \
-            dist/unread-city-tokyo-sandbox.zip \
             dist/lite-verification.json \
             dist/lite-assets-report.json \
             --target "$GITHUB_SHA" --prerelease \

@@ -1721,6 +1721,7 @@ function verifySocialConsentEvidence(state: WorldState, reply: GeneratedStory): 
   const people = worldScenePeople(state);
   const dialogue = parseNovelDialogue(reply.text);
   for (const action of proofActions) {
+    if (action.type !== 'exchange_contact' && action.type !== 'social_invite') continue;
     const who = action.type === 'exchange_contact' ? action.npcId : action.targetId;
     const contact = state.contacts.find(row => row.id === who || row.sourcePersonId === who);
     const person = people.find(row => row.id === (contact?.sourcePersonId ?? who) || row.contactId === who);
@@ -1772,7 +1773,7 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
   const invited = recordSocialInvitations(sent, actions, turnId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const withAgenda = applySocialAgendaActions(invited,actions,turnId);
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId));
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda));
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
@@ -1798,7 +1799,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const withAgenda = applySocialAgendaActions(invited,narrativeActions,ids.assistantId);
-  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId);
+  const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId, withAgenda);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));

@@ -3,7 +3,13 @@ export async function readLocalAssetBytes(source: string, encodedLimit: number, 
   const inline = /^data:[^;,]*;base64,([A-Za-z0-9+/=]+)$/.exec(source);
   if (inline) {
     if (inline[1].length > encodedLimit) throw new Error(message);
-    return Uint8Array.from(atob(inline[1]), character => character.charCodeAt(0));
+    const binary = atob(inline[1]);
+    const length = binary.length;
+    const bytes = new Uint8Array(new ArrayBuffer(length));
+    for (let i = 0; i < length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
   }
   if (!source.startsWith('blob:')) throw new Error(message);
   const result = await fetch(source);
