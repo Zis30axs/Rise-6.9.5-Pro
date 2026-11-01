@@ -24,7 +24,7 @@ const generatedHeadshots = Object.fromEntries(
     [path.slice(path.lastIndexOf('/') + 1).replace(/\.svg$/, ''), src]),
 ) as Record<string, string>;
 const personAvatarIds: Readonly<Record<string, string>> = {
-  '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
+  '高松灯': 'tomori', '高松燈': 'tomori', '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
   '要乐奈': 'rana', '若叶睦': 'mutsumi',
   '樱羽艾玛': 'majo-emma', '二阶堂希罗': 'majo-hiro', '夏目安安': 'majo-anan',
   '城崎诺亚': 'majo-noa', '佐伯米莉亚': 'majo-milia', '宝生玛格': 'majo-margo',
@@ -33,11 +33,16 @@ const personAvatarIds: Readonly<Record<string, string>> = {
   '甘织玲奈子': 'wata-renako', '王冢真唯': 'wata-mai', '濑名紫阳花': 'wata-ajisai',
   '琴纱月': 'wata-satsuki', '小柳香穗': 'wata-kaho', '甘织遥奈': 'wata-haruna',
 };
+// Match this registered resident's stable world ID even when a saved contact is renamed.
+const personIdHeadshotAliases: Readonly<Record<string, string>> = {
+  'bang-tomori': 'tomori',
+};
 const protagonistAvatarIds: Readonly<Record<string, string>> = {
   sakiko: 'sakiko', emma: 'majo-emma', renako: 'wata-renako',
 };
 function headshotFor(person: MapAvatarIdentity): MapAvatarAsset | null {
   const candidates = [
+    person.personId ? personIdHeadshotAliases[person.personId] : undefined,
     person.personId?.replace(/^watanare-/, 'wata-'),
     person.protagonistId ? protagonistAvatarIds[person.protagonistId] : undefined,
     personAvatarIds[person.name],
@@ -115,7 +120,8 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   if (!person.protagonistId && (isTomoriSpeaker(person.name) || isTomoriSpeaker(person.personId ?? ''))) {
-    const art = getTomoriArt(downtownArtPack, { speaker: person.name || person.personId, expression: 'neutral' });
+    const tomoriSpeaker = isTomoriSpeaker(person.personId ?? '') ? person.personId : person.name;
+    const art = getTomoriArt(downtownArtPack, { speaker: tomoriSpeaker, expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   const atlas = person.portraitId && Object.hasOwn(novelNpcAtlases, person.portraitId)

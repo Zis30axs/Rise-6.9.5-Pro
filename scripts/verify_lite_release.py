@@ -45,6 +45,12 @@ def verify() -> dict:
         manifest = json.loads(manifest_bytes)
         assets = manifest['assets']
         keys = {x['sha256'] for x in assets}
+        # Each self-contained map crop must be externalized into this SAME ZIP.
+        svg_assets = {asset['sha256'] for asset in assets if asset['mime'] == 'image/svg+xml'}
+        for avatar in sorted((ROOT / 'assets/map-avatars').glob('*.svg')):
+            avatar_sha = sha(avatar.read_bytes())
+            if avatar_sha not in svg_assets:
+                raise ValueError('Lite ZIP 缺少地图 SVG 头像：' + avatar.name)
         tokyo = [asset for asset in assets if asset['sha256'] == TOKYO_SANDBOX_SHA256]
         if len(tokyo) != 1 or tokyo[0]['bytes'] != TOKYO_SANDBOX_BYTES:
             raise ValueError('东京 3D 沙盘 GLB 未放入主 Lite 资源 ZIP')
