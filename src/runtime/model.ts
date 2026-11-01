@@ -1792,7 +1792,8 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
       ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
     : validateGeneratedStory(result, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
-  const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算'));
+  const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
+  const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
   const narrativeActions = legacyResult.worldActions ?? [];
   const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
   const sent = commitNarrativeMessaging(withSkills, narrativeActions, ids.assistantId);
