@@ -55,6 +55,7 @@ describe('sandbox avatar and compact pins', () => {
     expect(mapSpriteObjectPosition({ name: '远野汉娜', personId: 'majo-hanna' })).toBe('center 12%');
     expect(mapSpriteObjectPosition({ name: '高松灯', personId: 'bang-tomori' })).toBe('center 4%');
     expect(mapSpriteObjectPosition({ name: '冰上梅露露', personId: 'majo-meruru' })).toBe('center top');
+    expect(mapSpriteObjectPosition({ name: '长崎夫人', personId: 'nagasaki-mother' })).toBe('center 4%');
     expect(readFileSync('assets/map-avatars/majo-meruru.svg', 'utf8')).toContain('data:image/webp;base64,');
   });
 });

@@ -51,8 +51,10 @@ const spriteObjectPosition: Readonly<Record<string, string>> = {
   'majo-arisa': 'center top', 'majo-sherry': 'center top', 'majo-yuki': 'center top',
   'wata-renako': 'center top', 'wata-mai': 'center top', 'wata-ajisai': 'center top',
   'wata-satsuki': 'center top', 'wata-kaho': 'center top', 'wata-haruna': 'center top',
+  'nagasaki-mother': 'center 4%',
 };
 export function mapSpriteObjectPosition(person: MapAvatarIdentity): string {
+  if (isNagasakiMotherSpeaker(person.personId) || isNagasakiMotherSpeaker(person.name)) return spriteObjectPosition['nagasaki-mother']!;
   const candidates = [
     person.personId ? personIdHeadshotAliases[person.personId] : undefined,
     person.personId?.replace(/^watanare-/, 'wata-'),
