@@ -21,6 +21,7 @@ import { applyMandatoryStoryTagContract } from './story-tag-contract';
 import { getAirTrafficContext } from './air-traffic';
 import { getTransitContext } from './transit';
 import { getStoreAvailability, getStoreItem, PACKAGING_FEE, storeCatalog } from './convenience-store';
+import { cookingLlmPayload } from './cooking';
 import { academicMajors, getAcademicOverview, getAcademicTimetable } from './academics';
 import { SOCIAL_PERSONALITY, socialSkillOverview } from './social-skills';
 import { protagonistHomeRooms } from './natural-interactions';
@@ -31,7 +32,7 @@ import { lawCareerStoryContext } from './law-career';
 import { courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
 import { npcProfession } from './npc-professions';
-import { getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
+import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
 import { atMargoCafe, getCafeMenu } from './margo-cafe-menu';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -128,6 +129,7 @@ export const STORY_PROTOCOL = [
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
+  '【法院大厅旁听·自然语言行动】玩家已位于 courthouse（法院入口/大厅）或 court-hearing（公开法庭）且明确表示执行旁听时，使用 <world_actions>[{"type":"service","serviceId":"court-observe","minutes":45,"knowledgeGain":11}]</world_actions>（此为45分钟的字段格式示例，11点仅是示例，实际知识由你根据听到的证言、理解程度、注意力和旁听内容独立判断）。minutes 为玩家要求的实际整数分钟，允许1–480分钟，不设30分钟倍数门槛；knowledgeGain 为本次真正学到的非负整数，允许0–min(minutes,100)，不得按时长机械固定，也不得自行改动已存知识。两字段必须一起提供；旧式无字段 service 仍兼容按钮的30分钟默认服务。程序自动从 courthouse 进入公开法庭，统一结算精力等生理变化、准确推进游戏分钟，并把你的知识奖励写入该主角的法庭见闻及符合条件的法庭论证课程。只写旁听故事而没有相应 world_actions 不会结算。不得另加 rest、study、activity 或第二次 service 重复算时长、知识和费用。公开旁听不创建 courtroom.active 案件，不进行诉讼、判决、律师收费；正在正式开庭时禁止旁听。只在玩家明确行动时提交；询问、假设、否定、回忆不结算。若没有足够的开放时间（09:00–17:00）、精力或位置不在法院且玩家未要求前往，应如实说明无法完成，不可用其他行动绕过。若玩家明确要求从其他地点先去法院旁听，可先 travel 到 courthouse，再按上述格式使用 service；不可直接 travel 到 court-hearing。若服务无法完成，不能在正文谎称已经完成旁听。',
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 必须逐字取自 cafeMenu，quantity 为 1–20；cafe-daily-special 是每日特调，每人每天限一杯。咖啡馆购买只放入背包，不自动喝掉，不另加打包费。{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
@@ -143,12 +145,13 @@ export const STORY_PROTOCOL = [
   '目录外的合理日常行动如洗澡、做家务、兼职，可使用{"type":"activity","label":"本次活动","minutes":30,"effects":{"energy":-5,"morale":3,"stress":-2,"health":0,"balance":0,"satiety":0,"foodEnergy":0}}。minutes为整数1–10080；七个effects字段必须齐全、无变化填0；除balance整数±100000、foodEnergy整数±20000外其余整数±100。收入支出及身心变化须与行动相符，余额不得为负；时间带来的正常饱腹和能量消耗由程序自动计算，不再手动重扣。不能用activity绕过已配置服务的收费、库存、闭店或学习规则，不能凭空增加物品或学习点。',
   `角色之间的资金往来必须使用显式转账行动：{"type":"transfer","from":"付款方ID","to":"收款方ID","cents":5000,"reason":"本轮转账依据"}。from和to逐字使用主角ID或contacts里的联系人ID，两者不能相同；cents为整数1–${STORY_ACTION_LIMITS.transferCents}（单笔最高十万日元），程序双边同时扣款与入账，总金额守恒。只有本轮明确发生金钱交付时才转账；他人给玩家的钱不得用activity的balance冒充，必须走transfer。付款方余额不足时整轮不保存，转账前先核对。`,
   'journal 和 scene.lastInteraction 中已经结算的活动只作为完成后的事实承接；使用保存的实际时长和结果，不重复结算、不重抽时长，也不擅自追加一段活动。',
+  'cooking 若出现，只是已经发生的下厨事实：菜名、难度、完美或普通或失败料理、指针停点和偏向、偏离多少、用过的食材、谁在哪间厨房、当时的时刻。按眼前的场景和人物性格写过程和反应。这些数量已经记下，不要再买、再吃、再赠或用活动去改背包和时钟。',
   '余额、背包数量、健康、精神、压力、饱腹和食物能量由行动规则结算。叙事可描写本轮world_actions的实际过程与结束状态；已有journal只承接，不能重复扣钱、消耗物品或加减数值。对随机学习、交通结果不要预先编造精确点数或时长，下轮以保存记录为准。',
   'player.morale是0–100的游戏精神状态，越高表示越有精神；stress越高表示压力越大。学习消耗精力和精神、增加压力；整理、浏览书架及休息也有已由程序结算的身心变化，以journal和当前状态为准，不再加减。普通闲聊、观察和点击推进已有剧情不消耗精力或精神；真实费力社交可由明确的social_skill行动额外结算精力和压力，不可在activity中重复扣除。',
   'academics 是已确认的专业及多科学习进度；subjects 各有独立学习点、阶段与目标，timetable 是每周课程表，不等于已经出勤或学完。学习时由玩家选科，围绕 lastGain 中已完成的科目和实际结果承接叙事，不替玩家换科或虚构提升。教室只学本专业；图书馆学习、选书阅读和书店阅读可选其他专业科目。本专业每分钟1点；跨科由程序一次抽取灵感（25%，点数×1.5、额外精神+3压力−2）、困惑（25%，点数×0.5、额外精力−3精神−4压力+5）或普通（50%）。这些修正叠加常规学习消耗，实际数值以lastGain保存的净变化为准。',
   'lastGain 是最近一次已保存的学习历史，只承接不重抽、不重复奖励。旧记录新增字段为null表示当时没有这些信息，不推断随机结果。普通对话、观察、整理、十分钟浏览书架和完成日程不增加学习点；打开课表、选科或切换场景也不会学习。阶段目标是游戏进度，不代表考试成绩、学位或现实资格。academics 为null时尚未选择，不代设专业或补发历史点数。',
   'travel沿用纯小说路线：基础精力消耗为原路线的0.1倍，再由出发时健康、饱腹和压力调整。精力不足不会阻止场景切换，只扣到0；学习、整理等耗能交互仍受资源限制。父地点与对应房间进出不重复计算长途旅行。',
-  'venue提供当前地点营业时间和确定的营业状态，locationServices提供此地实际支持的菜单、活动、费用、时长及blockedReason。营业与否以这些数据为准，不再用灯光猜测或说不清是否营业；打烊时自然说明营业时间，临近关门无法完成的服务也不接受。serviceAlternatives是有同类服务的其他地点此刻状态，可提示由地图前往，但不承诺到达时仍营业。未配置服务的地点不杜撰店铺、商品或可用操作。到达门外仍可观察，不因闭店禁止旅行。',
+  'venue提供当前地点营业时间和确定的营业状态，locationServices提供此地实际支持的菜单、活动、费用、时长及blockedReason。营业与否以这些数据为准，不再用灯光猜测或说不清是否营业；打烊时自然说明营业时间，临近关门无法完成的服务也不接受。serviceAlternatives是有同类服务的其他地点此刻状态，可提示由地图前往，但不承诺到达时仍营业。未配置服务的地点不杜撰店铺、商品或可用操作。唯一特殊入口是 courtObservation：即使当前位置为 courthouse 院前广场、locationServices 尚不列出室内 court-observe，也允许按上述自然语言旁听协议自动从入口进入法庭；开放与完整时长仍由程序验证。到达门外仍可观察，不因闭店禁止旅行。',
   '玩家要求点咖啡、吃饭或运动时，直接选择当前地点相符的service；不要把咖啡馆需求统一赶到便利店。当前已打烊或服务不可用则说明原因和可行去处，除非玩家表达出行意图，不自动带去另一家店。服务描述为门前窗口或露台取用时，不写成已进入未实现的店内。',
   'store.available仅表示便利店货架可购买，不能据此否认其他地点的locationServices。inventory是实际持有物品，持有食物可从常驻背包使用；service不生成库存，takeaway才打包入背包。商品品牌、品质、菜单与价格以目录为准，不自行增加商品、折扣、赠品或库存。书店阅读须遵守venue营业时间和本轮学习时长。',
   'player.energy是行动精力，foodEnergy是游戏中的食物能量储备（kcal），satiety是饱腹，stress越高压力越大，health越低健康状况越差。食物能量与饱腹随游戏中已结算的时间消耗；普通对话不推进。香烟的短时提神和减压伴随健康下降，不把高价品牌写成无害，也不把游戏数值解释为现实疗效。',
@@ -362,6 +365,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
       const narrative = narrativeContext(snapshot);
+      const cooking = cookingLlmPayload(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
       const minimalStore = storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category }));
@@ -373,6 +377,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         socialInvitations: (snapshot.protagonists?.socialInvitations ?? [])
           .filter(row => row.owner === activeProtagonist(snapshot)).slice(-18),
         narrative,
+        ...(cooking ? { cooking } : {}),
         worldContinuity: omniscientContinuityContext(snapshot),
         otherSideOpportunity: otherSidePromptContext(snapshot),
         weeklyMemory: weeklyMemoryContext(snapshot),
@@ -389,6 +394,21 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
         lawCareer: lawCareerStoryContext(snapshot),
         courtroom: courtStoryContext(snapshot),
+        // Available even at the courtyard entrance before locationServices
+        // exposes the indoor hearing-room service.
+        courtObservation: snapshot.locationId === 'courthouse' || snapshot.locationId === 'court-hearing' ? {
+          serviceId: COURT_OBSERVE_ID,
+          currentVenue: snapshot.locationId,
+          authoredMinutes: 30,
+          requestedMinutes: { min: 1, max: COURT_OBSERVE_MAX_MINUTES, integer: true },
+          knowledge: { source: 'LLM', field: 'knowledgeGain', min: 0,
+            max: 'min(minutes,100)', description: '由本轮实际旁听的学习效果决定，而非固定比例' },
+          openHours: '09:00–17:00',
+          openNow: getLocationStatus('court-hearing', snapshot.clock)?.isOpen ?? false,
+          minutesUntilClose: getLocationStatus('court-hearing', snapshot.clock)?.minutesUntilClose ?? 0,
+          formalTrialActive: !!snapshot.courtroom?.active,
+          baseEnergyCostPer30Minutes: 5,
+        } : null,
         // Playable protagonists have their own academics: never overwrite it
         // with a stale NPC lore record in the model context.
         residentProfessions: allResidentCast.flatMap(person => {

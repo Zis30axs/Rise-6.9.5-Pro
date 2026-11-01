@@ -24,6 +24,9 @@ export function interactionLabel(action: WorldAction): string {
     case 'buy_item': return `购买${getStoreItem(action.itemId)?.name ?? (action.itemId === CAFE_DAILY_SPECIAL_ID ? '每日特调' : '商品')}`;
     case 'pack_item': return `打包${getStoreItem(action.itemId)?.name ?? '商品'}`;
     case 'use_item': return `使用${getStoreItem(action.itemId)?.name ?? '物品'}`;
+    case 'cook_begin': return '下厨';
+    case 'cook_cancel': return '离开厨房';
+    case 'cook_settle': return '停下指针';
     case 'gift_item': return `赠送${getStoreItem(action.itemId)?.name ?? '物品'}`;
     case 'novel_travel':
     case 'travel': return `前往${locations.find(item => item.id === action.locationId)?.name ?? '目的地'}`;

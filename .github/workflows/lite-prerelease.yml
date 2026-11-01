@@ -57,6 +57,8 @@ jobs:
           r=json.load(open('dist/lite-verification.json'))
           assert r['status']=='passed-build-only-not-tested-on-iphone'
           assert r['approvedNewArtExternalized']==39
+          assert r['tokyoSandboxSeparatePack'] is False and r['tokyoSandboxInCoreZip'] is True
+          assert r['tokyoSandboxArchive']=='unread-city-lite-assets.zip'
           print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts

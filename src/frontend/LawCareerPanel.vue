@@ -129,13 +129,14 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
 <template>
   <section class="law-career" data-law-career>
     <header class="law-career-heading">
-      <small>{{ model.state.locationId==='court-hearing'?'新宿地方裁判所 · 庭审中':'枫庭律师事务所' }}</small>
+      <small>{{ model.state.locationId==='court-hearing'?'魔女审判最高法庭 · 庭审中':'枫庭律师事务所' }}</small>
       <h2>{{ model.state.locationId==='court-hearing'?'庭审卷宗':'案件与诉讼' }}</h2>
       <div class="law-career-stats">
         <span>职业经验 <strong>{{ formatGameNumber(experience) }}</strong></span>
         <span>累计报酬 <strong>¥{{ formatGameNumber(earnings) }}</strong></span>
         <span>已结案 <strong>{{ lawStats.completedCaseIds.length + court.results.filter(row => row.owner === owner).length }}</strong></span>
         <span>律师职业 <strong>{{ career?.enrolled ? qualificationNames[career.qualification] : '未登记' }}</strong></span>
+        <span data-court-observation-knowledge>旁听见闻 <strong>{{ formatGameNumber(court.observationKnowledge?.[owner] ?? 0) }}</strong></span>
       </div>
     </header>
     <p v-if="model.notice" class="law-error" role="alert">{{ model.notice }}</p>
@@ -242,8 +243,8 @@ const feeTotal = computed(()=>filing.value ? filing.value.courtFeeYen + filing.v
             <h3>{{ special.title }}</h3>
             <p>{{ special.summary }}</p>
             <small>委托人：{{ special.client }} · 报酬 ¥{{ formatGameNumber(special.rewardYen) }}</small>
-            <button type="button" :disabled="model.busy || working || court.results.some(row=>row.id===special.id)" @click="accept(special)">
-              {{ court.results.some(row=>row.id===special.id)?'已结案':'承接特殊委托' }}
+            <button type="button" :disabled="model.busy || working || court.results.some(row=>row.id===special?.id)" @click="accept(special)">
+              {{ court.results.some(row=>row.id===special?.id)?'已结案':'承接特殊委托' }}
             </button>
           </article>
           <button v-else type="button" data-court-special-request :disabled="model.busy || working" @click="requestSpecial">查看特殊委托</button>

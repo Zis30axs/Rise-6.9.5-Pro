@@ -7,7 +7,9 @@ from pathlib import Path
 from zipfile import ZipFile
 from build_card import ROOT, IMMERSIVE_SCRIPT_ID
 from card_codec import extract_card
-from build_lite_release import PNG_LIMIT, TOKYO_SANDBOX_SHA256, TOKYO_SANDBOX_BYTES
+from build_lite_release import (
+    PNG_LIMIT, TOKYO_SANDBOX_BYTES, TOKYO_SANDBOX_SHA256,
+)
 from verify_downtown_art import extract_v2
 
 
@@ -43,13 +45,21 @@ def verify() -> dict:
         manifest = json.loads(manifest_bytes)
         assets = manifest['assets']
         keys = {x['sha256'] for x in assets}
+        # Each self-contained map crop must be externalized into this SAME ZIP.
+        svg_assets = {asset['sha256'] for asset in assets if asset['mime'] == 'image/svg+xml'}
+        for avatar in sorted((ROOT / 'assets/map-avatars').glob('*.svg')):
+            avatar_sha = sha(avatar.read_bytes())
+            if avatar_sha not in svg_assets:
+                raise ValueError('Lite ZIP 缺少地图 SVG 头像：' + avatar.name)
         tokyo = [asset for asset in assets if asset['sha256'] == TOKYO_SANDBOX_SHA256]
         if len(tokyo) != 1 or tokyo[0]['bytes'] != TOKYO_SANDBOX_BYTES:
-            raise ValueError('东京 3D 沙盘 GLB 未放入 Lite 资源 ZIP')
+            raise ValueError('东京 3D 沙盘 GLB 未放入主 Lite 资源 ZIP')
         if tokyo[0]['mime'] not in ('model/gltf-binary', 'application/octet-stream'):
             raise ValueError('东京 GLB 的 ZIP MIME 不正确')
         if report.get('tokyoSandboxSha256') != TOKYO_SANDBOX_SHA256 or not report.get('tokyoSandboxExternalized'):
             raise ValueError('东京沙盘 Lite 打包报告不完整')
+        if report.get('tokyoSandboxSeparatePack') is not False or report.get('tokyoSandboxInCoreZip') is not True:
+            raise ValueError('东京沙盘必须包含在主素材包内')
         if not expected.issubset(keys):
             raise ValueError('One or more approved downtown-art images were not externalized')
         if len(assets) != report['assets']:
@@ -62,6 +72,13 @@ def verify() -> dict:
             raw = zip_file.read(x['path'])
             if len(raw) != x['bytes'] or sha(raw) != x['sha256']:
                 raise ValueError('ZIP asset corrupt: ' + x['path'])
+    packs = data['extensions']['unread_city']['immersive'].get('assetPacks')
+    expected_packs = [
+        {'id': 'lite-assets', 'archive': 'unread-city-lite-assets.zip', 'required': True,
+         'tokyoSandboxIncluded': True},
+    ]
+    if packs != expected_packs:
+        raise ValueError('Lite 角色卡素材包登记不正确')
     return {'status': 'passed-build-only-not-tested-on-iphone',
             'liteCardBytes': card.stat().st_size, 'liteCardSha256': sha(card.read_bytes()),
             'liteBundleBytes': lite.stat().st_size, 'zipBytes': archive.stat().st_size,
@@ -69,7 +86,10 @@ def verify() -> dict:
             'approvedNewArtExternalized': len(expected), 'offline': True,
             'physicalDeviceTested': False,
             'tokyoSandboxSha256': TOKYO_SANDBOX_SHA256,
-            'tokyoSandboxIncludedInZip': True}
+            'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES,
+            'tokyoSandboxArchive': 'unread-city-lite-assets.zip',
+            'tokyoSandboxSeparatePack': False,
+            'tokyoSandboxInCoreZip': True}
 
 if __name__ == '__main__':
     result = verify()

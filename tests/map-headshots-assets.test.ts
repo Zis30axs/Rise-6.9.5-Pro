@@ -30,9 +30,10 @@ const sourceById: Record<string, string> = {
 };
 
 describe('identity-safe offline map headshots', () => {
-  it('keeps Soyo original headshot untouched and creates exactly 23 distinct crops', () => {
-    const files = readdirSync(resolve('assets/map-avatars')).sort();
-    expect(files).toEqual(['soyo.webp', ...Object.keys(sourceById).map(id => id + '.svg')].sort());
+  it('keeps Soyo original headshot and all 23 approved crops without restricting future avatars', () => {
+    const files = new Set(readdirSync(resolve('assets/map-avatars')));
+    expect(files.has('soyo.webp')).toBe(true);
+    for (const id of Object.keys(sourceById)) expect(files.has(id + '.svg'), id + ' crop missing').toBe(true);
     expect(readFileSync(resolve('assets/map-avatars/soyo.webp')).byteLength).toBeGreaterThan(100);
   });
 
@@ -53,8 +54,33 @@ describe('identity-safe offline map headshots', () => {
     const logic = readFileSync(resolve('src/frontend/map-character-avatar.ts'), 'utf8');
     const component = readFileSync(resolve('src/frontend/MapCharacterAvatar.vue'), 'utf8');
     expect(logic).toContain('assets/map-avatars/*.svg');
+    expect(logic).toContain("query: '?offline-map-headshot'");
+    const vite = readFileSync(resolve('vite.config.ts'), 'utf8');
+    expect(vite).toContain("name: 'unread-city-map-headshot-base64'");
+    expect(vite).toContain("'data:image/svg+xml;base64,'");
     expect(logic).toContain('ignoreNewHeadshot');
     expect(logic).toContain('soyoHeadshot');
     expect(component).toContain('resolveMapCharacterAvatar(props, true)');
+  });
+});
+
+it('resolves Tomori by her stable world ID even after a contact rename', () => {
+  const logic = readFileSync(resolve('src/frontend/map-character-avatar.ts'), 'utf8');
+  const cast = readFileSync(resolve('src/runtime/npc-cast.ts'), 'utf8');
+  expect(cast).toContain("'bang-tomori'");
+  expect(logic).toContain("'bang-tomori': 'tomori'");
+  expect(logic).toContain("'高松灯': 'tomori'");
+  expect(logic).toContain('person.personId ? personIdHeadshotAliases[person.personId] : undefined');
+  expect(logic).toContain("isTomoriSpeaker(person.personId ?? '') ? person.personId : person.name");
+  expect(logic).toContain('speaker: tomoriSpeaker');
+});
+
+describe('headshots in the existing single offline Lite ZIP', () => {
+  it('fails the final release audit if any crop is absent from the ZIP manifest', () => {
+    const audit = readFileSync(resolve('scripts/verify_lite_release.py'), 'utf8');
+    expect(audit).toContain("ROOT / 'assets/map-avatars'");
+    expect(audit).toContain("asset['mime'] == 'image/svg+xml'");
+    expect(audit).toContain('avatar.read_bytes()');
+    expect(audit).toContain("dist/unread-city-lite-assets.zip");
   });
 });

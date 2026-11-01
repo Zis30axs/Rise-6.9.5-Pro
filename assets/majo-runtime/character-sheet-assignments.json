@@ -51,7 +51,7 @@
   ],
   "missingCharacters": [
     "majo-emma 已有九表情，不在三姿态映射中",
-    "majo-koko、majo-meruru、majo-leia 仍未接入确认身份的专属立绘"
+    "majo-koko、majo-leia 仍未接入确认身份的专属立绘"
   ],
   "subsequentConfirmedSources": [
     {
@@ -101,6 +101,16 @@
       "cutoutMethod": "rembg-isnet-anime-border-constrained",
       "userProvided": true,
       "note": "2026-10-30 用户提供的奶白色绞花开衫三联与世界书现用立绘一致，作为默认。早先 anime-seg 三张保留在 characters/majo-milia/，不删除。"
+    },
+    {
+      "personId": "majo-meruru",
+      "sourceId": "characters/source-sheets/20261031-meruru",
+      "sourceManifest": "assets/majo-cast/character-source-sheets-20261031-meruru.json",
+      "outfit": "白头纱十字饰与粉缎带修女裙",
+      "panelExpressions": ["shy", "surprised", "angry", "happy", "sad"],
+      "cutoutMethod": "white-border-connected-flood",
+      "userProvided": true,
+      "note": "2026-10-31 用户提供五张同姿态白底立绘，身份沿用世界书 majo-meruru（冰上梅露露）。没有单独的平静脸，平静与开心共用闭眼笑。世界书外观写成银白到浅蓝与蓝白蕾丝，这套图是银粉长发与白粉十字头纱。"
     }
   ]
 }

@@ -53,6 +53,8 @@ export function projectOldTokyoPosition(position: TokyoPoint, hint?: MapDistrict
 
 /** Authoritative location IDs take precedence over approximate old-to-new mapping. */
 export function tokyoLocationPosition(locationId: string, hint?: MapDistrictId): TokyoPoint | undefined {
+  // The court's indoor and outdoor map pins both refer to the new building.
+  if (locationId === 'court-hearing') locationId = 'courthouse';
   const landmark = landmarkById.get(locationId);
   if (landmark) return { x: landmark.x, z: landmark.z };
   const old = mapLocationPoint(locationId);

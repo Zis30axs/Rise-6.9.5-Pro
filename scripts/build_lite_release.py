@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Split a production IIFE into a Lite IIFE plus a verified data-only offline ZIP."""
+"""Split a production IIFE into a Lite IIFE plus a verified data-only offline ZIP.
+
+The Tokyo 3D sandbox GLB is packaged directly inside unread-city-lite-assets.zip.
+"""
 from __future__ import annotations
 
 import argparse
@@ -20,6 +23,7 @@ MIN_REMOVED_BYTES = 20_000_000
 PNG_LIMIT = 25_000_000
 TOKYO_SANDBOX_SHA256 = '12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb'
 TOKYO_SANDBOX_BYTES = 6_232_488
+TOKYO_SANDBOX_ARCHIVE = 'unread-city-lite-assets.zip'
 
 
 def digest(data: bytes) -> str:
@@ -51,8 +55,7 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     compact = DATA_URL.sub(replace, source)
     entries = [{'sha256': sha, 'mime': mime, 'bytes': len(raw), 'path': 'assets/' + sha}
                for sha, (mime, raw) in sorted(assets.items())]
-    # The old SVG sandtable was removed: never publish a Lite ZIP without the GLB.
-    # Vite must have embedded the original GLB before this splitter externalizes it.
+    # The Tokyo sandbox GLB must be packaged inside the main Lite ZIP.
     tokyo = [row for row in entries if row['sha256'] == TOKYO_SANDBOX_SHA256]
     if len(tokyo) != 1 or tokyo[0]['bytes'] != TOKYO_SANDBOX_BYTES or tokyo[0]['mime'] not in (
         'model/gltf-binary', 'application/octet-stream'
@@ -89,7 +92,9 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
               'manifestSha256': manifest_sha, 'zipBytes': len(archive_bytes),
               'zipSha256': digest(archive_bytes), 'reconstructionMode': 'IndexedDB Blob URLs; no remote fetch',
               'deviceTested': False, 'tokyoSandboxSha256': TOKYO_SANDBOX_SHA256,
-              'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES, 'tokyoSandboxExternalized': True}
+              'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES, 'tokyoSandboxExternalized': True,
+              'tokyoSandboxSeparatePack': False, 'tokyoSandboxInCoreZip': True,
+              'tokyoSandboxArchive': 'unread-city-lite-assets.zip'}
     return script, archive_bytes, report
 
 
@@ -99,6 +104,7 @@ def main() -> None:
     parser.add_argument('--loader', type=Path, default=ROOT / 'scripts/lite_asset_loader.js')
     parser.add_argument('--lite', type=Path, default=ROOT / 'dist/immersive-shell-lite.js')
     parser.add_argument('--zip', type=Path, default=ROOT / 'dist/unread-city-lite-assets.zip')
+    parser.add_argument('--sandbox-zip', type=Path, default=None, help='Deprecated separate pack path')
     parser.add_argument('--report', type=Path, default=ROOT / 'dist/lite-assets-report.json')
     args = parser.parse_args()
     script, archive, report = externalize(args.full.read_text('utf-8'), args.loader.read_text('utf-8'))
@@ -109,6 +115,10 @@ def main() -> None:
     args.lite.write_text(script, encoding='utf-8')
     args.zip.write_bytes(archive)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    # Clean up obsolete separate sandbox zip if present in dist
+    obsolete_sandbox = ROOT / 'dist/unread-city-tokyo-sandbox.zip'
+    if obsolete_sandbox.exists():
+        obsolete_sandbox.unlink()
     print(json.dumps(report, ensure_ascii=False))
 
 

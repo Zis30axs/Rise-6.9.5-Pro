@@ -4,6 +4,7 @@ import { LAW_OFFICE_ID } from '../runtime/law-career';
 import { canManageLivehouseAndBand, getCampusInterior, getMlmWorkBlockedReason, isStudyInteraction } from '../runtime/campus-interiors';
 import { activeProtagonist } from '../runtime/protagonist-world';
 import { getStoreAvailability } from '../runtime/convenience-store';
+import { kitchenAt } from '../runtime/cooking';
 import { getAdjacentLocations } from '../runtime/location-links';
 import { getLocationServiceQuote, getLocationServices, getLocationStatus, getTakeawayQuote } from '../runtime/location-services';
 import { getNovelTravelQuote } from '../runtime/model';
@@ -11,13 +12,14 @@ import { formatGameNumber } from './format-game-number';
 import type { ShellModel } from './types';
 
 const props = defineProps<{ model: ShellModel; catalog?: boolean }>();
-const emit = defineEmits<{ travel: [locationId: string]; service: [serviceId: string]; package: [serviceId: string]; activity: [interactionId: string]; store: []; books: []; law: []; map: []; more: [] }>();
+const emit = defineEmits<{ travel: [locationId: string]; service: [serviceId: string]; package: [serviceId: string]; activity: [interactionId: string]; store: []; books: []; law: []; map: []; more: []; enter: [roomId: string]; cook: [] }>();
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
 const status = computed(() => getLocationStatus(props.model.state.locationId, props.model.state.clock));
 const services = computed(() => getLocationServices(props.model.state).map(service => ({ service, quote: getLocationServiceQuote(props.model.state, service.id) })));
 const takeaways = computed(() => getLocationServices(props.model.state).map(service => ({ service, quote: getTakeawayQuote(props.model.state, service.id) })).filter(item => item.quote.item));
 const adjacent = computed(() => getAdjacentLocations(props.model.state).map(place => ({ place, quote: getNovelTravelQuote(props.model.state, place.id) })));
 const storeAvailable = computed(() => getStoreAvailability(props.model.state).available);
+const kitchen = computed(() => kitchenAt(props.model.state));
 const atBookshop = computed(() => !props.model.state.interior && props.model.state.locationId === 'bookshop');
 const activityBlockedReason = (id: string): string | null => {
   if (id === 'livehouse-booking' || id === 'livehouse-create-band') {
@@ -43,7 +45,9 @@ const activityDisabled = (id: string) => {
       <div class="place-action-options" tabindex="0" aria-label="此地活动，可左右滚动">
         <button v-for="{ service, quote } in services" :key="service.id" type="button" :data-quick-service="service.id" :disabled="model.busy || (!service.reveal && !!quote.blockedReason)" :title="service.reveal ? service.description : quote.blockedReason ?? service.description" @click="emit('service', service.id)"><span>{{ service.label }}</span><small>{{ service.reveal ? '两人招聘 · 点击查看完整条件' : quote.blockedReason ? (status && !status.isOpen ? `开放 ${status.hoursLabel}` : quote.blockedReason) : service.payout ? `工资 ¥${formatGameNumber(service.payout)} · 精力 −${-service.effects.energy} · ${service.minutes} 分钟` : `${service.price ? `¥${formatGameNumber(service.price)}` : '免费'} · ${service.minutes} 分钟` }}</small></button>
         <button v-for="{ service, quote } in takeaways" :key="`pack-${service.id}`" type="button" :data-quick-package-service="service.id" :disabled="model.busy || !!quote.blockedReason" :title="quote.blockedReason ?? '含打包费，放入背包；稍后可使用或送人'" @click="emit('package', service.id)"><span>{{ quote.item?.name }}</span><small>{{ quote.blockedReason ?? `¥${formatGameNumber(quote.totalPrice)} · 含打包费 ¥${quote.packagingFee}` }}</small></button>
+        <button v-if="kitchen" type="button" data-place-cook :disabled="model.busy" title="指针来回摆，看准再停" @click="emit('cook')"><span>下厨</span><small>指针来回摆，看准再停</small></button>
         <button v-for="activity in room?.interactions ?? []" :key="activity.id" type="button" :data-place-activity="activity.id" :disabled="activityDisabled(activity.id)" :title="activityBlockedReason(activity.id) ?? activity.description" @click="emit('activity', activity.id)"><span>{{ activity.label }}</span><small>{{ activityBlockedReason(activity.id) ?? (activity.id === 'dorm-rest' ? '选择休息时长' : isStudyInteraction(activity.id) ? '选择科目与时长' : `${activity.minutes} 分钟${activity.energyDelta < 0 ? ` · 精力 ${activity.energyDelta}` : ''}${activity.balanceDelta ? ` · ¥+${formatGameNumber(activity.balanceDelta)}` : ''}${!activity.energyDelta && !activity.balanceDelta ? ' · 免费' : ''}`) }}</small></button>
+        <button v-if="!room && model.state.locationId === 'courthouse'" type="button" data-place-court-enter :disabled="model.busy || !status?.isOpen" @click="emit('enter', 'court-hearing')"><span>进入公开法庭</span><small>{{ status?.isOpen ? '旁听席 · 法庭论证' : '开放 09:00–17:00' }}</small></button>
         <button v-if="room?.id === LAW_OFFICE_ID" type="button" data-place-law @click="emit('law')"><span>案件卷宗与法庭</span><small>调查证据 · 当庭质证 · 雪莉协助</small></button>
         <button v-if="storeAvailable" type="button" data-place-store data-store-entry :disabled="model.busy" @click="emit('store')"><span>逛便利店</span><small>货架 · 买入背包</small></button>
         <button v-if="atBookshop" type="button" data-place-books data-book-reading-entry :disabled="model.busy || !status?.isOpen" :title="status?.hoursLabel" @click="emit('books')"><span>选书阅读</span><small>{{ status?.isOpen ? '选择科目与时长' : `开放 ${status?.hoursLabel}` }}</small></button>

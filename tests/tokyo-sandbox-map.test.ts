@@ -24,6 +24,7 @@ describe('Tokyo GLB scenic-coordinate migration', () => {
       expect(text).toContain('CitySandboxScene');
       expect(text).not.toContain('<CampusMapScene');
       expect(text).not.toContain('<LocalMapGeometry');
+      expect(text).not.toContain(':preview-only="true"');
     }
   });
 });

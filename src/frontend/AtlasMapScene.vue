@@ -46,6 +46,7 @@ const raycaster = new THREE.Raycaster(); const projectedPoint = new THREE.Vector
 const HOME = TOKYO_CENTER; // Ikebukuro/Toshima vicinity, not a surveyed fictional campus coordinate.
 const smooth = (value: number) => { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
 const divisionRecords = computed(() => props.subdivisions.features.map(feature => ({ feature, bounds: featureBounds(feature) })));
+const maritimeTotalParts = computed(() => props.chinaMaritimeLines?.features.flatMap(polygons).length ?? 0);
 
 function fitSpan(bounds: AtlasBounds) {
   const aspect = Math.max(.3, props.width / Math.max(1, props.height));
@@ -429,7 +430,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="root" class="atlas-scene" :data-atlas-renderer="mode" :data-atlas-country="countryId" :data-atlas-region="regionId" :data-atlas-bearing="bearing.toFixed(2)" :data-atlas-camera-scale="cameraScale.toFixed(3)" :data-atlas-center="`${cameraTarget.x.toFixed(3)},${(-cameraTarget.z / LAT_STRETCH).toFixed(3)}`" :data-atlas-division-count="visibleDivisionCount" :data-atlas-maritime-parts="chinaMaritimeLines?.features.flatMap(polygons).length ?? 0" :data-atlas-maritime-visible="maritimeVisibleParts" aria-label="可旋转的世界浅浮雕地图">
+  <section ref="root" class="atlas-scene" :data-atlas-renderer="mode" :data-atlas-country="countryId" :data-atlas-region="regionId" :data-atlas-bearing="bearing.toFixed(2)" :data-atlas-camera-scale="cameraScale.toFixed(3)" :data-atlas-center="`${cameraTarget.x.toFixed(3)},${(-cameraTarget.z / LAT_STRETCH).toFixed(3)}`" :data-atlas-division-count="visibleDivisionCount" :data-atlas-maritime-parts="maritimeTotalParts" :data-atlas-maritime-visible="maritimeVisibleParts" aria-label="可旋转的世界浅浮雕地图">
     <canvas ref="canvas" v-show="mode === 'webgl'" class="atlas-canvas" aria-label="国家、省份与立体地标，点选或使用下方地区列表" />
     <svg v-if="mode === 'fallback' && active" class="atlas-fallback" :viewBox="`0 0 ${width} ${height}`" aria-label="世界地图平面备用显示">
       <path v-for="feature in fallbackPaths" :key="`${feature.division}:${feature.id}`" :d="feature.path" :class="{ home: feature.home, selected: feature.id === selected, division: feature.division }" :data-map-target="`${feature.division ? 'division' : 'country'}:${feature.id}`" tabindex="0" role="button" :aria-label="`查看${feature.name}`" @keydown.enter="emit('select', `${feature.division ? 'division' : 'country'}:${feature.id}`)"><title>{{ feature.name }}</title></path>

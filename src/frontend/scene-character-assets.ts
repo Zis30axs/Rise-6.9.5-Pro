@@ -8,7 +8,7 @@ import { getAnonArt, getMutsumiArt, getRaanaArt, getTakiArt, getTomoriArt } from
 import { resolveMajoTrioSceneArt } from './majo-art';
 export { characterForPerson } from './character-appearance';
 
-/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, and the 魔裁 casual trio. Other names stay on their existing models. */
+/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, the 魔裁 casual trio, and 冰上梅露露. Other names stay on their existing models. */
 export function resolveSceneCharacterArt(name: string, expression?: unknown) {
   return getMutsumiArt(downtownArtPack, { speaker: name, expression })
     ?? getAnonArt(downtownArtPack, { speaker: name, expression })

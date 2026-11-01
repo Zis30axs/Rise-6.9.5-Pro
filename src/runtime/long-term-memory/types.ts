@@ -1,7 +1,7 @@
 import type { ProtagonistId } from '../dual-protagonists';
 
 export type MemoryProtocol = 'tools' | 'tags';
-export type MemoryKind = 'story' | 'journal' | 'message' | 'weekly' | 'decision' | 'promise' | 'relationship' | 'item' | 'discovery' | 'conflict' | 'resolution';
+export type MemoryKind = 'story' | 'journal' | 'message' | 'weekly' | 'decision' | 'promise' | 'relationship' | 'item' | 'discovery' | 'conflict' | 'resolution' | 'interaction';
 export type MemoryJobState = 'pending' | 'working' | 'done' | 'failed';
 
 export interface MemorySource {
