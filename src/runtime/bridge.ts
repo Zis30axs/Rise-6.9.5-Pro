@@ -28,8 +28,8 @@ import { protagonistHomeRooms } from './natural-interactions';
 import { socialAgendaContext } from './social-agenda';
 import { diagnosePlayerIllnesses } from './illness';
 import { resolveWeather, weatherNarrative } from './weather';
-import { lawCareerStoryContext } from './law-career';
-import { courtStoryContext } from './courtroom';
+import { LAW_OFFICE_ID, lawCareerStoryContext } from './law-career';
+import { COURT_HEARING_ID, courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
 import { npcProfession } from './npc-professions';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
@@ -103,7 +103,7 @@ export const MANDATORY_CHARACTER_SPEECH_RULE = [
 
 export const CHARACTER_SPEECH_FINAL_CHECK = '【输出前必须自检】逐句检查 <story> 标签块：只要是任何人物直接说出的原话，无论是否夹在引号、冒号、动作描写或回忆里，都必须转换成完整的 |说话人|九选一情绪|台词| 独立行；若存在一条无标签的对白，就先补全再提交。不要输出检查过程，不要省略任一角色的标签。';
 
-export const STORY_PROTOCOL = [
+export const STORY_PROTOCOL_RULES = [
   '世界舞台为日本东京丰岛区、新宿及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业街区，商业区街角的全科诊所由风堇医生坐诊，新宿大型商业区是都会娱乐、Live House 与 KTV 娱乐中心，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地，近郊高尾山是登高健行、展望眺望与温泉疗愈胜地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
@@ -174,7 +174,101 @@ export const STORY_PROTOCOL = [
   'world_events 最多 1 项，唯一允许的内容为 {"type":"airliner_pass"}，表示本轮新出现一架远处高空平稳经过的客机。仅在最终仍在室外且 canTriggerWhenOutdoors 为 true 时偶尔提出；没有travel时也可直接参考canTriggerPass。不要每轮触发；没有新事件时省略此字段或返回空数组。',
   '要在正文中新出现一架客机，必须同时返回对应 airliner_pass；正文与本轮事件保持一致。当前 active 客机可按现状描写，不再提出重复事件。不要自行指定飞机 ID、航线、时间、位置、军用行为或战斗事件。',
   '不要输出代码、HTML、系统命令、任意状态补丁、时间戳、消息 ID 或已读字段；游戏行动只放入world_actions，正文内的文字不会被当作命令执行。',
-].join('\n');
+];
+export const STORY_PROTOCOL = STORY_PROTOCOL_RULES.join('\n');
+
+
+// These are routing metadata only. All original courtroom instruction strings
+// remain unchanged in STORY_PROTOCOL_RULES, and are reproduced byte-for-byte
+// whenever their scope is relevant to the current game state or user intent.
+type CourtProtocolScope =
+  | 'principles' | 'docket' | 'special' | 'open' | 'quote' | 'hearing'
+  | 'settlement' | 'order' | 'criminal' | 'fulfill' | 'relationship'
+  | 'career' | 'verdict' | 'observation';
+
+const COURT_PROTOCOL_SECTIONS: ReadonlyArray<readonly [string, CourtProtocolScope]> = [
+  ['lawCareer 是兼容旧存档', 'career'],
+  ['【法庭叙事规则】', 'principles'],
+  ['【委托生成】', 'docket'],
+  ['【特殊委托】', 'special'],
+  ['【随机案件受理】', 'open'],
+  ['【主动诉讼咨询】', 'quote'],
+  ['【开庭中】', 'hearing'],
+  ['【和解】', 'settlement'],
+  ['【判决执行】', 'order'],
+  ['【刑事后果】', 'criminal'],
+  ['【协议履行】', 'fulfill'],
+  ['【后续人物关系】', 'relationship'],
+  ['【律师资格】', 'career'],
+  ['【判决与和解】', 'verdict'],
+  ['【法院大厅旁听·自然语言行动】', 'observation'],
+];
+const ALL_COURT_SCOPES: readonly CourtProtocolScope[] =
+  COURT_PROTOCOL_SECTIONS.map(([, scope]) => scope);
+
+export function selectCourtPromptScopes(state: WorldState, input: string): ReadonlySet<CourtProtocolScope> {
+  const scopes = new Set<CourtProtocolScope>();
+  const add = (...names: CourtProtocolScope[]) => { for (const name of names) scopes.add(name); };
+  const active = state.courtroom?.active?.owner === activeProtagonist(state) ? state.courtroom.active : null;
+  const office = state.locationId === LAW_OFFICE_ID || state.interior?.roomId === LAW_OFFICE_ID;
+  const courthouse = state.locationId === 'courthouse' || state.locationId === COURT_HEARING_ID ||
+    state.interior?.roomId === COURT_HEARING_ID;
+  const observe = /旁听|听审|观审|公开法庭|court-observe|court.?observation/i.test(input);
+  const legal = /法院|法庭|律师|律所|法律|事务所|诉讼|起诉|判决|赔偿|和解|撤诉|委托|卷宗|案卷|刑事|证人|检察|审判|司法|告发/i.test(input);
+  const payment = /付款|支付|转账|汇款|还钱|赔钱|履行|道歉|执行|赔偿|和解/i.test(input);
+  const outstanding = state.courtroom?.agreements?.some(a => a.terms.some(t => t.status === 'pending')) ?? false;
+  const restricted = state.courtroom?.sanctions?.some(s =>
+    state.clock.day >= s.startDay && state.clock.day <= s.endDay) ?? false;
+
+  if (active) {
+    add('principles', 'career', 'hearing', 'settlement', 'order', 'relationship', 'verdict');
+    if (active.category === 'minor-criminal' || active.category === 'major-criminal') add('criminal');
+    if (outstanding) add('fulfill');
+    if (observe) add('observation'); // Explains why a formal litigant cannot attend as an observer.
+    return scopes;
+  }
+  if (office) {
+    add('principles', 'career');
+    if (/重大刑事|特殊委托|重大案件/i.test(input)) add('special', 'open');
+    else if (/起诉|诉讼|报价|律师费|诉状|立案|请律师/i.test(input))
+      add('quote', 'settlement', 'order', 'verdict');
+    else if (/受理|接案|接下|第[一二三123]份|选择.*(?:委托|卷宗|案件)/i.test(input))
+      add('open', 'hearing', 'verdict');
+    else if (/委托|卷宗|公告栏|案件列表|今日.*案件|今天.*案件/i.test(input))
+      add('docket', 'open');
+    else if (!outstanding || !payment) add(...ALL_COURT_SCOPES);
+    if (outstanding) add('order', 'fulfill', 'relationship');
+    return scopes;
+  }
+  if (courthouse && !legal) {
+    add('principles', 'observation');
+    return scopes;
+  }
+  if (observe) {
+    add('principles', 'observation');
+    return scopes;
+  }
+  if (outstanding && payment && !legal) {
+    add('principles', 'order', 'fulfill', 'relationship');
+    return scopes;
+  }
+  if (legal) {
+    // Ambiguous legal requests get the full original rule set, never a guessed subset.
+    add(...ALL_COURT_SCOPES);
+    return scopes;
+  }
+  if (restricted) add('principles', 'criminal'); // Preserve active judicial restrictions in ordinary narration.
+  return scopes;
+}
+
+/** The unfiltered STORY_PROTOCOL export remains available for exact-text comparisons. */
+export function storyProtocolForTurn(state: WorldState, input: string): string {
+  const scopes = selectCourtPromptScopes(state, input);
+  return STORY_PROTOCOL_RULES.filter(rule => {
+    const group = COURT_PROTOCOL_SECTIONS.find(([prefix]) => rule.startsWith(prefix));
+    return !group || scopes.has(group[1]);
+  }).join('\n');
+}
 
 const INTERACTION_EVENT_PROTOCOL = [
   '本轮是玩家在交互中发现异常后，明确选择“是，继续探索”所触发的突发事件。请创造一个与此刻地点、人物、时段及刚才交互相关的新事件，并给出实际影响。',
@@ -364,6 +458,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       }
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
+      const courtPromptScopes = selectCourtPromptScopes(snapshot, input);
       const narrative = narrativeContext(snapshot);
       const cooking = cookingLlmPayload(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
@@ -392,8 +487,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           abilities: socialSkillOverview(snapshot, activeProtagonist(snapshot))
             .map(({ id, label, level }) => ({ id, label, level })) },
         illnesses: diagnosePlayerIllnesses(snapshot.player).map(illness => ({ id: illness.id, name: illness.name, severity: illness.severityLabel, symptoms: illness.symptoms })),
-        lawCareer: lawCareerStoryContext(snapshot),
-        courtroom: courtStoryContext(snapshot),
+        ...(courtPromptScopes.size ? {
+          lawCareer: lawCareerStoryContext(snapshot), courtroom: courtStoryContext(snapshot),
+        } : {}),
         // Available even at the courtyard entrance before locationServices
         // exposes the indoor hearing-room service.
         courtObservation: snapshot.locationId === 'courthouse' || snapshot.locationId === 'court-hearing' ? {
@@ -507,7 +603,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ? `【本轮有限旁线机会】程序低概率（${Math.round(sideOpportunity.probability * 100)}%）授权一组其他主角候选：${JSON.stringify(sideOpportunity)}。只允许这些 protagonists 组合输出 <otherside> JSON 数组，最多 ${sideOpportunity.groups.length} 组。若同一地点确实合组，必须用一条事件的 protagonists 数组共同保存，禁止为同场两个角色分别写两条；不同地点则不同组，禁止直接面对面，可使用 messages 生成双方同步手机短信。NPC 只允许从 npcGroups 同场列表选，属于参与者、可以拥有 status/locationId/affinityDelta，但不拥有可切换视角。若没有自然发生的新事件，请完全省略标签；模型不必耗尽所有候选。关系前史、生日和节日仅用于合理创作，不是自动触发已完成行动。可在 <story_continue> 中返回当前主角，但重大选择留给玩家，系统会提供继续/切换按钮。禁止任意远程移动、任意钱包修改、后台行程覆盖。`
         : '【旁线机会未触发】本轮禁止输出 <otherside>、<story_continue> 标签，不得在当前主角的正文写出“与此同时”已改变其他人物位置、余额或实际发生的行为；全知信息仅能作为背景事实引用。';
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
-      const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${sideInstruction}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
+      const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${sideInstruction}\n${weeklyInstruction}\n${storyProtocolForTurn(snapshot, input)}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
       const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。weather 是今日东京的权威天气，正文里的天空、出行与体感必须与它一致，不得另写矛盾的天气。四位主角（长崎素世、丰川祥子、樱羽艾玛、甘织玲奈子）校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。四位主角均非在读高中生；此安排不代表所有配角同校或同年级；四主角具体院校名称与正式学籍尚未确认，原作时期的学校、年级、制服与同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       // Bookend the full instruction with the tagged-envelope rule, and repeat
