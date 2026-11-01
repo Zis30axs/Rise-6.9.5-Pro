@@ -40,6 +40,30 @@ const personIdHeadshotAliases: Readonly<Record<string, string>> = {
 const protagonistAvatarIds: Readonly<Record<string, string>> = {
   sakiko: 'sakiko', emma: 'majo-emma', renako: 'wata-renako',
 };
+/** Full-body sheets without a headshot crop. Percentages skip each sheet's empty top; no extra scale. */
+const spriteObjectPosition: Readonly<Record<string, string>> = {
+  sakiko: 'center 4%', tomori: 'center 4%', anon: 'center 4%', taki: 'center 4%',
+  rana: 'center 4%', mutsumi: 'center 4%',
+  'majo-anan': 'center 5%', 'majo-noa': 'center 3%', 'majo-hanna': 'center 12%',
+  'majo-meruru': 'center top', 'majo-emma': 'center top', 'majo-hiro': 'center top',
+  'majo-margo': 'center top', 'majo-milia': 'center top', 'majo-nanoka': 'center top',
+  'majo-arisa': 'center top', 'majo-sherry': 'center top', 'majo-yuki': 'center top',
+  'wata-renako': 'center top', 'wata-mai': 'center top', 'wata-ajisai': 'center top',
+  'wata-satsuki': 'center top', 'wata-kaho': 'center top', 'wata-haruna': 'center top',
+};
+export function mapSpriteObjectPosition(person: MapAvatarIdentity): string {
+  const candidates = [
+    person.personId ? personIdHeadshotAliases[person.personId] : undefined,
+    person.personId?.replace(/^watanare-/, 'wata-'),
+    person.protagonistId ? protagonistAvatarIds[person.protagonistId] : undefined,
+    personAvatarIds[person.name],
+    person.personId ?? undefined,
+  ];
+  for (const id of candidates) {
+    if (id && spriteObjectPosition[id]) return spriteObjectPosition[id];
+  }
+  return 'center top';
+}
 function headshotFor(person: MapAvatarIdentity): MapAvatarAsset | null {
   const candidates = [
     person.personId ? personIdHeadshotAliases[person.personId] : undefined,

@@ -176,7 +176,7 @@ async function loadSharedTokyoGlb(assetUrl: string): Promise<THREE.Group> {
 }
 
 import {
-  projectOldTokyoPosition, tokyoDistrictBounds,
+  projectOldTokyoPosition, TOKYO_PIN_ELEVATION, tokyoDistrictBounds,
   tokyoDistricts, tokyoLocationPosition, type TokyoScope,
 } from './tokyo-sandbox-map';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
@@ -694,7 +694,7 @@ import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { districtMapPlaces, isMapDistrict, type MapDistrictId } from './map-districts';
-import { mapLocationPoint, type MapCameraView } from './campus-map-layout';
+import type { MapCameraView } from './campus-map-layout';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; x: number; y: number };
 type MapPerson = {
@@ -703,9 +703,12 @@ type MapPerson = {
   position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo';
 };
 type Pin = { id: string; name: string; x: number; y: number };
+type AnchoredPin = Pin & { anchorX: number; anchorY: number };
 type DistrictPin = Pin & { available: boolean; selected: boolean };
-type PlacePin = Pin & { disabled: boolean; current: boolean; number: number; compact: boolean };
-type PersonPin = Pin & MapPerson;
+type PlacePin = AnchoredPin & { disabled: boolean; current: boolean; number: number; compact: boolean };
+type PersonPin = AnchoredPin & MapPerson;
+type EventPin = AnchoredPin & { icon: string; kind: string; label: string; title: string };
+type LeaderLine = { id: string; x1: number; y1: number; x2: number; y2: number };
 const props = withDefaults(defineProps<{
   active: boolean; scope: TokyoScope; width: number; height: number;
   bearing: number; viewScale: number; selectedId: string;
@@ -742,7 +745,8 @@ const activePreset = ref<ResolvedAtmospherePreset>('day');
 const districtPins = ref<DistrictPin[]>([]);
 const placePins = ref<PlacePin[]>([]);
 const personPins = ref<PersonPin[]>([]);
-const eventPins = ref<Pin[]>([]);
+const eventPins = ref<EventPin[]>([]);
+const leaderLines = ref<LeaderLine[]>([]);
 const playerPin = ref<Pin | null>(null);
 const selectedPerson = ref('');
 const cameraPosition = ref('');
@@ -926,7 +930,7 @@ function release(unmounting = false) {
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
   lastTick = 0;
   districtPins.value = []; placePins.value = []; personPins.value = [];
-  eventPins.value = []; playerPin.value = null;
+  eventPins.value = []; leaderLines.value = []; playerPin.value = null;
 
   if (usingPersistentRuntime && persistentSandboxRuntime) {
     persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
@@ -1072,14 +1076,15 @@ function render() {
     persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
   }
 
-  const player = props.position ? projectOldTokyoPosition(props.position, props.scope === 'city' ? undefined : props.scope)
-    : tokyoLocationPosition(props.locationId, props.scope === 'city' ? undefined : props.scope);
+  const positionHint = props.scope === 'city' ? undefined : props.scope;
+  const player = props.position ? projectOldTokyoPosition(props.position, positionHint)
+    : tokyoLocationPosition(props.locationId, positionHint);
   latestPlayerWorldPos = player ? { x: player.x, z: player.z } : undefined;
 
   renderer.render(scene, camera);
   if (props.decorative) {
     districtPins.value = []; placePins.value = []; personPins.value = [];
-    eventPins.value = []; playerPin.value = null;
+    eventPins.value = []; leaderLines.value = []; playerPin.value = null;
     return;
   }
 
@@ -1102,56 +1107,72 @@ function render() {
 
   const places = props.scope === 'city' ? [] : districtMapPlaces(props.scope);
   const occupiedPlaces: { x: number; y: number }[] = [];
+  const separate = (anchor: { x: number; y: number }, occupied: { x: number; y: number }[], gap: number, offsets: number[][]) => {
+    const placed = offsets
+      .map(([dx, dy]) => ({
+        x: Math.max(24, Math.min(width - 24, anchor.x + dx)),
+        y: Math.max(24, Math.min(height - 24, anchor.y + dy)),
+      }))
+      .find(cand => occupied.every(other => Math.hypot(cand.x - other.x, cand.y - other.y) >= gap))
+      ?? { x: anchor.x, y: anchor.y };
+    occupied.push(placed);
+    return placed;
+  };
   placePins.value = places.flatMap((place, index) => {
-    const point = tokyoLocationPosition(place.id, props.scope === 'city' ? undefined : props.scope);
+    const point = tokyoLocationPosition(place.id, positionHint);
     if (!point) return [];
-    const p = project(point.x, point.z, 9);
+    const p = project(point.x, point.z, TOKYO_PIN_ELEVATION);
     if (!p.visible) return [];
     const compact = index >= 6 || width < 520;
-    const minSep = compact ? 26 : 34;
-    const candidateOffsets = [
+    const placed = separate(p, occupiedPlaces, compact ? 26 : 34, [
       [0, 0], [0, -26], [0, 26], [-32, -16], [32, -16], [-32, 16], [32, 16], [0, -48], [0, 48],
-    ];
-    const placed = candidateOffsets
-      .map(([dx, dy]) => ({
-        x: Math.max(24, Math.min(width - 24, p.x + dx)),
-        y: Math.max(24, Math.min(height - 24, p.y + dy)),
-      }))
-      .find(cand => occupiedPlaces.every(other => Math.hypot(cand.x - other.x, cand.y - other.y) >= minSep))
-      ?? { x: p.x, y: p.y };
-    occupiedPlaces.push(placed);
+    ]);
     return [{
-      id: place.id, name: place.name, x: placed.x, y: placed.y,
+      id: place.id, name: place.name, x: placed.x, y: placed.y, anchorX: p.x, anchorY: p.y,
       compact, number: index + 1,
       current: place.id === props.locationId,
       disabled: props.busy || place.id === props.locationId || props.disabledIds.includes(place.id),
     }];
   });
-  const playerScreen = player ? project(player.x, player.z, 16) : null;
+  const playerScreen = player ? project(player.x, player.z, TOKYO_PIN_ELEVATION) : null;
   playerPin.value = playerScreen?.visible
     ? { id: 'player', name: props.playerName || '当前位置', x: playerScreen.x, y: playerScreen.y } : null;
 
   const busyPins: { x: number; y: number }[] = playerPin.value ? [playerPin.value] : [];
   personPins.value = props.scope === 'city' ? [] : props.people.flatMap(person => {
-    const original = person.position ??
-      (person.place ? mapLocationPoint(person.place.id) : undefined);
-    if (!original) return [];
-    const result = projectOldTokyoPosition(original, props.scope === 'city' ? undefined : props.scope);
-    const point = project(result.x, result.z, 16);
+    const world = person.position
+      ? projectOldTokyoPosition(person.position, positionHint)
+      : (person.place ? tokyoLocationPosition(person.place.id, positionHint) : undefined);
+    if (!world) return [];
+    const point = project(world.x, world.z, TOKYO_PIN_ELEVATION);
     if (!point.visible) return [];
-    const offsets = [[0, 0], [-46, 0], [46, 0], [0, -46], [0, 46], [-46, -46], [46, -46]];
-    const chosen = offsets.map(([dx, dy]) => ({ x: Math.max(22, Math.min(width - 22, point.x + dx)),
-      y: Math.max(22, Math.min(height - 22, point.y + dy)) }))
-      .find(candidate => busyPins.every(other => Math.hypot(candidate.x - other.x, candidate.y - other.y) >= 44)) ??
-      { x: point.x, y: point.y };
-    busyPins.push(chosen);
-    return [{ ...person, id: person.contactId, x: chosen.x, y: chosen.y }];
+    const chosen = separate(point, busyPins, 44, [[0, 0], [-46, 0], [46, 0], [0, -46], [0, 46], [-46, -46], [46, -46]]);
+    return [{ ...person, id: person.contactId, name: person.name, x: chosen.x, y: chosen.y, anchorX: point.x, anchorY: point.y }];
   });
+  const eventOccupied = [...placePins.value.map(pin => ({ x: pin.x, y: pin.y })), ...busyPins];
   eventPins.value = props.scope === 'city' ? [] : props.roadEvents.flatMap(event => {
-    const point = projectOldTokyoPosition({ x: event.x, z: event.y }, props.scope === 'city' ? undefined : props.scope);
-    const p = project(point.x, point.z, 4);
-    return p.visible ? [{ id: event.id, name: event.icon, x: p.x, y: p.y }] : [];
+    const destination = tokyoLocationPosition(event.id, positionHint);
+    const world = destination && player
+      ? { x: (destination.x + player.x) / 2, z: (destination.z + player.z) / 2 }
+      : projectOldTokyoPosition({ x: event.x, z: event.y }, positionHint);
+    const p = project(world.x, world.z, TOKYO_PIN_ELEVATION);
+    if (!p.visible) return [];
+    const placed = separate(p, eventOccupied, 36, [
+      [0, 0], [0, -28], [0, 28], [-28, 0], [28, 0],
+    ]);
+    return [{
+      id: event.id, name: event.icon, icon: event.icon, kind: event.kind,
+      label: event.label, title: event.title,
+      x: placed.x, y: placed.y, anchorX: p.x, anchorY: p.y,
+    }];
   });
+  const leaderFor = (id: string, pin: AnchoredPin) => Math.hypot(pin.x - pin.anchorX, pin.y - pin.anchorY) > 2
+    ? [{ id, x1: pin.anchorX, y1: pin.anchorY, x2: pin.x, y2: pin.y }] : [];
+  leaderLines.value = [
+    ...placePins.value.flatMap(pin => leaderFor('place:' + pin.id, pin)),
+    ...personPins.value.flatMap(pin => leaderFor('person:' + pin.contactId, pin)),
+    ...eventPins.value.flatMap(pin => leaderFor('event:' + pin.id, pin)),
+  ];
   emit('scale', { metersPerPixel });
 }
 
@@ -1391,6 +1412,9 @@ onBeforeUnmount(() => {
     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，请从右侧地点列表选择目的地。</p>
     <template v-if="status === 'ready'">
+      <svg v-if="leaderLines.length" class="tokyo-sandbox-leaders" aria-hidden="true">
+        <line v-for="line in leaderLines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" />
+      </svg>
       <button v-for="district in districtPins.filter(item => item.available)" :key="district.id"
         type="button" class="tokyo-sandbox-pin tokyo-sandbox-district"
         :class="{ selected: district.selected }"
@@ -1408,8 +1432,11 @@ onBeforeUnmount(() => {
         <span v-if="!place.compact">{{ place.name }}</span>
       </button>
       <button v-for="event in eventPins" :key="event.id" type="button" class="tokyo-sandbox-event"
-        :data-map-target="'event:' + event.id" :style="{ left: event.x + 'px', top: event.y + 'px' }"
-        @click="emit('event', event.id)">{{ event.name }}</button>
+        :class="{ special: event.kind === 'special' }"
+        :data-map-target="'event:' + event.id" data-map-event :data-event-kind="event.kind"
+        :style="{ left: event.x + 'px', top: event.y + 'px' }"
+        :title="event.title" :aria-label="event.label"
+        @click="emit('event', event.id)"><span>{{ event.icon }}</span></button>
       <button v-if="playerPin" type="button" class="tokyo-sandbox-avatar tokyo-sandbox-player"
         :style="{ left: playerPin.x + 'px', top: playerPin.y + 'px' }"
         :aria-label="'当前位置：' + playerPin.name" data-map-player @click="selectedPerson = ''">

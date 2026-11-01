@@ -33,6 +33,7 @@ import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
 import type { TokyoAtmosphereMode } from './tokyo-sandbox-vfx';
+import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
 import openAiMark from '../../assets/openai-mark.svg?inline';
 
 const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean }>(), { novelMode: false });
@@ -543,7 +544,7 @@ function activateTarget(target: string) {
   if (target.startsWith('country:')) selectCountry(target.slice(8));
   else if (target.startsWith('division:')) selectDivision(target.slice(9));
   else if (target.startsWith('landmark:')) { if (ATLAS_LANDMARKS.some(item => item.id === target.slice(9))) { selectedKind.value = 'landmark'; selectedId.value = target.slice(9); } }
-  else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) activeEventId.value = activeEventId.value === id ? '' : id; }
+  else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) openRouteEvent(id, true); }
   else if (target.startsWith('city:')) enterDistrict(target.slice(5));
   else if (localLayer.value && localDestinations.value.some(item => item.id === target)) travelTo(target);
 }
@@ -564,7 +565,25 @@ function pointerUp(event: PointerEvent) {
   if (!pointers.size) { tapTarget = undefined; tapClient = undefined; gestureMoved = false; gestureHadMultiple = false; activeDragKind = 'pan'; }
 }
 function guardClick(event: MouseEvent) {
-  if (event.detail > 0 && now() < ignoreClickUntil && !(event.target as Element).closest('[data-map-controls], [data-map-person-id], [data-map-player]')) { event.preventDefault(); event.stopImmediatePropagation(); }
+  // Route-event pins keep their click so keyboard and a leaked click can open the description.
+  // The gesture path toggles first; openRouteEvent ignores that follow-up click.
+  if (event.detail > 0 && now() < ignoreClickUntil && !(event.target as Element).closest('[data-map-controls], [data-map-person-id], [data-map-player], [data-map-event]')) { event.preventDefault(); event.stopImmediatePropagation(); }
+}
+let routeEventGestureId = '';
+let routeEventGestureTimer = 0;
+function openRouteEvent(id: string, fromGesture: boolean) {
+  const view = viewport.value?.ownerDocument.defaultView;
+  if (fromGesture) {
+    const next = applyRouteEventGesture(activeEventId.value, id);
+    activeEventId.value = next.activeId;
+    routeEventGestureId = id;
+    view?.clearTimeout(routeEventGestureTimer);
+    routeEventGestureTimer = view?.setTimeout(() => { routeEventGestureId = ''; }, 450) ?? 0;
+    return;
+  }
+  const next = applyRouteEventTap(activeEventId.value, id, routeEventGestureId === id);
+  activeEventId.value = next.activeId;
+  routeEventGestureId = '';
 }
 function cancelGestures() {
   const ids = [...pointers.keys()]; pointers.clear(); gesture = undefined; tapTarget = undefined; tapClient = undefined;
@@ -607,7 +626,7 @@ onMounted(() => {
   if (owner?.ResizeObserver) { observer = new owner.ResizeObserver(resize); observer.observe(viewport.value); }
   resize();
 });
-onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(); });
+onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(); viewport.value?.ownerDocument.defaultView?.clearTimeout(routeEventGestureTimer); });
 </script>
 
 <template>
@@ -635,7 +654,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
                 :player-id="activeProtagonist(model.state)"
                 :people="localLayer ? visiblePeople : []" :road-events="localLayer ? roadEvents : []"
                 @select="enterDistrict($event)" @travel="travelTo($event)"
-                @event="activeEventId = activeEventId === $event ? '' : $event"
+                @event="openRouteEvent($event, false)"
                 @scale="setTokyoMapScale" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
@@ -658,7 +677,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <button type="button" aria-label="向右旋转地图" @click="rotateBy(30)">↷</button>
           </div>
         </div>
-        <div v-if="roadEvents.length && localLayer && !novelMode" class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="activeEventId = activeEventId === event.id ? '' : event.id">{{ event.icon }} {{ event.title }}</button></div>
+        <div v-if="roadEvents.length && localLayer && !novelMode" class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="openRouteEvent(event.id, false)">{{ event.icon }} {{ event.title }}</button></div>
         <label v-if="localLayer" class="wm-demo-toggle"><input v-model="showDemoPeople" type="checkbox" aria-label="显示演示人物定位"/><span>演示图层：人物定位<small>有明确演示记录，且关系 ≥ {{ affinityThreshold }} 才显示</small></span></label>
         <p v-if="localLayer" class="wm-boundary-note">演示记录 · 只显示已知且关系达标的位置</p>
         <div v-if="activeEvent && localLayer" class="wm-event-detail" role="status"><h3>{{ activeEvent.title }}</h3><p>{{ activeEvent.detail }}</p><button type="button" @click="activeEventId = ''">收起事件详情</button></div>

@@ -21,6 +21,7 @@ const sourceById: Record<string, string> = {
   'majo-sherry': 'assets/majo-runtime/characters/majo-sherry/neutral.webp',
   'majo-hanna': 'assets/majo-runtime/characters/majo-hanna/neutral.webp',
   'majo-yuki': 'assets/majo-runtime/characters/majo-yuki/neutral.png',
+  'majo-meruru': 'assets/majo-runtime/characters/majo-meruru/neutral.webp',
   'wata-renako': 'assets/watanare-runtime/renako/neutral.webp',
   'wata-mai': 'assets/watanare-runtime/characters/watanare-mai/neutral.webp',
   'wata-ajisai': 'assets/watanare-runtime/characters/watanare-ajisai/neutral.webp',

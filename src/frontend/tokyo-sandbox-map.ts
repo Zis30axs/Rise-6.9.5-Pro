@@ -51,14 +51,38 @@ export function projectOldTokyoPosition(position: TokyoPoint, hint?: MapDistrict
   };
 }
 
-/** Authoritative location IDs take precedence over approximate old-to-new mapping. */
+/** Place, person, protagonist and route-event pins share this height above the ground. */
+export const TOKYO_PIN_ELEVATION = 8;
+
+const LEGACY_LANDMARK_EPSILON = 0.6;
+
+function sameScenicPoint(a: TokyoPoint, b: TokyoPoint) {
+  return Math.abs(a.x - b.x) < LEGACY_LANDMARK_EPSILON && Math.abs(a.z - b.z) < LEGACY_LANDMARK_EPSILON;
+}
+
+/**
+ * Location pins on the new sand table.
+ * A landmark that still sits on its old flat-map coordinate is projected into
+ * the district frame so it meets the 3D building. A landmark authored on the
+ * new map (it no longer matches that old point) stays at the saved coordinate.
+ */
 export function tokyoLocationPosition(locationId: string, hint?: MapDistrictId): TokyoPoint | undefined {
   // The court's indoor and outdoor map pins both refer to the new building.
   if (locationId === 'court-hearing') locationId = 'courthouse';
-  const landmark = landmarkById.get(locationId);
-  if (landmark) return { x: landmark.x, z: landmark.z };
   const old = mapLocationPoint(locationId);
+  const landmark = landmarkById.get(locationId);
+  if (landmark && !(old && sameScenicPoint(landmark, old))) return { x: landmark.x, z: landmark.z };
   return old ? projectOldTokyoPosition(old, hint) : undefined;
+}
+
+/** One tap opens or closes a route-event description. A gesture and its follow-up click must not both toggle. */
+export function applyRouteEventGesture(activeId: string, eventId: string): { activeId: string; gestureAlreadyToggled: true } {
+  return { activeId: activeId === eventId ? '' : eventId, gestureAlreadyToggled: true };
+}
+
+export function applyRouteEventTap(activeId: string, eventId: string, gestureAlreadyToggled: boolean): { activeId: string; gestureAlreadyToggled: false } {
+  if (gestureAlreadyToggled) return { activeId, gestureAlreadyToggled: false };
+  return { activeId: activeId === eventId ? '' : eventId, gestureAlreadyToggled: false };
 }
 
 export function tokyoDistrictBounds(scope: TokyoScope) {

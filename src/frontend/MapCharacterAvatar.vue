@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { mapAvatarInitials, resolveMapCharacterAvatar, type MapAvatarIdentity } from './map-character-avatar';
+import { mapAvatarInitials, mapSpriteObjectPosition, resolveMapCharacterAvatar, type MapAvatarIdentity } from './map-character-avatar';
 
 const props = defineProps<MapAvatarIdentity>();
 const avatar = computed(() => resolveMapCharacterAvatar(props));
@@ -26,7 +26,7 @@ const atlasBox = computed(() => active.value?.kind === 'atlas'
 
 <template>
   <span class="cms-avatar-face" :data-map-avatar-kind="active?.kind ?? 'initials'" aria-hidden="true">
-    <img v-if="active?.kind === 'sprite' || active?.kind === 'headshot'" :src="active.src" :class="{ 'cms-avatar-headshot': active?.kind === 'headshot' || protagonistId === 'soyo' }" alt="" draggable="false" @error="markFailed(active.src)" />
+    <img v-if="active?.kind === 'sprite' || active?.kind === 'headshot'" :src="active.src" :class="{ 'cms-avatar-headshot': active?.kind === 'headshot' || protagonistId === 'soyo' }" :style="active.kind === 'sprite' ? { objectPosition: mapSpriteObjectPosition(props) } : undefined" :data-avatar-crop="active.kind === 'sprite' ? mapSpriteObjectPosition(props) : undefined" alt="" draggable="false" @error="markFailed(active.src)" />
     <svg v-else-if="active?.kind === 'atlas'" :viewBox="atlasBox" preserveAspectRatio="xMidYMin meet">
       <image :href="active.src" :width="active.atlasWidth" :height="active.atlasHeight" />
     </svg>
