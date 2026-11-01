@@ -28,7 +28,9 @@ TAKI_POSES = ('neutral', 'crossed', 'drumsticks', 'embarrassed')
 TAKI_SPRITES = {f'taki_uniform_{pose}' for pose in TAKI_POSES}
 TOMORI_POSES = ('neutral', 'smile', 'surprised', 'sad', 'shy')
 TOMORI_SPRITES = {f'tomori_uniform_{pose}' for pose in TOMORI_POSES}
-SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | RAANA_SPRITES | TAKI_SPRITES | TOMORI_SPRITES
+NAGASAKI_MOTHER_POSES = ('neutral', 'smile', 'surprised', 'cheerful')
+NAGASAKI_MOTHER_SPRITES = {f'nagasaki_mother_suit_{pose}' for pose in NAGASAKI_MOTHER_POSES}
+SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | RAANA_SPRITES | TAKI_SPRITES | TOMORI_SPRITES | NAGASAKI_MOTHER_SPRITES
 BACKGROUNDS = {'toyokawa_mansion_day', 'toyokawa_mansion_dusk', 'toyokawa_mansion_night',
                'toyokawa_living_room', 'downtown_day', 'downtown_night'}
 EXPECTED_ASSETS = SPRITES | BACKGROUNDS

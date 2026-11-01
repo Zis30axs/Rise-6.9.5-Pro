@@ -2,12 +2,13 @@ import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { isRaanaSpeaker } from './raana-art-policy';
 import { isTakiSpeaker } from './taki-art-policy';
 import { isTomoriSpeaker } from './tomori-art-policy';
+import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
 import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
@@ -146,6 +147,11 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
   if (!person.protagonistId && (isTomoriSpeaker(person.name) || isTomoriSpeaker(person.personId ?? ''))) {
     const tomoriSpeaker = isTomoriSpeaker(person.personId ?? '') ? person.personId : person.name;
     const art = getTomoriArt(downtownArtPack, { speaker: tomoriSpeaker, expression: 'neutral' });
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isNagasakiMotherSpeaker(person.name) || isNagasakiMotherSpeaker(person.personId ?? ''))) {
+    const motherSpeaker = isNagasakiMotherSpeaker(person.personId ?? '') ? person.personId : person.name;
+    const art = getNagasakiMotherArt(downtownArtPack, { speaker: motherSpeaker, expression: 'neutral' });
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   const atlas = person.portraitId && Object.hasOwn(novelNpcAtlases, person.portraitId)

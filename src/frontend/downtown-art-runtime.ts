@@ -4,10 +4,11 @@ import { selectRaanaSprite, type RaanaOutfit, type RaanaPose, type RaanaSpriteId
 import { selectSakikoSprite, type SakikoSpriteId, type SakikoOutfit, type SakikoExpression } from './sakiko-art-policy';
 import { selectTakiSprite, type TakiOutfit, type TakiPose, type TakiSpriteId } from './taki-art-policy';
 import { selectTomoriSprite, type TomoriOutfit, type TomoriPose, type TomoriSpriteId } from './tomori-art-policy';
+import { selectNagasakiMotherSprite, type NagasakiMotherOutfit, type NagasakiMotherPose, type NagasakiMotherSpriteId } from './nagasaki-mother-art-policy';
 
 export type ArtPhase = 'day' | 'dusk' | 'night';
 export type DowntownBackgroundId = 'toyokawa_mansion_day' | 'toyokawa_mansion_dusk' | 'toyokawa_mansion_night' | 'toyokawa_living_room' | 'downtown_day' | 'downtown_night';
-export type DowntownArtId = SakikoSpriteId | MutsumiSpriteId | AnonSpriteId | RaanaSpriteId | TakiSpriteId | TomoriSpriteId | DowntownBackgroundId;
+export type DowntownArtId = SakikoSpriteId | MutsumiSpriteId | AnonSpriteId | RaanaSpriteId | TakiSpriteId | TomoriSpriteId | NagasakiMotherSpriteId | DowntownBackgroundId;
 export interface DowntownArtAsset {
   readonly id: DowntownArtId;
   readonly src: string;
@@ -98,6 +99,17 @@ export function getTomoriArt(pack: DowntownArtPack, options: {
   if (exact) return { ...exact, outfit: selection.outfit, expression: selection.expression, pose: selection.pose };
   const neutral = asset(pack, 'tomori_uniform_neutral');
   return neutral ? { ...neutral, outfit: 'uniform', expression: 'neutral', pose: 'neutral' } : null;
+}
+
+export function getNagasakiMotherArt(pack: DowntownArtPack, options: {
+  speaker: unknown; expression: unknown;
+}): (DowntownArtAsset & { outfit: NagasakiMotherOutfit; expression: SakikoExpression; pose: NagasakiMotherPose }) | null {
+  const selection = selectNagasakiMotherSprite(options);
+  if (!selection) return null;
+  const exact = asset(pack, selection.id);
+  if (exact) return { ...exact, outfit: selection.outfit, expression: selection.expression, pose: selection.pose };
+  const neutral = asset(pack, 'nagasaki_mother_suit_neutral');
+  return neutral ? { ...neutral, outfit: 'suit', expression: 'neutral', pose: 'neutral' } : null;
 }
 
 export function nearToyokawaEntrance(

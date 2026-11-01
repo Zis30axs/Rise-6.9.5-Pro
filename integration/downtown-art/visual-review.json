@@ -135,6 +135,31 @@
     "canvas": [768, 1344],
     "anchor": [384, 1280]
   },
+  "nagasakiMother": {
+    "reviewedOn": "2026-11-01",
+    "count": 4,
+    "outfit": "suit",
+    "origin": "user-provided",
+    "personId": "nagasaki-mother",
+    "background": "white removed by border-connected near-white flood fill; sealed arm-torso holes of at least 800px removed; interior alpha forced opaque; feather only on the outer 1-2px",
+    "identityConsistent": true,
+    "poses": ["neutral", "smile", "surprised", "cheerful"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "surprised",
+      "troubled": "surprised",
+      "annoyed": "neutral",
+      "sad": "surprised"
+    },
+    "cheerfulKeptAsPose": true,
+    "armGapOpened": true,
+    "legGapOpened": true,
+    "fullHeadHandsAndBothShoes": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -354,6 +379,26 @@
     {
       "id": "tomori_uniform_shy",
       "sha256": "4f34c3467fadaf0189b0cf44619a2967614c19760dc473482ce266727f36d868",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_neutral",
+      "sha256": "9c66de5031c338b1d0eebc56d8f57ebeb0324264787538a91fafb42eaf553fa6",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_smile",
+      "sha256": "c949ffa6cb56c1aff0833f032181cf9eded249fe48e1f1e13d789e9192217ecd",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_surprised",
+      "sha256": "956cf738b427220f187e5173708e671e729698c4bb9839323ee30661be9d5b36",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_cheerful",
+      "sha256": "3ebc815e481a78c9d7aca7998949bbd9541e48f9a3a86c57f1349ae6f2dc0847",
       "visuallyReviewed": true
     }
   ],

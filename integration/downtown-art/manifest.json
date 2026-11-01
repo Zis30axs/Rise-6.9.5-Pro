@@ -499,6 +499,58 @@
       ]
     },
     {
+      "id": "nagasaki_mother_suit_neutral",
+      "path": "characters/nagasaki-mother/suit/neutral.webp",
+      "sha256": "9c66de5031c338b1d0eebc56d8f57ebeb0324264787538a91fafb42eaf553fa6",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_smile",
+      "path": "characters/nagasaki-mother/suit/smile.webp",
+      "sha256": "c949ffa6cb56c1aff0833f032181cf9eded249fe48e1f1e13d789e9192217ecd",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_surprised",
+      "path": "characters/nagasaki-mother/suit/surprised.webp",
+      "sha256": "956cf738b427220f187e5173708e671e729698c4bb9839323ee30661be9d5b36",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_cheerful",
+      "path": "characters/nagasaki-mother/suit/cheerful.webp",
+      "sha256": "3ebc815e481a78c9d7aca7998949bbd9541e48f9a3a86c57f1349ae6f2dc0847",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "backgrounds/toyokawa_mansion_day.webp",
       "sha256": "3223ab495c09bb2db16fa0a72efaebe5d4347ee9a06c8c8176e241672cc65776",
