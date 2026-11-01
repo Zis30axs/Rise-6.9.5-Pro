@@ -1,0 +1,166 @@
+{
+  "source": "53b11282edcb001668ac590befdbe60a6d907479",
+  "methodology": "Captured Tavern bridge system+user prompts; baseline replaces only the selected protocol with the hash-verified original full protocol. Memory disabled. Estimate = non-ASCII code points + ASCII characters / 4, rounded up. Excludes inherited Tavern presets/lore and model-specific message overhead.",
+  "rows": [
+    {
+      "name": "campus-meal",
+      "plan": {
+        "stages": [
+          "entry",
+          "consultation",
+          "observation"
+        ],
+        "reason": "bounded-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 19894,
+      "requestCharsBefore": 46208,
+      "requestCharsAfter": 42108,
+      "estimatedTokensBefore": 25298,
+      "estimatedTokensAfter": 22819,
+      "savedChars": 4100
+    },
+    {
+      "name": "shopping",
+      "plan": {
+        "stages": [
+          "entry",
+          "consultation",
+          "observation"
+        ],
+        "reason": "bounded-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 19894,
+      "requestCharsBefore": 46210,
+      "requestCharsAfter": 42110,
+      "estimatedTokensBefore": 25300,
+      "estimatedTokensAfter": 22821,
+      "savedChars": 4100
+    },
+    {
+      "name": "consultation-entry",
+      "plan": {
+        "stages": [
+          "entry",
+          "consultation",
+          "observation"
+        ],
+        "reason": "bounded-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 19894,
+      "requestCharsBefore": 46209,
+      "requestCharsAfter": 42109,
+      "estimatedTokensBefore": 25299,
+      "estimatedTokensAfter": 22820,
+      "savedChars": 4100
+    },
+    {
+      "name": "travel-observation",
+      "plan": {
+        "stages": [
+          "entry",
+          "consultation",
+          "observation"
+        ],
+        "reason": "bounded-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 19894,
+      "requestCharsBefore": 46212,
+      "requestCharsAfter": 42112,
+      "estimatedTokensBefore": 25300,
+      "estimatedTokensAfter": 22822,
+      "savedChars": 4100
+    },
+    {
+      "name": "indirect-lawsuit",
+      "plan": {
+        "stages": [
+          "entry",
+          "commissions",
+          "consultation",
+          "acceptance",
+          "hearing",
+          "settlement",
+          "enforcement",
+          "observation"
+        ],
+        "reason": "uncertain-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 23994,
+      "requestCharsBefore": 46219,
+      "requestCharsAfter": 46219,
+      "estimatedTokensBefore": 25309,
+      "estimatedTokensAfter": 25309,
+      "savedChars": 0
+    },
+    {
+      "name": "office-docket",
+      "plan": {
+        "stages": [
+          "entry",
+          "commissions",
+          "consultation",
+          "acceptance",
+          "hearing",
+          "settlement",
+          "enforcement",
+          "observation"
+        ],
+        "reason": "court-place"
+      },
+      "systemCharsBefore": 24035,
+      "systemCharsAfter": 24035,
+      "requestCharsBefore": 45688,
+      "requestCharsAfter": 45688,
+      "estimatedTokensBefore": 25229,
+      "estimatedTokensAfter": 25229,
+      "savedChars": 0
+    },
+    {
+      "name": "active-hearing",
+      "plan": {
+        "stages": [
+          "entry",
+          "commissions",
+          "consultation",
+          "acceptance",
+          "hearing",
+          "settlement",
+          "enforcement",
+          "observation"
+        ],
+        "reason": "court-state"
+      },
+      "systemCharsBefore": 24035,
+      "systemCharsAfter": 24035,
+      "requestCharsBefore": 48579,
+      "requestCharsAfter": 48579,
+      "estimatedTokensBefore": 26312,
+      "estimatedTokensAfter": 26312,
+      "savedChars": 0
+    },
+    {
+      "name": "post-judgment",
+      "plan": {
+        "stages": [
+          "entry",
+          "consultation",
+          "enforcement",
+          "observation"
+        ],
+        "reason": "bounded-request"
+      },
+      "systemCharsBefore": 23994,
+      "systemCharsAfter": 21095,
+      "requestCharsBefore": 47523,
+      "requestCharsAfter": 44624,
+      "estimatedTokensBefore": 25758,
+      "estimatedTokensAfter": 24098,
+      "savedChars": 2899
+    }
+  ]
+}

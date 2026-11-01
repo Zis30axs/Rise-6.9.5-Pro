@@ -1,3 +1,4 @@
+import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
@@ -103,25 +104,25 @@ export const MANDATORY_CHARACTER_SPEECH_RULE = [
 
 export const CHARACTER_SPEECH_FINAL_CHECK = '【输出前必须自检】逐句检查 <story> 标签块：只要是任何人物直接说出的原话，无论是否夹在引号、冒号、动作描写或回忆里，都必须转换成完整的 |说话人|九选一情绪|台词| 独立行；若存在一条无标签的对白，就先补全再提交。不要输出检查过程，不要省略任一角色的标签。';
 
-export const STORY_PROTOCOL = [
+const STORY_PROTOCOL_PARTS = [
   '世界舞台为日本东京丰岛区、新宿及邻近街区。高田／西早稻田是校园生活圈，池袋／东池袋是商业街区，商业区街角的全科诊所由风堇医生坐诊，新宿大型商业区是都会娱乐、Live House 与 KTV 娱乐中心，艾玛与雪住在杂司谷，丰川家位于目白台，神田川沿岸有住宅与绿地，近郊高尾山是登高健行、展望眺望与温泉疗愈胜地。所有日常购物和车费均用日元，时间、位置与结算以当前游戏存档为准。',
   '本轮由《未读之城》前端接收并处理结果，请继续简短的场景叙事。以下是当前存档中的人物和地点。',
   '世界设定和叙事风格可作为内容参考；其他提示中关于展示标签、状态栏、思考过程、选项、变量更新或旧输出格式的要求不适用于本轮。',
   'music 中的乐队名册、邀请状态和演出预约是正式登记的唯一依据。创建乐队或预约演出需由玩家填写 Live House 表单；邀请加入需由玩家从手机发送、收件人明确同意后登记。不得用普通 interact、activity、schedule、手机闲聊或叙事文字代替这些确认流程，不得编造已确定的成员、能力或档期。',
   'lawCareer 是兼容旧存档的律师职业记录；新案件以 courtroom 为准。橘雪莉保持法学专业、律师路线、见习身份，不凭空赋予正式执业资格。正常雪莉救场取得职业收益40%，主角切换中断仅得0%；不得用普通 activity、service、transfer 或其他叙事补偿。法律专业不自动等于正式律师资格。',
-  '【法庭叙事规则】只有在法院或事务所正式开启诉讼时使用 courtroom。每日委托只生成公开案情和可查证的证据，不预设隐藏真相或误导剧本，也不设置唯一正确的解谜答案；LLM根据实际辩论及已知证据自然推导，不能为了改变结果而重写已确认的事实。玩家用普通自由文本发表意见、质证、辩护，不要求固定证据按钮。案件已有事实不能被自由起诉改写；无论委托或主动诉讼均不生成黑剧本，任何一方都可能败诉。不能强制 NPC 主动起诉四位主角。民事及行政纠纷不必存在犯罪者。重大刑事不得自动出现在日常委托。',
-  '【委托生成】玩家在枫庭律师事务所要求查看今日三份委托时，若 courtroom.board 今日尚未生成，只生成两份随机委托；另一个预设见 courtroom.dailyPreset。必须保证三份委托覆盖玩家当前筛选的所有日常类别，不重复标题，两个随机类别须补齐预设尚未覆盖的类别。用 <world_actions>[{"type":"court_docket","offers":[{"id":"docket-1-a","category":"administrative","title":"委托名","client":"委托人","summary":"简介","difficulty":"easy","rewardYen":8000,"experience":100,"preset":false},{"id":"docket-1-b","category":"minor-criminal","title":"委托名","client":"委托人","summary":"简介","difficulty":"normal","rewardYen":12000,"experience":120,"preset":false}]}]</world_actions>；这是首日默认分类的字段示例，不要直接复制编号或类别。实际 id 分别使用 courtroom.suggestedRandomIds 的两个值；另外一份预设由程序插入。类别只能从 courtroom.categories 已勾选日常范围中选，难度 easy/normal/hard，预设随机 false。今日有公告栏时绝不能再生成。',
-  '【特殊委托】只有玩家主动开启重大刑事委托时才允许生成，使用 <world_actions>[{"type":"court_special","offer":{"id":"special-1","category":"major-criminal","title":"案件标题","client":"临时NPC","summary":"重大刑事委托简介","difficulty":"hard","rewardYen":40000,"experience":350,"preset":false}}]</world_actions>，重大案件不占日常三份委托且涉案人默认随机临时NPC；一旦玩家明确选择该委托，再用 court_open 构造公开案情与证据。不得自动启用特殊案件。特殊案件 id 用 courtroom.suggestedSpecialId 指示的当前游戏日编号，而不是复制示例。',
-  '【随机案件受理】用户选择今日公告栏中的随机委托后，使用 <world_actions>[{"type":"court_open","offerId":"公告栏精确ID","respondent":"固定的被告或刑事嫌疑人姓名，不能是四主角","white":"面向玩家的案情，^重要词^以红色突出","evidence":[{"title":"证据名","detail":"玩家可见事实"},{"title":"证据二","detail":"另一事实"}]}]</world_actions> 锁定案情与现有证据；须有2–8项证据，后续LLM根据事实推演但不提前指定黑剧本结论。respondent 在受理时与公开证据一起冻结；之后任何裁判执行条款的 respondent 必须和此身份完全一致，不能中途把无关 NPC 判成被告。不生成地图调查阶段，受理后直接自由庭审，不得在 <story> 中输出工程变量名或所谓隐藏答案。',
-  '【主动诉讼咨询】玩家明确提出起诉对象和理由并请事务所报价时，先陈述胜诉风险，费用由模型根据案情合理决定，提交 court_quote 行动：{"type":"court_quote","defendant":"被告姓名","reason":"起诉理由","risk":"仅有邀请行为可能不足以证明不正当竞争，可能承担败诉费用","category":"civil","lawyer":null,"sherry":false,"courtFeeYen":2000,"lawyerFeeYen":0,"sherryFeeYen":0}。主动提起的诉讼 category 只能为 civil 或 administrative，玩家可主动起诉另一名可操作主角（对方由LLM独立应诉，玩家继续控制原告），但不能起诉自己；NPC绝不能主动起诉四主角，日常委托也不得自动安排四主角为被告；刑事公诉依法由检察机关提出，不能通过此私人诉状入口开启刑事法庭。玩家如需举报刑事案件只能作为独立剧情向警察或检察机关告发，后续是否起诉不由玩家自行决定。选择另一主角协助时 lawyer 填其主角ID，选择雪莉协助时 sherry=true；未选时费用必须为0。此报价不收费，玩家确认后程序才扣起诉费并真实向受聘人物转账。金钱绝不只靠叙事变动，不用 activity 冒充人物转账。其他主角不自动具有日本律师执业资格，可作为协助人员。',
-  '【开庭中】courtroom.active 非空时，位置为 court-hearing 正式法庭（非律师事务所），剧情锁定同一游戏日同一法庭，不得 travel/rest/购物/学习或主动改换地点。普通辩论耗时0，仅真正新的证言用 {"type":"court_step","key":"testimony-1","kind":"testimony","summary":"新证言"} 推进5分钟，关键新推理 insight 推进10分钟，真正澄清矛盾 contradiction 推进15分钟；key 在本案必须唯一，不得为刷时间重复或假造。继续质证与证言根据角色知情界限合理生成，不能代替玩家决定新台词。案件需要判决时自动或依玩家请求输出 {"type":"court_finish","verdict":"win","summary":"法庭认可的结论"}；若结论尚缺关键论据就继续庭审，而非跳过证明。',
-  '【和解】只在主动民事/行政诉讼里、且对方确实通过庭审同意谈判后，使用 <world_actions>[{"type":"court_settlement","summary":"双方愿意结束纠纷","defendantConsented":true,"terms":[{"kind":"payment","from":"defendant","description":"支付已协商的款项","amountYen":3000,"dueDay":3}]}]</world_actions> 保存待确认和解。terms 可含 payment/apology/cease/return；非付款 amountYen 必须是0；dueDay 使用当前游戏日或未来日期，不能填过去。这个例子里的钱与日期都只是格式样例，实际由LLM按案情确定。defendantConsented 仅在被告明确同意对应全部条件时才允许 true。提出和解不等于玩家接受，不能用 court_finish settled 代替确认；原告必须亲自接受后才生成正式协议。仅在玩家明确提出撤诉时提示她使用法庭案卷的撤诉确认，不能替玩家撤诉。',
-  '【判决执行】法官确实判定金钱或履行义务时，court_finish 可添加 order:{"respondent":"对方当事人姓名","terms":[{"kind":"payment","from":"defendant","description":"支付判定的赔偿","amountYen":5000,"dueDay":4}],"sanctions":[]}。这会写成后续可执行的判决协议，真实付款从既有双方钱包账本进行；不能仅在正文宣称转账已完成。普通赔偿和律师费不自动重复扣款。原告/被告身份以案卷为准，委托案原告是委托人而不是协助办理案件的主角。没有判令付款就省略 order；不能编造与现有情节无关的被告、资产或证据。',
-  '【刑事后果】只有真正的刑事案件在有充分法律根据及定罪依据时，order.sanctions 才能记录处罚，格式为 {"personId":"既有NPC的精确personId","kind":"custody","startDay":3,"endDay":5,"detail":"判决生效后依法执行"}。必须是确实被定罪的既有NPC，不得处罚其他无关NPC或任一可操作主角。重大刑事中临时登场人物尚无地图生活排程时，仅叙述裁判结果，不虚构已执行的地图拘留状态。已保存的拘留与社区服务时段约束 NPC 现场出现；普通每日生活不能越过这一状态。',
-  '【协议履行】法庭协议与判决已经写入 courtroom.agreements，状态为 pending、fulfilled 或逾期 overdue。NPC 或当前主角已经实际履行了非货币承诺时可用 {"type":"court_fulfill","termId":"确切条款ID","description":"已发生的履行依据"}，程序核对条款后标记 fulfilled。金钱赔偿可以通过法庭案卷中的支付按钮过账；若通过原有转账协议 <world_actions> transfer 付款，必须用该待付条款唯一 ID 作为精确的 reason 字段："court-obligation:term-..."，并确保付款人、收款人、金额与条款完全一致。程序只有在双边转账成功后才将相应条款标记 fulfilled；不要再另扣款。不能把 court_fulfill、relationship 或 activity 当作付款。违约只依据已保存的期限/履行状态推演后续剧情；不能把未经确认的谈判承诺当作和解协议。',
-  '【后续人物关系】判决、和解、撤诉可能自然影响当事人对彼此的看法。只有确实已发生的事件且对象是玩家已保存的联系人，才可以附加合法的 relationship 行动改变有限好感；不得仅凭胜败就无条件让所有人讨厌原告或突然爱上律师。对未入通讯录的NPC用持续有效的案件判决、协议履行与限制状态推动后续对话，不生成工程说明文字。',
-  '【律师资格】courtroom.careers 记录四主角的法律职业参与、经历与资格等级；法学在读和见习不等于持证律师。选择未持证的另一主角时是法律协助，不得把她写成法定的正式诉讼代理人；职业经验和协助费用由程序结算。橘雪莉保留原设定的见习身份。事务所受理后，程序转入正式的 court-hearing 法庭室内；法庭结案再返回事务所，叙述不能把事务所接待室当作正规法院。',
-  '【判决与和解】职业委托有固定真相，艾玛推理不佳导致败诉时雪莉依已知证据自动救场，职业收益40%；玩家独立胜诉100%。玩家可以主动请求雪莉接手（通过事务所按钮或自然语言），自然语言接手必须在当前艾玛职业委托中先通过 court_assist 行动 {"type":"court_assist","who":"sherry"} 更新持久化 courtroom.active.assistance，再用独立的 court_finish 行动结案；可以在同一回复按顺序输出这两项。普通建议、参与讨论或结案说明提到雪莉，不执行 court_assist，也不扣掉独立结案的60%。结算只读取持久化变量，禁止解析剧情措辞。主动诉讼无预设真相和强制胜诉，原告可赢可输；若双方提出和解必须先用 court_settlement 写入条款，并让玩家明确接受或拒绝；玩家撤诉只能通过明确的撤诉申请与确认，court_finish 只用于胜败判决。赔偿及和解金必须经真实账本付款才能算 fulfilled，不得擅自使用 balance 发钱。法庭不能因反复对话自动跨游戏日。',
+  COURT_PROMPT_RULES.foundation,
+  COURT_PROMPT_RULES.commissions,
+  COURT_PROMPT_RULES.special,
+  COURT_PROMPT_RULES.acceptance,
+  COURT_PROMPT_RULES.consultation,
+  COURT_PROMPT_RULES.hearing,
+  COURT_PROMPT_RULES.settlement,
+  COURT_PROMPT_RULES.judgment,
+  COURT_PROMPT_RULES.criminal,
+  COURT_PROMPT_RULES.fulfillment,
+  COURT_PROMPT_RULES.relationships,
+  COURT_PROMPT_RULES.qualification,
+  COURT_PROMPT_RULES.resolution,
 
   MANDATORY_CHARACTER_SPEECH_RULE,
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
@@ -129,7 +130,7 @@ export const STORY_PROTOCOL = [
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
-  '【法院大厅旁听·自然语言行动】玩家已位于 courthouse（法院入口/大厅）或 court-hearing（公开法庭）且明确表示执行旁听时，使用 <world_actions>[{"type":"service","serviceId":"court-observe","minutes":45,"knowledgeGain":11}]</world_actions>（此为45分钟的字段格式示例，11点仅是示例，实际知识由你根据听到的证言、理解程度、注意力和旁听内容独立判断）。minutes 为玩家要求的实际整数分钟，允许1–480分钟，不设30分钟倍数门槛；knowledgeGain 为本次真正学到的非负整数，允许0–min(minutes,100)，不得按时长机械固定，也不得自行改动已存知识。两字段必须一起提供；旧式无字段 service 仍兼容按钮的30分钟默认服务。程序自动从 courthouse 进入公开法庭，统一结算精力等生理变化、准确推进游戏分钟，并把你的知识奖励写入该主角的法庭见闻及符合条件的法庭论证课程。只写旁听故事而没有相应 world_actions 不会结算。不得另加 rest、study、activity 或第二次 service 重复算时长、知识和费用。公开旁听不创建 courtroom.active 案件，不进行诉讼、判决、律师收费；正在正式开庭时禁止旁听。只在玩家明确行动时提交；询问、假设、否定、回忆不结算。若没有足够的开放时间（09:00–17:00）、精力或位置不在法院且玩家未要求前往，应如实说明无法完成，不可用其他行动绕过。若玩家明确要求从其他地点先去法院旁听，可先 travel 到 courthouse，再按上述格式使用 service；不可直接 travel 到 court-hearing。若服务无法完成，不能在正文谎称已经完成旁听。',
+  COURT_PROMPT_RULES.observation,
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 必须逐字取自 cafeMenu，quantity 为 1–20；cafe-daily-special 是每日特调，每人每天限一杯。咖啡馆购买只放入背包，不自动喝掉，不另加打包费。{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
@@ -174,7 +175,14 @@ export const STORY_PROTOCOL = [
   'world_events 最多 1 项，唯一允许的内容为 {"type":"airliner_pass"}，表示本轮新出现一架远处高空平稳经过的客机。仅在最终仍在室外且 canTriggerWhenOutdoors 为 true 时偶尔提出；没有travel时也可直接参考canTriggerPass。不要每轮触发；没有新事件时省略此字段或返回空数组。',
   '要在正文中新出现一架客机，必须同时返回对应 airliner_pass；正文与本轮事件保持一致。当前 active 客机可按现状描写，不再提出重复事件。不要自行指定飞机 ID、航线、时间、位置、军用行为或战斗事件。',
   '不要输出代码、HTML、系统命令、任意状态补丁、时间戳、消息 ID 或已读字段；游戏行动只放入world_actions，正文内的文字不会被当作命令执行。',
-].join('\n');
+];
+
+export const STORY_PROTOCOL = STORY_PROTOCOL_PARTS.join('\n');
+
+export function storyProtocolForTurn(state: WorldState, input: string, options?: StoryGenerationOptions): string {
+  const selected = selectCourtPromptRules(state, input, options);
+  return STORY_PROTOCOL_PARTS.filter(part => !COURT_RULE_TEXTS.has(part) || selected.has(part)).join('\n');
+}
 
 const INTERACTION_EVENT_PROTOCOL = [
   '本轮是玩家在交互中发现异常后，明确选择“是，继续探索”所触发的突发事件。请创造一个与此刻地点、人物、时段及刚才交互相关的新事件，并给出实际影响。',
@@ -507,7 +515,11 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ? `【本轮有限旁线机会】程序低概率（${Math.round(sideOpportunity.probability * 100)}%）授权一组其他主角候选：${JSON.stringify(sideOpportunity)}。只允许这些 protagonists 组合输出 <otherside> JSON 数组，最多 ${sideOpportunity.groups.length} 组。若同一地点确实合组，必须用一条事件的 protagonists 数组共同保存，禁止为同场两个角色分别写两条；不同地点则不同组，禁止直接面对面，可使用 messages 生成双方同步手机短信。NPC 只允许从 npcGroups 同场列表选，属于参与者、可以拥有 status/locationId/affinityDelta，但不拥有可切换视角。若没有自然发生的新事件，请完全省略标签；模型不必耗尽所有候选。关系前史、生日和节日仅用于合理创作，不是自动触发已完成行动。可在 <story_continue> 中返回当前主角，但重大选择留给玩家，系统会提供继续/切换按钮。禁止任意远程移动、任意钱包修改、后台行程覆盖。`
         : '【旁线机会未触发】本轮禁止输出 <otherside>、<story_continue> 标签，不得在当前主角的正文写出“与此同时”已改变其他人物位置、余额或实际发生的行为；全知信息仅能作为背景事实引用。';
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
-      const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${sideInstruction}\n${weeklyInstruction}\n${STORY_PROTOCOL}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
+      // Retrieved history and native tool continuations may introduce a legal
+      // transition that was absent from the initial snapshot/request.
+      const turnProtocol = retrievedMemory || (memoryNarrative && memorySettings.protocol === 'tools' && storyApi.mode === 'custom')
+        ? STORY_PROTOCOL : storyProtocolForTurn(snapshot, input, options);
+      const systemPrompt = options?.kind === 'autonomous_sms' ? AUTONOMOUS_SMS_PROTOCOL : options?.kind === 'band_invitation_reply' ? BAND_REPLY_PROTOCOL : options?.kind === 'contact_introduction' ? CONTACT_INTRODUCTION_PROTOCOL : options?.kind === 'npc_phone_reply' ? NPC_PHONE_REPLY_PROTOCOL : options?.kind === 'phone_reply' ? PHONE_REPLY_PROTOCOL : `${perspective}\n${sideInstruction}\n${weeklyInstruction}\n${turnProtocol}\n${options?.kind === 'interaction_event' ? `${INTERACTION_EVENT_PROTOCOL}\n` : ''}${!airTraffic.canTriggerWhenOutdoors ? '本轮客机经过仍在冷却或已达到记录上限，禁止提出 airliner_pass；world_events 必须省略或为空数组。睡眠推进的是游戏时间，不能绕过现实时间的客机冷却。' : snapshot.interior ? '行动前玩家在室内，天空不可见，禁止提出 airliner_pass；只有本轮travel已经带玩家离开到室外且最终仍在室外时，才可依据canTriggerWhenOutdoors偶尔提出。' : '本轮空中事件未在冷却，可按上面的限制偶尔提出客机经过；若本轮travel最终进入室内，则不得提出天空事件。'}\n${CHARACTER_SPEECH_FINAL_CHECK}`;
       const calendarInstruction = '所有剧情的唯一日期是权威存档 calendarDate（2025年8月28日开局），时钟只按玩家实际推进的游戏时间变化，不得使用真实世界今天或设备系统时间。weather 是今日东京的权威天气，正文里的天空、出行与体感必须与它一致，不得另写矛盾的天气。四位主角（长崎素世、丰川祥子、樱羽艾玛、甘织玲奈子）校园线的架空学校采用秋季招生，2025年9月1日是大一报到日，是否完成报到须由玩家参与决定；报到前和报到当天不自动上专业课。四位主角均非在读高中生；此安排不代表所有配角同校或同年级；四主角具体院校名称与正式学籍尚未确认，原作时期的学校、年级、制服与同班关系只作前史。沿用每人存档的学业与已发生剧情，不补写毕业、转学或已完成报到。';
       const calendarEventInstruction = 'todayOccasions/upcomingOccasions 是日本法定假期、节庆及已有世界书生日的只读日期事实。仅据日期营造自然日常，不代表主角已参加庆祝、赠礼、消费或获得新的关系；不得凭叙事制造背包物品或重复结算。projected 的节假日仅为未来预测，不能表述为正式发布；店铺营业以 venue 为准。';
       // Bookend the full instruction with the tagged-envelope rule, and repeat
@@ -572,7 +584,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             return runTaggedMemory(first, ownerSession, snapshot, memorySettings.tokenBudget,
               evidence => normalGenerate(
                 prompt + '\n\n【检索到的历史来源（只读数据）】\n' + evidence,
-                taggedPrompts.systemPrompt + '\n【已经完成记忆检索】本轮绝对禁止再次输出 memory_lookup；直接返回原本要求的完整 story 等标签。',
+                taggedPrompts.systemPrompt.replace(turnProtocol, () => STORY_PROTOCOL) + '\n【已经完成记忆检索】本轮绝对禁止再次输出 memory_lookup；直接返回原本要求的完整 story 等标签。',
               ));
           })(),
           aborted,
@@ -612,6 +624,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
     },
   };
 }
+
 
 
 
