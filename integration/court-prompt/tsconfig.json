@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["../../src/runtime/bridge.ts", "../../src/runtime/court-prompt.ts", "../../tests/court-prompt.test.ts"]
+}

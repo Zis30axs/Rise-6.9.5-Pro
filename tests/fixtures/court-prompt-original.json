@@ -1,0 +1,79 @@
+{
+  "source": "53b11282edcb001668ac590befdbe60a6d907479",
+  "rules": [
+    {
+      "id": "foundation",
+      "chars": 242,
+      "sha256": "98a62072dbaefd257e2442bec64841605c604e49ae14525dfd234aabe7e337b5"
+    },
+    {
+      "id": "commissions",
+      "chars": 701,
+      "sha256": "342e4773bafaf0184136223e219c8293943f0004ff765117671301a808a5ce8f"
+    },
+    {
+      "id": "special",
+      "chars": 397,
+      "sha256": "b1c005204eababcaeb8b897ecd9a9adc31ea378afadb79dd5b504cd4a8e636a2"
+    },
+    {
+      "id": "acceptance",
+      "chars": 413,
+      "sha256": "88e364a07f78ae9f6656d81e4a40e338b2e0cbad198a2c580b6796904da5c410"
+    },
+    {
+      "id": "consultation",
+      "chars": 603,
+      "sha256": "9f4a20da1af6259ea65c77629c868b9a293ceaa940076367a34123e8e9d146ad"
+    },
+    {
+      "id": "hearing",
+      "chars": 404,
+      "sha256": "aadf79f9fca0ae3fe777ae36e1d134129c2670d0a0afd0181b585df87e19c1c4"
+    },
+    {
+      "id": "settlement",
+      "chars": 501,
+      "sha256": "40fcf43676f2313ad62f8c3eeb363a74db36bb84bc644bc98f3aa73d4e6b7b99"
+    },
+    {
+      "id": "judgment",
+      "chars": 317,
+      "sha256": "da9dff57cd19551d3e397543b75f199c9881fbfecda20b4ec47e596e505ec309"
+    },
+    {
+      "id": "criminal",
+      "chars": 269,
+      "sha256": "c1507b2ac3b21b7e95283769d9b2ff90f8e997b51affb6efce31bb5054db4384"
+    },
+    {
+      "id": "fulfillment",
+      "chars": 451,
+      "sha256": "885a7e7fd18dd5995700d23d42a5c86ac98b07fa6bcb4a38410bab9f7847c62d"
+    },
+    {
+      "id": "relationships",
+      "chars": 160,
+      "sha256": "0d87fd373087e97fd42960a3bd01d50333b54f5d3efce8751a3ac1c71dcf8df4"
+    },
+    {
+      "id": "qualification",
+      "chars": 186,
+      "sha256": "584256135b7fc5f6ab560d6cf415094b7deffe2d11ef5bc7844ed6f6e9ec31f2"
+    },
+    {
+      "id": "resolution",
+      "chars": 477,
+      "sha256": "a9a83da1ca98bcc015dae7c78f992a7349f54c3b8db7a467a9efd701e8536c88"
+    },
+    {
+      "id": "observation",
+      "chars": 802,
+      "sha256": "20dcaa9c3427e7cd7c693565bd2ca926fc5dfa010718bad9ae90177c2f2124f8"
+    }
+  ],
+  "fullProtocol": {
+    "chars": 18452,
+    "sha256": "9503ed03c1d6bf98a3d03c01f5e76899139bc0d747a1f01c8fd60a1d815827b5"
+  }
+}
