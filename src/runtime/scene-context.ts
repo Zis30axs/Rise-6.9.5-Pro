@@ -257,7 +257,7 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 export const SCENE_ENCOUNTER_DISTANCE = 7;
 function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
-  return contact ? { relationship: affinityRelation(contact.affinity) } : {};
+  return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
 }
 export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {

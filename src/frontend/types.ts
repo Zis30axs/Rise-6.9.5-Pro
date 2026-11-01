@@ -111,6 +111,8 @@ export interface CharacterContact {
   /** Stable pedestrian identity, retained after the player leaves the scene. */
   sourcePersonId: string | null;
   isMain: boolean;
+  /** Established relationship fact, such as an agreed romance. Absent for strangers and old saves. */
+  relationNote?: string;
 }
 
 export interface ContactProfileInput {

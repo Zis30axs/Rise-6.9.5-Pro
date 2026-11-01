@@ -195,13 +195,13 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       row.from === senderId && row.to === task.owner || row.from === task.owner && row.to === senderId &&
       person.phone.some(message => message.id === row.id && message.read)).slice(-20);
     const profile = residentById(PROTAGONIST_PERSON_IDS[senderId] ?? '');
-    const towardRecipient = person.contacts.find(row => row.id === 'protagonist-' + task.owner)?.affinity;
+    const towardRecipient = person.contacts.find(row => row.id === 'protagonist-' + task.owner);
     return {
       ...common,
       actor: { id: senderId, name: protagonistNames[senderId], kind: 'protagonist',
         personality: profile?.profile ?? bandoriProfiles.entries.find(row => row.name === protagonistNames[senderId])?.content ?? null,
-        relationship: towardRecipient ?? null,
-        bond: towardRecipient == null ? null : affinityRelation(towardRecipient),
+        relationship: towardRecipient?.affinity ?? null,
+        bond: towardRecipient ? affinityRelation(towardRecipient.affinity, towardRecipient.relationNote) : null,
         ownLocation: person.locationId, ownCalendar: p.devices[senderId].calendar.slice(-8),
         ownSchedule: person.schedule.filter(row => !row.done).slice(-8),
         pendingActivity: p.backgroundLife?.people[senderId].pending ?? null,
@@ -223,7 +223,7 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       personality: (resident?.profile ?? contact.summary).slice(0, 8000),
       publicProfile: resident?.publicProfile ?? null,
       relationshipAffinity: contact.affinity,
-      bond: affinityRelation(contact.affinity),
+      bond: affinityRelation(contact.affinity, contact.relationNote),
       activity: presence?.activity ?? '当前行程未公开',
       available: presence?.available ?? null,
       locationId: presence?.locationId ?? null },

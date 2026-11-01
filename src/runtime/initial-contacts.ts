@@ -75,14 +75,34 @@ export const STARTING_RELATION: Record<StartingOwner, Record<string, StartingAff
   },
 };
 
+/** Exact opening numbers that do not match a named step. */
+const STARTING_AFFINITY_VALUE: Partial<Record<StartingOwner, Readonly<Record<string, number>>>> = {
+  renako: { 'watanare-ajisai': 80, 'watanare-mai': 75 },
+};
+
+/** Optional fact carried into prompts. The affinity number still comes from the table above. */
+const STARTING_RELATION_NOTE: Partial<Record<StartingOwner, Readonly<Record<string, string>>>> = {
+  renako: {
+    'watanare-ajisai': '恋人（玲奈子与濑名紫阳花、王冢真唯三人知情同意的认真交往）',
+    'watanare-mai': '恋人（玲奈子与王冢真唯、濑名紫阳花三人知情同意的认真交往）',
+  },
+};
+
 export function startingAffinity(owner: StartingOwner, contactId: string): number {
+  const override = STARTING_AFFINITY_VALUE[owner]?.[contactId];
+  if (override !== undefined) return override;
   const tier = STARTING_RELATION[owner][contactId];
   if (!tier) throw new Error(`缺少开局好感：${owner} → ${contactId}`);
   return STARTING_AFFINITY[tier];
 }
 
+export function startingRelationNote(owner: StartingOwner, contactId: string): string | undefined {
+  return STARTING_RELATION_NOTE[owner]?.[contactId];
+}
+
 function seed<T extends CharacterContact>(owner: StartingOwner, contact: T): T {
-  return { ...contact, affinity: startingAffinity(owner, contact.id) };
+  const relationNote = startingRelationNote(owner, contact.id);
+  return { ...contact, affinity: startingAffinity(owner, contact.id), ...(relationNote ? { relationNote } : {}) };
 }
 
 /** Already exchanged numbers during CRYCHIC, not a first-encounter unlock. */

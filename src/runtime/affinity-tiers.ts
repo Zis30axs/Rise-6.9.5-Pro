@@ -60,13 +60,23 @@ export function affinityTier(value: number): AffinityTier {
   return tier;
 }
 
-/** Compact bond for a prompt: number, tier id, label, and the behavior hint. */
-export function affinityRelation(value: number) {
+/** Compact bond for a prompt. A relation note is a saved fact and outranks the tier's romance caution. */
+export function affinityRelation(value: number, relationNote?: string | null) {
   const tier = affinityTier(value);
-  return { affinity: Math.max(-100, Math.min(100, Math.trunc(value))), tier: tier.id, label: tier.label, hint: tier.hint };
+  const note = relationNote?.trim() || undefined;
+  const hint = note
+    ? `${tier.hint} 关系备注「${note}」是已经确定的事实，优先于本档「不要默认成恋爱」的限制：若备注写明恋人，就按认真交往来写亲密、在意、占有欲或撒娇，并遵守备注里写明的约定；性格仍以世界书为准。`
+    : tier.hint;
+  return {
+    affinity: Math.max(-100, Math.min(100, Math.trunc(value))),
+    tier: tier.id, label: tier.label, hint,
+    ...(note ? { relationNote: note } : {}),
+  };
 }
 
-export function affinityContactLine(value: number) {
-  const relation = affinityRelation(value);
-  return `好感 ${relation.affinity} · ${relation.label}`;
+export function affinityContactLine(value: number, relationNote?: string | null) {
+  const relation = affinityRelation(value, relationNote);
+  return relation.relationNote
+    ? `好感 ${relation.affinity} · ${relation.label} · ${relation.relationNote}`
+    : `好感 ${relation.affinity} · ${relation.label}`;
 }

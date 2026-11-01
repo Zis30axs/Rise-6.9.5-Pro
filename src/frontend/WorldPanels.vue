@@ -109,13 +109,13 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
           <div class="wp-heading"><h2>联系人</h2><span class="wp-badge">{{ unread }} 未读</span></div>
           <button v-for="(contact, index) in model.state.contacts" :key="contact.id" class="wp-contact" :class="{ selected: activeContact?.id === contact.id }" :aria-pressed="activeContact?.id === contact.id" @click="selectedContactId = contact.id">
             <span class="wp-avatar" :class="'wp-avatar-' + index % 3">{{ contact.name.slice(-2) }}</span>
-            <span class="wp-contact-info"><b>{{ contact.name }}</b><small>{{ contact.status }} · <span :title="affinityTier(contact.affinity).note">{{ affinityContactLine(contact.affinity) }}</span></small></span>
+            <span class="wp-contact-info"><b>{{ contact.name }}</b><small>{{ contact.status }} · <span :title="[affinityTier(contact.affinity).note, contact.relationNote].filter(Boolean).join(' ')">{{ affinityContactLine(contact.affinity, contact.relationNote) }}</span></small></span>
             <span v-if="unreadFor(contact.id)" class="wp-badge">{{ unreadFor(contact.id) }}</span>
           </button>
           <p v-if="!model.state.contacts.length" class="wp-empty">还没有联系人。</p>
         </aside>
         <div v-if="activeContact" class="wp-conversation">
-          <div class="wp-conversation-heading"><h2>{{ activeContact.name }}</h2><p>{{ activeContact.tag }} · {{ activeContact.status }} · <span :title="affinityTier(activeContact.affinity).note">{{ affinityContactLine(activeContact.affinity) }}</span></p></div>
+          <div class="wp-conversation-heading"><h2>{{ activeContact.name }}</h2><p>{{ activeContact.tag }} · {{ activeContact.status }} · <span :title="[affinityTier(activeContact.affinity).note, activeContact.relationNote].filter(Boolean).join(' ')">{{ affinityContactLine(activeContact.affinity, activeContact.relationNote) }}</span></p></div>
           <div class="wp-message-list">
             <article v-for="message in contactMessages" :key="message.id" class="wp-message">
               <time>{{ formatGameStamp(message.at) }}</time><p class="wp-message-bubble">{{ message.text }}</p>

@@ -54,7 +54,7 @@ export function phoneReplyContext(state: WorldState, messageId: string) {
       profile: actorProfile?.summary ?? null },
     sender: { id: sender, name: protagonistNames[sender],
       profile: peer?.summary ?? null,
-      bond: peer ? affinityRelation(peer.affinity) : null },
+      bond: peer ? affinityRelation(peer.affinity, peer.relationNote) : null },
     message: source,
     invitation: p!.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,
     inboxIsVisibleToRecipient: true,

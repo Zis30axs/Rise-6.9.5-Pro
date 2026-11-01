@@ -821,5 +821,5 @@ function courtPartyBonds(state: WorldState) {
   const present = new Set(worldScenePeople(state).flatMap(person => [person.id, person.contactId ?? '']));
   return state.contacts.filter(contact => present.has(contact.id) || (contact.sourcePersonId && present.has(contact.sourcePersonId)))
     .slice(0, 8)
-    .map(contact => ({ id: contact.id, name: contact.name, ...affinityRelation(contact.affinity) }));
+    .map(contact => ({ id: contact.id, name: contact.name, ...affinityRelation(contact.affinity, contact.relationNote) }));
 }

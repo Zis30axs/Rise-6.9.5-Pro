@@ -24,6 +24,14 @@ describe('starting affinity for people who already know each other', () => {
       }
     }
     expect(STARTING_AFFINITY.parent).toBe(80);
+    expect(startingAffinity('renako', 'watanare-ajisai')).toBe(80);
+    expect(startingAffinity('renako', 'watanare-mai')).toBe(75);
+    expect(startingAffinity('renako', 'watanare-satsuki')).toBe(62);
+    expect(startingAffinity('renako', 'watanare-kaho')).toBe(62);
+    const renako = personState(state, 'renako').contacts;
+    expect(renako.find(contact => contact.id === 'watanare-ajisai')?.relationNote).toContain('三人知情同意');
+    expect(renako.find(contact => contact.id === 'watanare-mai')?.relationNote).toContain('三人知情同意');
+    expect(renako.find(contact => contact.id === 'watanare-satsuki')?.relationNote).toBeUndefined();
     expect(startingAffinity('soyo', 'nagasaki-mother')).toBe(80);
     expect(startingAffinity('soyo', 'protagonist-sakiko')).toBe(startingAffinity('sakiko', 'protagonist-soyo'));
     expect(startingAffinity('soyo', 'protagonist-sakiko')).toBeLessThan(STARTING_AFFINITY.dearest);
@@ -50,6 +58,13 @@ describe('starting affinity for people who already know each other', () => {
     const loaded = parseState(raw);
     expect(loaded.contacts.some(contact => contact.id === 'nagasaki-mother')).toBe(false);
     expect(loaded.contacts.every(contact => contact.affinity === 0)).toBe(true);
+    const live = enableProtagonists(createInitialState());
+    const savedAjisai = personState(live, 'renako').contacts.find(contact => contact.id === 'watanare-ajisai')!;
+    delete savedAjisai.relationNote;
+    savedAjisai.affinity = 5;
+    const kept = personState(parseState(JSON.parse(JSON.stringify(live))), 'renako').contacts.find(contact => contact.id === 'watanare-ajisai')!;
+    expect(kept.affinity).toBe(5);
+    expect(kept.relationNote).toBeUndefined();
     const roundTrip = parseState(JSON.parse(JSON.stringify(createInitialState())));
     expect(roundTrip.contacts.map(contact => [contact.id, contact.affinity])).toEqual(
       createInitialState().contacts.map(contact => [contact.id, contact.affinity]),

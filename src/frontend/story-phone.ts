@@ -36,7 +36,7 @@ export interface StoryPhoneLink {
 }
 
 const contactsOf = (state: WorldState): StoryPhoneContact[] => state.contacts.map(contact => ({
-  id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity)}`,
+  id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contact.relationNote)}`,
   ...(contact.id.startsWith('protagonist-') ? {} : { portraitId: contact.portraitId }), summary: contact.summary.slice(0, 500), sourcePersonId: contact.sourcePersonId, isMain: contact.isMain,
 }));
 

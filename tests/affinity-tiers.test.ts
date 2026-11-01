@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createInitialState } from '../src/runtime/model';
+import { createInitialState, reduceState } from '../src/runtime/model';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { worldSceneContext } from '../src/runtime/world-presence';
 import { getSceneArea, sceneLocationId, scenePersonAnchors } from '../src/runtime/scene-context';
 import { residentPresence } from '../src/runtime/npc-cast';
 import { AFFINITY_TIERS, affinityRelation, affinityTier } from '../src/runtime/affinity-tiers';
-import { startingAffinity } from '../src/runtime/initial-contacts';
+import { startingAffinity, startingRelationNote } from '../src/runtime/initial-contacts';
 
 describe('affinity tiers', () => {
   it('covers -100..100 without gaps or overlaps', () => {
@@ -33,6 +34,12 @@ describe('affinity tiers', () => {
     expect(affinityTier(70).label).toBe('挚友');
     expect(affinityTier(90).label).toBe('羁绊');
     expect(affinityRelation(80)).toMatchObject({ affinity: 80, tier: 'close', label: '挚友' });
+    expect(affinityRelation(80).hint).not.toContain('认真交往');
+    const noted = affinityRelation(80, '恋人（三人知情同意的认真交往）');
+    expect(noted.relationNote).toBe('恋人（三人知情同意的认真交往）');
+    expect(noted.hint).toContain('认真交往');
+    expect(noted.hint).toContain('占有欲或撒娇');
+    expect(noted.hint).toContain('三人知情同意');
   });
 
   it('puts the tier hint on people who are here, and not on contacts who are elsewhere', () => {
@@ -57,7 +64,25 @@ describe('affinity tiers', () => {
     const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
     expect(bridge).toContain('relationship 只发给已经是联系人的在场者');
     const sms = readFileSync('src/runtime/autonomous-sms.ts', 'utf8');
-    expect(sms).toContain('bond: affinityRelation(contact.affinity)');
+    expect(sms).toContain('bond: affinityRelation(contact.affinity, contact.relationNote)');
     expect(sms).toContain('高档位不等于恋爱');
+  });
+
+  it('sends Ajisai’s lover note only when she is present', () => {
+    let state = reduceState(enableProtagonists(createInitialState()), { type: 'switch_protagonist', target: 'renako' });
+    const presence = residentPresence('watanare-ajisai', state.clock);
+    const anchor = scenePersonAnchors.find(item => item.id === presence?.anchorId);
+    const area = anchor ? getSceneArea(anchor.x, anchor.z) : null;
+    if (!anchor || !area) throw new Error('紫阳花的锚点缺失');
+    state.scene = { x: anchor.x, z: anchor.z, yaw: 0, areaId: area.id, seed: 'ajisai-note', encounterId: null };
+    state.locationId = sceneLocationId(area.id);
+    const scene = worldSceneContext(state);
+    const ajisai = scene?.nearbyPeople.find(person => person.id === 'watanare-ajisai');
+    const note = startingRelationNote('renako', 'watanare-ajisai')!;
+    expect(ajisai?.relationship).toMatchObject({ affinity: 80, label: '挚友', relationNote: note });
+    expect(ajisai?.relationship?.hint).toContain('认真交往');
+    const maiNote = startingRelationNote('renako', 'watanare-mai')!;
+    const maiHere = scene?.nearbyPeople.some(person => person.id === 'watanare-mai');
+    if (!maiHere) expect(JSON.stringify(scene?.nearbyPeople)).not.toContain(maiNote);
   });
 });

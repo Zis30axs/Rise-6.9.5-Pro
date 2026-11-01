@@ -402,7 +402,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   return {
     task: 'reply_to_npc_sms', actor: { id: actorId, name: resident?.name ?? contact?.name ?? meeting?.name,
       worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null,
-      bond: contact ? affinityRelation(contact.affinity) : null },
+      bond: contact ? affinityRelation(contact.affinity, contact.relationNote) : null },
     sender: { id: source.owner, name: protagonistNames[source.owner] },
     message: source, clock: s.clock, minute: gameMinute(s),
     invitation: s.protagonists?.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,

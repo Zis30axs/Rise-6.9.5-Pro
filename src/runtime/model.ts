@@ -692,14 +692,16 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
       return { id: id(item.id, `${path}.id`), npcId: id(item.npcId, `${path}.npcId`), text: text(item.text, `${path}.text`, 4000), read: boolean(item.read, `${path}.read`), at: text(item.at, `${path}.at`, 40) };
     }),
     contacts: list(state.contacts, 'contacts', CONTACT_PROFILE_LIMITS.contacts, (value, path) => {
-      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status', ...(version === '1.11.0' ? ['portraitId', 'sourcePersonId', 'isMain'] : [])], path);
+      const hasRelationNote = !!value && typeof value === 'object' && Object.hasOwn(value, 'relationNote');
+      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status', ...(version === '1.11.0' ? ['portraitId', 'sourcePersonId', 'isMain'] : []), ...(hasRelationNote ? ['relationNote'] : [])], path);
       const contactId = id(item.id, `${path}.id`);
       const profile = version === '1.11.0' ? {
         portraitId: isCharacterPortraitId(item.portraitId) ? item.portraitId : invalid(`${path}.portraitId`),
         sourcePersonId: item.sourcePersonId === null ? null : id(item.sourcePersonId, `${path}.sourcePersonId`),
         isMain: boolean(item.isMain, `${path}.isMain`),
       } : legacyCharacterProfile(contactId);
-      return { id: contactId, name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200), ...profile };
+      const relationNote = hasRelationNote ? text(item.relationNote, `${path}.relationNote`, 240) : undefined;
+      return { id: contactId, name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200), ...profile, ...(relationNote ? { relationNote } : {}) };
     }),
     schedule: list(state.schedule, 'schedule', 100, (value, path) => {
       const item = object(value, ['id', 'title', 'locationId', 'time', 'done'], path);

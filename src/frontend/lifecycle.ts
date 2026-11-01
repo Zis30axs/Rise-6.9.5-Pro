@@ -403,7 +403,7 @@ export function mountShell(
           const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
           bridge.save(next); model.state = next; model.notice = '';
           const contact = next.contacts.find(contact => contact.id === id)!;
-          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity)}`,
+          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contact.relationNote)}`,
             summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
         },
         async generateIntroduction(raw) {
