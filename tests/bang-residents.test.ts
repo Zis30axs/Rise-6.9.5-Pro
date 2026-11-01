@@ -23,7 +23,7 @@ describe('band residents', () => {
   it('seeds only the relationships the worldbook already states', () => {
     const state = enableProtagonists(createInitialState());
     expect(personState(state, 'soyo').contacts.map(contact => contact.id)).toEqual([
-      'protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi',
+      'protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi', 'nagasaki-mother',
     ]);
     expect(personState(state, 'sakiko').contacts.map(contact => contact.id)).toEqual([
       'protagonist-soyo', 'bang-mutsumi', 'bang-uika', 'bang-umiri', 'bang-nyamu',

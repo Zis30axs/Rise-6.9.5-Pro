@@ -1,21 +1,104 @@
 import type { CharacterContact } from '../frontend/types';
 import { characterForPerson } from '../frontend/character-appearance';
-import { bangResidentCast, residentCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
+import { bangFamilyCast, bangResidentCast, residentCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
+
+/**
+ * Opening affinity for people who already know each other. New meetings stay at 0.
+ * One named step per kind of bond, on the saved -100..100 scale.
+ */
+export const STARTING_AFFINITY = {
+  parent: 80,
+  family: 76,
+  dearest: 78,
+  close: 62,
+  familiar: 38,
+  complicated: 50,
+  strained: 29,
+} as const;
+
+export type StartingAffinityTier = keyof typeof STARTING_AFFINITY;
+export type StartingOwner = 'soyo' | 'sakiko' | 'emma' | 'renako';
+
+/** Viewpoint → already-known contact → bond. Strangers are absent and stay at 0. */
+export const STARTING_RELATION: Record<StartingOwner, Record<string, StartingAffinityTier>> = {
+  soyo: {
+    'nagasaki-mother': 'parent',
+    'protagonist-sakiko': 'complicated',
+    'bang-tomori': 'close',
+    'bang-mutsumi': 'close',
+    'bang-anon': 'familiar',
+    'bang-rana': 'familiar',
+    'bang-taki': 'strained',
+  },
+  sakiko: {
+    'protagonist-soyo': 'complicated',
+    'bang-mutsumi': 'dearest',
+    'bang-uika': 'close',
+    'bang-umiri': 'close',
+    'bang-nyamu': 'strained',
+  },
+  emma: {
+    'majo-yuki': 'dearest',
+    'majo-hiro': 'dearest',
+    'majo-sherry': 'close',
+    'majo-milia': 'close',
+    'majo-meruru': 'strained',
+    'majo-anan': 'strained',
+    'majo-noa': 'familiar',
+    'majo-leia': 'familiar',
+    'majo-margo': 'familiar',
+    'majo-nanoka': 'familiar',
+    'majo-arisa': 'familiar',
+    'majo-hanna': 'familiar',
+    'majo-koko': 'familiar',
+  },
+  renako: {
+    'watanare-miyoko': 'parent',
+    'watanare-haruna': 'family',
+    'watanare-mai': 'dearest',
+    'watanare-ajisai': 'close',
+    'watanare-satsuki': 'close',
+    'watanare-kaho': 'close',
+    'watanare-hiroki': 'familiar',
+    'watanare-kippei': 'familiar',
+    'watanare-koto-mother': 'familiar',
+    'watanare-hitoe': 'familiar',
+    'watanare-rene': 'familiar',
+    'watanare-lucie': 'familiar',
+    'watanare-seira': 'familiar',
+    'watanare-youko': 'familiar',
+    'watanare-michiru': 'familiar',
+    'watanare-himiko': 'familiar',
+    'watanare-suzuran': 'familiar',
+    'watanare-chizuru': 'familiar',
+    'watanare-miki': 'familiar',
+  },
+};
+
+export function startingAffinity(owner: StartingOwner, contactId: string): number {
+  const tier = STARTING_RELATION[owner][contactId];
+  if (!tier) throw new Error(`缺少开局好感：${owner} → ${contactId}`);
+  return STARTING_AFFINITY[tier];
+}
+
+function seed<T extends CharacterContact>(owner: StartingOwner, contact: T): T {
+  return { ...contact, affinity: startingAffinity(owner, contact.id) };
+}
 
 /** Already exchanged numbers during CRYCHIC, not a first-encounter unlock. */
-export function knownProtagonistContact(id: 'soyo' | 'sakiko', name: string): CharacterContact {
+export function knownProtagonistContact(id: 'soyo' | 'sakiko', name: string, owner: StartingOwner = id === 'sakiko' ? 'soyo' : 'sakiko'): CharacterContact {
   const contactId = `protagonist-${id}`;
-  return {
+  return seed(owner, {
     id: contactId, name, tag: '旧识 · 手机联系人',
     summary: '曾经同在 CRYCHIC 活动的旧识，至今保留着彼此的联系方式。',
     affinity: 0, status: '已交换联系方式',
     portraitId: characterForPerson(contactId), sourcePersonId: null, isMain: true,
-  };
+  });
 }
 
 /** Emma already knows the original prisoners and Yuki; the former guard Honoka is not an automatic phone friend. */
 export function emmaInitialFriendContacts(): CharacterContact[] {
-  return residentCast.filter(person => person.id !== 'majo-emma' && person.id !== 'majo-honoka').map(person => ({
+  return residentCast.filter(person => person.id !== 'majo-emma' && person.id !== 'majo-honoka').map(person => seed('emma', {
     id: person.id, name: person.name,
     tag: person.id === 'majo-yuki' ? '挚友 · 同住' : '牢屋敷旧识 · 手机好友',
     summary: person.profile.split('\n')[0]?.slice(0, 500) || person.publicProfile,
@@ -28,7 +111,7 @@ export function emmaInitialFriendContacts(): CharacterContact[] {
 export function renakoInitialFriendContacts(): CharacterContact[] {
   const quintet = new Set<string>(WATANARE_QUINTET_IDS);
   const family = new Set<string>(['watanare-haruna', 'watanare-miyoko']);
-  return watanareResidentCast.filter(person => person.id !== 'watanare-renako').map(person => ({
+  return watanareResidentCast.filter(person => person.id !== 'watanare-renako').map(person => seed('renako', {
     id: person.id, name: person.name,
     tag: family.has(person.id) ? '家人 · 同住' : quintet.has(person.id) ? '芦谷五人组 · 挚友' : '芦谷旧识与亲友 · 手机好友',
     summary: person.profile.split('\n')[0]?.slice(0, 500) || person.publicProfile,
@@ -47,6 +130,18 @@ const bandContact = (id: string, tag: string): CharacterContact => {
   };
 };
 
+/** Soyo's mother already lives with her. She is not a stranger met in the new city. */
+export function soyoMotherContact(): CharacterContact {
+  const person = bangFamilyCast.find(row => row.id === 'nagasaki-mother');
+  if (!person) throw new Error('长崎夫人未登记为常驻家人');
+  return seed('soyo', {
+    id: person.id, name: person.name, tag: '家人 · 同住',
+    summary: person.profile.split('\n')[0]?.slice(0, 500) || person.publicProfile,
+    affinity: 0, status: '母女同住',
+    portraitId: characterForPerson(person.id), sourcePersonId: person.id, isMain: true,
+  });
+}
+
 /** Soyo already plays in MyGO!!!!! and kept Mutsumi from CRYCHIC. */
 export function soyoInitialBandContacts(): CharacterContact[] {
   return [
@@ -55,7 +150,7 @@ export function soyoInitialBandContacts(): CharacterContact[] {
     bandContact('bang-taki', 'MyGO!!!!! · 乐队'),
     bandContact('bang-rana', 'MyGO!!!!! · 乐队'),
     bandContact('bang-mutsumi', '月之森同窗 · CRYCHIC 旧友'),
-  ];
+  ].map(contact => seed('soyo', contact));
 }
 
 /** Sakiko already plays in Ave Mujica. Other bands are not preloaded onto her phone. */
@@ -65,5 +160,14 @@ export function sakikoInitialBandContacts(): CharacterContact[] {
     bandContact('bang-uika', 'Ave Mujica · 乐队'),
     bandContact('bang-umiri', 'Ave Mujica · 乐队'),
     bandContact('bang-nyamu', 'Ave Mujica · 乐队'),
+  ].map(contact => seed('sakiko', contact));
+}
+
+/** Everyone already on Soyo's phone when a new game begins. */
+export function soyoInitialContacts(sakikoName: string): CharacterContact[] {
+  return [
+    knownProtagonistContact('sakiko', sakikoName, 'soyo'),
+    ...soyoInitialBandContacts(),
+    soyoMotherContact(),
   ];
 }

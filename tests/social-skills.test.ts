@@ -63,16 +63,17 @@ describe('社交 Skills：存档、四主角隔离、正负好感和结算', () 
   it('违和行为只折减同对象的正面好感，不削弱负面后果', () => {
     const original = newWorld();
     const npcId = original.contacts[0]!.id;
+    const base = original.contacts[0]!.affinity;
     const positive = applyStoryActions(original, [
       { type: 'relationship', npcId, delta: 10, reason: '对方认可坦白' },
       practice('expression', 3, npcId),
     ], 'skill-rapport-positive');
-    expect(positive.contacts.find(c => c.id === npcId)?.affinity).toBe(6);
+    expect(positive.contacts.find(c => c.id === npcId)?.affinity).toBe(base + 6);
     const negative = applyStoryActions(positive, [
       practice('expression', 3, npcId),
       { type: 'relationship', npcId, delta: -10, reason: '对方对威胁感到愤怒' },
     ], 'skill-rapport-negative');
-    expect(negative.contacts.find(c => c.id === npcId)?.affinity).toBe(-4);
+    expect(negative.contacts.find(c => c.id === npcId)?.affinity).toBe(base + 6 - 10);
   });
 
   it('一天多次社交不会无限刷经验', () => {

@@ -5,6 +5,8 @@ import { LAW_OFFICE_ID, SHERRY_ASSIST_RATE, lawCases } from './law-career';
 import { getLocationStatus } from './location-services';
 import { getCampusInterior } from './campus-interiors';
 import { personState } from './protagonist-world';
+import { worldScenePeople } from './world-presence';
+import { affinityRelation } from './affinity-tiers';
 import {
   initialCourtCareers, parseCourtCareer, parseCourtAgreement, parseCourtSanction,
   parseCourtSanctionDraft, parseCourtSettlementOffer, parseCourtTermDraft,
@@ -808,6 +810,16 @@ export function courtStoryContext(state: WorldState) {
     active: activePublic,
     pendingFiling:court.filing?.claimant === owner ? court.filing : null,
     recentResults:court.results.filter(item => item.owner === owner || item.lawyer === owner || item.defendant === protagonistNames[owner]).slice(-6),
+    ...(state.locationId === 'courthouse' || state.locationId === COURT_HEARING_ID || state.interior?.roomId === COURT_HEARING_ID || active ? {
+      bonds: courtPartyBonds(state),
+    } : {}),
     rule:'庭审进程以持久化 court.active.assistance 和 court.results 等脚本变量为准，不以文字或临时结案词判断。雪莉正式接手必须先由 court_assist 将 assistance=sherry；普通建议不修改变量。所有委托仅保存公开案情和证据，不生成或注入预设黑剧本；依据现有世界事实、证据与人物知情边界自由推理，不得临时篡改已确认的历史；轻微刑事仅可告发，检察官决定公诉。自由文本质询，只有新的证言/推理/矛盾推动 court_step。庭审不能离开。艾玛独立胜诉100%，正式雪莉救场40%，切换主角0%；切换后的世界案件结果与玩家职业判负分开。和解须双方同意，撤诉必须玩家主动表达。每日委托次日刷新。',
   };
+}
+
+function courtPartyBonds(state: WorldState) {
+  const present = new Set(worldScenePeople(state).flatMap(person => [person.id, person.contactId ?? '']));
+  return state.contacts.filter(contact => present.has(contact.id) || (contact.sourcePersonId && present.has(contact.sourcePersonId)))
+    .slice(0, 8)
+    .map(contact => ({ id: contact.id, name: contact.name, ...affinityRelation(contact.affinity) }));
 }

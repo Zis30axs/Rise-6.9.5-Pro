@@ -6,6 +6,7 @@ import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { agendaTargetResident, residentSocialAgendaPresence } from './social-agenda';
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentGroupById, residentGroupForNpc, residentPresence, WATANARE_GROUP_ID, WATANARE_GROUP_NAME, WATANARE_QUINTET_IDS } from './npc-cast';
+import { affinityRelation } from './affinity-tiers';
 
 export interface ContactProposal {
   kind: 'contact' | 'group';
@@ -400,7 +401,8 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
     : [];
   return {
     task: 'reply_to_npc_sms', actor: { id: actorId, name: resident?.name ?? contact?.name ?? meeting?.name,
-      worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null },
+      worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null,
+      bond: contact ? affinityRelation(contact.affinity) : null },
     sender: { id: source.owner, name: protagonistNames[source.owner] },
     message: source, clock: s.clock, minute: gameMinute(s),
     invitation: s.protagonists?.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,

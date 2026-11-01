@@ -1,4 +1,5 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
+import { affinityRelation } from './affinity-tiers';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
@@ -254,13 +255,17 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
+function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
+  const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
+  return contact ? { relationship: affinityRelation(contact.affinity) } : {};
+}
 export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
     const nearbyPeople = (population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds))
-      .map(person => ({ ...person, distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
+      .map(person => ({ ...person, ...relationshipOf(person, contacts), distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
       .filter(person => person.distanceMetres <= 18);
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.distanceMetres <= SCENE_ENCOUNTER_DISTANCE) ?? null;
     return {
@@ -282,7 +287,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 8);
   const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain,
-    outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null });
+    outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null, ...relationshipOf(person, contacts) });
   const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
   return {
     areaId: area.id, label: area.label, outdoors: true, skyVisible: true,

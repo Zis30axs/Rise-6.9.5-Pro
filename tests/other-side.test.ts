@@ -162,13 +162,14 @@ describe('otherside sampled cross-view narrative', () => {
     }, candidate => candidate.npcGroups.some(group => group.protagonists.includes('emma') && group.npcs.length > 0));
     const group = opportunity.npcGroups.find(g => g.protagonists.includes('emma') && g.npcs.length > 0)!;
     const npc = group.npcs[0]!;
+    const beforeAffinity = personState(state, 'emma').contacts.find(row => row.id === npc.id)?.affinity ?? 0;
     const side = { protagonists: group.protagonists, text: '艾玛与熟识的朋友在同一地点谈起近况。',
       npcs: [{ id: npc.id, status: '约好了稍后一起吃饭', affinityDelta: 1 }] };
     expect(() => validateOtherSideEvents([{ ...side, npcs: [{ id: 'watanare-mai', status: '被错误召唤' }] }], state)).toThrow();
     const committed = commitStoryTurn(state, '看看书。', parseGeneratedStory(format([side]), state), ids);
     expect(committed.protagonists!.otherSideNpc?.[npc.id]?.status).toBe('约好了稍后一起吃饭');
     const emma = personState(committed, 'emma');
-    expect(emma.contacts.find(row => row.id === npc.id)?.affinity).toBe(1);
+    expect(emma.contacts.find(row => row.id === npc.id)?.affinity).toBe(beforeAffinity + 1);
     const switched = reduceState(committed, { type: 'switch_protagonist', target: 'emma' });
     expect(worldScenePeople(switched).some(person => person.id === npc.id)).toBe(true);
   });
