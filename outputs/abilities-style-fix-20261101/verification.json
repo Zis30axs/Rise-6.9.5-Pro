@@ -1,0 +1,96 @@
+{
+    "rootCause":  "Component scoped CSS was emitted separately and omitted from the packaged Shadow DOM",
+    "buildPassed":  true,
+    "realModelCalled":  false,
+    "academicRing":  {
+                         "label":  "rgb(248, 250, 252)",
+                         "width":  108,
+                         "fill":  "none"
+                     },
+    "ciRun":  false,
+    "fix":  "Include namespaced social-skills.css through shell.css inline",
+    "status":  "passed",
+    "typecheckPassed":  true,
+    "physicalTauriTavernTested":  false,
+    "liveSillyTavernUiReloaded":  false,
+    "assetsSha256":  "0ecb2dbc1318b215594d3af9152efab55d48506bd10758b7310043ee530a976c",
+    "localImportVerified":  true,
+    "browserChecks":  [
+                          {
+                              "screenshots":  [
+                                                  "../abilities-packaged-qa/1440x900.png",
+                                                  "../abilities-packaged-qa/1440x900-skills.png",
+                                                  "../abilities-packaged-qa/1440x900-academics.png"
+                                              ],
+                              "viewport":  "1440x900",
+                              "style":  {
+                                            "iconWidth":  18,
+                                            "iconHeight":  18,
+                                            "radarWidth":  310,
+                                            "ringFill":  "none",
+                                            "ringStroke":  "rgba(148, 163, 184, 0.16)",
+                                            "labelFill":  "rgb(255, 255, 255)",
+                                            "layout":  "grid"
+                                        },
+                              "passed":  true
+                          },
+                          {
+                              "screenshots":  [
+                                                  "../abilities-packaged-qa/1280x800.png",
+                                                  "../abilities-packaged-qa/1280x800-skills.png",
+                                                  "../abilities-packaged-qa/1280x800-academics.png"
+                                              ],
+                              "viewport":  "1280x800",
+                              "style":  {
+                                            "iconWidth":  18,
+                                            "iconHeight":  18,
+                                            "radarWidth":  310,
+                                            "ringFill":  "none",
+                                            "ringStroke":  "rgba(148, 163, 184, 0.16)",
+                                            "labelFill":  "rgb(255, 255, 255)",
+                                            "layout":  "grid"
+                                        },
+                              "passed":  true
+                          },
+                          {
+                              "screenshots":  [
+                                                  "../abilities-packaged-qa/390x844.png",
+                                                  "../abilities-packaged-qa/390x844-skills.png",
+                                                  "../abilities-packaged-qa/390x844-academics.png"
+                                              ],
+                              "viewport":  "390x844",
+                              "style":  {
+                                            "iconWidth":  18,
+                                            "iconHeight":  18,
+                                            "radarWidth":  274,
+                                            "ringFill":  "none",
+                                            "ringStroke":  "rgba(148, 163, 184, 0.16)",
+                                            "labelFill":  "rgb(255, 255, 255)",
+                                            "layout":  "grid"
+                                        },
+                              "passed":  true
+                          },
+                          {
+                              "screenshots":  [
+                                                  "../abilities-packaged-qa/320x568.png",
+                                                  "../abilities-packaged-qa/320x568-skills.png",
+                                                  "../abilities-packaged-qa/320x568-academics.png"
+                                              ],
+                              "viewport":  "320x568",
+                              "style":  {
+                                            "iconWidth":  18,
+                                            "iconHeight":  18,
+                                            "radarWidth":  204,
+                                            "ringFill":  "none",
+                                            "ringStroke":  "rgba(148, 163, 184, 0.16)",
+                                            "labelFill":  "rgb(255, 255, 255)",
+                                            "layout":  "grid"
+                                        },
+                              "passed":  true
+                          }
+                      ],
+    "agentEditionRun":  false,
+    "scriptSha256":  "6f7b3e22a03fb2c594dd0b5db86acd19323d6a235fb506652eba7c6f0a3d2129",
+    "packagedBrowserTestsPassed":  4,
+    "relatedUnitTestsPassed":  12
+}

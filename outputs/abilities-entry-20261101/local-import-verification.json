@@ -1,0 +1,14 @@
+{
+  "status": "built-and-updated-local-sillytavern",
+  "avatar": "未读之城.png",
+  "scriptSha256": "766795b29b7d10f6524ecdab0951e230d8462c5e9323b149003f83c1b1c327c9",
+  "assetsSha256": "69bbfaacc4402141d8960cbd5d8b3a9f27a439f6939f0a96b86a7aee589a6f26",
+  "serverReadbackMatches": true,
+  "otherCardFieldsUnchanged": true,
+  "coverUnchanged": true,
+  "chatFilesUnchanged": 14,
+  "canonicalMetadata": "chara_card_v2 / 2.0",
+  "backup": "D:\\.study\\cc\\dist\\abilities-entry-before-import",
+  "liveUiReloaded": false,
+  "physicalTauriTavernTested": false
+}

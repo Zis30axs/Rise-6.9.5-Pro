@@ -96,11 +96,14 @@ describe('社交 Skills：存档、四主角隔离、正负好感和结算', () 
     expect(() => applyStoryActions(world, [{ ...practice(), secret: 999 } as unknown as StoryAction], 'skill-extra')).toThrow();
   });
 
-  it('状态面板入口与内容在代码层独立存在', () => {
-    const status = readFileSync(resolve(process.cwd(), 'src/frontend/WorldPanels.vue'), 'utf8');
+  it('能力面板使用独立入口与内容标识', () => {
+    const shell = readFileSync(resolve(process.cwd(), 'src/frontend/App.vue'), 'utf8');
+    const panels = readFileSync(resolve(process.cwd(), 'src/frontend/WorldPanels.vue'), 'utf8');
     const panel = readFileSync(resolve(process.cwd(), 'src/frontend/SocialSkills.vue'), 'utf8');
-    expect(status).toContain('<SocialSkills :state="model.state" />');
-    expect(panel).toContain('data-status-section="skills"');
+    expect(shell).toContain("id: 'abilities', title: '能力'");
+    expect(panels).toContain('panel === \'abilities\'');
+    expect(panel).toContain('data-abilities-panel');
+    expect(panel).not.toContain('data-status-section');
     expect(panel).toContain('role="progressbar"');
     expect(panel).not.toContain('Jev');
     expect(panel).not.toContain('LLM');

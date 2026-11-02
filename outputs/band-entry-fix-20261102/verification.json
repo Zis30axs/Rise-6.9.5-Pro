@@ -1,0 +1,39 @@
+{
+    "screenshotDirectory":  "../band-entry-qa",
+    "fix":  "Project the phone owner eligibility through livehousePhoneView.canManage and gate all shortcuts plus stale open panel",
+    "scriptSha256":  "a8bef117d802718d73314533a8f8fdcd31ffa737870e60b366e7cf54d466673b",
+    "rootCause":  "Phone band shortcuts were unconditional and did not receive the existing management eligibility",
+    "viewports":  [
+                      "1440x900",
+                      "1280x800",
+                      "390x844",
+                      "320x568"
+                  ],
+    "packagedBrowserTestsPassed":  4,
+    "assetsSha256":  "67051939bb49ac00531776b6cf0af0f70cdc518d35282878eb9b11bd10f5d88d",
+    "typecheckPassed":  true,
+    "localImportVerified":  true,
+    "agentEditionRun":  false,
+    "browserChecks":  [
+                          "actual Lite IIFE plus matching ZIP",
+                          "actual embedded phone list and thread",
+                          "non-music Soyo and Sakiko retain shortcuts",
+                          "non-music Emma and Renako hide shortcuts",
+                          "normal message composer remains visible",
+                          "no page errors or model calls"
+                      ],
+    "ciRun":  false,
+    "liveSillyTavernUiReloaded":  false,
+    "relatedUnitTestsPassed":  61,
+    "status":  "passed",
+    "physicalTauriTavernTested":  false,
+    "buildPassed":  true,
+    "unitTestFiles":  [
+                          "livehouse-ui.test.js",
+                          "livehouse-persistence.test.ts",
+                          "grand-commercial-music.test.ts",
+                          "livehouse-lifecycle.test.ts",
+                          "protagonist-academics.test.ts",
+                          "classic-manual-sms.test.ts"
+                      ]
+}

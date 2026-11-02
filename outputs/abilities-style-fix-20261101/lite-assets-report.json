@@ -1,0 +1,19 @@
+{
+  "status": "offline-assets-extracted",
+  "fullScriptBytes": 152478987,
+  "liteScriptBytes": 17412809,
+  "assets": 204,
+  "extractedBytes": 88383295,
+  "replacedLiteralOccurrences": 208,
+  "manifestSha256": "526d6d297998d6b255a456bf2f62ee494414b4a23152c154f8013e9c4fd318e8",
+  "zipBytes": 88467741,
+  "zipSha256": "0ecb2dbc1318b215594d3af9152efab55d48506bd10758b7310043ee530a976c",
+  "reconstructionMode": "IndexedDB Blob URLs; no remote fetch",
+  "deviceTested": false,
+  "tokyoSandboxSha256": "12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb",
+  "tokyoSandboxBytes": 6232488,
+  "tokyoSandboxExternalized": true,
+  "tokyoSandboxSeparatePack": false,
+  "tokyoSandboxInCoreZip": true,
+  "tokyoSandboxArchive": "unread-city-lite-assets.zip"
+}

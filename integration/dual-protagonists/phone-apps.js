@@ -186,6 +186,7 @@ function worldApp(ctx,id) {
   function render() {
     if(v.disposed)return;
     if(id==='worldmessages'){
+      if(data.music?.canManage!==true)bandPanelOpen=false;
       if(bandPanelOpen){
         const binding=JSON.stringify([data.binding,data.owner]);
         if(bandView.binding!==binding) bandView={binding,draft:{},expanded:[],scroll:0,focus:null};
@@ -273,7 +274,7 @@ function worldApp(ctx,id) {
   v.on('click','[data-action]',async el=>{
     if(pending&&!['retry','discard'].includes(el.dataset.action)) throw Error('请先重试或取消尚未保存的操作');
     switch(el.dataset.action){
-      case 'open-bands':bandPanelOpen=true;render();break;
+      case 'open-bands':bandPanelOpen=data.music?.canManage===true;render();break;
       case 'close-bands':bandPanelOpen=false;render();break;
       case 'band-invite': {
         if(!formValue('band')||!formValue('band-contact')||!formValue('band-role'))throw Error('请选择乐队、联系人和分工');

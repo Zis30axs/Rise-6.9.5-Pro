@@ -24,11 +24,11 @@ import { resolveWeather, WEATHER_EFFECTS } from '../runtime/weather';
 import { lawCases, lawOwner } from '../runtime/law-career';
 import type { ShellActions, ShellModel } from './types';
 
-type Panel = 'phone' | 'map' | 'schedule' | 'status';
+type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean }>();
 const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
 const labels: Record<Panel, string> = {
-  phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记',
+  phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长',
 };
 const selectedContactId = ref('');
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
@@ -161,6 +161,9 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <p class="wp-footnote">演示安排 · 到达地点并到达约定时间后可完成。</p>
     </template>
 
+    <template v-else-if="panel === 'abilities'">
+      <SocialSkills :state="model.state" />
+    </template>
     <template v-else-if="panel === 'status'">
       <StoryEngineSettings :memory-scope="model.memoryScope || ''" />
       <details v-if="model.state.protagonists" class="wp-status-section" data-testid="protagonist-recap" :data-owner="protagonist" open>
@@ -174,7 +177,6 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · {{ weatherText }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
-      <SocialSkills :state="model.state" />
       <section class="wp-status-section" data-status-section="social" aria-label="社交与邀约">
         <div class="wp-heading"><h2>社交与邀约</h2><small>相遇、联系和约定</small></div>
         <p class="wp-footnote">{{ invitations.length ? `邀约簿里记着 ${invitations.length} 份邀请与约定。` : '给想见的人留一句邀请，记下下一次见面的时间。' }}</p>

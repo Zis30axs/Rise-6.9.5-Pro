@@ -28,6 +28,19 @@ function invite(s: WorldState,requestId='invite-one',contactId='taki-contact') {
 function withBand() { return reduceState(initial(),register()); }
 
 describe('Live House confirmed registry',()=>{
+  it('uses the phone owner\'s own major for band visibility, including inactive protagonists',()=>{
+    let s=reduceState(enableProtagonists(createInitialState()),{type:'choose_academics',majorId:'music'});
+    expect(livehousePhoneView(s,'emma').canManage).toBe(false);
+    expect(livehousePhoneView(s,'renako').canManage).toBe(false);
+    s=reduceState(s,{type:'switch_protagonist',target:'emma'});
+    s=reduceState(s,{type:'choose_academics',majorId:'music'});
+    s=reduceState(s,{type:'switch_protagonist',target:'renako'});
+    s=reduceState(s,{type:'choose_academics',majorId:'computer-science'});
+    expect(livehousePhoneView(s,'emma').canManage).toBe(true);
+    expect(livehousePhoneView(s,'renako').canManage).toBe(false);
+    expect(livehousePhoneView(createInitialState(),'soyo').canManage).toBe(true);
+    expect(livehousePhoneView(createInitialState(),'renako').canManage).toBe(false);
+  });
   it('loads older saves without fabricating registrations from legacy success logs or activity IDs',()=>{
     const old=initial();old.interior!.activityId='livehouse-create-band';old.journal.push({id:'old-success',text:'已经登记成功',at:'第 1 天 17:50'});
     const next=parseState(JSON.parse(JSON.stringify(old)));expect(next.livehouse).toBeUndefined();
