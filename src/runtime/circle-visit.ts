@@ -2,6 +2,7 @@ import type { WorldState } from '../frontend/types';
 import {
   CIRCLE_LOCATION_ID, CIRCLE_STAFF_NAME, CIRCLE_STUDIO_ROOM_ID, circleBorrowedPrice,
 } from './circle-venue';
+import { marinaOnDuty } from './npc-cast';
 import { prepareLivehouseService, type LivehouseServiceFacts } from './livehouse-visit';
 
 /** Shifts the shared bill generator so CiRCLE does not copy RiNG's lineup. */
@@ -35,8 +36,13 @@ export function prepareCircleVisitService(state: WorldState, serviceId: string, 
     omitDutyNote: true,
   });
   if (!prepared) return null;
+  const onDuty = marinaOnDuty(state.clock);
   return {
     ...prepared,
-    facts: { ...prepared.facts, summary: `${prepared.facts.summary}店员${CIRCLE_STAFF_NAME}在咖啡厅。` },
+    facts: {
+      ...prepared.facts,
+      marinaOnDuty: onDuty,
+      summary: `${prepared.facts.summary}${CIRCLE_STAFF_NAME}${onDuty ? '正在店里当班。' : '此刻不在店里当班。'}`,
+    },
   };
 }

@@ -15,7 +15,7 @@ const bandIds = [...MYGO_MEMBER_IDS, ...AVE_MUJICA_MEMBER_IDS];
 describe('band residents', () => {
   it('registers the eight canon members without making Soyo or Sakiko residents', () => {
     expect(bangResidentCast.map(person => person.id)).toEqual(bandIds);
-    expect(allResidentCast.filter(person => person.id.startsWith('bang-')).map(person => person.id)).toEqual(bandIds);
+    expect(allResidentCast.filter(person => person.id.startsWith('bang-')).map(person => person.id)).toEqual([...bandIds, 'bang-marina']);
     expect(bangResidentCast.every(person => person.majorId === null && person.careerId === null)).toBe(true);
     expect(allResidentCast.some(person => person.id === 'soyo' || person.id === 'sakiko')).toBe(false);
   });

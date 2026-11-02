@@ -90,6 +90,8 @@ export interface LivehouseServiceFacts {
   receipt: string;
   blockedCode: LivehouseBlockedCode | null;
   takiOnDuty: boolean;
+  /** CiRCLE staff on the counter. Absent for the original live house. */
+  marinaOnDuty?: boolean;
   skillBefore: number;
   skillGain: number;
   skillAfter: number;

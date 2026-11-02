@@ -6,10 +6,18 @@ import { isScenePositionWalkable, type SceneMovementWorld } from './scene-moveme
 import { downtownArtPack } from './generated/downtown-art';
 import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
 import { resolveMajoTrioSceneArt } from './majo-art';
+import { resolveMarinaExpressionPortrait } from './marina-art';
+import { resolveNovelNpcEmotion } from './novel-npc-emotions';
 export { characterForPerson } from './character-appearance';
 
-/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, 长崎夫人, the 魔裁 casual trio, and 冰上梅露露. Other names stay on their existing models. */
+/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, 长崎夫人, 月岛麻里奈, the 魔裁 casual trio, and 冰上梅露露. Other names stay on their existing models. */
 export function resolveSceneCharacterArt(name: string, expression?: unknown) {
+  const marinaEmotion = resolveNovelNpcEmotion(typeof expression === 'string' ? expression : '');
+  const marina = resolveMarinaExpressionPortrait(name, marinaEmotion);
+  if (marina) {
+    const pose = marinaEmotion === 'happy' ? 'smile' : marinaEmotion === 'relieved' ? 'cheerful' : marinaEmotion === 'surprised' || marinaEmotion === 'sad' || marinaEmotion === 'shy' || marinaEmotion === 'thinking' ? 'surprised' : 'neutral';
+    return { ...marina, id: `marina_casual_${pose}`, pose, outfit: 'casual' as const, anchor: [384, 1280] as const };
+  }
   return getMutsumiArt(downtownArtPack, { speaker: name, expression })
     ?? getAnonArt(downtownArtPack, { speaker: name, expression })
     ?? getRaanaArt(downtownArtPack, { speaker: name, expression })

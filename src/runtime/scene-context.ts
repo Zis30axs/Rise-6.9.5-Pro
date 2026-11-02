@@ -49,7 +49,7 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
   'city-park': '神田川沿岸的室外绿地与步道；可见树木、休憩区域和神田川绿道站。',
   'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、写字楼商务中心、Live House 入口与 KTV 娱乐城，尚未进入店内。',
   'takao-mountain': '高尾山风景区的室外山麓山道与接驳广场；可见参天杉木、登山步道起点、观光缆车站、极乐汤温泉入口与远处重叠的苍翠山峰。',
-  circle: 'CiRCLE 现场屋门前的步行广场；可见一楼咖啡厅的落地窗、侧翼练团室入口，以及通往新宿大型商业区的人行道。店员月之森真里在咖啡厅里接待，尚未进入店内。',
+  circle: 'CiRCLE 现场屋门前的步行广场；可见一楼咖啡厅的落地窗、侧翼练团室入口，以及通往新宿大型商业区的人行道。店员月岛麻里奈在咖啡厅里接待，尚未进入店内。',
   'city-roads': '连接校园与远处住宅区、商业区、公园的室外道路；可见路面、人行道与过往车辆。',
 };
 
@@ -171,12 +171,25 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
     }] : [];
   }
   if (roomId === 'livehouse') {
-    const taki = allResidentCast.find(row => row.id === 'bang-taki');
-    return taki ? [{
-      id: taki.id, name: taki.name, candidateName: taki.name,
-      identity: 'Live House 工作人员', tags: ['常驻人物', '乐队'],
-      description: taki.publicProfile, x: 2.2, z: 1.6, color: 0x859c6d,
-      portraitId: characterForPerson(taki.id), contactId: null, isMain: false,
+    return ['bang-taki', 'bang-marina'].flatMap(id => {
+      const person = allResidentCast.find(row => row.id === id);
+      if (!person) return [];
+      return [{
+        id: person.id, name: person.name, candidateName: person.name,
+        identity: id === 'bang-marina' ? 'CiRCLE 店员' : 'Live House 工作人员',
+        tags: ['常驻人物', id === 'bang-marina' ? '店员' : '乐队'],
+        description: person.publicProfile, x: id === 'bang-marina' ? -2.2 : 2.2, z: 1.6, color: 0x859c6d,
+        portraitId: characterForPerson(person.id), contactId: null, isMain: false,
+      }];
+    });
+  }
+  if (roomId === 'circle-cafe' || roomId === 'circle-studio') {
+    const marina = allResidentCast.find(row => row.id === 'bang-marina');
+    return marina ? [{
+      id: marina.id, name: marina.name, candidateName: marina.name,
+      identity: 'CiRCLE 店员', tags: ['常驻人物', '店员'],
+      description: marina.publicProfile, x: 0, z: -2.2, color: 0x859c6d,
+      portraitId: characterForPerson(marina.id), contactId: null, isMain: false,
     }] : [];
   }
   if (RESIDENTIAL_INTERIOR_HOMES.has(roomId)) {
@@ -203,7 +216,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
 }
 
 /** Authored indoor people are separate from outdoor anchors and random pedestrians. */
-export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number; day?: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   if (!clock) return [];
   if (roomId === 'court-hearing') return getInteriorPeopleForValidation(roomId);
   return getInteriorPeopleForValidation(roomId).flatMap(person => {
@@ -215,7 +228,7 @@ export function getInteriorPeople(roomId: string, contacts: readonly CharacterCo
   });
 }
 
-export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   const hidden = new Set(hiddenPersonIds);
   const names = new Set<string>();
   const people = scenePersonAnchors.map(anchor => {
@@ -260,7 +273,7 @@ function relationshipOf(person: { id: string; contactId: string | null }, contac
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
   return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
 }
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;

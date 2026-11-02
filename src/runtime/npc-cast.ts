@@ -1,8 +1,10 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
 import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
+import circleLore from '../worldbook/circle-livehouse.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import { CIRCLE_CAFE_ROOM_ID, CIRCLE_CLOSES, CIRCLE_OPENS, CIRCLE_STAFF_ID } from './circle-venue';
 
 function mapWorldbookResidents(entries: typeof lore.entries) {
   return entries.filter(entry => entry.extensions.personId).map(entry => {
@@ -27,7 +29,8 @@ export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries a
 /** MyGO!!!!! and Ave Mujica members registered on the existing canon worldbook. Soyo and Sakiko stay protagonists. */
 export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId?.startsWith('bang-')) as typeof lore.entries);
 export const bangFamilyCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId && !entry.extensions.personId.startsWith('bang-')) as typeof lore.entries);
-export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast]);
+export const circleStaffCast = mapWorldbookResidents(circleLore.entries.filter(entry => entry.extensions?.personId) as typeof lore.entries);
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast, ...circleStaffCast]);
 
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
@@ -57,7 +60,12 @@ export const residentGroupForNpc = (npcId: string) =>
 export const residentById = (id: string) => allResidentCast.find(row => row.id === id);
 
 /** Small authored schedules, not agents or claims about canonical itineraries. */
-export function residentPresence(id: string, clock: { hour: number; minute: number }) {
+export function marinaOnDuty(clock: { hour: number; minute: number; day?: number }): boolean {
+  const presence = residentPresence(CIRCLE_STAFF_ID, clock);
+  return !!presence?.available && presence.locationId === CIRCLE_CAFE_ROOM_ID;
+}
+
+export function residentPresence(id: string, clock: { hour: number; minute: number; day?: number }) {
   const person = residentById(id);
   if (!person) return null;
   const minute = clock.hour * 60 + clock.minute;
@@ -92,6 +100,27 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
       activity: minute >= 9 * 60 + 30 && minute < 14 * 60 ? '在公司处理繁忙的商务工作' : '在卧室休息',
       available: false,
       housing: housing?.id ?? 'soyo-house', district: housing?.district ?? 'traditional-downtown', outfit: residentOutfit(id),
+    };
+  }
+  if (id === CIRCLE_STAFF_ID) {
+    const day = clock.day ?? 1;
+    const rest = day % 7 === 0;
+    const assistRing = !rest && day % 7 === 4 && minute >= 15 * 60 && minute < 18 * 60;
+    const atCircle = !rest && !assistRing && minute >= CIRCLE_OPENS && minute < CIRCLE_CLOSES;
+    if (assistRing) return {
+      anchorId: null, locationId: 'livehouse',
+      activity: '到 RiNG 协助处理预约和店务', available: true,
+      housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+    };
+    if (atCircle) return {
+      anchorId: null, locationId: CIRCLE_CAFE_ROOM_ID,
+      activity: '在 CiRCLE 咖啡厅接待客人', available: true,
+      housing: housing?.id ?? null, district: 'circle', outfit: residentOutfit(id),
+    };
+    if (rest) return {
+      anchorId: null, locationId: person.home,
+      activity: '休息日留在住处', available: false,
+      housing: housing?.id ?? null, district: null, outfit: residentOutfit(id),
     };
   }
   if (id === 'bang-taki' && minute >= 16 * 60 && minute < 22 * 60) return {

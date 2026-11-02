@@ -93,10 +93,11 @@ describe('CiRCLE live house', () => {
     expect(getNovelBackground('circle', 12).src).toBe(getNovelBackground('bookshop', 12).src);
     expect(getNovelBackground('circle-cafe', 20).src).toBe(getNovelBackground('bookshop', 20).src);
     expect(getNovelBackground('circle-studio', 21).src).toBe(getNovelBackground('livehouse', 21).src);
-    expect(worldbook.entries[0]?.keys).toContain('月之森真里');
+    expect(worldbook.entries[1]?.keys).toContain('月岛麻里奈');
+    expect(worldbook.entries[1]?.extensions.personId).toBe('bang-marina');
     expect(worldbook.entries[0]?.content).toContain('11:00');
-    expect(worldbook.entries[0]?.extensions).toEqual({});
-    expect(readFileSync('src/runtime/npc-cast.ts', 'utf8')).not.toContain('月之森真里');
+    expect(JSON.stringify(worldbook)).not.toContain('月之森真里');
+    expect(readFileSync('src/runtime/npc-cast.ts', 'utf8')).toContain('CIRCLE_STAFF_ID');
   });
 
   it('settles the small cafe menu with the existing service quote and reports structured failures', () => {
@@ -188,6 +189,8 @@ describe('CiRCLE live house', () => {
     const ringQuote = getLocationServiceQuote(ringState, 'livehouse-watch-1800');
     expect(bought.blockedReason).toBeNull();
     expect(bought.price).toBe(circleBorrowedPrice(ringQuote.price));
+    expect(bought.livehouse?.marinaOnDuty).toBe(true);
+    expect(bought.livehouse?.summary).toContain('月岛麻里奈正在店里当班');
     expect(bought.livehouse?.show?.id).toBe(`circle-d${here.clock.day}-1800`);
     expect(bought.livehouse?.show?.actId).toBe(liveBill(here.clock.day + CIRCLE_BILL_SHIFT).find(row => row.key === '1800')?.act.id);
     expect(ringQuote.livehouse?.show?.id).toBe(`d${here.clock.day}-1800`);

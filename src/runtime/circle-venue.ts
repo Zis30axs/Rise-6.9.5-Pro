@@ -5,7 +5,8 @@ export const CIRCLE_STUDIO_ROOM_ID = 'circle-studio';
 export const CIRCLE_HOURS_LABEL = '11:00–22:00';
 export const CIRCLE_OPENS = 11 * 60;
 export const CIRCLE_CLOSES = 22 * 60;
-export const CIRCLE_STAFF_NAME = '月之森真里';
+export const CIRCLE_STAFF_NAME = '月岛麻里奈';
+export const CIRCLE_STAFF_ID = 'bang-marina';
 /** Same settlement rows as the existing cafe menu; this counter only lists three of them. */
 export const CIRCLE_CAFE_MENU_IDS = ['drink-coffee', 'drink-latte', 'eat-dessert'] as const;
 export const CIRCLE_MENU_LOCATION_IDS = [CIRCLE_LOCATION_ID, CIRCLE_CAFE_ROOM_ID] as const;
