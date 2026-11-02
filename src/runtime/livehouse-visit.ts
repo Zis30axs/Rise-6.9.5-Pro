@@ -214,7 +214,18 @@ function watchedAlready(state: WorldState, owner: ProtagonistId, id: string, aut
   return rows.some(row => row.owner === owner && row.showId === id);
 }
 
-export function prepareLivehouseService(state: WorldState, serviceId: string, authority?: WorldState): {
+/** Optional venue tune. Defaults keep the original Live House prices, bill and show ids. */
+export interface LivehouseVenueTune {
+  here?: (state: WorldState) => boolean;
+  billDay?: number;
+  showIdFor?: (day: number, key: LiveShowKey) => string;
+  priceFor?: (price: number) => number;
+  locationIds?: readonly string[];
+  serviceId?: string;
+  omitDutyNote?: boolean;
+}
+
+export function prepareLivehouseService(state: WorldState, serviceId: string, authority?: WorldState, tune?: LivehouseVenueTune): {
   service: LocationService;
   blockedReason: string | null;
   blockedCode: LivehouseBlockedCode | null;
@@ -224,11 +235,14 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   const owner = visitOwner(state, authority);
   const skillBefore = instrumentSkill(state, authority);
   const duty = takiOnDuty(state.clock);
-  const here = state.locationId === 'livehouse';
+  const here = tune?.here ? tune.here(state) : state.locationId === 'livehouse';
+  const priced = (amount: number) => tune?.priceFor ? tune.priceFor(amount) : amount;
+  const dutyNote = tune?.omitDutyNote ? '' : (duty ? '椎名立希正在店里当班。' : '椎名立希此刻不在店里当班。');
   const watch = SHOW_SLOTS.find(slot => serviceId === `livehouse-watch-${slot.key}`);
   if (watch) {
-    const act = liveBill(state.clock.day).find(row => row.key === watch.key)!.act;
-    const id = showId(state.clock.day, watch.key);
+    const billDay = tune?.billDay ?? state.clock.day;
+    const act = liveBill(billDay).find(row => row.key === watch.key)!.act;
+    const id = tune?.showIdFor ? tune.showIdFor(state.clock.day, watch.key) : showId(state.clock.day, watch.key);
     const now = minuteOf(state.clock);
     const end = watch.start + LIVEHOUSE_SHOW_MINUTES;
     const wait = Math.max(0, watch.start - now);
@@ -238,13 +252,14 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
         : now >= watch.start ? 'show_started' : null;
     const blockedReason = blockedCode ? REASONS[blockedCode] : null;
     const audience = members.filter(member => member.inAudience).map(member => member.name);
-    const summary = `${watch.label} 开演，${LIVEHOUSE_SHOW_MINUTES} 分钟，${act.name}。${act.atmosphere}。票价 ${LIVEHOUSE_TICKET_PRICE} 日元。${audience.length ? `${audience.join('、')}在观众席。` : ''}${duty ? '椎名立希正在店里当班。' : '椎名立希此刻不在店里当班。'}`;
-    const receipt = `看完 ${watch.label} 的${act.name}。${duty ? '椎名立希当时在店里当班。' : ''}`;
+    const ticket = priced(LIVEHOUSE_TICKET_PRICE);
+    const summary = `${watch.label} 开演，${LIVEHOUSE_SHOW_MINUTES} 分钟，${act.name}。${act.atmosphere}。票价 ${ticket} 日元。${audience.length ? `${audience.join('、')}在观众席。` : ''}${dutyNote}`;
+    const receipt = `看完 ${watch.label} 的${act.name}。${dutyNote}`;
     const service: LocationService = {
-      id: serviceId, locationIds: ['livehouse'], label: `看 ${watch.label} 的演出`,
+      id: tune?.serviceId ?? serviceId, locationIds: tune?.locationIds ?? ['livehouse'], label: `看 ${watch.label} 的演出`,
       description: '买票看这一场已经排好的演出。',
       minutes: blockedCode ? LIVEHOUSE_SHOW_MINUTES : wait + LIVEHOUSE_SHOW_MINUTES,
-      price: LIVEHOUSE_TICKET_PRICE,
+      price: ticket,
       completionDescription: receipt,
       effects: effects({ energy: -8, morale: 14, stress: -12, satiety: -4, foodEnergy: -40 }),
     };
@@ -266,12 +281,13 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   const gain = practiceGain(skillBefore, hours, joined.length > 0);
   let blockedCode: LivehouseBlockedCode | null = together && joined.length === 0 ? 'no_partner' : null;
   const names = joined.map(person => person.name).join('、');
-  const summary = `${plan.label}，${plan.price} 日元。乐器熟练度 ${skillBefore}，这场预计增加 ${gain}，上限 ${INSTRUMENT_SKILL_CAP}。${together ? (names ? `${names}可以一起来。` : '现在没有能一起来的熟人。') : '一个人练。'}${duty ? '椎名立希正在店里当班。' : ''}`;
+  const rent = priced(plan.price);
+  const summary = `${plan.label}，${rent} 日元。乐器熟练度 ${skillBefore}，这场预计增加 ${gain}，上限 ${INSTRUMENT_SKILL_CAP}。${together ? (names ? `${names}可以一起来。` : '现在没有能一起来的熟人。') : '一个人练。'}${tune?.omitDutyNote ? '' : (duty ? '椎名立希正在店里当班。' : '')}`;
   const receipt = `${plan.label}。乐器熟练度 ${Math.min(INSTRUMENT_SKILL_CAP, skillBefore + gain)}。${names ? `${names}一起来，好感各 +${PRACTICE_AFFINITY_DELTA}。` : ''}`;
   const service: LocationService = {
-    id: serviceId, locationIds: ['livehouse'], label: together ? `和熟人一起${plan.label}` : plan.label,
+    id: tune?.serviceId ?? serviceId, locationIds: tune?.locationIds ?? ['livehouse'], label: together ? `和熟人一起${plan.label}` : plan.label,
     description: together ? '按小时租练习室，并和愿意来的 MyGO 成员一起练。' : '按小时租练习室，一个人练。',
-    minutes: plan.minutes, price: plan.price, completionDescription: receipt,
+    minutes: plan.minutes, price: rent, completionDescription: receipt,
     effects: effects({ energy: plan.energy, morale: plan.morale, stress: plan.stress }),
   };
   return {
@@ -361,7 +377,7 @@ export function parseLivehouseVisit(raw: unknown): LivehouseVisitState {
     if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('存档格式无效：livehouseVisit.watched。原存档已保留，请先备份并检查数据。');
     const entry = item as Record<string, unknown>;
     if (Object.keys(entry).length !== 2 || !PROTAGONISTS.includes(entry.owner as ProtagonistId)) throw new Error('存档格式无效：livehouseVisit.watched。原存档已保留，请先备份并检查数据。');
-    if (typeof entry.showId !== 'string' || !/^d\d+-(1800|1930)$/.test(entry.showId)) throw new Error('存档格式无效：livehouseVisit.watched。原存档已保留，请先备份并检查数据。');
+    if (typeof entry.showId !== 'string' || !/^(?:circle-)?d\d+-(1800|1930)$/.test(entry.showId)) throw new Error('存档格式无效：livehouseVisit.watched。原存档已保留，请先备份并检查数据。');
     return { owner: entry.owner as ProtagonistId, showId: entry.showId };
   });
   if (new Set(watched.map(item => `${item.owner}:${item.showId}`)).size !== watched.length) throw new Error('存档格式无效：livehouseVisit.watched。原存档已保留，请先备份并检查数据。');

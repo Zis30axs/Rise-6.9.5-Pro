@@ -2,6 +2,7 @@
  * Do not write these scenic coordinates into MVU, transit, schedules or save data.
  */
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
+import { circleSandboxOverlay } from './circle-sandbox-pack';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtBounds, mapDistricts, type MapDistrictId } from './map-districts';
 
@@ -9,8 +10,12 @@ export type TokyoPoint = { x: number; z: number };
 export type TokyoScope = 'city' | MapDistrictId;
 
 export const TOKYO_SANDBOX_MODEL_SHA256 = '12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb';
-export const tokyoDistricts = sandboxData.districts;
-export const tokyoLandmarks = sandboxData.landmarks;
+function withCirclePack<T extends { id: string }>(rows: readonly T[], extra: readonly T[]): T[] {
+  const ids = new Set(extra.map(row => row.id));
+  return [...rows.filter(row => !ids.has(row.id)), ...extra];
+}
+export const tokyoDistricts = withCirclePack(sandboxData.districts, circleSandboxOverlay.districts);
+export const tokyoLandmarks = withCirclePack(sandboxData.landmarks, circleSandboxOverlay.landmarks);
 export const tokyoCityBounds = {
   minX: Math.min(...tokyoDistricts.map(d => d.minX)),
   maxX: Math.max(...tokyoDistricts.map(d => d.maxX)),

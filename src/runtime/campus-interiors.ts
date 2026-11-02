@@ -2,6 +2,7 @@ import type { SceneMovementWorld } from '../frontend/scene-movement';
 import type { InteriorRestRecord, InteriorStudyRecord, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import { CIRCLE_CAFE_ROOM_ID, CIRCLE_LOCATION_ID, CIRCLE_STAFF_NAME, CIRCLE_STUDIO_ROOM_ID, attachCircleBorrowedInteractions } from './circle-venue';
 
 export const INTERIOR_ENTRANCE_RANGE = 5;
 export const INTERIOR_INTERACTION_RANGE = 3;
@@ -70,7 +71,7 @@ export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, '
 }
 
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
-export const campusInteriors: readonly CampusInterior[] = [
+const campusInteriorRooms: readonly CampusInterior[] = [
   {
     id: MARGO_CAFE_ROOM_ID, label: '玛格咖啡馆', parentLocationId: MARGO_CAFE_LOCATION_ID,
     description: '宝生玛格经营的街边咖啡馆。柜台旁摆着咖啡器具与当日甜点，窗边有可坐下喝茶、阅读或画画的小桌；南侧店门通向露台。',
@@ -554,7 +555,39 @@ export const campusInteriors: readonly CampusInterior[] = [
         prompt: '你在十一丁目茶屋享用了清凉回甘的冷萃煎茶。' },
     ],
   },
+  {
+    id: CIRCLE_CAFE_ROOM_ID, label: 'CiRCLE 咖啡厅', parentLocationId: CIRCLE_LOCATION_ID,
+    description: `CiRCLE 一楼咖啡厅。柜台后是店员${CIRCLE_STAFF_NAME}，窗边有小桌。菜单只有美式、拿铁和一份甜点，点单由柜台结算。`,
+    entrance: { x: -312, z: -157, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'circle-cafe-counter', kind: 'desk', minX: -2.4, maxX: 2.4, minZ: -4.2, maxZ: -2.8 },
+      { id: 'circle-cafe-window', kind: 'desk', minX: -5.2, maxX: -3.4, minZ: -1.2, maxZ: 1.6 },
+      { id: 'circle-cafe-cups', kind: 'shelf', minX: 3.8, maxX: 5.2, minZ: -3.6, maxZ: -1.6 },
+    ],
+    interactions: [
+      { id: 'circle-cafe-menu', label: '看看咖啡厅小菜单', description: '看看柜台上的美式、拿铁和甜点，不自动点单。',
+        x: 0, z: -1.6, minutes: 0, energyDelta: 0, result: '看过 CiRCLE 咖啡厅的小菜单，没有点单。', prompt: '你看过 CiRCLE 咖啡厅的小菜单，没有点单。点单必须使用当前地点列出的服务，付款、时间和身体变化以结算结果为准。' },
+      { id: 'circle-cafe-window', label: '在窗边坐一会儿', description: '在窗边坐 15 分钟，恢复至多 3 点精力，不会自动获得饮品。',
+        x: -4.2, z: 0.2, minutes: 15, energyDelta: 3, result: '在 CiRCLE 咖啡厅窗边坐了一会儿。', prompt: '你在 CiRCLE 咖啡厅窗边坐了十五分钟，程序已推进时间并恢复至多 3 点精力，没有自动消费。' },
+    ],
+  },
+  {
+    id: CIRCLE_STUDIO_ROOM_ID, label: 'CiRCLE 练团室', parentLocationId: CIRCLE_LOCATION_ID,
+    description: 'CiRCLE 侧翼的隔音练团室。鼓组、吉他音箱和谱架靠墙摆着，地上留着线材。',
+    entrance: { x: -306, z: -153, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'circle-studio-drums', kind: 'piano', minX: -2.2, maxX: 1.2, minZ: -4.2, maxZ: -2.2 },
+      { id: 'circle-studio-amps', kind: 'shelf', minX: 3.2, maxX: 5.2, minZ: -3.4, maxZ: -1.2 },
+      { id: 'circle-studio-bench', kind: 'desk', minX: -5.2, maxX: -3.2, minZ: 0.4, maxZ: 2.2 },
+    ],
+    interactions: [
+      { id: 'circle-studio-look', label: '看看练团室设备', description: '看看鼓组、音箱和谱架，不自动租用或演出。',
+        x: 0, z: -1.2, minutes: 0, energyDelta: 0, result: '看过 CiRCLE 练团室的鼓组、音箱和谱架。', prompt: '你看过 CiRCLE 练团室的设备，没有租用，也没有开始演出。' },
+    ],
+  },
 ];
+
+export const campusInteriors: readonly CampusInterior[] = attachCircleBorrowedInteractions(campusInteriorRooms);
 
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
   return campusInteriors.find(room => room.id === id);

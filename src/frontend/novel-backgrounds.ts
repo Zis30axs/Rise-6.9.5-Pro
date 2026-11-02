@@ -53,6 +53,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
+  circle: 'commercial', 'circle-cafe': 'commercial',
   'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'soyo-house': 'bedroom', 'mlm-office': 'commercial',
   clinic: 'commercial', 'clinic-room': 'commercial',
 });
@@ -124,6 +125,8 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
   // One indoor courtroom photograph. Dusk and night keep the same picture and only use the existing shade.
   if (locationId === 'court-hearing') return { id: 'court-hearing-day', src: courtHearingBg,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
+  if (locationId === 'circle-studio') return { id: 'circle-studio-fallback', src: livehouseBg,
+    phase: novelBackgroundPhase(hour), imagePhase: 'night', source: 'legacy' };
   const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
   if (authored) {
     const phase = novelBackgroundPhase(hour);

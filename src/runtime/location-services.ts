@@ -4,6 +4,12 @@ import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthExposure, resolveWeather } from './weather';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import {
+  CIRCLE_CAFE_MENU_IDS, CIRCLE_CAFE_ROOM_ID, CIRCLE_CLOSES, CIRCLE_HOURS_LABEL, CIRCLE_LOCATION_ID,
+  CIRCLE_MENU_LOCATION_IDS, CIRCLE_OPENS, CIRCLE_STAFF_NAME, CIRCLE_STUDIO_ROOM_ID,
+  circleBorrowedPrice, circleVisitServiceId, isBorrowedLivehouseService, isCircleVenueRoom,
+} from './circle-venue';
+import { isCircleVisitService, prepareCircleVisitService } from './circle-visit';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling } from './fengjin-clinic';
 import { isLivehouseVisitService, livehouseBlockedCode, prepareLivehouseService, type LivehouseServiceFacts, type LivehouseBlockedCode } from './livehouse-visit';
@@ -63,6 +69,9 @@ export const venues: readonly Venue[] = [
   { locationId: 'promenade', label: '林荫步道', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '沿现有林荫步道散步，花一点时间放松心情。' },
   { locationId: 'bookshop', label: '街角书店', hoursLabel: '09:00–22:00', opens: 9 * 60, closes: 22 * 60, outdoor: false, description: '营业时可在门前书摊选书阅读，沿用学科阅读入口和学习结算。' },
   { locationId: 'convenience', label: '便利店', hoursLabel: '24 小时营业', opens: null, closes: null, outdoor: false, description: '全天可从便利店货架购买商品；购买后进入背包，再从背包使用。' },
+  { locationId: CIRCLE_LOCATION_ID, label: 'CiRCLE 现场屋', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `现场屋门前广场连通一楼咖啡厅与侧翼练团室。咖啡厅由${CIRCLE_STAFF_NAME}接待，可点美式、拿铁和一份甜点。` },
+  { locationId: CIRCLE_CAFE_ROOM_ID, label: 'CiRCLE 咖啡厅', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `${CIRCLE_STAFF_NAME}在柜台接待。菜单是美式、拿铁和一份甜点，坐下喝完或吃完。` },
+  { locationId: CIRCLE_STUDIO_ROOM_ID, label: 'CiRCLE 练团室', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: '侧翼隔音练团室，靠墙放着鼓组、吉他音箱和谱架。' },
 ];
 
 export function getLocationStatus(locationId: string, clock: WorldState['clock']): LocationStatus | null {
@@ -111,7 +120,7 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 });
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
-export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
+const authoredLocationServices: readonly LocationService[] = Object.freeze([
   { id: COURT_OBSERVE_ID, locationIds: ['court-hearing'], label: courtObservation.label,
     description: '在公开旁听席安静观看法庭辩论与证据质证，学习法律程序，不介入正式在审案件。',
     completionDescription: courtObservation.result, minutes: courtObservation.minutes,
@@ -163,6 +172,25 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
+const circleCafeMenu = new Set<string>(CIRCLE_CAFE_MENU_IDS);
+const withCircleCafe = (service: LocationService): LocationService => circleCafeMenu.has(service.id)
+  ? Object.freeze({ ...service, locationIds: Object.freeze([...service.locationIds, ...CIRCLE_MENU_LOCATION_IDS]) })
+  : service;
+const circleBorrowedServices = authoredLocationServices.flatMap(service => {
+  const id = circleVisitServiceId(service.id) ?? (isBorrowedLivehouseService(service) ? `circle-borrow-${service.id}` : null);
+  if (!id) return [];
+  return [Object.freeze({
+    ...service,
+    id,
+    locationIds: Object.freeze([CIRCLE_LOCATION_ID, CIRCLE_STUDIO_ROOM_ID]),
+    price: circleBorrowedPrice(service.price),
+  })];
+});
+export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
+  ...authoredLocationServices.map(withCircleCafe),
+  ...circleBorrowedServices,
+]);
+
 export const COURT_OBSERVE_MAX_MINUTES = 480;
 export const COURT_OBSERVE_MAX_KNOWLEDGE = 100;
 
@@ -188,9 +216,10 @@ export function courtObservationServiceForMinutes(minutes: number): LocationServ
 }
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
-  return state.interior && ![MARGO_CAFE_ROOM_ID, 'court-hearing', 'livehouse'].includes(state.interior.roomId) ? []
-    : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
-      && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
+  const roomId = state.interior?.roomId;
+  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && !isCircleVenueRoom(roomId)) return [];
+  return locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
+    && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }
 
 /** Pay for the portion plus packaging now; nutrition is settled only on later use. */
@@ -229,7 +258,8 @@ export interface LocationServiceQuote {
 
 /** Preview is pure and shares authored costs, hours and nutrition with commit. */
 export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState, requestedMinutes?: number): LocationServiceQuote {
-  const prepared = isLivehouseVisitService(serviceId) ? prepareLivehouseService(state, serviceId, worldAuthority) : null;
+  const prepared = isLivehouseVisitService(serviceId) ? prepareLivehouseService(state, serviceId, worldAuthority)
+    : isCircleVisitService(serviceId) ? prepareCircleVisitService(state, serviceId, worldAuthority) : null;
   const service = prepared?.service ?? (serviceId === COURT_OBSERVE_ID && requestedMinutes !== undefined
     ? courtObservationServiceForMinutes(requestedMinutes)
     : locationServiceCatalog.find(item => item.id === serviceId) ?? null);

@@ -17,6 +17,7 @@ const outdoorLinks: readonly (readonly [string, string])[] = [
   ['bookshop', 'convenience'], ['bookshop', 'construction-site'], ['convenience', 'street-cafe'],
   ['street-cafe', 'bus-stop'], ['street-cafe', 'pocket-park'], ['convenience', 'pocket-park'],
   ['pocket-park', 'courthouse'], ['construction-site', 'courthouse'],
+  ['grand-commercial', 'circle'],
 ];
 const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain']);
 const areaExits: Readonly<Record<string, readonly string[]>> = {

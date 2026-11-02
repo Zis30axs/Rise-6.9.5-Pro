@@ -32,6 +32,7 @@ import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-a
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
+import { isCircleVenueRoom } from './circle-venue';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -163,6 +164,8 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     const room = getCampusInterior(locationId);
     const target = room?.parentLocationId ?? locationId;
     const targetStop = transitStops.find(stop => stop.id !== 'campus' && stop.locationId === target);
+    const circleOnFoot = (next.locationId === 'grand-commercial' && target === 'circle')
+      || (next.locationId === 'circle' && target === 'grand-commercial');
     let originStop = transitStops.find(stop => stop.id !== 'campus' && stop.locationId === next.locationId);
     // A save can be on a connecting road, outside every named district. Use its
     // nearest existing stop, then keep the normal campus transfer graph.
@@ -170,14 +173,16 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       const point = next.scene;
       originStop = [...transitStops].sort((a, b) => Math.hypot(point.x - a.x, point.z - a.z) - Math.hypot(point.x - b.x, point.z - b.z))[0];
     }
-    if (originStop) {
+    if (circleOnFoot) {
+      walk(target);
+    } else if (originStop) {
       position(originStop.locationId);
       if (originStop.id !== 'campus' && originStop.id !== targetStop?.id) ride('campus');
     }
-    if (targetStop) {
+    if (!circleOnFoot && targetStop) {
       if (next.locationId !== target) { walk('bus-stop'); ride(targetStop.id); }
       position(target);
-    } else {
+    } else if (!circleOnFoot) {
       walk(target);
     }
     // A far-city residence is still an indoor destination after its transit leg.
@@ -1498,6 +1503,10 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         if (!getLocationStatus(room.id, next.clock)?.isOpen) throw new Error('法院旁听席开放时间为 09:00–17:00。');
       }
       if (room.id === MARGO_CAFE_ROOM_ID && !getLocationStatus(MARGO_CAFE_LOCATION_ID, next.clock)?.isOpen) throw new Error('玛格的咖啡馆已打烊，营业时间 10:00–次日 02:00。');
+      if (isCircleVenueRoom(room.id)) {
+        const status = getLocationStatus(room.id, next.clock);
+        if (!status?.isOpen) throw new Error(status ? `当前${status.label}${status.statusLabel}，开放时间 ${status.hoursLabel}。` : '当前地点没有已设定的开放安排。');
+      }
       if (!next.scene || next.locationId !== room.parentLocationId || Math.hypot(next.scene.x - room.entrance.x, next.scene.z - room.entrance.z) > INTERIOR_ENTRANCE_RANGE) throw new Error('请先走到建筑入口附近，再进入室内。');
       next.interior = { roomId: room.id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
       next.locationId = room.id;

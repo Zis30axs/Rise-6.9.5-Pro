@@ -106,6 +106,19 @@
       "minZ": -24,
       "maxZ": 136,
       "color": 14205861
+    },
+    {
+      "id": "circle",
+      "name": "CiRCLE 现场屋",
+      "shortName": "CiRCLE",
+      "description": "与新宿大型商业区步行相连的现场演出屋。一楼是咖啡厅，侧翼是隔音练团室，咖啡厅由店员月之森真里接待。",
+      "x": -248,
+      "z": -90,
+      "minX": -292,
+      "maxX": -204,
+      "minZ": -140,
+      "maxZ": -40,
+      "color": 12868410
     }
   ],
   "landmarks": [
@@ -669,6 +682,47 @@
           "stressDelta": -16,
           "price": 0,
           "result": "在名门月之森女子学园的玫瑰温室旁聆听了优雅的午后室内乐合奏。"
+        }
+      ]
+    },
+    {
+      "id": "circle",
+      "name": "CiRCLE",
+      "subtitle": "咖啡厅与练团室",
+      "district": "circle",
+      "x": -248,
+      "z": -90,
+      "desc": "现场屋门前的步行广场。一楼咖啡厅可点美式、拿铁和甜点，侧翼练团室可进去看设备。店员月之森真里在咖啡厅区接待。门口张贴的营业时间是这座城市为这家店安排的。",
+      "services": [
+        {
+          "id": "drink-coffee",
+          "label": "喝美式咖啡",
+          "minutes": 10,
+          "energyDelta": 18,
+          "moraleDelta": 3,
+          "stressDelta": -3,
+          "price": 320,
+          "result": "在 CiRCLE 咖啡厅喝完一杯美式。"
+        },
+        {
+          "id": "drink-latte",
+          "label": "喝拿铁",
+          "minutes": 15,
+          "energyDelta": 15,
+          "moraleDelta": 5,
+          "stressDelta": -5,
+          "price": 440,
+          "result": "在 CiRCLE 咖啡厅喝完一杯拿铁。"
+        },
+        {
+          "id": "eat-dessert",
+          "label": "吃一份甜点",
+          "minutes": 15,
+          "energyDelta": 10,
+          "moraleDelta": 6,
+          "stressDelta": -4,
+          "price": 360,
+          "result": "在 CiRCLE 咖啡厅吃完一份甜点。"
         }
       ]
     }

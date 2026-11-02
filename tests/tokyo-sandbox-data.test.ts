@@ -6,16 +6,18 @@ describe('offline Tokyo sandbox metadata', () => {
   const districtIds = new Set(sandbox.districts.map(district => district.id));
   const landmarkIds = new Set(sandbox.landmarks.map(landmark => landmark.id));
 
-  it('keeps eight scenic districts while retaining supported game districts', () => {
-    expect(sandbox.districts).toHaveLength(8);
-    expect(districtIds.size).toBe(8);
+  it('keeps nine scenic districts while retaining supported game districts', () => {
+    expect(sandbox.districts).toHaveLength(9);
+    expect(districtIds.size).toBe(9);
     expect(districtIds.has('market-district')).toBe(true);
+    expect(districtIds.has('circle')).toBe(true);
     for (const id of MAP_DISTRICT_IDS) expect(districtIds.has(id)).toBe(true);
   });
 
   it('has valid landmarks, building IDs and roads', () => {
-    expect(sandbox.landmarks).toHaveLength(23);
-    expect(landmarkIds.size).toBe(23);
+    expect(sandbox.landmarks).toHaveLength(24);
+    expect(landmarkIds.size).toBe(24);
+    expect(landmarkIds.has('circle')).toBe(true);
     expect(new Set(sandbox.buildings.map(building => building.id)).size).toBe(48);
     expect(sandbox.roads).toHaveLength(44);
     for (const landmark of sandbox.landmarks) {
