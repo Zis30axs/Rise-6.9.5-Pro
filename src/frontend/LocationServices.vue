@@ -30,6 +30,7 @@ const guidance = computed(() => {
   if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
   if (room.value?.id === 'court-hearing') return '公开旁听与正式案件共用这一座法庭。旁听按游戏时间结算，不会自动开启委托或触发主模型。';
   if (!room.value && props.model.state.locationId === 'courthouse') return '已到达沙盘中的审判法庭。开放时可从此入口进入旁听席；正式诉讼仍需先在枫庭律师事务所受理。';
+  if (room.value?.id === 'livehouse') return '可以买票看排期演出，或按小时租练习室。花费、时间和乐器熟练度当场结算。';
   if (room.value?.id === MARGO_CAFE_ROOM_ID || atMargoCafe(props.model.state)) return '可以向在场的店主与来客打招呼，从菜单买一杯带走，或在窗边坐一会儿。';
   if (room.value) return '上方可直接选择房间里的学习、整理与休息，也可在 3D 中靠近桌椅、书架或床铺探索。';
   if (storeAvailable.value) return '在店门前打开货架选购，购买的商品放入背包，使用时才结算效果。';
@@ -111,9 +112,9 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
     </section>
     <div v-if="services.length" class="location-service-list">
       <article v-for="{ service, quote, takeaway } in services" :key="service.id" class="location-service-card" :data-location-service="service.id">
-        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : service.price ? `¥${formatGameNumber(service.price)}` : '免费' }}</strong></div>
-        <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ service.description }}</p>
-        <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ service.minutes }} 分钟</small>
+        <div class="location-service-title"><h3>{{ service.label }}</h3><strong>{{ service.reveal && revealingJob !== service.id ? '待遇面议' : service.payout ? `报酬 ¥${formatGameNumber(service.payout)}` : quote.price ? `¥${formatGameNumber(quote.price)}` : '免费' }}</strong></div>
+        <p :class="{ 'backend-recruitment-copy': !!service.reveal }">{{ quote.livehouse?.summary ?? service.description }}</p>
+        <small v-if="!service.reveal || revealingJob === service.id" class="location-service-duration">用时 {{ quote.minutes }} 分钟</small>
         <small v-if="service.id === 'court-observe'" class="location-service-duration">旁听见闻 +10 · 已有学业时额外积累法庭论证学习进度（均有上限）</small>
         <p v-if="!quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-effects" data-location-service-preview>{{ service.payout ? `收工工资 ¥${formatGameNumber(quote.payout)} · ` : "" }}此次实际变化：<template v-for="(effect, index) in effects(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < effects(quote).length - 1"> · </template></template></p>
         <p v-else-if="quote.blockedReason && (!service.reveal || revealingJob === service.id)" class="location-service-blocked" data-location-service-blocked>{{ quote.blockedReason }}</p>
@@ -124,7 +125,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
             <button type="button" class="location-service-cancel" :data-cancel-backend-job="service.id" @click="revealingJob = null">不接了</button>
           </div>
         </div>
-        <button v-else type="button" :data-use-location-service="service.id" :disabled="model.busy || (!service.reveal && !!quote.blockedReason)" @click="useService(service.id)">{{ service.reveal ? '前去应聘' : service.payout ? '开始打工' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
+        <button v-else type="button" :data-use-location-service="service.id" :disabled="model.busy || (!service.reveal && !!quote.blockedReason)" @click="useService(service.id)">{{ service.reveal ? '前去应聘' : service.payout ? '开始打工' : service.id.startsWith('livehouse-watch') ? '买票入场' : service.id.startsWith('livehouse-practice') ? '租下练习室' : service.price ? '购买并享用' : '开始活动' }} <span aria-hidden="true">↗</span></button>
         <button v-if="takeaway.item" type="button" class="location-service-pack" :data-package-service="service.id" :disabled="model.busy || !!takeaway.blockedReason" :title="takeaway.blockedReason ?? '放入背包，稍后食用或送人；当前不结算食用效果'" @click="packService(service.id)">打包带走 · ¥{{ formatGameNumber(takeaway.totalPrice) }}<small>含打包费 ¥{{ PACKAGING_FEE }}，不立即食用</small></button>
         <p v-if="takeaway.item && takeaway.blockedReason && takeaway.blockedReason !== quote.blockedReason" class="location-service-blocked">打包：{{ takeaway.blockedReason }}</p>
       </article>

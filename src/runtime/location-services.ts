@@ -6,6 +6,7 @@ import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthEx
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling } from './fengjin-clinic';
+import { isLivehouseVisitService, livehouseBlockedCode, prepareLivehouseService, type LivehouseServiceFacts, type LivehouseBlockedCode } from './livehouse-visit';
 import tokyoSandbox from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 
 export const COURT_OBSERVE_ID = 'court-observe';
@@ -49,6 +50,7 @@ export const venues: readonly Venue[] = [
   { locationId: 'street-cafe', label: '玛格咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '宝生玛格经营的街边咖啡馆营业到次日凌晨两点，提供咖啡、茶与当日甜点；可在露台享用，也可从店门进入馆内。' },
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
+  { locationId: 'livehouse', label: 'Live House', hoursLabel: '16:00–23:00', opens: 16 * 60, closes: 23 * 60, outdoor: false, description: '新宿大型商业区里的 Live House。可以买票看排期演出，也可以按小时租练习室。' },
   { locationId: 'takao-mountain', label: '高尾山风景区', hoursLabel: '06:00–21:00', opens: 6 * 60, closes: 21 * 60, outdoor: true, description: '近郊名山自然风景名胜，拥有绿荫登山步道、山顶全景展望台、山间老字号茶屋与山麓天然温泉。' },
   { locationId: 'courthouse', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '新沙盘中的法庭外广场和东侧公开入口。' },
   { locationId: 'court-hearing', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '公开旁听席与正式审理共用的法庭。不得干预正在进行的案件。' },
@@ -123,6 +125,12 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'eat-mall-meal', locationIds: ['grand-commercial'], label: '吃商场快餐', description: '在商业区美食广场点一份快餐，坐下吃完。', minutes: 20, price: 420, effects: effects({ energy: 24, morale: 5, health: 1, stress: -5, satiety: 45, foodEnergy: 650 }) },
   { id: 'browse-music-store', locationIds: ['grand-commercial'], label: '逛音乐周边店', description: '浏览商业区唱片店的乐器配件与黑胶唱片，放松心情。', minutes: 15, price: 0, effects: effects({ energy: -2, morale: 8, stress: -6 }) },
+  { id: 'livehouse-watch-1800', locationIds: ['livehouse'], label: '看 18:00 的演出', description: '买票看 18:00 这场已经排好的演出。', minutes: 80, price: 2800, effects: effects({ energy: -8, morale: 14, stress: -12, satiety: -4, foodEnergy: -40 }) },
+  { id: 'livehouse-watch-1930', locationIds: ['livehouse'], label: '看 19:30 的演出', description: '买票看 19:30 这场已经排好的演出。', minutes: 80, price: 2800, effects: effects({ energy: -8, morale: 14, stress: -12, satiety: -4, foodEnergy: -40 }) },
+  { id: 'livehouse-practice-1h', locationIds: ['livehouse'], label: '租练习室一小时', description: '按小时租练习室，一个人练。', minutes: 60, price: 1600, effects: effects({ energy: -8, morale: 3, stress: -4 }) },
+  { id: 'livehouse-practice-2h', locationIds: ['livehouse'], label: '租练习室两小时', description: '按小时租练习室，一个人练。', minutes: 120, price: 3000, effects: effects({ energy: -16, morale: 4, stress: -6 }) },
+  { id: 'livehouse-practice-1h-band', locationIds: ['livehouse'], label: '和熟人一起练一小时', description: '按小时租练习室，并和愿意来的 MyGO 成员一起练。', minutes: 60, price: 1600, effects: effects({ energy: -8, morale: 3, stress: -4 }) },
+  { id: 'livehouse-practice-2h-band', locationIds: ['livehouse'], label: '和熟人一起练两小时', description: '按小时租练习室，并和愿意来的 MyGO 成员一起练。', minutes: 120, price: 3000, effects: effects({ energy: -16, morale: 4, stress: -6 }) },
   { id: 'takao-hiking', locationIds: ['takao-mountain', 'takao-summit'], label: '登山步道健行', description: '沿绿荫葱郁的高尾山自然步道拾级而上。在负氧离子与清凉山风中健行攀登，强身健体、大幅清降压力，让神经彻底放松。', minutes: 50, price: 0, effects: effects({ energy: -20, health: 8, morale: 18, stress: -35, satiety: -15, foodEnergy: -250 }) },
   { id: 'takao-observation', locationIds: ['takao-mountain', 'takao-summit'], label: '山顶观景台眺望', description: '伫立在海拔599米的高尾山顶展望台极目远眺。俯瞰关东平原的壮阔天际线与连绵群山，心胸豁然开朗，治愈烦闷心绪。', minutes: 20, price: 0, effects: effects({ energy: -2, health: 2, morale: 15, stress: -20 }) },
   { id: 'takao-onsen', locationIds: ['takao-mountain', 'takao-onsen'], label: '山麓温泉浸泡', description: '沉浸在高尾山麓温热宜人的天然药汤与露天汤泉中。热气蒸腾间驱散周身寒气与酸痛疲劳，深层调理体虚，舒缓压力。', minutes: 45, price: 850, effects: effects({ energy: 35, health: 25, morale: 20, stress: -40, satiety: -5 }) },
@@ -180,7 +188,7 @@ export function courtObservationServiceForMinutes(minutes: number): LocationServ
 }
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
-  return state.interior && ![MARGO_CAFE_ROOM_ID, 'court-hearing'].includes(state.interior.roomId) ? []
+  return state.interior && ![MARGO_CAFE_ROOM_ID, 'court-hearing', 'livehouse'].includes(state.interior.roomId) ? []
     : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
       && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }
@@ -214,21 +222,25 @@ export interface LocationServiceQuote {
   /** Empty unless this outdoor job rolled a chill or heatstroke. */
   weatherLog: string;
   blockedReason: string | null;
+  /** Present for Live House tickets and practice rooms. */
+  blockedCode?: LivehouseBlockedCode | null;
+  livehouse?: LivehouseServiceFacts;
 }
 
 /** Preview is pure and shares authored costs, hours and nutrition with commit. */
 export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState, requestedMinutes?: number): LocationServiceQuote {
-  const service = serviceId === COURT_OBSERVE_ID && requestedMinutes !== undefined
+  const prepared = isLivehouseVisitService(serviceId) ? prepareLivehouseService(state, serviceId, worldAuthority) : null;
+  const service = prepared?.service ?? (serviceId === COURT_OBSERVE_ID && requestedMinutes !== undefined
     ? courtObservationServiceForMinutes(requestedMinutes)
-    : locationServiceCatalog.find(item => item.id === serviceId) ?? null;
+    : locationServiceCatalog.find(item => item.id === serviceId) ?? null);
   const minutes = service?.minutes ?? 0;
   const price = service?.price ?? 0;
   const payout = service?.payout ?? 0;
   const status = getLocationStatus(state.locationId, state.clock);
-  let blockedReason: string | null = !service ? '不存在的地点活动。'
+  let blockedReason: string | null = prepared?.blockedReason ?? (!service ? '不存在的地点活动。'
     : service.id === CONSTRUCTION_BACKEND_JOB_ID && state.academics?.majorId !== 'computer-science' ? '这份招聘只接受计算机专业的应聘者。'
       : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
-      : !status ? '当前地点没有已设定的开放安排。' : null;
+      : !status ? '当前地点没有已设定的开放安排。' : null);
   if (!blockedReason && service?.id === COURT_OBSERVE_ID && state.courtroom?.active)
     blockedReason = '正式庭审正在进行，旁听不能插入玩家案件。';
   if (!blockedReason && (service?.id === 'construction-carry' || service?.id === CONSTRUCTION_BACKEND_JOB_ID)) {
@@ -280,5 +292,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     foodEnergy: playerAfter.foodEnergy - state.player.foodEnergy,
     balance: playerAfter.balance - state.player.balance,
   };
-  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason };
+  const blockedCode = prepared ? livehouseBlockedCode(blockedReason, prepared.blockedCode) : undefined;
+  const livehouse = prepared ? { ...prepared.facts, blockedCode: blockedCode ?? null, commit: blockedReason ? null : prepared.facts.commit } : undefined;
+  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason, ...(prepared ? { blockedCode, livehouse } : {}) };
 }

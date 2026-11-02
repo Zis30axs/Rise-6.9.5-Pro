@@ -158,6 +158,8 @@ export interface WorldState {
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
   livehouse?: import('../runtime/livehouse').LivehouseState;
+  /** Tickets already used and instrument practice. Absent on old saves; skill starts at 0. */
+  livehouseVisit?: import('../runtime/livehouse-visit').LivehouseVisitState;
   /** Shared profession cases and rewards, keyed by the responsible protagonist. */
   lawCareer?: import('../runtime/law-career').LawCareerState;
   /** Shared court docket, active trial, filings and saved verdicts; absent in older saves. */

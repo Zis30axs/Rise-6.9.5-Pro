@@ -34,6 +34,7 @@ import { courtStoryContext } from './courtroom';
 import { allResidentCast } from './npc-cast';
 import { npcProfession } from './npc-professions';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, getLocationStatus, getLocationServices, getLocationServiceQuote, locationServiceCatalog } from './location-services';
+import { livehouseBill } from './livehouse-visit';
 import { atMargoCafe, getCafeMenu } from './margo-cafe-menu';
 import { campusInteriors } from './campus-interiors';
 import { getAdjacentLocations } from './location-links';
@@ -472,9 +473,12 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           const quote = getLocationServiceQuote(snapshot, service.id);
           // The narrator knows the published job advert, not the secretly assigned work.
           if (service.reveal) return { id: service.id, label: service.label, description: service.description };
+          const { commit: _commit, ...livehouseFacts } = quote.livehouse ?? {};
           return { id: service.id, label: service.label, description: service.description, minutes: quote.minutes,
-            price: quote.price, ...(quote.payout ? { payout: quote.payout } : {}), changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason };
+            price: quote.price, ...(quote.payout ? { payout: quote.payout } : {}), changes: quote.changes, available: !quote.blockedReason, blockedReason: quote.blockedReason,
+            ...(quote.livehouse ? { blockedCode: quote.blockedCode ?? null, livehouse: livehouseFacts } : {}) };
         }),
+        ...(snapshot.locationId === 'livehouse' ? { livehouseBill: livehouseBill(snapshot) } : {}),
         locationDetails: locations.find(location => location.id === snapshot.locationId),
         contactProposal: contactProposalContext(snapshot),
         scene: worldSceneContext(snapshot),

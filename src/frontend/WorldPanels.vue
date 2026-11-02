@@ -22,6 +22,7 @@ import { gameCalendarOccasions, upcomingGameCalendarOccasions } from '../runtime
 import { diagnosePlayerIllnesses } from '../runtime/illness';
 import { resolveWeather, WEATHER_EFFECTS } from '../runtime/weather';
 import { lawCases, lawOwner } from '../runtime/law-career';
+import { instrumentSkill, INSTRUMENT_SKILL_CAP } from '../runtime/livehouse-visit';
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities';
@@ -68,6 +69,7 @@ const invitations = computed(() => invitationCards(props.model.state));
 const lifeRecap = computed(() => protagonistRecap(props.model.state));
 const lawProgress = computed(() => lawOwner(props.model.state));
 const inventoryCount = computed(() => props.model.state.inventory.reduce((sum, item) => sum + item.quantity, 0));
+const instrument = computed(() => instrumentSkill(props.model.state));
 const unreadFor = (npcId: string) => props.model.state.phone.filter(item => item.npcId === npcId && !item.read).length;
 const locationName = (id: string) => locations.find(item => item.id === id)?.name ?? '未知地点';
 async function travelToPlan(locationId: string) {
@@ -177,6 +179,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <section class="wp-status-overview" data-status-section="overview" aria-label="此刻状态"><div><small>{{ calendarLabel }} · {{ civilDay.weekdayLabel }} · {{ weatherText }} · 第 {{ model.state.clock.day }} 天</small><strong>{{ time }}</strong><h2>{{ currentLocation.name }}</h2><p v-if="registration">{{ registration }}</p><p>{{ model.busy ? '正在继续故事…' : '停留在这里，等待你的下一步行动。' }}</p></div><button class="wp-secondary" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'wait', minutes: 15 })">休息 15 分钟 ↗</button><p v-if="lastActivity" class="wp-last-activity">最近完成：{{ lastActivity.result }}</p></section>
       <section class="wp-status-section" data-status-section="body" aria-label="身体状态"><div class="wp-heading"><h2>身体状态</h2><small>当前值与变化来源</small></div><div class="wp-wellbeing"><article v-for="stat in bodyStats" :key="stat.id" class="wp-wellbeing-stat"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>{{ stat.id === 'foodEnergy' ? 'kcal' : '/ 100' }}</small></p><div class="wp-energy"><span :style="{ width: Math.min(100, Math.max(0, stat.value / stat.maximum * 100)) + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
       <section class="wp-status-section" data-status-section="mind" aria-label="精神与压力"><div class="wp-heading"><h2>精神与压力</h2><small>感受与负担</small></div><div class="wp-wellbeing wp-mind-stats"><article v-for="stat in mindStats" :key="stat.id" class="wp-wellbeing-stat" :class="{ 'wp-stress': stat.id === 'stress' }"><div class="wp-heading"><h2>{{ stat.label }}</h2><small>{{ stat.state }}</small></div><p :data-player-stat="stat.id"><strong>{{ formatGameNumber(stat.value) }}</strong><small>/ 100</small></p><div class="wp-energy"><span :style="{ width: stat.value + '%' }"></span></div><small>{{ stat.note }}</small></article></div></section>
+      <section class="wp-status-section" data-status-section="instrument" aria-label="乐器熟练度"><div class="wp-heading"><h2>乐器熟练度</h2><small>Live House 练习室</small></div><p data-player-stat="instrument"><strong>{{ instrument }}</strong><small>/ {{ INSTRUMENT_SKILL_CAP }}</small></p><div class="wp-energy"><span :style="{ width: instrument + '%' }"></span></div><small>在练习室练琴会增加。越接近上限，涨得越少。没练过是 0。</small></section>
       <section class="wp-status-section" data-status-section="social" aria-label="社交与邀约">
         <div class="wp-heading"><h2>社交与邀约</h2><small>相遇、联系和约定</small></div>
         <p class="wp-footnote">{{ invitations.length ? `邀约簿里记着 ${invitations.length} 份邀请与约定。` : '给想见的人留一句邀请，记下下一次见面的时间。' }}</p>
