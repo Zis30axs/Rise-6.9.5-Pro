@@ -11,7 +11,25 @@ on:
 permissions:
   contents: write
 jobs:
+  # One-time RC3.1 publication reuses the already released PNG's exact card
+  # data and patches only the Lite picker; the full ZIP build is skipped.
+  rc31_png_only:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[rc31-png-only]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish Lite RC3.1 PNG only (no ZIP and no build)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 scripts/publish_lite_rc31_png_only.py
   prerelease:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[rc31-png-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
