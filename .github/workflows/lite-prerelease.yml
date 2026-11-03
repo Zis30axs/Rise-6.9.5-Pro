@@ -29,6 +29,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RC31_PNG_ARTIFACT_ONLY: '1'
         run: python3 publish_rc31.py
+      - name: Verify RC3.1 PNG checksum against first successful patch
+        run: echo "6b58d6669066b9f39bcc321d5aa78063a339e8eda9a5ed2a0ea4d5731bbdaa31  unread-city-lite-v0.3.0-rc3.1-tauri.png" | sha256sum -c -
       - name: Upload RC3.1 PNG as downloadable GitHub Actions artifact
         uses: actions/upload-artifact@v4
         with:
