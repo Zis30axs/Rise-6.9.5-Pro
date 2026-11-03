@@ -53,6 +53,25 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
         return f'__UC_LITE_ASSET__("{sha}","{mime}")'
 
     compact = DATA_URL.sub(replace, source)
+    # CiRCLE's sandbox loader only accepts the inline data URL, and that ZIP is
+    # below the 30KB extraction threshold. Copy the same bytes into the offline
+    # archive so the installable pack still contains the resource. The importer
+    # requires every ZIP member to be listed, so this entry is part of the card.
+    circle_zip_path = ROOT / 'assets/circle-livehouse/packs/unread-city-circle-sandbox.zip'
+    circle_zip = circle_zip_path.read_bytes()
+    circle_sha = digest(circle_zip)
+    if len(circle_zip) != 3106 or circle_sha != 'a672bc73e7e571e842daef38fee08bc9b99954dc0339fce8d7ebe3633804f62e':
+        raise ValueError('CiRCLE 资源包与角色卡内嵌校验值不一致')
+    if circle_sha not in assets:
+        assets[circle_sha] = ('application/zip', circle_zip)
+    marina_dir = ROOT / 'assets/downtown-art/characters/marina/casual'
+    marina_missing = []
+    for pose in ('neutral', 'smile', 'surprised', 'cheerful'):
+        portrait = (marina_dir / f'{pose}.webp').read_bytes()
+        if digest(portrait) not in assets:
+            marina_missing.append(pose)
+    if marina_missing:
+        raise ValueError('麻里奈立绘未被拆进 Lite ZIP：' + ','.join(marina_missing))
     entries = [{'sha256': sha, 'mime': mime, 'bytes': len(raw), 'path': 'assets/' + sha}
                for sha, (mime, raw) in sorted(assets.items())]
     # The Tokyo sandbox GLB must be packaged inside the main Lite ZIP.
@@ -94,7 +113,9 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
               'deviceTested': False, 'tokyoSandboxSha256': TOKYO_SANDBOX_SHA256,
               'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES, 'tokyoSandboxExternalized': True,
               'tokyoSandboxSeparatePack': False, 'tokyoSandboxInCoreZip': True,
-              'tokyoSandboxArchive': 'unread-city-lite-assets.zip'}
+              'tokyoSandboxArchive': 'unread-city-lite-assets.zip',
+              'circleSandboxZipSha256': circle_sha, 'circleSandboxZipBytes': len(circle_zip),
+              'circleSandboxInCoreZip': True, 'marinaPortraitsExternalized': 4}
     return script, archive_bytes, report
 
 
