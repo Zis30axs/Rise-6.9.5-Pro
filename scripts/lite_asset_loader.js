@@ -162,31 +162,7 @@ function __ucPackButton(pack, installed) {
   button.style.cssText = 'position:fixed;right:12px;top:' + pack.top + ';z-index:2147483646;background:#173b50;color:white;border:1px solid #abd3e3;border-radius:10px;padding:9px 11px;font:13px system-ui;max-width:' + pack.width + ';';
   const input = host.createElement('input');
   input.type = 'file'; input.accept = pack.accept; input.hidden = true;
-  button.addEventListener('click', async () => {
-    button.disabled = true;
-    try {
-      if (typeof fetch === 'function') {
-        button.textContent = '正在自动导入...';
-        const resp = await fetch('/unread-city-lite-assets.zip');
-        if (resp.ok) {
-          const blob = await resp.blob();
-          await __ucPackImport(blob, pack, msg => { button.textContent = msg; });
-          const ok = await __ucPackHydrate(pack);
-          if (ok) {
-            button.textContent = '已安装完成';
-            button.remove();
-            input.remove();
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[UnreadCity Lite] 自动导入失败，改用手动选择文件：', e);
-    }
-    button.disabled = false;
-    button.textContent = pack.label;
-    input.click();
-  });
+  button.addEventListener('click', () => input.click());
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     if (!file) return;
@@ -206,19 +182,7 @@ function __ucPackButton(pack, installed) {
   window.addEventListener('pagehide', () => { button.remove(); input.remove(); }, {once: true});
 }
 async function __uc_lite_init__() {
-  let installed = await __ucPackHydrate(__UC_CORE_PACK__);
-  if (!installed && typeof fetch === 'function') {
-    try {
-      const resp = await fetch('/unread-city-lite-assets.zip');
-      if (resp.ok) {
-        const blob = await resp.blob();
-        await __ucPackImport(blob, __UC_CORE_PACK__, () => {});
-        installed = await __ucPackHydrate(__UC_CORE_PACK__);
-      }
-    } catch (e) {
-      console.warn('[UnreadCity Lite] 本地自动载入失败，保留手动按钮：', e);
-    }
-  }
+  const installed = await __ucPackHydrate(__UC_CORE_PACK__);
   __ucPackButton(__UC_CORE_PACK__, installed);
   window.addEventListener('pagehide', () => {
     for (const url of __UC_LITE_URLS__.values()) URL.revokeObjectURL(url);
