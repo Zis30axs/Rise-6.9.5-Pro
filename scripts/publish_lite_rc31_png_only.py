@@ -10,6 +10,7 @@ import base64
 import copy
 import hashlib
 import json
+import os
 import shutil
 import struct
 import subprocess
@@ -157,7 +158,8 @@ def main() -> None:
     if destination.exists():
         raise SystemExit(f"Refusing to overwrite: {destination}")
     run("gh", "auth", "status")
-    if subprocess.run(["gh", "release", "view", TARGET_TAG, "--repo", REPO],
+    artifact_only = os.environ.get("RC31_PNG_ARTIFACT_ONLY") == "1"
+    if not artifact_only and subprocess.run(["gh", "release", "view", TARGET_TAG, "--repo", REPO],
                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
         raise SystemExit(f"Release {TARGET_TAG} already exists; refusing to overwrite")
     with tempfile.TemporaryDirectory(prefix="lite-rc31-") as td:
@@ -172,6 +174,9 @@ def main() -> None:
         destination.write_bytes(result)
         digest = hashlib.sha256(result).hexdigest()
         print(f"Generated {destination.name}: {len(result):,} bytes, SHA-256 {digest}")
+        if artifact_only:
+            print("Prepared RC3.1 PNG for Actions artifact upload; no GitHub Release API call.")
+            return
         notes = folder / "release-notes.md"
         notes.write_text(
             "# Lite v0.3.0 RC3.1 - Manual ZIP picker fix\n\n"
