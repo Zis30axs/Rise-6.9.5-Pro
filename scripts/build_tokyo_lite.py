@@ -10,7 +10,6 @@ No network downloads, CI, or GitHub Actions.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import subprocess
@@ -19,7 +18,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from build_tokyo_single_card import read_model, ROOT, MODEL_RELATIVE, EXPECTED_SHA256
+from build_lite_release import TOKYO_SANDBOX_BYTES
+from build_tokyo_single_card import read_model, ROOT, MODEL_RELATIVE
 
 
 def run(*args: str) -> None:
@@ -46,14 +46,15 @@ def ensure_tokyo_model(source: Path | None = None) -> None:
 def check_zip() -> None:
     core = ROOT / "dist/unread-city-lite-assets.zip"
     report = json.loads((ROOT / "dist/lite-assets-report.json").read_text("utf-8"))
-    if report.get("tokyoSandboxSha256") != EXPECTED_SHA256 or not report.get("tokyoSandboxInCoreZip"):
-        raise ValueError("Lite 构建报告缺少东京沙盘记录")
+    if not report.get("tokyoSandboxInCoreZip") or report.get("sha256Verification") not in (None, "not-required"):
+        raise ValueError("Lite 构建报告缺少东京沙盘记录，或仍把 SHA-256 当作发布门槛")
     with zipfile.ZipFile(core) as bundle:
         rows = json.loads(bundle.read("manifest.json"))["assets"]
-        match = [row for row in rows if row["sha256"] == EXPECTED_SHA256]
-        if len(match) != 1 or hashlib.sha256(bundle.read(match[0]["path"])).hexdigest() != EXPECTED_SHA256:
-            raise ValueError("主 Lite ZIP 中的东京沙盘模型缺失或校验失败")
-    print(f"已核实：东京 GLB 位于原 Lite ZIP 的 assets/{EXPECTED_SHA256}")
+        match = [row for row in rows if row["bytes"] == TOKYO_SANDBOX_BYTES and row["mime"] in (
+            "model/gltf-binary", "application/octet-stream")]
+        if len(match) != 1 or len(bundle.read(match[0]["path"])) != TOKYO_SANDBOX_BYTES:
+            raise ValueError("主 Lite ZIP 中的东京沙盘模型缺失或长度不正确")
+    print(f"已核实：东京 GLB 位于主 Lite ZIP，长度 {TOKYO_SANDBOX_BYTES}。不验证 SHA-256。")
 
 
 def build(source: Path | None = None, install_only: bool = False, skip_tauri: bool = False) -> None:

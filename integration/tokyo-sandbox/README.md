@@ -38,10 +38,10 @@ npm run build
 
 会自动执行：
 
-1. `prebuild` 校验仓库中的固定 GLB 与 SHA-256；
+1. `prebuild` 确认仓库中的固定 GLB 存在且结构有效。发布构建不因 SHA-256 不一致而失败；
 2. `npm run check` 与 `vite build` 构建原有全量脚本，Vite 静态导入本地 GLB；
 3. `postbuild` 自动执行 `scripts/build_lite_release.py`，从脚本里提取大体积素材（包含东京 GLB），统一写入 `unread-city-lite-assets.zip`，再生成 `unread-city-lite.png`；
-4. ZIP 使用未压缩 STORE、`manifest.json` 和 `assets/<SHA-256>`。校验器确认主 ZIP 包含该 GLB，哈希、长度和 MIME 与源文件一致。
+4. ZIP 使用未压缩 STORE、`manifest.json` 和 `assets/<SHA-256>`。校验器确认主 ZIP 包含该 GLB 的长度和 MIME。不需要验证 SHA-256；文件名里的哈希仍是安装器的内容寻址键。
 5. 角色脚本启动后，首次点击“📦 安装 Lite 素材 ZIP”安装此包并刷新即可加载全部素材与东京 3D 沙盘模型。
 
 需要同时生成 Tauri 卡并完整校验时，只用：

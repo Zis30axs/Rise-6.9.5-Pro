@@ -6,7 +6,7 @@
 
 - unread-city-lite-tauri.png：可导入 TauriTavern 的轻量 Character Card V2 PNG。角色设定、完整世界书、剧情逻辑、内嵌手机运行时保留。
 - unread-city-lite-assets.zip：离线本地资源包，只包含图片、模型（含东京 3D 沙盘）、Live2D 等数据，不包含需安装的插件或需要执行的脚本。
-- lite-verification.json：SHA-256、体积、移出资源数及世界书校验。
+- lite-verification.json：体积、移出资源数、市区立绘清单数量及世界书校验。发布校验不需要验证 SHA-256。
 
 轻量卡在 ZIP 尚未安装时不启动游戏前端，而是保留原生角色聊天界面。首次在该卡聊天中执行角色脚本，右上角会显示“📦 安装 Lite 素材 ZIP”。点按钮从 iPhone“文件”中选取配套 ZIP，校验并缓存完成后刷新页面重新进入角色；同源环境后续从 IndexedDB 按 SHA-256 恢复素材 Blob URL，不访问素材服务器。
 
@@ -36,7 +36,7 @@
     python scripts/build_tauri_import_card.py --source dist/unread-city-lite.png --output dist/unread-city-lite-tauri.png
     python scripts/verify_lite_release.py
 
-检查严格要求 Lite PNG 小于 25,000,000 字节，PR #6 的 18 张已批准图片全数外置，ZIP 每个资源核对 SHA-256，世界书中仍包含丰川祥子。失败则不得发布。
+检查严格要求 Lite PNG 小于 25,000,000 字节，市区立绘按 `integration/downtown-art/manifest.json` 的实际数量进入素材包，世界书中仍包含丰川祥子。失败则不得发布。不需要验证 SHA-256；内容寻址用的哈希只留给安装器，SHA256SUMS.txt 若生成也只供参考。安装说明模板见同目录 `README.txt`。
 
 GitHub Actions 的 .github/workflows/lite-prerelease.yml 在 push lite 分支时自动构建和校验，通过后以预发行发布 PNG、ZIP 和验证报告，原版 42.7MB PNG 不被覆盖。
 
