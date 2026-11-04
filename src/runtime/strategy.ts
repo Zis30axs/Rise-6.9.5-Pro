@@ -40,6 +40,8 @@ export interface FocusDefinition {
   cancel?: Condition;
   bypass?: Condition;
   aiWeight: number;
+  /** Completion offers a one-shot, non-random Otherside scene if the owner is offscreen. */
+  important?: boolean;
   aiModifiers?: readonly { when: Condition; add: number }[];
   onComplete?: readonly StrategyEffect[];
 }
@@ -66,9 +68,11 @@ export interface StrategyHistory {
   id: string;
   at: number;
   owner: StrategyOwner;
-  kind: 'start' | 'complete' | 'cancel' | 'bypass' | 'decision' | 'spirit_expired';
+  kind: 'start' | 'complete' | 'cancel' | 'bypass' | 'decision' | 'spirit_expired' | 'narrative' | 'major_event';
   subject: string;
+  note?: string;
 }
+export interface StrategyMajor { id: string; owner: StrategyOwner; focusId: string; at: number }
 export interface StrategyState {
   version: 1;
   cursor: number;
@@ -77,6 +81,8 @@ export interface StrategyState {
   people: Record<StrategyOwner, StrategyPerson>;
   receipts: { id: string; command: string }[];
   history: StrategyHistory[];
+  /** Omitted by v1 saves written before focus milestone scenes existed. */
+  majorQueue?: StrategyMajor[];
 }
 export type StrategyCommand =
   | { type: 'set_control'; owner: StrategyOwner; controller: 'manual' | 'auto'; includeInPrompt: boolean }
@@ -95,12 +101,12 @@ export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', '
 export const FOCUS_CATALOG: readonly FocusDefinition[] = [
   { id: 'soyo_face_past', owner: 'soyo', title: '面对过去', durationMinutes: 1440, aiWeight: 60,
     onComplete: [{ type: 'set_flag', key: 'soyo_looked_back', value: true }] },
-  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '筹划重建 CRYCHIC', durationMinutes: 4320,
+  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '筹划重建 CRYCHIC', durationMinutes: 4320, important: true,
     prerequisites: { completed: 'soyo_face_past' }, available: { always: true },
     bypass: { flag: 'crychic_reunited' }, aiWeight: 100,
     aiModifiers: [{ when: { flag: 'sakiko_final_break' }, add: -10000 }],
     onComplete: [{ type: 'set_flag', key: 'soyo_rebuild_plan_ready', value: true }] },
-  { id: 'sakiko_redefine_band', owner: 'sakiko', title: '重新确立乐队方向', durationMinutes: 2880, aiWeight: 100,
+  { id: 'sakiko_redefine_band', owner: 'sakiko', title: '重新确立乐队方向', durationMinutes: 2880, aiWeight: 100, important: true,
     onComplete: [{ type: 'set_flag', key: 'sakiko_band_plan_ready', value: true }] },
   { id: 'emma_daily_circle', owner: 'emma', title: '维系大家的日常', durationMinutes: 2880, aiWeight: 100,
     onComplete: [{ type: 'set_flag', key: 'emma_circle_plan_ready', value: true }] },
@@ -129,6 +135,11 @@ const traitById = new Map(TRAIT_CATALOG.map(row => [row.id, row]));
 const spiritById = new Map(SPIRIT_CATALOG.map(row => [row.id, row]));
 const permittedFlags = new Set<string>(STRATEGY_FLAGS);
 const permittedStats = new Set<string>(STRATEGY_STATS);
+/** Bounded namespaced facts let story authors invent minor personal developments. */
+export const strategyLocalKey = (key: string, owner?: StrategyOwner): boolean =>
+  /^focus:(soyo|sakiko|emma|renako):[a-z][a-z0-9_]{0,31}$/.test(key) &&
+  (!owner || key.startsWith(`focus:${owner}:`));
+const MAX_DYNAMIC_KEYS = 32;
 const MAX_MINUTE = 525599999;
 const HISTORY_LIMIT = 300;
 const RECEIPT_LIMIT = 160;
@@ -155,26 +166,29 @@ export function createStrategyState(at: number): StrategyState {
   boundedInt(at, 0, MAX_MINUTE, '初始化时间');
   return { version: 1, cursor: at, flags: {}, stats: {},
     people: Object.fromEntries(STRATEGY_OWNERS.map(owner => [owner, personDefault(owner)])) as Record<StrategyOwner, StrategyPerson>,
-    receipts: [], history: [] };
+    receipts: [], history: [], majorQueue: [] };
 }
 
 /** Reject malformed or forged fields before they enter the authoritative save. */
 export function parseStrategyState(raw: unknown, at: number): StrategyState {
-  const s = record(raw, ['version','cursor','flags','stats','people','receipts','history'], '根');
+  const withQueue = !!raw && typeof raw === 'object' && Object.hasOwn(raw, 'majorQueue');
+  const s = record(raw, ['version','cursor','flags','stats','people','receipts','history', ...(withQueue ? ['majorQueue'] : [])], '根');
   if (s.version !== 1) fail('版本');
   const cursor = boundedInt(s.cursor, 0, at, '时钟');
   const flagsRaw = s.flags && typeof s.flags === 'object' && !Array.isArray(s.flags) ? s.flags as Record<string, unknown> : fail('标志');
-  if (Object.keys(flagsRaw).length > STRATEGY_FLAGS.length) fail('标志数量');
+  if (Object.keys(flagsRaw).length > STRATEGY_FLAGS.length + MAX_DYNAMIC_KEYS) fail('标志数量');
+  if (Object.keys(flagsRaw).filter(key=>strategyLocalKey(key)).length > MAX_DYNAMIC_KEYS) fail('动态标志数量');
   const flags: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(flagsRaw)) {
-    if (!permittedFlags.has(key) || typeof value !== 'boolean') fail('标志字段');
+    if (!(permittedFlags.has(key) || strategyLocalKey(key)) || typeof value !== 'boolean') fail('标志字段');
     flags[key] = value;
   }
   const statsRaw = s.stats && typeof s.stats === 'object' && !Array.isArray(s.stats) ? s.stats as Record<string, unknown> : fail('变量');
-  if (Object.keys(statsRaw).length > STRATEGY_STATS.length) fail('变量数量');
+  if (Object.keys(statsRaw).length > STRATEGY_STATS.length + MAX_DYNAMIC_KEYS) fail('变量数量');
+  if (Object.keys(statsRaw).filter(key=>strategyLocalKey(key)).length > MAX_DYNAMIC_KEYS) fail('动态变量数量');
   const stats: Record<string, number> = {};
   for (const [key, value] of Object.entries(statsRaw)) {
-    if (!permittedStats.has(key)) fail('变量名');
+    if (!(permittedStats.has(key) || strategyLocalKey(key))) fail('变量名');
     stats[key] = boundedInt(value, -10000, 10000, `变量 ${key}`);
   }
   const peopleRaw = record(s.people, STRATEGY_OWNERS, '人物');
@@ -225,16 +239,27 @@ export function parseStrategyState(raw: unknown, at: number): StrategyState {
   });
   unique(receipts.map(row => row.id), '请求回执');
   if (!Array.isArray(s.history) || s.history.length > HISTORY_LIMIT) fail('历史');
-  const kinds = new Set(['start','complete','cancel','bypass','decision','spirit_expired']);
+  const kinds = new Set(['start','complete','cancel','bypass','decision','spirit_expired','narrative','major_event']);
   const history: StrategyHistory[] = s.history.map(rawHistory => {
-    const row = record(rawHistory,['id','at','owner','kind','subject'],'历史条目');
+    const hasNote = !!rawHistory && typeof rawHistory === 'object' && Object.hasOwn(rawHistory,'note');
+    const row = record(rawHistory,['id','at','owner','kind','subject',...(hasNote?['note']:[])],'历史条目');
     const id=identifier(row.id,'历史 ID'), subject=identifier(row.subject,'历史对象');
     const owner = row.owner;
     if (!STRATEGY_OWNERS.some(value=>value===owner) || !kinds.has(String(row.kind))) fail('历史身份');
-    return { id, at: boundedInt(row.at,0,cursor,'历史时间'), owner: owner as StrategyOwner, kind: row.kind as StrategyHistory['kind'], subject };
+    if (hasNote && (typeof row.note !== 'string' || !row.note.trim() || row.note.length > 180)) fail('历史注记');
+    return { id, at: boundedInt(row.at,0,cursor,'历史时间'), owner: owner as StrategyOwner, kind: row.kind as StrategyHistory['kind'], subject, ...(hasNote?{ note: row.note as string }: {}) };
   });
   unique(history.map(row => row.id), '历史事件');
-  return { version:1, cursor, flags, stats, people, receipts, history };
+  const majorQueue: StrategyMajor[] = withQueue && Array.isArray(s.majorQueue) && s.majorQueue.length <= 16
+    ? s.majorQueue.map(rawItem => {
+      const row = record(rawItem,['id','owner','focusId','at'],'重大事件排队');
+      const owner = identifier(row.owner,'重大事件归属'), focusId=identifier(row.focusId,'重大事件国策');
+      if (!STRATEGY_OWNERS.includes(owner) || !focusById.get(focusId)?.important || focusById.get(focusId)?.owner!==owner
+        || !people[owner]?.completed.includes(focusId)) fail('重大事件需要已经完成的重要国策');
+      return {id:identifier(row.id,'重大事件 ID'),owner,focusId,at:boundedInt(row.at,0,cursor,'重大事件时间')};
+    }) : withQueue ? fail('重大事件队列') : [];
+  unique(majorQueue.map(row=>row.id),'重大事件队列');
+  return { version:1, cursor, flags, stats, people, receipts, history, majorQueue }; 
 }
 
 export interface ConditionContext { state: StrategyState; owner: StrategyOwner; at?: number }
@@ -319,7 +344,15 @@ function finishFocus(state:StrategyState,owner:StrategyOwner,kind:'complete'|'by
   const definition=focusById.get(focus.id)!;
   p.active=null;
   p.completed.push(focus.id);
-  if (kind==='complete') applyEffects(state,owner,definition.onComplete??[],at);
+  if (kind==='complete') {
+    applyEffects(state,owner,definition.onComplete??[],at);
+    if (definition.important) {
+      const queue = state.majorQueue ??= [];
+      const id = `major:${owner}:${at}:${focus.id}`;
+      if (!queue.some(row=>row.id===id)) queue.push({id,owner,focusId:focus.id,at});
+      if (queue.length > 16) queue.shift();
+    }
+  }
   pushHistory(state,owner,kind,focus.id,at);
 }
 export function applyStrategyCommand(state: StrategyState,command:StrategyCommand,requestId:string):StrategyState {
@@ -366,7 +399,6 @@ export function applyStrategyCommand(state: StrategyState,command:StrategyComman
 /** Event-boundary scheduler: all owners share one chronological clock. No model calls. */
 export function settleStrategyState(input: StrategyState, end: number): StrategyState {
   boundedInt(end, input.cursor, MAX_MINUTE, '结算时间');
-  if (end === input.cursor) return input;
   const state: StrategyState = structuredClone(input);
   let at = state.cursor, iterations = 0;
   const limit = 16 + FOCUS_CATALOG.length * 4 + SPIRIT_CATALOG.length * STRATEGY_OWNERS.length;
@@ -438,4 +470,29 @@ export function settleStrategyState(input: StrategyState, end: number): Strategy
   }
   state.cursor = end;
   return state;
+}
+
+/** LLM may propose bounded progress, never mark a focus completed by writing save fields. */
+export function adjustStrategyProgress(state: StrategyState, owner: StrategyOwner, focusId: string, delta: number): void {
+  const run = state.people[owner]?.active;
+  // Time advancement may have completed this focus before the response was committed.
+  if (!run || run.id !== focusId) return;
+  const def = focusById.get(focusId)!;
+  run.progress = Math.max(0, Math.round((run.progress + delta) * 100) / 100);
+  if (run.progress >= def.durationMinutes) finishFocus(state,owner,'complete',state.cursor);
+}
+
+/** Private all-knowing audit: this note must not appear in the active character's journal. */
+export function appendStrategyNarrativeAudit(state: StrategyState, id: string, owner: StrategyOwner, subject: string, note: string, major=false): void {
+  if (state.history.some(row => row.id===id)) return;
+  state.history.push({id,at:state.cursor,owner,kind:major?'major_event':'narrative',subject,note});
+  state.history=state.history.slice(-HISTORY_LIMIT);
+}
+
+export function consumeStrategyMajor(state: StrategyState, id: string, owner: StrategyOwner): StrategyMajor {
+  const queue = state.majorQueue ?? [];
+  const event = queue.find(row=>row.id===id && row.owner===owner);
+  if (!event) return fail('重大事件未被预先授权');
+  state.majorQueue = queue.filter(row=>row!==event);
+  return event;
 }
