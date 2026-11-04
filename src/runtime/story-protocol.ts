@@ -200,16 +200,6 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     tail = cleaned.slice(close ? close.index + close[0].length : end);
     break;
   }
-  if (!story) {
-    // A model that returns only ordinary prose should still produce a scene.
-    // Remove structural payloads before using free-form prose as the fallback.
-    story = cleaned
-      .replace(/<(phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue)>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<\/?story>/gi, '')
-      .replace(/^\[content\]\s*/i, '')
-      .trim();
-    tail = cleaned;
-  }
   if (!story) return null;
 
   const readJson = (name: string, kind: 'array' | 'object'): unknown => {
