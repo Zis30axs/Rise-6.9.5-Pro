@@ -2,6 +2,7 @@ import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteractio
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
+import { commitStrategyCommand } from './strategy-world';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
@@ -1689,6 +1690,10 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
   if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
+  if (action?.type === 'strategy') {
+    const prepared = enableProtagonists(before);
+    return parseState(commitStrategyCommand(prepared, action.requestId, action.command));
+  }
   if (action?.type === 'courtroom') {
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;

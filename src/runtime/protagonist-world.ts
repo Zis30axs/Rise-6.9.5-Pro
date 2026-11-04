@@ -15,6 +15,8 @@ import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settl
 import { createSocialSkills, parseSocialSkills, type SocialSkillState } from './social-skills';
 import { parseSocialInvitations, type SocialInvitation } from './natural-interactions';
 import { settleSocialAgendas } from './social-agenda';
+import { createStrategyState, parseStrategyState, type StrategyState } from './strategy';
+import { settleStrategyWorld } from './strategy-world';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -72,6 +74,8 @@ export interface ProtagonistWorld {
   socialSkills?: SocialSkillState;
   /** Shared invitation history, scoped by sender and message identity. */
   socialInvitations?: SocialInvitation[];
+  /** Offline focuses, traits, ideas and AI-control state, persisted on the shared game clock. */
+  strategy?: StrategyState;
 }
 export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -163,6 +167,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
     p.socialSkills ??= createSocialSkills();
+    p.strategy ??= createStrategyState(gameMinute(next));
     return next;
   }
   const point = sceneLandmarks.find(x => x.id === 'downtown')!;
@@ -180,6 +185,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
+  next.protagonists!.strategy = createStrategyState(gameMinute(next));
   // Other viewpoints start unassigned, even when the first protagonist has a major.
   return next;
 }
@@ -191,7 +197,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -314,6 +320,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   result.socialSkills = Object.hasOwn(p,'socialSkills') ? parseSocialSkills(p.socialSkills) : createSocialSkills();
   if (Object.hasOwn(p, 'socialInvitations')) result.socialInvitations = parseSocialInvitations(p.socialInvitations, gameMinute(base));
+  result.strategy = Object.hasOwn(p, 'strategy') ? parseStrategyState(p.strategy, gameMinute(base)) : createStrategyState(gameMinute(base));
   return result;
 }
 function isKnownLocation(locationId: string): boolean {
@@ -345,6 +352,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   if (elapsed < 0) fail('世界时钟不能倒退');
   const next={...after,schema_version:'1.13.0' as const,protagonists:p};
   settleBackgroundLife(before,next,reservedOtherSide);
+  settleStrategyWorld(before,next);
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);

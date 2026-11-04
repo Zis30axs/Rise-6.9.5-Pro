@@ -190,6 +190,7 @@ export type WorldAction =
   | { type: 'receive_cafe_gift'; offerId: string }
   | { type: 'switch_protagonist'; target: import('../runtime/dual-protagonists').ProtagonistId }
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
+  | { type: 'strategy'; requestId: string; command: import('../runtime/strategy').StrategyCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
   | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
