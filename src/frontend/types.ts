@@ -286,6 +286,10 @@ export interface OtherSideEvent {
 }
 
 export interface GeneratedStory {
+  /** Validated optional focus changes from the same existing narrative request. */
+  strategyUpdates?: import('../runtime/strategy-narrative').StrategyNarrativeUpdate[];
+  /** Only a real, authorized Otherside milestone can resolve this. */
+  strategyMajor?: import('../runtime/strategy-narrative').StrategyMajorUpdate[];
   otherSide?: OtherSideEvent[];
   returnStory?: string;
   text: string;

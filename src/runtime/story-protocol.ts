@@ -6,6 +6,7 @@ import { sceneLocationId } from './scene-context';
 import { otherSideOpportunity } from './other-side';
 import { validateContactProposals } from './npc-phone';
 import { validateStoryActions } from './story-actions';
+import { validateStrategyNarrativeUpdates, validateStrategyMajorUpdate } from './strategy-narrative';
 export { STORY_ACTION_LIMITS } from './story-actions';
 
 export const STORY_OUTPUT_LIMITS = {
@@ -14,6 +15,7 @@ export const STORY_OUTPUT_LIMITS = {
   phoneEvents: 8,
   worldEvents: 1,
   otherSideEvents: 3,
+  strategyUpdates: 4,
   otherSideText: 1200,
   storyReturnText: 2000,
   otherSideNpcEvents: 5,
@@ -127,7 +129,7 @@ export function validateOtherSideEvents(value: unknown, state: WorldState): Othe
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide', 'returnStory']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide', 'returnStory', 'strategyUpdates', 'strategyMajor']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -138,6 +140,18 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
   });
   const parsed: GeneratedStory = { text: story, phoneMessages };
   if (Object.hasOwn(result, 'otherSide')) parsed.otherSide = validateOtherSideEvents(result.otherSide, state);
+  if (Object.hasOwn(result, 'strategyUpdates'))
+    parsed.strategyUpdates = validateStrategyNarrativeUpdates(result.strategyUpdates, state.protagonists?.strategy);
+  if (Object.hasOwn(result, 'strategyMajor')) {
+    if (!Array.isArray(result.strategyMajor) || result.strategyMajor.length > 1) return invalid('重大国策事件数量');
+    const opportunity = otherSideOpportunity(state);
+    if (result.strategyMajor.length && (!opportunity.strategyMajor ||
+      !parsed.otherSide?.some(event => event.protagonists.includes(opportunity.strategyMajor!.owner))))
+      return invalid('重大国策事件必须有对应的合法旁线剧情');
+    parsed.strategyMajor = result.strategyMajor.map(update =>
+      validateStrategyMajorUpdate(update, state.protagonists?.strategy,
+        opportunity.strategyMajor!.id, opportunity.strategyMajor!.owner));
+  }
   if (Object.hasOwn(result, 'returnStory')) {
     if (!parsed.otherSide?.length) return invalid('story_continue 只能在真实旁线事件后使用');
     parsed.returnStory = text(result.returnStory, STORY_OUTPUT_LIMITS.storyReturnText, '回到当前视角的正文');
@@ -191,7 +205,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     let end = close?.index ?? cleaned.length;
     if (!close) {
       // Even an unclosed story can be recovered when data tags follow it.
-      const next = /<(?:phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue)>/i.exec(cleaned.slice(start));
+      const next = /<(?:phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue|strategy_updates|strategy_major)>/i.exec(cleaned.slice(start));
       if (next) end = start + next.index;
     }
     const candidate = cleaned.slice(start, end).trim();
@@ -227,6 +241,8 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
   const actions = readJson('world_actions', 'array');
   const events = readJson('world_events', 'array');
   const weekly = readJson('weekly_summary', 'object');
+  const strategyUpdates = readJson('strategy_updates', 'array');
+  const strategyMajor = readJson('strategy_major', 'array');
   const continued = Array.isArray(otherSide) && otherSide.length ? readText('story_continue') : undefined;
   return {
     story,
@@ -237,6 +253,8 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     ...(actions !== undefined ? { world_actions: actions } : {}),
     ...(events !== undefined ? { world_events: events } : {}),
     ...(weekly !== undefined ? { weekly_summary: weekly } : {}),
+    ...(strategyUpdates !== undefined ? { strategy_updates: strategyUpdates } : {}),
+    ...(strategyMajor !== undefined ? { strategy_major: strategyMajor } : {}),
   };
 }
 
@@ -252,7 +270,7 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
   if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
-  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests', 'other_side', 'story_continue']);
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests', 'other_side', 'story_continue', 'strategy_updates', 'strategy_major']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'contact_requests') ? { contactRequests: envelope.contact_requests } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'other_side') ? { otherSide: envelope.other_side } : {}),
@@ -260,6 +278,8 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_events') ? { worldEvents: envelope.world_events } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'world_actions') ? { worldActions: envelope.world_actions } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'weekly_summary') ? { weeklySummary: envelope.weekly_summary } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_updates') ? { strategyUpdates: envelope.strategy_updates } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_major') ? { strategyMajor: envelope.strategy_major } : {}),
   }, state);
 }
 
