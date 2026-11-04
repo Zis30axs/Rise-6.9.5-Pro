@@ -1,3 +1,4 @@
+import { socialEquipmentMultiplier } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { adjustEnergy } from './energy';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
@@ -140,6 +141,8 @@ export const INITIAL_LEVELS: Readonly<Record<ProtagonistId, readonly number[]>> 
 
 export interface SocialSkillPerson {
   xp: Record<SocialSkillId, number>;
+  /** Quarter-XP fractions stay with this person and skill across equipment changes. */
+  xpRemainders?: Partial<Record<SocialSkillId, number>>;
   daily: { day: number; earned: number };
   latest: { skillId: SocialSkillId; earned: number; energyCost: number; stressGain: number; day: number } | null;
 }
@@ -177,7 +180,16 @@ export function parseSocialSkills(raw: unknown): SocialSkillState {
   const peopleRaw = record(root.people, PROTAGONISTS, '主角列表');
   const people = {} as Record<ProtagonistId, SocialSkillPerson>;
   for (const owner of PROTAGONISTS) {
-    const row = record(peopleRaw[owner], ['xp', 'daily', 'latest'], owner);
+    const hasRemainders = !!peopleRaw[owner] && typeof peopleRaw[owner] === 'object' && Object.hasOwn(peopleRaw[owner], 'xpRemainders');
+    const row = record(peopleRaw[owner], ['xp', 'daily', 'latest', ...(hasRemainders ? ['xpRemainders'] : [])], owner);
+    const xpRemainders: Partial<Record<SocialSkillId, number>> = {};
+    if (hasRemainders) {
+      if (!row.xpRemainders || typeof row.xpRemainders !== 'object' || Array.isArray(row.xpRemainders)) throw new Error('社交经验零头无效');
+      for (const [skill, remainder] of Object.entries(row.xpRemainders)) {
+        if (!isSocialSkillId(skill)) throw new Error('社交经验零头的技能无效');
+        xpRemainders[skill] = integer(remainder, 0, 3, owner + '.xpRemainders.' + skill);
+      }
+    }
     const xpRaw = record(row.xp, SOCIAL_SKILL_IDS, owner + '.xp');
     const xp = {} as Record<SocialSkillId, number>;
     for (const id of SOCIAL_SKILL_IDS) xp[id] = integer(xpRaw[id], 0, XP_CAP, owner + '.' + id);
@@ -198,7 +210,7 @@ export function parseSocialSkills(raw: unknown): SocialSkillState {
       };
       if (latest.day > daily.day) throw new Error('社交能力最近记录日期无效');
     }
-    people[owner] = { xp, daily, latest };
+    people[owner] = { xp, daily, latest, ...(hasRemainders ? { xpRemainders } : {}) };
   }
   if (!Array.isArray(root.receipts) || root.receipts.length > 96 ||
     root.receipts.some(id => typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(id)) ||
@@ -258,7 +270,7 @@ export function socialSkillQuote(state: WorldState, owner: ProtagonistId, skillI
   };
 }
 
-export function applySocialSkillTurn(state: WorldState, actions: readonly StoryAction[], turnId: string): WorldState {
+export function applySocialSkillTurn(state: WorldState, actions: readonly StoryAction[], turnId: string, equipmentBefore: WorldState = state): WorldState {
   const awards = actions.filter((action): action is Extract<StoryAction, { type: 'social_skill' }> => action.type === 'social_skill');
   if (!awards.length) return state;
   if (awards.length !== 1 || !state.protagonists) throw new Error('社交能力结算需要一位当前主角和一项实际交流');
@@ -271,7 +283,19 @@ export function applySocialSkillTurn(state: WorldState, actions: readonly StoryA
   const quote = socialSkillQuote(state, owner, award.skillId, award.deviation);
   const person = skillState.people[owner];
   const earnedToday = person.daily.day === next.clock.day ? person.daily.earned : 0;
-  const gained = Math.max(0, Math.min(quote.possibleXp, DAILY_XP_CAP - earnedToday, XP_CAP - person.xp[award.skillId]));
+  const multiplier = socialEquipmentMultiplier(equipmentBefore, owner, actions);
+  const previousRemainder = person.xpRemainders?.[award.skillId] ?? 0;
+  const quarters = quote.possibleXp * multiplier * 4 + previousRemainder;
+  const wanted = Math.floor(quarters / 4);
+  const room = Math.max(0, Math.min(DAILY_XP_CAP - earnedToday, XP_CAP - person.xp[award.skillId]));
+  const gained = Math.min(wanted, room);
+  // Reaching a cap never banks rejected gains for a later day.
+  const remainder = wanted >= room ? 0 : quarters % 4;
+  if (remainder || person.xpRemainders) {
+    person.xpRemainders ??= {};
+    if (remainder) person.xpRemainders[award.skillId] = remainder;
+    else delete person.xpRemainders[award.skillId];
+  }
   person.xp[award.skillId] += gained;
   person.daily = { day: next.clock.day, earned: earnedToday + gained };
   next.player.energy = adjustEnergy(next.player.energy, -quote.energyCost);

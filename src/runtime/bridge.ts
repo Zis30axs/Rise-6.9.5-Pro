@@ -1,3 +1,4 @@
+import { equipmentContext, getEquipmentItem } from './equipment';
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, protagonistNames } from './protagonist-world';
@@ -151,6 +152,7 @@ const STORY_PROTOCOL_PARTS = [
   '余额、背包数量、健康、精神、压力、饱腹和食物能量由行动规则结算。叙事可描写本轮world_actions的实际过程与结束状态；已有journal只承接，不能重复扣钱、消耗物品或加减数值。对随机学习、交通结果不要预先编造精确点数或时长，下轮以保存记录为准。',
   'player.morale是0–100的游戏精神状态，越高表示越有精神；stress越高表示压力越大。学习消耗精力和精神、增加压力；整理、浏览书架及休息也有已由程序结算的身心变化，以journal和当前状态为准，不再加减。普通闲聊、观察和点击推进已有剧情不消耗精力或精神；真实费力社交可由明确的social_skill行动额外结算精力和压力，不可在activity中重复扣除。',
   'academics 是已确认的专业及多科学习进度；subjects 各有独立学习点、阶段与目标，timetable 是每周课程表，不等于已经出勤或学完。学习时由玩家选科，围绕 lastGain 中已完成的科目和实际结果承接叙事，不替玩家换科或虚构提升。教室只学本专业；图书馆学习、选书阅读和书店阅读可选其他专业科目。本专业每分钟1点；跨科由程序一次抽取灵感（25%，点数×1.5、额外精神+3压力−2）、困惑（25%，点数×0.5、额外精力−3精神−4压力+5）或普通（50%）。这些修正叠加常规学习消耗，实际数值以lastGain保存的净变化为准。',
+  'equipment 是本人合照的实际使用状态和按当前专业确定的效果。仅当玩家明确要求装备或卸下时提交 {"type":"equip","itemId":"crychic-photo"} 或 {"type":"unequip","itemId":"crychic-photo"}；不自主换装、不消耗或赠送合照。经验倍率由程序按动作顺序结算，不能另发奖励、修改倍率或重算历史。正常描写回忆对人物的影响，不在小说中解释数值协议。',
   'lastGain 是最近一次已保存的学习历史，只承接不重抽、不重复奖励。旧记录新增字段为null表示当时没有这些信息，不推断随机结果。普通对话、观察、整理、十分钟浏览书架和完成日程不增加学习点；打开课表、选科或切换场景也不会学习。阶段目标是游戏进度，不代表考试成绩、学位或现实资格。academics 为null时尚未选择，不代设专业或补发历史点数。',
   'travel沿用纯小说路线：基础精力消耗为原路线的0.1倍，再由出发时健康、饱腹和压力调整。精力不足不会阻止场景切换，只扣到0；学习、整理等耗能交互仍受资源限制。父地点与对应房间进出不重复计算长途旅行。',
   'venue提供当前地点营业时间和确定的营业状态，locationServices提供此地实际支持的菜单、活动、费用、时长及blockedReason。营业与否以这些数据为准，不再用灯光猜测或说不清是否营业；打烊时自然说明营业时间，临近关门无法完成的服务也不接受。serviceAlternatives是有同类服务的其他地点此刻状态，可提示由地图前往，但不承诺到达时仍营业。未配置服务的地点不杜撰店铺、商品或可用操作。唯一特殊入口是 courtObservation：即使当前位置为 courthouse 院前广场、locationServices 尚不列出室内 court-observe，也允许按上述自然语言旁听协议自动从入口进入法庭；开放与完整时长仍由程序验证。到达门外仍可观察，不因闭店禁止旅行。',
@@ -439,7 +441,10 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             totalPoints: overview.totalPoints, lastGain: overview.lastGain,
             timetable: topics.study ? getAcademicTimetable(snapshot.academics) : [] } : null;
         })(),
+        equipment: equipmentContext(snapshot),
         inventory: snapshot.inventory.map(entry => {
+          const gear = getEquipmentItem(entry.itemId);
+          if (gear) return { itemId: gear.id, name: gear.name, quantity: entry.quantity, unit: gear.unit, equipped: entry.equipped === true };
           const item = getStoreItem(entry.itemId)!;
           return { itemId: item.id, name: item.name, brand: item.brand, tier: item.tier, quantity: entry.quantity, unit: item.useUnit };
         }),

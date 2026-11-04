@@ -77,6 +77,8 @@ export interface PlayerState {
 
 export interface AcademicGain {
   subjectId: string;
+  /** Effect used at settlement, independent of the current equipment. */
+  equipmentProfile?: import('../runtime/equipment').EquipmentProfileId;
   minutes: number;
   points: number;
   totalPoints: number;
@@ -93,7 +95,7 @@ export interface AcademicState {
   majorId: string;
   /** Explicit legacy major correction; allows retained earned points without a fabricated last gain. */
   correction?: { previousMajorId: string; keepProgress: boolean };
-  /** Per-subject progress uses exact half points. */
+  /** Per-subject progress uses exact quarter points; unequipped study retains its original formula. */
   subjects: { subjectId: string; points: number }[];
   lastGain: AcademicGain | null;
 }
@@ -172,7 +174,7 @@ export interface WorldState {
   cooking?: import('../runtime/cooking').CookingState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
-  inventory: { itemId: string; quantity: number }[];
+  inventory: { itemId: string; quantity: number; equipped?: boolean }[];
   academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
   contacts: CharacterContact[];
@@ -197,6 +199,7 @@ export type WorldAction =
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'equip_item' | 'unequip_item'; itemId: string }
   | { type: 'use_item'; itemId: string }
   | { type: 'cook_begin'; recipeId: string }
   | { type: 'cook_cancel'; sessionId: string }
@@ -249,6 +252,7 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'equip' | 'unequip'; itemId: string }
   | { type: 'use'; itemId: string }
   | { type: 'interact'; interactionId: string }
   | { type: 'study'; subjectId: string; minutes: number }

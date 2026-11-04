@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/runtime/equipment.ts",
+    "src/runtime/model.ts",
+    "src/runtime/social-skills.ts",
+    "src/runtime/bridge.ts",
+    "src/runtime/story-actions.ts",
+    "src/frontend/InventoryPanel.vue",
+    "src/frontend/interaction-controller.ts",
+    "tests/equipment.test.ts",
+    "tests/equipment-ui.test.ts",
+    "vitest.equipment.config.mts"
+  ],
+  "exclude": []
+}

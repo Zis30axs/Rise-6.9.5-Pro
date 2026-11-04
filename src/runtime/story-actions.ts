@@ -1,3 +1,4 @@
+import { getEquipmentItem } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONISTS } from './dual-protagonists';
@@ -69,6 +70,13 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     const path = `行动 ${index + 1}`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return invalid(path);
     switch ((raw as Record<string, unknown>).type) {
+      case 'equip':
+      case 'unequip': {
+        const item = record(raw, ['type', 'itemId'], path);
+        const itemId = text(item.itemId, 100, path + '.itemId');
+        if (!getEquipmentItem(itemId)) return invalid(path + '.itemId');
+        return { type: item.type as 'equip' | 'unequip', itemId };
+      }
       case 'go_home': {
         record(raw, ['type'], path);
         return { type: 'go_home' };

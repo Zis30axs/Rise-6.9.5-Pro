@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { equipmentCatalog, equipmentQuote } from '../runtime/equipment';
 import StoreProductImage from './StoreProductImage.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
@@ -11,7 +12,22 @@ const entries = computed(() => getInventoryCatalog().flatMap(item => {
   const quote = getUseItemQuote(props.model.state, item.id);
   return quote.owned > 0 ? [{ item, quote }] : [];
 }));
+const owner = computed(() => props.model.state.protagonists?.accounts.active ?? 'soyo');
+const equipmentEntries = computed(() => equipmentCatalog.flatMap(item => {
+  const quote = equipmentQuote(props.model.state, owner.value, item.id);
+  return props.model.state.inventory.some(row => row.itemId === item.id) ? [{ item, quote }] : [];
+}));
 const receipt = ref('');
+watch(owner, () => { receipt.value = ''; });
+function equipItem(itemId: string) {
+  const quote = equipmentQuote(props.model.state, owner.value, itemId);
+  if (props.model.busy || props.model.switchingProtagonist || quote.blockedReason) return;
+  receipt.value = '';
+  props.actions.dispatch({ type: quote.equipped ? 'unequip_item' : 'equip_item', itemId });
+  const after = equipmentQuote(props.model.state, owner.value, itemId);
+  if (after.equipped !== quote.equipped)
+    receipt.value = after.equipped ? `已装备${quote.item!.name}。` : `已收起${quote.item!.name}。`;
+}
 type UseQuote = ReturnType<typeof getUseItemQuote>;
 type ChangeKey = keyof UseQuote['changes'];
 const effectLabels: Record<ChangeKey, string> = {
@@ -34,9 +50,16 @@ async function useItem(itemId: string) {
 
 <template>
   <section class="inventory-panel" data-inventory-panel aria-label="随身背包">
-    <header class="inventory-heading"><div><h2>随身背包</h2><p>购买和打包的物品放在这里，使用时才结算效果。也可以在故事中提出送给某位联系人。</p></div><span class="inventory-count">{{ entries.length }} 种物品</span></header>
+    <header class="inventory-heading"><div><h2>随身背包</h2><p>随身物品与珍藏都放在这里。珍藏可以装备或收起，也可以在故事中提出。</p></div><span class="inventory-count">{{ entries.length + equipmentEntries.length }} 种物品</span></header>
     <p v-if="receipt" class="inventory-receipt" role="status" data-use-receipt>{{ receipt }}</p>
-    <div v-if="entries.length" class="inventory-list">
+    <div v-if="entries.length || equipmentEntries.length" class="inventory-list" aria-label="背包物品">
+      <article v-for="{ item, quote } in equipmentEntries" :key="item.id" class="inventory-item" :data-equipment-item="item.id">
+        <div class="inventory-item-heading"><div class="inventory-item-title"><small>随身珍藏</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-equipment-status>{{ quote.equipped ? '使用中' : '已收起' }}</span></div>
+        <p class="inventory-serving">{{ quote.profile?.description ?? item.description }}</p>
+        <p v-if="quote.profile" class="inventory-actual-effects" data-equipment-effects>音乐学习经验 ×{{ quote.profile.music }}<template v-if="!quote.profile.musicMajor"> · 当前专业经验 ×{{ quote.profile.major }}</template> · 社交经验 ×{{ quote.profile.social }}</p>
+        <p v-else class="inventory-serving">确认专业后，这份回忆对学习与交往的影响也会随之明确。</p>
+        <div class="inventory-use-row"><small>{{ quote.blockedReason ?? '装备后生效 · 不会消耗' }}</small><button type="button" class="inventory-use" :disabled="model.busy || model.switchingProtagonist || !!quote.blockedReason" :aria-label="`${quote.equipped ? '卸下' : '装备'}${item.name}`" @click="equipItem(item.id)">{{ quote.equipped ? '卸下' : '装备' }}</button></div>
+      </article>
       <article v-for="{ item, quote } in entries" :key="item.id" class="inventory-item" :data-inventory-product="item.id">
         <div class="inventory-item-heading"><StoreProductImage :item-id="item.id" :name="item.name" class="inventory-product-image" /><div class="inventory-item-title"><small>{{ item.brand }}</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-inventory-quantity>{{ quote.owned }} {{ item.useUnit }}</span></div>
         <p class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
@@ -44,7 +67,7 @@ async function useItem(itemId: string) {
         <div class="inventory-use-row"><small v-if="quote.blockedReason" class="inventory-blocked">{{ quote.blockedReason }}</small><small v-else>使用 1 {{ item.useUnit }}</small><button type="button" class="inventory-use" :aria-label="`使用${item.name}`" :disabled="model.busy || !!quote.blockedReason" @click="useItem(item.id)">使用<span aria-hidden="true"> ↗</span></button></div>
       </article>
     </div>
-    <p v-else class="inventory-empty">背包还是空的。可以在便利店购买，在玛格咖啡馆买一杯带走，或把咖啡、甜点与餐食打包带走。</p>
+    <p v-if="!entries.length && !equipmentEntries.length" class="inventory-empty">背包还是空的。可以在便利店购买，在玛格咖啡馆买一杯带走，或把咖啡、甜点与餐食打包带走。</p>
     <p v-if="entries.length" class="inventory-effect-note">预览已计入使用耗时与状态上下限；数值为 0 时，本次该项状态不变。</p>
   </section>
 </template>
