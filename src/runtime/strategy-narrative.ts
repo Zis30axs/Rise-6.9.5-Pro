@@ -4,7 +4,7 @@
  * This module is deliberately pure and has no model/provider dependency.
  */
 import {
-  FOCUS_CATALOG, STRATEGY_FLAGS, STRATEGY_STATS, STRATEGY_OWNERS,
+  FOCUS_CATALOG, STRATEGY_STATS, STRATEGY_OWNERS,
   adjustStrategyProgress, appendStrategyNarrativeAudit, consumeStrategyMajor,
   parseStrategyState, settleStrategyState, strategyLocalKey,
   type Condition, type StrategyOwner, type StrategyState,
@@ -28,10 +28,7 @@ export interface StrategyMajorUpdate {
   stats?: Record<string, number>;
 }
 
-const flagNames = new Set<string>(STRATEGY_FLAGS);
 const statNames = new Set<string>(STRATEGY_STATS);
-const MAJOR_ONLY_FLAGS = new Set(['sakiko_final_break','crychic_reunited',
-  'soyo_looked_back','soyo_rebuild_plan_ready','sakiko_band_plan_ready','emma_circle_plan_ready','renako_circle_plan_ready']);
 const LIMIT = 4;
 function invalid(reason: string): never { throw new Error(`国策剧情更新无效：${reason}`); }
 function object(raw: unknown, required: readonly string[], optional: readonly string[], name: string): Record<string, unknown> {
@@ -56,12 +53,16 @@ function boundedDeltas(raw: unknown, maxKeys: number, amountLimit: number, owner
   }
   return parsed;
 }
-function boundedFlags(raw: unknown, maxKeys: number, allowImportant: boolean, owner:StrategyOwner): Record<string, boolean> {
-  const row = object(raw, [], [...STRATEGY_FLAGS,...Object.keys(raw && typeof raw==='object' && !Array.isArray(raw)?raw:{})], '世界标志');
+function boundedFlags(raw: unknown, maxKeys: number, owner:StrategyOwner, majorFocusId?:string): Record<string, boolean> {
+  const row = object(raw, [], Object.keys(raw && typeof raw==='object' && !Array.isArray(raw)?raw:{}), '世界标志');
   if (!Object.keys(row).length || Object.keys(row).length > maxKeys) invalid('世界标志数量');
   const parsed: Record<string,boolean>={};
   for (const [key,value] of Object.entries(row)) {
-    if (!(strategyLocalKey(key,owner) || allowImportant && flagNames.has(key)) || typeof value!=='boolean' || (!allowImportant && MAJOR_ONLY_FLAGS.has(key)))
+    // A global outcome cannot be declared by an unrelated personal focus.
+    // Band reunion must wait for verified consent and organization state.
+    const approvedWorldFact = key==='sakiko_final_break' && owner==='sakiko'
+      && majorFocusId==='sakiko_redefine_band' && value===true;
+    if (!(strategyLocalKey(key,owner) || approvedWorldFact) || typeof value!=='boolean')
       invalid(`标志 ${key} 只能通过授权的重大事件变更`);
     parsed[key]=value;
   }
@@ -87,7 +88,7 @@ export function validateStrategyNarrativeUpdates(raw: unknown, state: StrategySt
       result.progressDelta=row.progressDelta;
     }
     if (Object.hasOwn(row,'stats')) result.stats=boundedDeltas(row.stats,3,10,owner);
-    if (Object.hasOwn(row,'flags')) result.flags=boundedFlags(row.flags,2,false,owner);
+    if (Object.hasOwn(row,'flags')) result.flags=boundedFlags(row.flags,2,owner);
     if (result.progressDelta===undefined && !result.stats && !result.flags) invalid('更新必须产生实际改变');
     return result;
   });
@@ -95,11 +96,12 @@ export function validateStrategyNarrativeUpdates(raw: unknown, state: StrategySt
 
 export function validateStrategyMajorUpdate(raw: unknown, state: StrategyState | undefined, majorId: string, owner: StrategyOwner): StrategyMajorUpdate {
   const row=object(raw,['majorId','owner','note'],['stats','flags'],'重大国策事件');
-  if (!state?.majorQueue?.some(q=>q.id===majorId && q.owner===owner) || row.majorId!==majorId || row.owner!==owner)
+  const milestone=state?.majorQueue?.find(q=>q.id===majorId && q.owner===owner);
+  if (!milestone || row.majorId!==majorId || row.owner!==owner)
     invalid('重大事件未由程序授权');
   const result:StrategyMajorUpdate={majorId,owner,note:note(row.note)};
   if (Object.hasOwn(row,'stats')) result.stats=boundedDeltas(row.stats,3,20,owner);
-  if (Object.hasOwn(row,'flags')) result.flags=boundedFlags(row.flags,3,true,owner);
+  if (Object.hasOwn(row,'flags')) result.flags=boundedFlags(row.flags,3,owner,milestone.focusId);
   return result;
 }
 
@@ -161,8 +163,9 @@ export function commitStrategyNarrative(
   const result:StrategyState=structuredClone(after);
   for (const update of routine) {
     // The focus may have ended naturally during this turn's in-game time advance.
-    if (result.people[update.owner].active?.id===update.focusId && update.progressDelta!==undefined)
-      adjustStrategyProgress(result,update.owner,update.focusId,update.progressDelta);
+    // Reject changes based on a stale focus that completed during time advancement.
+    if (result.people[update.owner].active?.id!==update.focusId) continue;
+    if (update.progressDelta!==undefined) adjustStrategyProgress(result,update.owner,update.focusId,update.progressDelta);
     effects(result,update.flags,update.stats);
     appendStrategyNarrativeAudit(result,`${receiptId}:${update.owner}`,update.owner,update.focusId,update.note);
   }

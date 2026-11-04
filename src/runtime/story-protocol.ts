@@ -142,6 +142,11 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
   if (Object.hasOwn(result, 'otherSide')) parsed.otherSide = validateOtherSideEvents(result.otherSide, state);
   if (Object.hasOwn(result, 'strategyUpdates'))
     parsed.strategyUpdates = validateStrategyNarrativeUpdates(result.strategyUpdates, state.protagonists?.strategy);
+  // A model cannot quietly perform offscreen deeds outside an actual scene.
+  // The local clock may still advance every owner's focused plan in the background.
+  if (parsed.strategyUpdates?.some(update => update.owner !== state.protagonists?.accounts.active &&
+    !parsed.otherSide?.some(event => event.protagonists.includes(update.owner as 'soyo' | 'sakiko' | 'emma' | 'renako'))))
+    return invalid('非当前主角的国策更新必须附带获准的旁线事件');
   if (Object.hasOwn(result, 'strategyMajor')) {
     if (!Array.isArray(result.strategyMajor) || result.strategyMajor.length > 1) return invalid('重大国策事件数量');
     const opportunity = otherSideOpportunity(state);

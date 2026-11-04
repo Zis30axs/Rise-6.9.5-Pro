@@ -3,6 +3,7 @@ import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './n
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { commitStrategyCommand } from './strategy-world';
+import { commitStrategyNarrative } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
@@ -1798,7 +1799,8 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
-  const needsWorld = result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type));
+  const needsWorld = !!(result.strategyUpdates?.length || result.strategyMajor?.length || result.otherSide?.length ||
+    result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type)));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
@@ -1806,13 +1808,19 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
   // A replay is checked against the stored, signed side-effect receipt rather
   // than re-rolling the probability gate against a state that already advanced.
-  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = result;
+  // Saved turns cannot re-roll an exhausted opportunity, but their exact
+  // structured effects must still match the original narrative receipt.
+  const { otherSide: requestedSide, returnStory: requestedReturn,
+    strategyUpdates: requestedUpdates, strategyMajor: requestedMajor, ...withoutSide } = result;
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
-      ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
+      ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}),
+      ...(requestedUpdates !== undefined ? { strategyUpdates: requestedUpdates } : {}),
+      ...(requestedMajor !== undefined ? { strategyMajor: requestedMajor } : {}) }
     : validateGeneratedStory(result, before);
-  const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
+  const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
+    strategyUpdates, strategyMajor, ...legacyResult } = validated;
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
   const narrativeActions = legacyResult.worldActions ?? [];
@@ -1824,6 +1832,17 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId, withAgenda);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
+  if (next.protagonists) {
+    const oldStrategy = before.protagonists?.strategy;
+    const newStrategy = next.protagonists.strategy;
+    if (!oldStrategy || !newStrategy) throw new Error('国策存档未初始化，拒绝提交不完整的剧情效果');
+    const saved = commitStrategyNarrative(oldStrategy, newStrategy,
+      strategyUpdates ?? [], strategyMajor ?? [], ids.assistantId);
+    if (saved !== newStrategy) {
+      next.protagonists.strategy = saved;
+      next.protagonists.revision++;
+    }
+  }
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
