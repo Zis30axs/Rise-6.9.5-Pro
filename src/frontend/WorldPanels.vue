@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import WorldMap from './WorldMap.vue';
 import StoryEngineSettings from './StoryEngineSettings.vue';
+import StrategyStatusHero from './StrategyStatusHero.vue';
 import AcademicProgress from './AcademicProgress.vue';
 import SocialSkills from './SocialSkills.vue';
 import { invitationCards } from './invitation-book';
@@ -167,6 +168,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <SocialSkills :state="model.state" />
     </template>
     <template v-else-if="panel === 'status'">
+      <StrategyStatusHero :state="model.state" />
       <StoryEngineSettings :memory-scope="model.memoryScope || ''" />
       <details v-if="model.state.protagonists" class="wp-status-section" data-testid="protagonist-recap" :data-owner="protagonist" open>
         <summary>{{ protagonistNames[protagonist] }} · 各自的日常</summary>
