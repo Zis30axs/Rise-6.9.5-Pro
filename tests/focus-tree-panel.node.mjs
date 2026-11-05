@@ -19,3 +19,9 @@ test('focus menu is visible through existing app shell without replacing persona
  assert.match(world,/<FocusTreePanel :model="model" :actions="actions"\s*\/>/);
  assert.match(world,/panel === 'status'/);
 });
+
+test('two local branch artworks and route lock are present',()=>{
+  for(const asset of ['crychic-branch.webp','mygo-branch.webp']) assert.ok(focus.includes(asset));
+  assert.ok(focus.includes('focusBranchLocked'));
+  assert.ok(focus.includes('互斥路线'));
+});

@@ -40,13 +40,13 @@ test('independent automation, progress, completion effect, and time-slice determ
   assert.deepEqual(long.people.soyo.completed,['soyo_face_past','soyo_rebuild_crychic']);
   assert.deepEqual(long.people.sakiko.completed,[]);
 });
-test('negative AI score keeps reassembly route unselected while manual start remains legal',()=>{
+test('secret -10000 redirects AI to MyGO while manual CRYCHIC remains legal',()=>{
   let s=createStrategyState(0);
   s.flags.sakiko_final_break=true;
   s.people.soyo.completed=['soyo_face_past'];
   let auto=command(s,{type:'set_control',owner:'soyo',controller:'auto',includeInPrompt:false},'auto');
   auto=settleStrategyState(auto,200);
-  assert.equal(auto.people.soyo.active,null);
+  assert.equal(auto.people.soyo.active?.id,'soyo_mygo_future');
   let manual=command(s,{type:'start_focus',owner:'soyo',focusId:'soyo_rebuild_crychic'},'manual');
   assert.equal(manual.people.soyo.active.id,'soyo_rebuild_crychic');
 });
@@ -83,4 +83,25 @@ test('modifier details expose trait source, not an invented global bonus',()=>{
   const score=calculateModifier({state:s,owner:'soyo'},'focus_ai_weight',100,'soyo_rebuild_crychic');
   assert.equal(score.value,150);
   assert.equal(score.breakdown[0].source,'trait:soyo_crychic_obsession');
+});
+
+test('CRYCHIC and MyGO are mutually exclusive Soyo branch focuses',()=>{
+  const crychic=FOCUS_CATALOG.find(f=>f.id==='soyo_rebuild_crychic');
+  const mygo=FOCUS_CATALOG.find(f=>f.id==='soyo_mygo_future');
+  assert.equal(crychic.branchGroup,mygo.branchGroup);
+  let s=createStrategyState(0);
+  s.people.soyo.completed=['soyo_face_past'];
+  assert.equal(canStartFocus(s,'soyo',crychic),true);
+  assert.equal(canStartFocus(s,'soyo',mygo),true);
+  s=command(s,{type:'start_focus',owner:'soyo',focusId:'soyo_mygo_future'},'mygo-start');
+  s=settleStrategyState(s,4320);
+  assert.equal(s.flags.soyo_mygo_plan_ready,true);
+  assert.equal(s.people.soyo.completed.includes('soyo_mygo_future'),true);
+  assert.equal(canStartFocus(s,'soyo',crychic),false);
+  assert.equal(s.flags.soyo_rebuild_plan_ready,undefined);
+  assert.throws(()=>command(s,{type:'start_focus',owner:'soyo',focusId:'soyo_rebuild_crychic'},'try-crychic'),/未满足/);
+  assert.deepEqual(parseStrategyState(JSON.parse(JSON.stringify(s)),4320),s);
+  const old=createStrategyState(0);
+  old.people.soyo.completed=['soyo_face_past','soyo_rebuild_crychic'];
+  assert.equal(canStartFocus(old,'soyo',mygo),false,'old completed route locks newly added branch');
 });

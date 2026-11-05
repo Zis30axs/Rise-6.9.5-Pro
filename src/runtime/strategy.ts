@@ -42,6 +42,8 @@ export interface FocusDefinition {
   aiWeight: number;
   /** Completion offers a one-shot, non-random Otherside scene if the owner is offscreen. */
   important?: boolean;
+  /** Completing any focus in a branch permanently locks the alternatives. */
+  branchGroup?: string;
   aiModifiers?: readonly { when: Condition; add: number }[];
   onComplete?: readonly StrategyEffect[];
 }
@@ -93,7 +95,7 @@ export type StrategyCommand =
 /** Registered world facts, not arbitrary paths into the save file. */
 export const STRATEGY_FLAGS = [
   'sakiko_final_break', 'crychic_reunited', 'soyo_looked_back', 'soyo_rebuild_plan_ready',
-  'sakiko_band_plan_ready', 'emma_circle_plan_ready', 'renako_circle_plan_ready',
+  'sakiko_band_plan_ready', 'emma_circle_plan_ready', 'renako_circle_plan_ready', 'soyo_mygo_plan_ready',
 ] as const;
 export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', 'renako_confidence'] as const;
 
@@ -101,11 +103,15 @@ export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', '
 export const FOCUS_CATALOG: readonly FocusDefinition[] = [
   { id: 'soyo_face_past', owner: 'soyo', title: '面对过去', durationMinutes: 1440, aiWeight: 60,
     onComplete: [{ type: 'set_flag', key: 'soyo_looked_back', value: true }] },
-  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '筹划重建 CRYCHIC', durationMinutes: 4320, important: true,
+  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '筹划重建 CRYCHIC', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
     prerequisites: { completed: 'soyo_face_past' }, available: { always: true },
     bypass: { flag: 'crychic_reunited' }, aiWeight: 100,
     aiModifiers: [{ when: { flag: 'sakiko_final_break' }, add: -10000 }],
     onComplete: [{ type: 'set_flag', key: 'soyo_rebuild_plan_ready', value: true }] },
+  { id: 'soyo_mygo_future', owner: 'soyo', title: '走向 MyGO!!!!!', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
+    prerequisites: { completed: 'soyo_face_past' }, aiWeight: 90,
+    // This is Soyo's choice to cooperate, not an automatic band membership change.
+    onComplete: [{ type: 'set_flag', key: 'soyo_mygo_plan_ready', value: true }] },
   { id: 'sakiko_redefine_band', owner: 'sakiko', title: '重新确立乐队方向', durationMinutes: 2880, aiWeight: 100, important: true,
     onComplete: [{ type: 'set_flag', key: 'sakiko_band_plan_ready', value: true }] },
   { id: 'emma_daily_circle', owner: 'emma', title: '维系大家的日常', durationMinutes: 2880, aiWeight: 100,
@@ -307,9 +313,15 @@ export function focusWeight(state: StrategyState, owner: StrategyOwner, focus: F
   }
   return {value:Math.round(value*100)/100,breakdown:score.breakdown};
 }
+/** Exclusive branches share the same owner and permanently lock after completion. */
+export function focusBranchLocked(state: StrategyState,owner: StrategyOwner, focus: FocusDefinition): boolean {
+  if (!focus.branchGroup) return false;
+  return FOCUS_CATALOG.some(other => other.owner===owner && other.id!==focus.id &&
+    other.branchGroup===focus.branchGroup && state.people[owner].completed.includes(other.id));
+}
 export function canStartFocus(state: StrategyState,owner: StrategyOwner, focus: FocusDefinition): boolean {
   const p=state.people[owner],ctx={state,owner};
-  return focus.owner===owner && !p.completed.includes(focus.id) &&
+  return focus.owner===owner && !p.completed.includes(focus.id) && !focusBranchLocked(state,owner,focus) &&
     (!focus.prerequisites || checkCondition(focus.prerequisites,ctx)) &&
     (!focus.available || checkCondition(focus.available,ctx)) &&
     (!focus.cancel || !checkCondition(focus.cancel,ctx)) &&

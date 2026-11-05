@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import crychicBranchIcon from './assets/focus/crychic-branch.webp';
+import mygoBranchIcon from './assets/focus/mygo-branch.webp';
 import type { ShellActions, ShellModel } from './types';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import {
   FOCUS_CATALOG, DECISION_CATALOG, TRAIT_CATALOG, SPIRIT_CATALOG,
-  canStartFocus, checkCondition, createStrategyState, focusWeight,
+  canStartFocus, checkCondition, createStrategyState, focusWeight, focusBranchLocked,
   type FocusDefinition, type DecisionDefinition, type StrategyCommand,
 } from '../runtime/strategy';
 
@@ -19,6 +21,12 @@ const history = computed(() => state.value.history.filter(row => row.owner === a
 const current = computed(() => FOCUS_CATALOG.find(row => row.id === profile.value.active?.id) ?? null);
 const traits = computed(() => profile.value.traits.flatMap(id => TRAIT_CATALOG.filter(row => row.id === id)));
 const spirits = computed(() => profile.value.spirits.flatMap(item => SPIRIT_CATALOG.filter(row => row.id === item.id)));
+const focusArtwork: Readonly<Record<string,string>> = {
+  soyo_rebuild_crychic: crychicBranchIcon,
+  soyo_mygo_future: mygoBranchIcon,
+};
+const focusIcon = (id: string): string | null => focusArtwork[id] ?? null;
+const hasBranches = computed(() => focuses.value.some(f => !!f.branchGroup));
 const feedback = ref('');
 let serial = 0;
 function dispatch(command: StrategyCommand) {
@@ -41,6 +49,7 @@ function available(focus: FocusDefinition) { return canStartFocus(state.value, a
 function status(focus: FocusDefinition) {
   if (profile.value.completed.includes(focus.id)) return '已完成';
   if (profile.value.active?.id === focus.id) return '进行中';
+  if (focusBranchLocked(state.value, actor.value, focus)) return '路线已锁定';
   if (!available(focus)) return '尚未解锁';
   return '可执行';
 }
@@ -90,8 +99,11 @@ function sourceName(id: string) {
     <p class="focus-note">AI 选择由本地权重计算，重大转折须经合法剧情事件。人物不会自动知晓其他人的秘密。</p>
 
     <h3>个人国策树</h3>
-    <div class="focus-tree">
-      <article v-for="focus in focuses" :key="focus.id" class="focus-card" :class="{'active':profile.active?.id===focus.id,done:profile.completed.includes(focus.id)}">
+    <p v-if="hasBranches" class="focus-note">分叉路线：完成其中一条后，另一条将永久锁定。国策完成只代表人物的计划，不会强制其他人加入乐队。</p>
+    <div class="focus-tree" :class="{'has-branches':hasBranches}">
+      <article v-for="focus in focuses" :key="focus.id" class="focus-card" :class="{'active':profile.active?.id===focus.id,done:profile.completed.includes(focus.id),'focus-route':!!focus.branchGroup,'route-locked':focusBranchLocked(state,actor,focus)}">
+        <figure v-if="focusIcon(focus.id)" class="focus-icon"><img :src="focusIcon(focus.id)!" :alt="`${focus.title}国策图标`" loading="lazy" /></figure>
+        <p v-if="focus.branchGroup" class="focus-route-tag">互斥路线 · 二选一</p>
         <div class="focus-row"><h4>{{ focus.title }}</h4><span>{{ status(focus) }}</span></div>
         <p>{{ prerequisites(focus) }}</p>
         <p>计划推进时间：{{ focus.durationMinutes / 1440 }} 游戏日 <span v-if="focus.important"> · 重要里程碑</span></p>
@@ -128,5 +140,5 @@ function sourceName(id: string) {
 </template>
 
 <style scoped>
-.focus-panel{display:grid;gap:12px;color:var(--text-color,inherit);min-width:0}.focus-top,.focus-row,.focus-controls,.focus-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.focus-top h2{margin:0;font-size:1.16rem}.focus-top p,.focus-note{font-size:.77rem;line-height:1.5;opacity:.72;margin:0}.focus-control{padding:6px 9px;border:1px solid rgba(112,137,182,.32);border-radius:12px;font-size:.72rem}.focus-controls{justify-content:start}.focus-panel button{border:1px solid rgba(112,137,182,.35);border-radius:9px;background:rgba(112,137,182,.12);color:inherit;padding:9px 12px;cursor:pointer;font-size:.81rem}.focus-panel button.selected{border-color:rgba(112,137,182,.85);background:rgba(112,137,182,.3)}.focus-panel button:disabled{opacity:.45;cursor:not-allowed}.focus-toggle{display:flex;gap:8px;align-items:center;font-size:.74rem}.focus-panel h3{margin:8px 0 0;font-size:1rem}.focus-tree,.focus-decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.focus-card{display:grid;align-content:start;gap:9px;border:1px solid rgba(112,137,182,.23);border-radius:13px;padding:13px;min-width:0}.focus-card.active{border-color:rgba(112,137,182,.86)}.focus-card.done{opacity:.78}.focus-card h4{font-size:.92rem;margin:0}.focus-card .focus-row>span,.focus-card small{font-size:.72rem;opacity:.75}.focus-card p,.focus-ai p{font-size:.76rem;line-height:1.45;margin:0;overflow-wrap:anywhere}.focus-progress{height:8px;border-radius:12px;background:rgba(112,137,182,.15);overflow:hidden}.focus-progress span{display:block;height:100%;border-radius:inherit;background:#73a3ce}.focus-ai{border-top:1px solid rgba(112,137,182,.22);padding-top:7px;font-size:.76rem}.focus-ai summary,.focus-history summary{cursor:pointer;font-weight:600}.focus-ai p{padding-top:5px}.focus-history{border-top:1px solid rgba(112,137,182,.25);padding-top:11px;font-size:.8rem}.focus-history p{font-size:.73rem;line-height:1.5;overflow-wrap:anywhere}.focus-feedback{font-size:.78rem;padding:9px;border:1px solid rgba(112,137,182,.35);border-radius:10px;margin:0}@media(max-width:500px){.focus-tree,.focus-decisions{grid-template-columns:1fr}}
+.focus-panel{display:grid;gap:12px;color:var(--text-color,inherit);min-width:0}.focus-top,.focus-row,.focus-controls,.focus-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.focus-top h2{margin:0;font-size:1.16rem}.focus-top p,.focus-note{font-size:.77rem;line-height:1.5;opacity:.72;margin:0}.focus-control{padding:6px 9px;border:1px solid rgba(112,137,182,.32);border-radius:12px;font-size:.72rem}.focus-controls{justify-content:start}.focus-panel button{border:1px solid rgba(112,137,182,.35);border-radius:9px;background:rgba(112,137,182,.12);color:inherit;padding:9px 12px;cursor:pointer;font-size:.81rem}.focus-panel button.selected{border-color:rgba(112,137,182,.85);background:rgba(112,137,182,.3)}.focus-panel button:disabled{opacity:.45;cursor:not-allowed}.focus-toggle{display:flex;gap:8px;align-items:center;font-size:.74rem}.focus-panel h3{margin:8px 0 0;font-size:1rem}.focus-tree,.focus-decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.focus-tree.has-branches{grid-template-columns:repeat(2,minmax(0,1fr))}.focus-tree.has-branches>.focus-card:not(.focus-route){grid-column:1/-1}.focus-route{position:relative}.focus-route.route-locked{opacity:.6}.focus-route-tag{font-size:.7rem;color:#a78952;letter-spacing:.03em}.focus-icon{width:min(100%,190px);margin:0 auto 4px;aspect-ratio:1;overflow:hidden;border-radius:50%;background:#111}.focus-icon img{display:block;width:100%;height:100%;object-fit:contain}.focus-card{display:grid;align-content:start;gap:9px;border:1px solid rgba(112,137,182,.23);border-radius:13px;padding:13px;min-width:0}.focus-card.active{border-color:rgba(112,137,182,.86)}.focus-card.done{opacity:.78}.focus-card h4{font-size:.92rem;margin:0}.focus-card .focus-row>span,.focus-card small{font-size:.72rem;opacity:.75}.focus-card p,.focus-ai p{font-size:.76rem;line-height:1.45;margin:0;overflow-wrap:anywhere}.focus-progress{height:8px;border-radius:12px;background:rgba(112,137,182,.15);overflow:hidden}.focus-progress span{display:block;height:100%;border-radius:inherit;background:#73a3ce}.focus-ai{border-top:1px solid rgba(112,137,182,.22);padding-top:7px;font-size:.76rem}.focus-ai summary,.focus-history summary{cursor:pointer;font-weight:600}.focus-ai p{padding-top:5px}.focus-history{border-top:1px solid rgba(112,137,182,.25);padding-top:11px;font-size:.8rem}.focus-history p{font-size:.73rem;line-height:1.5;overflow-wrap:anywhere}.focus-feedback{font-size:.78rem;padding:9px;border:1px solid rgba(112,137,182,.35);border-radius:10px;margin:0}@media(max-width:500px){.focus-tree,.focus-decisions,.focus-tree.has-branches{grid-template-columns:1fr}}
 </style>
