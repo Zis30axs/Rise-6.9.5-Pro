@@ -112,7 +112,7 @@ watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
 watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
-type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'transit' | 'store' | 'location' | 'law' | 'invitations';
+type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'transit' | 'store' | 'location' | 'law' | 'invitations' | 'identity';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
 const phoneExpanded = ref(false);
@@ -220,6 +220,7 @@ const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'invitations', title: '邀约簿', path: 'M3 9l9 6 9-6M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M3 19l6-5M21 19l-6-5M5 9V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4M9 7h6' },
   { id: 'inventory', title: '背包', path: 'M8 6V4a4 4 0 0 1 8 0v2M6 6h12a2 2 0 0 1 2 2v13H4V8a2 2 0 0 1 2-2ZM7 13h10v6H7ZM8 9h8' },
   { id: 'status', title: '状态', path: 'M5 3h14v18H5ZM9 7h6M9 11h6M9 15h3M3 7h4M3 15h4' },
+  { id: 'identity', title: '查身份', path: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0M3 3h2M19 3h2' },
   { id: 'abilities', title: '能力', path: 'm12 2 8.7 5v10L12 22l-8.7-5V7ZM12 2v20M3.3 7l17.4 10M3.3 17 20.7 7m-13.9 2 5.2-3 5.2 3v6L12 18l-5.2-3Z' },
 ];
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
