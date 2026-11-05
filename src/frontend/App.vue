@@ -25,6 +25,7 @@ import { resolveMajoSpeaker } from './majo-art';
 import { resolveWatanareSpeaker } from './watanare-art';
 import { resolveFengjinSpeaker } from './fengjin-art';
 import { isMarinaSpeaker } from './marina-art';
+import { isUikaSpeaker } from './uika-art';
 import { hasProtagonistPhonePose } from './protagonist-phone-art';
 import { type NovelSegment } from './novel-dialogue';
 import { resolveNovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
@@ -198,7 +199,7 @@ const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? h
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
 function recognizesNovelSpeaker(speaker: string): boolean {
   return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || isMutsumiSpeaker(speaker) || isAnonSpeaker(speaker) || isRaanaSpeaker(speaker) || isTakiSpeaker(speaker) || isTomoriSpeaker(speaker) || isNagasakiMotherSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
-    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isMarinaSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
+    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isUikaSpeaker(speaker) || isMarinaSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
       contacts: props.model.state.contacts,
       scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
       encounterId: props.model.state.scene?.encounterId,
