@@ -160,6 +160,8 @@ export function commitStrategyNarrative(
     if (existing.command!==signature) invalid('相同剧情 ID 的国策效果不同，禁止重新结算');
     return after;
   }
+  // Ordinary turns should not add a meaningless receipt to the save.
+  if (!routine.length && !major.length) return after;
   const result:StrategyState=structuredClone(after);
   for (const update of routine) {
     // The focus may have ended naturally during this turn's in-game time advance.
@@ -178,4 +180,9 @@ export function commitStrategyNarrative(
   reconciled.receipts.push({id:receiptId,command:signature});
   reconciled.receipts=reconciled.receipts.slice(-160);
   return parseStrategyState(reconciled,reconciled.cursor);
+}
+
+/** Detect a real saved effect on replay without exposing private receipt encoding. */
+export function hasStrategyNarrativeReceipt(state: StrategyState | undefined, turnId: string): boolean {
+  return !!state?.receipts.some(row => row.id === `story:${hash(turnId)}`);
 }

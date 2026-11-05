@@ -3,7 +3,7 @@ import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './n
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { commitStrategyCommand } from './strategy-world';
-import { commitStrategyNarrative } from './strategy-narrative';
+import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
@@ -1812,6 +1812,9 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // structured effects must still match the original narrative receipt.
   const { otherSide: requestedSide, returnStory: requestedReturn,
     strategyUpdates: requestedUpdates, strategyMajor: requestedMajor, ...withoutSide } = result;
+  if (alreadyCommitted && (requestedUpdates?.length || requestedMajor?.length)
+    && !hasStrategyNarrativeReceipt(before.protagonists?.strategy, ids.assistantId))
+    throw new Error('重复剧情 ID 不得新增原先没有的国策效果');
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
