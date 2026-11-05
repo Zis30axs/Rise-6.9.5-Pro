@@ -3,6 +3,7 @@ import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './n
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
 import { commitStrategyCommand } from './strategy-world';
+import { commitSocietyCommand } from './society-world';
 import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
@@ -1694,6 +1695,10 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
   if (action?.type === 'strategy') {
     const prepared = enableProtagonists(before);
     return parseState(commitStrategyCommand(prepared, action.requestId, action.command));
+  }
+  if (action?.type === 'society') {
+    const prepared = enableProtagonists(before);
+    return parseState(commitSocietyCommand(prepared, action.requestId, action.command));
   }
   if (action?.type === 'courtroom') {
     const prepared = enableProtagonists(before);
