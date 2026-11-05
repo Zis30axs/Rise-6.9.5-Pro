@@ -379,7 +379,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
       const minimalStore = storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category }));
-      const strategyFocus = strategyPromptContext(snapshot.protagonists?.strategy);
+      const strategyFocus = options?.kind === 'contact_introduction' ? null : strategyPromptContext(snapshot.protagonists?.strategy);
       const summary = {
         ...(strategyFocus ? { strategyFocus } : {}),
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
@@ -614,7 +614,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           : options?.kind === 'phone_reply'
           ? { text: phoneResponse!.text!, phoneMessages: [], ...(phoneResponse?.sceneText ? {phoneSceneText:phoneResponse.sceneText} : {}), ...(phoneResponse?.inviteDecision ? {inviteDecision:phoneResponse.inviteDecision} : {}), ...(phoneResponse?.inviteAgenda ? {inviteAgenda:phoneResponse.inviteAgenda} : {}) }
           : parseGeneratedStory(response, snapshot);
-        if (options?.kind === 'contact_introduction' && (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length)) throw new Error('人物简介格式无效，未修改角色或剧情，请重试。');
+        if (options?.kind === 'contact_introduction' && (reply.text.length > 500 || reply.phoneMessages.length || reply.worldActions?.length || reply.worldEvents?.length || reply.contactRequests?.length || reply.strategyUpdates?.length || reply.strategyMajor?.length)) throw new Error('人物简介格式无效，未修改角色或剧情，请重试。');
         if (options?.kind === 'interaction_event' && !reply.worldActions?.length) throw new Error('突发事件缺少实际影响，本次交互和事件均未保存；可以重试，或选择正常完成。');
         // With actions, commit checks the final scene once; a speculative replay here
         // would draw study/travel outcomes twice. Legacy replies retain early rejection.
