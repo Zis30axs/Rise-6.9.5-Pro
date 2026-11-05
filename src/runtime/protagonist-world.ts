@@ -17,6 +17,7 @@ import { parseSocialInvitations, type SocialInvitation } from './natural-interac
 import { settleSocialAgendas } from './social-agenda';
 import { createStrategyState, parseStrategyState, type StrategyState } from './strategy';
 import { settleStrategyWorld } from './strategy-world';
+import { settleSocietyWorld } from './society-world';
 import { createSocietyState, parseSocietyState, type SocietyState } from './society';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
@@ -359,6 +360,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   const next={...after,schema_version:'1.13.0' as const,protagonists:p};
   settleBackgroundLife(before,next,reservedOtherSide);
   settleStrategyWorld(before,next);
+  settleSocietyWorld(before,next);
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);

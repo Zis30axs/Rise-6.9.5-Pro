@@ -23,6 +23,15 @@ export interface SocialUnion {
 export interface SocialInvitation { id: string; circleId: string; from: SocialOwner; personId: string; at: number; status: 'pending' | 'accepted' | 'declined' }
 export interface SocialApplication { id: string; unionId: string; groupId: string; from: SocialOwner; at: number }
 export interface AdvisorAssignment { bandId: string; seat: AdvisorSeat; personId: string }
+export type ContestTargetKind = 'person' | 'opportunity';
+export type ContestStatus = 'open' | 'resolved';
+export interface SocialContest {
+  id: string; title: string; targetId: string; targetKind: ContestTargetKind;
+  openedAt: number; closesAt: number; participants: SocialOwner[];
+  influence: Partial<Record<SocialOwner, number>>;
+  lastContributionAt: Partial<Record<SocialOwner, number>>;
+  status: ContestStatus; winner: SocialOwner | null; resolvedAt: number | null;
+}
 export interface SocietyRecord { id: string; at: number; actor: SocialOwner; kind: string; subject: string }
 export interface SocietyState {
   version: 1;
@@ -31,6 +40,7 @@ export interface SocietyState {
   invitations: SocialInvitation[];
   applications: SocialApplication[];
   advisors: AdvisorAssignment[];
+  contests: SocialContest[];
   receipts: { id: string; command: string }[];
   history: SocietyRecord[];
 }
@@ -51,7 +61,11 @@ export type SocietyCommand =
   | { type: 'approve_union'; applicationId: string; accepted: boolean }
   | { type: 'leave_union'; unionId: string; groupId: string }
   | { type: 'appoint_advisor'; bandId: string; seat: AdvisorSeat; personId: string }
-  | { type: 'dismiss_advisor'; bandId: string; seat: AdvisorSeat };
+  | { type: 'dismiss_advisor'; bandId: string; seat: AdvisorSeat }
+  | { type: 'open_contest'; id: string; title: string; targetId: string; targetKind: ContestTargetKind; durationMinutes: number }
+  | { type: 'join_contest'; contestId: string }
+  | { type: 'contribute_contest'; contestId: string; effort: 'small' | 'medium' | 'large' }
+  | { type: 'withdraw_contest'; contestId: string };
 
 const MAX_AT = 525599999;
 const ID=/^[A-Za-z0-9][A-Za-z0-9_:.\-]{0,79}$/;
@@ -73,10 +87,11 @@ function items<T>(raw:unknown,max:number,fn:(raw:unknown)=>T,key:(v:T)=>string,l
   if(new Set(rows.map(key)).size!==rows.length)fail(`${label}重复`);
   return rows;
 }
-export function createSocietyState():SocietyState {return {version:1,circles:[],unions:[],invitations:[],applications:[],advisors:[],receipts:[],history:[]};}
+export function createSocietyState():SocietyState {return {version:1,circles:[],unions:[],invitations:[],applications:[],advisors:[],contests:[],receipts:[],history:[]};}
 export function parseSocietyState(raw:unknown,now:number):SocietyState {
   int(now,0,MAX_AT,'时钟');
-  const s=object(raw,['version','circles','unions','invitations','applications','advisors','receipts','history'],'根');
+  const hasContests=!!raw&&typeof raw==='object'&&!Array.isArray(raw)&&Object.hasOwn(raw,'contests');
+  const s=object(raw,['version','circles','unions','invitations','applications','advisors',...(hasContests?['contests']:[]),'receipts','history'],'根');
   if(s.version!==1)fail('版本');
   const circles=items(s.circles,40,x=>{
     const c=object(x,['id','title','founder','memberIds','formedAt'],'社交圈');
@@ -103,6 +118,31 @@ export function parseSocietyState(raw:unknown,now:number):SocietyState {
     const a=object(x,['bandId','seat','personId'],'顾问');
     return {bandId:validId(a.bandId,'乐队ID'),seat:seat(a.seat),personId:validId(a.personId,'顾问人物')};
   },x=>`${x.bandId}:${x.seat}`,'顾问');
+  const contests:SocialContest[]=hasContests?items(s.contests,40,x=>{
+    const c=object(x,['id','title','targetId','targetKind','openedAt','closesAt','participants','influence','lastContributionAt','status','winner','resolvedAt'],'竞争决议');
+    const id=validId(c.id,'竞争决议ID'), targetId=validId(c.targetId,'竞争目标');
+    if(c.targetKind!=='person'&&c.targetKind!=='opportunity')fail('竞争目标类型');
+    const openedAt=int(c.openedAt,0,now,'竞争开始时间'), closesAt=int(c.closesAt,openedAt+30,MAX_AT,'竞争截止时间');
+    if(closesAt>openedAt+43200)fail('竞争决议最长30天');
+    const participants=items(c.participants,4,x=>owner(x),x=>x,'参与者');
+    if(!participants.length)fail('竞争决议至少需要一名参与者');
+    const parseScores=(raw:unknown,label:string)=>{
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))fail(label);
+      const entries=Object.entries(raw as Record<string,unknown>);
+      if(entries.length>4)fail(label);
+      const result:Partial<Record<SocialOwner,number>>={};
+      for(const [key,value] of entries){const who=owner(key);if(!participants.includes(who))fail(label+'参与者');result[who]=int(value,0,10000,label+'数值');}
+      return result;
+    };
+    const influence=parseScores(c.influence,'影响力'),lastContributionAt=parseScores(c.lastContributionAt,'贡献时间');
+    for(const [key,value] of Object.entries(lastContributionAt))lastContributionAt[key as SocialOwner]=int(value,0,now,'上次贡献时间');
+    if(c.status!=='open'&&c.status!=='resolved')fail('竞争状态');
+    const winner=c.winner===null?null:owner(c.winner),resolvedAt=c.resolvedAt===null?null:int(c.resolvedAt,closesAt,now,'结算时间');
+    if(c.status==='open'&&(winner!==null||resolvedAt!==null))fail('未结算竞争不能有胜者');
+    if(c.status==='resolved'&&resolvedAt===null)fail('已结算竞争缺少结算时间');
+    if(winner!==null&&!participants.includes(winner))fail('胜者不属于参与者');
+    return {id,title:title(c.title),targetId,targetKind:c.targetKind as ContestTargetKind,openedAt,closesAt,participants,influence,lastContributionAt,status:c.status as ContestStatus,winner,resolvedAt};
+  },x=>x.id,'竞争决议'):[];
   const receipts=items(s.receipts,200,x=>{
     const r=object(x,['id','command'],'回执');
     if(typeof r.command!=='string'||r.command.length>400)fail('回执内容');
@@ -114,7 +154,7 @@ export function parseSocietyState(raw:unknown,now:number):SocietyState {
   },x=>x.id,'历史');
   for(const invite of invitations)if(!circles.some(c=>c.id===invite.circleId))fail('邀请引用不存在的圈子');
   for(const application of applications)if(!unions.some(u=>u.id===application.unionId))fail('申请引用不存在的联合体');
-  return {version:1,circles,unions,invitations,applications,advisors,receipts,history};
+  return {version:1,circles,unions,invitations,applications,advisors,contests,receipts,history};
 }
 const groupLeader=(s:SocietyState,context:SocietyContext,groupId:string):SocialOwner|null=>
   groupId.startsWith('circle:')?s.circles.find(c=>`circle:${c.id}`===groupId)?.founder??null:
@@ -137,6 +177,8 @@ export function applySocietyCommand(input:SocietyState,raw:SocietyCommand,reques
     leave_circle:['type','circleId'],create_union:['type','id','title','groupId'],propose_union:['type','unionId','groupId'],
     approve_union:['type','applicationId','accepted'],leave_union:['type','unionId','groupId'],
     appoint_advisor:['type','bandId','seat','personId'],dismiss_advisor:['type','bandId','seat'],
+    open_contest:['type','id','title','targetId','targetKind','durationMinutes'],join_contest:['type','contestId'],
+    contribute_contest:['type','contestId','effort'],withdraw_contest:['type','contestId'],
   };
   if(!Object.hasOwn(fields,(raw as SocietyCommand)?.type))fail('命令类型');
   const cmd=object(raw,fields[raw.type],'命令') as unknown as SocietyCommand;
@@ -200,8 +242,52 @@ export function applySocietyCommand(input:SocietyState,raw:SocietyCommand,reques
     const b=ctx.bands.find(b=>b.id===cmd.bandId),advisorSeat=seat(cmd.seat);
     if(!b||b.founder!==actor||!s.advisors.some(a=>a.bandId===b.id&&a.seat===advisorSeat))fail('顾问不存在或无管理权限');
     s.advisors=s.advisors.filter(a=>!(a.bandId===b.id&&a.seat===advisorSeat));subject=b.id;
+  }else if(cmd.type==='open_contest'){
+    const contestId=validId(cmd.id,'竞争决议ID'),targetId=validId(cmd.targetId,'竞争目标');
+    if(s.contests.some(c=>c.id===contestId)||s.contests.filter(c=>c.status==='open').length>=20)fail('竞争决议重复或数量已满');
+    if(cmd.targetKind!=='person'&&cmd.targetKind!=='opportunity')fail('竞争目标类型');
+    if(cmd.targetKind==='person'&&(!ctx.knownPersonIds.includes(targetId)||targetId===person))fail('只能争取真实认识的其他人物');
+    if(cmd.targetKind==='opportunity'&&!targetId.startsWith('opportunity:'))fail('机会目标必须使用 opportunity: 前缀');
+    const duration=int(cmd.durationMinutes,30,43200,'竞争时长');
+    s.contests.push({id:contestId,title:title(cmd.title),targetId,targetKind:cmd.targetKind,openedAt:ctx.at,closesAt:ctx.at+duration,
+      participants:[actor],influence:{[actor]:0},lastContributionAt:{},status:'open',winner:null,resolvedAt:null});subject=contestId;
+  }else if(cmd.type==='join_contest'){
+    const contest=s.contests.find(c=>c.id===cmd.contestId&&c.status==='open');
+    if(!contest||ctx.at>=contest.closesAt||contest.participants.includes(actor)||contest.participants.length>=4)fail('无法加入该竞争决议');
+    if(contest.targetKind==='person'&&contest.targetId===person)fail('不能争取自己');
+    contest.participants.push(actor);contest.influence[actor]=0;subject=contest.id;
+  }else if(cmd.type==='contribute_contest'){
+    const contest=s.contests.find(c=>c.id===cmd.contestId&&c.status==='open');
+    if(!contest||ctx.at>=contest.closesAt||!contest.participants.includes(actor))fail('当前不能参与该竞争');
+    const last=contest.lastContributionAt[actor];if(last!==undefined&&ctx.at-last<60)fail('每位参与者每小时只能贡献一次');
+    const gain=cmd.effort==='small'?1:cmd.effort==='medium'?3:cmd.effort==='large'?5:0;
+    if(!gain)fail('贡献档位无效');
+    contest.influence[actor]=Math.min(10000,(contest.influence[actor]??0)+gain);contest.lastContributionAt[actor]=ctx.at;subject=contest.id;
+  }else if(cmd.type==='withdraw_contest'){
+    const contest=s.contests.find(c=>c.id===cmd.contestId&&c.status==='open');
+    if(!contest||!contest.participants.includes(actor))fail('当前不能退出该竞争');
+    contest.participants=contest.participants.filter(x=>x!==actor);delete contest.influence[actor];delete contest.lastContributionAt[actor];subject=contest.id;
+    if(!contest.participants.length){contest.status='resolved';contest.winner=null;contest.resolvedAt=ctx.at;}
   }
   s.receipts.push({id,command:signature});s.receipts=s.receipts.slice(-200);
   s.history.push({id:`soc:${id}`,at:ctx.at,actor,kind,subject});s.history=s.history.slice(-300);
   return parseSocietyState(s,ctx.at);
+}
+
+/** The highest influence wins only when it leads outright and reaches a meaningful threshold. */
+export function settleSocietyState(input:SocietyState,now:number):SocietyState {
+  int(now,0,MAX_AT,'时钟');
+  const due=input.contests.filter(c=>c.status==='open'&&c.closesAt<=now);
+  if(!due.length)return input;
+  const next:SocietyState=structuredClone(input);
+  for(const contest of due){
+    const ranked=contest.participants.map(person=>({person,score:contest.influence[person]??0}))
+      .sort((a,b)=>b.score-a.score||a.person.localeCompare(b.person));
+    const first=ranked[0],second=ranked[1];
+    contest.winner=first&&first.score>=3&&(!second||first.score>second.score)?first.person:null;
+    contest.status='resolved';contest.resolvedAt=contest.closesAt;
+    next.history.push({id:`contest:${contest.id}:resolved`,at:contest.closesAt,actor:contest.winner??contest.participants[0]!,kind:'contest_resolved',subject:contest.id});
+  }
+  next.history=next.history.slice(-300);
+  return parseSocietyState(next,now);
 }
