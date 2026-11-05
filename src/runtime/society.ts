@@ -280,7 +280,9 @@ export function settleSocietyState(input:SocietyState,now:number):SocietyState {
   const due=input.contests.filter(c=>c.status==='open'&&c.closesAt<=now);
   if(!due.length)return input;
   const next:SocietyState=structuredClone(input);
-  for(const contest of due){
+  for(const dueContest of due){
+    // Only mutate the candidate save. Never alter the caller's input.
+    const contest=next.contests.find(item=>item.id===dueContest.id)!;
     const ranked=contest.participants.map(person=>({person,score:contest.influence[person]??0}))
       .sort((a,b)=>b.score-a.score||a.person.localeCompare(b.person));
     const first=ranked[0],second=ranked[1];

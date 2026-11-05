@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createSocietyState,parseSocietyState,applySocietyCommand,currentBandAdvisors} from '../src/runtime/society.ts';
+import {createSocietyState,parseSocietyState,applySocietyCommand,currentBandAdvisors,settleSocietyState} from '../src/runtime/society.ts';
 const bands=[{id:'new-band',founder:'soyo',members:[{personId:'protagonist-soyo'},{personId:'protagonist-sakiko'}]},{id:'other-band',founder:'sakiko',members:[{personId:'protagonist-sakiko'}]}];
 const ctx=(actor='soyo')=>({at:999,actor,personId:`protagonist-${actor}`,knownPersonIds:['protagonist-soyo','protagonist-sakiko','protagonist-emma'],bands});
 const apply=(s,cmd,id,actor='soyo')=>applySocietyCommand(s,cmd,id,ctx(actor));
@@ -45,4 +45,18 @@ test('formal adviser is restricted to founder and canonical livehouse roster',()
  assert.equal(s.advisors.length,1);
  s=apply(s,{type:'dismiss_advisor',bandId:'new-band',seat:'music'},'dismiss');
  assert.equal(s.advisors.length,0);
+});
+
+test('shared contest expires once, resolves on the new snapshot, and leaves the old save unchanged',()=>{
+ let s=apply(createSocietyState(),{type:'open_contest',id:'stage-slot',title:'舞台机会',targetId:'opportunity:stage',targetKind:'opportunity',durationMinutes:120},'open');
+ s=apply(s,{type:'join_contest',contestId:'stage-slot'},'join','sakiko');
+ s=apply(s,{type:'contribute_contest',contestId:'stage-slot',effort:'large'},'vote','soyo');
+ const original=JSON.stringify(s);
+ const settled=settleSocietyState(s,1120);
+ assert.equal(JSON.stringify(s),original,'input cannot be mutated');
+ assert.equal(settled.contests[0].status,'resolved');
+ assert.equal(settled.contests[0].winner,'soyo');
+ assert.equal(settled.contests[0].resolvedAt,1119);
+ assert.equal(settleSocietyState(settled,1220),settled,'second settlement is a no-op');
+ assert.equal(settled.history.filter(x=>x.kind==='contest_resolved').length,1);
 });
