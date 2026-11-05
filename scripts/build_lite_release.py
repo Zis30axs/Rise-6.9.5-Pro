@@ -92,6 +92,12 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
                               if (sakiko_uniform_dir / f'{pose}.webp').read_bytes() not in payloads]
     if sakiko_uniform_missing:
         raise ValueError('祥子制服立绘未被拆进 Lite ZIP：' + ','.join(sakiko_uniform_missing))
+    sakiko_indoor_dir = ROOT / 'assets/downtown-art/characters/sakiko/indoor'
+    sakiko_indoor_poses = ('neutral', 'wave', 'confident', 'thinking', 'shy')
+    sakiko_indoor_missing = [pose for pose in sakiko_indoor_poses
+                             if (sakiko_indoor_dir / f'{pose}.webp').read_bytes() not in payloads]
+    if sakiko_indoor_missing:
+        raise ValueError('祥子室内私服未被拆进 Lite ZIP：' + ','.join(sakiko_indoor_missing))
     entries = [{'sha256': sha, 'mime': mime, 'bytes': len(raw), 'path': 'assets/' + sha}
                for sha, (mime, raw) in sorted(assets.items())]
     # The Tokyo sandbox GLB must be packaged inside the main Lite ZIP.
@@ -137,7 +143,7 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
               'circleSandboxZipSha256': circle_sha, 'circleSandboxZipBytes': len(circle_zip),
               'circleSandboxInCoreZip': True, 'marinaPortraitsExternalized': 4,
               'uikaCasualPortraitsExternalized': 5, 'umiriCasualPortraitsExternalized': 5,
-              'nyamuCasualPortraitsExternalized': 5, 'sakikoUniformPortraitsExternalized': 9}
+              'nyamuCasualPortraitsExternalized': 5, 'sakikoUniformPortraitsExternalized': 9, 'sakikoIndoorPortraitsExternalized': 5}
     return script, archive_bytes, report
 
 
