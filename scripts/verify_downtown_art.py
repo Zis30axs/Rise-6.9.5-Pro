@@ -17,7 +17,8 @@ import zlib
 LIMIT = 50_000_000
 MAX_METADATA = 160 * 1024 * 1024
 EXPRESSIONS = ('neutral', 'smile', 'troubled', 'surprised', 'annoyed', 'sad')
-SAKIKO_SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
+# The default Haneoka uniform is an inline set, not these six home sprites.
+SAKIKO_SPRITES = {f'sakiko_home_{emotion}' for emotion in EXPRESSIONS}
 MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 'surprised')
 MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
 ANON_POSES = ('shy', 'smile', 'confident', 'wave', 'surprised', 'cheerful')

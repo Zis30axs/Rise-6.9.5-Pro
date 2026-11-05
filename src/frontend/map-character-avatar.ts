@@ -2,7 +2,8 @@ import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
+import { resolveSakikoUniformPortrait } from './sakiko-uniform-art';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { isRaanaSpeaker } from './raana-art-policy';
@@ -107,8 +108,7 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
     if (crop) return crop;
   }
   if (person.protagonistId === 'sakiko') {
-    const art = getSakikoArt(downtownArtPack, { speaker: '丰川祥子', expression: 'neutral' });
-    return art ? { kind: 'sprite', src: art.src } : null;
+    return { kind: 'sprite', src: resolveSakikoUniformPortrait('平静').src };
   }
   if (person.protagonistId === 'emma') {
     const src = majoExpressionFor('majo-emma', 'neutral');

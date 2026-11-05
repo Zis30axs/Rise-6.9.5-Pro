@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 // Authoritative crop sources: never use the newly generated decorative Grok/Image2 sheets.
 const sourceById: Record<string, string> = {
   tomori: 'assets/downtown-art/characters/tomori/uniform/neutral.webp',
-  sakiko: 'assets/downtown-art/characters/sakiko/casual/neutral.webp',
+  sakiko: 'assets/downtown-art/characters/sakiko/uniform/neutral.webp',
   anon: 'assets/downtown-art/characters/anon/uniform/smile.webp',
   taki: 'assets/downtown-art/characters/taki/uniform/neutral.webp',
   rana: 'assets/downtown-art/characters/raana/uniform/neutral.webp',

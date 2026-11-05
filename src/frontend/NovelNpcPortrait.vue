@@ -11,7 +11,8 @@ import { isRaanaSpeaker } from './raana-art-policy';
 import { isTakiSpeaker } from './taki-art-policy';
 import { isTomoriSpeaker } from './tomori-art-policy';
 import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
-import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
+import { isSakikoSpeaker, resolveSakikoOutfit, type SakikoOutfitMode } from './sakiko-art-policy';
+import { resolveSakikoUniformPortrait } from './sakiko-uniform-art';
 import { resolveMajoExpressionPortrait } from './majo-art';
 import { resolveWatanareExpressionPortrait } from './watanare-art';
 import { resolveFengjinExpressionPortrait } from './fengjin-art';
@@ -34,9 +35,14 @@ const isTaki = computed(() => isTakiSpeaker(props.speaker));
 const isTomori = computed(() => isTomoriSpeaker(props.speaker));
 const isNagasakiMother = computed(() => isNagasakiMotherSpeaker(props.speaker));
 const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveUikaExpressionPortrait(props.speaker, props.emotion) ?? resolveUmiriExpressionPortrait(props.speaker, props.emotion) ?? resolveNyamuExpressionPortrait(props.speaker, props.emotion) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
-const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
-  speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
-}));
+const selected = computed(() => {
+  if (isSakiko.value && resolveSakikoOutfit(props.outfit, props.locationId) !== 'home') {
+    return resolveSakikoUniformPortrait(props.emotion);
+  }
+  return getSakikoArt(props.artPack ?? downtownArtPack, {
+    speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
+  });
+});
 const mutsumiSelected = computed(() => getMutsumiArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion,
 }));
