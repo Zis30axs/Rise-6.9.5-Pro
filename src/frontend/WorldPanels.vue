@@ -4,6 +4,7 @@ import WorldMap from './WorldMap.vue';
 import StoryEngineSettings from './StoryEngineSettings.vue';
 import StrategyStatusHero from './StrategyStatusHero.vue';
 import IdentityPanel from './IdentityPanel.vue';
+import SocietyPanel from './SocietyPanel.vue';
 import AcademicProgress from './AcademicProgress.vue';
 import SocialSkills from './SocialSkills.vue';
 import { invitationCards } from './invitation-book';
@@ -27,11 +28,11 @@ import { lawCases, lawOwner } from '../runtime/law-career';
 import { instrumentSkill, INSTRUMENT_SKILL_CAP } from '../runtime/livehouse-visit';
 import type { ShellActions, ShellModel } from './types';
 
-type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'identity';
+type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'identity' | 'society';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean }>();
 const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
 const labels: Record<Panel, string> = {
-  phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长', identity: '全知人物档案',
+  phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长', identity: '全知人物档案', society: '阵营与社交圈',
 };
 const selectedContactId = ref('');
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
@@ -170,6 +171,9 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
     </template>
     <template v-else-if="panel === 'identity'">
       <IdentityPanel :state="model.state" />
+    </template>
+    <template v-else-if="panel === 'society'">
+      <SocietyPanel :model="model" :actions="actions" />
     </template>
     <template v-else-if="panel === 'status'">
       <StrategyStatusHero :state="model.state" />
