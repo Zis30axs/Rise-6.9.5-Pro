@@ -11,6 +11,7 @@ import { isTomoriSpeaker } from './tomori-art-policy';
 import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
 import { isMarinaSpeaker, resolveMarinaExpressionPortrait } from './marina-art';
 import { isUikaSpeaker, resolveUikaExpressionPortrait } from './uika-art';
+import { isUmiriSpeaker, resolveUmiriExpressionPortrait } from './umiri-art';
 import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
@@ -151,6 +152,10 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
   if (!person.protagonistId && (isTomoriSpeaker(person.name) || isTomoriSpeaker(person.personId ?? ''))) {
     const tomoriSpeaker = isTomoriSpeaker(person.personId ?? '') ? person.personId : person.name;
     const art = getTomoriArt(downtownArtPack, { speaker: tomoriSpeaker, expression: 'neutral' });
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isUmiriSpeaker(person.name) || isUmiriSpeaker(person.personId ?? ''))) {
+    const art = resolveUmiriExpressionPortrait(person.personId || person.name, 'neutral');
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   if (!person.protagonistId && (isUikaSpeaker(person.name) || isUikaSpeaker(person.personId ?? ''))) {

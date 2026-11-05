@@ -8,11 +8,14 @@ import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiAr
 import { resolveMajoTrioSceneArt } from './majo-art';
 import { resolveMarinaExpressionPortrait } from './marina-art';
 import { resolveUikaExpressionPortrait } from './uika-art';
+import { resolveUmiriExpressionPortrait } from './umiri-art';
 import { resolveNovelNpcEmotion } from './novel-npc-emotions';
 export { characterForPerson } from './character-appearance';
 
-/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, 长崎夫人, 三角初华, 月岛麻里奈, the 魔裁 casual trio, and 冰上梅露露. Other names stay on their existing models. */
+/** Named standing art for 若叶睦, 千早爱音, 要乐奈, 椎名立希, 高松灯, 长崎夫人, 三角初华, 八幡海铃, 月岛麻里奈, the 魔裁 casual trio, and 冰上梅露露. Other names stay on their existing models. */
 export function resolveSceneCharacterArt(name: string, expression?: unknown) {
+  const umiri = resolveUmiriExpressionPortrait(name, typeof expression === 'string' ? expression : '');
+  if (umiri) return { ...umiri, id: `umiri_casual_${umiri.pose}`, outfit: 'casual' as const, anchor: [384, 1280] as const };
   const uika = resolveUikaExpressionPortrait(name, typeof expression === 'string' ? expression : '');
   if (uika) return { ...uika, id: `uika_casual_${uika.pose}`, outfit: 'casual' as const, anchor: [384, 1280] as const };
   const marinaEmotion = resolveNovelNpcEmotion(typeof expression === 'string' ? expression : '');

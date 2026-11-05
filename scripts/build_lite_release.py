@@ -76,6 +76,11 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
                     if (uika_dir / f'{pose}.webp').read_bytes() not in payloads]
     if uika_missing:
         raise ValueError('初华便服立绘未被拆进 Lite ZIP：' + ','.join(uika_missing))
+    umiri_dir = ROOT / 'assets/downtown-art/characters/umiri/casual'
+    umiri_missing = [pose for pose in ('neutral', 'aside', 'smile', 'serious', 'happy')
+                     if (umiri_dir / f'{pose}.webp').read_bytes() not in payloads]
+    if umiri_missing:
+        raise ValueError('海铃便服立绘未被拆进 Lite ZIP：' + ','.join(umiri_missing))
     entries = [{'sha256': sha, 'mime': mime, 'bytes': len(raw), 'path': 'assets/' + sha}
                for sha, (mime, raw) in sorted(assets.items())]
     # The Tokyo sandbox GLB must be packaged inside the main Lite ZIP.
@@ -120,7 +125,7 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
               'tokyoSandboxArchive': 'unread-city-lite-assets.zip',
               'circleSandboxZipSha256': circle_sha, 'circleSandboxZipBytes': len(circle_zip),
               'circleSandboxInCoreZip': True, 'marinaPortraitsExternalized': 4,
-              'uikaCasualPortraitsExternalized': 5}
+              'uikaCasualPortraitsExternalized': 5, 'umiriCasualPortraitsExternalized': 5}
     return script, archive_bytes, report
 
 
