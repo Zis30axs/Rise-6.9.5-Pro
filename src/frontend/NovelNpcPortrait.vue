@@ -18,6 +18,7 @@ import { resolveFengjinExpressionPortrait } from './fengjin-art';
 import { resolveMarinaExpressionPortrait } from './marina-art';
 import { resolveUikaExpressionPortrait } from './uika-art';
 import { resolveUmiriExpressionPortrait } from './umiri-art';
+import { resolveNyamuExpressionPortrait } from './nyamu-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean; dimmed?: boolean;
@@ -32,7 +33,7 @@ const isRaana = computed(() => isRaanaSpeaker(props.speaker));
 const isTaki = computed(() => isTakiSpeaker(props.speaker));
 const isTomori = computed(() => isTomoriSpeaker(props.speaker));
 const isNagasakiMother = computed(() => isNagasakiMotherSpeaker(props.speaker));
-const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveUikaExpressionPortrait(props.speaker, props.emotion) ?? resolveUmiriExpressionPortrait(props.speaker, props.emotion) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
+const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveUikaExpressionPortrait(props.speaker, props.emotion) ?? resolveUmiriExpressionPortrait(props.speaker, props.emotion) ?? resolveNyamuExpressionPortrait(props.speaker, props.emotion) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
 const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
 }));
