@@ -55,6 +55,8 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { isInternationalLocation } from '../runtime/california';
+import { MYSTERY_VISITOR_ID, MYSTERY_VISITOR_NAME, mysteryVisitorPresent } from '../runtime/mystery-visitor';
+import mysteryVisitorPortrait from '../../assets/npc-portraits/mystery-visitor.webp?inline';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { agendaTargetProtagonist, agreedMinute, socialMinute } from '../runtime/social-agenda';
 import type { SocialInvitation } from '../runtime/natural-interactions';
@@ -163,6 +165,8 @@ const studySubjectId = ref('');
 const studyAttempted = ref(false);
 const studyDialog = ref<HTMLElement>();
 const localActivityReceipt = ref('');
+const mysteryDialog = ref(false);
+const mysteryGiftReceipt = ref('');
 const walkSeed = props.model.state.scene?.seed ?? (globalThis.crypto?.randomUUID?.() || `walk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 // Keep the complete saved population available when reading an earlier scene indoors.
 const portraitPeople = computed(() => {
@@ -202,7 +206,7 @@ const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.val
   scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
   encounterId: props.model.state.scene?.encounterId,
 }));
-function personLabel(person: WorldScenePerson) { return person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
+function personLabel(person: WorldScenePerson) { return person.id === MYSTERY_VISITOR_ID ? MYSTERY_VISITOR_NAME : person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
 const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
@@ -254,11 +258,19 @@ const nearbyTransitStop = computed(() => {
   const point = outdoorArrival();
   return point ? transitStops.find(stop => Math.hypot(stop.x - point.x, stop.z - point.z) <= 6) ?? null : null;
 });
-const nearbyPeople = computed(() => {
+const nearbyPeople = computed<{ person: WorldScenePerson; distance: number }[]>(() => {
   const position = worldScenePosition(props.model.state);
-  if (!position) return [];
-  return scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
-    .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance);
+  const ordinary = position ? scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
+    .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance) : [];
+  // Rare outdoor visitor is computed locally, including overseas novel-only places.
+  if (!mysteryVisitorPresent(props.model.state)) return ordinary;
+  const visitor: WorldScenePerson = {
+    id: MYSTERY_VISITOR_ID, name: MYSTERY_VISITOR_NAME, candidateName: MYSTERY_VISITOR_NAME,
+    identity: '身份不明', tags: ['奇遇', '稀有'], description: '一位穿深色针织衫的陌生访客，似乎有话想说。',
+    x: position?.x ?? 0, z: position?.z ?? 0, color: 0x363d50,
+    portraitId: 'claude', contactId: null, isMain: false,
+  };
+  return [{ person: visitor, distance: 2.5 }, ...ordinary];
 });
 const lastRoomActivity = computed(() => currentRoom.value ? getInteriorActivity(currentRoom.value, props.model.state.interior?.activityId, props.model.state.interior?.lastRest, props.model.state.interior?.lastStudy) : undefined);
 const persistedRoomReceipt = computed(() => {
@@ -819,12 +831,18 @@ function durationPickerKeydown(event: KeyboardEvent) {
   if (event.shiftKey && event.target === first) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && event.target === last) { event.preventDefault(); first.focus(); }
 }
-watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { livehouseMode.value = null; bedRestPicker.value = false; cookOpen.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
+watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { mysteryDialog.value = false; mysteryGiftReceipt.value = ''; livehouseMode.value = null; bedRestPicker.value = false; cookOpen.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
 watch(() => isInternationalLocation(props.model.state.locationId), overseas => {
   if (overseas && readingMode.value === 'hidden') readingMode.value = 'compact';
 });
 function sceneEncounter(personId: string) {
   if (props.model.busy) return;
+  if (personId === MYSTERY_VISITOR_ID) {
+    if (!mysteryVisitorPresent(props.model.state)) return;
+    mysteryGiftReceipt.value = '';
+    mysteryDialog.value = true;
+    return;
+  }
   scene.value?.flushPresence();
   if (!props.model.state.scene && !props.model.state.interior) {
     const arrival = worldScenePosition(props.model.state);
@@ -838,7 +856,15 @@ function sceneEncounter(personId: string) {
   historyPortrait.value = false;
   void prepareAction(`我向${personLabel(person)}打招呼，想和对方聊几句。请根据我们眼下所在的地方继续当面的对话，不要替我决定下一句话。`);
 }
+function claimMysteryGift() {
+  if (props.model.busy || !mysteryDialog.value || !mysteryVisitorPresent(props.model.state)) return;
+  props.actions.dispatch({ type: 'claim_mystery_gift' });
+  if (props.model.state.mysteryVisitor?.claimedBy[currentProtagonist.value]) {
+    mysteryGiftReceipt.value = '收到 Full Reset ×10、Pro 500 ×1。奖励已放入当前主角背包。';
+  }
+}
 function dismissOverlay() {
+  if (mysteryDialog.value) { mysteryDialog.value = false; return true; }
   if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
@@ -999,11 +1025,27 @@ onBeforeUnmount(() => {
       <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="person.id !== MYSTERY_VISITOR_ID" :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId && person.id !== MYSTERY_VISITOR_ID" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>
     <ProtagonistSwitchOverlay v-if="switchingLease" ref="switchOverlay" :lease="switchingLease" :novel-mode="novelMode" :hour="model.state.clock.hour" :scene="scene" @finished="switchingLease = null; nextTick(() => shell?.querySelector<HTMLElement>('[data-protagonist-select]')?.focus({ preventScroll: true }))" @exit="actions.exit()" />
+    <div v-if="mysteryDialog" class="mystery-visitor-mask" data-mystery-visitor-dialog role="dialog" aria-modal="true" aria-label="神秘访客">
+      <section class="mystery-visitor-panel">
+        <img :src="mysteryVisitorPortrait" alt="一位穿着深色衣服、双手微微张开的神秘访客" draggable="false" />
+        <div class="mystery-visitor-copy">
+          <small>极其罕见的相遇</small>
+          <h2>神秘访客</h2>
+          <p>“我这里有一些特别的东西。你愿意收下吗？”</p>
+          <p v-if="mysteryGiftReceipt" data-mystery-gift-receipt role="status">{{ mysteryGiftReceipt }}</p>
+          <div class="mystery-visitor-actions">
+            <button v-if="!mysteryGiftReceipt" type="button" data-claim-mystery-gift :disabled="model.busy" @click="claimMysteryGift">收下礼物</button>
+            <button v-if="mysteryGiftReceipt" type="button" @click="mysteryDialog=false; openWindow('inventory')">查看背包</button>
+            <button type="button" data-close-mystery-visitor @click="mysteryDialog=false">{{ mysteryGiftReceipt ? '离开' : '暂时告别' }}</button>
+          </div>
+        </div>
+      </section>
+    </div>
     <InteractionOverlay :model="model" :actions="actions" />
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
   </div>
@@ -1012,6 +1054,17 @@ onBeforeUnmount(() => {
 
 
 <style scoped>
+ .mystery-visitor-mask{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:#070911c9;padding:16px}
+.mystery-visitor-panel{display:flex;align-items:stretch;gap:22px;max-width:min(680px,95vw);max-height:88vh;overflow:auto;padding:20px;background:linear-gradient(140deg,#1c2439,#131823);border:1px solid #79839a75;border-radius:18px;color:#f2f4fc;box-shadow:0 12px 70px #000a}
+.mystery-visitor-panel img{height:clamp(200px,48vh,480px);width:auto;max-width:45%;object-fit:contain;align-self:center}
+.mystery-visitor-copy{flex:1;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.mystery-visitor-copy h2{font-size:23px;margin:0}
+.mystery-visitor-copy p{font-size:14px;line-height:1.65;margin:0}
+.mystery-visitor-copy small{letter-spacing:.12em;color:#becbe9}
+.mystery-visitor-actions{display:flex;flex-wrap:wrap;gap:8px}
+.mystery-visitor-actions button{padding:9px 14px;border-radius:9px;border:1px solid #a7b6d7;color:#fff;background:#455578;cursor:pointer}
+.mystery-visitor-actions button:last-child{background:#ffffff10}
+@media(max-width:450px){.mystery-visitor-panel{gap:8px;padding:12px}.mystery-visitor-panel img{max-width:42%;max-height:40vh}.mystery-visitor-copy{min-width:0}.mystery-visitor-copy h2{font-size:18px}}
 .novel-appointment-prompt{margin:6px 12px 8px;padding:10px 14px;background:color-mix(in srgb,var(--card,#fff) 88%,#c6a65d);border:1px solid #9d8a6a66;border-radius:12px;box-shadow:0 3px 14px #0001;position:relative;z-index:1}
 .novel-appointment-prompt p{margin:0 0 8px;font-size:13px;line-height:1.45;color:inherit}
 .novel-appointment-prompt div{display:flex;flex-wrap:wrap;gap:9px}
