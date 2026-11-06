@@ -23,7 +23,7 @@ import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusIn
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT, R27ET1_ITEM_ID } from './convenience-store';
-import { canEquipItem, equippedItem, isEquipmentSlot, r27et1Equipped, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS } from './equipment';
+import { canEquipItem, isEquipmentSlot, r27et1Equipped, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS } from './equipment';
 import { applyCookingBegin, applyCookingCancel, applyCookingSettle, parseCookingState } from './cooking';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, applyWeatherForElapsedDays, dailyEnergyAfter, exposureSeed, outdoorEnergyDrain, outdoorHealthExposure, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
