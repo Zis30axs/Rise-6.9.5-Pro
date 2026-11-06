@@ -373,12 +373,18 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       }
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
+      // Ambiguous natural-language continuations must never lose relevant private
+      // protagonist history merely because the player omitted a character name.
+      const continuationReference = /她|他|她们|他们|刚才|刚刚|继续|之前|上次|那件事|那个人|接着|后来|回忆|还记得|再见|重逢/.test(input);
+      const recentNarrativeText = snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))
+        .slice(-6).map(row => row.text).join('\n');
       const narrative = narrativeContext(snapshot);
       const sideOpportunity = otherSidePromptContext(snapshot);
       const weekly = weeklyMemoryContext(snapshot);
       const focusedOtherProtagonists = new Set(otherProtagonists(activeProtagonist(snapshot)).filter(id => {
         const shortName = id === 'renako' ? '玲奈子' : protagonistNames[id].slice(-2);
-        return input.includes(shortName) || input.includes(protagonistNames[id].slice(0, 2))
+        return continuationReference || input.includes(shortName) || input.includes(protagonistNames[id].slice(0, 2))
+          || recentNarrativeText.includes(shortName) || recentNarrativeText.includes(protagonistNames[id].slice(0, 2))
           || input.toLowerCase().includes(id)
           || narrative.counterpartsInScene.some(person => person.id === id)
           || (sideOpportunity.allowed && sideOpportunity.groups.some(group => group.includes(id)))
@@ -389,6 +395,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const storeAvailability = getStoreAvailability(snapshot);
       const minimalStore = storeAvailability.available || topics.shopping
         ? storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category })) : [];
+      // Small permanent ID/name index keeps natural-language shopping possible
+      // even when an indirect request doesn't match the topic hint regex.
+      const storeNameIndex = storeCatalog.map(({ id, name }) => ({ id, name }));
       const summary = {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
@@ -463,12 +472,12 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           services: locationServiceCatalog.filter(service => !service.reveal)
              .map(({ id, label, locationIds }) => ({ id, label, locationIds })),
           packagingFeePerItem: PACKAGING_FEE,
-          // The shop's live stock is already in store.items; only include the global list
-          // outside the shop when the player actually asks about food or shopping.
-          ...(storeAvailability.available ? {} : topics.shopping ? { storeItems: minimalStore } : {}),
-          rooms: campusInteriors.filter(room => topics.room || room.id === snapshot.interior?.roomId)
-            .map(room => ({ id: room.id, label: room.label, parentLocationId: room.parentLocationId,
-              interactions: room.interactions.map(({ id, label, description, minutes, energyDelta }) => ({ id, label, description, minutes, energyDelta })) })),
+          // Preserve all purchasable IDs for free-form actions. Full prices and
+          // categories are sent only when relevant; don't duplicate store.items.
+          ...(storeAvailability.available ? {} : { storeItems: topics.shopping ? minimalStore : storeNameIndex }),
+          rooms: campusInteriors.map(room => ({ id: room.id, label: room.label, parentLocationId: room.parentLocationId,
+            ...(room.id === snapshot.interior?.roomId || topics.room
+              ? { interactions: room.interactions.map(({ id, label, description, minutes, energyDelta }) => ({ id, label, description, minutes, energyDelta })) } : {}) })),
           subjects: topics.study ? academicMajors.flatMap(major => major.subjects.map(subject => ({ id: subject.id, name: subject.name, majorId: major.id, major: major.name }))) : [],
         },
         schedule: snapshot.schedule,
@@ -503,7 +512,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             id, name, tag, summary: summary.slice(0, PROMPT_CONTEXT_LIMITS.mainCharacterSummary), portraitId, affinity, sourcePersonId,
           })),
         recentPhone: selectPromptPhone(snapshot.phone),
-        recentSms: storySmsContext(snapshot).slice(topics.phone ? -24 : -8),
+        // Keep the original bounded SMS evidence: indirect references like
+        // "她刚才说什么" need no special keyword to remain intelligible.
+        recentSms: storySmsContext(snapshot),
         music: livehousePhoneView(snapshot, activeProtagonist(snapshot)),
         journal: selectPromptJournal(snapshot.journal, alreadyInNarrative),
         recentStory: selectPromptStory(snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))),
