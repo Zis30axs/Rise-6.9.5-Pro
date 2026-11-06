@@ -378,7 +378,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const weekly = weeklyMemoryContext(snapshot);
       const focusedOtherProtagonists = new Set(otherProtagonists(activeProtagonist(snapshot)).filter(id => {
         const shortName = id === 'renako' ? '玲奈子' : protagonistNames[id].slice(-2);
-        return input.includes(shortName) || input.toLowerCase().includes(id)
+        return input.includes(shortName) || input.includes(protagonistNames[id].slice(0, 2))
+          || input.toLowerCase().includes(id)
           || narrative.counterpartsInScene.some(person => person.id === id)
           || (sideOpportunity.allowed && sideOpportunity.groups.some(group => group.includes(id)))
           || !!weekly.pending;
