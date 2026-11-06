@@ -41,7 +41,7 @@ export const storeCatalog: readonly StoreItem[] = Object.freeze([
   ...cookingIngredientItems,
 ].map(item => Object.freeze({ ...item, effects: Object.freeze(item.effects) })) as StoreItem[]);
 
-/** A reusable R-27ET1-shaped writing instrument, not a functioning missile. */
+/** Reusable stationery items equipped from the backpack. */
 export const R27ET1_ITEM_ID = 'stationery-r27et1';
 export const stationeryCatalog: readonly StoreItem[] = Object.freeze([
   Object.freeze({ id: R27ET1_ITEM_ID, name: 'R-27ET1', brand: '街角文具店',
