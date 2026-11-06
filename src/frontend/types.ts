@@ -111,6 +111,8 @@ export interface CharacterContact {
   /** Stable pedestrian identity, retained after the player leaves the scene. */
   sourcePersonId: string | null;
   isMain: boolean;
+  /** Established relationship fact, such as an agreed romance. Absent for strangers and old saves. */
+  relationNote?: string;
 }
 
 export interface ContactProfileInput {
@@ -158,6 +160,8 @@ export interface WorldState {
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
   livehouse?: import('../runtime/livehouse').LivehouseState;
+  /** Tickets already used and instrument practice. Absent on old saves; skill starts at 0. */
+  livehouseVisit?: import('../runtime/livehouse-visit').LivehouseVisitState;
   /** Shared profession cases and rewards, keyed by the responsible protagonist. */
   lawCareer?: import('../runtime/law-career').LawCareerState;
   /** Shared court docket, active trial, filings and saved verdicts; absent in older saves. */
@@ -166,6 +170,8 @@ export interface WorldState {
   npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
   /** Shared counseling records with Dr. Fengjin; weekly per protagonist. */
   fengjinClinic?: import('../runtime/fengjin-clinic').FengjinClinicState;
+  /** Per-protagonist cooking sessions. Absent until someone starts a dish. */
+  cooking?: import('../runtime/cooking').CookingState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
@@ -194,6 +200,9 @@ export type WorldAction =
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use_item'; itemId: string }
+  | { type: 'cook_begin'; recipeId: string }
+  | { type: 'cook_cancel'; sessionId: string }
+  | { type: 'cook_settle'; sessionId: string; position: number }
   | { type: 'location_service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'fulfill-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }

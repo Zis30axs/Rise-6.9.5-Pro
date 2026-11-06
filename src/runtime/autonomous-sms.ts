@@ -3,6 +3,7 @@ import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, isProtagoni
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
 import { npcIdForContact } from './npc-phone';
 import { residentById, residentPresence } from './npc-cast';
+import { affinityRelation } from './affinity-tiers';
 import { backgroundLifeSummary } from './background-life';
 import { gameCalendar } from './game-calendar';
 import bandoriProfiles from '../worldbook/bang-dream-canon.json';
@@ -194,11 +195,13 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       row.from === senderId && row.to === task.owner || row.from === task.owner && row.to === senderId &&
       person.phone.some(message => message.id === row.id && message.read)).slice(-20);
     const profile = residentById(PROTAGONIST_PERSON_IDS[senderId] ?? '');
+    const towardRecipient = person.contacts.find(row => row.id === 'protagonist-' + task.owner);
     return {
       ...common,
       actor: { id: senderId, name: protagonistNames[senderId], kind: 'protagonist',
         personality: profile?.profile ?? bandoriProfiles.entries.find(row => row.name === protagonistNames[senderId])?.content ?? null,
-        relationship: person.contacts.find(row => row.id === 'protagonist-' + task.owner)?.affinity ?? null,
+        relationship: towardRecipient?.affinity ?? null,
+        bond: towardRecipient ? affinityRelation(towardRecipient.affinity, towardRecipient.relationNote) : null,
         ownLocation: person.locationId, ownCalendar: p.devices[senderId].calendar.slice(-8),
         ownSchedule: person.schedule.filter(row => !row.done).slice(-8),
         pendingActivity: p.backgroundLife?.people[senderId].pending ?? null,
@@ -220,6 +223,7 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       personality: (resident?.profile ?? contact.summary).slice(0, 8000),
       publicProfile: resident?.publicProfile ?? null,
       relationshipAffinity: contact.affinity,
+      bond: affinityRelation(contact.affinity, contact.relationNote),
       activity: presence?.activity ?? '当前行程未公开',
       available: presence?.available ?? null,
       locationId: presence?.locationId ?? null },
@@ -236,7 +240,7 @@ export const AUTONOMOUS_SMS_PROTOCOL = [
   '你是《未读之城》独立运行的私人短信子任务，不是主叙事者。不写story，不改变位置/时间/关系/钱包/背包/日程，不输出工具调用。',
   '只扮演上下文actor所指的唯一发件人，收件人为recipient。不要模仿其他人，不得写玩家发出的任何文本。',
   '根据人物性格、已有会话、实际作息及只属于发件人的已知事实，决定此刻是否真的有值得主动说的事。',
-  '人物档案用于定义本人性格和前史，不会赋予读心能力；他人的秘密、未读消息及未亲历的叙事不属于本人知情范围。关系数值不能当作对方内心或感情承诺的证据。',
+  '人物档案用于定义本人性格和前史，不会赋予读心能力；他人的秘密、未读消息及未亲历的叙事不属于本人知情范围。关系数值不能当作对方内心或感情承诺的证据。bond 是发件人对收件人的好感档位和分寸提示：按本人性格表现这一档，决定是否主动联系；高档位不等于恋爱，家人则是信任与照应。',
   '这是低频随机抽中的候选机会，并非必须发送。如果只是寒暄凑数、重复上次消息、没有真实话题、角色正在忙或刚发过消息，优先返回null。',
   '短信可以自然、有情绪、简短，不要每次报告角色去向或询问玩家在干什么；不能把推测当成已发生事件。',
   '不得回应等待玩家手动请求回复的短信。乐队邀请、加入名册与演出预约只能通过已有明确同意流程处理，不能在主动短信中代为同意或宣称登记完成。',

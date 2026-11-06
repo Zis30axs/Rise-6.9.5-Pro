@@ -164,42 +164,79 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
 }
 
 /**
- * Prefer explicit data tags when a model cannot keep a whole JSON envelope.
- * Only known tags are structural; text outside them is never executed.
- * The model's actions still pass the exact same whitelist validator as JSON.
+ * Be forgiving about model-facing tag syntax. Some models include reasoning,
+ * quoted examples, duplicate tags or a missing closing tag. Those are not
+ * reasons to discard a complete story.
+ *
+ * Structured side effects are read ONLY after the chosen story. Malformed
+ * optional data is ignored here; any accepted data still goes through the
+ * unchanged, strict world-state validators before it can be committed.
  */
 function parseTaggedStory(source: string): Record<string, unknown> | null {
-  const matches = [...source.matchAll(/<(story|phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue)>([\s\S]*?)<\/\1>/gi)];
-  if (!matches.length) return null;
-  const tokens = [...source.matchAll(/<\/?(?:story|phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue)>/gi)];
-  if (tokens.length !== matches.length * 2) return invalid('关键标签重复或未闭合');
-  const blocks = new Map<string, string>();
-  let end = 0;
-  for (const match of matches) {
-    const start = match.index ?? 0;
-    if (start < end) return invalid('关键标签嵌套');
-    end = start + match[0].length;
-    const name = match[1].toLowerCase();
-    if (blocks.has(name)) return invalid('关键标签重复');
-    blocks.set(name, match[2].trim());
+  const cleaned = source
+    .replace(/\[assistant\]\s*\[reasoning\][\s\S]*?\[content\]/gi, '')
+    .replace(/<(think|analysis|reasoning|konatan_planning~|tucao)(?:\s[^>]*)?>[\s\S]*?<\/\1\s*>/gi, '')
+    .trim();
+  const opens = [...cleaned.matchAll(/<story>/gi)];
+  let story = '';
+  let tail = cleaned;
+  // Prefer the last story opener: earlier occurrences are usually examples
+  // inside planning or a discarded draft.
+  for (let i = opens.length - 1; i >= 0; i--) {
+    const open = opens[i];
+    const start = (open.index ?? 0) + open[0].length;
+    const closing = /<\/story>/gi;
+    closing.lastIndex = start;
+    const close = closing.exec(cleaned);
+    let end = close?.index ?? cleaned.length;
+    if (!close) {
+      // Even an unclosed story can be recovered when data tags follow it.
+      const next = /<(?:phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue)>/i.exec(cleaned.slice(start));
+      if (next) end = start + next.index;
+    }
+    const candidate = cleaned.slice(start, end).trim();
+    if (!candidate) continue;
+    story = candidate;
+    tail = cleaned.slice(close ? close.index + close[0].length : end);
+    break;
   }
-  if (!blocks.has('story')) return invalid('缺少 story 标签');
-  const jsonArray = (name: string): unknown => {
-    const original = blocks.get(name);
-    if (original === undefined || !original) return [];
-    const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(original);
-    try { return JSON.parse((fenced ? fenced[1] : original).trim()); }
-    catch { return invalid(name + ' 必须为 JSON 数组'); }
+  if (!story) return null;
+
+  const readJson = (name: string, kind: 'array' | 'object'): unknown => {
+    const pattern = new RegExp('<' + name + '>([\\s\\S]*?)<\\/' + name + '>', 'gi');
+    const blocks = [...tail.matchAll(pattern)];
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      const original = blocks[i][1].trim();
+      const fence = String.fromCharCode(96).repeat(3);
+      const fenced = new RegExp('^' + fence + '(?:json)?\\s*\\n([\\s\\S]*?)\\n' + fence + '$', 'i').exec(original);
+      try {
+        const value: unknown = JSON.parse((fenced ? fenced[1] : original).trim());
+        if (kind === 'array' ? Array.isArray(value) : !!value && typeof value === 'object' && !Array.isArray(value)) return value;
+      } catch { /* A malformed optional block is not a failed story. */ }
+    }
+    return undefined;
   };
+  const readText = (name: string): string | undefined => {
+    const pattern = new RegExp('<' + name + '>([\\s\\S]*?)<\\/' + name + '>', 'gi');
+    const blocks = [...tail.matchAll(pattern)];
+    return blocks.length ? blocks[blocks.length - 1][1].trim() || undefined : undefined;
+  };
+  const phone = readJson('phone_messages', 'array');
+  const contacts = readJson('contact_requests', 'array');
+  const otherSide = readJson('otherside', 'array');
+  const actions = readJson('world_actions', 'array');
+  const events = readJson('world_events', 'array');
+  const weekly = readJson('weekly_summary', 'object');
+  const continued = Array.isArray(otherSide) && otherSide.length ? readText('story_continue') : undefined;
   return {
-    story: blocks.get('story'),
-    phone_messages: jsonArray('phone_messages'),
-    ...(blocks.has('contact_requests') ? { contact_requests: jsonArray('contact_requests') } : {}),
-    ...(blocks.has('otherside') ? { other_side: jsonArray('otherside') } : {}),
-    ...(blocks.has('story_continue') ? { story_continue: blocks.get('story_continue') } : {}),
-    ...(blocks.has('world_actions') ? { world_actions: jsonArray('world_actions') } : {}),
-    ...(blocks.has('world_events') ? { world_events: jsonArray('world_events') } : {}),
-    ...(blocks.has('weekly_summary') ? { weekly_summary: (() => { try { return JSON.parse(blocks.get('weekly_summary')!); } catch { return invalid('weekly_summary 必须为 JSON 对象'); } })() } : {}),
+    story,
+    phone_messages: phone ?? [],
+    ...(contacts !== undefined ? { contact_requests: contacts } : {}),
+    ...(otherSide !== undefined ? { other_side: otherSide } : {}),
+    ...(continued !== undefined ? { story_continue: continued } : {}),
+    ...(actions !== undefined ? { world_actions: actions } : {}),
+    ...(events !== undefined ? { world_events: events } : {}),
+    ...(weekly !== undefined ? { weekly_summary: weekly } : {}),
   };
 }
 

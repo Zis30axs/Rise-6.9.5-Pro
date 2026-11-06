@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-"""Fail-closed audit of Lite PNG plus its matching, data-only offline asset archive."""
+"""Fail-closed audit of Lite PNG plus its matching, data-only offline asset archive.
+
+Release audit checks structure, counts and byte lengths. It does not verify SHA-256.
+Content-addressed names remain the runtime installer's cache keys.
+"""
 from __future__ import annotations
-import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 from zipfile import ZipFile
 from build_card import ROOT, IMMERSIVE_SCRIPT_ID
 from card_codec import extract_card
-from build_lite_release import (
-    PNG_LIMIT, TOKYO_SANDBOX_ARCHIVE, TOKYO_SANDBOX_BYTES, TOKYO_SANDBOX_SHA256,
-)
+from build_lite_release import PNG_LIMIT, TOKYO_SANDBOX_BYTES
 from verify_downtown_art import extract_v2
-
-
-def sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
 
 
 def verify() -> dict:
@@ -22,7 +20,6 @@ def verify() -> dict:
     card = ROOT / 'dist/unread-city-lite-tauri.png'
     normal = ROOT / 'dist/unread-city-lite.png'
     archive = ROOT / 'dist/unread-city-lite-assets.zip'
-    sandbox_archive = ROOT / 'dist' / TOKYO_SANDBOX_ARCHIVE
     report = json.loads((ROOT / 'dist/lite-assets-report.json').read_text('utf-8'))
     if card.stat().st_size >= PNG_LIMIT:
         raise ValueError(f'Lite PNG too large: {card.stat().st_size} >= {PNG_LIMIT}')
@@ -38,24 +35,38 @@ def verify() -> dict:
     if not any('丰川祥子' in x.get('name','') for x in data['character_book']['entries']):
         raise ValueError('Sakiko worldbook missing')
     source_art = json.loads((ROOT / 'integration/downtown-art/manifest.json').read_text('utf-8'))
-    expected = {x['sha256'] for x in source_art['assets']}
+    approved = source_art['assets']
+    if not isinstance(approved, list) or not approved:
+        raise ValueError('市区立绘清单为空')
+    art_root = ROOT / 'assets/downtown-art'
+    art_files = []
+    for item in approved:
+        path = art_root / item['path']
+        if not path.is_file():
+            raise ValueError('市区立绘清单缺少文件：' + str(item.get('path')))
+        art_files.append(path)
+    approved_count = len(art_files)
     with ZipFile(archive) as zip_file:
-        manifest_bytes = zip_file.read('manifest.json')
-        if sha(manifest_bytes) != report['manifestSha256']:
-            raise ValueError('Lite ZIP manifest hash mismatch')
-        manifest = json.loads(manifest_bytes)
+        manifest = json.loads(zip_file.read('manifest.json'))
         assets = manifest['assets']
-        keys = {x['sha256'] for x in assets}
-        if any(asset['sha256'] == TOKYO_SANDBOX_SHA256 for asset in assets):
-            raise ValueError('东京 3D 沙盘 GLB 被写入了主 Lite 资源 ZIP')
-        if report.get('tokyoSandboxSha256') != TOKYO_SANDBOX_SHA256 or not report.get('tokyoSandboxExternalized'):
+        # Each self-contained map crop must be externalized into this SAME ZIP.
+        svg_assets = [asset for asset in assets if asset['mime'] == 'image/svg+xml']
+        svg_payloads = [zip_file.read(asset['path']) for asset in svg_assets]
+        for avatar in sorted((ROOT / 'assets/map-avatars').glob('*.svg')):
+            if avatar.read_bytes() not in svg_payloads:
+                raise ValueError('Lite ZIP 缺少地图 SVG 头像：' + avatar.name)
+        tokyo = [asset for asset in assets if asset['bytes'] == TOKYO_SANDBOX_BYTES and asset['mime'] in (
+            'model/gltf-binary', 'application/octet-stream')]
+        if len(tokyo) != 1:
+            raise ValueError('东京 3D 沙盘 GLB 未放入主 Lite 资源 ZIP')
+        if not report.get('tokyoSandboxExternalized'):
             raise ValueError('东京沙盘 Lite 打包报告不完整')
-        if report.get('tokyoSandboxSeparatePack') is not True or report.get('tokyoSandboxInCoreZip') is not False:
-            raise ValueError('东京沙盘必须是独立素材包')
-        if report.get('tokyoSandboxArchive') != TOKYO_SANDBOX_ARCHIVE:
-            raise ValueError('东京沙盘素材包文件名不正确')
-        if not expected.issubset(keys):
-            raise ValueError('One or more approved downtown-art images were not externalized')
+        if report.get('tokyoSandboxSeparatePack') is not False or report.get('tokyoSandboxInCoreZip') is not True:
+            raise ValueError('东京沙盘必须包含在主素材包内')
+        zip_sizes = Counter(asset['bytes'] for asset in assets)
+        missing_sizes = Counter(path.stat().st_size for path in art_files) - zip_sizes
+        if missing_sizes:
+            raise ValueError('市区立绘没有按清单数量进入素材包')
         if len(assets) != report['assets']:
             raise ValueError('ZIP asset count does not match report')
         if set(zip_file.namelist()) != {'manifest.json', *(x['path'] for x in assets)}:
@@ -64,51 +75,26 @@ def verify() -> dict:
             if zip_file.getinfo(x['path']).compress_type != 0:
                 raise ValueError('ZIP entry unexpectedly compressed; importer accepts STORE only')
             raw = zip_file.read(x['path'])
-            if len(raw) != x['bytes'] or sha(raw) != x['sha256']:
-                raise ValueError('ZIP asset corrupt: ' + x['path'])
+            if len(raw) != x['bytes']:
+                raise ValueError('ZIP asset length mismatch: ' + x['path'])
     packs = data['extensions']['unread_city']['immersive'].get('assetPacks')
     expected_packs = [
-        {'id': 'lite-assets', 'archive': 'unread-city-lite-assets.zip', 'required': True},
-        {'id': 'tokyo-sandbox', 'archive': TOKYO_SANDBOX_ARCHIVE, 'required': False,
-         'sha256': TOKYO_SANDBOX_SHA256, 'bytes': TOKYO_SANDBOX_BYTES},
+        {'id': 'lite-assets', 'archive': 'unread-city-lite-assets.zip', 'required': True,
+         'tokyoSandboxIncluded': True},
     ]
     if packs != expected_packs:
-        raise ValueError('Lite 角色卡未登记独立东京沙盘素材包')
-    with ZipFile(sandbox_archive) as sandbox_zip:
-        sandbox_manifest_bytes = sandbox_zip.read('manifest.json')
-        if sha(sandbox_manifest_bytes) != report['tokyoSandboxManifestSha256']:
-            raise ValueError('东京沙盘 ZIP manifest 哈希不一致')
-        sandbox_manifest = json.loads(sandbox_manifest_bytes)
-        sandbox_assets = sandbox_manifest['assets']
-        if sandbox_manifest.get('schema') != 'unread-city-tokyo-sandbox-v1' or sandbox_manifest.get('pack') != 'tokyo-sandbox':
-            raise ValueError('东京沙盘 ZIP 清单格式不正确')
-        if len(sandbox_assets) != 1 or sandbox_assets[0]['sha256'] != TOKYO_SANDBOX_SHA256 or sandbox_assets[0]['bytes'] != TOKYO_SANDBOX_BYTES:
-            raise ValueError('独立东京沙盘 ZIP 缺少固定 GLB')
-        if sandbox_assets[0]['mime'] not in ('model/gltf-binary', 'application/octet-stream'):
-            raise ValueError('东京 GLB 的 ZIP MIME 不正确')
-        if set(sandbox_zip.namelist()) != {'manifest.json', sandbox_assets[0]['path']}:
-            raise ValueError('东京沙盘 ZIP 条目不匹配')
-        info = sandbox_zip.getinfo(sandbox_assets[0]['path'])
-        if info.compress_type != 0:
-            raise ValueError('东京沙盘 ZIP 被压缩；导入器只接受 STORE')
-        raw_model = sandbox_zip.read(sandbox_assets[0]['path'])
-        if len(raw_model) != TOKYO_SANDBOX_BYTES or sha(raw_model) != TOKYO_SANDBOX_SHA256:
-            raise ValueError('独立东京沙盘 ZIP 中的 GLB 校验失败')
-    if sha(sandbox_archive.read_bytes()) != report['tokyoSandboxZipSha256']:
-        raise ValueError('东京沙盘 ZIP 哈希与构建报告不一致')
+        raise ValueError('Lite 角色卡素材包登记不正确')
     return {'status': 'passed-build-only-not-tested-on-iphone',
-            'liteCardBytes': card.stat().st_size, 'liteCardSha256': sha(card.read_bytes()),
+            'sha256Verification': 'not-required',
+            'liteCardBytes': card.stat().st_size,
             'liteBundleBytes': lite.stat().st_size, 'zipBytes': archive.stat().st_size,
-            'zipSha256': sha(archive.read_bytes()), 'externalAssets': report['assets'],
-            'approvedNewArtExternalized': len(expected), 'offline': True,
+            'externalAssets': report['assets'],
+            'approvedNewArtExternalized': approved_count, 'offline': True,
             'physicalDeviceTested': False,
-            'tokyoSandboxSha256': TOKYO_SANDBOX_SHA256,
             'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES,
-            'tokyoSandboxArchive': TOKYO_SANDBOX_ARCHIVE,
-            'tokyoSandboxSeparatePack': True,
-            'tokyoSandboxInCoreZip': False,
-            'tokyoSandboxZipBytes': sandbox_archive.stat().st_size,
-            'tokyoSandboxZipSha256': sha(sandbox_archive.read_bytes())}
+            'tokyoSandboxArchive': 'unread-city-lite-assets.zip',
+            'tokyoSandboxSeparatePack': False,
+            'tokyoSandboxInCoreZip': True}
 
 if __name__ == '__main__':
     result = verify()

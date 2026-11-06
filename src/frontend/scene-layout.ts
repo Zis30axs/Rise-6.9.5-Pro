@@ -1,7 +1,7 @@
 import type { SceneBounds } from './scene-movement';
 
 /** Illustrative local coordinates, shared by the walkable scene and its small navigation map. */
-export const sceneBounds: SceneBounds = { minX: -260, maxX: 260, minZ: -220, maxZ: 260 };
+export const sceneBounds: SceneBounds = { minX: -360, maxX: 260, minZ: -220, maxZ: 260 };
 export interface SceneArea extends SceneBounds { id: string; label: string }
 export interface SceneLandmark { id: string; label: string; x: number; z: number }
 export interface ScenePath { x: number; z: number; width: number; depth: number; kind: 'road' | 'walk' }
@@ -30,6 +30,7 @@ export const sceneAreas: SceneArea[] = [
   { id: 'city-park', label: '神田川沿岸公园', minX: 120, maxX: 250, minZ: -210, maxZ: -100 },
   { id: 'grand-commercial', label: '新宿·大型商业娱乐区', minX: -250, maxX: -120, minZ: -210, maxZ: -100 },
   { id: 'takao-mountain', label: '高尾山自然风景区', minX: -95, maxX: 95, minZ: -245, maxZ: -125 },
+  { id: 'circle', label: 'CiRCLE 现场屋', minX: -350, maxX: -268, minZ: -200, maxZ: -110 },
   { id: 'campus', label: '高田·西早稻田校园', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
   { id: 'neighborhood', label: '高田校园南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
   { id: 'city-roads', label: '城市连接道路', ...sceneBounds },
@@ -57,6 +58,7 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'city-park', label: '神田川绿道站', x: 180, z: -150 },
   { id: 'grand-commercial', label: '新宿大型商业区接驳站', x: -180, z: -150 },
   { id: 'takao-mountain', label: '高尾山接驳站', x: 0, z: -175 },
+  { id: 'circle', label: 'CiRCLE', x: -310, z: -155 },
 ];
 
 export const scenePaths: ScenePath[] = [
@@ -94,6 +96,9 @@ export const scenePaths: ScenePath[] = [
   { x: 190, z: -174, width: 110, depth: 5, kind: 'walk' },
   { x: 225, z: -163, width: 5, depth: 24, kind: 'walk' },
   { x: 0, z: -155, width: 80, depth: 5, kind: 'walk' },
+  // Footpath from CiRCLE's plaza into the existing Shinjuku commercial block.
+  { x: -280, z: -155, width: 70, depth: 5, kind: 'walk' },
+  { x: -220, z: -155, width: 60, depth: 5, kind: 'walk' },
   { x: -35, z: -185, width: 30, depth: 5, kind: 'walk' },
   { x: 25, z: -215, width: 40, depth: 5, kind: 'walk' },
   // Connect the courthouse pedestrian entrance to the existing street grid.

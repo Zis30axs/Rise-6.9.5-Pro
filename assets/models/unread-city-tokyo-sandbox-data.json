@@ -44,7 +44,7 @@
     },
     {
       "id": "downtown",
-      "name": "目白／目白台住宅区",
+      "name": "目白／目白台豪华住宅区",
       "shortName": "目白台住宅区",
       "description": "目白台高地名门宅邸区：丰川家大宅、王冢家豪宅、二阶堂家传统和风宅邸。",
       "x": 0,
@@ -106,6 +106,19 @@
       "minZ": -24,
       "maxZ": 136,
       "color": 14205861
+    },
+    {
+      "id": "circle",
+      "name": "CiRCLE 现场屋",
+      "shortName": "CiRCLE",
+      "description": "与新宿大型商业区步行相连的现场演出屋。一楼是咖啡厅，侧翼是隔音练团室，咖啡厅由店员月岛麻里奈接待。",
+      "x": -248,
+      "z": -90,
+      "minX": -292,
+      "maxX": -204,
+      "minZ": -140,
+      "maxZ": -40,
+      "color": 12868410
     }
   ],
   "landmarks": [
@@ -477,11 +490,11 @@
     {
       "id": "downtown",
       "name": "目白台接驳站",
-      "subtitle": "目白台高地名门街区",
+      "subtitle": "目白台高密度豪宅塔楼群与名门宅邸",
       "district": "downtown",
       "x": 0,
       "z": 145,
-      "desc": "目白／目白台的林荫大道，通往丰川家、王冢家与二阶堂家宅邸。",
+      "desc": "目白／目白台的皇家喷泉林荫大道与高密度豪华高层住宅群，毗邻长崎家高层豪华公寓（素世家）、丰川家、王冢家与二阶堂家宅邸。",
       "services": [
         {
           "id": "dt-avenue",
@@ -669,6 +682,47 @@
           "stressDelta": -16,
           "price": 0,
           "result": "在名门月之森女子学园的玫瑰温室旁聆听了优雅的午后室内乐合奏。"
+        }
+      ]
+    },
+    {
+      "id": "circle",
+      "name": "CiRCLE",
+      "subtitle": "咖啡厅与练团室",
+      "district": "circle",
+      "x": -248,
+      "z": -90,
+      "desc": "现场屋门前的步行广场。一楼咖啡厅可点美式、拿铁和甜点，侧翼练团室可进去看设备。店员月岛麻里奈在咖啡厅区接待。门口张贴的营业时间是这座城市为这家店安排的。",
+      "services": [
+        {
+          "id": "drink-coffee",
+          "label": "喝美式咖啡",
+          "minutes": 10,
+          "energyDelta": 18,
+          "moraleDelta": 3,
+          "stressDelta": -3,
+          "price": 320,
+          "result": "在 CiRCLE 咖啡厅喝完一杯美式。"
+        },
+        {
+          "id": "drink-latte",
+          "label": "喝拿铁",
+          "minutes": 15,
+          "energyDelta": 15,
+          "moraleDelta": 5,
+          "stressDelta": -5,
+          "price": 440,
+          "result": "在 CiRCLE 咖啡厅喝完一杯拿铁。"
+        },
+        {
+          "id": "eat-dessert",
+          "label": "吃一份甜点",
+          "minutes": 15,
+          "energyDelta": 10,
+          "moraleDelta": 6,
+          "stressDelta": -4,
+          "price": 360,
+          "result": "在 CiRCLE 咖啡厅吃完一份甜点。"
         }
       ]
     }
@@ -1122,6 +1176,178 @@
       "color": "#efe7d6",
       "roofType": "tsukinomori",
       "sign": "TSUKINOMORI 月之森女子学园"
+    },
+    {
+      "id": "building:mejirodai-west-mansion",
+      "name": "目白台银杏高层公馆",
+      "x": -60,
+      "z": 139,
+      "width": 14,
+      "depth": 12,
+      "height": 22.0,
+      "floors": 7,
+      "color": "#e8dec8",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:soyo-luxury-tower",
+      "name": "长崎家高层豪华公寓（素世家）",
+      "x": -38,
+      "z": 139,
+      "width": 15,
+      "depth": 13,
+      "height": 29.5,
+      "floors": 10,
+      "color": "#f3ede0",
+      "roofType": "mansion",
+      "sign": "NAGASAKI RESIDENCE",
+      "roomId": "soyo-house"
+    },
+    {
+      "id": "building:mejirodai-boulevard-west",
+      "name": "目白台凯旋西座公寓",
+      "x": -18,
+      "z": 139,
+      "width": 13,
+      "depth": 11.5,
+      "height": 19.5,
+      "floors": 6,
+      "color": "#dfd5c3",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-boulevard-east",
+      "name": "目白台凯旋东座公寓",
+      "x": 18,
+      "z": 139,
+      "width": 13,
+      "depth": 11.5,
+      "height": 19.5,
+      "floors": 6,
+      "color": "#dfd5c3",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-rose-residence",
+      "name": "目白台玫瑰天际公馆",
+      "x": 38,
+      "z": 139,
+      "width": 15,
+      "depth": 13,
+      "height": 25.0,
+      "floors": 8,
+      "color": "#efe4d4",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-east-mansion",
+      "name": "目白台东庭高层公寓",
+      "x": 60,
+      "z": 139,
+      "width": 14,
+      "depth": 12,
+      "height": 21.0,
+      "floors": 7,
+      "color": "#e4d9c5",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-mid-west",
+      "name": "目白台西庭翡翠塔楼",
+      "x": -36,
+      "z": 162,
+      "width": 9.5,
+      "depth": 14,
+      "height": 26.0,
+      "floors": 9,
+      "color": "#dce5df",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-mid-east",
+      "name": "目白台东庭琥珀塔楼",
+      "x": 38.5,
+      "z": 162,
+      "width": 10,
+      "depth": 14,
+      "height": 25.0,
+      "floors": 8,
+      "color": "#ebe0ce",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-sky-nw",
+      "name": "目白台北翼云顶公寓西栋",
+      "x": -60,
+      "z": 179,
+      "width": 15,
+      "depth": 10.5,
+      "height": 24.5,
+      "floors": 8,
+      "color": "#e6dcc8",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-sky-w",
+      "name": "目白台翠庭高层豪宅",
+      "x": -38,
+      "z": 179,
+      "width": 16,
+      "depth": 11,
+      "height": 28.0,
+      "floors": 9,
+      "color": "#f0e9da",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-royal-west",
+      "name": "目白台皇家天际双子塔·西座",
+      "x": -14,
+      "z": 179,
+      "width": 16.5,
+      "depth": 11,
+      "height": 33.0,
+      "floors": 11,
+      "color": "#f5efe2",
+      "roofType": "mansion",
+      "sign": "MEJIRODAI SKY WEST"
+    },
+    {
+      "id": "building:mejirodai-royal-east",
+      "name": "目白台皇家天际双子塔·东座",
+      "x": 14,
+      "z": 179,
+      "width": 16.5,
+      "depth": 11,
+      "height": 31.5,
+      "floors": 10,
+      "color": "#f5efe2",
+      "roofType": "mansion",
+      "sign": "MEJIRODAI SKY EAST"
+    },
+    {
+      "id": "building:mejirodai-sky-e",
+      "name": "目白台椿山高层豪宅",
+      "x": 38,
+      "z": 179,
+      "width": 16,
+      "depth": 11,
+      "height": 27.0,
+      "floors": 9,
+      "color": "#ede3d2",
+      "roofType": "mansion"
+    },
+    {
+      "id": "building:mejirodai-sky-ne",
+      "name": "目白台北翼云顶公寓东栋",
+      "x": 60,
+      "z": 179,
+      "width": 15,
+      "depth": 10.5,
+      "height": 23.5,
+      "floors": 8,
+      "color": "#e2d7c3",
+      "roofType": "mansion"
     }
   ],
   "roads": [

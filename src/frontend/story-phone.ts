@@ -3,6 +3,7 @@ import type { CharacterPortraitId, ContactProfileDraft, WorldState } from './typ
 import { validateContactProfileDraft } from '../runtime/characters';
 import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
 import { characterForPerson } from './character-appearance';
+import { affinityContactLine } from '../runtime/affinity-tiers';
 import { novelNpcAtlases } from './novel-npc-atlases';
 
 export interface StoryPhoneContact { id: string; name: string; description: string; portraitId?: CharacterPortraitId; summary?: string; sourcePersonId?: string | null; isMain?: boolean }
@@ -35,7 +36,7 @@ export interface StoryPhoneLink {
 }
 
 const contactsOf = (state: WorldState): StoryPhoneContact[] => state.contacts.map(contact => ({
-  id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
+  id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contact.relationNote)}`,
   ...(contact.id.startsWith('protagonist-') ? {} : { portraitId: contact.portraitId }), summary: contact.summary.slice(0, 500), sourcePersonId: contact.sourcePersonId, isMain: contact.isMain,
 }));
 

@@ -5,6 +5,7 @@ import { applyNpcPhoneCommand, applyNpcPhoneReply, npcPhoneReplyContext } from '
 import { phoneReplyContext } from './phone-reply';
 import canon from '../worldbook/bang-dream-canon.json';
 import { residentById } from './npc-cast';
+import { canManageLivehouseAndBand } from './campus-interiors';
 
 export const MUSIC_ROLES = ['vocal', 'guitar', 'bass', 'drums', 'keyboard'] as const;
 export type MusicRole = typeof MUSIC_ROLES[number];
@@ -125,6 +126,7 @@ const fixedSkills: Record<string, Partial<MusicProfile['skills']>> = {
   '若叶睦': { guitar: 93 }, '三角初华': { vocal: 94, guitar: 90 }, '八幡海铃': { bass: 96 }, '祐天寺若麦': { drums: 86 },
   'bang-tomori': { vocal: 90 }, 'bang-anon': { guitar: 58 }, 'bang-taki': { drums: 94 }, 'bang-rana': { guitar: 97 },
   'bang-mutsumi': { guitar: 93 }, 'bang-uika': { vocal: 94, guitar: 90 }, 'bang-umiri': { bass: 96 }, 'bang-nyamu': { drums: 86 },
+  'bang-marina': { guitar: 90 }, '月岛麻里奈': { guitar: 90 },
 };
 const hash = (s: string) => { let n = 2166136261; for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619); return n >>> 0; };
 function ensureProfile(s: WorldState, personId: string, seed: string, name = '') {
@@ -265,6 +267,8 @@ export function applyBandReply(state: WorldState, messageId: string, reply: stri
 }
 export function livehousePhoneView(s: WorldState, owner: ProtagonistId) {
   const registry = s.livehouse ?? empty(), personId = musicPersonId(owner);
+  const person = s.protagonists ? personState(s, owner) : owner === 'soyo' ? s : { academics: null };
+  const canManage = canManageLivehouseAndBand(person, owner).allowed;
   const bands = registry.bands.filter(b => b.members.some(m => m.personId === personId));
   // A new save can request a story before the protagonist world is created.
   // Other people's majors do not exist yet, so there is nobody to invite.
@@ -274,5 +278,5 @@ export function livehousePhoneView(s: WorldState, owner: ProtagonistId) {
       ? [{ id: c.id, name: c.name }] : [];
   }) : [];
   return { bands: bands.map(b => ({ ...b, members: b.members.map(m => ({ ...m, profile: registry.profiles.find(p => p.personId === m.personId) })) })), bookings: registry.bookings.filter(b => bands.some(band => band.id === b.bandId)), invitations: registry.invitations.filter(i => i.from === owner || i.personId === personId).map(i => ({ ...i, bandName: registry.bands.find(b => b.id === i.bandId)?.name })),
-    contacts };
+    contacts, canManage };
 }

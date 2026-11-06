@@ -1,0 +1,17 @@
+{
+  "schema": "unread-city-asset-pack-v1",
+  "id": "circle-sandbox",
+  "title": "CiRCLE 现场屋沙盘",
+  "archive": "assets/circle-livehouse/packs/unread-city-circle-sandbox.zip",
+  "source": "assets/circle-livehouse/circle-sandbox.json",
+  "manifestSchema": "unread-city-lite-assets-v1",
+  "loader": "src/frontend/circle-sandbox-pack.ts",
+  "compression": "STORE",
+  "payloadBytes": 2493,
+  "payloadSha256": "c1050db474e1d64fc725f478ea6434f36bd3d158bd8c26f47ea46e49e1d6ac08",
+  "manifestSha256": "68e67109770291d50dcf0302df321931aae17698f3103c8f575e9cca047a6f0c",
+  "zipBytes": 3106,
+  "zipSha256": "a672bc73e7e571e842daef38fee08bc9b99954dc0339fce8d7ebe3633804f62e",
+  "mime": "application/json",
+  "consumer": "src/frontend/tokyo-sandbox-map.ts"
+}

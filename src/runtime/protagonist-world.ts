@@ -327,7 +327,7 @@ function parseNpcWallets(raw: unknown): Record<string, number> {
 }
 
 /** Adapt all legacy money paths once, including nested travel legs and model actions. */
-export function finishPersonalChange(before: WorldState, after: WorldState, note: string): WorldState {
+export function finishPersonalChange(before: WorldState, after: WorldState, note: string, reservedOtherSide?: ReadonlySet<ProtagonistId>): WorldState {
   if (!before.protagonists) return after;
   if (JSON.stringify(legacyView(before)) === JSON.stringify(legacyView(after))) return clone(before);
   const p = clone(before.protagonists), owner = p.accounts.active;
@@ -344,7 +344,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   const elapsed=gameMinute(after)-gameMinute(before);
   if (elapsed < 0) fail('世界时钟不能倒退');
   const next={...after,schema_version:'1.13.0' as const,protagonists:p};
-  settleBackgroundLife(before,next);
+  settleBackgroundLife(before,next,reservedOtherSide);
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);

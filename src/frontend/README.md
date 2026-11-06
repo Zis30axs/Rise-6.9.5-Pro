@@ -31,6 +31,9 @@ python scripts/build_card.py --frontend dist/immersive-shell.js
 
 构建输出 `dist/immersive-shell.js`，包含 Vue、Three.js、d3-geo、CSS、处理后的地理轮廓、本项目资源及 ST-iPhonie 内嵌包；固定 banner 为 `UNREAD_CITY_IMMERSIVE_BUNDLE`。Three.js 与 d3-geo 是本地 npm 依赖，随脚本打包；程序化几何、静态降级图和内嵌 GeoJSON 无需 CDN、外部地图服务或私人素材。构建器将完整 IIFE 存入角色卡的 `data.extensions.tavern_helper.scripts`，以稳定 ID `9d9bc6da-0c08-4d1f-8d18-451c4de6e295` 替换本项目脚本，不创建第二份。
 
+
+浏览器独立预览：本地完成生产构建后运行 `npm run browser:preview`，会将全量 IIFE 内联到 `dist/unread-city-browser-preview.html`。该单 HTML 不要求访问父窗口，能在允许 JavaScript 的浏览器及跨域内嵌页面中使用；只提供临时演示存档与演示响应，不读取真实酒馆存档、也不调用模型。正式角色卡继续使用酒馆助手与同源宿主，浏览器禁止执行脚本、沙箱不允许脚本或设备内存不足时仍无法运行。
+
 `scripts/build_embedded_phone.mjs` 从独立私有仓库 `D:\.study\ST-iPhonie` 白名单读取代码、CSS、分词和相关资源，生成 `src/frontend/generated/embedded-phone.ts` 与许可证说明；不得手改生成产物。`predev` / `precheck` 会重建默认手机包，`npm run build` 的检查步骤也会触发此过程。默认不带约 24 MB、304 项的音效包，保留手机手动导入；完整音效包属于高级构建选择，须核对最终产物，后续默认重建会覆盖预生成的非默认选择。构建机需要手机源码目录，导入成品的设备只需 PNG。应用源文件之外的私人数据、设置、密钥和聊天存档不参与打包。
 
 ## 全屏场景与阅读层（2026-10-17 改版）

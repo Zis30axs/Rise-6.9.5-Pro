@@ -6,6 +6,9 @@ import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { worldScenePeople } from '../src/runtime/world-presence';
 import { applySocialInvitationReply, parseSocialInvitations, protagonistHomeRooms } from '../src/runtime/natural-interactions';
 import { parsePhoneReplyWithScene } from '../src/runtime/phone-reply';
+import { getCampusInterior } from '../src/runtime/campus-interiors';
+import { kitchenAt } from '../src/runtime/cooking';
+import { residentById } from '../src/runtime/npc-cast';
 import type { StoryAction, WorldState } from '../src/frontend/types';
 
 const world = () => parseState(enableProtagonists(createInitialState()));
@@ -41,7 +44,7 @@ describe('自然输入与面板操作共用真实状态', () => {
 
   it('每位主角各自有住所，不把回家误解成共同的 home 区域', () => {
     expect(protagonistHomeRooms).toEqual({
-      soyo: 'dorm-room', sakiko: 'toyokawa-house',
+      soyo: 'soyo-house', sakiko: 'toyokawa-house',
       emma: 'emma-yuki-home', renako: 'amaori-family-home',
     });
   });
@@ -175,6 +178,43 @@ describe('自然输入与面板操作共用真实状态', () => {
     expect(panel).toContain('data-status-section="social"');
     expect(panel).toContain('data-status-section="recent"');
     expect(panel).not.toContain('data-status-section="game-purchases"');
-    expect(panel).toContain("emit('invite', contact.name)");
+    expect(panel).toContain("emit('invitations')");
+    expect(panel).toContain('data-status-open-invitations');
+  });
+
+  it('素世回家进入长崎家高层公寓，支持全部居家交互、开放式厨房与长崎夫人同住日程', () => {
+    const home = outcome(world(), '素世回到目白台的公寓。', [{ type: 'go_home' }], 'soyo-go-home');
+    expect(home.locationId).toBe('soyo-house');
+    expect(home.interior?.roomId).toBe('soyo-house');
+    expect(kitchenAt(home)?.roomId).toBe('soyo-house');
+
+    const room = getCampusInterior('soyo-house');
+    expect(room?.parentLocationId).toBe('downtown');
+    expect(room?.interactions.map(item => item.id)).toEqual([
+      'soyo-bass-practice',
+      'soyo-brew-tea',
+      'soyo-mother-note',
+      'soyo-mother-chat',
+      'soyo-sofa-rest',
+      'soyo-window-view',
+    ]);
+
+    let current = home;
+    for (const item of room!.interactions) {
+      current = reduceState(current, { type: 'novel_approach', interactionId: item.id });
+      current = reduceState(current, { type: 'interior_interact', interactionId: item.id });
+    }
+    expect(current.journal.some(entry => entry.text.includes('在温暖柔和的客餐厅灯光下度过了宁静的茶歇时光'))).toBe(true);
+
+    const mother = residentById('nagasaki-mother');
+    expect(mother?.name).toBe('长崎夫人');
+    expect(mother?.home).toBe('soyo-house');
+
+    const eveningPeople = worldScenePeople({
+      ...home,
+      clock: { ...home.clock, hour: 19, minute: 30 },
+    });
+    expect(eveningPeople.some(person => person.id === 'nagasaki-mother' && person.name === '长崎夫人')).toBe(true);
   });
 });
+

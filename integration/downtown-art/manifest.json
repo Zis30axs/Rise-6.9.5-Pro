@@ -5,162 +5,6 @@
   "releaseLimitBytes": 50000000,
   "assets": [
     {
-      "id": "sakiko_casual_neutral",
-      "path": "characters/sakiko/casual/neutral.webp",
-      "sha256": "c485b2394e82057aca0428ca19e2c2627d7cd6bdcdb9af7db9f62770e784a35c",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_casual_smile",
-      "path": "characters/sakiko/casual/smile.webp",
-      "sha256": "94a2c1b58f859665b15036b0fb456a17aa391f0b01cfd55a407683372cde506e",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_casual_troubled",
-      "path": "characters/sakiko/casual/troubled.webp",
-      "sha256": "84fb74c5fce6b5e3953a0bc3a7a42791094498030018e5bb52782d934394cc71",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_casual_surprised",
-      "path": "characters/sakiko/casual/surprised.webp",
-      "sha256": "51a5072d78ef81bf155e3370c5ed4f3a0671441823fa4381cb338c33a3dfc267",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_casual_annoyed",
-      "path": "characters/sakiko/casual/annoyed.webp",
-      "sha256": "569674f0f3d86003e30709f4c39a66d9f6b353b3abd82a35fafe012dee740fa2",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_casual_sad",
-      "path": "characters/sakiko/casual/sad.webp",
-      "sha256": "f371fa7a6a2fa68626b08fa84e6fdcb9b1b389d4f66c5b6ee8a9d6fc5b5ba480",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_neutral",
-      "path": "characters/sakiko/home/neutral.webp",
-      "sha256": "98a3783882132c0d92da7d583678db3a3eea6d202171c229e0508f20d8a5be4e",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_smile",
-      "path": "characters/sakiko/home/smile.webp",
-      "sha256": "934d8f3c26a2204143a13665c900d46cb4dbe4a0690d25355d9f0693550fb6a2",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_troubled",
-      "path": "characters/sakiko/home/troubled.webp",
-      "sha256": "ab98c88eecc274cbd448e937ff373227c0ca5ce8edba27bddc0c2b3271fa9834",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_surprised",
-      "path": "characters/sakiko/home/surprised.webp",
-      "sha256": "6cc7b9deea011bde6aebee8e3b69dfd1fb5155759822426d7d91ab7f3672c2b4",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_annoyed",
-      "path": "characters/sakiko/home/annoyed.webp",
-      "sha256": "a1d6fe3bc3f13356a1201294dfd68bfaa88221769b86b88f067e8e92d9c66e78",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
-      "id": "sakiko_home_sad",
-      "path": "characters/sakiko/home/sad.webp",
-      "sha256": "522532b4d8f5af620c3194365cfc840bcb1a22c2c42b3544a02c875e7007da66",
-      "size": [
-        768,
-        1344
-      ],
-      "anchor": [
-        384,
-        1280
-      ]
-    },
-    {
       "id": "mutsumi_uniform_neutral",
       "path": "characters/mutsumi/uniform/neutral.webp",
       "sha256": "2d6be09bfc329e3a41768085e3712a693c3e00857d465b8c9ecc95a794f4075e",
@@ -489,6 +333,58 @@
       "id": "tomori_uniform_shy",
       "path": "characters/tomori/uniform/shy.webp",
       "sha256": "4f34c3467fadaf0189b0cf44619a2967614c19760dc473482ce266727f36d868",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_neutral",
+      "path": "characters/nagasaki-mother/suit/neutral.webp",
+      "sha256": "9c66de5031c338b1d0eebc56d8f57ebeb0324264787538a91fafb42eaf553fa6",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_smile",
+      "path": "characters/nagasaki-mother/suit/smile.webp",
+      "sha256": "c949ffa6cb56c1aff0833f032181cf9eded249fe48e1f1e13d789e9192217ecd",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_surprised",
+      "path": "characters/nagasaki-mother/suit/surprised.webp",
+      "sha256": "956cf738b427220f187e5173708e671e729698c4bb9839323ee30661be9d5b36",
+      "size": [
+        768,
+        1344
+      ],
+      "anchor": [
+        384,
+        1280
+      ]
+    },
+    {
+      "id": "nagasaki_mother_suit_cheerful",
+      "path": "characters/nagasaki-mother/suit/cheerful.webp",
+      "sha256": "3ebc815e481a78c9d7aca7998949bbd9541e48f9a3a86c57f1349ae6f2dc0847",
       "size": [
         768,
         1344

@@ -9,7 +9,7 @@ export interface MapBuilding { id: string; x: number; z: number; width: number; 
 export const campusMapBounds = campusDetailBounds;
 export const mapBounds = districtBounds;
 export const mapPaths = scenePaths;
-export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain'].includes(area.id));
+export const mapAreas = sceneAreas.filter(area => ['campus', 'neighborhood', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain', 'circle'].includes(area.id));
 export const mapLandmarks = sceneLandmarks;
 
 // Major building footprints mirror the outdoor scene. A regression compares
@@ -37,6 +37,10 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:downtown-office-south', x: -82, z: 157, width: 22, depth: 17, height: 18.6, color: '#9ba9a0' },
   { id: 'building:downtown-shop-east', x: 87, z: 226, width: 17, depth: 18, height: 13.2, color: '#aa8770' },
   { id: 'building:toyokawa-residence', x: 50, z: 235, width: 24, depth: 20, height: 12.8, color: '#b7ac8b' },
+  { id: 'building:soyo-luxury-tower', x: -76, z: 162, width: 18, depth: 16, height: 28.5, color: '#e8dec8' },
+  { id: 'building:mejirodai-royal-west', x: -24, z: 242, width: 20, depth: 14, height: 31.0, color: '#dfd3bc' },
+  { id: 'building:mejirodai-royal-east', x: 18, z: 242, width: 20, depth: 14, height: 29.5, color: '#dfd3bc' },
+  { id: 'building:mejirodai-rose-residence', x: 52, z: 162, width: 18, depth: 16, height: 24.0, color: '#d8c9b0' },
   { id: 'building:grand-mall', x: -180, z: -175, width: 32, depth: 22, height: 16.5, color: '#8a7d93' },
   { id: 'building:livehouse', x: -155, z: -135, width: 26, depth: 20, height: 14.2, color: '#9d708b' },
   { id: 'building:ktv', x: -205, z: -135, width: 24, depth: 18, height: 12.8, color: '#aa726d' },
@@ -45,6 +49,8 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:takao-onsen', x: 45, z: -155, width: 24, depth: 18, height: 10.8, color: '#9c6f5a' },
   { id: 'building:takao-teahouse', x: -35, z: -185, width: 16, depth: 14, height: 7.2, color: '#aa7a59' },
   { id: 'building:takao-summit', x: 25, z: -215, width: 22, depth: 18, height: 12.0, color: '#688d77' },
+  { id: 'building:circle-hall', x: -332, z: -170, width: 24, depth: 14, height: 11.5, color: '#b68f76' },
+  { id: 'building:circle-studio', x: -288, z: -170, width: 18, depth: 12, height: 7.2, color: '#875f42' },
 ];
 
 const aliases: Record<string, string> = { gate: 'south-gate', cafe: 'campus-cafe', dorm: 'residences' };

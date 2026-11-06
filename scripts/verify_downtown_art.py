@@ -17,7 +17,8 @@ import zlib
 LIMIT = 50_000_000
 MAX_METADATA = 160 * 1024 * 1024
 EXPRESSIONS = ('neutral', 'smile', 'troubled', 'surprised', 'annoyed', 'sad')
-SAKIKO_SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
+# Sakiko's uniform and indoor clothes are inline sets, not downtown-pack sprites.
+SAKIKO_SPRITES = set()
 MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 'surprised')
 MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
 ANON_POSES = ('shy', 'smile', 'confident', 'wave', 'surprised', 'cheerful')
@@ -28,7 +29,9 @@ TAKI_POSES = ('neutral', 'crossed', 'drumsticks', 'embarrassed')
 TAKI_SPRITES = {f'taki_uniform_{pose}' for pose in TAKI_POSES}
 TOMORI_POSES = ('neutral', 'smile', 'surprised', 'sad', 'shy')
 TOMORI_SPRITES = {f'tomori_uniform_{pose}' for pose in TOMORI_POSES}
-SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | RAANA_SPRITES | TAKI_SPRITES | TOMORI_SPRITES
+NAGASAKI_MOTHER_POSES = ('neutral', 'smile', 'surprised', 'cheerful')
+NAGASAKI_MOTHER_SPRITES = {f'nagasaki_mother_suit_{pose}' for pose in NAGASAKI_MOTHER_POSES}
+SPRITES = SAKIKO_SPRITES | MUTSUMI_SPRITES | ANON_SPRITES | RAANA_SPRITES | TAKI_SPRITES | TOMORI_SPRITES | NAGASAKI_MOTHER_SPRITES
 BACKGROUNDS = {'toyokawa_mansion_day', 'toyokawa_mansion_dusk', 'toyokawa_mansion_night',
                'toyokawa_living_room', 'downtown_day', 'downtown_night'}
 EXPECTED_ASSETS = SPRITES | BACKGROUNDS

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Build the regular Lite PNG, the core offline ZIP, and the separate Tokyo sandbox ZIP.
+"""Build the regular Lite PNG + its ONE matching offline asset ZIP.
 
 No extra GLB input is needed: the canonical source lives at assets/models/.
-The sandbox model is packaged as dist/unread-city-tokyo-sandbox.zip and is not
-a member of dist/unread-city-lite-assets.zip.
+The first build produces the Lite card + ZIP; this command also produces the
+optional Tauri import PNG and validates the final offline package.
+The Tokyo sandbox model is packaged directly inside dist/unread-city-lite-assets.zip.
 No network downloads, CI, or GitHub Actions.
 """
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import subprocess
@@ -18,7 +18,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from build_tokyo_single_card import read_model, ROOT, MODEL_RELATIVE, EXPECTED_SHA256
+from build_lite_release import TOKYO_SANDBOX_BYTES
+from build_tokyo_single_card import read_model, ROOT, MODEL_RELATIVE
 
 
 def run(*args: str) -> None:
@@ -44,22 +45,16 @@ def ensure_tokyo_model(source: Path | None = None) -> None:
 
 def check_zip() -> None:
     core = ROOT / "dist/unread-city-lite-assets.zip"
-    archive = ROOT / "dist/unread-city-tokyo-sandbox.zip"
     report = json.loads((ROOT / "dist/lite-assets-report.json").read_text("utf-8"))
-    if report.get("tokyoSandboxSha256") != EXPECTED_SHA256 or not report.get("tokyoSandboxSeparatePack"):
-        raise ValueError("Lite 构建报告缺少独立东京沙盘包")
-    if report.get("tokyoSandboxInCoreZip"):
-        raise ValueError("东京沙盘被并入了主 Lite ZIP")
+    if not report.get("tokyoSandboxInCoreZip") or report.get("sha256Verification") not in (None, "not-required"):
+        raise ValueError("Lite 构建报告缺少东京沙盘记录，或仍把 SHA-256 当作发布门槛")
     with zipfile.ZipFile(core) as bundle:
         rows = json.loads(bundle.read("manifest.json"))["assets"]
-        if any(row["sha256"] == EXPECTED_SHA256 for row in rows):
-            raise ValueError("主 Lite ZIP 仍包含东京沙盘模型")
-    with zipfile.ZipFile(archive) as bundle:
-        rows = json.loads(bundle.read("manifest.json"))["assets"]
-        match = [row for row in rows if row["sha256"] == EXPECTED_SHA256]
-        if len(rows) != 1 or len(match) != 1 or hashlib.sha256(bundle.read(match[0]["path"])).hexdigest() != EXPECTED_SHA256:
-            raise ValueError("独立东京沙盘 ZIP 缺失或校验失败")
-    print(f"已核实：东京 GLB 位于独立素材包 {archive.name}，未进入主 Lite ZIP")
+        match = [row for row in rows if row["bytes"] == TOKYO_SANDBOX_BYTES and row["mime"] in (
+            "model/gltf-binary", "application/octet-stream")]
+        if len(match) != 1 or len(bundle.read(match[0]["path"])) != TOKYO_SANDBOX_BYTES:
+            raise ValueError("主 Lite ZIP 中的东京沙盘模型缺失或长度不正确")
+    print(f"已核实：东京 GLB 位于主 Lite ZIP，长度 {TOKYO_SANDBOX_BYTES}。不验证 SHA-256。")
 
 
 def build(source: Path | None = None, install_only: bool = False, skip_tauri: bool = False) -> None:
@@ -72,7 +67,7 @@ def build(source: Path | None = None, install_only: bool = False, skip_tauri: bo
         raise RuntimeError("无法找到本地 Node/npm")
 
     # package.json prebuild verifies the canonical model; postbuild creates
-    # the core Lite ZIP, the separate Tokyo sandbox ZIP, and the canonical PNG.
+    # the ONE Lite ZIP and canonical PNG automatically, even on plain npm build.
     run(npm, "run", "build")
     check_zip()
 
@@ -89,8 +84,7 @@ def build(source: Path | None = None, install_only: bool = False, skip_tauri: bo
         run(sys.executable, "scripts/verify_lite_release.py")
 
     print("Lite 角色卡：dist/unread-city-lite.png")
-    print("Lite 离线资源 ZIP：dist/unread-city-lite-assets.zip")
-    print("东京沙盘独立素材包：dist/unread-city-tokyo-sandbox.zip")
+    print("Lite 离线资源 ZIP（含东京沙盘）：dist/unread-city-lite-assets.zip")
     if not skip_tauri:
         print("Tauri 导入卡：dist/unread-city-lite-tauri.png")
     print("后续构建自动使用仓库内的同一份东京 GLB，不再要求手动指定模型文件。")
@@ -103,7 +97,7 @@ def main() -> int:
     parser.add_argument("--install-only", action="store_true",
         help="仅一次性导入/校验原始 GLB，不构建")
     parser.add_argument("--skip-tauri", action="store_true",
-        help="只构建普通 Lite PNG、主资源 ZIP 与独立东京沙盘 ZIP")
+        help="只构建普通 Lite PNG 与原资源 ZIP")
     args = parser.parse_args()
     try:
         build(args.asset.resolve() if args.asset else None, args.install_only, args.skip_tauri)

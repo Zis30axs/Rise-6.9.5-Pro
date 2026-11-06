@@ -110,8 +110,12 @@ describe('冰上梅露露 standing art', () => {
     expect(resolveSceneCharacterArt('majo-meruru', '开心')?.id).toBe('meruru_nun_smile');
     expect(resolveSceneCharacterArt('丰川祥子')).toBeNull();
     const neutral = majoExpressionSets['majo-meruru']!.expressions.neutral;
-    expect(resolveMapCharacterAvatar({ name: '冰上梅露露', personId: 'majo-meruru' })).toEqual({ kind: 'sprite', src: neutral });
-    expect(resolveMapCharacterAvatar({ name: '梅露露' })).toEqual({ kind: 'sprite', src: neutral });
+    const headshot = resolveMapCharacterAvatar({ name: '冰上梅露露', personId: 'majo-meruru' });
+    expect(headshot?.kind).toBe('headshot');
+    expect(String(headshot?.src)).toMatch(/majo-meruru\.svg|data:image\/svg\+xml/);
+    expect(resolveMapCharacterAvatar({ name: '梅露露' })?.kind).toBe('headshot');
+    expect(resolveMapCharacterAvatar({ name: '冰上梅露露', personId: 'majo-meruru' }, true)).toEqual({ kind: 'sprite', src: neutral });
+    expect(resolveMapCharacterAvatar({ name: '梅露露' }, true)).toEqual({ kind: 'sprite', src: neutral });
     expect(majoArtStatus.find(row => row.personId === 'majo-meruru')).toMatchObject({
       outfit: '白头纱十字饰与粉缎带修女裙', expressions: 5, complete: true, targetExpressions: 3,
     });

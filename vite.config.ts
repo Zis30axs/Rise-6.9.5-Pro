@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { readFileSync } from 'node:fs';
+import { unreadCityOfflinePackPlugin } from './offline-pack-plugin';
 
 export default defineConfig({
   assetsInclude: ['**/*.glb'],
   plugins: [
+    unreadCityOfflinePackPlugin(),
     // Export map-avatar SVGs as BASE64 data URL literals, not Vite's URL-encoded SVG.
     // The existing Lite ZIP externalizer then finds and moves these large assets
     // into its SHA-256-verified local archive; the card PNG stays lightweight.

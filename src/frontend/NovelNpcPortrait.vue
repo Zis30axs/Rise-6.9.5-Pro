@@ -4,16 +4,23 @@ import { novelNpcAtlases } from './novel-npc-atlases';
 import { resolveNovelNpcEmotion } from './novel-npc-emotions';
 import type { NovelNpcPortraitId } from './novel-npc-portraits';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt, type DowntownArtPack } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiArt, getTomoriArt, type DowntownArtPack } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { isRaanaSpeaker } from './raana-art-policy';
 import { isTakiSpeaker } from './taki-art-policy';
 import { isTomoriSpeaker } from './tomori-art-policy';
-import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
+import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
+import { isSakikoSpeaker, resolveSakikoOutfit, type SakikoOutfitMode } from './sakiko-art-policy';
+import { resolveSakikoUniformPortrait } from './sakiko-uniform-art';
+import { resolveSakikoIndoorPortrait } from './sakiko-indoor-art';
 import { resolveMajoExpressionPortrait } from './majo-art';
 import { resolveWatanareExpressionPortrait } from './watanare-art';
 import { resolveFengjinExpressionPortrait } from './fengjin-art';
+import { resolveMarinaExpressionPortrait } from './marina-art';
+import { resolveUikaExpressionPortrait } from './uika-art';
+import { resolveUmiriExpressionPortrait } from './umiri-art';
+import { resolveNyamuExpressionPortrait } from './nyamu-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean; dimmed?: boolean;
@@ -27,10 +34,14 @@ const isAnon = computed(() => isAnonSpeaker(props.speaker));
 const isRaana = computed(() => isRaanaSpeaker(props.speaker));
 const isTaki = computed(() => isTakiSpeaker(props.speaker));
 const isTomori = computed(() => isTomoriSpeaker(props.speaker));
-const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value));
-const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
-  speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
-}));
+const isNagasakiMother = computed(() => isNagasakiMotherSpeaker(props.speaker));
+const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveUikaExpressionPortrait(props.speaker, props.emotion) ?? resolveUmiriExpressionPortrait(props.speaker, props.emotion) ?? resolveNyamuExpressionPortrait(props.speaker, props.emotion) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
+const selected = computed(() => {
+  if (!isSakiko.value) return null;
+  return resolveSakikoOutfit(props.outfit, props.locationId) === 'home'
+    ? resolveSakikoIndoorPortrait(props.emotion)
+    : resolveSakikoUniformPortrait(props.emotion);
+});
 const mutsumiSelected = computed(() => getMutsumiArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion,
 }));
@@ -46,15 +57,19 @@ const takiSelected = computed(() => getTakiArt(props.artPack ?? downtownArtPack,
 const tomoriSelected = computed(() => getTomoriArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion,
 }));
+const nagasakiMotherSelected = computed(() => getNagasakiMotherArt(props.artPack ?? downtownArtPack, {
+  speaker: props.speaker, expression: props.emotion,
+}));
 const failedId = ref('');
-watch(() => selected.value?.src ?? mutsumiSelected.value?.src ?? anonSelected.value?.src ?? raanaSelected.value?.src ?? takiSelected.value?.src ?? tomoriSelected.value?.src, () => { failedId.value = ''; });
+watch(() => selected.value?.src ?? mutsumiSelected.value?.src ?? anonSelected.value?.src ?? raanaSelected.value?.src ?? takiSelected.value?.src ?? tomoriSelected.value?.src ?? nagasakiMotherSelected.value?.src, () => { failedId.value = ''; });
 const sakiko = computed(() => selected.value && selected.value.id !== failedId.value ? selected.value : null);
 const mutsumi = computed(() => !sakiko.value && mutsumiSelected.value && mutsumiSelected.value.id !== failedId.value ? mutsumiSelected.value : null);
 const anon = computed(() => !sakiko.value && !mutsumi.value && anonSelected.value && anonSelected.value.id !== failedId.value ? anonSelected.value : null);
 const raana = computed(() => !sakiko.value && !mutsumi.value && !anon.value && raanaSelected.value && raanaSelected.value.id !== failedId.value ? raanaSelected.value : null);
 const taki = computed(() => !sakiko.value && !mutsumi.value && !anon.value && !raana.value && takiSelected.value && takiSelected.value.id !== failedId.value ? takiSelected.value : null);
 const tomori = computed(() => !sakiko.value && !mutsumi.value && !anon.value && !raana.value && !taki.value && tomoriSelected.value && tomoriSelected.value.id !== failedId.value ? tomoriSelected.value : null);
-const atlas = computed(() => !isSakiko.value && !isMutsumi.value && !isAnon.value && !isRaana.value && !isTaki.value && !isTomori.value && props.portraitId && Object.hasOwn(novelNpcAtlases, props.portraitId)
+const nagasakiMother = computed(() => !sakiko.value && !mutsumi.value && !anon.value && !raana.value && !taki.value && !tomori.value && nagasakiMotherSelected.value && nagasakiMotherSelected.value.id !== failedId.value ? nagasakiMotherSelected.value : null);
+const atlas = computed(() => !isSakiko.value && !isMutsumi.value && !isAnon.value && !isRaana.value && !isTaki.value && !isTomori.value && !isNagasakiMother.value && props.portraitId && Object.hasOwn(novelNpcAtlases, props.portraitId)
   ? novelNpcAtlases[props.portraitId] : null);
 const frame = computed(() => atlas.value?.frames[emotion.value] ?? null);
 const viewBox = computed(() => {
@@ -68,7 +83,8 @@ function imageFailed(event: Event) {
     : anonSelected.value?.src === source ? anonSelected.value
     : raanaSelected.value?.src === source ? raanaSelected.value
     : takiSelected.value?.src === source ? takiSelected.value
-    : tomoriSelected.value?.src === source ? tomoriSelected.value : null;
+    : tomoriSelected.value?.src === source ? tomoriSelected.value
+    : nagasakiMotherSelected.value?.src === source ? nagasakiMotherSelected.value : null;
   if (current) failedId.value = current.id;
 }
 </script>
@@ -115,6 +131,12 @@ function imageFailed(event: Event) {
     :data-tomori-outfit="tomori.outfit" :data-tomori-pose="tomori.pose" :data-tomori-sprite="tomori.id" aria-hidden="true">
     <img :key="tomori.id" class="novel-npc-portrait__sprite" :src="tomori.src"
       :width="tomori.width" :height="tomori.height" alt="" draggable="false" @error="imageFailed">
+  </div>
+  <div v-else-if="nagasakiMother" class="novel-npc-portrait" :class="{ 'is-muted': !active, 'is-dimmed': dimmed }"
+    data-npc-portrait="nagasaki-mother" :data-npc-speaker="speaker" :data-npc-emotion="nagasakiMother.expression"
+    :data-nagasaki-mother-outfit="nagasakiMother.outfit" :data-nagasaki-mother-pose="nagasakiMother.pose" :data-nagasaki-mother-sprite="nagasakiMother.id" aria-hidden="true">
+    <img :key="nagasakiMother.id" class="novel-npc-portrait__sprite" :src="nagasakiMother.src"
+      :width="nagasakiMother.width" :height="nagasakiMother.height" alt="" draggable="false" @error="imageFailed">
   </div>
   <div v-else-if="portraitId && atlas && frame" class="novel-npc-portrait" :class="{ 'is-muted': !active, 'is-dimmed': dimmed }"
     :data-npc-portrait="portraitId" :data-npc-speaker="speaker" :data-npc-emotion="emotion" aria-hidden="true">

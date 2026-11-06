@@ -1,4 +1,5 @@
 import { mountShell, type ShellHandle } from './lifecycle';
+import { resolveShellHost } from './host-window';
 import { createTavernBridge } from '../runtime/bridge';
 import { createDemoHost } from './demo';
 import { createPhoneRuntime } from './phone-runtime';
@@ -22,11 +23,13 @@ type HelperWindow = Window & {
 
 function bootstrap() {
   const owner = window as HelperWindow;
-  let host: HostWindow;
-  try { host = window.parent as HostWindow; void host.document.body; }
-  catch { console.error('[UnreadCity] 无法访问同源酒馆宿主，保留原生界面。'); return; }
-  const demo = owner === host && host.document.documentElement.hasAttribute('data-unread-city-demo')
-    ? createDemoHost() : null;
+  const resolved = resolveShellHost(owner);
+  if (!resolved) {
+    console.error('[UnreadCity] 无法访问同源酒馆宿主，保留原生界面。');
+    return;
+  }
+  const host = resolved.host as HostWindow;
+  const demo = resolved.demo ? createDemoHost() : null;
   let shell: ShellHandle | undefined;
   let shutDown = false;
   let launchSequence = 0;

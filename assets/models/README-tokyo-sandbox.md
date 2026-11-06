@@ -2,8 +2,8 @@
 
 `unread-city-tokyo-sandbox.glb` 为 `lite` 固定离线资源，而不是构建时下载的附件。
 首次从用户提供的 GLB 一次性放入本目录并提交 Git。
-此后的 `npm run build` / `npm run lite:build` 自动校验，并把它打成独立素材包 `dist/unread-city-tokyo-sandbox.zip`。
-该包不并入 `dist/unread-city-lite-assets.zip`。城市沙盘场景从这份独立包加载模型。
+此后的 `npm run build` / `npm run lite:build` 自动校验，并把它打包进配套素材包 `dist/unread-city-lite-assets.zip`。
+城市沙盘场景从该素材包加载模型。
 
 - 文件：`assets/models/unread-city-tokyo-sandbox.glb`
 - 字节：`6232488`
