@@ -22,7 +22,7 @@ describe('Lite narrative prompt context budget', () => {
     }
     const before = JSON.stringify(state);
     const compact = omniscientContinuityContext(state, new Set());
-    const focused = omniscientContinuityContext(state, new Set(['sakiko']));
+    const focused = omniscientContinuityContext(state, new Set(['sakiko' as const]));
     const unchanged = omniscientContinuityContext(state);
     const compactSakiko = compact.find(person => person.id === 'sakiko')!;
     const focusedSakiko = focused.find(person => person.id === 'sakiko')!;
