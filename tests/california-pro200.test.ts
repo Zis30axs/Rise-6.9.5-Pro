@@ -23,7 +23,7 @@ describe('California airport and fictional Pro200 trade', () => {
       expect(entry.constant).toBe(false);
       expect(entry.enabled).toBe(true);
       expect(entry.keys.length).toBeGreaterThan(0);
-      expect(entry.content).not.toMatch(/[\\u3040-\\u30FF]/);
+      expect(entry.content).not.toMatch(/[\u3040-\u30FF]/);
     }
     expect(californiaWorldbook.entries.map(entry => entry.content).join(' ')).toContain('返程须沿同一条航线');
   });
