@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { californiaPlaces, internationalConnections, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID, PRO200_RESALE_YEN, pro200ClaimBlocked } from '../src/runtime/california';
+import { californiaPlaces, internationalConnections, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID, PRO200_RESALE_YEN, pro200ClaimBlocked, californiaLocalClock, californiaOffsetMinutes, isCaliforniaLocalLocation } from '../src/runtime/california';
 import { getStoreItem, getPurchaseQuote, getUseItemQuote } from '../src/runtime/convenience-store';
 import { getAdjacentLocations } from '../src/runtime/location-links';
 import { getLocationServiceQuote, getLocationServices, getLocationStatus } from '../src/runtime/location-services';
 import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
 import { validateStoryActions } from '../src/runtime/story-actions';
+import { gameDayFromISO } from '../src/runtime/game-calendar';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 
@@ -50,6 +51,38 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(parseState(market)).toEqual(market);
   });
 
+  it('returns through California and Tokyo airports with all fares', () => {
+    const start = fundedState();
+    start.locationId = 'california-market';
+    start.scene = null;
+    start.clock = { day: 16, hour: 12, minute: 0 };
+    expect(getNovelTravelQuote(start, 'haneda-airport').blockedReason).toMatch(/国际旅行只能/);
+    const office = reduceState(start, { type: 'novel_travel', locationId: 'california-openai' });
+    const sfo = reduceState(office, { type: 'novel_travel', locationId: 'sfo-airport' });
+    expect(getNovelTravelQuote(sfo, 'haneda-airport').minutes).toBe(600);
+    const haneda = reduceState(sfo, { type: 'novel_travel', locationId: 'haneda-airport' });
+    const tokyo = reduceState(haneda, { type: 'novel_travel', locationId: 'bus-stop' });
+    expect(tokyo.locationId).toBe('bus-stop');
+    expect(tokyo.player.balance).toBe(start.player.balance - 520 - 2600 - 48000 - 1200);
+    expect(parseState(tokyo)).toEqual(tokyo);
+  });
+
+  it('uses Pacific local time, including daylight-saving transitions', () => {
+    expect(isCaliforniaLocalLocation('sfo-airport')).toBe(true);
+    expect(isCaliforniaLocalLocation('california-market')).toBe(true);
+    expect(isCaliforniaLocalLocation('haneda-airport')).toBe(false);
+    const march = gameDayFromISO('2026-03-08');
+    expect(californiaOffsetMinutes({ day: march, hour: 18, minute: 59 })).toBe(-17 * 60);
+    expect(californiaOffsetMinutes({ day: march, hour: 19, minute: 0 })).toBe(-16 * 60);
+    expect(californiaLocalClock({ day: march, hour: 18, minute: 59 }).hour).toBe(1);
+    expect(californiaLocalClock({ day: march, hour: 19, minute: 0 }).hour).toBe(3);
+    const november = gameDayFromISO('2025-11-02');
+    expect(californiaOffsetMinutes({ day: november, hour: 17, minute: 59 })).toBe(-16 * 60);
+    expect(californiaOffsetMinutes({ day: november, hour: 18, minute: 0 })).toBe(-17 * 60);
+    expect(californiaLocalClock({ day: november, hour: 17, minute: 59 }).hour).toBe(1);
+    expect(californiaLocalClock({ day: november, hour: 18, minute: 0 }).hour).toBe(1);
+  });
+
   it('forbids boarding a flight without funds or physically being at the airport', () => {
     const poor = createInitialState();
     poor.locationId = 'haneda-airport';
@@ -91,10 +124,11 @@ describe('California airport and fictional Pro200 trade', () => {
   });
 
   it('credits the active Appie Pay ledger without altering the other characters', () => {
-    const owned = enableProtagonists(fundedState());
-    owned.locationId = 'california-openai';
-    owned.scene = null;
-    owned.clock = { day: 2, hour: 5, minute: 0 };
+    const base = fundedState();
+    base.locationId = 'california-openai';
+    base.scene = null;
+    base.clock = { day: 2, hour: 5, minute: 0 };
+    const owned = enableProtagonists(base);
     const beforeBalances = Object.fromEntries(['soyo', 'sakiko', 'emma', 'renako']
       .map(id => [id, appiePayBalance(owned.protagonists!.accounts, id as 'soyo' | 'sakiko' | 'emma' | 'renako')]));
     const claimed = reduceState(owned, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
