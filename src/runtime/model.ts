@@ -720,7 +720,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
       const item = object(value, ['id', 'text', 'at'], path);
       return { id: id(item.id, `${path}.id`), text: text(item.text, `${path}.text`, 1000), at: text(item.at, `${path}.at`, 40) };
     }),
-    story: list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
+    story: retainStoryHistory(list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
       const hasParticipants = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'participantIds');
       const hasSideBeats = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'otherSideBeats');
       const hasReturnStory = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'returnStory');
@@ -757,7 +757,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         ...(participantIds ? { participantIds } : {}),
         ...(otherSideBeats ? { otherSideBeats } : {}),
         ...(hasReturnStory ? { returnStory: text(item.returnStory, `${path}.returnStory`, 2000) } : {}) };
-    }),
+    })),
   };
   if (result.scene?.areaId === 'construction-site' && result.locationId === 'neighborhood') result.locationId = 'construction-site';
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
