@@ -33,6 +33,7 @@ import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { isCircleVenueRoom } from './circle-venue';
+import { californiaPlaces, internationalLeg, isInternationalLocation, parseCaliforniaState, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID } from './california';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -71,6 +72,7 @@ export const locations: Location[] = [
     x: (area.minX + area.maxX) / 2, y: (area.minZ + area.maxZ) / 2,
   })),
   ...campusInteriors.map(room => ({ id: room.id, name: room.label, subtitle: '校园室内', description: room.description, x: room.entrance.x, y: room.entrance.z })),
+  ...californiaPlaces.map(place => ({ ...place, x: 0, y: 0 })),
 ];
 
 /** Navigation remains limited to existing, reachable landmarks and authored rooms. */
@@ -87,6 +89,7 @@ export const novelDestinations: readonly NovelDestination[] = [
     return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
   }),
   ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+  ...californiaPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
 ];
 
 export interface NovelTravelQuote {
@@ -130,6 +133,27 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择都营巴士或东京Metro接驳线路。');
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
+    if (isInternationalLocation(next.locationId) || isInternationalLocation(locationId)) {
+      const leg = internationalLeg(next.locationId, locationId);
+      if (!leg) throw new Error('国际旅行只能沿机场与湾区接驳线路逐站前往，不能直接跨境传送。');
+      if (next.interior) throw new Error('请先离开建筑，再前往机场交通站。');
+      quote.minutes = leg.minutes;
+      quote.fare = leg.fare;
+      quote.baseEnergyCost = leg.minutes >= 300 ? 8 : Math.max(2, Math.ceil(leg.minutes / 30));
+      quote.calculatedEnergyCost = Math.round(quote.baseEnergyCost * quote.baseEnergyMultiplier * conditionMultiplier * 100) / 100;
+      quote.energyCost = Math.min(energyUnits(departure.energy), energyUnits(quote.calculatedEnergyCost)) / 100;
+      if (departure.balance < leg.fare) throw new Error(`余额不足，本段行程需要 ${leg.fare} 日元。`);
+      advance(next, leg.minutes);
+      next.player.energy = dailyEnergyAfter(adjustEnergy(departure.energy, -quote.energyCost), state.clock.day, next.clock.day);
+      next.player.balance = departure.balance - leg.fare;
+      quote.foodEnergyCost = state.player.foodEnergy - next.player.foodEnergy;
+      quote.satietyCost = state.player.satiety - next.player.satiety;
+      next.interior = null;
+      next.scene = null;
+      next.locationId = leg.to;
+      note(next, `搭乘${leg.method}抵达${locations.find(place => place.id === leg.to)!.name}，耗时 ${leg.minutes} 分钟，车票 ¥${leg.fare}。`);
+      return { next, quote };
+    }
     // Quote the complete trip even when the real player cannot afford it. This
     // private planning budget is replaced with the real balance before commit.
     next.player = { ...next.player, energy: 100, balance: 1_000_000 };
@@ -647,13 +671,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
+  const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasCalifornia ? ['california'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -689,6 +714,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     npcProfessions: hasNpcProfessions ? parseNpcProfessions(state.npcProfessions) : initialNpcProfessions(),
     ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     ...(hasCooking ? { cooking: parseCookingState(state.cooking) } : {}),
+    ...(hasCalifornia ? { california: parseCaliforniaState(state.california) } : {}),
     ...(hasLivehouseVisit ? { livehouseVisit: parseLivehouseVisit(state.livehouseVisit) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
@@ -1361,6 +1387,18 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const status = getLocationStatus(next.locationId, next.clock)!;
       const startDay = next.clock.day;
       const visitCommit = quote.livehouse?.commit ?? null;
+      if (quote.service.id === PRO200_CLAIM_SERVICE_ID) {
+        const owned = next.inventory.find(entry => entry.itemId === PRO200_GAME_ITEM_ID);
+        if (owned) owned.quantity += 1;
+        else next.inventory.push({ itemId: PRO200_GAME_ITEM_ID, quantity: 1 });
+        next.california = { claims: { ...(next.california?.claims ?? {}), [activeProtagonistId(next, worldAuthority)]: next.clock.day } };
+      }
+      if (quote.service.id === PRO200_RESELL_SERVICE_ID) {
+        const index = next.inventory.findIndex(entry => entry.itemId === PRO200_GAME_ITEM_ID);
+        if (index < 0) throw new Error('背包中没有可出售的 Pro200 凭证。');
+        if (next.inventory[index].quantity === 1) next.inventory.splice(index, 1);
+        else next.inventory[index].quantity -= 1;
+      }
       advance(next, quote.minutes);
       // The quote already includes elapsed nutrition; replace, never apply twice.
       // Day-change weather is reapplied because this replacement discards the clock step.
