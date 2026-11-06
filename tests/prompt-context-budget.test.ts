@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { promptTopicHints } from '../src/runtime/prompt-pruning';
 import { omniscientContinuityContext } from '../src/runtime/protagonist-narrative';
@@ -5,12 +6,26 @@ import { createInitialState } from '../src/runtime/model';
 import { enableProtagonists, personState } from '../src/runtime/protagonist-world';
 
 describe('Lite narrative prompt context budget', () => {
-  it('recognizes phone discussion without expanding phone history on ordinary dialogue', () => {
+  it('recognizes direct and indirect shopping and phone requests', () => {
     expect(promptTopicHints('查看素世发来的短信').phone).toBe(true);
     expect(promptTopicHints('给祥子打电话').phone).toBe(true);
     expect(promptTopicHints('我收到了新消息').phone).toBe(true);
     expect(promptTopicHints('继续在咖啡厅聊天').phone).toBe(false);
     expect(promptTopicHints('去便利店买饮料').shopping).toBe(true);
+    expect(promptTopicHints('我渴了，找点喝的').shopping).toBe(true);
+    expect(promptTopicHints('这个多少钱？').shopping).toBe(true);
+  });
+
+
+
+  it('keeps free-form action IDs and SMS evidence when a request uses no topic keyword', () => {
+    const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
+    expect(bridge).toContain('storeNameIndex = storeCatalog.map(({ id, name }) => ({ id, name }))');
+    expect(bridge).toContain('storeItems: topics.shopping ? minimalStore : storeNameIndex');
+    expect(bridge).toContain('rooms: campusInteriors.map(room');
+    expect(bridge).toContain('recentSms: storySmsContext(snapshot),');
+    expect(bridge).toContain('continuationReference || input.includes(shortName)');
+    expect(bridge).not.toContain('storySmsContext(snapshot).slice(topics.phone ? -24 : -8)');
   });
 
   it('keeps compact continuity for unrelated protagonists and full evidence for a named protagonist', () => {
