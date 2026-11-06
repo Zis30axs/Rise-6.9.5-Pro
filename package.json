@@ -12,6 +12,7 @@
     "predev": "npm run art:build && npm run phone:build",
     "precheck": "npm run art:build && npm run phone:build",
     "dev": "vite --host 127.0.0.1",
+    "browser:preview": "node scripts/build_browser_preview.mjs",
     "check": "vue-tsc --noEmit",
     "check:no-ja": "vitest run tests/no-japanese.test.ts",
     "build": "npm run check && vite build",
