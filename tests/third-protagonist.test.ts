@@ -98,6 +98,33 @@ describe('third protagonist accounts and timeline', () => {
     }
   });
 
+  it('retains 60 story records per protagonist across reload and viewpoint switches', () => {
+    const state = world();
+    const owners = ['soyo', 'sakiko', 'emma', 'renako'] as const;
+    for (const owner of owners) {
+      const personal = personState(state, owner);
+      personal.story = Array.from({ length: 60 }, (_, index) => ({
+        id: `sixty-story-${owner}-${index}`,
+        role: index % 2 === 0 ? 'user' as const : 'assistant' as const,
+        text: `${owner} 的第 ${index + 1} 条剧情记录。`,
+      }));
+    }
+    let current = parseState(JSON.parse(JSON.stringify(state)));
+    for (const target of ['sakiko', 'emma', 'renako', 'soyo'] as const) {
+      current = reduceState(current, { type: 'switch_protagonist', target });
+      expect(current.story).toHaveLength(60);
+      expect(current.story[0]!.id).toBe(`sixty-story-${target}-0`);
+      expect(current.story[59]!.id).toBe(`sixty-story-${target}-59`);
+      current = parseState(JSON.parse(JSON.stringify(current)));
+      for (const owner of owners) {
+        expect(personState(current, owner).story).toHaveLength(60);
+      }
+    }
+    const overLimit = structuredClone(current);
+    overLimit.story.push({ id: 'sixty-story-over-limit', role: 'user', text: '第 61 条记录。' });
+    expect(() => parseState(overLimit)).toThrow();
+  });
+
   it('seeds only the intended contacts and leaves all demo messages and schedules out of a new game', () => {
     const initial = createInitialState();
     expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi', 'nagasaki-mother']);
