@@ -12,7 +12,7 @@ import {
 import { isCircleVisitService, prepareCircleVisitService } from './circle-visit';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling, activeProtagonistId } from './fengjin-clinic';
-import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_RESALE_YEN, PRO200_GAME_ITEM_ID, pro200ClaimBlocked, californiaLocalClock } from './california';
+import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_RESALE_YEN, PRO200_GAME_ITEM_ID, pro200ClaimBlocked, californiaLocalClock, isCaliforniaLocalLocation } from './california';
 import { isLivehouseVisitService, livehouseBlockedCode, prepareLivehouseService, type LivehouseServiceFacts, type LivehouseBlockedCode } from './livehouse-visit';
 import tokyoSandbox from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 
@@ -83,7 +83,7 @@ export function getLocationStatus(locationId: string, clock: WorldState['clock']
   const venue = venues.find(item => item.locationId === cafeServiceLocation(locationId));
   if (!venue) return null;
   // The world keeps one clock; only venue opening hours use California's local time.
-  const local = locationId.startsWith('california-') ? californiaLocalClock(clock) : clock;
+  const local = isCaliforniaLocalLocation(locationId) ? californiaLocalClock(clock) : clock;
   const minute = local.hour * 60 + local.minute;
   const alwaysOpen = venue.opens === null || venue.closes === null;
   const isOpen = alwaysOpen || (venue.opens! < venue.closes!

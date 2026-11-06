@@ -1,6 +1,7 @@
 import type { WorldState } from '../frontend/types';
 import type { StoreItem } from './convenience-store';
 import type { ProtagonistId } from './dual-protagonists';
+import { gameCalendar } from './game-calendar';
 
 /** Small fictional overseas extension. No foreign coordinate is placed on the Tokyo 3D map. */
 export const californiaPlaces = [
@@ -13,6 +14,11 @@ export const californiaPlaces = [
 const foreignLocationIds: ReadonlySet<string> = new Set(californiaPlaces.map(place => place.id));
 export function isInternationalLocation(locationId: string): boolean {
   return foreignLocationIds.has(locationId);
+}
+
+/** The airport belongs to California even though its ID is sfo-airport. */
+export function isCaliforniaLocalLocation(id: string): boolean {
+  return id === 'sfo-airport' || id.startsWith('california-');
 }
 
 export interface InternationalLeg {
@@ -41,16 +47,22 @@ export function internationalConnections(from: string): InternationalLeg[] {
     : leg.to === from ? [{ ...leg, from, to: leg.from }] : []);
 }
 
-/** One authoritative game clock, rendered 16 hours earlier for California in this fictional summer setting. */
-export const CALIFORNIA_OFFSET_MINUTES = -16 * 60;
+/** Derived Pacific time only; the persisted world clock stays on Tokyo civil time. */
+function nthSunday(year: number, month: number, nth: number): number {
+  const weekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  return 1 + ((7 - weekday) % 7) + 7 * (nth - 1);
+}
+export function californiaOffsetMinutes(clock: WorldState['clock']): number {
+  const date = gameCalendar(clock.day);
+  const utc = Date.UTC(date.year, date.month - 1, date.date, clock.hour, clock.minute) - 9 * 60 * 60_000;
+  const spring = Date.UTC(date.year, 2, nthSunday(date.year, 3, 2), 10);
+  const fall = Date.UTC(date.year, 10, nthSunday(date.year, 11, 1), 9);
+  return utc >= spring && utc < fall ? -16 * 60 : -17 * 60;
+}
 export function californiaLocalClock(clock: WorldState['clock']) {
-  const relativeMinute = clock.hour * 60 + clock.minute + CALIFORNIA_OFFSET_MINUTES;
-  const minuteOfDay = ((relativeMinute % 1440) + 1440) % 1440;
-  return {
-    day: clock.day + Math.floor(relativeMinute / 1440),
-    hour: Math.floor(minuteOfDay / 60),
-    minute: minuteOfDay % 60,
-  };
+  const minute = clock.hour * 60 + clock.minute + californiaOffsetMinutes(clock);
+  const local = ((minute % 1440) + 1440) % 1440;
+  return { day: clock.day + Math.floor(minute / 1440), hour: Math.floor(local / 60), minute: local % 60 };
 }
 
 export const PRO200_GAME_ITEM_ID = 'pro200-game-voucher';
