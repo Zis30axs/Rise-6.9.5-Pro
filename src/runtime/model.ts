@@ -34,6 +34,7 @@ import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcadem
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { isCircleVenueRoom } from './circle-venue';
 import { californiaPlaces, internationalLeg, isInternationalLocation, parseCaliforniaState, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID } from './california';
+import { FULL_RESET_ITEM_ID, PRO500_ITEM_ID, MYSTERY_GIFT_RESET_COUNT, mysteryVisitorPresent, parseMysteryVisitorState } from './mystery-visitor';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -672,13 +673,14 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
   const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
+  const hasMysteryVisitor = version === '1.11.0' && Object.hasOwn(value, 'mysteryVisitor');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasCalifornia ? ['california'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -715,6 +717,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     ...(hasCooking ? { cooking: parseCookingState(state.cooking) } : {}),
     ...(hasCalifornia ? { california: parseCaliforniaState(state.california) } : {}),
+    ...(hasMysteryVisitor ? { mysteryVisitor: parseMysteryVisitorState(state.mysteryVisitor) } : {}),
     ...(hasLivehouseVisit ? { livehouseVisit: parseLivehouseVisit(state.livehouseVisit) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
@@ -1199,6 +1202,28 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
   const next = parseStateCore(state, true);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
+    case 'claim_mystery_gift': {
+      const owner = activeProtagonist(worldAuthority ?? next);
+      const authoritative = { ...next, protagonists: worldAuthority?.protagonists };
+      if (!mysteryVisitorPresent(authoritative)) throw new Error('神秘访客此刻并不在附近，或者礼物已领取。');
+      for (const [itemId, count] of [[FULL_RESET_ITEM_ID, MYSTERY_GIFT_RESET_COUNT], [PRO500_ITEM_ID, 1]] as const) {
+        const owned = next.inventory.find(item => item.itemId === itemId);
+        if ((owned?.quantity ?? 0) + count > INVENTORY_ITEM_LIMIT) throw new Error('背包无法容纳这份神秘礼物。');
+      }
+      const add = (itemId: string, quantity: number) => {
+        const item = next.inventory.find(row => row.itemId === itemId);
+        if (item) item.quantity += quantity;
+        else next.inventory.push({ itemId, quantity });
+      };
+      add(FULL_RESET_ITEM_ID, MYSTERY_GIFT_RESET_COUNT);
+      add(PRO500_ITEM_ID, 1);
+      next.mysteryVisitor = { claimedBy: { ...next.mysteryVisitor?.claimedBy, [owner]: true } };
+      const giftText = '神秘访客把一份罕见的礼物交到你手中：Full Reset ×10，以及 Pro 500 ×1。物品已存入背包。';
+      note(next, giftText);
+      next.story.push({ id: `mystery-gift-${owner}-${next.clock.day}-${next.clock.hour}-${next.clock.minute}`, role: 'assistant', text: giftText });
+      next.story = next.story.slice(-STATE_LIMITS.story);
+      break;
+    }
     case 'save_contact': {
       const { type: _type, ...input } = action;
       const profile = validateContactProfileInput(input);

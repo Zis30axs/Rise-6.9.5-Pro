@@ -4,6 +4,7 @@ import { adjustEnergy, energyDifference } from './energy';
 import { locationServiceCatalog } from './location-services';
 import { cafeInventoryItems } from './margo-cafe-menu';
 import { pro200GameItem } from './california';
+import { mysteryVisitorItems } from './mystery-visitor';
 
 export interface StoreItem {
   readonly id: string;
@@ -71,7 +72,7 @@ export function getServiceTakeawayItem(serviceId: string): StoreItem | null {
 }
 
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem];
+  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {
@@ -114,7 +115,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。'
-    : item.category === 'collectible' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : null;
+    : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '神秘访客的特殊奖励已收藏，当前无法直接使用。' : null;
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';
