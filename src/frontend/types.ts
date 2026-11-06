@@ -88,6 +88,8 @@ export interface AcademicGain {
   energyConsumed: number | null;
   moraleChange: number | null;
   stressChange: number | null;
+  /** Recorded stationery used for this completed study session. */
+  equipmentId?: string;
 }
 export interface AcademicState {
   majorId: string;
@@ -172,7 +174,7 @@ export interface WorldState {
   cooking?: import('../runtime/cooking').CookingState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
-  inventory: { itemId: string; quantity: number }[];
+  inventory: { itemId: string; quantity: number; equipped?: import('../runtime/equipment').EquipmentSlot }[];
   academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
   contacts: CharacterContact[];
@@ -194,6 +196,7 @@ export type WorldAction =
   | { type: 'choose_academics'; majorId: string }
   | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
   | { type: 'buy_item'; itemId: string; quantity: number }
+  | { type: 'equip_item'; itemId: string; slot: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
@@ -246,6 +249,7 @@ export type StoryAction =
   // Court observation can use any integer duration; the narrator chooses its knowledge grant.
   | { type: 'service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'buy'; itemId: string; quantity: number }
+  | { type: 'equip'; itemId: string; slot: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
