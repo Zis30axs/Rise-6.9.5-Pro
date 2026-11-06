@@ -51,6 +51,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   sports: 'park', promenade: 'park', campus: 'park',
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
+  'haneda-airport': 'commercial', 'sfo-airport': 'commercial', 'california-openai': 'commercial', 'california-market': 'commercial',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
   circle: 'commercial', 'circle-cafe': 'commercial',

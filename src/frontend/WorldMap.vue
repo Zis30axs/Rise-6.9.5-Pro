@@ -21,6 +21,7 @@ let cachedViewportSize = { width: 620, height: 420 };
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
+import { internationalConnections, isInternationalLocation } from '../runtime/california';
 import { worldScenePeople, worldScenePosition } from '../runtime/world-presence';
 import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
@@ -44,7 +45,7 @@ const layers: { id: Layer; name: string; depth: number }[] = [
   { id: 'city', name: '城市', depth: 2 }, { id: 'province', name: '所在区域', depth: 3 },
   { id: 'world', name: '世界', depth: 5 },
 ];
-const depth = ref(2);
+const depth = ref(isInternationalLocation(props.model.state.locationId) ? 5 : 2);
 const focusZoom = ref(1);
 const bearing = ref(0);
 const sandboxOverhead = ref(0);
@@ -181,6 +182,7 @@ const cityPlaces = mapDistricts;
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
 const novelQuotes = computed(() => new Map(novelDestinations.map(place => [place.id, getNovelTravelQuote(props.model.state, place.id)])));
+const overseasRoutes = computed(() => internationalConnections(props.model.state.locationId));
 function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
   return status ? `此刻${status.statusLabel} · ${status.hoursLabel}` : '';
@@ -720,6 +722,12 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="regionCities.length && layer === 'province'" class="wm-detail-note">省内地名：{{ regionCities.map(item => item.properties.name).join(' · ') }}。所在城市尚未指定。</p>
           <p class="wm-detail-note">地形为艺术化浅起伏，地标为微缩示意。浏览不会推进时间。</p>
         </template>
+        <section v-if="novelMode" class="wm-overseas-routes" aria-label="国际航线">
+          <small class="wm-kicker">海外旅行</small><h3>东京 · 旧金山</h3>
+          <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。加州的 Pro200 是仅供游戏内收集、出售的虚构凭证。</p>
+          <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
+          <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
+        </section>
       </aside>
     </div>
   </div>
