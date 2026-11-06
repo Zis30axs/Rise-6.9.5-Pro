@@ -12,6 +12,9 @@ export const STORY_RECORD_LIMIT = STORY_REPLY_LIMIT * 2 + STORY_AUXILIARY_LIMIT;
  */
 export function retainStoryHistory<T extends WorldState['story'][number]>(rows: readonly T[]): T[] {
   const kept = new Set<number>();
+  const openingIndex = rows.findIndex(row => row.role === 'assistant'
+    && /^(?:opening|(?:soyo|sakiko|emma|renako)-opening)$/.test(row.id));
+  const auxiliaryBudget = STORY_AUXILIARY_LIMIT - (openingIndex >= 0 ? 1 : 0);
   let replies = 0;
   let auxiliary = 0;
   for (let index = rows.length - 1; index >= 0; index--) {
@@ -22,7 +25,7 @@ export function retainStoryHistory<T extends WorldState['story'][number]>(rows: 
         kept.add(index);
       }
       index--; // The preceding user input belongs to this exact reply.
-    } else if (auxiliary++ < STORY_AUXILIARY_LIMIT) {
+    } else if (index === openingIndex || auxiliary++ < auxiliaryBudget) {
       kept.add(index);
     }
   }
