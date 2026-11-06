@@ -5,6 +5,8 @@ import { getAdjacentLocations } from '../src/runtime/location-links';
 import { getLocationServiceQuote, getLocationServices, getLocationStatus } from '../src/runtime/location-services';
 import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
 import { validateStoryActions } from '../src/runtime/story-actions';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { appiePayBalance } from '../src/runtime/dual-protagonists';
 
 function fundedState() {
   const state = createInitialState();
@@ -85,6 +87,23 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(sold.player.balance).toBe(market.player.balance + PRO200_RESALE_YEN);
     expect(getLocationServiceQuote(sold, PRO200_RESELL_SERVICE_ID).blockedReason).toMatch(/没有可出售/);
     expect(() => reduceState(sold, { type: 'location_service', serviceId: PRO200_RESELL_SERVICE_ID })).toThrow(/没有可出售/);
+    expect(parseState(sold)).toEqual(sold);
+  });
+
+  it('credits the active Appie Pay ledger without altering the other characters', () => {
+    const owned = enableProtagonists(fundedState());
+    owned.locationId = 'california-openai';
+    owned.scene = null;
+    owned.clock = { day: 2, hour: 5, minute: 0 };
+    const beforeBalances = Object.fromEntries(['soyo', 'sakiko', 'emma', 'renako']
+      .map(id => [id, appiePayBalance(owned.protagonists!.accounts, id as 'soyo' | 'sakiko' | 'emma' | 'renako')]));
+    const claimed = reduceState(owned, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
+    expect(claimed.california?.claims.soyo).toBe(2);
+    const market = parseState({ ...claimed, locationId: 'california-market' });
+    const sold = reduceState(market, { type: 'location_service', serviceId: PRO200_RESELL_SERVICE_ID });
+    expect(appiePayBalance(sold.protagonists!.accounts, 'soyo')).toBe(beforeBalances.soyo + PRO200_RESALE_YEN * 100);
+    for (const id of ['sakiko', 'emma', 'renako'] as const)
+      expect(appiePayBalance(sold.protagonists!.accounts, id)).toBe(beforeBalances[id]);
     expect(parseState(sold)).toEqual(sold);
   });
 
