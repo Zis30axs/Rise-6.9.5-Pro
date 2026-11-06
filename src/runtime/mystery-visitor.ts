@@ -67,7 +67,3 @@ export function mysteryVisitorPresent(state: Pick<WorldState, 'clock' | 'locatio
   return hash(`mystery-v1|${seed}|${owner}|${state.locationId}|${state.clock.day}`) % MYSTERY_VISITOR_ONE_IN === 0;
 }
 
-/** Coordinates are relative to the current encounter origin, not a world position for foreign cities. */
-export function mysteryVisitorAnchor(state: Pick<WorldState, 'scene' | 'locationId'>): { x: number; z: number } {
-  return state.scene ? { x: state.scene.x + 2, z: state.scene.z + 1.5 } : { x: 2, z: 1.5 };
-}
