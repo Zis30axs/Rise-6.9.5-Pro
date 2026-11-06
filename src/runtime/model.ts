@@ -44,7 +44,7 @@ import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
-export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
+export const STATE_LIMITS = { journal: 100, story: 60, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
 /** Every outdoor place on the local sandtable. Gate, library, cafe, dorm,
  * teaching and the bus stop keep the primary labels; the remaining existing
  * places use compact numbered markers. */
