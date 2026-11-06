@@ -75,6 +75,5 @@ export function promptTopicHints(input: string) {
     study: /学习|上课|课程|读书|专业|考试|复习|图书馆|教室|书店|课表|学科|study|class|school/i.test(input),
     shopping: /买|购物|超市|商店|便利店|外卖|点餐|食物|饮料|用餐|打包|食堂|咖啡|购买|饿|渴|吃|喝|点一|来一|拿一|想要一|饮品|零食|药品|价格|价钱|多少钱|售价|shop|food|delivery/i.test(input),
     room: /进入|房间|宿舍|教室|办公室|室内|物品|书架|床|课桌|门|互动|interact|room/i.test(input),
-    phone: /短信|手机|消息|私聊|群聊|聊天记录|收件箱|通知|打电话|来电|sms|message|phone/i.test(input),
   };
 }
