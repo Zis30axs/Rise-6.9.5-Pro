@@ -22,7 +22,8 @@ import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, trigger
 import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
-import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
+import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT, R27ET1_ITEM_ID } from './convenience-store';
+import { canEquipItem, equippedItem, isEquipmentSlot, r27et1Equipped, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS } from './equipment';
 import { applyCookingBegin, applyCookingCancel, applyCookingSettle, parseCookingState } from './cooking';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, applyWeatherForElapsedDays, dailyEnergyAfter, exposureSeed, outdoorEnergyDrain, outdoorHealthExposure, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
@@ -475,7 +476,11 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
     return { majorId, subjects, lastGain: null, ...correctionField };
   }
   const extras = ['outcome', 'channel', 'interactionId', 'energyConsumed', 'moraleChange', 'stressChange'];
-  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
+  const rawEquipmentId = !legacy && item.lastGain && typeof item.lastGain === 'object' && Object.hasOwn(item.lastGain, 'equipmentId');
+  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras), ...(rawEquipmentId ? ['equipmentId'] : [])], 'academics.lastGain');
+  const equipmentId = rawEquipmentId ? id(gain.equipmentId, 'academics.lastGain.equipmentId') : null;
+  if (equipmentId !== null && equipmentId !== R27ET1_ITEM_ID) return invalid('academics.lastGain.equipmentId');
+  const equipmentReceipt = equipmentId ? { equipmentId } : {};
   const subjectId = id(gain.subjectId, 'academics.lastGain.subjectId');
   const entry = subjects.find(subject => subject.subjectId === subjectId);
   const isCourtObservation = !legacy && gain.channel === 'court-hearing';
@@ -490,7 +495,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const total = stamp ? day * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]) : 0;
   if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('academics.lastGain.at');
   if (legacy || gain.outcome === null) {
-    if (points !== minutes || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
+    if (points !== minutes || equipmentId || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
     return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null }, ...correctionField };
   }
   const outcome = gain.outcome;
@@ -504,7 +509,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
     const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
     const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
     // Court observation has its own validated learning yield and fixed cost.
-    if (subjectId !== 'law-advocacy' || interactionId !== null || outcome !== 'normal' ||
+    if (equipmentId || subjectId !== 'law-advocacy' || interactionId !== null || outcome !== 'normal' ||
       minutes !== observe.minutes || points < 0 || points > courtObservationKnowledgeCap(minutes) ||
       energyConsumed !== Math.max(0, -observe.effects.energy) ||
       moraleChange < 0 || moraleChange > observe.effects.morale ||
@@ -518,14 +523,16 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if ((!crossMajor && outcome !== 'normal') || (crossMajor && channel === 'classroom')) return invalid('academics.lastGain 学习渠道或结果不一致');
   const multiplier = outcome === 'inspiration' ? 3 : outcome === 'confusion' ? 1 : 2;
   const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
-  if (points * 2 !== minutes * multiplier || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
+  const baseStudyPoints = minutes * multiplier / 2;
+  const expectedStudyPoints = equipmentId ? Math.round(baseStudyPoints * R27ET1_STUDY_BONUS * 2) / 2 : baseStudyPoints;
+  if (points !== expectedStudyPoints || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
   const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
   const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
   const base = getActivityEffects('study', minutes);
   const morale = base.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0);
   const stress = base.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0);
   if (moraleChange < Math.min(0, morale) || moraleChange > Math.max(0, morale) || stressChange < Math.min(0, stress) || stressChange > Math.max(0, stress)) return invalid('academics.lastGain 精神或压力净变化不一致');
-  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange }, ...correctionField };
+  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange, ...equipmentReceipt }, ...correctionField };
 }
 
 /** Convert historical money once; a persisted currency tag stops repeat conversions. */
@@ -662,10 +669,12 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length) return invalid('inventory');
     for (const [index, value] of state.inventory.entries()) {
       const path = `inventory[${index}]`;
-      const item = object(value, ['itemId', 'quantity'], path);
+      const hasEquipped = !!value && typeof value === 'object' && Object.hasOwn(value, 'equipped');
+      const item = object(value, ['itemId', 'quantity', ...(hasEquipped ? ['equipped'] : [])], path);
       const itemId = id(item.itemId, `${path}.itemId`);
       if (!getStoreItem(itemId) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
-      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, INVENTORY_ITEM_LIMIT) });
+      if (hasEquipped && (!isEquipmentSlot(item.equipped) || !canEquipItem(itemId, item.equipped) || inventory.some(entry => entry.equipped === item.equipped))) return invalid(`${path}.equipped`);
+      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, INVENTORY_ITEM_LIMIT), ...(hasEquipped ? { equipped: item.equipped as import('./equipment').EquipmentSlot } : {}) });
     }
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
@@ -883,6 +892,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         break;
       }
       case 'buy': next = reduceLegacyState(next, { type: 'buy_item', itemId: action.itemId, quantity: action.quantity }, worldAuthority); break;
+      case 'equip': next = reduceLegacyState(next, { type: 'equip_item', itemId: action.itemId, slot: action.slot }, worldAuthority); break;
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
@@ -924,7 +934,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const outcome = !crossMajor || draw >= 50 ? 'normal' : draw < 25 ? 'inspiration' : 'confusion';
         const energyConsumed = getStudyEnergyCost(action.minutes) + (outcome === 'confusion' ? 3 : 0);
         if (next.player.energy < energyConsumed) throw new Error(`精力不足，此次学习需要 ${energyConsumed} 点精力，请先休息。`);
-        const points = action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1);
+        const equipmentId = r27et1Equipped(next) ? R27ET1_ITEM_ID : null;
+        const points = studyPointsWithEquipment(next, action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1));
         let progress = next.academics.subjects.find(entry => entry.subjectId === action.subjectId);
         if ((progress?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
         const before = { ...next.player };
@@ -938,7 +949,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
         next.academics.lastGain = { subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
           interactionId: channel === 'bookshop' ? null : channel === 'classroom' ? 'classroom-notes' : 'study-focus',
-          energyConsumed, moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
+          energyConsumed, moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress,
+          ...(equipmentId ? { equipmentId } : {}) };
         clearInteriorActivity();
         note(next, `学习${subject.name} ${action.minutes} 分钟，进度 +${points}，累计 ${progress.points} 点。${crossMajor ? `跨专业阅读结果：${{ inspiration: '灵感', confusion: '困惑', normal: '普通' }[outcome]}。` : ''}${activityChangeNote(before, next.player)}`);
         break;
@@ -1268,6 +1280,12 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (owned) owned.quantity += quote.unitsAdded;
       else next.inventory.push({ itemId: quote.item.id, quantity: quote.unitsAdded });
       note(next, `购买${quote.item.name} ${quote.quantity} ${quote.item.purchaseUnit}，支付 ${quote.totalPrice} 日元；背包增加 ${quote.unitsAdded} ${quote.item.useUnit}。`);
+      break;
+    }
+    case 'equip_item': {
+      if (!getStoreItem(action.itemId)?.equipmentKind || (action.slot !== null && !isEquipmentSlot(action.slot))) throw new Error('无效装备道具或装备栏。');
+      setEquipmentSlot(next, action.itemId, action.slot);
+      note(next, action.slot === null ? `卸下${getStoreItem(action.itemId)!.name}。` : `将${getStoreItem(action.itemId)!.name}装备至${action.slot === 'special' ? '特殊道具栏' : action.slot === 'permanent-1' ? '常驻道具栏一' : '常驻道具栏二'}。`);
       break;
     }
     case 'pack_item':
@@ -1617,7 +1635,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         outcome = quote.outcomes[result < .25 ? 0 : result < .5 ? 1 : 2];
       }
       const energyConsumed = getStudyEnergyCost(minutes) + outcome.extraEnergy;
-      const points = minutes * (outcome.pointsMultiplier * 2) / 2;
+      const equipmentId = r27et1Equipped(next) ? R27ET1_ITEM_ID : null;
+      const points = studyPointsWithEquipment(next, minutes * (outcome.pointsMultiplier * 2) / 2);
+      if ((next.academics.subjects.find(item => item.subjectId === action.subjectId)?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
       const playerBefore = { ...next.player };
       advance(next, minutes);
       next.player.energy = adjustEnergy(next.player.energy, -energyConsumed);
@@ -1635,7 +1655,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       subject.points = (subject.points * 2 + points * 2) / 2;
       const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
       next.academics.lastGain = { subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
-        outcome: outcome.id, channel, interactionId: action.type === 'interior_study' ? action.interactionId : null, energyConsumed, moraleChange: next.player.morale - playerBefore.morale, stressChange: next.player.stress - playerBefore.stress };
+        outcome: outcome.id, channel, interactionId: action.type === 'interior_study' ? action.interactionId : null, energyConsumed, moraleChange: next.player.morale - playerBefore.morale, stressChange: next.player.stress - playerBefore.stress,
+        ...(equipmentId ? { equipmentId } : {}) };
       const place = channel === 'bookshop' ? '书店' : getCampusInterior(channel)!.label;
       note(next, `在${place}学习${quote.subject.name} ${minutes} 分钟，消耗 ${energyConsumed} 点精力。${quote.isCrossMajor ? `跨专业阅读：${outcome.label}。` : ''}${activityChangeNote(playerBefore, next.player)}${quote.subject.name}学习进度 +${points}，累计 ${subject.points} 点。`);
       break;
