@@ -1,6 +1,6 @@
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
-import { activeProtagonist, protagonistNames } from './protagonist-world';
+import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
 import { otherSidePromptContext } from './other-side';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
@@ -129,7 +129,7 @@ const STORY_PROTOCOL_PARTS = [
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
-  `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
+  `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、store.items、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   COURT_PROMPT_RULES.observation,
   '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用，或进行目录中的运动和休息；{"type":"buy","itemId":"商品ID","quantity":1}在便利店购买1–20份并放入背包。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 必须逐字取自 cafeMenu，quantity 为 1–20；cafe-daily-special 是每日特调，每人每天限一杯。咖啡馆购买只放入背包，不自动喝掉，不另加打包费。{"type":"use","itemId":"商品ID"}消耗背包中的一单位物品。此地服务不生成库存，购买不自动吃掉。不能重复收费或重复营养收益。',
@@ -373,11 +373,31 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       }
       if (disposed || retired || epoch !== requestEpoch || currentSession() !== ownerSession) throw cancelled();
       const topics = promptTopicHints(input);
+      // Ambiguous natural-language continuations must never lose relevant private
+      // protagonist history merely because the player omitted a character name.
+      const continuationReference = /她|他|她们|他们|刚才|刚刚|继续|之前|上次|那件事|那个人|接着|后来|回忆|还记得|再见|重逢/.test(input);
+      const recentNarrativeText = snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))
+        .slice(-6).map(row => row.text).join('\n');
       const narrative = narrativeContext(snapshot);
+      const sideOpportunity = otherSidePromptContext(snapshot);
+      const weekly = weeklyMemoryContext(snapshot);
+      const focusedOtherProtagonists = new Set(otherProtagonists(activeProtagonist(snapshot)).filter(id => {
+        const shortName = id === 'renako' ? '玲奈子' : protagonistNames[id].slice(-2);
+        return continuationReference || input.includes(shortName) || input.includes(protagonistNames[id].slice(0, 2))
+          || recentNarrativeText.includes(shortName) || recentNarrativeText.includes(protagonistNames[id].slice(0, 2))
+          || input.toLowerCase().includes(id)
+          || narrative.counterpartsInScene.some(person => person.id === id)
+          || (sideOpportunity.allowed && sideOpportunity.groups.some(group => group.includes(id)))
+          || !!weekly.pending;
+      }));
       const cooking = cookingLlmPayload(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
-      const minimalStore = storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category }));
+      const minimalStore = storeAvailability.available || topics.shopping
+        ? storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category })) : [];
+      // Small permanent ID/name index keeps natural-language shopping possible
+      // even when an indirect request doesn't match the topic hint regex.
+      const storeNameIndex = storeCatalog.map(({ id, name }) => ({ id, name }));
       const summary = {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
@@ -387,9 +407,9 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           .filter(row => row.owner === activeProtagonist(snapshot)).slice(-18),
         narrative,
         ...(cooking ? { cooking } : {}),
-        worldContinuity: omniscientContinuityContext(snapshot),
-        otherSideOpportunity: otherSidePromptContext(snapshot),
-        weeklyMemory: weeklyMemoryContext(snapshot),
+        worldContinuity: omniscientContinuityContext(snapshot, focusedOtherProtagonists),
+        otherSideOpportunity: sideOpportunity,
+        weeklyMemory: weekly,
         ...(retrievedMemory ? { retrievedMemory } : {}),
         clock: snapshot.clock, calendarDate: gameCalendar(snapshot.clock.day),
         weather: weatherNarrative(resolveWeather(snapshot)),
@@ -452,14 +472,16 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           services: locationServiceCatalog.filter(service => !service.reveal)
              .map(({ id, label, locationIds }) => ({ id, label, locationIds })),
           packagingFeePerItem: PACKAGING_FEE,
-          storeItems: minimalStore,
+          // Preserve all purchasable IDs for free-form actions. Full prices and
+          // categories are sent only when relevant; don't duplicate store.items.
+          ...(storeAvailability.available ? {} : { storeItems: topics.shopping ? minimalStore : storeNameIndex }),
           rooms: campusInteriors.map(room => ({ id: room.id, label: room.label, parentLocationId: room.parentLocationId,
             ...(room.id === snapshot.interior?.roomId || topics.room
               ? { interactions: room.interactions.map(({ id, label, description, minutes, energyDelta }) => ({ id, label, description, minutes, energyDelta })) } : {}) })),
           subjects: topics.study ? academicMajors.flatMap(major => major.subjects.map(subject => ({ id: subject.id, name: subject.name, majorId: major.id, major: major.name }))) : [],
         },
         schedule: snapshot.schedule,
-        store: { ...storeAvailability, items: storeAvailability.available ? minimalStore : [] },
+        store: storeAvailability.available ? { ...storeAvailability, items: minimalStore } : storeAvailability,
         venue: getLocationStatus(snapshot.locationId, snapshot.clock),
         serviceAlternatives: topics.shopping ? [...new Set(getLocationServices(snapshot).flatMap(service => service.locationIds))]
           .filter(locationId => locationId !== snapshot.locationId)
@@ -490,6 +512,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             id, name, tag, summary: summary.slice(0, PROMPT_CONTEXT_LIMITS.mainCharacterSummary), portraitId, affinity, sourcePersonId,
           })),
         recentPhone: selectPromptPhone(snapshot.phone),
+        // Keep the original bounded SMS evidence: indirect references like
+        // "她刚才说什么" need no special keyword to remain intelligible.
         recentSms: storySmsContext(snapshot),
         music: livehousePhoneView(snapshot, activeProtagonist(snapshot)),
         journal: selectPromptJournal(snapshot.journal, alreadyInNarrative),
@@ -513,8 +537,6 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           '玩家本次行动：', input.trim(),
         ].join('\n');
       const perspective = `recentSms 是当前主角参与的真实已保存手机短信（包含当前主角发出的分段消息）；仅作为已发生的信息事实，不能重复发送、补写回复或把手机发信当作面对面台词。outgoing 是本人已发送，incoming 是本人已收到；未读/送达不能擅自等同角色已打开阅读。短信对方的私人日记、其他对话和秘密不因全知视角自动成为当前主角已知。\nrecentOffscreenScenes 是只供玩家阅读的第三人称离屏镜头，不等于当前主角亲历或知悉，也不授权 NPC 获知其中的内心秘密。全知叙事模型可阅读七日全局记忆（weeklyMemory），其中包括素世、祥子、艾玛和玲奈子四位主角已保存的经历；不得把全知信息自动当作任一角色已知事实。当前玩家主角是${protagonistNames[activeProtagonist(snapshot)]}。四位主角各自拥有独立生活与叙事；只承接当前主角的 recentLife、story 和有来源的交流，不得把其他主角的秘密或离屏经历当作当前主角已知。切换视角不改写已保存的共同历史。counterpartsInScene 非空时由本轮叙事统筹在场双方交流；为空时不得凭空让其他人到场或替其编造离屏事实。nearbyPeople 与 encounter 上的 relationship 只发给已经是联系人的在场者，含好感数字、档位和分寸提示；按本人性格表现该档，高档位不等于恋爱，家人写成信任与照应。没有 relationship 的人不要套用别人的好感。凡在 <story> 里逐字呈现的角色原话，无论现场交谈、电话、回忆还是想象，都必须使用完整竖线对白标签；用旁白交代其现实或非现场语境，不能因为标签而虚构角色在场、信息已知或事件已经发生。短信内容另走 phone_messages 协议；间接叙述与未逐字引述的内心不当作直接台词。素世使用“长崎素世”或“素世”，祥子使用“丰川祥子”或“祥子”，艾玛使用“樱羽艾玛”或“艾玛”，玲奈子使用“甘织玲奈子”或“玲奈子”作为说话人。人物说法只是交流证据，余额、位置、订单仍以程序状态为准。本人收到的未读消息可以作为手机待查看内容，不能默认角色已经阅读。重大选择和家庭和解等节点留给玩家参与。\n${omniscientNarratorInstructions(snapshot)}`;
-      const weekly = weeklyMemoryContext(snapshot);
-      const sideOpportunity = otherSidePromptContext(snapshot);
       const sideInstruction = sideOpportunity.allowed
         ? `【本轮有限旁线机会】程序低概率（${Math.round(sideOpportunity.probability * 100)}%）授权一组其他主角候选：${JSON.stringify(sideOpportunity)}。只允许这些 protagonists 组合输出 <otherside> JSON 数组，最多 ${sideOpportunity.groups.length} 组。若同一地点确实合组，必须用一条事件的 protagonists 数组共同保存，禁止为同场两个角色分别写两条；不同地点则不同组，禁止直接面对面，可使用 messages 生成双方同步手机短信。NPC 只允许从 npcGroups 同场列表选，属于参与者、可以拥有 status/locationId/affinityDelta，但不拥有可切换视角。若没有自然发生的新事件，请完全省略标签；模型不必耗尽所有候选。关系前史、生日和节日仅用于合理创作，不是自动触发已完成行动。可在 <story_continue> 中返回当前主角，但重大选择留给玩家，系统会提供继续/切换按钮。禁止任意远程移动、任意钱包修改、后台行程覆盖。`
         : '【旁线机会未触发】本轮禁止输出 <otherside>、<story_continue> 标签，不得在当前主角的正文写出“与此同时”已改变其他人物位置、余额或实际发生的行为；全知信息仅能作为背景事实引用。';
