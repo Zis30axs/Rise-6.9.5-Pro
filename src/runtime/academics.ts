@@ -1,6 +1,7 @@
 import type { AcademicGain, AcademicState, WorldState } from '../frontend/types';
 import { getCampusInterior, getStudyEnergyCost, INTERIOR_INTERACTION_RANGE, isStudyInteraction, studyDurationOptions } from './campus-interiors';
 import { getLocationStatus } from './location-services';
+import { studyPointsWithEquipment } from './equipment';
 
 export interface AcademicSubject {
   readonly id: string;
@@ -159,7 +160,7 @@ export function getAcademicStudyQuote(state: WorldState, request: AcademicStudyR
   if (!blockedReason && state.player.energy < maxEnergyCost) blockedReason = `精力不足，此档学习至少需要 ${maxEnergyCost} 点精力，请先休息。`;
   if (!blockedReason && option && state.clock.day * 1440 + state.clock.hour * 60 + state.clock.minute + option.maxMinutes > 365000 * 1440 + 1439) blockedReason = '已到达最大天数，此档学习无法完整结算。';
   const ownedPoints = state.academics?.subjects.find(item => item.subjectId === request.subjectId)?.points ?? 0;
-  if (!blockedReason && option && (ownedPoints * 2 + option.maxMinutes * (isCrossMajor ? 3 : 2)) > MAX_ACADEMIC_POINTS * 2) blockedReason = '学习进度已到达存档上限，本次学习未结算。';
+  if (!blockedReason && option && (ownedPoints + studyPointsWithEquipment(state, option.maxMinutes * (isCrossMajor ? 1.5 : 1))) > MAX_ACADEMIC_POINTS) blockedReason = '学习进度已到达存档上限，本次学习未结算。';
   return { subject, option, isCrossMajor, minMinutes: option?.minMinutes ?? 0,
     maxMinutes: option?.maxMinutes ?? 0, maxEnergyCost, outcomes, blockedReason };
 }
