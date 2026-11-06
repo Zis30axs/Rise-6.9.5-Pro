@@ -7,8 +7,6 @@
 export const PROMPT_CONTEXT_LIMITS = {
   journalEntries: 7,
   journalText: 300,
-  storyTurns: 6,
-  storyText: 650,
   phoneMessages: 8,
   phoneText: 280,
   calendarEntries: 12,
@@ -45,17 +43,18 @@ export function selectPromptJournal(rows: readonly PromptJournal[], excludedIds:
   return newest.reverse();
 }
 
-/** Read-only prose projection. The foreground return AFTER an off-screen cut is
- * the actual last narrated moment, so always reserve room for it. Never append
- * otherSideBeats: those are private, non-witnessed events in other saves. */
+/** Send every saved foreground turn of the current protagonist, in order.
+ * Keep both the original prose and any later foreground continuation intact.
+ * otherSideBeats remain separate private evidence, never appended here.
+ * Save retention is governed independently by the WorldState schema.
+ */
 export function selectPromptStory(rows: readonly PromptStory[]): PromptStory[] {
-  return rows.slice(-PROMPT_CONTEXT_LIMITS.storyTurns).map(row => {
+  return rows.map(row => {
     const beginning = pruneVariableEcho(row.text);
     const resumed = row.role === 'assistant' && row.returnStory
-      ? pruneVariableEcho(row.returnStory).slice(-300) : '';
+      ? pruneVariableEcho(row.returnStory) : '';
     const tail = resumed ? '\n【回到当前视角后已经发生的正文】\n' + resumed : '';
-    const available = PROMPT_CONTEXT_LIMITS.storyText - tail.length;
-    return { role: row.role, text: beginning.slice(0, available) + tail };
+    return { role: row.role, text: beginning + tail };
   }).filter(row => row.text);
 }
 
