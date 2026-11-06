@@ -86,3 +86,15 @@
   .store-categories { gap:5px; margin:18px 0 14px; }
   .store-current-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+/* Reusable equipment slots and the street-side stationery counter. */
+.equipment-slots { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:13px 0 18px; }
+.equipment-slot { min-width:0; border:1px solid #d4c59845; border-radius:9px; background:#d7c39a09; padding:10px; }
+.equipment-slot small { display:block; color:#c2cbb7; font-size:11px; }
+.equipment-slot strong { display:block; font-size:13px; color:#f2ddb1; overflow-wrap:anywhere; }
+.equipment-actions { justify-content:flex-start; flex-wrap:wrap; }
+.equipment-actions button { padding:8px 10px; border-radius:7px; }
+.stationery-store .store-products { grid-template-columns:minmax(0,320px); margin-top:20px; }
+.stationery-pen-illustration { color:#ddcb9f; font-size:68px; text-align:center; line-height:1.8; }
+.stationery-store .store-blocked { color:#e0b79c; }
+@media (max-width:460px) { .equipment-slots { grid-template-columns:1fr 1fr; } .stationery-store .store-products { grid-template-columns:minmax(0,1fr); } }
