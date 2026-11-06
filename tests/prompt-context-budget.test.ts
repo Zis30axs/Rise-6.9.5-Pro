@@ -8,6 +8,7 @@ describe('Lite narrative prompt context budget', () => {
   it('recognizes phone discussion without expanding phone history on ordinary dialogue', () => {
     expect(promptTopicHints('查看素世发来的短信').phone).toBe(true);
     expect(promptTopicHints('给祥子打电话').phone).toBe(true);
+    expect(promptTopicHints('我收到了新消息').phone).toBe(true);
     expect(promptTopicHints('继续在咖啡厅聊天').phone).toBe(false);
     expect(promptTopicHints('去便利店买饮料').shopping).toBe(true);
   });
