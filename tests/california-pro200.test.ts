@@ -6,6 +6,7 @@ import { getLocationServiceQuote, getLocationServices, getLocationStatus } from 
 import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
 import { validateStoryActions } from '../src/runtime/story-actions';
 import { gameDayFromISO } from '../src/runtime/game-calendar';
+import californiaWorldbook from '../src/worldbook/california.json';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { appiePayBalance } from '../src/runtime/dual-protagonists';
 
@@ -16,6 +17,17 @@ function fundedState() {
 }
 
 describe('California airport and fictional Pro200 trade', () => {
+  it('ships optional California worldbook entries in the offline card', () => {
+    expect(californiaWorldbook.entries).toHaveLength(2);
+    for (const entry of californiaWorldbook.entries) {
+      expect(entry.constant).toBe(false);
+      expect(entry.enabled).toBe(true);
+      expect(entry.keys.length).toBeGreaterThan(0);
+      expect(entry.content).not.toMatch(/[\\u3040-\\u30FF]/);
+    }
+    expect(californiaWorldbook.entries.map(entry => entry.content).join(' ')).toContain('返程须沿同一条航线');
+  });
+
   it('requires a real four-stop route from Tokyo and charges each leg', () => {
     expect(californiaPlaces.map(place => place.id)).toEqual([
       'haneda-airport', 'sfo-airport', 'california-openai', 'california-market',
