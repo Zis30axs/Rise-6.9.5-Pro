@@ -11,7 +11,8 @@ import {
 } from './circle-venue';
 import { isCircleVisitService, prepareCircleVisitService } from './circle-visit';
 import { getIllnessDebuffs } from './illness';
-import { hasUsedWeeklyCounseling } from './fengjin-clinic';
+import { hasUsedWeeklyCounseling, activeProtagonistId } from './fengjin-clinic';
+import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_RESALE_YEN, PRO200_GAME_ITEM_ID, pro200ClaimBlocked } from './california';
 import { isLivehouseVisitService, livehouseBlockedCode, prepareLivehouseService, type LivehouseServiceFacts, type LivehouseBlockedCode } from './livehouse-visit';
 import tokyoSandbox from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 
@@ -62,6 +63,10 @@ export const venues: readonly Venue[] = [
   { locationId: 'court-hearing', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '公开旁听席与正式审理共用的法庭。不得干预正在进行的案件。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
   { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
+  { locationId: 'haneda-airport', label: '东京羽田国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际航班值机与出发大厅。前往旧金山须先到达机场。' },
+  { locationId: 'sfo-airport', label: '旧金山国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际到达大厅与机场联运站，可前往旧金山或返回羽田。' },
+  { locationId: 'california-openai', label: 'OpenAI 办公地点', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '架空的访客大厅，可每七个游戏日领取一张虚构 Pro200 凭证。' },
+  { locationId: 'california-market', label: '湾区二手交易市场', hoursLabel: '10:00–20:00', opens: 10 * 60, closes: 20 * 60, outdoor: false, description: '本地收藏品市场，收购虚构 Pro200 凭证。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },
   { locationId: 'pocket-park', label: '口袋公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在长椅上小憩，或沿着公园步道散步。' },
@@ -77,7 +82,9 @@ export const venues: readonly Venue[] = [
 export function getLocationStatus(locationId: string, clock: WorldState['clock']): LocationStatus | null {
   const venue = venues.find(item => item.locationId === cafeServiceLocation(locationId));
   if (!venue) return null;
-  const minute = clock.hour * 60 + clock.minute;
+  // The world keeps one clock; California venue hours use a fixed local offset.
+  const minute = locationId.startsWith('california-') ? (clock.hour * 60 + clock.minute + 480) % 1440
+    : clock.hour * 60 + clock.minute;
   const alwaysOpen = venue.opens === null || venue.closes === null;
   const isOpen = alwaysOpen || (venue.opens! < venue.closes!
     ? minute >= venue.opens! && minute < venue.closes!
@@ -121,6 +128,8 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
 const authoredLocationServices: readonly LocationService[] = Object.freeze([
+  { id: PRO200_CLAIM_SERVICE_ID, locationIds: ['california-openai'], label: '领取 Pro200 凭证', description: '在访客登记台领取一张架空 Pro200 收藏凭证。每人每七个游戏日限领一张。', minutes: 15, price: 0, effects: effects({ energy: -1, morale: 3 }) },
+  { id: PRO200_RESELL_SERVICE_ID, locationIds: ['california-market'], label: '出售 Pro200 凭证', description: '将背包中的一张虚构 Pro200 凭证出售给收藏品商人。', minutes: 20, price: 0, payout: PRO200_RESALE_YEN, effects: effects({ energy: -2, morale: 5 }) },
   { id: COURT_OBSERVE_ID, locationIds: ['court-hearing'], label: courtObservation.label,
     description: '在公开旁听席安静观看法庭辩论与证据质证，学习法律程序，不介入正式在审案件。',
     completionDescription: courtObservation.result, minutes: courtObservation.minutes,
@@ -279,6 +288,11 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
       blockedReason = debuffs.heavyLaborReason ?? '身体抱恙，无法承担高强度重体力劳动。';
     }
   }
+  if (!blockedReason && service?.id === PRO200_CLAIM_SERVICE_ID)
+    blockedReason = pro200ClaimBlocked(state, activeProtagonistId(state, worldAuthority));
+  if (!blockedReason && service?.id === PRO200_RESELL_SERVICE_ID &&
+    !state.inventory.some(entry => entry.itemId === PRO200_GAME_ITEM_ID && entry.quantity > 0))
+    blockedReason = '背包中没有可出售的 Pro200 凭证。';
   if (!blockedReason && service?.id === 'clinic-counseling') {
     if (hasUsedWeeklyCounseling(state, undefined, worldAuthority)) {
       blockedReason = '本周已经找风堇医生谈过心了，请遵循医嘱好好休养，下周再来吧。';

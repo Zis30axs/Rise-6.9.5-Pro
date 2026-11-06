@@ -170,6 +170,8 @@ export interface WorldState {
   fengjinClinic?: import('../runtime/fengjin-clinic').FengjinClinicState;
   /** Per-protagonist cooking sessions. Absent until someone starts a dish. */
   cooking?: import('../runtime/cooking').CookingState;
+  /** Shared claim receipts; absent from legacy saves. */
+  california?: import('../runtime/california').CaliforniaState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];

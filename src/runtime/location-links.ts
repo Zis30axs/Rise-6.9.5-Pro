@@ -1,11 +1,12 @@
 import type { WorldState } from '../frontend/types';
 import { campusInteriors, getCampusInterior } from './campus-interiors';
 import { novelDestinations } from './model';
+import { internationalConnections } from './california';
 
 export interface AdjacentLocation {
   id: string;
   label: string;
-  kind: 'enter' | 'exit' | 'nearby' | 'transit';
+  kind: 'enter' | 'exit' | 'nearby' | 'transit' | 'flight';
 }
 
 /** Undirected connections between the existing reachable outdoor landmarks. */
@@ -49,5 +50,6 @@ export function getAdjacentLocations(state: Pick<WorldState, 'locationId' | 'int
   for (const id of areaExits[origin] ?? []) add(id, distantLocations.has(id) || origin === 'city-roads' ? 'transit' : 'nearby');
   if (distantLocations.has(origin)) add('bus-stop', 'transit');
   if (origin === 'bus-stop') distantLocations.forEach(id => add(id, 'transit'));
+  for (const leg of internationalConnections(origin)) add(leg.to, leg.method.includes('航班') ? 'flight' : 'transit');
   return result;
 }
