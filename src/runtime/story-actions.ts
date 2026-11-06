@@ -7,7 +7,8 @@ import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
-import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
+import { getServiceTakeawayItem, getStoreItem, storeCatalog, stationeryCatalog } from './convenience-store';
+import { isEquipmentSlot, canEquipItem } from './equipment';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
@@ -172,12 +173,20 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       case 'buy':
       case 'pack': {
         const item = record(raw, ['type', 'itemId', 'quantity'], path);
-        const product = storeCatalog.find(product => product.id === item.itemId);
+        const product = [...storeCatalog, ...stationeryCatalog].find(product => product.id === item.itemId);
         const cafeCup = item.type === 'buy' && typeof item.itemId === 'string' && isCafeStoryItem(state, item.itemId);
-        if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette' || product.category === 'ingredient'))) return invalid(`${path} 商品`);
+        if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette' || product.category === 'ingredient' || product.category === 'stationery'))) return invalid(`${path} 商品`);
         return item.type === 'buy'
           ? { type: 'buy', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) }
           : { type: 'pack', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) };
+      }
+      case 'equip': {
+        const item = record(raw, ['type', 'itemId', 'slot'], path);
+        const id = item.itemId;
+        const slot = item.slot;
+        if (typeof id !== 'string' || !getStoreItem(id)?.equipmentKind ||
+            (slot !== null && (!isEquipmentSlot(slot) || !canEquipItem(id, slot)))) return invalid(`${path} 装备或装备栏`);
+        return { type: 'equip', itemId: id, slot: slot as import('./equipment').EquipmentSlot | null };
       }
       case 'takeaway': {
         const item = record(raw, ['type', 'serviceId', 'quantity'], path);
