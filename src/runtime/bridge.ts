@@ -386,7 +386,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const cooking = cookingLlmPayload(snapshot);
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
-      const minimalStore = storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category }));
+      const minimalStore = storeAvailability.available || topics.shopping
+        ? storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category })) : [];
       const summary = {
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
