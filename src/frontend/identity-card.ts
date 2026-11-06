@@ -324,19 +324,19 @@ export const SOYO_IDENTITY_CARD: ResidentIdentityCard = {
     {
       personId: 'bang-mutsumi',
       name: '若叶睦',
-      roleLabel: '月之森同班同学 · CRYCHIC 旧友',
+      roleLabel: '月之森同窗 · 内疚与牵挂',
       affinity: 62,
-      statusTag: '亲近 · 62',
-      note: '经常向睦询问祥子的近况，也习惯照顾少言的睦。',
+      statusTag: '牵挂 · 62',
+      note: '虽然日常仍习惯照顾少言的睦，但经历过退还黄瓜的刺痛后，心中暗藏着未曾说清的内疚与复杂关照。',
       group: 'crychic'
     },
     {
       personId: 'sakiko',
       name: '丰川祥子',
-      roleLabel: '旧乐队同伴 · 难以释怀的羁绊',
+      roleLabel: '旧团同伴 · 微妙和解',
       affinity: 68,
-      statusTag: '牵挂 · 68',
-      note: '始终挂念着昔日春日影下的约定与未解开的心结。',
+      statusTag: '克制 · 68',
+      note: '经历过误会解开后重新接触，在日常中保持着带着一丝尴尬与克制的分寸感。',
       group: 'crychic'
     },
     {
@@ -454,10 +454,10 @@ export const SAKIKO_IDENTITY_CARD: ResidentIdentityCard = {
     {
       personId: 'soyo',
       name: '长崎素世',
-      roleLabel: 'CRYCHIC 旧同伴',
+      roleLabel: 'CRYCHIC 旧友 · 微妙和解',
       affinity: 68,
-      statusTag: '复杂 · 68',
-      note: '曾共同创立 CRYCHIC，彼此之间仍有极深的情感牵扯。',
+      statusTag: '克制 · 68',
+      note: '解开家变隐情后重新建立联系，深知昔日伤害仍在，在温情中恪守体面分寸。',
       group: 'crychic'
     },
     {
@@ -477,6 +477,15 @@ export const SAKIKO_IDENTITY_CARD: ResidentIdentityCard = {
       statusTag: '旧约 · 75',
       note: '曾最先读懂灯的笔记并邀请她歌唱，那段时光始终留在心底深处。',
       group: 'crychic'
+    },
+    {
+      personId: 'bang-nyamu',
+      name: '祐天寺若麦',
+      roleLabel: 'Ave Mujica 鼓手 · 商业与舞台',
+      affinity: 52,
+      statusTag: '磨合 · 52',
+      note: '虽历经武道馆揭面风波与商业理念碰撞，但在乐队重组后已形成成熟务实的舞台默契。',
+      group: 'mujica'
     }
   ],
   endorsements: [
