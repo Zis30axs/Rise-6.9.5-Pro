@@ -153,6 +153,22 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(parseState(sold)).toEqual(sold);
   });
 
+  it('retains each protagonist\'s claim cooldown after changing the controlled character', () => {
+    const base = fundedState();
+    base.clock = { day: 2, hour: 5, minute: 0 };
+    base.locationId = 'california-openai';
+    base.scene = null;
+    const claimed = reduceState(enableProtagonists(base), { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
+    const other = reduceState(claimed, { type: 'switch_protagonist', target: 'sakiko' });
+    expect(other.california?.claims.soyo).toBe(2);
+    expect(pro200ClaimBlocked(other, 'sakiko')).toBeNull();
+    expect(pro200ClaimBlocked(other, 'soyo')).toMatch(/已经领取/);
+    const returned = reduceState(other, { type: 'switch_protagonist', target: 'soyo' });
+    expect(returned.california?.claims.soyo).toBe(2);
+    expect(pro200ClaimBlocked(returned, 'soyo')).toMatch(/已经领取/);
+    expect(parseState(returned)).toEqual(returned);
+  });
+
   it('does not allow buying, using, or inventing vouchers outside their dedicated services', () => {
     const state = fundedState();
     expect(getStoreItem(PRO200_GAME_ITEM_ID)?.category).toBe('collectible');
