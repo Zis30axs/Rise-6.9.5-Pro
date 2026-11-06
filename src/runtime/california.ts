@@ -6,8 +6,8 @@ import type { ProtagonistId } from './dual-protagonists';
 export const californiaPlaces = [
   { id: 'haneda-airport', name: '东京羽田国际机场', subtitle: '国际航站楼', description: '通往旧金山的国际航班从这里出发，须先到东京的南门交通站转乘机场接驳车。' },
   { id: 'sfo-airport', name: '旧金山国际机场', subtitle: '加州 · 入境大厅', description: '旧金山湾区的国际航空门户，可以搭乘机场接驳车前往市区，也可以购票返回东京。' },
-  { id: 'california-openai', name: 'OpenAI 办公地点', subtitle: '加州 · 旧金山', description: '架空故事中的 OpenAI 访客大厅，开放时可领取一种叫作 Pro200 的虚构交易凭证。它不代表现实的订阅、兑换码或账号。' },
-  { id: 'california-market', name: '湾区二手交易市场', subtitle: '加州 · 旧金山', description: '湾区的收藏品交易市场，收购游戏中的虚构 Pro200 凭证。这里的交易不涉及现实账号或真实数字服务。' },
+  { id: 'california-openai', name: 'OpenAI 办公地点', subtitle: '加州 · 旧金山', description: 'OpenAI 访客大厅设有专门的登记柜台，开放时可申请领取 Pro200 收藏券。' },
+  { id: 'california-market', name: '湾区二手交易市场', subtitle: '加州 · 旧金山', description: '湾区的收藏品交易市场，常有商人收购各式纪念券，其中也包括 Pro200。' },
 ] as const;
 
 const foreignLocationIds: ReadonlySet<string> = new Set(californiaPlaces.map(place => place.id));
@@ -50,7 +50,7 @@ export const PRO200_COOLDOWN_DAYS = 7;
 /** A non-consumable, non-purchasable fictional item, unrelated to real OpenAI accounts. */
 export const pro200GameItem: StoreItem = Object.freeze({
   id: PRO200_GAME_ITEM_ID,
-  name: 'Pro200 虚构权益券',
+  name: 'Pro200 收藏券',
   brand: '湾区收藏品',
   tier: 'premium',
   category: 'collectible',

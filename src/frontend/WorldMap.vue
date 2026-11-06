@@ -724,7 +724,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         </template>
         <section v-if="novelMode" class="wm-overseas-routes" aria-label="国际航线">
           <small class="wm-kicker">海外旅行</small><h3>东京 · 旧金山</h3>
-          <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。加州的 Pro200 是仅供游戏内收集、出售的虚构凭证。</p>
+          <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
           <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
           <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
