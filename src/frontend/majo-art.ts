@@ -20,9 +20,15 @@ import hiroShy from '../../assets/majo-runtime/characters/majo-hiro/shy.webp?inl
 import noaNeutral from '../../assets/majo-runtime/characters/majo-noa/neutral.webp?inline';
 import noaHappy from '../../assets/majo-runtime/characters/majo-noa/happy.webp?inline';
 import noaShy from '../../assets/majo-runtime/characters/majo-noa/shy.webp?inline';
-import miliaNeutral from '../../assets/majo-runtime/characters/majo-milia/neutral.webp?inline';
-import miliaHappy from '../../assets/majo-runtime/characters/majo-milia/happy.webp?inline';
-import miliaShy from '../../assets/majo-runtime/characters/majo-milia/shy.webp?inline';
+import miliaNeutral from '../../assets/majo-runtime/characters/majo-milia/casual/neutral.webp?inline';
+import miliaHappy from '../../assets/majo-runtime/characters/majo-milia/casual/happy.webp?inline';
+import miliaThinking from '../../assets/majo-runtime/characters/majo-milia/casual/thinking.webp?inline';
+import nanokaNeutral from '../../assets/majo-runtime/characters/majo-nanoka/neutral.webp?inline';
+import nanokaHappy from '../../assets/majo-runtime/characters/majo-nanoka/happy.webp?inline';
+import nanokaThinking from '../../assets/majo-runtime/characters/majo-nanoka/thinking.webp?inline';
+import arisaNeutral from '../../assets/majo-runtime/characters/majo-arisa/neutral.webp?inline';
+import arisaHappy from '../../assets/majo-runtime/characters/majo-arisa/happy.webp?inline';
+import arisaThinking from '../../assets/majo-runtime/characters/majo-arisa/thinking.webp?inline';
 import ananNeutral from '../../assets/majo-runtime/characters/majo-anan/neutral.webp?inline';
 import ananHappy from '../../assets/majo-runtime/characters/majo-anan/happy.webp?inline';
 import ananShy from '../../assets/majo-runtime/characters/majo-anan/shy.webp?inline';
@@ -40,6 +46,12 @@ import margoSurprised from '../../assets/majo-runtime/characters/majo-margo/extr
 import yukiNeutral from '../../assets/majo-runtime/characters/majo-yuki/neutral.png?inline';
 import yukiHappy from '../../assets/majo-runtime/characters/majo-yuki/happy.png?inline';
 import yukiThinking from '../../assets/majo-runtime/characters/majo-yuki/thinking.png?inline';
+import meruruNeutral from '../../assets/majo-runtime/characters/majo-meruru/neutral.webp?inline';
+import meruruHappy from '../../assets/majo-runtime/characters/majo-meruru/happy.webp?inline';
+import meruruShy from '../../assets/majo-runtime/characters/majo-meruru/shy.webp?inline';
+import meruruSurprised from '../../assets/majo-runtime/characters/majo-meruru/surprised.webp?inline';
+import meruruAngry from '../../assets/majo-runtime/characters/majo-meruru/angry.webp?inline';
+import meruruSad from '../../assets/majo-runtime/characters/majo-meruru/sad.webp?inline';
 import highrise from '../../assets/majo-runtime/interiors/highrise-river-view-living-room-dusk.webp?inline';
 import timber from '../../assets/majo-runtime/interiors/timber-courtyard-house-interior-day.webp?inline';
 import olderFamily from '../../assets/majo-runtime/interiors/older-family-house-living-room-day.webp?inline';
@@ -50,6 +62,7 @@ import oldTownStreet from '../../assets/majo-runtime/districts/old-town-courtyar
 import riverfrontStreet from '../../assets/majo-runtime/districts/riverfront-highrise-promenade-dusk.webp?inline';
 import olderApartmentStreet from '../../assets/majo-runtime/districts/older-apartment-courtyard-day.webp?inline';
 import type { NovelNpcEmotion } from './novel-npc-emotions';
+import { isMajoTrioPerson, majoMeruruPoseFor, majoTrioPoseFor, resolveMajoMeruruSpeaker, resolveMajoTrioSpeaker, selectMajoMeruruSprite, selectMajoTrioSprite, type MajoMeruruPose, type MajoTrioId, type MajoTrioPose } from './majo-trio-art';
 
 export const majoEmotions: readonly NovelNpcEmotion[] = Object.freeze([
   'neutral', 'happy', 'sad', 'angry', 'surprised', 'shy', 'thinking', 'serious', 'relieved',
@@ -82,6 +95,27 @@ export interface MajoExpressionSet {
 
 const semiMainExpressions = (neutral: string, happy: string, shy: string): Readonly<Partial<Record<NovelNpcEmotion, string>>> => Object.freeze({ neutral, happy, shy });
 
+/** Three authored poses. happy is the smile drawing; other emotions are mapped in majoExpressionFor. */
+const trioSet = (personId: MajoTrioId, width: number, height: number, neutral: string, happy: string, thinking: string): MajoExpressionSet => Object.freeze({
+  personId, tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
+  width, height, expressions: Object.freeze({ neutral, happy, thinking }),
+});
+
+const trioSprites: Readonly<Record<MajoTrioId, Readonly<Record<MajoTrioPose, string>>>> = Object.freeze({
+  'majo-nanoka': Object.freeze({ neutral: nanokaNeutral, smile: nanokaHappy, thinking: nanokaThinking }),
+  'majo-arisa': Object.freeze({ neutral: arisaNeutral, smile: arisaHappy, thinking: arisaThinking }),
+  'majo-milia': Object.freeze({ neutral: miliaNeutral, smile: miliaHappy, thinking: miliaThinking }),
+});
+
+const meruruSprites: Readonly<Record<MajoMeruruPose, string>> = Object.freeze({
+  neutral: meruruNeutral,
+  smile: meruruHappy,
+  troubled: meruruShy,
+  surprised: meruruSurprised,
+  annoyed: meruruAngry,
+  sad: meruruSad,
+});
+
 const semiMainSet = (personId: string, expressions: Readonly<Partial<Record<NovelNpcEmotion, string>>>): MajoExpressionSet => Object.freeze({
   personId, tier: 'semi-main', targetExpressions: 3, complete: true, completedExpressions: 3,
   width: 1024, height: 2048, expressions,
@@ -99,14 +133,24 @@ export const majoExpressionSets: Readonly<Record<string, MajoExpressionSet>> = O
   }),
   'majo-hiro': semiMainSet('majo-hiro', semiMainExpressions(hiroNeutral, hiroHappy, hiroShy)),
   'majo-noa': semiMainSet('majo-noa', semiMainExpressions(noaNeutral, noaHappy, noaShy)),
-  'majo-milia': semiMainSet('majo-milia', semiMainExpressions(miliaNeutral, miliaHappy, miliaShy)),
+  'majo-milia': trioSet('majo-milia', 398, 976, miliaNeutral, miliaHappy, miliaThinking),
   'majo-anan': semiMainSet('majo-anan', semiMainExpressions(ananNeutral, ananHappy, ananShy)),
   'majo-sherry': semiMainSet('majo-sherry', semiMainExpressions(sherryNeutral, sherryHappy, sherryShy)),
   'majo-hanna': semiMainSet('majo-hanna', semiMainExpressions(hannaNeutral, hannaHappy, hannaShy)),
+  'majo-nanoka': trioSet('majo-nanoka', 396, 960, nanokaNeutral, nanokaHappy, nanokaThinking),
+  'majo-arisa': trioSet('majo-arisa', 377, 935, arisaNeutral, arisaHappy, arisaThinking),
   'majo-yuki': Object.freeze({
     personId: 'majo-yuki', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 3,
     width: 512, height: 1024,
     expressions: Object.freeze({ neutral: yukiNeutral, happy: yukiHappy, thinking: yukiThinking }),
+  }),
+  'majo-meruru': Object.freeze({
+    personId: 'majo-meruru', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 5,
+    width: 813, height: 2089,
+    expressions: Object.freeze({
+      neutral: meruruNeutral, happy: meruruHappy, shy: meruruShy,
+      surprised: meruruSurprised, angry: meruruAngry, sad: meruruSad,
+    }),
   }),
   'majo-margo': Object.freeze({
     personId: 'majo-margo', tier: 'semi-main' as const, targetExpressions: 3, complete: true, completedExpressions: 5,
@@ -122,20 +166,31 @@ const speakerAliases: Readonly<Record<string, string>> = Object.freeze({
   '二阶堂希罗': 'majo-hiro', '希罗': 'majo-hiro',
   '城崎诺亚': 'majo-noa', '诺亚': 'majo-noa',
   '佐伯米莉亚': 'majo-milia', '米莉亚': 'majo-milia',
+  '黑部奈叶香': 'majo-nanoka', '奈叶香': 'majo-nanoka',
+  '紫藤亚里沙': 'majo-arisa', '亚里沙': 'majo-arisa',
   '夏目安安': 'majo-anan', '安安': 'majo-anan',
   '橘雪莉': 'majo-sherry', '橘雪梨': 'majo-sherry', '雪莉': 'majo-sherry', '雪梨': 'majo-sherry',
   '远野汉娜': 'majo-hanna', '汉娜': 'majo-hanna',
   '宝生玛格': 'majo-margo', '玛格': 'majo-margo',
+  '黑部穗奈香': 'majo-honoka', '穗奈香': 'majo-honoka', '黑部穗乃香': 'majo-honoka', '穗乃香': 'majo-honoka',
   '月代雪': 'majo-yuki',
+  '冰上梅露露': 'majo-meruru', '梅露露': 'majo-meruru', 'meruru': 'majo-meruru', 'majo-meruru': 'majo-meruru',
+  '\u6c37\u4e0a\u30e1\u30eb\u30eb': 'majo-meruru', '\u30e1\u30eb\u30eb': 'majo-meruru',
 });
 
 export function resolveMajoSpeaker(speaker: string): string | null {
   const name = speaker.trim();
-  return Object.prototype.hasOwnProperty.call(speakerAliases, name) ? speakerAliases[name] : null;
+  if (Object.prototype.hasOwnProperty.call(speakerAliases, name)) return speakerAliases[name];
+  const lower = name.toLowerCase();
+  return Object.prototype.hasOwnProperty.call(speakerAliases, lower) ? speakerAliases[lower] : null;
 }
 
 /** Exact emotion first, then the same person's neutral panel; never another identity. */
+const meruruExactEmotions = new Set<NovelNpcEmotion>(['happy', 'sad', 'angry', 'surprised', 'shy']);
+
 export function majoExpressionFor(personId: string, emotion: NovelNpcEmotion): string | null {
+  if (personId === 'majo-meruru') return meruruSprites[majoMeruruPoseFor(emotion)];
+  if (isMajoTrioPerson(personId)) return trioSprites[personId][majoTrioPoseFor(emotion)];
   const set = majoExpressionSets[personId];
   return set?.expressions[emotion] ?? set?.expressions.neutral ?? null;
 }
@@ -145,7 +200,7 @@ export interface MajoExpressionPortrait {
   src: string;
   width: number;
   height: number;
-  /** False when the requested emotion is not authored and neutral is used. */
+  /** False when this emotion has no drawing of its own and another pose is standing in. */
   exact: boolean;
 }
 
@@ -155,7 +210,36 @@ export function resolveMajoExpressionPortrait(speaker: string, emotion: NovelNpc
   const set = personId ? majoExpressionSets[personId] : undefined;
   const src = personId ? majoExpressionFor(personId, emotion) : null;
   if (!personId || !set || !src) return null;
-  return { personId, src, width: set.width, height: set.height, exact: !!set.expressions[emotion] };
+  const authored = personId === 'majo-meruru'
+    ? meruruExactEmotions.has(emotion)
+    : isMajoTrioPerson(personId)
+      ? emotion === 'neutral' || emotion === 'happy' || emotion === 'thinking'
+      : !!set.expressions[emotion];
+  return { personId, src, width: set.width, height: set.height, exact: authored };
+}
+
+/** Scene and map callers that still use the six game expression names. */
+export function resolveMajoTrioSceneArt(name: string, expression?: unknown) {
+  if (resolveMajoMeruruSpeaker(name)) {
+    const pose = majoMeruruPoseFor(expression);
+    const set = majoExpressionSets['majo-meruru'];
+    const selection = selectMajoMeruruSprite({ speaker: name, expression });
+    if (!set || !selection) return null;
+    return {
+      id: selection.id, src: meruruSprites[pose], width: set.width, height: set.height,
+      outfit: selection.outfit, expression: selection.expression, pose,
+    };
+  }
+  const personId = resolveMajoTrioSpeaker(name);
+  if (!personId) return null;
+  const pose = majoTrioPoseFor(expression);
+  const set = majoExpressionSets[personId];
+  const selection = selectMajoTrioSprite({ speaker: name, expression });
+  if (!set || !selection) return null;
+  return {
+    id: selection.id, src: trioSprites[personId][pose], width: set.width, height: set.height,
+    outfit: selection.outfit, expression: selection.expression, pose,
+  };
 }
 
 /** Verified interior art used by novel-mode backdrops. */
@@ -165,6 +249,7 @@ export const majoInteriorArt: Readonly<Record<string, string>> = Object.freeze({
   'koko-old-house': olderFamily,
   'emma-yuki-home': modernOpen,
   'anan-noa-milia-home': sharedLiving,
+  'nanoka-honoka-home': sharedLiving,
   'majo-studio': studio,
 });
 
@@ -197,14 +282,15 @@ export const majoArtStatus: readonly MajoArtStatus[] = Object.freeze([
   { personId: 'majo-hiro', tier: 'semi-main', targetExpressions: 3, outfit: '和服', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-anan', tier: 'semi-main', targetExpressions: 3, outfit: '银蓝发哥特长裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-noa', tier: 'semi-main', targetExpressions: 3, outfit: '彩发双马尾波点外套', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
-  { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '金发黑色蕾丝开衫', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
+  { personId: 'majo-milia', tier: 'semi-main', targetExpressions: 3, outfit: '奶白色绞花针织开衫', expressions: 3, complete: true, note: '2026-10-30 用户提供的常服三联是世界书现用立绘，已作为默认（平静/开心/思考）。早先 anime-seg 的 neutral/happy/shy 仍留在人物目录。smile 用开心姿态，troubled 与 annoyed 用思考姿态，surprised 与 sad 用平静姿态。' },
   { personId: 'majo-sherry', tier: 'semi-main', targetExpressions: 3, outfit: '蓝发贝雷帽格裙', expressions: 3, complete: true, note: '用户确认身份（消息写作“橘雪梨”，稳定 ID 仍为 majo-sherry）；已抠图并 2× 放大。' },
   { personId: 'majo-hanna', tier: 'semi-main', targetExpressions: 3, outfit: '金发绿裙', expressions: 3, complete: true, note: '用户确认身份；已用 anime-seg 抠图并 2× 放大（平静/开心/害羞），第三姿态为初版映射。' },
   { personId: 'majo-margo', tier: 'semi-main', targetExpressions: 3, outfit: '紫黑哥特和风', expressions: 5, complete: true, note: '已接入五张透明立绘：平静、开心、害羞、生气、惊讶。难过、思考、严肃、安心使用本人平静立绘。' },
-  { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-nanoka', tier: 'semi-main', targetExpressions: 3, outfit: '黑色贝雷帽、扣件深色外套、格裙', expressions: 3, complete: true, note: '2026-10-30 用户提供常服三联（平静/闭眼笑/托腮）。smile 用开心姿态，troubled 与 annoyed 用思考姿态，surprised 与 sad 用平静姿态。' },
+  { personId: 'majo-honoka', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '大学毕业、与奈叶香同居的常驻NPC；专属透明立绘未提交，沿用通用立绘。' },
+  { personId: 'majo-arisa', tier: 'semi-main', targetExpressions: 3, outfit: '黑红兜帽与口罩', expressions: 3, complete: true, note: '2026-10-30 用户提供常服三联（插袋平静/闭眼手靠脸/抱臂贴口罩）。smile 用开心姿态，troubled 与 annoyed 用思考姿态，surprised 与 sad 用平静姿态。' },
   { personId: 'majo-koko', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
-  { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
+  { personId: 'majo-meruru', tier: 'semi-main', targetExpressions: 3, outfit: '白头纱十字饰与粉缎带修女裙', expressions: 5, complete: true, note: '2026-10-31 用户提供五张同姿态白底立绘。没有单独的平静脸，平静与开心用闭眼笑；害羞与困扰用脸红含泪；惊讶、生气、难过各用本人对应的脸。严肃回退平静，安心回退开心，思考与害羞共用脸红含泪。白衣只去掉与画面边缘相连的近白背景。' },
   { personId: 'majo-leia', tier: 'semi-main', targetExpressions: 3, outfit: '待确认', expressions: 0, complete: false, note: '表情差分待补交，沿用通用立绘。' },
   { personId: 'majo-yuki', tier: 'semi-main', targetExpressions: 3, outfit: '浅蓝开衫、深蓝长裙、花饰帽', expressions: 3, complete: true, note: '已接入三姿态透明立绘（平静/开心/思考），缺失情绪回退同一人物的平静立绘。' },
 ]);

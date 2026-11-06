@@ -63,16 +63,17 @@ describe('社交 Skills：存档、四主角隔离、正负好感和结算', () 
   it('违和行为只折减同对象的正面好感，不削弱负面后果', () => {
     const original = newWorld();
     const npcId = original.contacts[0]!.id;
+    const base = original.contacts[0]!.affinity;
     const positive = applyStoryActions(original, [
       { type: 'relationship', npcId, delta: 10, reason: '对方认可坦白' },
       practice('expression', 3, npcId),
     ], 'skill-rapport-positive');
-    expect(positive.contacts.find(c => c.id === npcId)?.affinity).toBe(6);
+    expect(positive.contacts.find(c => c.id === npcId)?.affinity).toBe(base + 6);
     const negative = applyStoryActions(positive, [
       practice('expression', 3, npcId),
       { type: 'relationship', npcId, delta: -10, reason: '对方对威胁感到愤怒' },
     ], 'skill-rapport-negative');
-    expect(negative.contacts.find(c => c.id === npcId)?.affinity).toBe(-4);
+    expect(negative.contacts.find(c => c.id === npcId)?.affinity).toBe(base + 6 - 10);
   });
 
   it('一天多次社交不会无限刷经验', () => {
@@ -92,14 +93,17 @@ describe('社交 Skills：存档、四主角隔离、正负好感和结算', () 
     expect(() => applyStoryActions(world, [practice('unknown', 2)], 'skill-invalid-id')).toThrow();
     expect(() => applyStoryActions(world, [practice('expression', 4)], 'skill-invalid-degree')).toThrow();
     expect(() => applyStoryActions(world, [practice(), practice()], 'skill-duplicate')).toThrow();
-    expect(() => applyStoryActions(world, [{ ...practice(), secret: 999 } as StoryAction], 'skill-extra')).toThrow();
+    expect(() => applyStoryActions(world, [{ ...practice(), secret: 999 } as unknown as StoryAction], 'skill-extra')).toThrow();
   });
 
-  it('状态面板入口与内容在代码层独立存在', () => {
-    const status = readFileSync(resolve(process.cwd(), 'src/frontend/WorldPanels.vue'), 'utf8');
+  it('能力面板使用独立入口与内容标识', () => {
+    const shell = readFileSync(resolve(process.cwd(), 'src/frontend/App.vue'), 'utf8');
+    const panels = readFileSync(resolve(process.cwd(), 'src/frontend/WorldPanels.vue'), 'utf8');
     const panel = readFileSync(resolve(process.cwd(), 'src/frontend/SocialSkills.vue'), 'utf8');
-    expect(status).toContain('<SocialSkills :state="model.state" />');
-    expect(panel).toContain('data-status-section="skills"');
+    expect(shell).toContain("id: 'abilities', title: '能力'");
+    expect(panels).toContain('panel === \'abilities\'');
+    expect(panel).toContain('data-abilities-panel');
+    expect(panel).not.toContain('data-status-section');
     expect(panel).toContain('role="progressbar"');
     expect(panel).not.toContain('Jev');
     expect(panel).not.toContain('LLM');

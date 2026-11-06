@@ -265,6 +265,204 @@
       "origin": "user-provided"
     },
     {
+      "id": "raana_uniform_neutral",
+      "path": "assets/downtown-art/sources/raana-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1232982,
+      "sha256": "d3a12bb94c5d3cc184de1ccc676199801a7d08afbb12bb236bbea6f49ff59ce8",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_smile",
+      "path": "assets/downtown-art/sources/raana-uniform-smile.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1056408,
+      "sha256": "6a715e4a42f3ce21ab062abcf94bf0440f345afe8d64f4230185be7f93e097fa",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_crossed",
+      "path": "assets/downtown-art/sources/raana-uniform-crossed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1164982,
+      "sha256": "8fa3903c4327a7d237db7988adf1ae4d66859a0c10f36d058c471d47b90452fa",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_wave",
+      "path": "assets/downtown-art/sources/raana-uniform-wave.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1177513,
+      "sha256": "6a0e038a0597486bfbadbaf3d0df32fe0fe25973e977ee3bfd01fbb9ba41f76a",
+      "origin": "user-provided"
+    },
+    {
+      "id": "raana_uniform_hips",
+      "path": "assets/downtown-art/sources/raana-uniform-hips.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1298348,
+      "sha256": "c39eafcbc51a41f0bb5502e06aeadc2ddedc6c37b2f0f9e2d0e67cc7e6232666",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_neutral",
+      "path": "assets/downtown-art/sources/taki-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1363038,
+      "sha256": "02a14f7c43edb872daf5929cdbe6b9ad9d8a2edeb92cc463797869752e1cc5c9",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_crossed",
+      "path": "assets/downtown-art/sources/taki-uniform-crossed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1131554,
+      "sha256": "9a04e5b0401247f077dba6584ddfb57db40fbad5cf2395e033db09a2344a0f19",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_drumsticks",
+      "path": "assets/downtown-art/sources/taki-uniform-drumsticks.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1285550,
+      "sha256": "3a821123301461c12d55ea9964319f870fbf8a3b90d5aa2b4a58e425d4eba1b5",
+      "origin": "user-provided"
+    },
+    {
+      "id": "taki_uniform_embarrassed",
+      "path": "assets/downtown-art/sources/taki-uniform-embarrassed.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1278159,
+      "sha256": "b3e73e8b9fbae203063a26438170e192ebd998c0c60ea99907327d5f5d9224bc",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_neutral",
+      "path": "assets/downtown-art/sources/tomori-uniform-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1184518,
+      "sha256": "2226b30bf0ce92996608940b1ce1997c192ffa9e61eae66e30f3dcec7849b8b4",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_smile",
+      "path": "assets/downtown-art/sources/tomori-uniform-smile.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1810069,
+      "sha256": "c2e51ce3a0acbe97a50d34441a8af710c5bf9c4a58cad5c50b52e3e9b3269e8c",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_surprised",
+      "path": "assets/downtown-art/sources/tomori-uniform-surprised.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1706142,
+      "sha256": "4def14bda59ca3e98b8916b50f2aa94af530901e3c99eebfd673d05396e8e274",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_sad",
+      "path": "assets/downtown-art/sources/tomori-uniform-sad.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1302248,
+      "sha256": "f859a445e9e0db74bc87f5f8ba9eaf13b935efbccf31d1ff3ae8a627f739f2c3",
+      "origin": "user-provided"
+    },
+    {
+      "id": "tomori_uniform_shy",
+      "path": "assets/downtown-art/sources/tomori-uniform-shy.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 1722555,
+      "sha256": "09ed5435511c605f8f35a884589f13940a06727ca61b10332ab84076f31ade92",
+      "origin": "user-provided"
+    },
+    {
+      "id": "nagasaki_mother_suit_neutral",
+      "path": "assets/downtown-art/sources/nagasaki-mother-suit-neutral.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 762915,
+      "sha256": "f451a1207475faaf152af3adf1015c978e5b2b7e5af514c5c5938a2b114afb0a",
+      "origin": "user-provided"
+    },
+    {
+      "id": "nagasaki_mother_suit_smile",
+      "path": "assets/downtown-art/sources/nagasaki-mother-suit-smile.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 707704,
+      "sha256": "e2fd6a5566e911f7e203f6d1d3b8a6fcf766727b7a0b8326f496769b5d0ac8c2",
+      "origin": "user-provided"
+    },
+    {
+      "id": "nagasaki_mother_suit_surprised",
+      "path": "assets/downtown-art/sources/nagasaki-mother-suit-surprised.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 730585,
+      "sha256": "134f1e5faa1e660987097b8029c9cac7b2334eadb71ca735eeb96a35cb8e36ed",
+      "origin": "user-provided"
+    },
+    {
+      "id": "nagasaki_mother_suit_cheerful",
+      "path": "assets/downtown-art/sources/nagasaki-mother-suit-cheerful.png",
+      "size": [
+        1500,
+        2250
+      ],
+      "bytes": 784511,
+      "sha256": "7cccef73247427481c995c872c62e001e34db3bc83de26582e169c1aef9e018e",
+      "origin": "user-provided"
+    },
+    {
       "id": "toyokawa_mansion_day",
       "path": "assets/downtown-art/sources/toyokawa-mansion-day.png",
       "size": [

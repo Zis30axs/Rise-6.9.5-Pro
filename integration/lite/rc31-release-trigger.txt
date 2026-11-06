@@ -1,0 +1,6 @@
+One-time GitHub Actions release request.
+Release: lite-v0.3.0-rc3.1
+Source PNG: lite-v0.3.0-rc1 / unread-city-lite-v0.3.0-rc1-tauri.png
+Fix source commit: ee7e4d0e62def8cf500fbcbef1d32f54c32cf66d
+Output: one Tauri PNG only; reuse original RC1 offline ZIP.
+This file is a one-time dispatch marker, not a runtime resource.

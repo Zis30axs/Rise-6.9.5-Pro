@@ -2,6 +2,7 @@ import type { SceneMovementWorld } from '../frontend/scene-movement';
 import type { InteriorRestRecord, InteriorStudyRecord, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import { CIRCLE_CAFE_ROOM_ID, CIRCLE_LOCATION_ID, CIRCLE_STAFF_NAME, CIRCLE_STUDIO_ROOM_ID, attachCircleBorrowedInteractions } from './circle-venue';
 
 export const INTERIOR_ENTRANCE_RANGE = 5;
 export const INTERIOR_INTERACTION_RANGE = 3;
@@ -70,7 +71,7 @@ export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, '
 }
 
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
-export const campusInteriors: readonly CampusInterior[] = [
+const campusInteriorRooms: readonly CampusInterior[] = [
   {
     id: MARGO_CAFE_ROOM_ID, label: '玛格咖啡馆', parentLocationId: MARGO_CAFE_LOCATION_ID,
     description: '宝生玛格经营的街边咖啡馆。柜台旁摆着咖啡器具与当日甜点，窗边有可坐下喝茶、阅读或画画的小桌；南侧店门通向露台。',
@@ -141,6 +142,43 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
   },
   {
+    id: 'soyo-house', label: '长崎家高层公寓', parentLocationId: 'downtown',
+    description: '位于目白台与池袋交界高地的豪华高层塔楼公寓复式户。挑高宽敞的落地窗外可俯瞰都市天际线，室内设有整洁考究的开放式料理岛台与厨房、原木长餐桌、木质香氛扩香器与素世练习贝斯和低音提琴的音乐角落；忙于公司事务的母亲长崎夫人常在餐桌上留下字迹娟秀的便签与生活费，清晨或夜晚归家时也会在此饮茶小憩。',
+    entrance: { x: -76, z: 158, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'soyo-sofa', kind: 'bed', minX: -5.0, maxX: -2.2, minZ: -3.6, maxZ: -1.8 },
+      { id: 'soyo-kitchen', kind: 'shelf', minX: 2.6, maxX: 5.5, minZ: -4.5, maxZ: -2.6 },
+      { id: 'soyo-bass-corner', kind: 'piano', minX: -5.4, maxX: -3.6, minZ: 0.4, maxZ: 2.4 },
+      { id: 'soyo-dining-table', kind: 'desk', minX: 0.4, maxX: 2.8, minZ: -0.6, maxZ: 1.2 },
+    ],
+    interactions: [
+      { id: 'soyo-bass-practice', label: '练习贝斯与低音提琴', description: '在音乐角抱起贝斯专注练习指法与乐队曲目（35 分钟），精力 -6，精神 +12，压力 -10。',
+        x: -2.4, z: 1.4, minutes: 35, energyDelta: -6, moraleDelta: 12, stressDelta: -10,
+        result: '在安静的高层公寓里抱起贝斯专注练习了三十五分钟，低沉平稳的弦音让心绪逐渐沉淀。',
+        prompt: '你在长崎家高层公寓的音乐角练习了三十五分钟贝斯，程序已推进 35 分钟并扣除 6 点精力、提升精神与缓解压力。请根据现场继续叙述。' },
+      { id: 'soyo-brew-tea', label: '冲泡伯爵红茶与香氛放松', description: '在开放式岛台冲泡温热的伯爵红茶并点亮木质调香氛（20 分钟），精力 +8，精神 +10，压力 -12，健康 +2。',
+        x: 3.8, z: -1.4, minutes: 20, energyDelta: 8, moraleDelta: 10, stressDelta: -12, healthDelta: 2,
+        result: '在开放式料理岛台前冲泡了香气舒缓的伯爵红茶，伴着淡雅的木质香氛小口慢饮，紧绷的神经渐渐柔和下来。',
+        prompt: '你在长崎家高层公寓冲泡了红茶并伴随香氛放松了二十分钟，程序已推进 20 分钟并恢复精力与心情。' },
+      { id: 'soyo-mother-note', label: '查看妈妈留下的便签与家计簿', description: '在原木餐桌旁查看母亲长崎夫人留下的手写便签、家用信封与花瓶插花（10 分钟），精神 +5，压力 -4。',
+        x: 1.6, z: 2.2, minutes: 10, energyDelta: 0, moraleDelta: 5, stressDelta: -4,
+        result: '翻看了原木餐桌上母亲留下的娟秀便签与整齐备好的生活费信封，字里行间满是忙碌却温柔的叮嘱。',
+        prompt: '你在餐桌旁查看了母亲长崎夫人留下的便签与家计安排，程序已推进 10 分钟。请结合母亲当前是否在家如实描写。' },
+      { id: 'soyo-mother-chat', label: '与妈妈共度居家茶歇', description: '在客餐厅与难得在家的母亲共饮热茶、聊聊近况或整理家务（25 分钟），精力 +10，精神 +14，压力 -16，健康 +3。',
+        x: -0.8, z: -0.8, minutes: 25, energyDelta: 10, moraleDelta: 14, stressDelta: -16, healthDelta: 3,
+        result: '在温暖柔和的客餐厅灯光下度过了宁静的茶歇时光，空旷的房间里多了一份难得的家庭温度。',
+        prompt: '你在长崎家高层公寓度过了二十五分钟的居家茶歇时光，程序已恢复精力并缓解压力。请结合长崎夫人当前是否在场如实叙述母女相处或居家心境。' },
+      { id: 'soyo-sofa-rest', label: '在落地窗沙发小憩', description: '靠在米白色转角沙发上安静小憩（30 分钟），恢复至多 12 点精力，精神 +6，压力 -8。',
+        x: -3.4, z: -0.8, minutes: 30, energyDelta: 12, moraleDelta: 6, stressDelta: -8,
+        result: '在柔软的米白色转角沙发上安静小憩了半小时，疲惫消散了不少。',
+        prompt: '你在长崎家高层公寓的转角沙发上休息了半小时，程序已推进 30 分钟并恢复精力。' },
+      { id: 'soyo-window-view', label: '落地窗前俯瞰都市天际线', description: '站在挑高落地窗前俯瞰目白台与池袋交织的街景，不消耗时间或精力。',
+        x: 0.0, z: -3.8, minutes: 0, energyDelta: 0,
+        result: '站在高层公寓宽阔的落地窗前，静静俯瞰脚下流淌的都市车流与远方天际线。',
+        prompt: '你站在长崎家高层公寓的落地窗前俯瞰都市街景，未消耗时间或精力。' },
+    ],
+  },
+  {
     id: 'toyokawa-house', label: '丰川家会客厅', parentLocationId: 'downtown',
     description: '丰川家位于市中心。这里是入门后的会客与钢琴区域。祥子与家族正尝试修复关系。',
     entrance: { x: 50, z: 222, yaw: 0 }, bounds, spawn,
@@ -156,6 +194,24 @@ export const campusInteriors: readonly CampusInterior[] = [
     ],
   },
   {
+    id: 'nanoka-honoka-home', label: '黑部姐妹的家', parentLocationId: 'home',
+    description: '杂司谷住宅区的黑部家公寓，奈叶香和已大学毕业的姐姐穗奈香住在这里。客厅连着厨房与书架，走廊通向她们各自的卧室。',
+    entrance: { x: -203, z: 130, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'kurobe-living-sofa', kind: 'bed', minX: -5.3, maxX: -2.6, minZ: -3.7, maxZ: -2.1 },
+      { id: 'kurobe-kitchen', kind: 'shelf', minX: 3.4, maxX: 5.5, minZ: -4.5, maxZ: -2.8 },
+      { id: 'kurobe-table', kind: 'desk', minX: -0.5, maxX: 1.8, minZ: -1.1, maxZ: 0.5 },
+    ],
+    interactions: [
+      { id: 'kurobe-living-room', label: '在客厅坐一会儿', description: '在客厅坐15分钟，恢复至多3点精力；不自动让任何住户到场。',
+        x: -3.2, z: 0.8, minutes: 15, energyDelta: 3, result: '在黑部家的客厅休息了十五分钟。',
+        prompt: '你在黑部姐妹家客厅休息了十五分钟，游戏已推进时间并恢复至多三点精力。住户是否在家以真实日程为准；不擅自获得她们的秘密。' },
+      { id: 'kurobe-bookshelf', label: '看看书架', description: '看看公共书架，不擅自翻看姐妹的私人文件。',
+        x: 3.3, z: 0.8, minutes: 0, energyDelta: 0, result: '看了看公共书架，没有动用私人资料。',
+        prompt: '你只是浏览了黑部家客厅的公共书架，没有擅自查看奈叶香或穗奈香的私人文件，也没有获得额外情报。' },
+    ],
+  },
+  {
     id: 'emma-yuki-home', label: '艾玛与月代雪的家', parentLocationId: 'home',
     description: '两人共同居住的现代公寓客餐厅。料理台、沙发与阅读角在同一空间。',
     entrance: { x: -190, z: 130, yaw: 0 }, bounds, spawn,
@@ -167,8 +223,6 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'emma-home-window', label: '看看窗外', description: '观察窗外街区与室内光线，不消耗时间或精力。',
         x: -5, z: 2.8, minutes: 0, energyDelta: 0, result: '在窗边看了一会儿街区，没有改变位置或时间。', prompt: '你在艾玛与月代雪家的窗边观察街区，没有消耗时间或精力。请基于已保存的在场事实叙述。' },
-      { id: 'emma-home-kitchen', label: '煮点东西', description: '使用料理台 20 分钟，消耗 3 点精力；不会凭空生成食材。',
-        x: 4, z: -1.2, minutes: 20, energyDelta: -3, result: '在料理台前简单煮了点东西，食材仍以背包记录为准。', prompt: '你在料理台前煮了东西，程序已推进 20 分钟并扣除 3 点精力；不自动消耗或生成背包物品。' },
       { id: 'emma-home-sofa', label: '在沙发休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.2, z: -1.2, minutes: 30, energyDelta: 6, result: '在沙发上休息了半小时。', prompt: '你在沙发上休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
@@ -253,8 +307,6 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [
       { id: 'studio-window', label: '看看窗外', description: '观察公寓窗外的城市公园方向，不消耗时间或精力。',
         x: -5.2, z: 2.6, minutes: 0, energyDelta: 0, result: '在单身公寓的窗边看了看外头的公园方向。', prompt: '你在单身公寓的窗边观察窗外，没有消耗时间或精力。' },
-      { id: 'studio-kitchen', label: '用厨房', description: '简单使用厨房 15 分钟，消耗 2 点精力；不会凭空生成食材。',
-        x: 4.2, z: -1.6, minutes: 15, energyDelta: -2, result: '在小厨房简单弄了点吃的，食材仍以背包记录为准。', prompt: '你在单身公寓的小厨房忙了十五分钟，程序已扣除 2 点精力；不自动消耗或生成背包物品。' },
       { id: 'studio-rest', label: '在床边休息', description: '休息 30 分钟，恢复至多 6 点精力。',
         x: -3.8, z: -0.6, minutes: 30, energyDelta: 6, result: '在床边休息了半小时。', prompt: '你在单身公寓的床边休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
     ],
@@ -398,9 +450,9 @@ export const campusInteriors: readonly CampusInterior[] = [
     interactions: [],
   },
   {
-    id: 'court-hearing', label: '新宿地方裁判所 · 法庭', parentLocationId: 'grand-commercial',
+    id: 'court-hearing', label: '魔女审判最高法庭 · 公开法庭', parentLocationId: 'courthouse',
     description: '地方法院内庄严的公开法庭。正前方是审判席，左右为原告席、被告席与证人席，旁听席排列在后部。书记员记录诉讼进展。人物的身份与证言以真实案卷为准。',
-    entrance: { x: -145, z: -158, yaw: 0 }, bounds, spawn: { x: 0, z: 3.5, yaw: 0 },
+    entrance: { x: -20, z: 94, yaw: -1.571 }, bounds, spawn: { x: 0, z: 3.5, yaw: 0 },
     obstacles: [
       { id: 'court-judge-bench', kind: 'podium', minX: -4.5, maxX: 4.5, minZ: -4.7, maxZ: -3.4 },
       { id: 'court-witness-stand', kind: 'podium', minX: -5.0, maxX: -3.0, minZ: -2.7, maxZ: -1.6 },
@@ -503,7 +555,39 @@ export const campusInteriors: readonly CampusInterior[] = [
         prompt: '你在十一丁目茶屋享用了清凉回甘的冷萃煎茶。' },
     ],
   },
+  {
+    id: CIRCLE_CAFE_ROOM_ID, label: 'CiRCLE 咖啡厅', parentLocationId: CIRCLE_LOCATION_ID,
+    description: `CiRCLE 一楼咖啡厅。柜台后是店员${CIRCLE_STAFF_NAME}，窗边有小桌。菜单只有美式、拿铁和一份甜点，点单由柜台结算。`,
+    entrance: { x: -312, z: -157, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'circle-cafe-counter', kind: 'desk', minX: -2.4, maxX: 2.4, minZ: -4.2, maxZ: -2.8 },
+      { id: 'circle-cafe-window', kind: 'desk', minX: -5.2, maxX: -3.4, minZ: -1.2, maxZ: 1.6 },
+      { id: 'circle-cafe-cups', kind: 'shelf', minX: 3.8, maxX: 5.2, minZ: -3.6, maxZ: -1.6 },
+    ],
+    interactions: [
+      { id: 'circle-cafe-menu', label: '看看咖啡厅小菜单', description: '看看柜台上的美式、拿铁和甜点，不自动点单。',
+        x: 0, z: -1.6, minutes: 0, energyDelta: 0, result: '看过 CiRCLE 咖啡厅的小菜单，没有点单。', prompt: '你看过 CiRCLE 咖啡厅的小菜单，没有点单。点单必须使用当前地点列出的服务，付款、时间和身体变化以结算结果为准。' },
+      { id: 'circle-cafe-window', label: '在窗边坐一会儿', description: '在窗边坐 15 分钟，恢复至多 3 点精力，不会自动获得饮品。',
+        x: -4.2, z: 0.2, minutes: 15, energyDelta: 3, result: '在 CiRCLE 咖啡厅窗边坐了一会儿。', prompt: '你在 CiRCLE 咖啡厅窗边坐了十五分钟，程序已推进时间并恢复至多 3 点精力，没有自动消费。' },
+    ],
+  },
+  {
+    id: CIRCLE_STUDIO_ROOM_ID, label: 'CiRCLE 练团室', parentLocationId: CIRCLE_LOCATION_ID,
+    description: 'CiRCLE 侧翼的隔音练团室。鼓组、吉他音箱和谱架靠墙摆着，地上留着线材。',
+    entrance: { x: -306, z: -153, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'circle-studio-drums', kind: 'piano', minX: -2.2, maxX: 1.2, minZ: -4.2, maxZ: -2.2 },
+      { id: 'circle-studio-amps', kind: 'shelf', minX: 3.2, maxX: 5.2, minZ: -3.4, maxZ: -1.2 },
+      { id: 'circle-studio-bench', kind: 'desk', minX: -5.2, maxX: -3.2, minZ: 0.4, maxZ: 2.2 },
+    ],
+    interactions: [
+      { id: 'circle-studio-look', label: '看看练团室设备', description: '看看鼓组、音箱和谱架，不自动租用或演出。',
+        x: 0, z: -1.2, minutes: 0, energyDelta: 0, result: '看过 CiRCLE 练团室的鼓组、音箱和谱架。', prompt: '你看过 CiRCLE 练团室的设备，没有租用，也没有开始演出。' },
+    ],
+  },
 ];
+
+export const campusInteriors: readonly CampusInterior[] = attachCircleBorrowedInteractions(campusInteriorRooms);
 
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
   return campusInteriors.find(room => room.id === id);

@@ -12,6 +12,7 @@
     "predev": "npm run art:build && npm run phone:build",
     "precheck": "npm run art:build && npm run phone:build",
     "dev": "vite --host 127.0.0.1",
+    "browser:preview": "node scripts/build_browser_preview.mjs",
     "check": "vue-tsc --noEmit",
     "check:no-ja": "vitest run tests/no-japanese.test.ts",
     "build": "npm run check && vite build",
@@ -20,7 +21,10 @@
     "card": "npm run build && python scripts/build_card.py --frontend dist/immersive-shell.js",
     "card:art": "python scripts/build_downtown_art.py --require-ready && npm run card && python scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/unread-city-downtown-art-tauri.png && python scripts/verify_downtown_art.py --root assets/downtown-art --manifest integration/downtown-art/manifest.json --card dist/unread-city-downtown-art-tauri.png --report outputs/downtown-art-release.json",
     "kaguya:model": "node scripts/prepare_kaguya_live_model.mjs",
-    "kaguya:demo": "node scripts/prepare_kaguya_live_model.mjs --check && node scripts/build_kaguya_live_demo.mjs"
+    "kaguya:demo": "node scripts/prepare_kaguya_live_model.mjs --check && node scripts/build_kaguya_live_demo.mjs",
+    "prebuild": "python scripts/verify_tokyo_model.py",
+    "postbuild": "python scripts/build_lite_release.py && python scripts/build_lite_card.py",
+    "lite:build": "python scripts/build_tokyo_lite.py"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.5.5",

@@ -58,6 +58,11 @@ export const majoHousings: readonly MajoHousing[] = Object.freeze([
     interiorId: 'anan-noa-milia-home', district: 'older-apartment-courtyard', parentLocationId: 'junction', districtArt: true,
   },
   {
+    id: 'nanoka-honoka-home', type: 'shared-apartment', label: '黑部姐妹的家',
+    description: '杂司谷住宅区的黑部家公寓，奈叶香与已大学毕业的姐姐穗奈香共同生活；两人各有卧室，共用客厅、厨房与书架。',
+    interiorId: 'nanoka-honoka-home', district: 'old-town-lowrise', parentLocationId: 'home', districtArt: true,
+  },
+  {
     id: 'sherry-hanna-home', type: 'riverfront-highrise', label: '雪莉与汉娜的住处',
     description: '神田川沿岸高层住宅的客餐厅，落地窗外是河岸步道。',
     interiorId: 'majo-highrise-home', district: 'riverfront-highrise-district', parentLocationId: 'commercial', districtArt: true,
@@ -74,6 +79,11 @@ export const watanareHousings: readonly MajoHousing[] = Object.freeze([
     id: 'amaori-family-home', type: 'old-family-house', label: '甘织家住宅',
     description: '杂司谷住宅街充满生活气息的甘织家一户建；玲奈子、妹妹遥奈与母亲美代子、父亲同住于此，二楼有玲奈子与遥奈各自的房间，客厅摆着全家共用的沙发与电视游戏机。',
     interiorId: 'amaori-family-home', district: 'old-town-lowrise', parentLocationId: 'home', districtArt: true,
+  },
+  {
+    id: 'soyo-house', type: 'riverfront-highrise', label: '长崎家高层公寓',
+    description: '目白台与池袋交界高地的豪华高层塔楼公寓复式户；配有挑高落地窗、开放式料理岛台与厨房、原木餐桌和贝斯练习角，长崎素世与母亲长崎夫人居住于此。',
+    interiorId: 'soyo-house', district: 'traditional-downtown', parentLocationId: 'downtown', districtArt: true,
   },
   {
     id: 'ouzuka-residence', type: 'traditional-courtyard', label: '王冢家宅邸',
@@ -137,6 +147,8 @@ export const allHousings: readonly MajoHousing[] = Object.freeze([...majoHousing
 const housingByPerson: Readonly<Record<string, string>> = Object.freeze({
   'majo-emma': 'emma-yuki-home',
   'majo-yuki': 'emma-yuki-home',
+  'majo-nanoka': 'nanoka-honoka-home',
+  'majo-honoka': 'nanoka-honoka-home',
   'majo-koko': 'koko-old-house',
   'majo-hiro': 'nikaido-house',
   'majo-anan': 'anan-noa-milia-home',
@@ -164,6 +176,7 @@ const housingByPerson: Readonly<Record<string, string>> = Object.freeze({
   'watanare-suzuran': 'haga-residence',
   'watanare-chizuru': 'kamezaki-residence',
   'watanare-miki': 'nemoto-residence',
+  'nagasaki-mother': 'soyo-house',
 });
 
 /** Stable outfit descriptors used by schedules and prompts; not a claim of complete art. */

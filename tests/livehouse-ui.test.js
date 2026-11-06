@@ -5,6 +5,7 @@ import LivehousePanel from '../src/frontend/LivehousePanel.vue';
 import { renderBandPanel, renderWorldMessenger } from '../integration/dual-protagonists/phone-messenger.js';
 import { createInitialState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { createWorldPhoneApi } from '../src/frontend/world-phone';
 
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 const btn=(action,label,cls='',attrs='')=>`<button type="button" class="${cls}" data-action="${action}" ${attrs}>${label}</button>`;
@@ -45,7 +46,31 @@ describe('Live House explicit player forms',()=>{
   });
 });
 describe('existing phone Messages band entry',()=>{
-  const data={binding:'qa-soyo',revision:0,owner:'soyo',active:'soyo',name:'素世',now:1000,conversation:[],messages:[],others:[],npcPhone:{contacts:[],groups:[],requests:[],messages:[]},music:{bands:[],bookings:[],invitations:[],contacts:[]}};
+  it.each(['emma','renako'])('hides all band shortcuts for %s without music eligibility',owner=>{
+    let state=reduceState(enableProtagonists(createInitialState()),{type:'switch_protagonist',target:owner});
+    const api=createWorldPhoneApi({session:'band-eligibility',current:()=>true,busy:()=>false,state:()=>state,commit:()=>{throw Error('Read only');}});
+    for(const major of [null,'computer-science']) {
+      if(major) state=reduceState(state,{type:'choose_academics',majorId:major});
+      const snapshot=api.read();
+      for(const mode of ['list','thread']) {
+        const screen=renderWorldMessenger({data:snapshot,recipient:'protagonist:soyo',mode,drafts:new Map(),pending:null},{esc,btn,heading,time});
+        const root=document.createElement('div');root.innerHTML=screen.html;
+        expect(root.querySelector('[data-action=open-bands]')).toBeNull();
+        expect(root.textContent).not.toContain('我的乐队');
+      }
+    }
+  });
+  it.each([['soyo','computer-science'],['sakiko','computer-science'],['emma','music'],['renako','music']])('keeps eligible %s band shortcuts for %s', (owner,major)=>{
+    let state=reduceState(enableProtagonists(createInitialState()),{type:'switch_protagonist',target:owner});
+    state=reduceState(state,{type:'choose_academics',majorId:major});
+    const api=createWorldPhoneApi({session:'band-eligibility',current:()=>true,busy:()=>false,state:()=>state,commit:()=>{throw Error('Read only');}});
+    for(const mode of ['list','thread']) {
+      const screen=renderWorldMessenger({data:api.read(),recipient:'',mode,drafts:new Map(),pending:null},{esc,btn,heading,time});
+      const root=document.createElement('div');root.innerHTML=screen.html;
+      expect(root.querySelector('[data-action=open-bands]')).not.toBeNull();
+    }
+  });
+  const data={binding:'qa-soyo',revision:0,owner:'soyo',active:'soyo',name:'素世',now:1000,conversation:[],messages:[],others:[],npcPhone:{contacts:[],groups:[],requests:[],messages:[]},music:{canManage:true,bands:[],bookings:[],invitations:[],contacts:[]}};
   it('shows the band entry, fixed saved abilities and escapes user-controlled names and replies',()=>{
     const skills={vocal:25,guitar:25,bass:90,drums:25,keyboard:25};
     const html=renderBandPanel({...data,music:{...data.music,bands:[{id:'one',name:'<img src=x onerror=alert(1)>',members:[{name:'素世',role:'bass',profile:{source:'fixed',skills}}]}],invitations:[{bandId:'one',name:'立希',role:'drums',from:'soyo',status:'pending',messageId:'npc:one',reply:null}]}},{esc,btn,heading,time});
@@ -70,6 +95,10 @@ describe('existing phone Messages band entry',()=>{
     expect(root.querySelector('[data-world-field=band]').value).toBe('band-one');expect(root.querySelector('[data-world-field=band-contact]').value).toBe('taki');expect(root.querySelector('[data-world-field=band-role]').value).toBe('drums');
     await click(root.querySelector('[data-action=band-invite]'));expect(sends).toBe(1);expect(replies).toBe(0);await click(root.querySelector('[data-action=band-reply]'));expect(replies).toBe(1);
     current={...current,binding:'qa-new-chat',revision:current.revision+1};onWorldUpdate();
-    expect(root.querySelector('[data-world-field=band]').value).toBe('');expect(root.querySelector('[data-band-member]').open).toBe(false);root.remove();
+    expect(root.querySelector('[data-world-field=band]').value).toBe('');expect(root.querySelector('[data-band-member]').open).toBe(false);
+    current={...current,owner:'renako',active:'renako',binding:'qa-renako',music:{...current.music,canManage:false}};onWorldUpdate();
+    expect(root.querySelector('.uc-band-page')).toBeNull();expect(root.querySelector('[data-action=open-bands]')).toBeNull();
+    const staleButton=document.createElement('button');staleButton.dataset.action='open-bands';await click(staleButton);
+    expect(root.querySelector('.uc-band-page')).toBeNull();expect(sends).toBe(1);expect(replies).toBe(1);root.remove();
   });
 });

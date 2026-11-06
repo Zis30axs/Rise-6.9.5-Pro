@@ -66,6 +66,9 @@ export const streetRoutes: Record<string, StreetNode[]> = {
   'pocket-park': [
     { label: '口袋公园', position: [37, 1.7, 76], yaw: 3.141 },
   ],
+  courthouse: [
+    { label: '审判法庭东入口', position: [-20, 1.7, 94], yaw: -1.571 },
+  ],
   home: [
     { label: '住宅区公交站', position: [-180, 1.7, 150], yaw: 0 },
     { label: '家门前庭院', position: [-190, 1.7, 130], yaw: 0 },
@@ -88,6 +91,10 @@ export const streetRoutes: Record<string, StreetNode[]> = {
     { label: 'Live House 门前广场', position: [-155, 1.7, -135], yaw: 0 },
     { label: 'KTV 娱乐城门前', position: [-205, 1.7, -135], yaw: 0 },
     { label: '启航商贸写字楼门前', position: [-150, 1.7, -170], yaw: 0 },
+  ],
+  circle: [
+    { label: 'CiRCLE 门前广场', position: [-310, 1.7, -155], yaw: 0 },
+    { label: '通往大型商业区的步道', position: [-240, 1.7, -155], yaw: 1.571 },
   ],
 };
 
@@ -243,6 +250,11 @@ export function createCampusWorld(scene: THREE.Scene) {
     cylinder(0.08, 0.15, 1.1, palette.dark, x, 0.6, z);
     for (const dx of [-1, 1]) { box(0.52, 0.1, 0.55, palette.wood, x + dx, 0.65, z); solidBox(`terrace-chair:${x + dx}:${z}`, x + dx, z, 0.52, 0.55); }
   }
+  // Mirror the authoritative new Tokyo sandbox courthouse in legacy free-walk.
+  build(-38, 94, 28, 15.6, 22, 4, 8, palette.stone, 'supreme-courthouse');
+  box(0.18, 4.2, 3.2, palette.glass, -23.85, 2.25, 94);
+  for (const z of [87, 91, 97, 101]) cylinder(0.22, 0.24, 5, palette.trim, -22.75, 2.5, z);
+  box(6, 0.25, 19, palette.path, -20, 0.045, 94);
   // Skyline remains beyond the playable block, leaving the new north campus open.
   const distantMat = material(0xa4a798);
   for (let i = 0; i < 11; i++) box(7 + i % 3, 10 + i % 4 * 3, 8, distantMat, (i - 5) * 15, 5 + i % 4 * 1.5, -76 - i % 3 * 4);
@@ -512,6 +524,8 @@ export function createCampusWorld(scene: THREE.Scene) {
   build(-155, -135, 26, 14.2, 20, 4, 6, palette.brick, 'livehouse');
   build(-205, -135, 24, 12.8, 18, 4, 6, palette.shopRed, 'ktv');
   build(-150, -180, 20, 22.0, 20, 7, 5, palette.stone, 'grand-tower');
+  build(-332, -170, 24, 11.5, 14, 3, 6, palette.brick, 'circle-hall');
+  build(-288, -170, 18, 7.2, 12, 2, 4, palette.wood, 'circle-studio');
   for (const [x, z] of [[-180, 141], [180, 141], [180, -159], [-20, 176], [-180, -141]]) {
     for (let dx = -53; dx <= 53; dx += 7) if (Math.abs(dx) > 9) box(3.5, 0.025, 0.12, palette.roadPaint, x + dx, 0.035, z);
     for (let dz = -4; dz <= 4; dz += 1.1) box(3, 0.025, 0.5, palette.roadPaint, x - 14, 0.035, z + dz);
@@ -571,6 +585,8 @@ export function createCampusWorld(scene: THREE.Scene) {
   signText('住宅区 · 示例住处', -192, 5, 126.22, 14);
   signText('城市商业区', 178, 4.2, 118.91, 16);
   signText('城市公园', 180, 3.2, -152.67, 10);
+  box(8, 1.15, 0.14, palette.roof, -310, 3.2, -160);
+  signText('CiRCLE', -310, 3.2, -159.88, 7.2);
   for (const [label, x, z] of [['住宅区公交站', -180, 150], ['商业区公交站', 180, 150], ['公园公交站', 180, -150]] as const) signText(label, x, 3.2, z + 2.45, 11, true);
   box(6.5, 1.1, 0.18, palette.roof, 46, 2.7, 14.5); signText('运动场', 46, 2.7, 14.61, 6);
   for (const x of [43.3, 48.7]) { box(0.1, 2.2, 0.1, palette.dark, x, 1.1, 14.5); solidBox(`sport-sign-post:${x}`, x, 14.5, 0.1, 0.1); }

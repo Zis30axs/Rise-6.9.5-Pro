@@ -18,6 +18,7 @@ import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
 import { stageAutonomousSms, applyAutonomousSms } from '../runtime/autonomous-sms';
+import { affinityContactLine } from '../runtime/affinity-tiers';
 import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
@@ -402,7 +403,7 @@ export function mountShell(
           const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
           bridge.save(next); model.state = next; model.notice = '';
           const contact = next.contacts.find(contact => contact.id === id)!;
-          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}`,
+          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contact.relationNote)}`,
             summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
         },
         async generateIntroduction(raw) {
@@ -576,7 +577,7 @@ export function mountShell(
         // character scene may narrate the evidence but never re-book money,
         // time, contact actions, off-screen events, SMS or any other side effect.
         const safeReply = mode === 'law_narration'
-          ? { text: reply.text, phoneMessages: [] }
+          ? { text: reply.text, phoneMessages: [], worldChronicleReceipt: reply.worldChronicleReceipt }
           : reply;
         const next = commitStoryTurn(snapshot(), trimmed, safeReply, { userId: storyId(), assistantId: storyId() });
         saveWithSms(next);

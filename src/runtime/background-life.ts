@@ -308,7 +308,24 @@ function complete(state: WorldState, owner: ProtagonistId, activity: BackgroundA
   }
 }
 
-function choose(state: WorldState, owner: ProtagonistId, at: number) {
+function nextReservedAppointmentAt(state: WorldState, owner: ProtagonistId, at: number, fallback: number): number {
+  const life = state.protagonists!.backgroundLife!.people[owner];
+  const personal = personState(state, owner);
+  const appointment = appointments(state, owner, at).find(event =>
+    !life.calendarSeen.includes(event.key) &&
+    (event.start <= at + 90 || event.departAt !== undefined && event.departAt <= at + 90));
+  if (!appointment) return fallback;
+  const critical = /和解|决裂|告白|分手|结婚|离婚|退学|签约|辞职|借款|贷款|重大|争执/.test(appointment.title);
+  if (!appointment.shared && !critical && at < appointment.start + appointment.duration && personal.locationId !== appointment.locationId) {
+    const view = ownedView(state, owner, at), quote = getNovelTravelQuote(view, appointment.locationId);
+    const departureAt = appointment.departAt === undefined ? appointment.start - quote.minutes :
+      Math.max(appointment.departAt, appointment.start - quote.minutes);
+    return Math.min(fallback, departureAt);
+  }
+  return Math.min(fallback, appointment.start);
+}
+
+function choose(state: WorldState, owner: ProtagonistId, at: number, reserved = false) {
   const p = state.protagonists!, life = p.backgroundLife!.people[owner];
   life.nextDecisionAt = nextQuarter(at);
   const id = (kind: string) => `bg:${owner}:${at}:${kind}`;
@@ -344,30 +361,32 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
     return false;
   };
 
-  for (const order of [...p.orders]) {
-    if (order.owner !== owner || order.status !== 'delivered' || order.address !== personState(state, owner).locationId) continue;
-    try {
-      ownPhone(state, owner, at, id(`receive-${stamp(order.id)}`), { type: 'receive_order', id: order.id });
-      record(state, owner, { id: id(`received-${stamp(order.id)}`), at, kind: 'order', text: '在订单记录的收货地点领到了自己的包裹，物品已放入本人背包。' });
-    } catch { /* A full inventory or receipt log leaves the same delivered order for manual collection. */ }
-  }
-
-  // A factual, modest daily message. Sending it is a shared event; both sides retain the same source ID.
-  const day = Math.floor(at / 1440) + 1;
-  if (at % 1440 >= 1080 && at % 1440 < 1260 && life.lastMessageDay !== day && !protagonistsNearby(state)
-    && owner === otherProtagonists(activeProtagonist(state))[0]) {
-    const recipient = personState(state, otherProtagonist(owner));
-    if (recipient.phone.length < 200 && recipient.contacts.length < 50 && p.devices[otherProtagonist(owner)].notifications.length < 200 && p.operations.length < 2000) {
-      const text = owner === 'soyo' ? '我这边先照顾一下自己的安排。你忙完后，方便的话给我留个消息。' : '我会先处理自己的安排。若有需要协调的事，请给我留言。';
+  if (!reserved) {
+    for (const order of [...p.orders]) {
+      if (order.owner !== owner || order.status !== 'delivered' || order.address !== personState(state, owner).locationId) continue;
       try {
-        ownPhone(state, owner, at, id('message'), { type: 'send_message', text });
-        record(state, owner, { id: `dual:${id('message')}`, at, kind: 'message', text: `给${protagonistNames[otherProtagonist(owner)]}发了消息：${text}` });
-        life.lastMessageDay = day;
-      } catch { /* No automatic retry loop or substitution with someone else's account. */ }
+        ownPhone(state, owner, at, id(`receive-${stamp(order.id)}`), { type: 'receive_order', id: order.id });
+        record(state, owner, { id: id(`received-${stamp(order.id)}`), at, kind: 'order', text: '在订单记录的收货地点领到了自己的包裹，物品已放入本人背包。' });
+      } catch { /* A full inventory or receipt log leaves the same delivered order for manual collection. */ }
     }
-  }
 
-  if (personState(state, owner).player.satiety <= 20 && nourish()) return;
+    // A factual, modest daily message. Sending it is a shared event; both sides retain the same source ID.
+    const day = Math.floor(at / 1440) + 1;
+    if (at % 1440 >= 1080 && at % 1440 < 1260 && life.lastMessageDay !== day && !protagonistsNearby(state)
+      && owner === otherProtagonists(activeProtagonist(state))[0]) {
+      const recipient = personState(state, otherProtagonist(owner));
+      if (recipient.phone.length < 200 && recipient.contacts.length < 50 && p.devices[otherProtagonist(owner)].notifications.length < 200 && p.operations.length < 2000) {
+        const text = owner === 'soyo' ? '我这边先照顾一下自己的安排。你忙完后，方便的话给我留个消息。' : '我会先处理自己的安排。若有需要协调的事，请给我留言。';
+        try {
+          ownPhone(state, owner, at, id('message'), { type: 'send_message', text });
+          record(state, owner, { id: `dual:${id('message')}`, at, kind: 'message', text: `给${protagonistNames[otherProtagonist(owner)]}发了消息：${text}` });
+          life.lastMessageDay = day;
+        } catch { /* No automatic retry loop or substitution with someone else's account. */ }
+      }
+    }
+
+    if (personState(state, owner).player.satiety <= 20 && nourish()) return;
+  }
   const personal = personState(state, owner);
   const appointment = appointments(state, owner, at).find(event =>
     !life.calendarSeen.includes(event.key) &&
@@ -410,6 +429,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
       return;
     }
   }
+  if (reserved) return;
 
   if (nourish()) return;
   const current = personState(state, owner);
@@ -421,7 +441,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number) {
 }
 
 /** Advance each background person on the one committed game timeline. No timers, network, or model calls. */
-export function settleBackgroundLife(before: WorldState, state: WorldState) {
+export function settleBackgroundLife(before: WorldState, state: WorldState, reservedOtherSide?: ReadonlySet<ProtagonistId>) {
   const p = state.protagonists!;
   const start = gameMinute(before), end = gameMinute(state), activeId = activeProtagonist(state);
   const life = p.backgroundLife ?? (p.backgroundLife = initializeBackgroundLife(before));
@@ -429,7 +449,7 @@ export function settleBackgroundLife(before: WorldState, state: WorldState) {
   if (end === start) return;
   const foreground = life.people[activeId];
   foreground.pending = null; foreground.nextDecisionAt = nextQuarter(end);
-  for (const owner of otherProtagonists(activeId)) settleBackgroundPerson(before, state, owner, start, end);
+  for (const owner of otherProtagonists(activeId)) settleBackgroundPerson(before, state, owner, start, end, reservedOtherSide?.has(owner) ?? false);
   life.cursor = end;
 }
 
@@ -447,7 +467,7 @@ function belongsToForegroundScene(state: WorldState, owner: ProtagonistId): bool
     && protagonistsInTalkingRange(state).some(person => person.protagonistId === owner);
 }
 
-function settleBackgroundPerson(before: WorldState, state: WorldState, owner: ProtagonistId, start: number, end: number) {
+function settleBackgroundPerson(before: WorldState, state: WorldState, owner: ProtagonistId, start: number, end: number, reserved = false) {
   const p = state.protagonists!, life = p.backgroundLife!, background = life.people[owner];
   // A shared physical scene belongs to the foreground narrator, including arrivals during this action.
   if (belongsToForegroundScene(before, owner) || belongsToForegroundScene(state, owner)) {
@@ -455,10 +475,14 @@ function settleBackgroundPerson(before: WorldState, state: WorldState, owner: Pr
     advanceBackgroundPlayer(state, owner, start, end - start);
     background.nextDecisionAt = nextQuarter(end); return;
   }
-  let cursor = start;
+  let cursor = start, lastChosenAt = -1;
   while (cursor < end) {
+    const rawDecisionAt = reserved && !background.pending
+      ? nextReservedAppointmentAt(state, owner, cursor, background.nextDecisionAt)
+      : background.nextDecisionAt;
+    const decisionAt = lastChosenAt === cursor ? Math.max(cursor + 1, rawDecisionAt) : Math.max(cursor, rawDecisionAt);
     const dueOrder = p.orders.filter(order => order.owner === owner && order.status === 'paid' && order.due > cursor).reduce((nearest, order) => Math.min(nearest, order.due), end);
-    const boundary = Math.min(end, dueOrder, background.pending?.due ?? Math.max(cursor, background.nextDecisionAt));
+    const boundary = Math.min(end, dueOrder, background.pending?.due ?? decisionAt);
     if (boundary > cursor) advanceBackgroundPlayer(state, owner, cursor, boundary - cursor);
     cursor = boundary; life.cursor = cursor;
     settlePhoneTime({ ...state, clock: clockAt(cursor) });
@@ -470,7 +494,13 @@ function settleBackgroundPerson(before: WorldState, state: WorldState, owner: Pr
       background.pending = null; background.nextDecisionAt = nextQuarter(end);
       return;
     }
-    if (!background.pending && background.nextDecisionAt <= cursor) choose(state, owner, cursor);
+    const nextDecision = reserved && !background.pending
+      ? nextReservedAppointmentAt(state, owner, cursor, background.nextDecisionAt)
+      : background.nextDecisionAt;
+    if (!background.pending && nextDecision <= cursor && lastChosenAt !== cursor) {
+      lastChosenAt = cursor;
+      choose(state, owner, cursor, reserved);
+    }
     if (background.nextDecisionAt <= cursor && !background.pending) background.nextDecisionAt = nextQuarter(cursor);
   }
 }

@@ -7,6 +7,8 @@ import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { getSceneArea, sceneLocationId, scenePersonAnchors } from '../src/runtime/scene-context';
 import { residentCast, residentPresence } from '../src/runtime/npc-cast';
 import { worldScenePeople } from '../src/runtime/world-presence';
+import { startSocialAgenda } from '../src/runtime/social-agenda';
+import type { SocialInvitation } from '../src/runtime/natural-interactions';
 import type { WorldState } from '../src/frontend/types';
 import type { ProtagonistId } from '../src/runtime/dual-protagonists';
 
@@ -160,14 +162,166 @@ describe('otherside sampled cross-view narrative', () => {
     }, candidate => candidate.npcGroups.some(group => group.protagonists.includes('emma') && group.npcs.length > 0));
     const group = opportunity.npcGroups.find(g => g.protagonists.includes('emma') && g.npcs.length > 0)!;
     const npc = group.npcs[0]!;
+    const beforeAffinity = personState(state, 'emma').contacts.find(row => row.id === npc.id)?.affinity ?? 0;
     const side = { protagonists: group.protagonists, text: '艾玛与熟识的朋友在同一地点谈起近况。',
       npcs: [{ id: npc.id, status: '约好了稍后一起吃饭', affinityDelta: 1 }] };
     expect(() => validateOtherSideEvents([{ ...side, npcs: [{ id: 'watanare-mai', status: '被错误召唤' }] }], state)).toThrow();
     const committed = commitStoryTurn(state, '看看书。', parseGeneratedStory(format([side]), state), ids);
     expect(committed.protagonists!.otherSideNpc?.[npc.id]?.status).toBe('约好了稍后一起吃饭');
     const emma = personState(committed, 'emma');
-    expect(emma.contacts.find(row => row.id === npc.id)?.affinity).toBe(1);
+    expect(emma.contacts.find(row => row.id === npc.id)?.affinity).toBe(beforeAffinity + 1);
     const switched = reduceState(committed, { type: 'switch_protagonist', target: 'emma' });
     expect(worldScenePeople(switched).some(person => person.id === npc.id)).toBe(true);
+  });
+
+  describe('single-turn otherside reservation vs background life scheduler (17:20 -> 17:40)', () => {
+    function emmaAt1720WithSoyoOtherSide() {
+      return eligible(state => {
+        const switched = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
+        Object.assign(state, switched);
+        state.clock = { day: 1, hour: 17, minute: 20 };
+        const bg = state.protagonists!.backgroundLife!;
+        bg.cursor = 17 * 60 + 20;
+        for (const id of ['soyo', 'sakiko', 'emma', 'renako'] as ProtagonistId[]) {
+          bg.people[id].pending = null;
+          bg.people[id].nextDecisionAt = 17 * 60 + 30;
+        }
+      }, candidate => candidate.groups.some(group => group.length === 1 && group[0] === 'soyo'));
+    }
+
+    const withTwentyMinActivity = (events?: unknown[]) => {
+      const actions = [{
+        type: 'activity',
+        label: '在原地整理线索与笔记',
+        minutes: 20,
+        effects: { energy: -2, morale: 1, stress: 0, health: 0, balance: 0, satiety: 0, foodEnergy: 0 },
+      }];
+      const sideBlock = events ? `<otherside>${JSON.stringify(events)}</otherside><story_continue>艾玛合上笔记本。</story_continue>` : '';
+      return `<story>艾玛低头整理了二十分钟笔记。</story><world_actions>${JSON.stringify(actions)}</world_actions><phone_messages>[]</phone_messages>${sideBlock}`;
+    };
+
+    it('1 & 5 & 6 & 7: reserves Soyo during 17:20->17:40 without blocking other protagonists, stays idempotent on replay, and restores Soyo scheduling next turn', () => {
+      const { state } = emmaAt1720WithSoyoOtherSide();
+      const soyoBefore = structuredClone(personState(state, 'soyo').player);
+      const side = {
+        protagonists: ['soyo'],
+        text: '素世在街角停下脚步，望着傍晚的天色轻轻舒了口气。',
+        variables: { soyo: { morale: 2 } },
+      };
+      const reply = parseGeneratedStory(withTwentyMinActivity([side]), state);
+      const turnIds = { userId: 'u-1720', assistantId: 'a-1720' };
+
+      // 1. 17:20->17:40 with Soyo otherside succeeds and applies morale +2 without creating a 17:30 pending activity.
+      const committed = commitStoryTurn(state, '整理二十分钟笔记。', reply, turnIds);
+      expect(committed.clock).toEqual({ day: 1, hour: 17, minute: 40 });
+      const soyoAfter = personState(committed, 'soyo').player;
+      expect(soyoAfter.morale).toBe(Math.min(100, soyoBefore.morale + 2));
+      expect(soyoAfter.foodEnergy).toBeLessThan(soyoBefore.foodEnergy);
+      expect(committed.protagonists!.backgroundLife!.people.soyo.pending).toBeNull();
+      expect(committed.protagonists!.backgroundLife!.people.soyo.nextDecisionAt).toBe(17 * 60 + 45);
+
+      // 5. Other protagonists not in otherside (sakiko, renako) still run their normal 17:30 background decisions.
+      expect(committed.protagonists!.backgroundLife!.people.sakiko.pending).not.toBeNull();
+      expect(committed.protagonists!.backgroundLife!.people.sakiko.pending?.start).toBe(17 * 60 + 30);
+      expect(committed.protagonists!.backgroundLife!.people.renako.pending).not.toBeNull();
+      expect(committed.protagonists!.backgroundLife!.people.renako.pending?.start).toBe(17 * 60 + 30);
+
+      // 6. Replaying the same assistantId is idempotent and does not double-settle.
+      const replayed = commitStoryTurn(committed, '整理二十分钟笔记。', reply, turnIds);
+      expect(replayed).toEqual(committed);
+      expect(personState(replayed, 'soyo').player.morale).toBe(soyoAfter.morale);
+
+      // 7. Next turn (17:40->17:50 without otherside): Soyo's normal background scheduling resumes at 17:45.
+      const nextActions = [{
+        type: 'activity',
+        label: '继续观察街口动静',
+        minutes: 10,
+        effects: { energy: 0, morale: 0, stress: 0, health: 0, balance: 0, satiety: 0, foodEnergy: 0 },
+      }];
+      const nextReply = parseGeneratedStory(
+        `<story>艾玛又观察了十分钟。</story><world_actions>${JSON.stringify(nextActions)}</world_actions><phone_messages>[]</phone_messages>`,
+        committed,
+      );
+      const afterNextTurn = commitStoryTurn(committed, '继续观察十分钟。', nextReply, { userId: 'u-1740', assistantId: 'a-1740' });
+      expect(afterNextTurn.clock).toEqual({ day: 1, hour: 17, minute: 50 });
+      expect(afterNextTurn.protagonists!.backgroundLife!.people.soyo.pending).not.toBeNull();
+      expect(afterNextTurn.protagonists!.backgroundLife!.people.soyo.pending?.start).toBe(17 * 60 + 45);
+    });
+
+    it('2: starts normal 17:30 background pending for Soyo when advancing 17:20->17:40 without otherside', () => {
+      const { state } = emmaAt1720WithSoyoOtherSide();
+      const reply = parseGeneratedStory(withTwentyMinActivity(), state);
+      const committed = commitStoryTurn(state, '整理二十分钟笔记。', reply, { userId: 'u-no-side', assistantId: 'a-no-side' });
+      expect(committed.clock).toEqual({ day: 1, hour: 17, minute: 40 });
+      expect(committed.protagonists!.backgroundLife!.people.soyo.pending).not.toBeNull();
+      expect(committed.protagonists!.backgroundLife!.people.soyo.pending?.start).toBe(17 * 60 + 30);
+    });
+
+    it('3: continues to reject otherside when Soyo already had a pending background activity before generation', () => {
+      const { state } = emmaAt1720WithSoyoOtherSide();
+      const side = { protagonists: ['soyo'], text: '素世停下脚步。', variables: { soyo: { morale: 2 } } };
+      const reply = parseGeneratedStory(withTwentyMinActivity([side]), state);
+
+      const withPreExistingPending = structuredClone(state);
+      const soyoPose = JSON.stringify([
+        personState(withPreExistingPending, 'soyo').locationId,
+        personState(withPreExistingPending, 'soyo').scene,
+        personState(withPreExistingPending, 'soyo').interior,
+      ]);
+      // Even if the pre-existing pending finishes at 17:35 (before 17:40), it was active before generation and must be rejected.
+      withPreExistingPending.protagonists!.backgroundLife!.people.soyo.pending = {
+        id: 'bg:soyo:1025:routine',
+        kind: 'routine',
+        start: 17 * 60 + 5,
+        due: 17 * 60 + 35,
+        target: '',
+        label: '独自读了会儿随身文字，整理自己的日常安排',
+        origin: soyoPose,
+        calendarKey: '',
+        arrival: null,
+        routeContext: null,
+      };
+      expect(() => validateOtherSideEvents([side], withPreExistingPending)).toThrow();
+      expect(() => commitStoryTurn(withPreExistingPending, '整理二十分钟笔记。', reply, { userId: 'u-pre-pending', assistantId: 'a-pre-pending' })).toThrow();
+    });
+
+    it('4: does not silently skip confirmed social invitations or deterministic appointment trips when otherside conflicts', () => {
+      const { state } = emmaAt1720WithSoyoOtherSide();
+      const side = { protagonists: ['soyo'], text: '素世仍留在原地沉思。', variables: { soyo: { morale: 2 } } };
+      const reply = parseGeneratedStory(withTwentyMinActivity([side]), state);
+
+      const withConfirmedInvite = structuredClone(state);
+      const invitation: SocialInvitation = {
+        id: 'inv-soyo-1730',
+        owner: 'sakiko',
+        targetId: 'protagonist-soyo',
+        targetName: '长崎素世',
+        source: 'sms',
+        locationId: 'cafe',
+        day: 1,
+        time: '17:40',
+        message: '17:40 在咖啡馆商量排练安排可以吗？',
+        status: 'accepted',
+        createdAt: 17 * 60,
+        messageId: 'npc:inv-soyo-1730',
+        response: '好的，我会过去。',
+      };
+      withConfirmedInvite.protagonists!.socialInvitations = [invitation];
+      startSocialAgenda(withConfirmedInvite, invitation, {
+        rationale: '按时从当前地点出发赴约。',
+        steps: [
+          { kind: 'prepare', day: 1, time: '17:22', detail: '整理随身物品' },
+          { kind: 'depart', day: 1, time: '17:25', detail: '从当前地点出发前往咖啡馆' },
+          { kind: 'arrive', day: 1, time: '17:40', detail: '到达咖啡馆' },
+          { kind: 'leave', day: 1, time: '18:40', detail: '结束会面离开' },
+        ],
+      });
+      expect(() => commitStoryTurn(
+        withConfirmedInvite,
+        '整理二十分钟笔记。',
+        reply,
+        { userId: 'u-invite-conflict', assistantId: 'a-invite-conflict' },
+      )).toThrow(/旁线与后台已结算的位置变化冲突|旁线人物正在执行后台安排/);
+    });
   });
 });

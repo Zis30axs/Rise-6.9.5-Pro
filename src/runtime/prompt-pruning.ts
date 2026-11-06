@@ -5,12 +5,8 @@
  * bounded projection because Tavern mode uses max_chat_history: 0.
  */
 export const PROMPT_CONTEXT_LIMITS = {
-  // Forward every journal entry retained by WorldState to the narrator.
-  journalEntries: 100,
-  // Do not silently omit the end of a saved action receipt.
-  journalText: 1000,
-  storyTurns: 6,
-  storyText: 650,
+  journalEntries: 7,
+  journalText: 300,
   phoneMessages: 8,
   phoneText: 280,
   calendarEntries: 12,
@@ -47,17 +43,18 @@ export function selectPromptJournal(rows: readonly PromptJournal[], excludedIds:
   return newest.reverse();
 }
 
-/** Read-only prose projection. The foreground return AFTER an off-screen cut is
- * the actual last narrated moment, so always reserve room for it. Never append
- * otherSideBeats: those are private, non-witnessed events in other saves. */
+/** Send every saved foreground turn of the current protagonist, in order.
+ * Keep both the original prose and any later foreground continuation intact.
+ * otherSideBeats remain separate private evidence, never appended here.
+ * Save retention is governed independently by the WorldState schema.
+ */
 export function selectPromptStory(rows: readonly PromptStory[]): PromptStory[] {
-  return rows.slice(-PROMPT_CONTEXT_LIMITS.storyTurns).map(row => {
+  return rows.map(row => {
     const beginning = pruneVariableEcho(row.text);
     const resumed = row.role === 'assistant' && row.returnStory
-      ? pruneVariableEcho(row.returnStory).slice(-300) : '';
+      ? pruneVariableEcho(row.returnStory) : '';
     const tail = resumed ? '\n【回到当前视角后已经发生的正文】\n' + resumed : '';
-    const available = PROMPT_CONTEXT_LIMITS.storyText - tail.length;
-    return { role: row.role, text: beginning.slice(0, available) + tail };
+    return { role: row.role, text: beginning + tail };
   }).filter(row => row.text);
 }
 
@@ -75,7 +72,7 @@ export function selectPromptPhone(rows: readonly PromptPhone[]): PromptPhone[] {
 export function promptTopicHints(input: string) {
   return {
     study: /学习|上课|课程|读书|专业|考试|复习|图书馆|教室|书店|课表|学科|study|class|school/i.test(input),
-    shopping: /买|购物|超市|商店|便利店|外卖|点餐|食物|饮料|用餐|打包|食堂|咖啡|购买|shop|food|delivery/i.test(input),
+    shopping: /买|购物|超市|商店|便利店|外卖|点餐|食物|饮料|用餐|打包|食堂|咖啡|购买|饿|渴|吃|喝|点一|来一|拿一|想要一|饮品|零食|药品|价格|价钱|多少钱|售价|shop|food|delivery/i.test(input),
     room: /进入|房间|宿舍|教室|办公室|室内|物品|书架|床|课桌|门|互动|interact|room/i.test(input),
   };
 }

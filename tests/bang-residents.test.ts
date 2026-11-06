@@ -15,7 +15,7 @@ const bandIds = [...MYGO_MEMBER_IDS, ...AVE_MUJICA_MEMBER_IDS];
 describe('band residents', () => {
   it('registers the eight canon members without making Soyo or Sakiko residents', () => {
     expect(bangResidentCast.map(person => person.id)).toEqual(bandIds);
-    expect(allResidentCast.filter(person => person.id.startsWith('bang-')).map(person => person.id)).toEqual(bandIds);
+    expect(allResidentCast.filter(person => person.id.startsWith('bang-')).map(person => person.id)).toEqual([...bandIds, 'bang-marina']);
     expect(bangResidentCast.every(person => person.majorId === null && person.careerId === null)).toBe(true);
     expect(allResidentCast.some(person => person.id === 'soyo' || person.id === 'sakiko')).toBe(false);
   });
@@ -23,7 +23,7 @@ describe('band residents', () => {
   it('seeds only the relationships the worldbook already states', () => {
     const state = enableProtagonists(createInitialState());
     expect(personState(state, 'soyo').contacts.map(contact => contact.id)).toEqual([
-      'protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi',
+      'protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi', 'nagasaki-mother',
     ]);
     expect(personState(state, 'sakiko').contacts.map(contact => contact.id)).toEqual([
       'protagonist-soyo', 'bang-mutsumi', 'bang-uika', 'bang-umiri', 'bang-nyamu',
@@ -52,7 +52,9 @@ describe('band residents', () => {
     expect(residentGroupForNpc('majo-hiro')?.id).toBe('majo-circle');
     expect(majoExpressionFor('bang-tomori', 'neutral')).toBeNull();
     const portraitId = characterForPerson('bang-tomori');
-    expect(resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId })?.kind).toBe('atlas');
+    const avatar = resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId });
+    expect(avatar?.kind).toBe('sprite');
+    expect(avatar && 'src' in avatar && avatar.src.startsWith('data:image/webp;base64,')).toBe(true);
   });
 
   it('still lets a new game reduce without treating bandmates as strangers on Soyo phone', () => {

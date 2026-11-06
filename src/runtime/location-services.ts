@@ -4,8 +4,25 @@ import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, exposureSeed, outdoorExertionDrain, outdoorHealthExposure, resolveWeather } from './weather';
 
 import { cafeServiceLocation, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
+import {
+  CIRCLE_CAFE_MENU_IDS, CIRCLE_CAFE_ROOM_ID, CIRCLE_CLOSES, CIRCLE_HOURS_LABEL, CIRCLE_LOCATION_ID,
+  CIRCLE_MENU_LOCATION_IDS, CIRCLE_OPENS, CIRCLE_STAFF_NAME, CIRCLE_STUDIO_ROOM_ID,
+  circleBorrowedPrice, circleVisitServiceId, isBorrowedLivehouseService, isCircleVenueRoom,
+} from './circle-venue';
+import { isCircleVisitService, prepareCircleVisitService } from './circle-visit';
 import { getIllnessDebuffs } from './illness';
 import { hasUsedWeeklyCounseling } from './fengjin-clinic';
+import { isLivehouseVisitService, livehouseBlockedCode, prepareLivehouseService, type LivehouseServiceFacts, type LivehouseBlockedCode } from './livehouse-visit';
+import tokyoSandbox from '../../assets/models/unread-city-tokyo-sandbox-data.json';
+
+export const COURT_OBSERVE_ID = 'court-observe';
+// The newly imported Tokyo sandbox owns the authored observation details.
+const courthouse = tokyoSandbox.landmarks.find(place => place.id === 'courthouse') as {
+  services?: { id: string; label: string; minutes: number; price: number;
+    energyDelta: number; moraleDelta: number; stressDelta: number; result: string }[];
+} | undefined;
+const courtObservation = courthouse?.services?.find(service => service.id === COURT_OBSERVE_ID);
+if (!courtObservation) throw new Error('东京沙盘缺少法院旁听服务');
 
 export const CONSTRUCTION_BACKEND_JOB_ID = 'construction-backend-recruitment';
 // The original 200-yuan pay line is part of the advertisement joke; this shift settles in JPY without conversion.
@@ -39,7 +56,10 @@ export const venues: readonly Venue[] = [
   { locationId: 'street-cafe', label: '玛格咖啡馆', hoursLabel: '10:00–次日 02:00', opens: 10 * 60, closes: 2 * 60, outdoor: false, description: '宝生玛格经营的街边咖啡馆营业到次日凌晨两点，提供咖啡、茶与当日甜点；可在露台享用，也可从店门进入馆内。' },
   { locationId: 'commercial', label: '城市商业区', hoursLabel: '10:00–22:00', opens: 10 * 60, closes: 22 * 60, outdoor: false, description: '商业街的外带餐点窗口供应简餐和热汤面，取餐后在街边用餐区吃完。' },
   { locationId: 'grand-commercial', label: '大型商业区', hoursLabel: '10:00–23:00', opens: 10 * 60, closes: 23 * 60, outdoor: false, description: '大型商业娱乐区的室外步行广场，连接 Live House、KTV 包厢与商业中心。' },
+  { locationId: 'livehouse', label: 'Live House', hoursLabel: '16:00–23:00', opens: 16 * 60, closes: 23 * 60, outdoor: false, description: '新宿大型商业区里的 Live House。可以买票看排期演出，也可以按小时租练习室。' },
   { locationId: 'takao-mountain', label: '高尾山风景区', hoursLabel: '06:00–21:00', opens: 6 * 60, closes: 21 * 60, outdoor: true, description: '近郊名山自然风景名胜，拥有绿荫登山步道、山顶全景展望台、山间老字号茶屋与山麓天然温泉。' },
+  { locationId: 'courthouse', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '新沙盘中的法庭外广场和东侧公开入口。' },
+  { locationId: 'court-hearing', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '公开旁听席与正式审理共用的法庭。不得干预正在进行的案件。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
   { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
@@ -49,6 +69,9 @@ export const venues: readonly Venue[] = [
   { locationId: 'promenade', label: '林荫步道', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '沿现有林荫步道散步，花一点时间放松心情。' },
   { locationId: 'bookshop', label: '街角书店', hoursLabel: '09:00–22:00', opens: 9 * 60, closes: 22 * 60, outdoor: false, description: '营业时可在门前书摊选书阅读，沿用学科阅读入口和学习结算。' },
   { locationId: 'convenience', label: '便利店', hoursLabel: '24 小时营业', opens: null, closes: null, outdoor: false, description: '全天可从便利店货架购买商品；购买后进入背包，再从背包使用。' },
+  { locationId: CIRCLE_LOCATION_ID, label: 'CiRCLE 现场屋', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `现场屋门前广场连通一楼咖啡厅与侧翼练团室。咖啡厅由${CIRCLE_STAFF_NAME}接待，可点美式、拿铁和一份甜点。` },
+  { locationId: CIRCLE_CAFE_ROOM_ID, label: 'CiRCLE 咖啡厅', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `${CIRCLE_STAFF_NAME}在柜台接待。菜单是美式、拿铁和一份甜点，坐下喝完或吃完。` },
+  { locationId: CIRCLE_STUDIO_ROOM_ID, label: 'CiRCLE 练团室', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: '侧翼隔音练团室，靠墙放着鼓组、吉他音箱和谱架。' },
 ];
 
 export function getLocationStatus(locationId: string, clock: WorldState['clock']): LocationStatus | null {
@@ -97,7 +120,12 @@ const effects = (changes: Partial<LocationServiceEffects>): Readonly<LocationSer
 });
 
 /** One action pays, spends time, and consumes the service; no inventory is created. */
-export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
+const authoredLocationServices: readonly LocationService[] = Object.freeze([
+  { id: COURT_OBSERVE_ID, locationIds: ['court-hearing'], label: courtObservation.label,
+    description: '在公开旁听席安静观看法庭辩论与证据质证，学习法律程序，不介入正式在审案件。',
+    completionDescription: courtObservation.result, minutes: courtObservation.minutes,
+    price: courtObservation.price, effects: effects({ energy: courtObservation.energyDelta,
+      morale: courtObservation.moraleDelta, stress: courtObservation.stressDelta }) },
   { id: 'drink-coffee', locationIds: ['cafe', 'street-cafe'], label: '喝美式咖啡', description: '点一杯美式咖啡，坐下喝完。', minutes: 10, price: 320, effects: effects({ energy: 18, morale: 3, stress: -3, foodEnergy: 10 }) },
   { id: 'drink-latte', locationIds: ['cafe', 'street-cafe'], label: '喝拿铁', description: '点一杯拿铁，坐下慢慢喝完。', minutes: 15, price: 440, effects: effects({ energy: 15, morale: 5, stress: -5, satiety: 6, foodEnergy: 150 }) },
   { id: 'drink-tea', locationIds: ['cafe', 'street-cafe'], label: '喝热茶', description: '点一杯热茶，坐下歇一会儿。', minutes: 10, price: 240, effects: effects({ energy: 8, morale: 5, stress: -5 }) },
@@ -106,6 +134,12 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'eat-noodles', locationIds: ['commercial'], label: '吃热汤面', description: '从沿街餐点窗口取一碗热汤面，在街边用餐区吃完。', minutes: 15, price: 300, effects: effects({ energy: 18, morale: 3, stress: -3, satiety: 32, foodEnergy: 480 }) },
   { id: 'eat-mall-meal', locationIds: ['grand-commercial'], label: '吃商场快餐', description: '在商业区美食广场点一份快餐，坐下吃完。', minutes: 20, price: 420, effects: effects({ energy: 24, morale: 5, health: 1, stress: -5, satiety: 45, foodEnergy: 650 }) },
   { id: 'browse-music-store', locationIds: ['grand-commercial'], label: '逛音乐周边店', description: '浏览商业区唱片店的乐器配件与黑胶唱片，放松心情。', minutes: 15, price: 0, effects: effects({ energy: -2, morale: 8, stress: -6 }) },
+  { id: 'livehouse-watch-1800', locationIds: ['livehouse'], label: '看 18:00 的演出', description: '买票看 18:00 这场已经排好的演出。', minutes: 80, price: 2800, effects: effects({ energy: -8, morale: 14, stress: -12, satiety: -4, foodEnergy: -40 }) },
+  { id: 'livehouse-watch-1930', locationIds: ['livehouse'], label: '看 19:30 的演出', description: '买票看 19:30 这场已经排好的演出。', minutes: 80, price: 2800, effects: effects({ energy: -8, morale: 14, stress: -12, satiety: -4, foodEnergy: -40 }) },
+  { id: 'livehouse-practice-1h', locationIds: ['livehouse'], label: '租练习室一小时', description: '按小时租练习室，一个人练。', minutes: 60, price: 1600, effects: effects({ energy: -8, morale: 3, stress: -4 }) },
+  { id: 'livehouse-practice-2h', locationIds: ['livehouse'], label: '租练习室两小时', description: '按小时租练习室，一个人练。', minutes: 120, price: 3000, effects: effects({ energy: -16, morale: 4, stress: -6 }) },
+  { id: 'livehouse-practice-1h-band', locationIds: ['livehouse'], label: '和熟人一起练一小时', description: '按小时租练习室，并和愿意来的 MyGO 成员一起练。', minutes: 60, price: 1600, effects: effects({ energy: -8, morale: 3, stress: -4 }) },
+  { id: 'livehouse-practice-2h-band', locationIds: ['livehouse'], label: '和熟人一起练两小时', description: '按小时租练习室，并和愿意来的 MyGO 成员一起练。', minutes: 120, price: 3000, effects: effects({ energy: -16, morale: 4, stress: -6 }) },
   { id: 'takao-hiking', locationIds: ['takao-mountain', 'takao-summit'], label: '登山步道健行', description: '沿绿荫葱郁的高尾山自然步道拾级而上。在负氧离子与清凉山风中健行攀登，强身健体、大幅清降压力，让神经彻底放松。', minutes: 50, price: 0, effects: effects({ energy: -20, health: 8, morale: 18, stress: -35, satiety: -15, foodEnergy: -250 }) },
   { id: 'takao-observation', locationIds: ['takao-mountain', 'takao-summit'], label: '山顶观景台眺望', description: '伫立在海拔599米的高尾山顶展望台极目远眺。俯瞰关东平原的壮阔天际线与连绵群山，心胸豁然开朗，治愈烦闷心绪。', minutes: 20, price: 0, effects: effects({ energy: -2, health: 2, morale: 15, stress: -20 }) },
   { id: 'takao-onsen', locationIds: ['takao-mountain', 'takao-onsen'], label: '山麓温泉浸泡', description: '沉浸在高尾山麓温热宜人的天然药汤与露天汤泉中。热气蒸腾间驱散周身寒气与酸痛疲劳，深层调理体虚，舒缓压力。', minutes: 45, price: 850, effects: effects({ energy: 35, health: 25, morale: 20, stress: -40, satiety: -5 }) },
@@ -138,10 +172,54 @@ export const locationServiceCatalog: readonly LocationService[] = Object.freeze(
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
+const circleCafeMenu = new Set<string>(CIRCLE_CAFE_MENU_IDS);
+const withCircleCafe = (service: LocationService): LocationService => circleCafeMenu.has(service.id)
+  ? Object.freeze({ ...service, locationIds: Object.freeze([...service.locationIds, ...CIRCLE_MENU_LOCATION_IDS]) })
+  : service;
+const circleBorrowedServices = authoredLocationServices.flatMap(service => {
+  const id = circleVisitServiceId(service.id) ?? (isBorrowedLivehouseService(service) ? `circle-borrow-${service.id}` : null);
+  if (!id) return [];
+  return [Object.freeze({
+    ...service,
+    id,
+    locationIds: Object.freeze([CIRCLE_LOCATION_ID, CIRCLE_STUDIO_ROOM_ID]),
+    price: circleBorrowedPrice(service.price),
+  })];
+});
+export const locationServiceCatalog: readonly LocationService[] = Object.freeze([
+  ...authoredLocationServices.map(withCircleCafe),
+  ...circleBorrowedServices,
+]);
+
+export const COURT_OBSERVE_MAX_MINUTES = 480;
+export const COURT_OBSERVE_MAX_KNOWLEDGE = 100;
+
+/** Upper safety bound only: the story LLM chooses the actual knowledge awarded. */
+export function courtObservationKnowledgeCap(minutes: number): number {
+  return Math.min(minutes, COURT_OBSERVE_MAX_KNOWLEDGE);
+}
+
+/** Reuse the authored 30-minute activity for any integer minute duration.
+ * Effects scale by elapsed time; knowledge does NOT use this formula.
+ * Nonzero costs/benefits have a minimum unit to avoid zero-cost one-minute farming.
+ */
+export function courtObservationServiceForMinutes(minutes: number): LocationService {
+  if (!Number.isSafeInteger(minutes) || minutes < 1 || minutes > COURT_OBSERVE_MAX_MINUTES)
+    throw new Error('法院旁听时长必须是 1–480 分钟的整数。');
+  const base = locationServiceCatalog.find(service => service.id === COURT_OBSERVE_ID)!;
+  if (minutes === base.minutes) return base;
+  const ratio = minutes / base.minutes;
+  const scale = (value: number) => value === 0 ? 0 : Math.sign(value) * Math.max(1, Math.round(Math.abs(value) * ratio));
+  const adjusted = effects(Object.fromEntries(Object.entries(base.effects)
+    .map(([key, value]) => [key, scale(value)])) as Partial<LocationServiceEffects>);
+  return { ...base, minutes, effects: adjusted };
+}
+
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
-  return state.interior && state.interior.roomId !== MARGO_CAFE_ROOM_ID ? []
-    : locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
-      && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
+  const roomId = state.interior?.roomId;
+  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && !isCircleVenueRoom(roomId)) return [];
+  return locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
+    && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }
 
 /** Pay for the portion plus packaging now; nutrition is settled only on later use. */
@@ -173,19 +251,28 @@ export interface LocationServiceQuote {
   /** Empty unless this outdoor job rolled a chill or heatstroke. */
   weatherLog: string;
   blockedReason: string | null;
+  /** Present for Live House tickets and practice rooms. */
+  blockedCode?: LivehouseBlockedCode | null;
+  livehouse?: LivehouseServiceFacts;
 }
 
 /** Preview is pure and shares authored costs, hours and nutrition with commit. */
-export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState): LocationServiceQuote {
-  const service = locationServiceCatalog.find(item => item.id === serviceId) ?? null;
+export function getLocationServiceQuote(state: WorldState, serviceId: string, worldAuthority?: WorldState, requestedMinutes?: number): LocationServiceQuote {
+  const prepared = isLivehouseVisitService(serviceId) ? prepareLivehouseService(state, serviceId, worldAuthority)
+    : isCircleVisitService(serviceId) ? prepareCircleVisitService(state, serviceId, worldAuthority) : null;
+  const service = prepared?.service ?? (serviceId === COURT_OBSERVE_ID && requestedMinutes !== undefined
+    ? courtObservationServiceForMinutes(requestedMinutes)
+    : locationServiceCatalog.find(item => item.id === serviceId) ?? null);
   const minutes = service?.minutes ?? 0;
   const price = service?.price ?? 0;
   const payout = service?.payout ?? 0;
   const status = getLocationStatus(state.locationId, state.clock);
-  let blockedReason: string | null = !service ? '不存在的地点活动。'
+  let blockedReason: string | null = prepared?.blockedReason ?? (!service ? '不存在的地点活动。'
     : service.id === CONSTRUCTION_BACKEND_JOB_ID && state.academics?.majorId !== 'computer-science' ? '这份招聘只接受计算机专业的应聘者。'
       : !getLocationServices(state).some(entry => entry.id === serviceId) ? '当前地点不提供这项活动，请先到达对应地点。'
-      : !status ? '当前地点没有已设定的开放安排。' : null;
+      : !status ? '当前地点没有已设定的开放安排。' : null);
+  if (!blockedReason && service?.id === COURT_OBSERVE_ID && state.courtroom?.active)
+    blockedReason = '正式庭审正在进行，旁听不能插入玩家案件。';
   if (!blockedReason && (service?.id === 'construction-carry' || service?.id === CONSTRUCTION_BACKEND_JOB_ID)) {
     const debuffs = getIllnessDebuffs(state.player);
     if (debuffs.prohibitHeavyLabor) {
@@ -235,5 +322,7 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     foodEnergy: playerAfter.foodEnergy - state.player.foodEnergy,
     balance: playerAfter.balance - state.player.balance,
   };
-  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason };
+  const blockedCode = prepared ? livehouseBlockedCode(blockedReason, prepared.blockedCode) : undefined;
+  const livehouse = prepared ? { ...prepared.facts, blockedCode: blockedCode ?? null, commit: blockedReason ? null : prepared.facts.commit } : undefined;
+  return { service, minutes, price, payout, playerAfter, changes, weatherLog, blockedReason, ...(prepared ? { blockedCode, livehouse } : {}) };
 }

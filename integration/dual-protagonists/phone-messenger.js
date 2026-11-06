@@ -65,6 +65,7 @@ function replyCandidate(rows) {
 
 /** The caller owns the active tab, authoritative state and short-lived per-thread drafts. */
 export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,btn,heading,time}) {
+  const canManageBands=data.music?.canManage===true;
   const recipients=worldMessageRecipients(data);
   const chosen=recipients.some(row=>row.key===recipient) ? recipient : recipients[0]?.key || '';
   const requests=(data.npcPhone?.requests || []).filter(r=>r.status==='pending');
@@ -92,7 +93,7 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     return {recipient:chosen,replyId:null,html:CHAT_STYLE+heading('消息','','Messages')
       + '<div class="uc-phone-header"><small>'+esc(data.name)+' · '+esc(time(data.now))
       + '</small></div>'+reqHTML+reminderHTML
-      + btn('open-bands','我的乐队 · 名册与邀请','secondary')
+      + (canManageBands?btn('open-bands','我的乐队 · 名册与邀请','secondary'):'')
       + '<div class="conv-list uc-conv-list" role="list">'+(list||'<p class="chat-empty">暂无可联系的角色</p>')+'</div>'};
   }
   const contact=recipients.find(r=>r.key===chosen);
@@ -115,11 +116,11 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
     return '<article class="msg'+(outgoing?' me':'')+'" data-message-id="'+esc(m.id)+'">'
       +(outgoing?'':'<span class="uc-portrait" style="width:32px;height:32px;border-radius:50%;font-size:12px" aria-hidden="true">'+esc(speaker.slice(0,1))+'</span>')
       +'<div class="m-body">'+(chosen.startsWith('group:')?'<span class="m-name">'+esc(speaker)+'</span>':'')
-      +'<div class="chat-bubble">'+esc(m.text)+(data.music?.invitations.some(i=>i.messageId===m.id)?btn('open-bands','查看乐队邀请','text-button'):'')+'</div>'
+      +'<div class="chat-bubble">'+esc(m.text)+(canManageBands&&data.music?.invitations.some(i=>i.messageId===m.id)?btn('open-bands','查看乐队邀请','text-button'):'')+'</div>'
       +'<small class="uc-meta">'+esc(clock.split(' ').slice(-1)[0])+(receipt?' · '+receipt:'')+status+'</small></div></article>'+handoff;
   }).join('');
   const pendingUI=pending ? '<div class="sys" role="status">发送未保存 · 可重试'+btn('retry','重试','text-button')+btn('discard','取消','text-button')+'</div>' : '';
-  const tools='<div class="uc-reply-tools">'+btn('open-bands','我的乐队','text-button')
+  const tools='<div class="uc-reply-tools">'+(canManageBands?btn('open-bands','我的乐队','text-button'):'')
     + btn('request-reply','让对方回复','secondary','data-id="'+esc(lastPending||'')+'"'+(lastPending&&!pending?'':' disabled'))
     + btn('wait-read','等5分钟','text-button','data-minutes="5"'+(pending?' disabled':''))
     + btn('wait-read','等15分钟','text-button','data-minutes="15"'+(pending?' disabled':''))

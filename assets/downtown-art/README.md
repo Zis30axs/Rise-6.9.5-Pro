@@ -8,12 +8,20 @@
 - `characters/mutsumi/uniform/`：同一画布与足部锚点的六张运行 WebP。游戏表情仍用 neutral、smile、troubled、surprised、annoyed、sad；没有对应原图时，troubled 用 shy，annoyed 用 neutral-aside，sad 用 neutral-aside-2。
 - `sources/anon-uniform-*.png`：2026-10-30 用户提供的千早爱音羽丘制服透明底全身原图六张，表情为 shy、smile、confident、wave、surprised、cheerful。字节原样保留，未重编码。
 - `characters/anon/uniform/`：同一画布与足部锚点的六张运行 WebP。游戏表情仍用那六个名字；neutral 用 smile，smile 用 cheerful，troubled 与 sad 用 shy，annoyed 用 confident，surprised 用 surprised。wave 保留为挥手姿势，不顶替这六个表情。
+- `sources/raana-uniform-*.png`：2026-10-30 用户提供的要乐奈花咲川制服白底全身原图五张。白底已从与画面边缘相连的近白区域去除，银发、水手领、袖口和格子裙保留，姿势为 neutral、smile、crossed、wave、hips。抠图后的 PNG 按字节保留。
+- `characters/raana/uniform/`：同一画布与足部锚点的五张运行 WebP。游戏表情仍用那六个名字；neutral 与 surprised 用 neutral，smile 用 smile，troubled 与 sad 用 crossed，annoyed 用 hips。wave 保留为挥手姿势，不顶替这六个表情。
+- `sources/taki-uniform-*.png`：2026-10-30 用户提供的椎名立希花咲川制服全身原图四张，白底已去除后保存为透明 PNG。姿势为 neutral（单手叉腰侧目）、crossed（抱臂）、drumsticks（叉腰浅笑、手持鼓棒）、embarrassed（双手贴脸、脸红）。
+- `characters/taki/uniform/`：同一画布与足部锚点的四张运行 WebP。游戏表情仍用那六个名字；neutral 用 neutral，smile 用 drumsticks，annoyed 用 crossed，troubled、sad 与 surprised 用 embarrassed。
+- `sources/tomori-uniform-*.png`：2026-10-31 用户提供的高松灯羽丘制服白底全身原图五张。白底只从与画面边缘相连的近白区域去除，白衬衫领、格子裙、袜子和微笑姿势里的石头保留。姿势为 neutral（正面站立）、smile（手持石头）、surprised（抬手触碰耳侧头发）、sad（侧目抱臂）、shy（双手在胸前交握）。抠图后的 PNG 按字节保留。轮廓内部 alpha 为完全不透明，只在外缘 1 到 2 像素保留羽化。
+- `characters/tomori/uniform/`：同一画布与足部锚点的五张运行 WebP。游戏表情仍用那六个名字；neutral 用 neutral，smile 用 smile，surprised 与 troubled 用 surprised，sad 与 annoyed 用 sad。shy 保留为交握双手的姿势，不顶替这六个表情。世界书人物 id 仍是 `bang-tomori`。
+- `sources/nagasaki-mother-reference/`：2026-11-01 用户提供的长崎夫人白底全身原图四张。白底只从与画面边缘相连的近白区域去除；手叉腰姿势里被衣袖封住的臂间白隙，以及另外两张贴脸姿势里同样封住的缝，按面积不少于 800 像素的近白空洞一并去除。灰色西装、黑内搭、黑皮带和黑高跟鞋留在轮廓内且完全不透明，只在外缘 1 到 2 像素保留羽化。抠图后的 PNG 在 `sources/nagasaki-mother-suit-*.png`，按字节保留。
+- `characters/nagasaki-mother/suit/`：同一画布与足部锚点的四张运行 WebP。姿势为 neutral（一手叉腰、另一臂横在腰前、浅笑）、smile（手贴脸颊、闭口浅笑）、surprised（手靠近脸颊、张口、脸红）、cheerful（高举拳头、张口大笑）。游戏表情仍用那六个名字；neutral 与 annoyed 用 neutral，smile 用 smile，surprised、troubled 与 sad 用 surprised。cheerful 保留为欢呼姿势，不顶替这六个表情。世界书人物 id 仍是 `nagasaki-mother`。
 - `backgrounds/`：丰川家昼/昏/夜、会客厅、市中心昼/夜，1536×864。
 
 提示词保存在 `integration/downtown-art/prompts/`；`backgrounds-sunburst.jsonl` 是最终背景生成批次。其余文本是各次生成/编辑的完整提示词，`backgrounds.jsonl` 为早期草稿批次。最终 18 张原图的尺寸、大小、SHA-256 和模型在 `sources.json`；实际运行文件清单在 `manifest.json`，逐项视觉审核在 `visual-review.json`。这些文件均位于 `integration/downtown-art/`。
 
-`python scripts/prepare_downtown_art.py` 从原图派生运行 WebP：立绘 alpha 做 3×3 median，清除 alpha≤24 的散点，等比缩放/对齐后无损编码；背景等比裁切到 16:9，以 WebP quality 90 编码。这里的“无损”仅指处理后立绘的 WebP 编码，不宣称处理过程与原 PNG 像素相同。`--check` 重新派生并逐字节比较，不自动批准审核。
+`python scripts/prepare_downtown_art.py` 从原图派生运行 WebP：立绘 alpha 做 3×3 median，清除 alpha≤24 的散点，等比缩放/对齐后，把距离透明区超过 2 像素的内部重新设为完全不透明，只保留外缘羽化，再无损编码；背景等比裁切到 16:9，以 WebP quality 90 编码。这里的“无损”仅指处理后立绘的 WebP 编码，不宣称处理过程与原 PNG 像素相同。已批准且来源哈希未变的旧字节保持不变。`--check` 重新派生并逐字节比较，不自动批准审核。
 
-运行素材合计 **8,649,600 字节**（含若叶睦与千早爱音制服各六张）。原 PNG 仅用于溯源和再编辑，不进入游戏包。祥子 12 张、若叶睦 6 张与千早爱音 6 张立绘头、手、鞋完整，画面中允许下半身被正文/输入面板遮挡；用户要求放大人物，不以“全身素材”为由缩成小人。
+运行素材合计 **12,583,948 字节**（含若叶睦与千早爱音制服各六张、要乐奈制服五张、椎名立希制服四张、高松灯制服五张，以及长崎夫人西装四张）。原 PNG 仅用于溯源和再编辑，不进入游戏包。祥子 12 张、若叶睦 6 张、千早爱音 6 张、要乐奈 5 张、椎名立希 4 张与高松灯 5 张立绘头、手、鞋完整，画面中允许下半身被正文/输入面板遮挡；用户要求放大人物，不以“全身素材”为由缩成小人。
 
 祥子与家族和解是本卡后日谈/AU，不是官方剧情声明。生成画面不提供票价、功能状态、大小或其他游戏设定；规则以程序和世界书为准。素材不是官方授权插画。

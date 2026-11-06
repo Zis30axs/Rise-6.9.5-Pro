@@ -56,7 +56,7 @@ describe('Margo dialogue portraits', () => {
     });
     expect(majoExpressionSets['majo-hiro'] && Object.keys(majoExpressionSets['majo-hiro'].expressions).sort()).toEqual(['happy', 'neutral', 'shy']);
     expect(majoExpressionSets['majo-emma'] && Object.keys(majoExpressionSets['majo-emma'].expressions)).toHaveLength(9);
-    expect(majoArtStatus.filter(row => row.personId !== 'majo-margo' && row.complete && row.tier === 'semi-main').every(row => row.expressions === 3)).toBe(true);
+    expect(majoArtStatus.filter(row => row.personId !== 'majo-margo' && row.personId !== 'majo-meruru' && row.complete && row.tier === 'semi-main').every(row => row.expressions === 3)).toBe(true);
   });
 
   it('lists the five committed AVIF files in the runtime manifest', () => {

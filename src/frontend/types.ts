@@ -83,7 +83,7 @@ export interface AcademicGain {
   at: string;
   /** Null means a 1.9 historical record without outcome evidence. */
   outcome: 'normal' | 'inspiration' | 'confusion' | null;
-  channel: 'classroom' | 'study-room' | 'bookshop' | null;
+  channel: 'classroom' | 'study-room' | 'bookshop' | 'court-hearing' | null;
   interactionId: string | null;
   energyConsumed: number | null;
   moraleChange: number | null;
@@ -111,6 +111,8 @@ export interface CharacterContact {
   /** Stable pedestrian identity, retained after the player leaves the scene. */
   sourcePersonId: string | null;
   isMain: boolean;
+  /** Established relationship fact, such as an agreed romance. Absent for strangers and old saves. */
+  relationNote?: string;
 }
 
 export interface ContactProfileInput {
@@ -140,6 +142,8 @@ export interface WorldState {
   schema_version: '1.11.0' | '1.12.0' | '1.13.0';
   /** Shared daily forecast. Old saves receive it from the civil date on load. */
   weather?: import('../runtime/weather').WeatherState;
+  /** GMT+8 real-world history dispatch; shared by all protagonists. */
+  worldChronicle?: import('../runtime/world-chronicle').WorldChronicleState;
   /** Added lazily when a dual-protagonist feature is first used. */
   protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };
@@ -156,6 +160,8 @@ export interface WorldState {
   margoCafeDaily?: import('../runtime/margo-cafe').MargoCafeState;
   /** Shared confirmed bands, invitations and performance bookings; absent in older saves. */
   livehouse?: import('../runtime/livehouse').LivehouseState;
+  /** Tickets already used and instrument practice. Absent on old saves; skill starts at 0. */
+  livehouseVisit?: import('../runtime/livehouse-visit').LivehouseVisitState;
   /** Shared profession cases and rewards, keyed by the responsible protagonist. */
   lawCareer?: import('../runtime/law-career').LawCareerState;
   /** Shared court docket, active trial, filings and saved verdicts; absent in older saves. */
@@ -164,6 +170,8 @@ export interface WorldState {
   npcProfessions?: import('../runtime/npc-professions').NpcProfessions;
   /** Shared counseling records with Dr. Fengjin; weekly per protagonist. */
   fengjinClinic?: import('../runtime/fengjin-clinic').FengjinClinicState;
+  /** Per-protagonist cooking sessions. Absent until someone starts a dish. */
+  cooking?: import('../runtime/cooking').CookingState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number }[];
@@ -192,7 +200,10 @@ export type WorldAction =
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
   | { type: 'use_item'; itemId: string }
-  | { type: 'location_service'; serviceId: string }
+  | { type: 'cook_begin'; recipeId: string }
+  | { type: 'cook_cancel'; sessionId: string }
+  | { type: 'cook_settle'; sessionId: string; position: number }
+  | { type: 'location_service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'law_case'; phase: 'accept' | 'investigate' | 'present' | 'sherry'; caseId?: string; evidenceId?: string }
   | { type: 'courtroom'; phase: 'filter' | 'accept-preset' | 'confirm-filing' | 'migrate-legacy' | 'sherry' | 'enroll-law' | 'accept-settlement' | 'reject-settlement' | 'withdraw' | 'pay-term' | 'collect-term' | 'fulfill-term' | 'return-office'; offerId?: string; termId?: string; categories?: import('../runtime/courtroom').CourtCategory[] }
   | { type: 'novel_travel'; locationId: string; vehicleId?: string }
@@ -234,7 +245,8 @@ export type StoryAction =
       triggerId: string; reason: string; agenda?: import('../runtime/social-agenda').SocialAgendaDraft }
   | { type: 'travel'; locationId: string }
   | { type: 'rest'; minutes: number; kind: 'sleep' | 'rest' | 'wait' }
-  | { type: 'service'; serviceId: string }
+  // Court observation can use any integer duration; the narrator chooses its knowledge grant.
+  | { type: 'service'; serviceId: string; minutes?: number; knowledgeGain?: number }
   | { type: 'buy'; itemId: string; quantity: number }
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
@@ -292,6 +304,8 @@ export interface GeneratedStory {
   autonomousSmsText?: string | null;
   bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
+  /** Internal runtime delivery receipt; never produced by, or sent to, the LLM. */
+  worldChronicleReceipt?: import('../runtime/world-chronicle').WorldChronicleReceipt;
 }
 
 export type StoryGenerationOptions = {

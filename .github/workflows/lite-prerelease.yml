@@ -11,7 +11,35 @@ on:
 permissions:
   contents: write
 jobs:
+  # One-time RC3.1 publication reuses the already released PNG's exact card
+  # data and patches only the Lite picker; the full ZIP build is skipped.
+  rc31_png_only:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[rc31-png-only]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Fetch just the PNG patch script (no 1GB repository checkout)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/contents/scripts/publish_lite_rc31_png_only.py?ref=${{ github.sha }}" --jq .content | base64 -d > publish_rc31.py
+      - name: Prepare Lite RC3.1 PNG (no ZIP and no Release write)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RC31_PNG_ARTIFACT_ONLY: '1'
+        run: python3 publish_rc31.py
+      - name: Verify RC3.1 PNG checksum against first successful patch
+        run: echo "6b58d6669066b9f39bcc321d5aa78063a339e8eda9a5ed2a0ea4d5731bbdaa31  unread-city-lite-v0.3.0-rc3.1-tauri.png" | sha256sum -c -
+      - name: Upload RC3.1 PNG as downloadable GitHub Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lite-v0.3.0-rc3.1-tauri-png
+          path: unread-city-lite-v0.3.0-rc3.1-tauri.png
+          if-no-files-found: error
+          retention-days: 30
   prerelease:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[rc31-png-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -54,10 +82,15 @@ jobs:
           python scripts/verify_lite_release.py
           python - <<'PY'
           import json
+          from pathlib import Path
           r=json.load(open('dist/lite-verification.json'))
+          manifest=json.loads(Path('integration/downtown-art/manifest.json').read_text(encoding='utf-8'))
           assert r['status']=='passed-build-only-not-tested-on-iphone'
-          assert r['approvedNewArtExternalized']==30
-          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources')
+          assert r['sha256Verification']=='not-required'
+          assert r['approvedNewArtExternalized']==len(manifest['assets'])
+          assert r['tokyoSandboxSeparatePack'] is False and r['tokyoSandboxInCoreZip'] is True
+          assert r['tokyoSandboxArchive']=='unread-city-lite-assets.zip'
+          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources;',r['approvedNewArtExternalized'],'downtown art')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts
         uses: actions/upload-artifact@v4
@@ -107,12 +140,14 @@ jobs:
               '进入角色聊天后点“安装 Lite 素材 ZIP”，选取文件，安装后刷新。',
               '',
               '## 校验',
-              f"- PNG: {info['liteCardBytes']} bytes，SHA-256 `{info['liteCardSha256']}`",
-              f"- ZIP: {info['zipBytes']} bytes，SHA-256 `{info['zipSha256']}`",
-              f"- 离线资源：{info['externalAssets']} 项；离线：{info['offline']}",
+              f"- PNG: {info['liteCardBytes']} bytes",
+              f"- ZIP: {info['zipBytes']} bytes",
+              f"- 离线资源：{info['externalAssets']} 项；市区立绘按当前清单数量核对（{info['approvedNewArtExternalized']}）",
+              f"- 离线：{info['offline']}",
+              '- 不需要验证 SHA-256。若附带 SHA256SUMS.txt，只供参考，不是发布门槛。',
               '',
               '**边界：**构建验证通过，不等于已在 iPhone / TauriTavern 真机验收。',
-              '此发行以本标签的提交与哈希为准，不沿用旧版 RC2 的功能说明。',
+              '此发行以本标签的提交为准，不沿用旧版 RC2 的功能说明。',
           ]
           Path('dist/lite-release-notes.md').write_text('\n'.join(notes) + '\n', encoding='utf-8')
           PY

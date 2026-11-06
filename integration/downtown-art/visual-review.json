@@ -66,6 +66,100 @@
     "canvas": [768, 1344],
     "anchor": [384, 1280]
   },
+  "raana": {
+    "reviewedOn": "2026-10-30",
+    "count": 5,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "identityConsistent": true,
+    "poses": ["neutral", "smile", "crossed", "wave", "hips"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "neutral",
+      "troubled": "crossed",
+      "annoyed": "hips",
+      "sad": "crossed"
+    },
+    "waveKeptAsPose": true,
+    "fullHeadHandsAndBothShoes": true,
+    "raisedArmAndWidePosesInsideCanvas": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
+  "taki": {
+    "reviewedOn": "2026-10-30",
+    "count": 4,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "background": "white removed by border-connected near-white flood fill",
+    "identityConsistent": true,
+    "poses": ["neutral", "crossed", "drumsticks", "embarrassed"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "drumsticks",
+      "surprised": "embarrassed",
+      "troubled": "embarrassed",
+      "annoyed": "crossed",
+      "sad": "embarrassed"
+    },
+    "fullHeadHandsAndBothShoes": true,
+    "drumsticksKept": true,
+    "sailorCollarAndCuffsKept": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
+  "tomori": {
+    "reviewedOn": "2026-10-31",
+    "count": 5,
+    "outfit": "uniform",
+    "origin": "user-provided",
+    "background": "white removed by border-connected near-white flood fill; interior alpha forced opaque; feather only on the outer 1-2px",
+    "identityConsistent": true,
+    "poses": ["neutral", "smile", "surprised", "sad", "shy"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "surprised",
+      "troubled": "surprised",
+      "annoyed": "sad",
+      "sad": "sad"
+    },
+    "shyKeptAsPose": true,
+    "stoneKeptOnSmile": true,
+    "whiteCollarKept": true,
+    "fullHeadHandsAndBothShoes": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
+  "nagasakiMother": {
+    "reviewedOn": "2026-11-01",
+    "count": 4,
+    "outfit": "suit",
+    "origin": "user-provided",
+    "personId": "nagasaki-mother",
+    "background": "white removed by border-connected near-white flood fill; sealed arm-torso holes of at least 800px removed; interior alpha forced opaque; feather only on the outer 1-2px",
+    "identityConsistent": true,
+    "poses": ["neutral", "smile", "surprised", "cheerful"],
+    "expressionPose": {
+      "neutral": "neutral",
+      "smile": "smile",
+      "surprised": "surprised",
+      "troubled": "surprised",
+      "annoyed": "neutral",
+      "sad": "surprised"
+    },
+    "cheerfulKeptAsPose": true,
+    "armGapOpened": true,
+    "legGapOpened": true,
+    "fullHeadHandsAndBothShoes": true,
+    "actualAlpha": true,
+    "canvas": [768, 1344],
+    "anchor": [384, 1280]
+  },
   "files": [
     {
       "id": "sakiko_casual_neutral",
@@ -215,6 +309,96 @@
     {
       "id": "anon_uniform_cheerful",
       "sha256": "a44baad1e924fec1c8b45f90a98d7da9d7882c957a5dfb7e9c335e63fe1d89dd",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_neutral",
+      "sha256": "e9a154a547c2973e8c2cda0533bad73bed78fb5936aead93bf40bff345ad056e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_smile",
+      "sha256": "59dec0addb8f25543ca65d5024ff316eae77d53c3e51d18600fe8339e661bfb7",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_crossed",
+      "sha256": "927bf3b75509274e00c41708101fe451014d8c7eccaf27aa3c50854fec582f2c",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_wave",
+      "sha256": "de57cde4e1e335bcbbef25a9391383ba187f6d64e9df92970eb222e0328cd938",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "raana_uniform_hips",
+      "sha256": "9ecf314719b3374ea3c28249739fbc49aabd98405f57fcae44e501a86eb1d97d",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_neutral",
+      "sha256": "8cf25bbd5c4bbd5489523e3d654393e9588f28bf2be4601fbdb23c3e8f2fc77f",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_crossed",
+      "sha256": "6260495c2e8107e8ff19e136b9e0545fea6f05355f49491bb7451b681510de92",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_drumsticks",
+      "sha256": "0ae085cbee83e74459b09669cc821e779df3443835140f6165bcb9e9fdc8f524",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "taki_uniform_embarrassed",
+      "sha256": "37d530e98f6cc8de37251fe0a6e4d0eb7b807f1b348f64eb36f81b2853efcf8c",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "tomori_uniform_neutral",
+      "sha256": "ed45886eab84e983c3b06298963fb21f008e16a740ca13096afcd10f6cbdeb9a",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "tomori_uniform_smile",
+      "sha256": "ca823161267e345c5d8c37d07772966aa920aa26a9cea4c993b5fab15abb723f",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "tomori_uniform_surprised",
+      "sha256": "d9ea6441e54004d853ec4cb23a3d73d0d46d0fc366e58f7a55f5e6058c126d6e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "tomori_uniform_sad",
+      "sha256": "b29d94ece3898879b21366dd51de5163096d5060341a799287064e062d603b8e",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "tomori_uniform_shy",
+      "sha256": "4f34c3467fadaf0189b0cf44619a2967614c19760dc473482ce266727f36d868",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_neutral",
+      "sha256": "9c66de5031c338b1d0eebc56d8f57ebeb0324264787538a91fafb42eaf553fa6",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_smile",
+      "sha256": "c949ffa6cb56c1aff0833f032181cf9eded249fe48e1f1e13d789e9192217ecd",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_surprised",
+      "sha256": "956cf738b427220f187e5173708e671e729698c4bb9839323ee30661be9d5b36",
+      "visuallyReviewed": true
+    },
+    {
+      "id": "nagasaki_mother_suit_cheerful",
+      "sha256": "3ebc815e481a78c9d7aca7998949bbd9541e48f9a3a86c57f1349ae6f2dc0847",
       "visuallyReviewed": true
     }
   ],

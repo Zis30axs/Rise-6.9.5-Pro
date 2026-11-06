@@ -1,0 +1,17 @@
+{
+  "status": "passed-build-only-not-tested-on-iphone",
+  "liteCardBytes": 9966304,
+  "liteCardSha256": "f5aab2867f20d62a0969f49c88f3a02ef3ef28b3c635d700151d1da9461490a8",
+  "liteBundleBytes": 17667201,
+  "zipBytes": 88467741,
+  "zipSha256": "0ecb2dbc1318b215594d3af9152efab55d48506bd10758b7310043ee530a976c",
+  "externalAssets": 204,
+  "approvedNewArtExternalized": 44,
+  "offline": true,
+  "physicalDeviceTested": false,
+  "tokyoSandboxSha256": "12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb",
+  "tokyoSandboxBytes": 6232488,
+  "tokyoSandboxArchive": "unread-city-lite-assets.zip",
+  "tokyoSandboxSeparatePack": false,
+  "tokyoSandboxInCoreZip": true
+}

@@ -1,0 +1,1 @@
+One-time RC3.1 PNG-only Actions artifact delivery. No ZIP or release API writes. Reuse RC1 matching offline ZIP.

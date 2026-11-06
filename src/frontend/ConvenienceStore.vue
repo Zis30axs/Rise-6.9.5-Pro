@@ -14,6 +14,7 @@ const categories: { id: StoreItem['category']; label: string; description: strin
   { id: 'drink', label: '饮品', description: '在货架前挑一瓶喜欢的饮品。' },
   { id: 'cigarette', label: '香烟', description: '按盒购买，按支使用；效果包含健康损失。' },
   { id: 'medicine', label: '医药', description: '常备非处方药与急救调理品。' },
+  { id: 'ingredient', label: '食材', description: '买回去，在有厨房的住处自己做。' },
 ];
 const tiers: Record<StoreItem['tier'], string> = { basic: '基础款', standard: '标准款', premium: '精选款' };
 const selectedCategory = ref<StoreItem['category']>('meal');
@@ -72,7 +73,7 @@ async function pack(itemId: string) {
         <ul class="store-effects" :aria-label="`${item.name}每${item.useUnit}效果`"><li v-for="effect in effects(item)" :key="effect.key" :class="{ harmful: effect.harmful }">{{ effect.label }} {{ effect.value > 0 ? '+' : '−' }}{{ Math.abs(effect.value) }}</li></ul>
         <p class="store-owned" data-product-owned>背包库存 {{ quote.owned }} {{ item.useUnit }}</p>
         <button type="button" class="store-buy" :aria-label="`购买${item.name}，${quantity}${item.purchaseUnit}`" :disabled="model.busy || !!quote.blockedReason" @click="buy(item.id)"><span>购买 {{ quantity }} {{ item.purchaseUnit }}</span><strong>¥{{ quote.totalPrice.toFixed(2) }}</strong></button>
-        <button v-if="item.category !== 'cigarette'" type="button" class="store-pack" :data-package-item="item.id" :disabled="model.busy || !!packQuote.blockedReason" :title="packQuote.blockedReason ?? `每件加 ¥${PACKAGING_FEE} 打包费，放入背包后可使用或送人`" @click="pack(item.id)"><span>加包装带走 {{ quantity }} {{ item.purchaseUnit }}<small>每件打包费 ¥{{ PACKAGING_FEE }}</small></span><strong>¥{{ packQuote.totalPrice.toFixed(2) }}</strong></button>
+        <button v-if="item.category !== 'cigarette' && item.category !== 'ingredient'" type="button" class="store-pack" :data-package-item="item.id" :disabled="model.busy || !!packQuote.blockedReason" :title="packQuote.blockedReason ?? `每件加 ¥${PACKAGING_FEE} 打包费，放入背包后可使用或送人`" @click="pack(item.id)"><span>加包装带走 {{ quantity }} {{ item.purchaseUnit }}<small>每件打包费 ¥{{ PACKAGING_FEE }}</small></span><strong>¥{{ packQuote.totalPrice.toFixed(2) }}</strong></button>
         <p v-if="quote.blockedReason" class="store-blocked">{{ quote.blockedReason }}</p>
         <p v-else class="store-purchase-hint">放入背包 {{ quote.unitsAdded }} {{ item.useUnit }}</p>
       </article>

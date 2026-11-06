@@ -1,0 +1,13 @@
+{
+  "status": "built-and-updated-local-sillytavern",
+  "avatar": "未读之城.png",
+  "scriptSha256": "a8bef117d802718d73314533a8f8fdcd31ffa737870e60b366e7cf54d466673b",
+  "assetsSha256": "67051939bb49ac00531776b6cf0af0f70cdc518d35282878eb9b11bd10f5d88d",
+  "serverReadbackMatches": true,
+  "otherCardFieldsUnchanged": true,
+  "coverUnchanged": true,
+  "chatFilesUnchanged": 14,
+  "backup": "D:\\.study\\cc\\dist\\band-entry-before-import",
+  "liveUiReloaded": false,
+  "physicalTauriTavernTested": false
+}

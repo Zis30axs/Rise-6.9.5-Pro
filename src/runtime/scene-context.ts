@@ -1,4 +1,5 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
+import { affinityRelation } from './affinity-tiers';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
@@ -38,15 +39,17 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
   'street-cafe': '街边咖啡馆门前的室外露台；可见桌椅、店门与街道，尚未进入店内。',
   'bus-stop': '高田接驳站的室外候车区域；可见站牌、候车棚与十字路口。',
   'pocket-park': '室外口袋公园；可见步道、树木、长椅与小喷泉。',
+  courthouse: '审判法庭前广场；可见古典石柱、黄金天平徽章与正义穹顶。东侧公开入口通往旁听席及法庭。',
   junction: '南门十字路口的室外道路；可见斑马线、交通灯与两侧商铺。',
   campus: '校园内的室外步行区；可见图书馆、教学楼及连接宿舍和运动场的步道。',
   neighborhood: '高田校园南门街区的室外公共空间；可见商铺、道路与通向公交站和公园的人行道。',
   home: '杂司谷的室外住宅区；可见住宅楼、街边树木和杂司谷接驳站，尚未进入家中。',
   commercial: '池袋／东池袋的室外步行广场；可见商场店面、街道和池袋接驳站，尚未进入商场。',
-  downtown: '目白／目白台的街道与步行空间；可见目白台接驳站、商店和丰川家的外部建筑。丰川家私人区域并非公共场所，尚未进入。',
+  downtown: '目白／目白台的豪华住宅大道与高密度高层公寓街区；可见目白台接驳站、喷泉广场、林立的豪华高层住宅塔楼、长崎家高层公寓，以及丰川家、王冢家与二阶堂家的外部宅邸。',
   'city-park': '神田川沿岸的室外绿地与步道；可见树木、休憩区域和神田川绿道站。',
   'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、写字楼商务中心、Live House 入口与 KTV 娱乐城，尚未进入店内。',
   'takao-mountain': '高尾山风景区的室外山麓山道与接驳广场；可见参天杉木、登山步道起点、观光缆车站、极乐汤温泉入口与远处重叠的苍翠山峰。',
+  circle: 'CiRCLE 现场屋门前的步行广场；可见一楼咖啡厅的落地窗、侧翼练团室入口，以及通往新宿大型商业区的人行道。店员月岛麻里奈在咖啡厅里接待，尚未进入店内。',
   'city-roads': '连接校园与远处住宅区、商业区、公园的室外道路；可见路面、人行道与过往车辆。',
 };
 
@@ -147,7 +150,7 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
-const WATANARE_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home']);
+const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home', 'soyo-house']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
@@ -168,15 +171,28 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
     }] : [];
   }
   if (roomId === 'livehouse') {
-    const taki = allResidentCast.find(row => row.id === 'bang-taki');
-    return taki ? [{
-      id: taki.id, name: taki.name, candidateName: taki.name,
-      identity: 'Live House 工作人员', tags: ['常驻人物', '乐队'],
-      description: taki.publicProfile, x: 2.2, z: 1.6, color: 0x859c6d,
-      portraitId: characterForPerson(taki.id), contactId: null, isMain: false,
+    return ['bang-taki', 'bang-marina'].flatMap(id => {
+      const person = allResidentCast.find(row => row.id === id);
+      if (!person) return [];
+      return [{
+        id: person.id, name: person.name, candidateName: person.name,
+        identity: id === 'bang-marina' ? 'CiRCLE 店员' : 'Live House 工作人员',
+        tags: ['常驻人物', id === 'bang-marina' ? '店员' : '乐队'],
+        description: person.publicProfile, x: id === 'bang-marina' ? -2.2 : 2.2, z: 1.6, color: 0x859c6d,
+        portraitId: characterForPerson(person.id), contactId: null, isMain: false,
+      }];
+    });
+  }
+  if (roomId === 'circle-cafe' || roomId === 'circle-studio') {
+    const marina = allResidentCast.find(row => row.id === 'bang-marina');
+    return marina ? [{
+      id: marina.id, name: marina.name, candidateName: marina.name,
+      identity: 'CiRCLE 店员', tags: ['常驻人物', '店员'],
+      description: marina.publicProfile, x: 0, z: -2.2, color: 0x859c6d,
+      portraitId: characterForPerson(marina.id), contactId: null, isMain: false,
     }] : [];
   }
-  if (WATANARE_INTERIOR_HOMES.has(roomId)) {
+  if (RESIDENTIAL_INTERIOR_HOMES.has(roomId)) {
     return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
       identity: '住户', tags: ['常驻人物', '住户'],
@@ -200,7 +216,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
 }
 
 /** Authored indoor people are separate from outdoor anchors and random pedestrians. */
-export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+export function getInteriorPeople(roomId: string, contacts: readonly CharacterContact[] = [], clock?: { hour: number; minute: number; day?: number }, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   if (!clock) return [];
   if (roomId === 'court-hearing') return getInteriorPeopleForValidation(roomId);
   return getInteriorPeopleForValidation(roomId).flatMap(person => {
@@ -212,7 +228,7 @@ export function getInteriorPeople(roomId: string, contacts: readonly CharacterCo
   });
 }
 
-export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
+export function getScenePeople(scene: ScenePresence, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = []): ScenePerson[] {
   const hidden = new Set(hiddenPersonIds);
   const names = new Set<string>();
   const people = scenePersonAnchors.map(anchor => {
@@ -253,13 +269,17 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
-export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
+function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
+  const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
+  return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
+}
+export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
     const nearbyPeople = (population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds))
-      .map(person => ({ ...person, distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
+      .map(person => ({ ...person, ...relationshipOf(person, contacts), distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
       .filter(person => person.distanceMetres <= 18);
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.distanceMetres <= SCENE_ENCOUNTER_DISTANCE) ?? null;
     return {
@@ -281,7 +301,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 8);
   const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain,
-    outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null });
+    outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null, ...relationshipOf(person, contacts) });
   const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
   return {
     areaId: area.id, label: area.label, outdoors: true, skyVisible: true,

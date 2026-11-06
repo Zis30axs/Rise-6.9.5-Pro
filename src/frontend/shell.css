@@ -1,5 +1,6 @@
 @import './livehouse.css';
 @import './panels.css';
+@import './social-skills.css';
 @import './scene.css';
 @import './world-map.css';
 @import './campus-map.css';
@@ -11,13 +12,16 @@
 @import './novel-npc-portrait.css';
 @import './novel-invitation-portraits.css';
 @import './convenience-store.css';
+@import './cooking.css';
 @import './academic.css';
 @import './location-services.css';
 @import './place-actions.css';
 @import './interaction-overlay.css';
 @import './social-interaction.css';
+@import './invitation-book.css';
 @import './story-engine-settings.css';
 @import './protagonist-switch.css';
+@import './identity-card.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
 .uc-shell *, .uc-shell *::before, .uc-shell *::after { box-sizing:border-box; }
@@ -282,3 +286,11 @@
 .court-switch-actions button{min-height:46px;padding:10px;border:1px solid #c2b8ca;border-radius:9px;color:inherit;background:#62566e;cursor:pointer}
 .court-switch-actions button:first-child{background:transparent}
 .court-switch-actions button:focus-visible{outline:3px solid #dec1ff;outline-offset:2px}
+
+
+/* Keep the shortcuts within the 320px baseline. */
+@media(max-width:760px) {
+  .tool-dock { width:min(370px,calc(100% - 16px)); gap:0; justify-content:space-between; }
+  .uc-shell .tool-dock button { flex:1; width:auto; min-width:0; padding:5px 2px; }
+  .uc-shell .tool-dock .phone-launcher { flex:1.4; width:auto; }
+}

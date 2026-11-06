@@ -3,9 +3,11 @@ import { PROTAGONISTS, PROTAGONIST_PERSON_ID_LIST, type ProtagonistId } from './
 import { activeProtagonist, gameMinute, personState, protagonistNames } from './protagonist-world';
 import { getCampusInterior } from './campus-interiors';
 import { allResidentCast, residentPresence } from './npc-cast';
+import { agendaTargetProtagonist, residentSocialAgendaPresence } from './social-agenda';
 import { gameCalendarOccasions } from './japan-calendar-events';
 import { scenePersonAnchors, getSceneArea, sceneLocationId } from './scene-context';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { retainStoryHistory } from './story-history';
 import relationLore from '../worldbook/story-arcs-relationships.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-story-arcs.json' with { type: 'json' };
 
@@ -56,6 +58,19 @@ const categoryForNpc = (id: string): string =>
   id.startsWith('majo-') ? 'majo' : id.startsWith('watanare-') ? 'watanare' : 'bang-dream';
 
 function npcAt(state: WorldState, id: string): { locationId: string; kind: string; x: number; z: number } | null {
+  const agenda = residentSocialAgendaPresence(state, id);
+  if (agenda) {
+    if (agenda.phase !== 'present') return null;
+    const locationId = agenda.locationId;
+    if (getCampusInterior(locationId)) return { locationId, kind: 'room', x: 0, z: 0 };
+    const anchor = scenePersonAnchors.find(point => {
+      const area = getSceneArea(point.x, point.z);
+      return area && sceneLocationId(area.id) === locationId && point.id === id;
+    });
+    if (anchor) return { locationId, kind: 'outdoor', x: anchor.x + 0.6, z: anchor.z + 0.6 };
+    const landmark = sceneLandmarks.find(p => sceneLocationId(p.id) === locationId);
+    return landmark ? { locationId, kind: 'outdoor', x: landmark.x, z: landmark.z } : null;
+  }
   const now = gameMinute(state);
   const override = state.protagonists?.otherSideNpc?.[id];
   const validOverride = override && override.at <= now && now < override.until ? override : null;
@@ -310,7 +325,20 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
     eventIds.add(eventId);
     for (const owner of event.protagonists) {
       if (!positionEqual(before, next, owner)) throw new Error('旁线与后台已结算的位置变化冲突，请重新生成');
-      if (p.backgroundLife?.people[owner].pending) throw new Error('旁线人物正在执行后台安排，不能额外结算动作');
+      const bgOwner = p.backgroundLife?.people[owner];
+      if (before.protagonists?.backgroundLife?.people[owner]?.pending || bgOwner?.pending
+        || bgOwner?.events.some(row => row.at > gameMinute(before) && (row.kind === 'travel' || row.kind === 'study')))
+        throw new Error('旁线人物正在执行后台安排，不能额外结算动作');
+      if (event.locationId && event.locationId !== personState(next, owner).locationId) {
+        const activeInvitation = (p.socialInvitations ?? []).some(row => {
+          if (row.status !== 'accepted' || row.agenda?.status !== 'scheduled') return false;
+          if (row.owner !== owner && agendaTargetProtagonist(next, row) !== owner) return false;
+          const arrive = row.agenda.steps.find(step => step.kind === 'arrive');
+          const leave = row.agenda.steps.find(step => step.kind === 'leave');
+          return !!arrive && !!leave && arrive.at <= time && time < leave.at && personState(next, owner).locationId === row.locationId;
+        });
+        if (activeInvitation) throw new Error('旁线与后台已结算的位置变化冲突，请重新生成');
+      }
     }
     for (const owner of event.protagonists) {
       if (event.locationId) moveLocally(next, owner, event.locationId);
@@ -322,7 +350,7 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
         else if (typeof personal.player[field] === 'number') personal.player[field] = affect(personal.player[field], value);
       }
       personal.story.push({ id: eventId, role: 'assistant', text: event.text });
-      personal.story = personal.story.slice(-40);
+      personal.story = retainStoryHistory(personal.story);
       personal.journal.push({ id: eventId, at: stamp(time),
         text: `与此同时，${event.text}`.slice(0, 1000) });
       personal.journal = personal.journal.slice(-100);

@@ -28,8 +28,8 @@
 /* Portrait pins remain a 44px touch target, while the visible portrait stays compact. */
 .world-map .cms-avatar-pin { position:absolute; display:grid; place-items:center; width:44px; height:44px; min-height:44px; padding:4px; transform:translate(-50%,-50%); border:0; background:transparent; z-index:6; cursor:pointer; touch-action:none; }
 .world-map .cms-avatar-face { display:grid; place-items:center; position:relative; width:34px; height:34px; border-radius:50%; overflow:hidden; background:#e7d9c7; color:#3a5361; border:2px solid #fff3d4; box-shadow:0 2px 8px #182a2f88; }
-.world-map .cms-avatar-face > img { width:100%; height:100%; object-fit:cover; object-position:center 15%; transform:scale(3.1); transform-origin:center top; }
-.world-map .cms-avatar-face > img.cms-avatar-headshot { object-position:center; transform:none; }
+.world-map .cms-avatar-face > img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+.world-map .cms-avatar-face > img.cms-avatar-headshot { object-position:center; }
 .world-map .cms-avatar-face > svg { width:100%; height:100%; overflow:hidden; background:#eff0e7; }
 .world-map .cms-avatar-initials { font-weight:700; font-size:11px; letter-spacing:-.5px; }
 .world-map .cms-avatar-player { z-index:7; }
@@ -38,3 +38,123 @@
 .world-map .cms-person-detail { position:absolute; z-index:9; bottom:10px; left:10px; display:flex; flex-direction:column; gap:2px; min-width:128px; max-width:calc(100% - 20px); padding:9px 30px 9px 10px; border:1px solid #8ea68d; border-radius:8px; background:#f9f4e4; box-shadow:0 4px 12px #253e3e55; color:#2f5040; font-size:12px; }
 .world-map .cms-person-detail small { color:#53705d; }
 .world-map .cms-person-detail button { position:absolute; right:0; top:0; width:30px; min-height:36px; font-size:20px; color:#496353; }
+
+
+/* Tokyo sandbox UI is part of shell.css: the packaged character card has no external stylesheet. */
+.world-map .tokyo-sandbox-scene { position:absolute; inset:0; width:100%; height:100%; overflow:hidden; }
+.world-map .tokyo-sandbox-canvas { width:100%; height:100%; display:block; pointer-events:none; }
+.world-map .tokyo-sandbox-pin {
+  position:absolute; z-index:3; display:flex; align-items:center; justify-content:center; gap:4px;
+  transform:translate(-50%,-50%); min-height:42px; max-width:136px;
+  padding:5px 9px; border-radius:10px; border:1px solid rgba(175,186,157,.85);
+  background:rgba(248,247,224,.92); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  color:#365243; font:600 11px/1.3 system-ui,sans-serif; text-align:center;
+  box-shadow:0 3px 12px rgba(24,42,36,.24), inset 0 1px 0 rgba(255,255,255,.65);
+  transition:background .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease;
+  touch-action:none; cursor:pointer;
+}
+.world-map .tokyo-sandbox-pin:hover:not(:disabled) {
+  box-shadow:0 4px 16px rgba(36,72,56,.38), 0 0 0 1px rgba(217,201,155,.7);
+}
+.world-map .tokyo-sandbox-pin.selected {
+  background:linear-gradient(135deg,#2c5240,#3d6b52); color:#fff3d1; border-color:#e5d29c;
+  box-shadow:0 4px 16px rgba(20,40,32,.45), 0 0 12px rgba(229,210,156,.35);
+}
+.world-map .tokyo-sandbox-pin.current { background:#e4d5ac; color:#345146; border-color:#c4b07b; }
+.world-map .tokyo-sandbox-pin.compact {
+  width:44px; height:44px; min-width:44px; min-height:44px; max-width:44px;
+  padding:0; gap:0; border-radius:50%; display:grid; place-items:center;
+}
+.world-map .tokyo-sandbox-place-index {
+  display:grid; place-items:center; flex-shrink:0; min-width:22px; height:22px;
+  border-radius:50%; border:1px solid #bbc7ab; font-size:10px;
+}
+.world-map .tokyo-sandbox-caption {
+  position:absolute; z-index:2; transform:translate(-50%,-50%);
+  padding:6px 10px; border:1px dashed rgba(164,181,162,.8); border-radius:8px;
+  background:rgba(235,239,222,.84); backdrop-filter:blur(4px); color:#4a6453;
+  font:600 11px/1.35 system-ui,sans-serif; pointer-events:none;
+}
+
+/* Atmosphere-adaptive glassmorphism for Dusk, Night, and Cyber Rain modes */
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="dusk"] .tokyo-sandbox-pin {
+  background:rgba(48,30,44,.84); color:#ffe8d1; border-color:rgba(255,158,109,.55);
+  box-shadow:0 4px 14px rgba(22,10,24,.48), 0 0 10px rgba(255,138,84,.18);
+}
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="dusk"] .tokyo-sandbox-pin.selected {
+  background:linear-gradient(135deg,#9a3412,#c2410c); color:#fff7ed; border-color:#fdba74;
+}
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="night"] .tokyo-sandbox-pin,
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="cyber"] .tokyo-sandbox-pin {
+  background:rgba(15,23,42,.84); color:#e0f2fe; border-color:rgba(56,189,248,.48);
+  box-shadow:0 4px 16px rgba(2,6,23,.65), 0 0 12px rgba(56,189,248,.2);
+}
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="night"] .tokyo-sandbox-pin.selected,
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="cyber"] .tokyo-sandbox-pin.selected {
+  background:linear-gradient(135deg,#0369a1,#1d4ed8); color:#ffffff; border-color:#7dd3fc;
+  box-shadow:0 0 18px rgba(56,189,248,.55);
+}
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="night"] .tokyo-sandbox-pin.current,
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="cyber"] .tokyo-sandbox-pin.current {
+  background:linear-gradient(135deg,#b45309,#d97706); color:#fffbeb; border-color:#fde68a;
+}
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="night"] .tokyo-sandbox-caption,
+.world-map .tokyo-sandbox-scene[data-tokyo-atmosphere="cyber"] .tokyo-sandbox-caption {
+  background:rgba(15,23,42,.72); color:#94a3b8; border-color:rgba(100,116,139,.45);
+}
+
+.world-map .tokyo-sandbox-avatar {
+  display:grid; place-items:center; position:absolute; z-index:6;
+  transform:translate(-50%,-50%); width:44px; height:44px; min-width:44px; min-height:44px;
+  padding:4px; border:0; background:transparent; touch-action:none; cursor:pointer;
+}
+.world-map .tokyo-sandbox-player { z-index:7; }
+.world-map .tokyo-sandbox-person.selected .cms-avatar-face { border-color:#e9bf6b; }
+.world-map .tokyo-sandbox-leaders {
+  position:absolute; inset:0; width:100%; height:100%; overflow:visible;
+  pointer-events:none; z-index:2;
+}
+.world-map .tokyo-sandbox-leaders line {
+  stroke:#7c8c70; stroke-width:1.2; stroke-dasharray:2 2;
+}
+.world-map .tokyo-sandbox-event {
+  position:absolute; z-index:4; transform:translate(-50%,-50%);
+  display:grid; place-items:center; box-sizing:border-box;
+  width:44px; height:44px; min-width:44px; min-height:44px; padding:0;
+  color:#fff7e0; background:#bc7950; border:2px solid #f8edce;
+  border-radius:50%; font-size:18px; line-height:1; cursor:pointer;
+}
+.world-map .tokyo-sandbox-event > span { display:grid; place-items:center; width:100%; height:100%; }
+.world-map .tokyo-sandbox-event.special { background:#7e8552; }
+.world-map .tokyo-sandbox-person-detail {
+  position:absolute; z-index:9; left:12px; bottom:10px; display:flex; align-items:center;
+  gap:12px; padding:5px 12px; background:#284e43eb; color:#fff1cc;
+  border:1px solid #c2bc91; border-radius:8px; font-size:12px;
+}
+.world-map .tokyo-sandbox-person-detail button { min-width:44px; min-height:44px; }
+.world-map .tokyo-sandbox-fallback {
+  position:absolute; top:50%; left:50%; width:min(280px,85%);
+  transform:translate(-50%,-50%); background:#365046cc;
+  border-radius:12px; padding:18px; color:#fff0d2; text-align:center;
+  font-size:12px; line-height:1.7;
+}
+.world-map .wm-viewport { cursor:grab; user-select:none; -webkit-user-select:none; }
+.world-map .wm-viewport:active { cursor:grabbing; }
+.world-map .wm-viewport.is-orbit-mode { cursor:all-scroll; }
+.world-map .wm-mode-pill {
+  width:auto !important; min-width:44px; padding:0 9px !important;
+  font:600 11px/1 system-ui,sans-serif !important; white-space:nowrap;
+}
+.world-map .wm-mode-pill.active {
+  background:#365d48 !important; color:#fff0c7 !important; border-color:#d9c99b !important;
+}
+.world-map .wm-flare-pill:active {
+  background:#b45309 !important; color:#fffbeb !important;
+}
+@media (max-width:760px) {
+  .world-map .tokyo-sandbox-pin { min-height:38px; padding:4px 7px; font-size:10px; }
+  .world-map .tokyo-sandbox-pin.compact {
+    width:38px; height:38px; min-width:38px; min-height:38px; max-width:38px;
+  }
+  .world-map .wm-mode-pill { padding:0 7px !important; font-size:10px !important; }
+}

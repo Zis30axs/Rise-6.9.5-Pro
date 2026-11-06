@@ -1,5 +1,23 @@
 # 未读之城 / Unread City
 
+## 手机“我的乐队”入口资格（2026-11-02）
+
+联系人列表、聊天工具栏及邀请消息中的乐队快捷入口统一读取手机主人的现有音乐资格：素世、祥子保留豁免，艾玛、玲奈子仅在本人选择音乐专业后显示。切换到无资格主角时收起已打开的乐队页；既有名册、短信和邀请记录仍保留。
+
+类型检查、构建、61 项定向单元测试及正式 IIFE/内嵌手机在 1440×900、1280×800、390×844、320×568 的四尺寸检查通过。已更新本机“未读之城”原卡和配套素材，服务器回读一致，其他卡片字段、封面与 14 份聊天记录保持原样。需刷新酒馆；未做手机 TauriTavern 真机验收。
+
+交付：[Tauri Lite 卡](outputs/band-entry-fix-20261102/unread-city-lite-tauri.png) · [通用 Lite 卡](outputs/band-entry-fix-20261102/unread-city-lite.png) · [素材 ZIP](outputs/band-entry-fix-20261102/unread-city-lite-assets.zip) · [导入核验](outputs/band-entry-fix-20261102/local-import-verification.json)。
+
+## 独立能力入口（2026-11-01）
+
+主导航新增“能力”，直接打开“能力体系 · 星盘与专长”浮窗，查看当前主角的社交与心性、专业学识、实务与见闻。该内容已从“状态”页移出；查看与切换分类不推进时间或改变存档。
+
+修复正式卡中的巨大图标与黑色图表：组件原先的 scoped CSS 被构建为独立文件，没有随脚本进入游戏窗口的 Shadow DOM；现将其限定在 `.uc-skills` 内，通过 `shell.css` 一并内嵌。首次仅检查开发页面未发现此问题，现新增直接加载发行 IIFE 与配套 ZIP 的浏览器回归。
+
+本地类型检查、12 项相关测试、生产构建与卡包校验通过；正式包在 1440×900、1280×800、390×844、320×568 四种尺寸下的图标、图表、分类和滚动检查通过。已更新本机酒馆的“未读之城”原卡及配套素材，服务器回读与构建一致，封面、其他卡片字段和 14 份聊天记录保持原样。当前页面需刷新重进；浏览器窄屏检查不等于 TauriTavern 真机验收，也未声称已刷新用户的酒馆界面。
+
+交付：[Tauri Lite 角色卡](outputs/abilities-style-fix-20261101/unread-city-lite-tauri.png) · [通用 Lite 角色卡](outputs/abilities-style-fix-20261101/unread-city-lite.png) · [配套素材 ZIP](outputs/abilities-style-fix-20261101/unread-city-lite-assets.zip) · [本地导入核验](outputs/abilities-style-fix-20261101/local-import-verification.json) · [正式包截图](outputs/abilities-packaged-qa/1440x900.png)。
+
 ## 随机主动短信（2026-10-26）
 
 自由行动推进游戏时间后，已认识的角色可以低频随机地主动来信，无需点击确认；没有合理话题时可以保持沉默。调度使用持久化游戏时间冷却，每次只询问一个角色。普通回复仍由玩家手动请求，乐队邀请仍须明确同意。此次补全最新 `lite` 初版的隔离生成、四主角隐私、去重与重载/切聊天安全，详见 [实现与本地验证](integration/autonomous-sms/README.md)。
