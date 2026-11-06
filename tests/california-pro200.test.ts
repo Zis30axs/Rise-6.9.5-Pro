@@ -28,9 +28,9 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(californiaWorldbook.entries.map(entry => entry.content).join(' ')).toContain('返程须沿同一条航线');
   });
 
-  it('requires a real four-stop route from Tokyo and charges each leg', () => {
+  it('requires an airport route from Tokyo and charges each leg', () => {
     expect(californiaPlaces.map(place => place.id)).toEqual([
-      'haneda-airport', 'sfo-airport', 'california-openai', 'california-market',
+      'haneda-airport', 'sfo-airport', 'california-openai', 'california-anthropic', 'california-market',
     ]);
     const base = fundedState();
     const stop = reduceState(base, { type: 'novel_travel', locationId: 'bus-stop' });
@@ -58,7 +58,7 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(office.locationId).toBe('california-openai');
     const market = reduceState(office, { type: 'novel_travel', locationId: 'california-market' });
     expect(market.locationId).toBe('california-market');
-    expect(internationalConnections('california-market').map(leg => leg.to)).toEqual(['california-openai']);
+    expect(internationalConnections('california-market').map(leg => leg.to)).toEqual(['california-openai', 'california-anthropic']);
     expect(() => reduceState(market, { type: 'novel_travel', locationId: 'bus-stop' })).toThrow(/国际旅行只能/);
     expect(parseState(market)).toEqual(market);
   });
