@@ -190,7 +190,10 @@ function venueStatusText(locationId: string) {
 const localDestinations = computed(() => districtMapPlaces(detailDistrict.value ?? 'campus').map(place => ({ ...place, subtitle: place.kind === 'interior' ? '室内入口' : '室外地点' })));
 function destinationDisabled(id: string) {
   if (props.model.busy) return true;
-  if (props.novelMode) { const quote = novelQuotes.value.get(id); return !quote || quote.alreadyThere || !!quote.blockedReason; }
+  if (props.novelMode || isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId)) {
+    const quote = novelQuotes.value.get(id);
+    return !quote || quote.alreadyThere || !!quote.blockedReason;
+  }
   return !!props.model.state.interior || needsTransitReturn.value || id === props.model.state.locationId || !locations.some(place => place.id === id);
 }
 function destinationNote(id: string) {
@@ -209,8 +212,9 @@ function energyCalculationNote(id: string) {
 }
 async function travelTo(id: string) {
   if (destinationDisabled(id)) return;
-  const saved = await runInteraction(props.model, props.actions, { type: props.novelMode ? 'novel_travel' : 'travel', locationId: id });
-  if (saved && props.novelMode) emit('travelled');
+  const overseas = isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId);
+  const saved = await runInteraction(props.model, props.actions, { type: props.novelMode || overseas ? 'novel_travel' : 'travel', locationId: id });
+  if (saved && (props.novelMode || overseas)) emit('travelled');
 }
 
 function setTokyoMapScale(value: { metersPerPixel: number }) {
@@ -722,7 +726,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="regionCities.length && layer === 'province'" class="wm-detail-note">省内地名：{{ regionCities.map(item => item.properties.name).join(' · ') }}。所在城市尚未指定。</p>
           <p class="wm-detail-note">地形为艺术化浅起伏，地标为微缩示意。浏览不会推进时间。</p>
         </template>
-        <section v-if="novelMode" class="wm-overseas-routes" aria-label="国际航线">
+        <section v-if="novelMode || overseasRoutes.length" class="wm-overseas-routes" aria-label="国际航线">
           <small class="wm-kicker">海外旅行</small><h3>东京 · 旧金山</h3>
           <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
           <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>

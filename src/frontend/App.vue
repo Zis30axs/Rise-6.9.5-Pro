@@ -820,6 +820,9 @@ function durationPickerKeydown(event: KeyboardEvent) {
   else if (!event.shiftKey && event.target === last) { event.preventDefault(); first.focus(); }
 }
 watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { livehouseMode.value = null; bedRestPicker.value = false; cookOpen.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
+watch(() => isInternationalLocation(props.model.state.locationId), overseas => {
+  if (overseas && readingMode.value === 'hidden') readingMode.value = 'compact';
+});
 function sceneEncounter(personId: string) {
   if (props.model.busy) return;
   scene.value?.flushPresence();
