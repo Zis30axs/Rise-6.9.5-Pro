@@ -42,9 +42,10 @@ import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengji
 import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
+import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
-export const STATE_LIMITS = { journal: 100, story: 60, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
+export const STATE_LIMITS = { journal: 100, story: STORY_RECORD_LIMIT, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
 /** Every outdoor place on the local sandtable. Gate, library, cafe, dorm,
  * teaching and the bus stop keep the primary labels; the remaining existing
  * places use compact numbered markers. */
@@ -1088,7 +1089,7 @@ function commitLegacyStoryTurn(
     { id: ids.userId, role: 'user', text: inputText, ...participantEvidence },
     { id: ids.assistantId, role: 'assistant', text: reply.text, ...participantEvidence },
   );
-  next.story = next.story.slice(-STATE_LIMITS.story);
+  next.story = retainStoryHistory(next.story);
   if (worldActions.length) note(next, `已结算本轮 ${worldActions.length} 项剧情行动。`, actionReceiptId);
   return parseStateCore(next, true);
 }
@@ -1202,7 +1203,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       let sequence = 1;
       while (next.story.some(entry => entry.id === `${prefix}${sequence}`)) sequence++;
       next.story.push({ id: `${prefix}${sequence}`, role: 'assistant', text: eventText, participantIds: [contact.id] });
-      next.story = next.story.slice(-STATE_LIMITS.story);
+      next.story = retainStoryHistory(next.story);
       break;
     }
     case 'choose_academics': {
@@ -1256,7 +1257,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
           let sequence = 1;
           let servingId = `cafe-serve.${owner}.${next.clock.day}.${sequence}`;
           while (next.story.some(row => row.id === servingId)) servingId = `cafe-serve.${owner}.${next.clock.day}.${++sequence}`;
-          next.story = [...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }].slice(-STATE_LIMITS.story);
+          next.story = retainStoryHistory([...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }]);
         }
         note(next, cafeQuote.journal);
         break;
