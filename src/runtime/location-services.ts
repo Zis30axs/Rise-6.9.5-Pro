@@ -303,7 +303,8 @@ export function getLocationServiceQuote(state: WorldState, serviceId: string, wo
     blockedReason = `距打烊只剩 ${status.minutesUntilClose} 分钟，这项活动需要 ${minutes} 分钟，请下次营业时再来。`;
   }
   if (!blockedReason && state.player.balance < price) blockedReason = `余额不足，这项活动需要 ${price} 日元。`;
-  if (!blockedReason && state.player.balance + payout - price > 20_000_000) blockedReason = '余额已接近上限，暂时无法领取这笔工资。';
+  if (!blockedReason && state.player.balance + payout - price > 20_000_000) blockedReason =
+    service?.id === PRO200_RESELL_SERVICE_ID ? '余额已接近上限，暂时无法完成出售。' : '余额已接近上限，暂时无法领取这笔工资。';
   const outdoor = !state.interior && venues.some(venue => venue.locationId === state.locationId && venue.outdoor);
   const weatherDrain = service ? outdoorExertionDrain(resolveWeather(state).id, outdoor, service.effects.energy) : 0;
   const neededEnergy = service ? Math.max(0, -service.effects.energy) + weatherDrain : 0;

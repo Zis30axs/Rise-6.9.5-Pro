@@ -1,4 +1,5 @@
 import { getLocationServiceQuote, getTakeawayQuote } from '../runtime/location-services';
+import { PRO200_RESELL_SERVICE_ID } from '../runtime/california';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import type { ShellActions, ShellModel, WorldState } from './types';
@@ -28,7 +29,7 @@ export async function completeLocationService(model: ShellModel, actions: ShellA
   const actor = saved.protagonists?.accounts.active ?? 'soyo';
   const learned = serviceId === 'court-observe'
     ? (saved.courtroom?.observationKnowledge?.[actor] ?? 0) - (before.courtroom?.observationKnowledge?.[actor] ?? 0) : 0;
-  return `${quote.service.label}已完成 · 本次共 ${absoluteMinutes(saved.clock) - absoluteMinutes(before.clock)} 分钟 · 第 ${saved.clock.day} 天 ${time}${balance ? ` · ${quote.payout ? '工资' : '余额'} ${signedServiceEffect(balance)} 元` : ''}${changes ? ` · ${changes}` : ''}${serviceId === 'court-observe' ? ` · 法庭见闻 +${learned}` : ''}。已保存；后续事件见正文与状态。`;
+  return `${quote.service.label}已完成 · 本次共 ${absoluteMinutes(saved.clock) - absoluteMinutes(before.clock)} 分钟 · 第 ${saved.clock.day} 天 ${time}${balance ? ` · ${serviceId === PRO200_RESELL_SERVICE_ID ? '交易收入' : quote.payout ? '工资' : '余额'} ${signedServiceEffect(balance)} 元` : ''}${changes ? ` · ${changes}` : ''}${serviceId === 'court-observe' ? ` · 法庭见闻 +${learned}` : ''}。已保存；后续事件见正文与状态。`;
 }
 
 export async function packageLocationService(model: ShellModel, actions: ShellActions, serviceId: string): Promise<string | null> {

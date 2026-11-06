@@ -1436,7 +1436,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
           knowledgeReceipt += `法庭论证学习进度 +${gain} 点。`;
         }
       }
-      const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
+      const settlement = quote.service.id === PRO200_RESELL_SERVICE_ID ? `出售收藏凭证，收入 ${quote.payout} 日元`
+        : quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
       if (quote.service.id === 'clinic-counseling') {
