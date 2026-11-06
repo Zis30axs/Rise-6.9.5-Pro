@@ -66,6 +66,7 @@ export const venues: readonly Venue[] = [
   { locationId: 'haneda-airport', label: '东京羽田国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际航班值机与出发大厅。前往旧金山须先到达机场。' },
   { locationId: 'sfo-airport', label: '旧金山国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际到达大厅与机场联运站，可前往旧金山或返回羽田。' },
   { locationId: 'california-openai', label: 'OpenAI 办公地点', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '访客大厅内设有领取柜台，每位访客每七日可领取一次 Pro200 收藏券。' },
+  { locationId: 'california-anthropic', label: 'Anthropic 访客中心', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '展示区陈列研究展板，休息区欢迎旅客参观。偶尔会有人递来奇怪的邀请。' },
   { locationId: 'california-market', label: '湾区二手交易市场', hoursLabel: '10:00–20:00', opens: 10 * 60, closes: 20 * 60, outdoor: false, description: '本地收藏品市场，欢迎携带 Pro200 收藏券前来交易。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },

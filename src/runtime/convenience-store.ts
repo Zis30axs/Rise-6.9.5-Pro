@@ -4,7 +4,7 @@ import { adjustEnergy, energyDifference } from './energy';
 import { locationServiceCatalog } from './location-services';
 import { cafeInventoryItems } from './margo-cafe-menu';
 import { pro200GameItem } from './california';
-import { mysteryVisitorItems } from './mystery-visitor';
+import { mysteryVisitorItems, secondMysteryVisitorItems } from './mystery-visitor';
 
 export interface StoreItem {
   readonly id: string;
@@ -72,7 +72,7 @@ export function getServiceTakeawayItem(serviceId: string): StoreItem | null {
 }
 
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems];
+  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {

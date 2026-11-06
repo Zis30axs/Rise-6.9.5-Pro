@@ -8,6 +8,7 @@ export const californiaPlaces = [
   { id: 'haneda-airport', name: '东京羽田国际机场', subtitle: '国际航站楼', description: '通往旧金山的国际航班从这里出发，须先到东京的南门交通站转乘机场接驳车。' },
   { id: 'sfo-airport', name: '旧金山国际机场', subtitle: '加州 · 入境大厅', description: '旧金山湾区的国际航空门户，可以搭乘机场接驳车前往市区，也可以购票返回东京。' },
   { id: 'california-openai', name: 'OpenAI 办公地点', subtitle: '加州 · 旧金山', description: 'OpenAI 访客大厅设有专门的登记柜台，开放时可申请领取 Pro200 收藏券。' },
+  { id: 'california-anthropic', name: 'Anthropic 访客中心', subtitle: '加州 · 旧金山', description: '湾区另一家 AI 公司，设有安静的访客大厅与研究展示区。神秘研究者偶尔会在附近出现。' },
   { id: 'california-market', name: '湾区二手交易市场', subtitle: '加州 · 旧金山', description: '湾区的收藏品交易市场，常有商人收购各式纪念券，其中也包括 Pro200。' },
 ] as const;
 
@@ -33,6 +34,8 @@ const travelLegs: readonly InternationalLeg[] = [
   { from: 'haneda-airport', to: 'sfo-airport', minutes: 600, fare: 48000, method: '东京至旧金山国际航班' },
   { from: 'sfo-airport', to: 'california-openai', minutes: 65, fare: 2600, method: '湾区机场接驳车' },
   { from: 'california-openai', to: 'california-market', minutes: 25, fare: 520, method: '湾区有轨电车' },
+  { from: 'california-openai', to: 'california-anthropic', minutes: 20, fare: 450, method: '湾区市内接驳车' },
+  { from: 'california-anthropic', to: 'california-market', minutes: 15, fare: 350, method: '湾区市内接驳车' },
 ];
 
 export function internationalLeg(from: string, to: string): InternationalLeg | null {

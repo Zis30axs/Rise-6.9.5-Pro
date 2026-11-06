@@ -6,6 +6,11 @@ import { isInternationalLocation } from './california';
 /** A self-contained, fully offline Easter egg. Not a real subscription or reset service. */
 export const MYSTERY_VISITOR_ID = 'rare-mysterious-visitor';
 export const MYSTERY_VISITOR_NAME = '神秘访客';
+export const SECOND_MYSTERY_VISITOR_ID = 'rare-bay-area-researcher';
+export const SECOND_MYSTERY_VISITOR_NAME = '神秘研究者';
+export const MAX20X_ITEM_ID = 'max20x-collector-ticket';
+export const KYC_ITEM_ID = 'kyc-collector-ticket';
+export const LAST_DECISION_ITEM_ID = 'last-decision-collector-ticket';
 export const FULL_RESET_ITEM_ID = 'full-reset-collector-ticket';
 export const PRO500_ITEM_ID = 'pro500-collector-ticket';
 export const MYSTERY_GIFT_RESET_COUNT = 10;
@@ -20,6 +25,25 @@ export const mysteryVisitorItems: readonly StoreItem[] = Object.freeze([
   }),
   Object.freeze({
     id: PRO500_ITEM_ID, name: 'Pro 500', brand: '神秘访客', tier: 'premium',
+    category: 'collectible', price: 0, packSize: 1, purchaseUnit: '张', useUnit: '张',
+    kcal: 0, useMinutes: 0, effects: inertEffects,
+  }),
+]);
+
+/** Rewards issued by the second mystery visitor, with no real account or identity check. */
+export const secondMysteryVisitorItems: readonly StoreItem[] = Object.freeze([
+  Object.freeze({
+    id: MAX20X_ITEM_ID, name: 'Max 20x', brand: '神秘研究者', tier: 'premium',
+    category: 'collectible', price: 0, packSize: 1, purchaseUnit: '张', useUnit: '张',
+    kcal: 0, useMinutes: 0, effects: inertEffects,
+  }),
+  Object.freeze({
+    id: KYC_ITEM_ID, name: 'KYC', brand: '神秘研究者', tier: 'premium',
+    category: 'collectible', price: 0, packSize: 1, purchaseUnit: '张', useUnit: '张',
+    kcal: 0, useMinutes: 0, effects: inertEffects,
+  }),
+  Object.freeze({
+    id: LAST_DECISION_ITEM_ID, name: 'Last Decision', brand: '神秘研究者', tier: 'premium',
     category: 'collectible', price: 0, packSize: 1, purchaseUnit: '张', useUnit: '张',
     kcal: 0, useMinutes: 0, effects: inertEffects,
   }),
@@ -67,3 +91,12 @@ export function mysteryVisitorPresent(state: Pick<WorldState, 'clock' | 'locatio
   return hash(`mystery-v1|${seed}|${owner}|${state.locationId}|${state.clock.day}`) % MYSTERY_VISITOR_ONE_IN === 0;
 }
 
+
+/** A second independent rare roll; it does not replace or consume the original encounter. */
+export function secondMysteryVisitorPresent(state: Pick<WorldState, 'clock' | 'locationId' | 'scene' | 'interior' | 'protagonists' | 'anthropicVisitor'>): boolean {
+  if (state.interior) return false;
+  const owner = state.protagonists?.accounts.active ?? 'soyo';
+  if (state.anthropicVisitor?.claimedBy[owner]) return false;
+  if (!state.scene && !isInternationalLocation(state.locationId)) return false;
+  return hash(`bay-visitor-v1|${state.scene?.seed ?? 'overseas-v1'}|${owner}|${state.locationId}|${state.clock.day}`) % MYSTERY_VISITOR_ONE_IN === 0;
+}
