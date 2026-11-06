@@ -148,7 +148,7 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
   familySummary: '父：若叶（知名喜剧演员） / 母：森美奈美（实力派女演员）',
   signatureText: '若葉 睦',
   quote: '“……黄瓜长得很精神。需要我陪你待一会儿吗？”',
-  traits: ['浅灰绿长发 · 琥珀金瞳', '寡言克制', '园艺与黄瓜栽培', '七弦吉他手', '重情守诺'],
+  traits: ['浅灰绿长发 · 琥珀金瞳', '寡言克制 · 敏锐好奇', '园艺与黄瓜栽培', '七弦吉他手', '深层依赖 · 占有欲'],
   stageProfile: {
     bandName: 'Ave Mujica',
     stageCode: 'Mortis / 莫蒂斯',
@@ -173,10 +173,19 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
     {
       personId: 'soyo',
       name: '长崎素世',
-      roleLabel: '月之森同班同学 · CRYCHIC 旧友',
+      roleLabel: '月之森同班同学 · 隐秘依存',
       affinity: 62,
-      statusTag: '亲近 · 62',
-      note: '在班内与旧乐队时期频繁相处，常成为素世打听消息与倾诉心事的对象。',
+      statusTag: '依存 · 62',
+      note: '在月之森与旧团时期深陷彼此的生活，在少言的外表下对素世怀有深层依赖与隐秘的占有欲，不愿素世被新乐队或他人彻底夺走。',
+      group: 'crychic'
+    },
+    {
+      personId: 'bang-rana',
+      name: '要乐奈',
+      roleLabel: '野猫吉他手 · 探索与浓厚兴趣',
+      affinity: 54,
+      statusTag: '好奇 · 54',
+      note: '对乐奈如野猫般自由随性、不受世俗与规矩束缚的姿态抱有浓厚好奇，偶遇时会主动走近、投以注视或分享抹茶甜点。',
       group: 'crychic'
     },
     {
@@ -265,7 +274,7 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
   ],
   bioParagraphs: [
     '月之森女子学园高等部一年级学生，与长崎素世同班；现作为准大一先修生常驻高田·目白大学城。出身演艺世家，父亲是家喻户晓的喜剧演员若叶，母亲是著名女演员森美奈美。',
-    '性格极其安静内敛，说话总是简短克制，习惯用轻轻点头、递出亲手种的小黄瓜或默默跟在身旁来表达善意。曾担任 CRYCHIC 吉他手，后受丰川祥子之邀加入假面乐队 Ave Mujica，以代号“Mortis”执掌七弦电吉他。'
+    '性格安静克制却绝非被动无为，对外界环境有着敏锐而活跃的探索欲。对如野猫般随性的吉他手要乐奈抱有浓厚兴趣；对长崎素世怀有隐秘的依赖与占有欲。曾担任 CRYCHIC 吉他手，后受丰川祥子之邀加入假面乐队 Ave Mujica，以代号“Mortis”执掌七弦电吉他。'
   ],
   mrzLine1: 'IDJPN519101147<<WAKABA<<MUTSUMI<<<<<<<<<<<<<',
   mrzLine2: '0701148F3003315JPN<<<<<<<<<<TSK20250114M<<08'
