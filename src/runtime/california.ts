@@ -41,6 +41,18 @@ export function internationalConnections(from: string): InternationalLeg[] {
     : leg.to === from ? [{ ...leg, from, to: leg.from }] : []);
 }
 
+/** One authoritative game clock, rendered 16 hours earlier for California in this fictional summer setting. */
+export const CALIFORNIA_OFFSET_MINUTES = -16 * 60;
+export function californiaLocalClock(clock: WorldState['clock']) {
+  const relativeMinute = clock.hour * 60 + clock.minute + CALIFORNIA_OFFSET_MINUTES;
+  const minuteOfDay = ((relativeMinute % 1440) + 1440) % 1440;
+  return {
+    day: clock.day + Math.floor(relativeMinute / 1440),
+    hour: Math.floor(minuteOfDay / 60),
+    minute: minuteOfDay % 60,
+  };
+}
+
 export const PRO200_GAME_ITEM_ID = 'pro200-game-voucher';
 export const PRO200_CLAIM_SERVICE_ID = 'openai-pro200-claim';
 export const PRO200_RESELL_SERVICE_ID = 'pro200-resell';

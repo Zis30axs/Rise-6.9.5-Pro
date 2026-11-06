@@ -12,7 +12,7 @@ import { atMargoCafe, getCafeMenu } from '../runtime/margo-cafe-menu';
 import StoreProductImage from './StoreProductImage.vue';
 import { runInteraction } from './interaction-action';
 import { LAW_OFFICE_ID } from '../runtime/law-career';
-import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID } from '../runtime/california';
+import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, californiaLocalClock } from '../runtime/california';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
 const emit = defineEmits<{ map: []; store: []; books: []; activities: []; law: []; enter: [roomId: string] }>();
@@ -26,7 +26,9 @@ const atBookshop = computed(() => !props.model.state.interior && props.model.sta
 const receipt = ref('');
 const attempted = ref(false);
 const revealingJob = ref<string | null>(null);
-const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
+const localClock = computed(() => props.model.state.locationId.startsWith('california-')
+  ? californiaLocalClock(props.model.state.clock) : props.model.state.clock);
+const time = computed(() => `${String(localClock.value.hour).padStart(2, '0')}:${String(localClock.value.minute).padStart(2, '0')}`);
 const guidance = computed(() => {
   if (room.value?.id === LAW_OFFICE_ID) return '可以翻阅委托卷宗、核对证物并在模拟庭审中质证；雪莉会协助艾玛参与案件。';
   if (room.value?.id === 'court-hearing') return '公开旁听与正式案件共用这一座法庭。旁听按游戏时间结算，不会自动开启委托或触发主模型。';
@@ -91,10 +93,10 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
 <template>
   <section class="location-services" data-location-services aria-label="此地服务">
     <header class="location-service-heading">
-      <div><small>此刻所在 · 第 {{ model.state.clock.day }} 天 {{ time }}</small><h2>{{ room?.label ?? status?.label ?? place?.name ?? '当前地点' }}</h2></div>
+      <div><small>此刻所在 · 第 {{ localClock.day }} 天 {{ time }}{{ model.state.locationId.startsWith('california-') ? '（旧金山当地）' : '' }}</small><h2>{{ room?.label ?? status?.label ?? place?.name ?? '当前地点' }}</h2></div>
       <span v-if="status" class="location-open-status" :class="{ closed: !status.isOpen }" data-location-open-status>{{ status.statusLabel }}</span>
     </header>
-    <p v-if="status" class="location-hours" data-location-hours>开放时间 · {{ status.hoursLabel }}</p>
+    <p v-if="status" class="location-hours" data-location-hours>开放时间{{ model.state.locationId.startsWith('california-') ? '（旧金山当地）' : '' }} · {{ status.hoursLabel }}</p>
     <p class="location-description">{{ status?.description ?? place?.description }}</p>
     <p v-if="status && !status.isOpen" class="location-closed-note" data-location-closed>此刻暂停服务，距离开放还有 {{ status.minutesUntilOpen }} 分钟。可先去其他地点。</p>
     <p v-if="receipt" class="location-service-receipt" data-location-service-receipt role="status">{{ receipt }}</p>
