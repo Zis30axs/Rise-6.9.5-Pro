@@ -670,6 +670,110 @@ export const RENAKO_IDENTITY_CARD: ResidentIdentityCard = {
   mrzLine2: '0703035F3003315JPN<<<<<<<<<<UNR20250303R<<02'
 };
 
+export function resolveZodiac(month: number, day: number): string {
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return '白羊座';
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return '金牛座';
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) return '双子座';
+  if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) return '巨蟹座';
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return '狮子座';
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return '处女座';
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) return '天秤座';
+  if ((month === 10 && day >= 24) || (month === 11 && day <= 22)) return '天蝎座';
+  if ((month === 11 && day >= 23) || (month === 12 && day <= 21)) return '射手座';
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return '摩羯座';
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return '水瓶座';
+  return '双鱼座';
+}
+
+export const HARUNA_IDENTITY_CARD: ResidentIdentityCard = {
+  id: 'watanare-haruna',
+  personId: 'watanare-haruna',
+  name: '甘织遥奈',
+  nativeName: '甘織 遥奈',
+  romanizedName: 'AMAORI HARUNA',
+  gender: '女',
+  birthDate: '2009.05.28',
+  zodiac: '双子座',
+  bloodType: 'A型',
+  cardSerial: '5191-0528-0916-08',
+  municipality: '东京都丰岛·目白学区 住民基本台帐',
+  authorityLabel: '东京都目白学区学生事务署 · 月之森学园联署',
+  categoryBadge: '学区高中生 · 亲属档案',
+  schoolOrAffiliation: '月之森女子学园 高等部',
+  gradeOrTitle: '高等部一年级 · 羽毛球部主力',
+  studentNo: 'TSK-2025-0528H',
+  residenceAddress: '东京都高田·目白生活圈 甘织家住宅',
+  anchorZoneId: 'park',
+  anchorZoneLabel: '中央公园',
+  anchorSpotDetail: '神田川绿道羽球场与杂司谷甘织家',
+  issueDate: '2025.04.01',
+  expiryDate: '2030.03.31',
+  phoneDisplay: '080-5191-0528',
+  appaPayHandle: 'APPA-HARUNA-0528',
+  familySummary: '甘织家次女，与姐姐甘织玲奈子及父母同住，极度维护姐姐',
+  signatureText: '甘織 遥奈',
+  quote: '“老姐，出门前先把穿搭拍给我检查！”',
+  traits: ['粉发活力短马尾', '真·现充少女', '羽毛球部王牌', '重度姐控', '行动力拔群'],
+  bonds: [
+    {
+      personId: 'renako',
+      name: '甘织玲奈子',
+      roleLabel: '至亲姐姐 · 依赖与极度崇拜',
+      affinity: 88,
+      statusTag: '羁绊 · 88',
+      note: '最崇拜和珍视的人，平日嘴硬吐槽，关键时刻永远毫无保留地站在姐姐身旁。',
+      group: 'campus'
+    },
+    {
+      personId: 'watanare-seira',
+      name: '鬼瓦星来',
+      roleLabel: '月之森同班好友 · 挚友搭档',
+      affinity: 78,
+      statusTag: '挚友 · 78',
+      note: '同为月之森高一学生，一起打球、吃甜点与聊天的默契同伴。',
+      group: 'campus'
+    },
+    {
+      personId: 'watanare-mai',
+      name: '王冢真唯',
+      roleLabel: '姐姐的闪耀恋人 · 相互认可',
+      affinity: 70,
+      statusTag: '认可 · 70',
+      note: '承认真唯对姐姐的热切真心，偶尔会提醒她不要把大狗狗一样的黏人劲弄得老姐太难为情。',
+      group: 'campus'
+    },
+    {
+      personId: 'watanare-ajisai',
+      name: '濑名紫阳花',
+      roleLabel: '温柔治愈的紫阳花姐',
+      affinity: 74,
+      statusTag: '温和 · 74',
+      note: '很喜欢紫阳花温和柔顺的长姐气场，经常受到她的贴心点心照顾。',
+      group: 'campus'
+    }
+  ],
+  endorsements: [
+    {
+      authority: '月之森女子学园 教务处',
+      scope: '高中部全日制学籍与体育场馆通行认证',
+      code: 'TSK-STD-0528',
+      validUntil: '2028.03.31'
+    },
+    {
+      authority: '神田川体育运动联合会',
+      scope: '东京都青少年羽毛球竞技排位赛注册签注',
+      code: 'BDM-FED-0528',
+      validUntil: '2027.03.31'
+    }
+  ],
+  bioParagraphs: [
+    '月之森女子学园高等部一年级生，甘织玲奈子的亲妹妹。天生爽朗善交际、行动力极强的活力少女，在校担任羽毛球部王牌主力。',
+    '亲手在春假帮家里蹲姐姐完成“现充出道”特训；虽然在家常对沉迷单机游戏的姐姐嘴硬吐槽，实则是无条件崇拜与守护姐姐的重度姐控。随着姐姐升入大学，遥奈升入月之森高等部，比玲奈子低两届，展现出耀眼的青春活力。'
+  ],
+  mrzLine1: 'IDJPN519105288<<AMAORI<<HARUNA<<<<<<<<<<<<<',
+  mrzLine2: '0905286F3003315JPN<<<<<<<<<<TSK20250528H<<01'
+};
+
 const PROTAGONIST_CARDS: Record<ProtagonistId, ResidentIdentityCard> = {
   soyo: SOYO_IDENTITY_CARD,
   sakiko: SAKIKO_IDENTITY_CARD,
@@ -688,7 +792,422 @@ const BUILTIN_CARDS: Record<string, ResidentIdentityCard> = {
   emma: EMMA_IDENTITY_CARD,
   '樱羽艾玛': EMMA_IDENTITY_CARD,
   renako: RENAKO_IDENTITY_CARD,
-  '甘织玲奈子': RENAKO_IDENTITY_CARD
+  '甘织玲奈子': RENAKO_IDENTITY_CARD,
+  'watanare-haruna': HARUNA_IDENTITY_CARD,
+  haruna: HARUNA_IDENTITY_CARD,
+  '甘织遥奈': HARUNA_IDENTITY_CARD,
+  '遥奈': HARUNA_IDENTITY_CARD
+};
+
+interface ResidentProfilePreset {
+  birthDate: string;
+  zodiac: string;
+  bloodType: string;
+  gender: string;
+  schoolOrAffiliation: string;
+  gradeOrTitle: string;
+  familySummary: string;
+  quote?: string;
+}
+
+const KNOWN_RESIDENT_PROFILES: Record<string, ResidentProfilePreset> = {
+  // 渡奈系列 - 妹妹与高中同学（高一，16岁，2009年生）
+  'watanare-haruna': {
+    birthDate: '2009.05.28',
+    zodiac: '双子座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '月之森女子学园 高等部',
+    gradeOrTitle: '高等部一年级 · 羽毛球部主力',
+    familySummary: '甘织家次女，与姐姐甘织玲奈子及父母同住',
+    quote: '“老姐，出门前先把穿搭拍给我检查！”'
+  },
+  'watanare-seira': {
+    birthDate: '2009.02.10',
+    zodiac: '水瓶座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '月之森女子学园 高等部',
+    gradeOrTitle: '高等部一年级 · 鬼瓦洗衣店看板娘',
+    familySummary: '鬼瓦洗衣店独生女，与遥奈同在月之森高一',
+    quote: '“玲奈子姐！刚熨好的衣服送来啦！”'
+  },
+  '鬼瓦星来': {
+    birthDate: '2009.02.10',
+    zodiac: '水瓶座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '月之森女子学园 高等部',
+    gradeOrTitle: '高等部一年级 · 鬼瓦洗衣店看板娘',
+    familySummary: '鬼瓦洗衣店独生女，与遥奈同在月之森高一',
+    quote: '“玲奈子姐！刚熨好的衣服送来啦！”'
+  },
+  // 渡奈系列 - 母亲长辈（44岁，1981年生）
+  'watanare-miyoko': {
+    birthDate: '1981.04.18',
+    zodiac: '白羊座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '东京都丰岛学区 居民自治会',
+    gradeOrTitle: '甘织家主妇 · 兼职工作',
+    familySummary: '甘织玲奈子与遥奈的母亲，温和包容的长辈',
+    quote: '“欢迎来家里玩呀，今晚要不要留下来一起吃晚饭？”'
+  },
+  '甘织美代子': {
+    birthDate: '1981.04.18',
+    zodiac: '白羊座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '东京都丰岛学区 居民自治会',
+    gradeOrTitle: '甘织家主妇 · 兼职工作',
+    familySummary: '甘织玲奈子与遥奈的母亲，温和包容的长辈',
+    quote: '“欢迎来家里玩呀，今晚要不要留下来一起吃晚饭？”'
+  },
+  // 邦邦系列 - 素世的母亲长辈（46岁，1979年生）
+  'nagasaki-mother': {
+    birthDate: '1979.08.12',
+    zodiac: '狮子座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '东京都港区 都市商贸集团',
+    gradeOrTitle: '企业高级管理层 · 职场高管',
+    familySummary: '长崎素世的单亲母亲，深爱女儿的职场女性',
+    quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
+  },
+  '长崎夫人': {
+    birthDate: '1979.08.12',
+    zodiac: '狮子座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '东京都港区 都市商贸集团',
+    gradeOrTitle: '企业高级管理层 · 职场高管',
+    familySummary: '长崎素世的单亲母亲，深爱女儿的职场女性',
+    quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
+  },
+  'bang-makoto': {
+    birthDate: '1979.08.12',
+    zodiac: '狮子座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '东京都港区 都市商贸集团',
+    gradeOrTitle: '企业高级管理层 · 职场高管',
+    familySummary: '长崎素世的单亲母亲，深爱女儿的职场女性',
+    quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
+  },
+  '长崎真琴': {
+    birthDate: '1979.08.12',
+    zodiac: '狮子座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '东京都港区 都市商贸集团',
+    gradeOrTitle: '企业高级管理层 · 职场高管',
+    familySummary: '长崎素世的单亲母亲，深爱女儿的职场女性',
+    quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
+  },
+  // CiRCLE 店长长辈（27岁，1997年生）
+  'circle-marina': {
+    birthDate: '1997.10.16',
+    zodiac: '天秤座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: 'Live House CiRCLE',
+    gradeOrTitle: 'CiRCLE 店长 · 音乐现场总策划',
+    familySummary: '都心Live House职员，负责协调各少女乐队活动',
+    quote: '“欢迎来到 CiRCLE！今天的排练也要全力以赴哦！”'
+  },
+  '月岛麻里奈': {
+    birthDate: '1997.10.16',
+    zodiac: '天秤座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: 'Live House CiRCLE',
+    gradeOrTitle: 'CiRCLE 店长 · 音乐现场总策划',
+    familySummary: '都心Live House职员，负责协调各少女乐队活动',
+    quote: '“欢迎来到 CiRCLE！今天的排练也要全力以赴哦！”'
+  },
+  // 芦谷五人组（大一，18岁，2006~2007年生）
+  'watanare-mai': {
+    birthDate: '2007.09.01',
+    zodiac: '处女座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 现役时尚名模',
+    familySummary: 'Queen Rose 社长王冢露涅的独生女',
+    quote: '“又在说不行不行了吗？但在我眼里，玲奈子比任何人都耀眼哦。”'
+  },
+  '王冢真唯': {
+    birthDate: '2007.09.01',
+    zodiac: '处女座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 现役时尚名模',
+    familySummary: 'Queen Rose 社长王冢露涅的独生女',
+    quote: '“又在说不行不行了吗？但在我眼里，玲奈子比任何人都耀眼哦。”'
+  },
+  'watanare-ajisai': {
+    birthDate: '2007.06.24',
+    zodiac: '巨蟹座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 治愈系长女',
+    familySummary: '双职工家庭长女，悉心照料两个幼弟',
+    quote: '“今天也可以让我稍微对玲奈酱撒会儿娇吗？”'
+  },
+  '濑名紫阳花': {
+    birthDate: '2007.06.24',
+    zodiac: '巨蟹座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 治愈系长女',
+    familySummary: '双职工家庭长女，悉心照料两个幼弟',
+    quote: '“今天也可以让我稍微对玲奈酱撒会儿娇吗？”'
+  },
+  'watanare-satsuki': {
+    birthDate: '2006.05.15',
+    zodiac: '金牛座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 文学社才女',
+    familySummary: '与单亲母亲相依为命，自律克制',
+    quote: '“哼，甘织，你脑子里的杂音吵得我连书都翻不下去了。”'
+  },
+  '琴纱月': {
+    birthDate: '2006.05.15',
+    zodiac: '金牛座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 文学社才女',
+    familySummary: '与单亲母亲相依为命，自律克制',
+    quote: '“哼，甘织，你脑子里的杂音吵得我连书都翻不下去了。”'
+  },
+  'watanare-kaho': {
+    birthDate: '2006.11.11',
+    zodiac: '天蝎座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 硬核Cosplayer',
+    familySummary: '真唯热烈单推人，与玲奈子为损友阿宅',
+    quote: '“玲奈蹦～今天的现充营业额度已经耗尽啦！”'
+  },
+  '小柳香穗': {
+    birthDate: '2006.11.11',
+    zodiac: '天蝎座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '芦谷高校毕业 · 未读之城大学',
+    gradeOrTitle: '大一在读 · 硬核Cosplayer',
+    familySummary: '真唯热烈单推人，与玲奈子为损友阿宅',
+    quote: '“玲奈蹦～今天的现充营业额度已经耗尽啦！”'
+  },
+  // Bang Dream 同伴（18岁左右）
+  'bang-tomori': {
+    birthDate: '2007.01.29',
+    zodiac: '水瓶座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '羽丘女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 主唱 · 歌词作者',
+    familySummary: '收集石头与创可贴的温柔主唱',
+    quote: '“就算迷茫……也要一直向前歌唱。”'
+  },
+  '高松灯': {
+    birthDate: '2007.01.29',
+    zodiac: '水瓶座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '羽丘女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 主唱 · 歌词作者',
+    familySummary: '收集石头与创可贴的温柔主唱',
+    quote: '“就算迷茫……也要一直向前歌唱。”'
+  },
+  'bang-anon': {
+    birthDate: '2006.09.08',
+    zodiac: '处女座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '羽丘女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 吉他手 · 气氛核心',
+    familySummary: '善于社交的归国女生，乐团行动派',
+    quote: '“素世小姐～今天放学一起去喝奶茶吧！”'
+  },
+  '千早爱音': {
+    birthDate: '2006.09.08',
+    zodiac: '处女座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '羽丘女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 吉他手 · 气氛核心',
+    familySummary: '善于社交的归国女生，乐团行动派',
+    quote: '“素世小姐～今天放学一起去喝奶茶吧！”'
+  },
+  'bang-taki': {
+    birthDate: '2006.08.09',
+    zodiac: '狮子座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 鼓手 · Livehouse打工',
+    familySummary: '严谨负责的鼓手，虽然毒舌但内心极度重视同伴',
+    quote: '“别发呆了，排练时间已经到了。”'
+  },
+  '椎名立希': {
+    birthDate: '2006.08.09',
+    zodiac: '狮子座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'MyGO!!!!! 鼓手 · Livehouse打工',
+    familySummary: '严谨负责的鼓手，虽然毒舌但内心极度重视同伴',
+    quote: '“别发呆了，排练时间已经到了。”'
+  },
+  'bang-rana': {
+    birthDate: '2008.02.22',
+    zodiac: '双鱼座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园',
+    gradeOrTitle: 'MyGO!!!!! 吉他手 · 野猫天才乐手',
+    familySummary: '随性自由的吉他天才，Space老店长的孙女',
+    quote: '“……有抹茶芭菲吗？吃完再弹。”'
+  },
+  '要乐奈': {
+    birthDate: '2008.02.22',
+    zodiac: '双鱼座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园',
+    gradeOrTitle: 'MyGO!!!!! 吉他手 · 野猫天才乐手',
+    familySummary: '随性自由的吉他天才，Space老店长的孙女',
+    quote: '“……有抹茶芭菲吗？吃完再弹。”'
+  },
+  'bang-uika': {
+    birthDate: '2007.05.27',
+    zodiac: '双子座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'Ave Mujica 主唱兼吉他手 · sumimi成员',
+    familySummary: '童年与祥子在海岛相识，以初华之名活动的偶像主唱',
+    quote: '“只要抬头看星星，就会想起和小祥在岛上的夏天。”'
+  },
+  '三角初华': {
+    birthDate: '2007.05.27',
+    zodiac: '双子座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'Ave Mujica 主唱兼吉他手 · sumimi成员',
+    familySummary: '童年与祥子在海岛相识，以初华之名活动的偶像主唱',
+    quote: '“只要抬头看星星，就会想起和小祥在岛上的夏天。”'
+  },
+  'bang-umiri': {
+    birthDate: '2006.04.07',
+    zodiac: '白羊座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'Ave Mujica 贝斯手 · 职业支援乐手',
+    familySummary: '精准冷峻的贝斯手，曾同时支援30支乐队',
+    quote: '“日程表上还有四十五分钟，足够我们合奏两遍。”'
+  },
+  '八幡海铃': {
+    birthDate: '2006.04.07',
+    zodiac: '白羊座',
+    bloodType: 'O型',
+    gender: '女',
+    schoolOrAffiliation: '花咲川女子学园 高等部',
+    gradeOrTitle: 'Ave Mujica 贝斯手 · 职业支援乐手',
+    familySummary: '精准冷峻的贝斯手，曾同时支援30支乐队',
+    quote: '“日程表上还有四十五分钟，足够我们合奏两遍。”'
+  },
+  'bang-nyamu': {
+    birthDate: '2006.06.01',
+    zodiac: '双子座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '艺术学院 高中',
+    gradeOrTitle: 'Ave Mujica 鼓手 · 美妆美搭视频博主',
+    familySummary: '以喵梦之名活跃的网络博主与实力鼓手',
+    quote: '“各位喵梦比～今天也在超努力练习架子鼓喵！”'
+  },
+  '祐天寺若麦': {
+    birthDate: '2006.06.01',
+    zodiac: '双子座',
+    bloodType: 'B型',
+    gender: '女',
+    schoolOrAffiliation: '艺术学院 高中',
+    gradeOrTitle: 'Ave Mujica 鼓手 · 美妆美搭视频博主',
+    familySummary: '以喵梦之名活跃的网络博主与实力鼓手',
+    quote: '“各位喵梦比～今天也在超努力练习架子鼓喵！”'
+  },
+  // 艾玛系列
+  'majo-sherry': {
+    birthDate: '2006.09.24',
+    zodiac: '天秤座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '未读之城大学 法学部',
+    gradeOrTitle: '大一在读 · 法律援助事务所见习',
+    familySummary: '逻辑缜密的推理搭档，与艾玛形影不离',
+    quote: '“证据链已经完整了，接下来就交给我们吧。”'
+  },
+  '橘雪莉': {
+    birthDate: '2006.09.24',
+    zodiac: '天秤座',
+    bloodType: 'AB型',
+    gender: '女',
+    schoolOrAffiliation: '未读之城大学 法学部',
+    gradeOrTitle: '大一在读 · 法律援助事务所见习',
+    familySummary: '逻辑缜密的推理搭档，与艾玛形影不离',
+    quote: '“证据链已经完整了，接下来就交给我们吧。”'
+  },
+  'majo-yuki': {
+    birthDate: '2007.02.28',
+    zodiac: '双鱼座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '未读之城大学',
+    gradeOrTitle: '大一在读 · 艾玛同居挚友',
+    familySummary: '艾玛的中学同窗，共同生活于城市公寓',
+    quote: '“只要有艾玛在身边，无论哪里都是安心的家。”'
+  },
+  '月代雪': {
+    birthDate: '2007.02.28',
+    zodiac: '双鱼座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '未读之城大学',
+    gradeOrTitle: '大一在读 · 艾玛同居挚友',
+    familySummary: '艾玛的中学同窗，共同生活于城市公寓',
+    quote: '“只要有艾玛在身边，无论哪里都是安心的家。”'
+  },
+  'majo-hiro': {
+    birthDate: '2007.01.10',
+    zodiac: '摩羯座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '目白台传统研修院 · 大学一年级',
+    gradeOrTitle: '大一在读 · 剑道与礼法研习生',
+    familySummary: '注重礼法家风的严谨少女，艾玛的童年旧友',
+    quote: '“这样不正确。既是原则问题，我便不会退让。”'
+  },
+  '二阶堂希罗': {
+    birthDate: '2007.01.10',
+    zodiac: '摩羯座',
+    bloodType: 'A型',
+    gender: '女',
+    schoolOrAffiliation: '目白台传统研修院 · 大学一年级',
+    gradeOrTitle: '大一在读 · 剑道与礼法研习生',
+    familySummary: '注重礼法家风的严谨少女，艾玛的童年旧友',
+    quote: '“这样不正确。既是原则问题，我便不会退让。”'
+  }
 };
 
 export function formatDeterministicCardSerial(seedKey: string): string {
@@ -704,7 +1223,9 @@ export function formatDeterministicCardSerial(seedKey: string): string {
   return `5191-${blockB}-${blockC}-${check}`;
 }
 
-export function buildContactIdentityCard(contact: CharacterContact): ResidentIdentityCard {
+export function buildContactIdentityCard(
+  contact: Partial<CharacterContact> & { id: string; name: string }
+): ResidentIdentityCard {
   const builtin = BUILTIN_CARDS[contact.id] ?? BUILTIN_CARDS[contact.name];
   if (builtin) {
     return { ...builtin };
@@ -713,22 +1234,83 @@ export function buildContactIdentityCard(contact: CharacterContact): ResidentIde
   const serial = formatDeterministicCardSerial(`${contact.id}:${contact.name}`);
   const cleanCode = contact.id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 10) || 'RESIDENT';
 
+  const preset =
+    KNOWN_RESIDENT_PROFILES[contact.id] ??
+    KNOWN_RESIDENT_PROFILES[contact.sourcePersonId ?? ''] ??
+    KNOWN_RESIDENT_PROFILES[contact.name];
+
+  let birthDate = '2007.05.15';
+  let zodiac = '金牛座';
+  let bloodType = 'O型';
+  let gender = '登记居民';
+  let schoolOrAffiliation = '未读之城大学城 联合学区';
+  let gradeOrTitle = contact.tag || '学区常驻居民';
+  let familySummary = '学区常规户籍备案居民';
+  let quote = contact.summary || '已在人际档案中登记，可通过手机或当面交谈保持联系。';
+
+  if (preset) {
+    birthDate = preset.birthDate;
+    zodiac = preset.zodiac;
+    bloodType = preset.bloodType;
+    gender = preset.gender;
+    schoolOrAffiliation = preset.schoolOrAffiliation;
+    gradeOrTitle = contact.tag || preset.gradeOrTitle;
+    familySummary = preset.familySummary;
+    quote = contact.summary || preset.quote || quote;
+  } else {
+    // 智能推导年龄层与生日
+    const tagAndName = `${contact.name} ${contact.tag || ''} ${contact.summary || ''}`;
+    let birthYear = 2007; // 默认大一同龄层（18岁）
+    if (/母|父|妈妈|爸爸|长辈|阿姨|叔/.test(tagAndName)) {
+      birthYear = 1981; // 成熟长辈（44岁）
+      gradeOrTitle = contact.tag || '学区长辈居民';
+      familySummary = '学区家庭长辈，照料家人生活';
+    } else if (/店长|店员|经理|职员|顾问|教练|老板/.test(tagAndName)) {
+      birthYear = 1997; // 青年职场人（28岁）
+      gradeOrTitle = contact.tag || '商业街服务人员';
+      familySummary = '都会工作者，活跃于街区与场馆日常';
+    } else if (/妹|弟|学妹|学弟|后辈|国中|初中/.test(tagAndName)) {
+      birthYear = 2009; // 晚辈/学弟妹（16岁，绝不长于大一主角）
+      gradeOrTitle = contact.tag || '学区高中在读生';
+      familySummary = '在读学子，与家人同住';
+    }
+
+    let hash = 2166136261;
+    for (let i = 0; i < contact.name.length; i += 1) {
+      hash ^= contact.name.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const abs = Math.abs(hash);
+    const month = 1 + (abs % 12);
+    const day = 1 + (Math.floor(abs / 12) % 28);
+    birthDate = `${birthYear}.${String(month).padStart(2, '0')}.${String(day).padStart(2, '0')}`;
+    zodiac = resolveZodiac(month, day);
+    const bloodTypes = ['A型', 'B型', 'O型', 'AB型'];
+    bloodType = bloodTypes[abs % bloodTypes.length]!;
+  }
+
+  const birthParts = birthDate.split('.');
+  const birthY2 = (birthParts[0] || '2007').slice(-2);
+  const birthM2 = (birthParts[1] || '01').padStart(2, '0');
+  const birthD2 = (birthParts[2] || '01').padStart(2, '0');
+  const mrzDatePart = `${birthY2}${birthM2}${birthD2}`;
+
   return {
     id: contact.id,
     personId: contact.sourcePersonId ?? contact.id,
     name: contact.name,
     nativeName: contact.name,
     romanizedName: `RESIDENT · ${cleanCode}`,
-    gender: '登记居民',
-    birthDate: '2006.09.15',
-    zodiac: '处女座',
-    bloodType: 'O型',
+    gender,
+    birthDate,
+    zodiac,
+    bloodType,
     cardSerial: serial,
     municipality: '未读之城大学城 住民基本台帐',
     authorityLabel: '未读之城学区市民课 · 校内通行认证',
     categoryBadge: contact.isMain ? '主要人物档案' : '在册联系人',
-    schoolOrAffiliation: '未读之城大学城 联合学区',
-    gradeOrTitle: contact.tag || '学区常驻居民',
+    schoolOrAffiliation,
+    gradeOrTitle,
     studentNo: `UNR-2025-${cleanCode.slice(0, 5)}`,
     residenceAddress: '未读之城 · 大学城常驻社区',
     anchorZoneId: 'library',
@@ -738,17 +1320,17 @@ export function buildContactIdentityCard(contact: CharacterContact): ResidentIde
     expiryDate: '2029.08.31',
     phoneDisplay: '校内通讯录已登记',
     appaPayHandle: `APPA-${cleanCode.slice(0, 6)}`,
-    familySummary: '学区常规户籍备案居民',
+    familySummary,
     signatureText: contact.name,
-    quote: contact.summary || '已在人际档案中登记，可通过手机或当面交谈保持联系。',
-    traits: [contact.tag || '学区居民', contact.status || '日常活动', `好感度 ${contact.affinity}`],
+    quote,
+    traits: [gradeOrTitle, contact.status || '日常活动', `好感度 ${contact.affinity ?? 50}`],
     bonds: [
       {
         personId: 'protagonist',
         name: '当前主角',
         roleLabel: contact.tag || '相识关系',
-        affinity: contact.affinity,
-        statusTag: `好感 · ${contact.affinity}`,
+        affinity: contact.affinity ?? 50,
+        statusTag: `好感 · ${contact.affinity ?? 50}`,
         note: contact.summary || '当前记录于通讯录中。',
         group: 'campus'
       }
@@ -762,10 +1344,10 @@ export function buildContactIdentityCard(contact: CharacterContact): ResidentIde
       }
     ],
     bioParagraphs: [
-      contact.summary || `${contact.name}是当前登记在通讯录中的${contact.tag || '居民'}。`
+      contact.summary || `${contact.name}是当前登记在通讯录中的${gradeOrTitle}。`
     ],
     mrzLine1: `IDJPN${serial.replace(/-/g, '').slice(0, 9)}<<${cleanCode}<<<<<<<<<<<<<<<<<<<`.slice(0, 44),
-    mrzLine2: `0609152U2908315JPN<<<<<<<<<<<${cleanCode.slice(0, 10)}<<<<02`.slice(0, 44)
+    mrzLine2: `${mrzDatePart}2U2908315JPN<<<<<<<<<<<${cleanCode.slice(0, 10)}<<<<02`.slice(0, 44)
   };
 }
 
@@ -802,18 +1384,46 @@ export function resolveIdentityCardById(
   state: WorldState,
   activeProtagonist: ProtagonistId = 'soyo'
 ): ResidentIdentityCard {
-  const catalog = getIdentityCardCatalog(state, activeProtagonist);
   if (!targetIdOrName) {
     return WAKABA_MUTSUMI_CARD;
   }
-  const normalized = targetIdOrName.trim().toLowerCase();
+  const trimmed = targetIdOrName.trim();
+  const normalized = trimmed.toLowerCase();
+
+  const directBuiltin = BUILTIN_CARDS[trimmed] ?? BUILTIN_CARDS[normalized];
+  if (directBuiltin) {
+    return directBuiltin;
+  }
+
+  const catalog = getIdentityCardCatalog(state, activeProtagonist);
   const matched = catalog.find(
     (card) =>
       card.id.toLowerCase() === normalized ||
       card.personId.toLowerCase() === normalized ||
       card.name.toLowerCase() === normalized
   );
-  return matched ?? WAKABA_MUTSUMI_CARD;
+  if (matched) {
+    return matched;
+  }
+
+  const profilePreset =
+    KNOWN_RESIDENT_PROFILES[trimmed] ??
+    KNOWN_RESIDENT_PROFILES[normalized];
+  if (profilePreset) {
+    return buildContactIdentityCard({
+      id: trimmed,
+      name: trimmed,
+      affinity: 50,
+      tag: profilePreset.gradeOrTitle,
+      summary: profilePreset.familySummary,
+      status: '学区常驻',
+      portraitId: 'claude',
+      sourcePersonId: trimmed,
+      isMain: false
+    });
+  }
+
+  return WAKABA_MUTSUMI_CARD;
 }
 
 export function isCharacterInContacts(

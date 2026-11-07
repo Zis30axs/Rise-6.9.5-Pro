@@ -188,7 +188,7 @@ const japaneseMayorLabel = computed<string>(() => {
   const id = activeCard.value.id;
   if (id === 'bang-mutsumi') return '東京都文京区長';
   if (id === 'soyo') return '東京都港区長';
-  if (id === 'sakiko' || id === 'renako') return '東京都豊島区長';
+  if (id === 'sakiko' || id === 'renako' || id === 'watanare-haruna' || id === '甘织遥奈') return '東京都豊島区長';
   if (id === 'emma') return '東京都新宿区長';
   return '東京都文京区長';
 });
@@ -197,7 +197,7 @@ const japaneseHankoSeal = computed<string>(() => {
   const id = activeCard.value.id;
   if (id === 'bang-mutsumi') return '文京区長之印';
   if (id === 'soyo') return '港区長之印';
-  if (id === 'sakiko' || id === 'renako') return '豊島区長之印';
+  if (id === 'sakiko' || id === 'renako' || id === 'watanare-haruna' || id === '甘织遥奈') return '豊島区長之印';
   if (id === 'emma') return '新宿区長之印';
   return '文京区長之印';
 });

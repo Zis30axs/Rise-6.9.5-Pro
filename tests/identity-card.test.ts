@@ -115,4 +115,94 @@ describe('identity-card module (Wakaba Mutsumi exemplar)', () => {
     expect(customCard.name).toBe('林知夏');
     expect(customCard.gradeOrTitle).toBe('文学社学姐');
   });
+
+  it('allocates correct age and birthDate for Amaori Haruna (2009.05.28) making her younger than Renako (2007.03.03)', () => {
+    const state = createInitialState();
+    const renakoCard = resolveIdentityCardById('renako', state, 'renako');
+    const harunaCard = resolveIdentityCardById('watanare-haruna', state, 'renako');
+    const harunaByCn = resolveIdentityCardById('甘织遥奈', state, 'renako');
+
+    expect(renakoCard.birthDate).toBe('2007.03.03');
+    expect(harunaCard.birthDate).toBe('2009.05.28');
+    expect(harunaByCn.birthDate).toBe('2009.05.28');
+    expect(harunaCard.zodiac).toBe('双子座');
+    expect(harunaCard.gradeOrTitle).toContain('高等部一年级');
+    expect(harunaCard.schoolOrAffiliation).toContain('月之森女子学园');
+
+    // 解析年份，确保遥奈出生年份晚于玲奈子（妹妹年龄严格小于姐姐）
+    const renakoBirthYear = Number(renakoCard.birthDate.split('.')[0]);
+    const harunaBirthYear = Number(harunaCard.birthDate.split('.')[0]);
+    expect(harunaBirthYear).toBeGreaterThan(renakoBirthYear);
+    expect(harunaBirthYear - renakoBirthYear).toBe(2);
+
+    // MRZ 码第 2 行严格以出生年月日 YYMMDD 开头
+    expect(harunaCard.mrzLine2.startsWith('090528')).toBe(true);
+    expect(renakoCard.mrzLine2.startsWith('070303')).toBe(true);
+  });
+
+  it('differentiates mother and adult generations from student age brackets', () => {
+    const state = createInitialState();
+
+    // 甘织美代子（母亲长辈，44岁左右）
+    const miyokoCard = buildContactIdentityCard({
+      id: 'watanare-miyoko',
+      name: '甘织美代子',
+      tag: '甘织家母亲',
+      summary: '玲奈子与遥奈的母亲。',
+      affinity: 70,
+      status: '甘织家',
+      portraitId: 'claude',
+      sourcePersonId: 'watanare-miyoko',
+      isMain: false
+    });
+    expect(miyokoCard.birthDate).toBe('1981.04.18');
+    expect(Number(miyokoCard.birthDate.split('.')[0])).toBeLessThan(1990);
+    expect(miyokoCard.zodiac).toBe('白羊座');
+
+    // 长崎夫人（素世的母亲长辈，46岁左右）
+    const nagasakiMotherCard = buildContactIdentityCard({
+      id: 'nagasaki-mother',
+      name: '长崎夫人',
+      tag: '企业高管 · 素世母亲',
+      summary: '长崎素世的单亲母亲。',
+      affinity: 65,
+      status: '长崎家高层公寓',
+      portraitId: 'claude',
+      sourcePersonId: 'nagasaki-mother',
+      isMain: false
+    });
+    expect(nagasakiMotherCard.birthDate).toBe('1979.08.12');
+    expect(Number(nagasakiMotherCard.birthDate.split('.')[0])).toBeLessThan(1985);
+    expect(nagasakiMotherCard.zodiac).toBe('狮子座');
+
+    // 鬼瓦星来（遥奈的高一同班好友，16岁）
+    const seiraCard = buildContactIdentityCard({
+      id: 'watanare-seira',
+      name: '鬼瓦星来',
+      tag: '月之森高一生 · 遥奈好友',
+      summary: '月之森女子学园高等部在读学生。',
+      affinity: 72,
+      status: '鬼瓦洗衣店',
+      portraitId: 'claude',
+      sourcePersonId: 'watanare-seira',
+      isMain: false
+    });
+    expect(seiraCard.birthDate).toBe('2009.02.10');
+    expect(seiraCard.zodiac).toBe('水瓶座');
+
+    // 王冢真唯（大一，18岁）
+    const maiCard = buildContactIdentityCard({
+      id: 'watanare-mai',
+      name: '王冢真唯',
+      tag: '大学一年级 · 现役模特',
+      summary: '芦谷五人组成员。',
+      affinity: 85,
+      status: '校园西门',
+      portraitId: 'claude',
+      sourcePersonId: 'watanare-mai',
+      isMain: true
+    });
+    expect(maiCard.birthDate).toBe('2007.09.01');
+    expect(maiCard.zodiac).toBe('处女座');
+  });
 });
