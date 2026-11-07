@@ -1,4 +1,4 @@
-import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, isEquipmentSlot, r27et1Equipped, setEquipment, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS, validatePersonalEquipment } from './equipment';
+import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, isEquipmentSlot, r27et1Equipped, setEquipment, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS, MYGO_PHOTO, validatePersonalEquipment } from './equipment';
 import type { ProtagonistId } from './dual-protagonists';
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
@@ -265,7 +265,7 @@ export function createInitialState(): WorldState {
     courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
-    inventory: [{ itemId: 'crychic-photo', quantity: 1 }],
+    inventory: [{ itemId: 'crychic-photo', quantity: 1 }, { itemId: MYGO_PHOTO, quantity: 1 }],
     academics: null,
     phone: [],
     contacts: soyoInitialContacts(protagonistNames.sakiko),

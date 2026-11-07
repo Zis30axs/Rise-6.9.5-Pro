@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick, reactive, type App } from 'vue';
-vi.mock('../src/frontend/store-product-images', () => ({ getStoreProductImage: () => null }));
+vi.mock('../src/frontend/store-product-images', () => ({ getStoreProductImage: (id: string) => id === 'mygo-photo' ? 'data:image/webp;base64,AA==' : null }));
 import InventoryPanel from '../src/frontend/InventoryPanel.vue';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
@@ -22,6 +22,15 @@ function mount() {
   return {root,model,save,interact,actions};
 }
 describe('equipment in the existing backpack',()=>{
+  it('shows the MyGO photo artwork and lets it occupy the special slot',async()=>{
+    const {root,model}=mount();
+    const card=root.querySelector('[data-equipment-item="mygo-photo"]');
+    expect(card?.querySelector('img[data-product-image="mygo-photo"]')).not.toBeNull();
+    expect(card?.textContent).toContain('纪念道具 · 不提供数值加成');
+    (card?.querySelector('button') as HTMLButtonElement).click();await nextTick();
+    expect(model.state.inventory.find(row=>row.itemId==='mygo-photo')?.equipped).toBe(true);
+    expect(root.querySelector('[data-equipment-slot="special"]')?.textContent).toContain('MyGO!!!!! 合照');
+  });
   it('shows the owner-dependent effect and toggles through the saved action without generating',async()=>{
     const {root,model,save,interact}=mount();
     expect(root.querySelector('[data-equipment-effects]')?.textContent).toContain('社交经验 ×0.25');
@@ -67,6 +76,6 @@ describe('equipment in the existing backpack',()=>{
     model.state.inventory.push({itemId:'medicine-cold',quantity:2});await nextTick();
     expect(root.querySelector('[data-inventory-product="medicine-cold"]')).not.toBeNull();
     expect(root.querySelector('[data-equipment-item]')?.textContent).not.toMatch(/kcal|使用 1|赠送/);
-    expect(root.querySelector('.inventory-count')?.textContent).toBe('2 种物品');
+    expect(root.querySelector('.inventory-count')?.textContent).toBe('3 种物品');
   });
 });

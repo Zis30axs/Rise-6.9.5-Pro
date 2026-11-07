@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyStoryActions, commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, legacyView, personalState, personState } from '../src/runtime/protagonist-world';
-import { CRYCHIC_PHOTO, equipmentContext, equipmentQuote } from '../src/runtime/equipment';
+import { CRYCHIC_PHOTO, MYGO_PHOTO, equipmentContext, equipmentQuote } from '../src/runtime/equipment';
 import { getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from '../src/runtime/academics';
 import { applySocialSkillTurn } from '../src/runtime/social-skills';
 import { initializeBackgroundLife } from '../src/runtime/background-life';
@@ -10,6 +10,7 @@ import type { ProtagonistId } from '../src/runtime/dual-protagonists';
 import type { StoryAction, WorldState } from '../src/frontend/types';
 
 const photo = { itemId: CRYCHIC_PHOTO };
+const mygoPhoto = { itemId: MYGO_PHOTO };
 const equip: StoryAction = { type: 'equip', ...photo };
 const unequip: StoryAction = { type: 'unequip', ...photo };
 const social = (skillId: 'expression' | 'empathy' = 'expression'): StoryAction => ({ type: 'social_skill', skillId, deviation: 3, reason: '认真表达自己的想法' });
@@ -31,20 +32,21 @@ const skill = (s: WorldState, owner = activeProtagonist(s)) => s.protagonists!.s
 afterEach(() => vi.restoreAllMocks());
 
 describe('CRYCHIC photo equipment', () => {
-  it('gives each original owner one unequipped keepsake when loading an old world under any viewpoint', () => {
+  it('grants each original owner their unequipped keepsakes when loading an old world under any viewpoint', () => {
     let s = fresh('renako');
     for (const id of ['soyo','sakiko','emma','renako'] as const) personState(s,id).inventory = [];
     const old = structuredClone(s);
     s = roundTrip(s);
     expect(old.inventory).toEqual([]);
-    for (const id of ['soyo','sakiko'] as const) expect(personState(s,id).inventory).toEqual([{ ...photo, quantity: 1 }]);
+    expect(personState(s,'soyo').inventory).toEqual([{ ...photo, quantity: 1 }, { ...mygoPhoto, quantity: 1 }]);
+    expect(personState(s,'sakiko').inventory).toEqual([{ ...photo, quantity: 1 }]);
     for (const id of ['emma','renako'] as const) expect(personState(s,id).inventory).toEqual([]);
     expect(roundTrip(s)).toEqual(s);
   });
   it('does not change time, body, quantity, or cause random events when equipping; repeats are idempotent', () => {
     const s = fresh(), result = worn(s);
     expect(result.clock).toEqual(s.clock); expect(result.player).toEqual(s.player);
-    expect(result.inventory).toEqual([{ ...photo, quantity: 1, equipped: true }]);
+    expect(result.inventory).toEqual([{ ...photo, quantity: 1, equipped: true }, { ...mygoPhoto, quantity: 1 }]);
     expect(worn(result)).toEqual(result);
     expect(isGameplayInteraction({type:'equip_item',...photo})).toBe(false);
     expect(isGameplayInteraction({type:'unequip_item',...photo})).toBe(false);

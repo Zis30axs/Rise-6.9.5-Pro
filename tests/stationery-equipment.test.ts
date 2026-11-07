@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { R27ET1_ITEM_ID, getPurchaseQuote, getStationeryAvailability, getUseItemQuote } from '../src/runtime/convenience-store';
-import { CRYCHIC_PHOTO, equippedItem, r27et1Equipped, studyPointsWithEquipment } from '../src/runtime/equipment';
+import { CRYCHIC_PHOTO, MYGO_PHOTO, equipmentContext, equipmentQuote, equippedItem, r27et1Equipped, studyPointsWithEquipment } from '../src/runtime/equipment';
 
 const fresh = () => {
   const state = createInitialState();
@@ -104,6 +104,28 @@ describe('R-27ET1 stationery and equipment slots', () => {
     state = reduceState(state, { type: 'equip_item', itemId: R27ET1_ITEM_ID, slot: null });
     expect(equippedItem(state, 'special')).toBe(CRYCHIC_PHOTO);
     expect(equippedItem(state, 'permanent-1')).toBeNull();
+  });
+
+
+  it('adds the MyGO photo as a Soyo-only keepsake in the special slot without numerical bonuses', () => {
+    let state = enableProtagonists(fresh());
+    expect(state.inventory).toContainEqual({ itemId: MYGO_PHOTO, quantity: 1 });
+    state = reduceState(state, { type: 'equip_item', itemId: CRYCHIC_PHOTO });
+    state = reduceState(state, { type: 'equip_item', itemId: MYGO_PHOTO });
+    expect(equippedItem(state, 'special')).toBe(MYGO_PHOTO);
+    expect(state.inventory.find(item => item.itemId === CRYCHIC_PHOTO)?.equipped).toBeUndefined();
+    expect(equipmentQuote(state, 'soyo', MYGO_PHOTO).profile).toBeNull();
+    expect(equipmentContext(state).find(item => item.itemId === MYGO_PHOTO)).toMatchObject({ equipped: true, effects: null });
+    expect(parseState(roundTrip(state))).toEqual(state);
+    state = reduceState(state, { type: 'equip_item', itemId: CRYCHIC_PHOTO });
+    expect(equippedItem(state, 'special')).toBe(CRYCHIC_PHOTO);
+    expect(state.inventory.find(item => item.itemId === MYGO_PHOTO)?.equipped).toBeUndefined();
+    state = reduceState(state, { type: 'equip_item', itemId: MYGO_PHOTO });
+    state = reduceState(state, { type: 'switch_protagonist', target: 'sakiko' });
+    expect(state.inventory.some(item => item.itemId === MYGO_PHOTO)).toBe(false);
+    expect(() => reduceState(state, { type: 'equip_item', itemId: MYGO_PHOTO })).toThrow('这张合照不属于她。');
+    state = reduceState(state, { type: 'switch_protagonist', target: 'soyo' });
+    expect(equippedItem(state, 'special')).toBe(MYGO_PHOTO);
   });
 
 });

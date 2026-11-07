@@ -3,10 +3,14 @@ import type { ProtagonistId } from './dual-protagonists';
 import { getStoreItem, R27ET1_ITEM_ID } from './convenience-store';
 
 export const CRYCHIC_PHOTO = 'crychic-photo';
+export const MYGO_PHOTO = 'mygo-photo';
 export const equipmentCatalog = Object.freeze([
   Object.freeze({ id: CRYCHIC_PHOTO, name: 'CRYCHIC 合照', unit: '张',
     owners: ['soyo', 'sakiko'] as readonly ProtagonistId[],
     description: '五个人曾经一起留下的合照。相同的回忆，在不同的人心里有不同的重量。' }),
+  Object.freeze({ id: MYGO_PHOTO, name: 'MyGO!!!!! 合照', unit: '张',
+    owners: ['soyo'] as readonly ProtagonistId[],
+    description: 'MyGO!!!!! 五人在练习室留下的合照。对素世而言，这是值得珍藏的共同回忆。' }),
 ]);
 
 // Versioned receipts preserve the meaning of already-earned experience.
@@ -53,6 +57,8 @@ export function historicalAcademicMultiplier(profileId: unknown, majorId: string
 export function ensurePersonalKeepsake(state: Pick<WorldState, 'inventory'>, owner: ProtagonistId): void {
   if ((owner === 'soyo' || owner === 'sakiko') && !state.inventory.some(row => row.itemId === CRYCHIC_PHOTO))
     state.inventory.push({ itemId: CRYCHIC_PHOTO, quantity: 1 });
+  if (owner === 'soyo' && !state.inventory.some(row => row.itemId === MYGO_PHOTO))
+    state.inventory.push({ itemId: MYGO_PHOTO, quantity: 1 });
 }
 export function validatePersonalEquipment(state: EquipmentView, owner: ProtagonistId): void {
   let special = 0;
@@ -80,7 +86,7 @@ export function equipmentQuote(state: EquipmentView, owner: ProtagonistId, itemI
   const held = state.inventory.find(row => row.itemId === itemId);
   const blockedReason = !item ? '这件物品不能装备。' : !item.owners.includes(owner) ? '这张合照不属于她。'
     : held?.quantity !== 1 ? '背包里没有这件物品。' : null;
-  const profileId = item ? photoProfile(state, owner) : null;
+  const profileId = item?.id === CRYCHIC_PHOTO ? photoProfile(state, owner) : null;
   return { item, equipped: held?.equipped === true, profileId, profile: equipmentProfile(profileId), blockedReason };
 }
 export function setEquipment(state: EquipmentView, owner: ProtagonistId, itemId: string, equipped: boolean): boolean {
@@ -90,7 +96,7 @@ export function setEquipment(state: EquipmentView, owner: ProtagonistId, itemId:
   for (const row of state.inventory) {
     if (row.itemId === itemId && equipped) row.equipped = true;
     else if (row.itemId === itemId) delete row.equipped;
-    else if (equipped && row.equipped === 'special') delete row.equipped;
+    else if (equipped && (row.equipped === true || row.equipped === 'special')) delete row.equipped;
   }
   return true;
 }
@@ -135,7 +141,7 @@ export function isEquipmentSlot(value: unknown): value is EquipmentSlot {
   return typeof value === 'string' && EQUIPMENT_SLOTS.some(slot => slot === value);
 }
 export function canEquipItem(itemId: string, slot: EquipmentSlot): boolean {
-  if (itemId === CRYCHIC_PHOTO) return slot === 'special';
+  if (getEquipmentItem(itemId)) return slot === 'special';
   const kind = getStoreItem(itemId)?.equipmentKind;
   return kind === (slot === 'special' ? 'special' : 'permanent');
 }
