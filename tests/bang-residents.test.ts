@@ -52,7 +52,7 @@ describe('band residents', () => {
     expect(residentGroupForNpc('majo-hiro')?.id).toBe('majo-circle');
     expect(majoExpressionFor('bang-tomori', 'neutral')).toBeNull();
     const portraitId = characterForPerson('bang-tomori');
-    const avatar = resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId });
+    const avatar = resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori', portraitId }, true);
     expect(avatar?.kind).toBe('sprite');
     expect(avatar && 'src' in avatar && avatar.src.startsWith('data:image/webp;base64,')).toBe(true);
   });

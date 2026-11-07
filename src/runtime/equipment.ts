@@ -103,15 +103,22 @@ export function socialEquipmentMultiplier(before: WorldState, owner: Protagonist
     if (action.type === 'equip' || action.type === 'unequip') {
       if (getEquipmentItem(action.itemId)) setEquipment(view, owner, action.itemId, action.type === 'equip');
       else if (getStoreItem(action.itemId)?.equipmentKind)
-        setEquipmentSlot(view, action.itemId, action.type === 'unequip' ? null : action.slot ?? 'permanent-1');
+        setEquipmentSlot(view, action.itemId, action.type === 'unequip' || action.slot === null ? null : action.slot ?? 'permanent-1');
     }
   }
   return 1;
 }
 
-export function equipmentContext(state: WorldState) {
+export interface EquipmentContextRow {
+  itemId: string;
+  name: string;
+  equipped: boolean;
+  effects: Readonly<Partial<Record<'learning' | 'music' | 'currentMajor' | 'social', number>>> | null;
+  description: string;
+}
+export function equipmentContext(state: WorldState): EquipmentContextRow[] {
   const owner = state.protagonists?.accounts.active ?? 'soyo';
-  return state.inventory.flatMap(row => {
+  return state.inventory.flatMap((row): EquipmentContextRow[] => {
     if (row.itemId === R27ET1_ITEM_ID) return [{
       itemId: R27ET1_ITEM_ID, name: 'R-27ET1', equipped: r27et1Equipped(state),
       effects: r27et1Equipped(state) ? { learning: R27ET1_STUDY_BONUS } : null,

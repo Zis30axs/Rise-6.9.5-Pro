@@ -849,7 +849,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
           if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip' && action.slot !== null))
             note(next, `${action.type === 'equip' && action.slot !== null ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
         } else if (getStoreItem(action.itemId)?.equipmentKind) {
-          const slot = action.type === 'unequip' ? null : action.slot ?? 'permanent-1';
+          const slot = action.type === 'unequip' || action.slot === null ? null : action.slot ?? 'permanent-1';
           if (slot !== null && !isEquipmentSlot(slot)) throw new Error('无效装备栏。');
           setEquipmentSlot(next, action.itemId, slot);
           note(next, slot === null ? '已卸下随身文具。' : '已装备随身文具。');
@@ -1228,7 +1228,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip_item' && action.slot !== null))
           note(next, `${action.type === 'equip_item' && action.slot !== null ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
       } else if (getStoreItem(action.itemId)?.equipmentKind) {
-        const slot = action.type === 'unequip_item' ? null : action.slot ?? 'permanent-1';
+        const slot = action.type === 'unequip_item' || action.slot === null ? null : action.slot ?? 'permanent-1';
         if (slot !== null && !isEquipmentSlot(slot)) throw new Error('无效装备栏。');
         setEquipmentSlot(next, action.itemId, slot);
         note(next, slot === null ? '已卸下随身文具。' : '已装备随身文具。');

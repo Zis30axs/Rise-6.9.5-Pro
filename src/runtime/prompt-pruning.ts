@@ -5,8 +5,8 @@
  * bounded projection because Tavern mode uses max_chat_history: 0.
  */
 export const PROMPT_CONTEXT_LIMITS = {
-  journalEntries: 7,
-  journalText: 300,
+  journalEntries: 100,
+  journalText: 1000,
   phoneMessages: 8,
   phoneText: 280,
   calendarEntries: 12,

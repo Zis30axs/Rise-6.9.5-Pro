@@ -25,7 +25,7 @@ export const raanaPoseForExpression: Readonly<Record<SakikoExpression, RaanaPose
 });
 
 const speakerNames = new Set([
-  'raana', 'rana', 'kaname raana', 'kaname rana', 'kaname-raana', 'kaname-rana',
+  'raana', 'rana', 'kaname raana', 'kaname rana', 'kaname-raana', 'kaname-rana', 'bang-rana', 'bang-raana',
   '要乐奈', '乐奈', '楽奈', '要楽奈', '樂奈',
 ]);
 const text = (value: unknown): string => typeof value === 'string' ? value.trim().toLowerCase() : '';

@@ -72,6 +72,7 @@ export const venues: readonly Venue[] = [
   { locationId: CIRCLE_LOCATION_ID, label: 'CiRCLE 现场屋', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `现场屋门前广场连通一楼咖啡厅与侧翼练团室。咖啡厅由${CIRCLE_STAFF_NAME}接待，可点美式、拿铁和一份甜点。` },
   { locationId: CIRCLE_CAFE_ROOM_ID, label: 'CiRCLE 咖啡厅', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: `${CIRCLE_STAFF_NAME}在柜台接待。菜单是美式、拿铁和一份甜点，坐下喝完或吃完。` },
   { locationId: CIRCLE_STUDIO_ROOM_ID, label: 'CiRCLE 练团室', hoursLabel: CIRCLE_HOURS_LABEL, opens: CIRCLE_OPENS, closes: CIRCLE_CLOSES, outdoor: false, description: '侧翼隔音练团室，靠墙放着鼓组、吉他音箱和谱架。' },
+  { locationId: 'aquarium', label: '阳光水族馆', hoursLabel: '10:00–20:00', opens: 10 * 60, closes: 20 * 60, outdoor: false, description: '位于东池袋高层顶部的知名水族馆，拥有弧形全景大水槽、水母发光长廊与露天空中企鹅展区，适合散心与约会同游。' },
 ];
 
 export function getLocationStatus(locationId: string, clock: WorldState['clock']): LocationStatus | null {
@@ -170,6 +171,9 @@ const authoredLocationServices: readonly LocationService[] = Object.freeze([
   { id: 'clinic-treatment', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '诊所全科问诊', description: '到街区全科诊所向风堇医生挂号问诊，进行听诊体检与用药调理。', minutes: 30, price: 1800, effects: effects({ energy: 15, health: 35, stress: -15, satiety: 5, foodEnergy: 100 }) },
   { id: 'clinic-counseling', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '风堇的谈心调理', description: '在诊所安静温馨的茶歇角与风堇医生轻声交谈。感受她如母亲般温暖包容的关切与开导，清空一切心理重压并重新充盈充沛精力。（每周限一次）', minutes: 40, price: 0, effects: effects({ energy: 100, morale: 25, health: 15, stress: -100, satiety: 5, foodEnergy: 100 }) },
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
+  { id: 'aquarium-visit', locationIds: ['commercial', 'aquarium'], label: '游览全景水槽与水母馆', description: '购票漫步于幽蓝深邃的弧形全景大水槽与发光水母回廊，在静谧水光中仰望魔鬼鱼与银色鱼群游弋，大幅舒缓压力、提振精神。', minutes: 40, price: 2400, effects: effects({ energy: 10, morale: 20, stress: -35 }) },
+  { id: 'aquarium-penguin', locationIds: ['commercial', 'aquarium'], label: '观赏空中企鹅展区', description: '在顶层露台的悬挑透明水槽下驻足，看企鹅在城市天际线与晴空背景中自在畅游，心情随之轻快明亮。', minutes: 20, price: 0, effects: effects({ energy: 5, morale: 16, stress: -18 }) },
+  { id: 'aquarium-soda', locationIds: ['commercial', 'aquarium'], label: '品尝海蓝气泡饮与甜点', description: '在水族馆主题吧台点一杯蔚蓝柑橘气泡饮与海豹造型甜点，坐在水光映照的窗边享用。', minutes: 15, price: 680, effects: effects({ energy: 15, morale: 10, stress: -10, satiety: 15, foodEnergy: 240 }) },
 ].map(service => Object.freeze({ ...service, locationIds: Object.freeze(service.locationIds) })));
 
 const circleCafeMenu = new Set<string>(CIRCLE_CAFE_MENU_IDS);
@@ -217,7 +221,7 @@ export function courtObservationServiceForMinutes(minutes: number): LocationServ
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
   const roomId = state.interior?.roomId;
-  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && !isCircleVenueRoom(roomId)) return [];
+  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && roomId !== 'aquarium' && !isCircleVenueRoom(roomId)) return [];
   return locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
     && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }

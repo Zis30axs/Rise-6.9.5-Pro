@@ -475,7 +475,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           const item = getStoreItem(entry.itemId)!;
           return { itemId: item.id, name: item.name, brand: item.brand, tier: item.tier, quantity: entry.quantity, unit: item.useUnit, equipped: entry.equipped ?? null };
         }),
-        equipment: EQUIPMENT_SLOTS.map(slot => ({ slot, itemId: equippedItem(snapshot, slot) })),
+        equipmentSlots: EQUIPMENT_SLOTS.map(slot => ({ slot, itemId: equippedItem(snapshot, slot) })),
         actionCatalog: {
           limits: STORY_ACTION_LIMITS,
           destinations: novelDestinations.map(({ id, name }) => ({ id, name })),
@@ -571,7 +571,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;
-      const combinedSystemPrompt = taggedPrompts.systemPrompt + (memoryNarrative && memorySettings.protocol === 'tags'
+      const combinedSystemPrompt = taggedPrompts.systemPrompt;
+      const effectiveSystemPrompt = combinedSystemPrompt + (memoryNarrative && memorySettings.protocol === 'tags'
         ? '\n【记忆查询独立响应例外】当必须查阅历史时，允许只输出 <memory_lookup>JSON</memory_lookup>，此时无需 story 标签；查询结果返回后的下一次生成必须恢复原有完整剧情标签协议。\n' + MEMORY_TAG_INSTRUCTION : '');
       let smsTimeout: ReturnType<typeof setTimeout> | undefined;
       try {
@@ -583,28 +584,28 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           }, AUTONOMOUS_SMS_TIMEOUT_MS);
         }
         let generationAttempt = 0;
-        const normalGenerate = (inputPrompt: string, instructions: string): Promise<unknown> => {
+        const normalGenerate = (prompt: string, combinedSystemPrompt: string): Promise<unknown> => {
           const attempt = ++generationAttempt;
           const attemptId = attempt === 1 ? generationId : generationId + ':resume:' + attempt;
           if (storyApi.mode === 'tavern' && pending
             && (pending.id === generationId || pending.id.startsWith(generationId + ':')))
             pending.id = attemptId;
           return storyApi.mode === 'custom'
-            ? requestStoryFromCustomApi(storyApi, inputPrompt, instructions, controller!.signal)
+            ? requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt, controller!.signal)
             : options?.kind === 'autonomous_sms'
             ? api.generateRaw!({
               generation_id: attemptId,
               ordered_prompts: [
-                { role: 'system', content: instructions },
-                { role: 'user', content: inputPrompt },
+                { role: 'system', content: combinedSystemPrompt },
+                { role: 'user', content: prompt },
               ],
               overrides: { chat_history: { with_depth_entries: false, author_note: '', prompts: [] } },
               should_stream: false, should_silence: true, max_chat_history: 0,
             })
             : api.generate({
               generation_id: attemptId,
-              user_input: inputPrompt,
-              injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: instructions }],
+              user_input: prompt,
+              injects: [{ role: 'system', position: 'in_chat', depth: 0, should_scan: false, content: combinedSystemPrompt }],
               should_stream: false, should_silence: true, max_chat_history: 0,
             });
         };
@@ -613,14 +614,14 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             if (memoryNarrative && memorySettings.protocol === 'tools' && storyApi.mode === 'custom') {
               try {
                 return await runNativeMemoryTools(storyApi, memorySettings, ownerSession,
-                  snapshot, prompt, combinedSystemPrompt, controller!.signal);
+                  snapshot, prompt, effectiveSystemPrompt, controller!.signal);
               } catch (error) {
                 if (controller!.signal.aborted) throw error;
                 // An optional memory provider must not prevent normal storytelling.
-                return normalGenerate(prompt, combinedSystemPrompt);
+                return normalGenerate(prompt, effectiveSystemPrompt);
               }
             }
-            const first = await normalGenerate(prompt, combinedSystemPrompt);
+            const first = await normalGenerate(prompt, effectiveSystemPrompt);
             if (!memoryNarrative || memorySettings.protocol !== 'tags') return first;
             return runTaggedMemory(first, ownerSession, snapshot, memorySettings.tokenBudget,
               evidence => normalGenerate(

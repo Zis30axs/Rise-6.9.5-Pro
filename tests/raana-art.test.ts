@@ -91,9 +91,9 @@ describe('Raana uniform art', () => {
     expect(resolveSceneCharacterArt('千早爱音', 'neutral')?.id).toBe('anon_uniform_smile');
     expect(resolveSceneCharacterArt('若叶睦', 'neutral')?.id).toBe('mutsumi_uniform_neutral');
     expect(resolveSceneCharacterArt('丰川祥子')).toBeNull();
-    const avatar = resolveMapCharacterAvatar({ name: '要乐奈', personId: 'bang-rana' });
+    const avatar = resolveMapCharacterAvatar({ name: '要乐奈', personId: 'bang-rana' }, true);
     expect(avatar?.kind).toBe('sprite');
     expect(avatar && 'src' in avatar && avatar.src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(resolveMapCharacterAvatar({ name: 'Rana', personId: 'bang-rana' })?.kind).toBe('sprite');
+    expect(resolveMapCharacterAvatar({ name: 'Rana', personId: 'bang-rana' }, true)?.kind).toBe('sprite');
   });
 });

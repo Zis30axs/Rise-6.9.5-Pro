@@ -89,7 +89,7 @@ describe('Taki uniform art', () => {
     const installed = getTakiArt(downtownArtPack, { speaker: '椎名立希', expression: 'neutral' });
     expect(installed).toMatchObject({ id: 'taki_uniform_neutral', outfit: 'uniform', pose: 'neutral', width: 768, height: 1344, anchor: [384, 1280] });
     expect(installed?.src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(resolveMapCharacterAvatar({ name: '椎名立希', personId: 'bang-taki' })).toEqual({ kind: 'sprite', src: installed?.src });
-    expect(resolveMapCharacterAvatar({ name: '立希' })).toEqual({ kind: 'sprite', src: installed?.src });
+    expect(resolveMapCharacterAvatar({ name: '椎名立希', personId: 'bang-taki' }, true)).toEqual({ kind: 'sprite', src: installed?.src });
+    expect(resolveMapCharacterAvatar({ name: '立希' }, true)).toEqual({ kind: 'sprite', src: installed?.src });
   });
 });

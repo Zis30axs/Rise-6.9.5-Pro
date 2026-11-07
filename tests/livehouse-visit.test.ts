@@ -79,6 +79,7 @@ describe('live house tickets and practice rooms', () => {
 
   it('practices with MyGO contacts at or above the familiar line and leaves Taki out', () => {
     const state = inside(17, 20);
+    state.contacts.find(contact => contact.id === 'bang-taki')!.affinity = 28;
     const quote = getLocationServiceQuote(state, 'livehouse-practice-1h-band');
     const joined = quote.livehouse?.partners.filter(person => person.affinityDelta > 0) ?? [];
     expect(joined.map(person => person.id).sort()).toEqual(['bang-anon', 'bang-rana', 'bang-tomori']);
