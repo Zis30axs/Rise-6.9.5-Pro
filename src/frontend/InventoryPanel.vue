@@ -76,7 +76,7 @@ async function useItem(itemId: string) {
     </div>
     <div v-if="entries.length || equipmentEntries.length" class="inventory-list" aria-label="背包物品">
       <article v-for="{ item, quote } in equipmentEntries" :key="item.id" class="inventory-item" :data-equipment-item="item.id">
-        <div class="inventory-item-heading"><div class="inventory-item-title"><small>随身珍藏</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-equipment-status>{{ quote.equipped ? '使用中' : '已收起' }}</span></div>
+        <div class="inventory-item-heading"><StoreProductImage :item-id="item.id" :name="item.name" class="inventory-product-image" /><div class="inventory-item-title"><small>随身珍藏</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-equipment-status>{{ quote.equipped ? '使用中' : '已收起' }}</span></div>
         <p class="inventory-serving">{{ quote.profile?.description ?? item.description }}</p>
         <p v-if="quote.profile" class="inventory-actual-effects" data-equipment-effects>音乐学习经验 ×{{ quote.profile.music }}<template v-if="!quote.profile.musicMajor"> · 当前专业经验 ×{{ quote.profile.major }}</template> · 社交经验 ×{{ quote.profile.social }}</p>
         <p v-else class="inventory-serving">确认专业后，这份回忆对学习与交往的影响也会随之明确。</p>

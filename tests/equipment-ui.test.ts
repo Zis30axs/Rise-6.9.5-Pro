@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick, reactive, type App } from 'vue';
-vi.mock('../src/frontend/store-product-images', () => ({ getStoreProductImage: () => null }));
+vi.mock('../src/frontend/store-product-images', () => ({ getStoreProductImage: (id: string) => id === 'crychic-photo' ? 'data:image/webp;base64,AA==' : null }));
 import InventoryPanel from '../src/frontend/InventoryPanel.vue';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
@@ -22,6 +22,10 @@ function mount() {
   return {root,model,save,interact,actions};
 }
 describe('equipment in the existing backpack',()=>{
+  it('renders the CRYCHIC photo artwork in the keepsake card',()=>{
+    const {root}=mount();
+    expect(root.querySelector('[data-equipment-item="crychic-photo"] img[data-product-image="crychic-photo"]')?.getAttribute('alt')).toBe('CRYCHIC 合照');
+  });
   it('shows the owner-dependent effect and toggles through the saved action without generating',async()=>{
     const {root,model,save,interact}=mount();
     expect(root.querySelector('[data-equipment-effects]')?.textContent).toContain('社交经验 ×0.25');
