@@ -44,6 +44,71 @@ const cardCatalog = computed<ResidentIdentityCard[]>(() =>
   getIdentityCardCatalog(props.model.state, activeProtagonist.value)
 );
 
+// 快捷持卡人选取、搜索与全览花名册
+const rosterSearchQuery = ref<string>('');
+const rosterCategoryFilter = ref<'all' | 'protagonist' | 'family' | 'watanare' | 'band' | 'town'>('all');
+const showRosterDrawer = ref<boolean>(false);
+
+const filteredCardCatalog = computed<ResidentIdentityCard[]>(() => {
+  const q = rosterSearchQuery.value.trim().toLowerCase();
+  return cardCatalog.value.filter((item) => {
+    if (q) {
+      const match =
+        item.name.toLowerCase().includes(q) ||
+        item.nativeName.toLowerCase().includes(q) ||
+        item.gradeOrTitle.toLowerCase().includes(q) ||
+        item.schoolOrAffiliation.toLowerCase().includes(q) ||
+        item.municipality.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (rosterCategoryFilter.value === 'all') return true;
+    if (rosterCategoryFilter.value === 'protagonist') {
+      return isProtagonistId(item.id);
+    }
+    if (rosterCategoryFilter.value === 'family') {
+      return /母|父|妹|弟|家/.test(item.familySummary) || /遥奈|美代子|长崎夫人|真琴/.test(item.name);
+    }
+    if (rosterCategoryFilter.value === 'watanare') {
+      return item.id.startsWith('watanare-') || item.id.startsWith('wata-') || /真唯|紫阳花|纱月|香穗|玲奈子|星来/.test(item.name);
+    }
+    if (rosterCategoryFilter.value === 'band') {
+      return item.id.startsWith('bang-') || Boolean(item.stageProfile) || /素世|祥子|睦|初华|海铃|喵梦|若麦|灯|立希|爱音|乐奈/.test(item.name);
+    }
+    if (rosterCategoryFilter.value === 'town') {
+      return !isProtagonistId(item.id) && !item.id.startsWith('watanare-') && !item.id.startsWith('bang-');
+    }
+    return true;
+  });
+});
+
+const currentCardIndex = computed(() =>
+  cardCatalog.value.findIndex((c) => c.id === activeCard.value.id)
+);
+
+function selectPrevCard() {
+  const len = cardCatalog.value.length;
+  if (len <= 1) return;
+  const idx = currentCardIndex.value;
+  const nextIdx = idx <= 0 ? len - 1 : idx - 1;
+  selectedCardId.value = cardCatalog.value[nextIdx].id;
+  actionFeedback.value = '';
+}
+
+function selectNextCard() {
+  const len = cardCatalog.value.length;
+  if (len <= 1) return;
+  const idx = currentCardIndex.value;
+  const nextIdx = (idx + 1) % len;
+  selectedCardId.value = cardCatalog.value[nextIdx].id;
+  actionFeedback.value = '';
+}
+
+function chooseCardFromDrawer(cardId: string) {
+  selectedCardId.value = cardId;
+  showRosterDrawer.value = false;
+  actionFeedback.value = '';
+}
+
 const selectedCardId = ref<string>(props.initialPersonId || activeProtagonist.value);
 const cardMode = ref<IdentityCardMode>('civil');
 const photoPose = ref<IdentityPhotoPose>('standard');
@@ -263,6 +328,29 @@ function setCardMode(mode: IdentityCardMode) {
 // Interactive Relationship Mesh Graph (可视化人际关系网状图)
 // ============================================================================
 const meshFilter = ref<IdentityMeshGroup>('all');
+const meshEdgeMode = ref<'direct' | 'all' | 'focus'>('direct');
+const meshZoom = ref<number>(1);
+const meshPanX = ref<number>(0);
+const meshPanY = ref<number>(0);
+
+function zoomInMesh() {
+  meshZoom.value = Math.min(2.5, Number((meshZoom.value + 0.2).toFixed(2)));
+}
+function zoomOutMesh() {
+  meshZoom.value = Math.max(0.6, Number((meshZoom.value - 0.2).toFixed(2)));
+}
+function resetMeshZoom() {
+  meshZoom.value = 1;
+  meshPanX.value = 0;
+  meshPanY.value = 0;
+}
+
+function onMeshWheel(event: WheelEvent) {
+  event.preventDefault();
+  const delta = event.deltaY < 0 ? 0.1 : -0.1;
+  meshZoom.value = Math.min(2.5, Math.max(0.6, Number((meshZoom.value + delta).toFixed(2))));
+}
+
 const selectedMeshNodeId = ref<string>('');
 const customNodeOffsets = reactive<Record<string, { x: number; y: number }>>({});
 const svgCanvasRef = ref<SVGSVGElement | null>(null);
@@ -303,6 +391,16 @@ const meshEdges = computed<
 >(() => {
   const focusId = selectedMeshNode.value?.id;
   return baseMesh.value.edges
+    .filter((edge) => {
+      if (meshEdgeMode.value === 'direct') {
+        return edge.kind === 'primary';
+      }
+      if (meshEdgeMode.value === 'focus') {
+        if (!focusId) return edge.kind === 'primary';
+        return edge.sourceId === focusId || edge.targetId === focusId;
+      }
+      return true;
+    })
     .map((edge) => {
       const s = meshNodeMap.value.get(edge.sourceId);
       const t = meshNodeMap.value.get(edge.targetId);
@@ -519,10 +617,122 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
         </div>
       </div>
 
-      <!-- Character Roster Tabs -->
+      <!-- Character Selection & Directory Toolbar -->
+      <div class="idcard-picker-toolbar">
+        <div class="idcard-picker-controls">
+          <!-- Prev / Next Card Stepper -->
+          <div class="idcard-nav-stepper">
+            <button
+              type="button"
+              class="idcard-stepper-btn"
+              title="切换至上一位持卡人"
+              aria-label="上一位持卡人"
+              @click="selectPrevCard"
+            >
+              ‹
+            </button>
+            <span class="idcard-stepper-counter">
+              {{ currentCardIndex >= 0 ? currentCardIndex + 1 : 1 }} / {{ cardCatalog.length }}
+            </span>
+            <button
+              type="button"
+              class="idcard-stepper-btn"
+              title="切换至下一位持卡人"
+              aria-label="下一位持卡人"
+              @click="selectNextCard"
+            >
+              ›
+            </button>
+          </div>
+
+          <!-- Quick Search Bar -->
+          <div class="idcard-search-box">
+            <input
+              v-model="rosterSearchQuery"
+              type="search"
+              class="idcard-search-input"
+              placeholder="🔍 快速找人（输入姓名/身份/学校）…"
+              aria-label="检索持卡人"
+            />
+            <button
+              v-if="rosterSearchQuery"
+              type="button"
+              class="idcard-search-clear"
+              title="清空搜索"
+              @click="rosterSearchQuery = ''"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Open Full Roster Modal / Drawer -->
+          <button
+            type="button"
+            class="idcard-drawer-toggle-btn"
+            :class="{ active: showRosterDrawer }"
+            @click="showRosterDrawer = !showRosterDrawer"
+          >
+            📋 全览花名册 ({{ cardCatalog.length }})
+          </button>
+        </div>
+
+        <!-- Quick Category Filter Chips -->
+        <div class="idcard-category-tabs" role="tablist">
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'all' }"
+            @click="rosterCategoryFilter = 'all'"
+          >
+            全部
+          </button>
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'protagonist' }"
+            @click="rosterCategoryFilter = 'protagonist'"
+          >
+            核心主角
+          </button>
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'family' }"
+            @click="rosterCategoryFilter = 'family'"
+          >
+            至亲家属
+          </button>
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'watanare' }"
+            @click="rosterCategoryFilter = 'watanare'"
+          >
+            芦谷同伴
+          </button>
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'band' }"
+            @click="rosterCategoryFilter = 'band'"
+          >
+            乐团成员
+          </button>
+          <button
+            type="button"
+            class="idcard-cat-tab"
+            :class="{ active: rosterCategoryFilter === 'town' }"
+            @click="rosterCategoryFilter = 'town'"
+          >
+            都会在册
+          </button>
+        </div>
+      </div>
+
+      <!-- Character Roster Quick Horizontal Chips -->
       <nav class="idcard-roster-bar" aria-label="切换证件持有人">
         <button
-          v-for="item in cardCatalog"
+          v-for="item in filteredCardCatalog"
           :key="item.id"
           type="button"
           class="idcard-roster-chip"
@@ -535,7 +745,50 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
           <span class="idcard-roster-name">{{ item.name }}</span>
           <span v-if="item.id === activeProtagonist" class="idcard-roster-badge self">当前视角</span>
         </button>
+        <span v-if="!filteredCardCatalog.length" class="idcard-roster-empty">
+          未检索到符合条件的持卡人
+        </span>
       </nav>
+
+      <!-- Full Roster Grid Drawer / Modal -->
+      <div v-if="showRosterDrawer" class="idcard-roster-drawer" role="dialog" aria-modal="true" aria-label="全览花名册">
+        <div class="idcard-drawer-backdrop" @click="showRosterDrawer = false"></div>
+        <div class="idcard-drawer-content">
+          <div class="idcard-drawer-header">
+            <div class="idcard-drawer-title-group">
+              <h5>学区在册居民身份证全览</h5>
+              <span class="idcard-drawer-subtitle">共收录 {{ cardCatalog.length }} 位在册居民 · 点击卡片立即调取档案</span>
+            </div>
+            <button type="button" class="idcard-drawer-close-btn" @click="showRosterDrawer = false">✕ 关闭</button>
+          </div>
+          <div class="idcard-drawer-grid">
+            <article
+              v-for="item in filteredCardCatalog"
+              :key="item.id"
+              class="idcard-drawer-card"
+              :class="{ active: item.id === activeCard.id, self: item.id === activeProtagonist }"
+              @click="chooseCardFromDrawer(item.id)"
+            >
+              <div class="idcard-drawer-avatar-wrap">
+                <MapCharacterAvatar class="idcard-avatar" :person-id="item.id" :protagonist-id="isProtagonistId(item.id) ? item.id : undefined" :name="item.name" />
+              </div>
+              <div class="idcard-drawer-info">
+                <div class="idcard-drawer-card-top">
+                  <span class="idcard-drawer-name">{{ item.name }}</span>
+                  <span v-if="item.id === activeProtagonist" class="idcard-drawer-badge self">当前视角</span>
+                  <span v-else class="idcard-drawer-badge">{{ item.categoryBadge.split('·')[0].trim() }}</span>
+                </div>
+                <div class="idcard-drawer-native">{{ item.nativeName }}</div>
+                <div class="idcard-drawer-role">{{ item.gradeOrTitle }}</div>
+                <div class="idcard-drawer-meta">
+                  <span>{{ item.schoolOrAffiliation.split('·')[0].trim() }}</span>
+                  <span>{{ item.municipality.split('·')[0].replace('东京都', '').replace('住民基本台帐', '').trim() }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- ====================================================================
@@ -1001,55 +1254,142 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
         <div class="idcard-mesh-title-block">
           <h5>{{ activeCard.name }} · 人际羁绊网状图</h5>
           <span class="idcard-mesh-subtitle">
-            点击节点检视羁绊详情 · 拖动节点可自由调整网状布局 · 当前区域：{{ currentLocationLabel }}
+            好感与身份层级优先显现 · 支持滚轮/按钮放大 · 切换圈层与连线模式避免遮挡 · 当前：{{ currentLocationLabel }}
           </span>
         </div>
-        <div class="idcard-mesh-filter-bar" role="group" aria-label="筛选关系圈层">
-          <button
-            type="button"
-            class="idcard-mesh-filter-btn"
-            :class="{ active: meshFilter === 'all' }"
-            @click="meshFilter = 'all'"
-          >
-            全部关系网
-          </button>
-          <button
-            type="button"
-            class="idcard-mesh-filter-btn mujica"
-            :class="{ active: meshFilter === 'mujica' }"
-            @click="meshFilter = 'mujica'"
-          >
-            Ave Mujica
-          </button>
-          <button
-            type="button"
-            class="idcard-mesh-filter-btn crychic"
-            :class="{ active: meshFilter === 'crychic' }"
-            @click="meshFilter = 'crychic'"
-          >
-            CRYCHIC · MyGO
-          </button>
-          <button
-            type="button"
-            class="idcard-mesh-filter-btn campus"
-            :class="{ active: meshFilter === 'campus' }"
-            @click="meshFilter = 'campus'"
-          >
-            大学城日常
-          </button>
-          <button
-            type="button"
-            class="idcard-mesh-reset-btn"
-            title="恢复默认环状拓扑位置"
-            @click="resetMeshLayout"
-          >
-            重置布局
-          </button>
+
+        <!-- Mesh Control Toolbar: Categories + Edge Mode + Zoom -->
+        <div class="idcard-mesh-toolbar-wrap">
+          <!-- Category Filter Bar -->
+          <div class="idcard-mesh-filter-bar" role="group" aria-label="筛选关系圈层">
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn"
+              :class="{ active: meshFilter === 'all' }"
+              @click="meshFilter = 'all'"
+            >
+              全部关系
+            </button>
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn family"
+              :class="{ active: meshFilter === 'family' }"
+              @click="meshFilter = 'family'"
+            >
+              至亲家庭
+            </button>
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn campus"
+              :class="{ active: meshFilter === 'campus' }"
+              @click="meshFilter = 'campus'"
+            >
+              学园同窗
+            </button>
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn mujica"
+              :class="{ active: meshFilter === 'mujica' }"
+              @click="meshFilter = 'mujica'"
+            >
+              Ave Mujica
+            </button>
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn crychic"
+              :class="{ active: meshFilter === 'crychic' }"
+              @click="meshFilter = 'crychic'"
+            >
+              CRYCHIC
+            </button>
+            <button
+              type="button"
+              class="idcard-mesh-filter-btn legal"
+              :class="{ active: meshFilter === 'legal' }"
+              @click="meshFilter = 'legal'"
+            >
+              事务伙伴
+            </button>
+          </div>
+
+          <!-- Edge Display Mode (Anti-Clutter) & Zoom Controls -->
+          <div class="idcard-mesh-action-controls">
+            <!-- Edge Clutter Reducer -->
+            <div class="idcard-mesh-edge-mode-bar" role="group" aria-label="连线显示模式">
+              <button
+                type="button"
+                class="idcard-mesh-mode-btn"
+                :class="{ active: meshEdgeMode === 'direct' }"
+                title="仅展示与持证人的直接好感连线，隐藏次级交叉线以防遮挡"
+                @click="meshEdgeMode = 'direct'"
+              >
+                主从直连
+              </button>
+              <button
+                type="button"
+                class="idcard-mesh-mode-btn"
+                :class="{ active: meshEdgeMode === 'all' }"
+                title="展示全部人物交叉羁绊网线"
+                @click="meshEdgeMode = 'all'"
+              >
+                全交叉网
+              </button>
+              <button
+                type="button"
+                class="idcard-mesh-mode-btn"
+                :class="{ active: meshEdgeMode === 'focus' }"
+                title="仅显示与当前选定人物相连的线"
+                @click="meshEdgeMode = 'focus'"
+              >
+                选中聚焦
+              </button>
+            </div>
+
+            <!-- Zoom & Pan Stepper -->
+            <div class="idcard-mesh-zoom-bar">
+              <button
+                type="button"
+                class="idcard-mesh-zoom-btn"
+                title="放大拓扑图（亦可滚轮滑动）"
+                aria-label="放大"
+                @click="zoomInMesh"
+              >
+                +
+              </button>
+              <span class="idcard-mesh-zoom-scale">{{ Math.round(meshZoom * 100) }}%</span>
+              <button
+                type="button"
+                class="idcard-mesh-zoom-btn"
+                title="缩小拓扑图"
+                aria-label="缩小"
+                @click="zoomOutMesh"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                class="idcard-mesh-zoom-btn reset"
+                title="恢复 100% 原始缩放"
+                @click="resetMeshZoom"
+              >
+                重置缩放
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="idcard-mesh-reset-btn"
+              title="恢复默认节点拓扑位置"
+              @click="resetMeshLayout"
+            >
+              重置位置
+            </button>
+          </div>
         </div>
       </header>
 
-      <!-- SVG Interactive Network Topology Canvas -->
-      <div class="idcard-mesh-canvas-wrap">
+      <!-- SVG Interactive Network Topology Canvas (Zoomable & Draggable) -->
+      <div class="idcard-mesh-canvas-wrap" @wheel="onMeshWheel">
         <svg
           ref="svgCanvasRef"
           class="idcard-mesh-svg"
@@ -1066,112 +1406,150 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
             </radialGradient>
           </defs>
 
-          <!-- Background Orbital Radar Rings -->
-          <circle cx="340" cy="190" r="175" fill="url(#mesh-center-glow)" />
-          <ellipse cx="340" cy="190" rx="188" ry="106" class="idcard-mesh-orbit-ring" />
-          <ellipse cx="340" cy="190" rx="242" ry="136" class="idcard-mesh-orbit-ring outer" />
-          <line x1="60" y1="190" x2="620" y2="190" class="idcard-mesh-axis-line" />
-          <line x1="340" y1="24" x2="340" y2="356" class="idcard-mesh-axis-line" />
+          <!-- Zoom Transform Layer -->
+          <g :transform="`scale(${meshZoom})`" transform-origin="340 190">
+            <!-- Background Orbital Radar Rings -->
+            <circle cx="340" cy="190" r="175" fill="url(#mesh-center-glow)" />
+            <ellipse cx="340" cy="190" rx="188" ry="106" class="idcard-mesh-orbit-ring" />
+            <ellipse cx="340" cy="190" rx="242" ry="136" class="idcard-mesh-orbit-ring outer" />
+            <line x1="60" y1="190" x2="620" y2="190" class="idcard-mesh-axis-line" />
+            <line x1="340" y1="24" x2="340" y2="356" class="idcard-mesh-axis-line" />
 
-          <!-- Relationship Edges (Primary Spokes + Inter-Character Cross Mesh) -->
-          <g class="idcard-mesh-edges">
-            <g
-              v-for="edge in meshEdges"
-              :key="edge.id"
-              class="idcard-mesh-edge-group"
-              :class="[
-                `kind-${edge.kind}`,
-                `group-${edge.group}`,
-                { dimmed: !edge.isHighlighted }
-              ]"
-            >
-              <line
-                :x1="edge.x1"
-                :y1="edge.y1"
-                :x2="edge.x2"
-                :y2="edge.y2"
-                class="idcard-mesh-edge-line"
-                :stroke-width="edge.kind === 'primary' ? Math.max(1.8, edge.affinity / 28) : 1.4"
-              />
-              <!-- Edge Midpoint Label Pill -->
+            <!-- Relationship Edges (Primary Spokes + Inter-Character Cross Mesh) -->
+            <g class="idcard-mesh-edges">
               <g
-                v-if="edge.kind === 'primary' || edge.isHighlighted"
-                :transform="`translate(${edge.mx}, ${edge.my})`"
-                class="idcard-mesh-edge-badge"
+                v-for="edge in meshEdges"
+                :key="edge.id"
+                class="idcard-mesh-edge-group"
+                :class="[
+                  `kind-${edge.kind}`,
+                  `group-${edge.group}`,
+                  { dimmed: !edge.isHighlighted }
+                ]"
               >
-                <rect
-                  :x="edge.kind === 'primary' ? -30 : -42"
-                  y="-9"
-                  :width="edge.kind === 'primary' ? 60 : 84"
-                  height="18"
-                  rx="9"
+                <line
+                  :x1="edge.x1"
+                  :y1="edge.y1"
+                  :x2="edge.x2"
+                  :y2="edge.y2"
+                  class="idcard-mesh-edge-line"
+                  :stroke-width="edge.kind === 'primary' ? Math.max(2.0, edge.affinity / 26) : 1.3"
                 />
-                <text x="0" y="3.5" text-anchor="middle">{{ edge.label }}</text>
+                <!-- Edge Midpoint Label Pill -->
+                <g
+                  v-if="edge.kind === 'primary' || edge.isHighlighted"
+                  :transform="`translate(${edge.mx}, ${edge.my})`"
+                  class="idcard-mesh-edge-badge"
+                >
+                  <rect
+                    :x="edge.kind === 'primary' ? -34 : -42"
+                    y="-9"
+                    :width="edge.kind === 'primary' ? 68 : 84"
+                    height="18"
+                    rx="9"
+                  />
+                  <text x="0" y="3.5" text-anchor="middle">{{ edge.label }}</text>
+                </g>
               </g>
             </g>
-          </g>
 
-          <!-- Relationship Nodes (Avatars + Halo Rings + Labels) -->
-          <g class="idcard-mesh-nodes">
-            <g
-              v-for="node in meshNodes"
-              :key="node.id"
-              class="idcard-mesh-node"
-              :class="[
-                `group-${node.group}`,
-                {
-                  'is-center': node.isCenter,
-                  'is-selected': selectedMeshNode?.id === node.id,
-                  'is-protagonist': node.isCurrentProtagonist
-                }
-              ]"
-              :data-mesh-node="node.id"
-              @pointerdown="startMeshNodeDrag(node, $event)"
-              @pointerup="endMeshNodeDrag(node, $event)"
-              @pointercancel="endMeshNodeDrag(node, $event)"
-            >
-              <!-- Outer Pulse Halo for Center or Selected Node -->
-              <circle
-                v-if="node.isCenter || selectedMeshNode?.id === node.id || node.isCurrentProtagonist"
-                :cx="node.x"
-                :cy="node.y"
-                :r="node.isCenter ? 35 : 27"
-                class="idcard-mesh-node-halo"
-              />
-
-              <!-- Node Background Circle -->
-              <circle
-                :cx="node.x"
-                :cy="node.y"
-                :r="node.isCenter ? 29 : 22"
-                class="idcard-mesh-node-bg"
-              />
-
-              <!-- Character Portrait Image inside Node Circle -->
-              <foreignObject
-                :x="node.x - (node.isCenter ? 28 : 21)"
-                :y="node.y - (node.isCenter ? 28 : 21)"
-                :width="node.isCenter ? 56 : 42"
-                :height="node.isCenter ? 56 : 42"
-                class="idcard-mesh-avatar"
+            <!-- Relationship Nodes (Affinity Priority Top + Avatar Center + Role Priority Bottom + Name Subordinate) -->
+            <g class="idcard-mesh-nodes">
+              <g
+                v-for="node in meshNodes"
+                :key="node.id"
+                class="idcard-mesh-node"
+                :class="[
+                  `group-${node.group}`,
+                  {
+                    'is-center': node.isCenter,
+                    'is-selected': selectedMeshNode?.id === node.id,
+                    'is-protagonist': node.isCurrentProtagonist
+                  }
+                ]"
+                :data-mesh-node="node.id"
+                @pointerdown="startMeshNodeDrag(node, $event)"
+                @pointerup="endMeshNodeDrag(node, $event)"
+                @pointercancel="endMeshNodeDrag(node, $event)"
               >
-                <MapCharacterAvatar class="idcard-avatar" :person-id="node.id" :protagonist-id="isProtagonistId(node.id) ? node.id : undefined" :name="node.name" />
-              </foreignObject>
+                <!-- 1. Top Affinity Badge (Highest Visual Priority) -->
+                <g :transform="`translate(${node.x}, ${node.y - (node.isCenter ? 36 : 28)})`" class="idcard-node-affinity-pill">
+                  <rect
+                    :x="node.isCenter ? -36 : -30"
+                    y="-9"
+                    :width="node.isCenter ? 72 : 60"
+                    height="18"
+                    rx="9"
+                    class="idcard-mesh-affinity-bg"
+                    :class="{
+                      high: node.affinity >= 80,
+                      mid: node.affinity >= 60 && node.affinity < 80,
+                      center: node.isCenter
+                    }"
+                  />
+                  <text x="0" y="3.5" text-anchor="middle" class="idcard-mesh-affinity-text">
+                    {{ node.isCenter ? '★ 持证人' : `★ ${node.affinity}` }}
+                  </text>
+                </g>
 
-              <!-- Node Border Ring -->
-              <circle
-                :cx="node.x"
-                :cy="node.y"
-                :r="node.isCenter ? 28.5 : 21.5"
-                class="idcard-mesh-node-ring"
-              />
+                <!-- 2. Outer Pulse Halo for Center or Selected Node -->
+                <circle
+                  v-if="node.isCenter || selectedMeshNode?.id === node.id || node.isCurrentProtagonist"
+                  :cx="node.x"
+                  :cy="node.y"
+                  :r="node.isCenter ? 35 : 27"
+                  class="idcard-mesh-node-halo"
+                />
 
-              <!-- Node Name Pill Below Circle -->
-              <g :transform="`translate(${node.x}, ${node.y + (node.isCenter ? 41 : 33)})`">
-                <rect x="-44" y="-10" width="88" height="20" rx="6" class="idcard-mesh-node-label-bg" />
-                <text x="0" y="3.5" text-anchor="middle" class="idcard-mesh-node-name">
-                  {{ node.name }}
-                </text>
+                <!-- 3. Node Background Circle -->
+                <circle
+                  :cx="node.x"
+                  :cy="node.y"
+                  :r="node.isCenter ? 29 : 22"
+                  class="idcard-mesh-node-bg"
+                />
+
+                <!-- 4. Character Portrait Image inside Node Circle -->
+                <foreignObject
+                  :x="node.x - (node.isCenter ? 28 : 21)"
+                  :y="node.y - (node.isCenter ? 28 : 21)"
+                  :width="node.isCenter ? 56 : 42"
+                  :height="node.isCenter ? 56 : 42"
+                  class="idcard-mesh-avatar"
+                >
+                  <MapCharacterAvatar class="idcard-avatar" :person-id="node.id" :protagonist-id="isProtagonistId(node.id) ? node.id : undefined" :name="node.name" />
+                </foreignObject>
+
+                <!-- 5. Node Border Ring -->
+                <circle
+                  :cx="node.x"
+                  :cy="node.y"
+                  :r="node.isCenter ? 28.5 : 21.5"
+                  class="idcard-mesh-node-ring"
+                />
+
+                <!-- 6. Identity / Role Priority Pill (Below Avatar, Bold Prominent) -->
+                <g :transform="`translate(${node.x}, ${node.y + (node.isCenter ? 36 : 28)})`" class="idcard-node-role-pill">
+                  <rect
+                    :x="-Math.max(48, Math.min(68, node.roleLabel.length * 6.6))"
+                    y="-10"
+                    :width="Math.max(96, Math.min(136, node.roleLabel.length * 13.2))"
+                    height="20"
+                    rx="6"
+                    class="idcard-mesh-role-bg"
+                    :class="{ 'is-selected': selectedMeshNode?.id === node.id }"
+                  />
+                  <text x="0" y="3.5" text-anchor="middle" class="idcard-mesh-role-text">
+                    {{ node.roleLabel.length > 9 ? node.roleLabel.slice(0, 8) + '…' : node.roleLabel }}
+                  </text>
+                </g>
+
+                <!-- 7. Character Name (Subordinate Secondary Label) -->
+                <g :transform="`translate(${node.x}, ${node.y + (node.isCenter ? 57 : 49)})`" class="idcard-node-name-pill">
+                  <text x="0" y="3" text-anchor="middle" class="idcard-mesh-name-subtext">
+                    {{ node.name }}
+                  </text>
+                </g>
               </g>
             </g>
           </g>
@@ -1179,10 +1557,13 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
 
         <!-- Mesh Legend Bar -->
         <div class="idcard-mesh-legend">
+          <span class="legend-item"><i class="dot family"></i> 至亲家庭</span>
+          <span class="legend-item"><i class="dot campus"></i> 学园同窗</span>
           <span class="legend-item"><i class="dot mujica"></i> Ave Mujica</span>
-          <span class="legend-item"><i class="dot crychic"></i> CRYCHIC · MyGO!!!!!</span>
-          <span class="legend-item"><i class="dot campus"></i> 大学城日常</span>
-          <span class="legend-item"><i class="line-sample cross"></i> 人物间交叉羁绊网线</span>
+          <span class="legend-item"><i class="dot crychic"></i> CRYCHIC · MyGO</span>
+          <span class="legend-item"><i class="dot legal"></i> 事务伙伴</span>
+          <span class="legend-item"><i class="line-sample direct"></i> 直连好感度</span>
+          <span class="legend-item"><i class="line-sample cross"></i> 交叉羁绊网</span>
         </div>
       </div>
 

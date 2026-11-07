@@ -1862,3 +1862,451 @@
 .idcard-strategy-grid article, .idcard-strategy-block { padding: 11px; border: 1px solid rgba(124,153,143,.27); border-radius: 10px; margin: 8px 0; }
 .idcard-strategy-section details { margin: 10px 0; }
 .idcard-strategy-section details p { font-size: 12px; line-height: 1.5; }
+
+/* ============================================================================
+   Enhanced Directory & Roster Picker Controls (避免一个一个点)
+   ============================================================================ */
+.idcard-picker-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+
+.idcard-picker-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.idcard-nav-stepper {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(18, 30, 26, 0.85);
+  border: 1px solid rgba(138, 184, 160, 0.3);
+  border-radius: 6px;
+  padding: 1px 4px;
+}
+
+.idcard-stepper-btn {
+  background: transparent;
+  border: none;
+  color: #cce3d6;
+  font-size: 15px;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 120ms ease;
+}
+
+.idcard-stepper-btn:hover {
+  background: rgba(144, 204, 174, 0.2);
+  color: #fff;
+}
+
+.idcard-stepper-counter {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a4c4b2;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.idcard-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 170px;
+}
+
+.idcard-search-input {
+  width: 100%;
+  height: 28px;
+  background: rgba(13, 22, 19, 0.9);
+  border: 1px solid rgba(134, 178, 154, 0.35);
+  border-radius: 6px;
+  padding: 0 24px 0 8px;
+  font-size: 11.5px;
+  color: #e2f2ea;
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.idcard-search-input:focus {
+  border-color: rgba(168, 226, 196, 0.85);
+  box-shadow: 0 0 0 2px rgba(130, 198, 164, 0.2);
+}
+
+.idcard-search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #8dafa0;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.idcard-drawer-toggle-btn {
+  height: 28px;
+  padding: 0 10px;
+  background: linear-gradient(135deg, rgba(32, 54, 46, 0.92), rgba(22, 38, 32, 0.96));
+  border: 1px solid rgba(154, 208, 178, 0.45);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ddf4e7;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.idcard-drawer-toggle-btn:hover,
+.idcard-drawer-toggle-btn.active {
+  background: rgba(64, 114, 92, 0.55);
+  border-color: rgba(188, 240, 212, 0.85);
+  color: #ffffff;
+}
+
+.idcard-category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.idcard-cat-tab {
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(18, 28, 25, 0.7);
+  border: 1px solid rgba(132, 174, 152, 0.22);
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #a8c6b7;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 120ms ease;
+}
+
+.idcard-cat-tab:hover {
+  color: #ffffff;
+  border-color: rgba(154, 204, 176, 0.45);
+}
+
+.idcard-cat-tab.active {
+  background: rgba(68, 118, 96, 0.42);
+  border-color: rgba(162, 222, 190, 0.8);
+  color: #ffffff;
+}
+
+.idcard-roster-empty {
+  font-size: 11px;
+  color: #8da498;
+  padding: 6px 10px;
+}
+
+/* Full Roster Grid Drawer / Modal */
+.idcard-roster-drawer {
+  position: relative;
+  z-index: 60;
+  margin: 6px 0 10px;
+}
+
+.idcard-drawer-content {
+  background: rgba(13, 22, 19, 0.98);
+  border: 1px solid rgba(152, 206, 178, 0.4);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.idcard-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(144, 186, 164, 0.2);
+  padding-bottom: 8px;
+}
+
+.idcard-drawer-title-group h5 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #eff8f3;
+}
+
+.idcard-drawer-subtitle {
+  font-size: 10.5px;
+  color: #92b8a5;
+}
+
+.idcard-drawer-close-btn {
+  background: transparent;
+  border: 1px solid rgba(144, 186, 164, 0.3);
+  border-radius: 4px;
+  color: #bad3c6;
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.idcard-drawer-close-btn:hover {
+  background: rgba(144, 186, 164, 0.2);
+  color: #fff;
+}
+
+.idcard-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.idcard-drawer-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: rgba(22, 34, 30, 0.75);
+  border: 1px solid rgba(138, 180, 158, 0.22);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 130ms ease;
+  user-select: none;
+}
+
+.idcard-drawer-card:hover {
+  background: rgba(36, 58, 50, 0.9);
+  border-color: rgba(168, 222, 192, 0.6);
+  transform: translateY(-1px);
+}
+
+.idcard-drawer-card.active {
+  background: rgba(48, 86, 72, 0.85);
+  border-color: rgba(198, 244, 220, 0.95);
+  box-shadow: 0 0 10px rgba(120, 196, 160, 0.25);
+}
+
+.idcard-drawer-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid rgba(154, 204, 176, 0.45);
+}
+
+.idcard-drawer-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.idcard-drawer-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.idcard-drawer-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f2faf5;
+}
+
+.idcard-drawer-badge {
+  font-size: 9.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(120, 172, 144, 0.2);
+  color: #c4e4d4;
+  white-space: nowrap;
+}
+
+.idcard-drawer-badge.self {
+  background: rgba(234, 198, 126, 0.25);
+  color: #ffe6a4;
+  font-weight: 700;
+}
+
+.idcard-drawer-native {
+  font-size: 10px;
+  color: #92b4a3;
+}
+
+.idcard-drawer-role {
+  font-size: 10.5px;
+  color: #c2ddd0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.idcard-drawer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: #7e9e8f;
+  margin-top: 1px;
+}
+
+/* ============================================================================
+   Enhanced Relationship Mesh Controls (好感与身份层级优先 + 放大与模式)
+   ============================================================================ */
+.idcard-mesh-toolbar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.idcard-mesh-action-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.idcard-mesh-edge-mode-bar,
+.idcard-mesh-zoom-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 26, 23, 0.85);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(138, 178, 156, 0.25);
+}
+
+.idcard-mesh-mode-btn,
+.idcard-mesh-zoom-btn {
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(24, 38, 33, 0.8);
+  border: 1px solid rgba(136, 176, 154, 0.25);
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #b8d4c6;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+
+.idcard-mesh-mode-btn:hover,
+.idcard-mesh-zoom-btn:hover {
+  background: rgba(48, 82, 68, 0.6);
+  color: #ffffff;
+}
+
+.idcard-mesh-mode-btn.active {
+  background: rgba(68, 120, 96, 0.48);
+  border-color: rgba(168, 226, 194, 0.8);
+  color: #ffffff;
+}
+
+.idcard-mesh-zoom-scale {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d6eee0;
+  padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  text-align: center;
+  user-select: none;
+}
+
+.idcard-mesh-filter-btn.family.active {
+  background: rgba(198, 76, 120, 0.45);
+  border-color: rgba(244, 154, 186, 0.8);
+}
+
+.idcard-mesh-filter-btn.legal.active {
+  background: rgba(168, 128, 62, 0.42);
+  border-color: rgba(236, 198, 124, 0.8);
+}
+
+/* SVG Node Internal Hierarchy Styling */
+.idcard-mesh-affinity-bg {
+  fill: rgba(22, 36, 31, 0.94);
+  stroke: rgba(144, 188, 164, 0.4);
+  stroke-width: 1;
+}
+
+.idcard-mesh-affinity-bg.high {
+  fill: rgba(38, 76, 58, 0.95);
+  stroke: rgba(166, 236, 196, 0.85);
+}
+
+.idcard-mesh-affinity-bg.mid {
+  fill: rgba(28, 52, 68, 0.92);
+  stroke: rgba(148, 204, 240, 0.75);
+}
+
+.idcard-mesh-affinity-bg.center {
+  fill: rgba(64, 52, 28, 0.95);
+  stroke: rgba(240, 208, 136, 0.85);
+}
+
+.idcard-mesh-affinity-text {
+  fill: #eff8f3;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.idcard-mesh-role-bg {
+  fill: rgba(13, 23, 20, 0.94);
+  stroke: rgba(162, 208, 184, 0.45);
+  stroke-width: 1.2;
+}
+
+.idcard-mesh-role-bg.is-selected {
+  fill: rgba(42, 74, 60, 0.98);
+  stroke: rgba(238, 212, 150, 0.9);
+}
+
+.idcard-mesh-role-text {
+  fill: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+}
+
+.idcard-mesh-name-subtext {
+  fill: #9abeb0;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.legend-item .dot.family { background: #e06c92; }
+.legend-item .dot.legal { background: #dca852; }
+.legend-item .line-sample.direct {
+  width: 16px;
+  height: 2px;
+  background: #6eb38e;
+}

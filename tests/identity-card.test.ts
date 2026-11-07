@@ -42,9 +42,11 @@ describe('identity-card module', () => {
     expect(fallback.id).toBe('soyo');
   });
 
-  it('computes distinct canon bond details for Soyo (62), Sakiko (78), Emma (56), and Renako (60) and detects contact registration', () => {
+  it('computes authentic canon bonds for Soyo (62) and Sakiko (78) while confirming Mutsumi has no pre-existing acquaintance with Emma or Renako', () => {
     const state = createInitialState();
     const baseContacts = state.contacts.filter(c => c.id !== 'bang-mutsumi');
+
+    // 素世与祥子是睦真实结识的初中同窗与乐团旧友/青梅
     const soyoBond = getProtagonistBondForCard(WAKABA_MUTSUMI_CARD, 'soyo', baseContacts);
     expect(soyoBond.protagonistName).toBe('长崎素世');
     expect(soyoBond.affinity).toBe(62);
@@ -54,13 +56,20 @@ describe('identity-card module', () => {
     expect(sakikoBond.protagonistName).toBe('丰川祥子');
     expect(sakikoBond.affinity).toBe(78);
 
+    // 小睦并不认识艾玛与玲奈子，在无真实通讯往来时羁绊未建立（好感为 0）
     const emmaBond = getProtagonistBondForCard(WAKABA_MUTSUMI_CARD, 'emma', baseContacts);
     expect(emmaBond.protagonistName).toBe('樱羽艾玛');
-    expect(emmaBond.affinity).toBe(56);
+    expect(emmaBond.affinity).toBe(0);
+    expect(emmaBond.statusTag).toContain('未结识');
 
     const renakoBond = getProtagonistBondForCard(WAKABA_MUTSUMI_CARD, 'renako', baseContacts);
     expect(renakoBond.protagonistName).toBe('甘织玲奈子');
-    expect(renakoBond.affinity).toBe(60);
+    expect(renakoBond.affinity).toBe(0);
+    expect(renakoBond.statusTag).toContain('未结识');
+
+    // 睦的卡片预设中不包含艾玛和玲奈子
+    expect(WAKABA_MUTSUMI_CARD.bonds.some(b => b.personId === 'emma')).toBe(false);
+    expect(WAKABA_MUTSUMI_CARD.bonds.some(b => b.personId === 'renako')).toBe(false);
 
     const withMutsumiContact = [
       ...baseContacts,
@@ -206,5 +215,31 @@ describe('identity-card module', () => {
     });
     expect(maiCard.birthDate).toBe('2007.09.01');
     expect(maiCard.zodiac).toBe('处女座');
+  });
+
+  it('removes Mutsumi bonds from Emma and Renako and links Renako to Haruna and Emma to Yuki', () => {
+    const state = createInitialState();
+    const renakoCard = resolveIdentityCardById('renako', state, 'renako');
+    const emmaCard = resolveIdentityCardById('emma', state, 'emma');
+
+    // 玲奈子与艾玛均不认识若叶睦
+    expect(renakoCard.bonds.some(b => b.personId === 'bang-mutsumi')).toBe(false);
+    expect(emmaCard.bonds.some(b => b.personId === 'bang-mutsumi')).toBe(false);
+
+    // 玲奈子包含亲妹妹遥奈（至亲家庭羁绊）
+    const harunaBond = renakoCard.bonds.find(b => b.personId === 'watanare-haruna');
+    expect(harunaBond).toBeDefined();
+    expect(harunaBond?.affinity).toBe(90);
+    expect(harunaBond?.group).toBe('family');
+
+    // 艾玛包含合租室友月代雪
+    const yukiBond = emmaCard.bonds.find(b => b.personId === 'majo-yuki');
+    expect(yukiBond).toBeDefined();
+    expect(yukiBond?.affinity).toBe(84);
+
+    // 玲奈子的关系网在 family 过滤下仅展示家人，阻断交叉杂线遮挡
+    const familyMesh = buildIdentityRelationshipMesh(renakoCard, state, 'renako', 'family');
+    expect(familyMesh.nodes.every(n => n.isCenter || n.group === 'family')).toBe(true);
+    expect(familyMesh.nodes.some(n => n.id === 'watanare-haruna')).toBe(true);
   });
 });

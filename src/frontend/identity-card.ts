@@ -5,7 +5,7 @@ import type { CharacterContact, WorldState } from './types';
 export type IdentityCardMode = 'civil' | 'stage';
 export type IdentityCardSide = 'front' | 'back';
 export type IdentityPhotoPose = 'standard' | 'smile' | 'shy' | 'stage';
-export type IdentityMeshGroup = 'all' | 'mujica' | 'crychic' | 'campus';
+export type IdentityMeshGroup = 'all' | 'family' | 'campus' | 'mujica' | 'crychic' | 'legal';
 
 export interface IdentityBondEntry {
   personId: string;
@@ -14,7 +14,7 @@ export interface IdentityBondEntry {
   affinity: number;
   statusTag: string;
   note: string;
-  group?: 'mujica' | 'crychic' | 'campus';
+  group?: 'family' | 'campus' | 'mujica' | 'crychic' | 'legal';
 }
 
 export interface IdentityMeshNode {
@@ -24,7 +24,7 @@ export interface IdentityMeshNode {
   affinity: number;
   statusTag: string;
   note: string;
-  group: 'center' | 'mujica' | 'crychic' | 'campus';
+  group: 'center' | 'family' | 'campus' | 'mujica' | 'crychic' | 'legal';
   groupLabel: string;
   isCenter?: boolean;
   isCurrentProtagonist?: boolean;
@@ -41,7 +41,7 @@ export interface IdentityMeshEdge {
   label: string;
   affinity: number;
   kind: 'primary' | 'cross';
-  group: 'mujica' | 'crychic' | 'campus';
+  group: 'family' | 'campus' | 'mujica' | 'crychic' | 'legal';
 }
 
 export interface IdentityEndorsementEntry {
@@ -232,24 +232,6 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
       statusTag: '旧识 · 52',
       note: '在 RiNG 或排练室偶遇时立希语气虽然急躁，但彼此都清楚对方的认真。',
       group: 'crychic'
-    },
-    {
-      personId: 'emma',
-      name: '樱羽艾玛',
-      roleLabel: '大学城同级生 · 图书馆邻座伙伴',
-      affinity: 56,
-      statusTag: '友善 · 56',
-      note: '在校园图书馆东侧花坛与阅览桌偶遇，收到过睦安静递来的小黄瓜。',
-      group: 'campus'
-    },
-    {
-      personId: 'renako',
-      name: '甘织玲奈子',
-      roleLabel: '安静同好 · 园艺与闲暇茶伴',
-      affinity: 60,
-      statusTag: '安心 · 60',
-      note: '和少言的睦待在一起时不需要勉强找话题，彼此都觉得十分自在。',
-      group: 'campus'
     }
   ],
   endorsements: [
@@ -535,12 +517,12 @@ export const EMMA_IDENTITY_CARD: ResidentIdentityCard = {
   traits: ['樱粉短发', '率真热忱', '模拟法庭与辩护', '甜点爱好者', '正义感满溢'],
   bonds: [
     {
-      personId: 'bang-mutsumi',
-      name: '若叶睦',
-      roleLabel: '大学城同级生 · 图书馆邻座伙伴',
-      affinity: 56,
-      statusTag: '友善 · 56',
-      note: '在图书馆查阅案卷时偶遇，收到过睦安静递来的小黄瓜。',
+      personId: 'majo-yuki',
+      name: '月代雪',
+      roleLabel: '旧友与合租室友 · 深层牵绊',
+      affinity: 84,
+      statusTag: '羁绊 · 84',
+      note: '牢屋敷时期的挚友，如今在城市公寓中一同生活，彼此最信任的存在。',
       group: 'campus'
     },
     {
@@ -550,7 +532,7 @@ export const EMMA_IDENTITY_CARD: ResidentIdentityCard = {
       affinity: 88,
       statusTag: '搭档 · 88',
       note: '无论在模拟法庭还是街区委托中都形影不离的黄金搭档。',
-      group: 'campus'
+      group: 'legal'
     },
     {
       personId: 'renako',
@@ -618,13 +600,13 @@ export const RENAKO_IDENTITY_CARD: ResidentIdentityCard = {
   traits: ['栗粉中长发', '内向努力家', '共情倾听', '主机游戏玩家', '吐槽役体质'],
   bonds: [
     {
-      personId: 'bang-mutsumi',
-      name: '若叶睦',
-      roleLabel: '安静同好 · 园艺与闲暇茶伴',
-      affinity: 60,
-      statusTag: '安心 · 60',
-      note: '和少言的睦待在一起时完全不需要勉强找话题，反而觉得格外放松。',
-      group: 'campus'
+      personId: 'watanare-haruna',
+      name: '甘织遥奈',
+      roleLabel: '至亲妹妹 · 重度姐控',
+      affinity: 90,
+      statusTag: '亲情 · 90',
+      note: '嘴硬吐槽却最崇拜自己的亲妹妹，在背后全力守护着自己的现充生活。',
+      group: 'family'
     },
     {
       personId: 'wata-mai',
@@ -1462,19 +1444,21 @@ export function getProtagonistBondForCard(
   const existingContact = isCharacterInContacts(card, contacts);
   const presetBond = card.bonds.find((b) => b.personId === activeProtagonist);
 
-  const affinity = existingContact?.affinity ?? presetBond?.affinity ?? 56;
   const defaultRoleByProtagonist: Record<ProtagonistId, string> = {
     soyo: '月之森同班同学 · CRYCHIC 旧友',
     sakiko: '幼时青梅竹马 · Ave Mujica 同伴',
-    emma: '大学城同级生 · 图书馆与花坛常客',
-    renako: '安静同好 · 校园与街区茶伴'
+    emma: '学区在册学生 · 暂无深入交往',
+    renako: '学区常驻同学 · 暂无深入交往'
   };
   const roleLabel =
     existingContact?.tag ||
     presetBond?.roleLabel ||
     defaultRoleByProtagonist[activeProtagonist];
 
-  let statusTag = presetBond?.statusTag ?? `好感 · ${affinity}`;
+  const hasEstablishedBond = Boolean(presetBond || existingContact);
+  const affinity = existingContact?.affinity ?? presetBond?.affinity ?? (hasEstablishedBond ? 50 : 0);
+
+  let statusTag = presetBond?.statusTag ?? (existingContact ? `好感 · ${affinity}` : '未结识 · 0');
   if (existingContact) {
     if (affinity >= 80) statusTag = `挚重 · ${affinity}`;
     else if (affinity >= 60) statusTag = `亲近 · ${affinity}`;
@@ -1485,7 +1469,7 @@ export function getProtagonistBondForCard(
   const note =
     existingContact?.summary ||
     presetBond?.note ||
-    `与${protagonistName}在未读之城大学城保持着日常来往。`;
+    `与${protagonistName}在未读之城生活圈暂无深入日常交集。`;
 
   return {
     protagonistName,
@@ -1503,7 +1487,7 @@ const CANON_CROSS_EDGES: Array<{
   b: string;
   label: string;
   affinity: number;
-  group: 'mujica' | 'crychic' | 'campus';
+  group: 'family' | 'campus' | 'mujica' | 'crychic' | 'legal';
 }> = [
   { a: 'sakiko', b: 'soyo', label: '旧乐队心结', affinity: 68, group: 'crychic' },
   { a: 'sakiko', b: 'bang-uika', label: '星光与共犯', affinity: 82, group: 'mujica' },
@@ -1520,16 +1504,21 @@ const CANON_CROSS_EDGES: Array<{
   { a: 'bang-uika', b: 'bang-tomori', label: '星空与诗句', affinity: 66, group: 'crychic' },
   { a: 'emma', b: 'renako', label: '咖啡馆同级挚友', affinity: 64, group: 'campus' },
   { a: 'emma', b: 'soyo', label: '社科与法学交流', affinity: 58, group: 'campus' },
-  { a: 'emma', b: 'majo-sherry', label: '事务所黄金搭档', affinity: 88, group: 'campus' },
+  { a: 'emma', b: 'majo-sherry', label: '事务所黄金搭档', affinity: 88, group: 'legal' },
+  { a: 'emma', b: 'majo-yuki', label: '合租伙伴 · 牢屋敷旧友', affinity: 84, group: 'campus' },
+  { a: 'renako', b: 'watanare-haruna', label: '甘织家亲姐妹', affinity: 90, group: 'family' },
   { a: 'renako', b: 'wata-mai', label: '芦谷闪耀羁绊', affinity: 86, group: 'campus' },
-  { a: 'renako', b: 'wata-ajisai', label: '温柔治愈同伴', affinity: 84, group: 'campus' }
+  { a: 'renako', b: 'wata-ajisai', label: '温柔治愈同伴', affinity: 84, group: 'campus' },
+  { a: 'watanare-haruna', b: 'watanare-seira', label: '月之森高一同窗', affinity: 78, group: 'campus' }
 ];
 
-const GROUP_LABELS: Record<'center' | 'mujica' | 'crychic' | 'campus', string> = {
+const GROUP_LABELS: Record<'center' | 'family' | 'campus' | 'mujica' | 'crychic' | 'legal', string> = {
   center: '档案中心',
+  family: '至亲家庭',
+  campus: '学园同窗',
   mujica: 'Ave Mujica',
-  crychic: 'CRYCHIC · MyGO!!!!!',
-  campus: '大学城日常'
+  crychic: 'CRYCHIC · MyGO',
+  legal: '事务搭档'
 };
 
 export function buildIdentityRelationshipMesh(
