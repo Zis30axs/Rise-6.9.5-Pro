@@ -53,7 +53,9 @@ describe('祐天寺若麦 casual art', () => {
     expect(resolveSceneCharacterArt('祐天寺若麦')?.id).toBe('nyamu_casual_neutral');
     expect(resolveSceneCharacterArt('八幡海铃', '开心')?.id).toBe('umiri_casual_happy');
     expect(resolveSceneCharacterArt('丰川祥子')).toBeNull();
-    expect(resolveMapCharacterAvatar({ name: '祐天寺若麦', personId: 'bang-nyamu' })).toEqual({
+    const person = { name: '祐天寺若麦', personId: 'bang-nyamu' };
+    expect(resolveMapCharacterAvatar(person)?.kind).toBe('headshot');
+    expect(resolveMapCharacterAvatar(person, true)).toEqual({
       kind: 'sprite', src: portrait('平静')!.src,
     });
   });

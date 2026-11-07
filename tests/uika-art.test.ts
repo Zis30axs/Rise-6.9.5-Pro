@@ -45,7 +45,9 @@ describe('三角初华 casual art', () => {
     expect(resolveSceneCharacterArt('bang-uika', '思考')?.id).toBe('uika_casual_reserved');
     expect(resolveSceneCharacterArt('三角初华', '安心')?.id).toBe('uika_casual_confident');
     expect(resolveSceneCharacterArt('丰川祥子')).toBeNull();
-    expect(resolveMapCharacterAvatar({ name: '三角初华', personId: 'bang-uika' })).toEqual({
+    const person = { name: '三角初华', personId: 'bang-uika' };
+    expect(resolveMapCharacterAvatar(person)?.kind).toBe('headshot');
+    expect(resolveMapCharacterAvatar(person, true)).toEqual({
       kind: 'sprite', src: portrait('平静')!.src,
     });
   });

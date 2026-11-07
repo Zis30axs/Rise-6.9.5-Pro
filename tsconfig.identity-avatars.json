@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/frontend/IdentityCardPanel.vue",
+    "src/frontend/MapCharacterAvatar.vue",
+    "src/frontend/offline-pack.d.ts",
+    "tests/identity-avatars.test.ts",
+    "tests/e2e/identity-avatars-fixture.ts",
+    "tests/e2e/identity-avatars.spec.ts",
+    "vite.identity-avatars.config.ts",
+    "playwright.identity-avatars.config.ts"
+  ]
+}
