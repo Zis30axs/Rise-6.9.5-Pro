@@ -1,3 +1,5 @@
+import { academicEquipment, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, setEquipment, validatePersonalEquipment } from './equipment';
+import type { ProtagonistId } from './dual-protagonists';
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
@@ -263,7 +265,7 @@ export function createInitialState(): WorldState {
     courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
-    inventory: [],
+    inventory: [{ itemId: 'crychic-photo', quantity: 1 }],
     academics: null,
     phone: [],
     contacts: soyoInitialContacts(protagonistNames.sakiko),
@@ -436,7 +438,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
 
 function academicPoints(value: unknown, path: string): number {
   const result = number(value, path, 0, MAX_ACADEMIC_POINTS, false);
-  if (!Number.isInteger(result * 2)) return invalid(path);
+  if (!Number.isInteger(result * 4)) return invalid(path);
   return result;
 }
 function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: boolean): AcademicState | null {
@@ -477,7 +479,9 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
     return { majorId, subjects, lastGain: null, ...correctionField };
   }
   const extras = ['outcome', 'channel', 'interactionId', 'energyConsumed', 'moraleChange', 'stressChange'];
-  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
+  const hasEquipment = !legacy && !!item.lastGain && typeof item.lastGain === 'object' && Object.hasOwn(item.lastGain, 'equipmentProfile');
+  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras), ...(hasEquipment ? ['equipmentProfile'] : [])], 'academics.lastGain');
+  if (hasEquipment && !equipmentProfile(gain.equipmentProfile)) return invalid('academics.lastGain.equipmentProfile');
   const subjectId = id(gain.subjectId, 'academics.lastGain.subjectId');
   const entry = subjects.find(subject => subject.subjectId === subjectId);
   const isCourtObservation = !legacy && gain.channel === 'court-hearing';
@@ -492,6 +496,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const total = stamp ? day * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]) : 0;
   if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('academics.lastGain.at');
   if (legacy || gain.outcome === null) {
+    if (hasEquipment) return invalid('academics.lastGain 旧记录不应包含装备加成');
     if (points !== minutes || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
     return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null }, ...correctionField };
   }
@@ -501,6 +506,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop' && channel !== 'court-hearing') return invalid('academics.lastGain.channel');
   const interactionId = gain.interactionId === null ? null : id(gain.interactionId, 'academics.lastGain.interactionId');
   if (channel === 'court-hearing') {
+    if (hasEquipment) return invalid('academics.lastGain 法庭旁听不使用合照加成');
     const observe = courtObservationServiceForMinutes(minutes);
     const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
     const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
@@ -520,14 +526,16 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if ((!crossMajor && outcome !== 'normal') || (crossMajor && channel === 'classroom')) return invalid('academics.lastGain 学习渠道或结果不一致');
   const multiplier = outcome === 'inspiration' ? 3 : outcome === 'confusion' ? 1 : 2;
   const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
-  if (points * 2 !== minutes * multiplier || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
+  const equipmentMultiplier = hasEquipment ? historicalAcademicMultiplier(gain.equipmentProfile, majorId, subjectId, !crossMajor) : 1;
+  if (points * 2 !== minutes * multiplier * equipmentMultiplier || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
   const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
   const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
   const base = getActivityEffects('study', minutes);
   const morale = base.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0);
   const stress = base.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0);
   if (moraleChange < Math.min(0, morale) || moraleChange > Math.max(0, morale) || stressChange < Math.min(0, stress) || stressChange > Math.max(0, stress)) return invalid('academics.lastGain 精神或压力净变化不一致');
-  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange }, ...correctionField };
+  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange,
+    ...(hasEquipment ? { equipmentProfile: gain.equipmentProfile as import('./equipment').EquipmentProfileId } : {}) }, ...correctionField };
 }
 
 /** Convert historical money once; a persisted currency tag stops repeat conversions. */
@@ -587,9 +595,14 @@ function clearDepartedProtagonistEncounters(state: WorldState): WorldState {
   return state;
 }
 
-export function parseState(value: unknown): WorldState {
+export function parseState(value: unknown, ownerOverride?: ProtagonistId): WorldState {
   const state = parseStateCore(value, true);
   validateLivehouseLinks(state);
+  for (const owner of state.protagonists ? PROTAGONISTS : [ownerOverride ?? 'soyo'] as ProtagonistId[]) {
+    const personal = state.protagonists ? personState(state, owner) : state;
+    validatePersonalEquipment(personal, owner);
+    ensurePersonalKeepsake(personal, owner);
+  }
   for (const view of protagonistViews(state)) {
     if (!view.scene?.encounterId || !isProtagonistEncounter(view.scene.encounterId)) continue;
     if (view.protagonists && view.scene.encounterId === protagonistSceneId(activeProtagonist(view))) return invalid('scene.encounterId 不能指向当前主角');
@@ -663,13 +676,16 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
   const inventory: WorldState['inventory'] = [];
   if (hasInventory) {
-    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length) return invalid('inventory');
+    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length + equipmentCatalog.length) return invalid('inventory');
     for (const [index, value] of state.inventory.entries()) {
       const path = `inventory[${index}]`;
-      const item = object(value, ['itemId', 'quantity'], path);
+      const hasEquipped = !!value && typeof value === 'object' && Object.hasOwn(value, 'equipped');
+      const item = object(value, ['itemId', 'quantity', ...(hasEquipped ? ['equipped'] : [])], path);
       const itemId = id(item.itemId, `${path}.itemId`);
-      if (!getStoreItem(itemId) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
-      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, INVENTORY_ITEM_LIMIT) });
+      if ((!getStoreItem(itemId) && !getEquipmentItem(itemId)) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
+      if (hasEquipped && !getEquipmentItem(itemId)) return invalid(`${path}.equipped`);
+      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, getEquipmentItem(itemId) ? 1 : INVENTORY_ITEM_LIMIT),
+        ...(hasEquipped ? { equipped: boolean(item.equipped, `${path}.equipped`) } : {}) });
     }
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
@@ -799,7 +815,8 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState, ownerOverride?: ProtagonistId): WorldState {
+  const equipmentOwner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
   let next = parseStateCore(state, true);
   // The legacy view omits the four-protagonist account owner. The court's
   // active speaker and filing payer must still be the selected protagonist.
@@ -816,6 +833,12 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   };
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
+      case 'equip':
+      case 'unequip': {
+        if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip'))
+          note(next, `${action.type === 'equip' ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
+        break;
+      }
       case 'go_home': {
         const owner = activeProtagonist(worldAuthority ?? next);
         next = reduceLegacyState(next, { type: 'novel_travel', locationId: protagonistHomeRooms[owner] });
@@ -929,7 +952,8 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const outcome = !crossMajor || draw >= 50 ? 'normal' : draw < 25 ? 'inspiration' : 'confusion';
         const energyConsumed = getStudyEnergyCost(action.minutes) + (outcome === 'confusion' ? 3 : 0);
         if (next.player.energy < energyConsumed) throw new Error(`精力不足，此次学习需要 ${energyConsumed} 点精力，请先休息。`);
-        const points = action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1);
+        const equipment = academicEquipment(next, equipmentOwner, action.subjectId, !crossMajor);
+        const points = action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1) * equipment.multiplier;
         let progress = next.academics.subjects.find(entry => entry.subjectId === action.subjectId);
         if ((progress?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
         const before = { ...next.player };
@@ -941,7 +965,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         if (!progress) { progress = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(progress); }
         progress.points += points;
         const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
-        next.academics.lastGain = { subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
+        next.academics.lastGain = { ...(equipment.equipmentProfile ? { equipmentProfile: equipment.equipmentProfile } : {}), subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
           interactionId: channel === 'bookshop' ? null : channel === 'classroom' ? 'classroom-notes' : 'study-focus',
           energyConsumed, moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
         clearInteriorActivity();
@@ -1174,10 +1198,17 @@ function activityChangeNote(before: PlayerState, after: PlayerState): string {
  * Structured narrative actions share these transactions; exact-duration rest,
  * study, contextual effects and relationship changes are handled above.
  */
-function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthority?: WorldState): WorldState {
+function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthority?: WorldState, ownerOverride?: ProtagonistId): WorldState {
+  const equipmentOwner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
   const next = parseStateCore(state, true);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
+    case 'equip_item':
+    case 'unequip_item': {
+      if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip_item'))
+        note(next, `${action.type === 'equip_item' ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
+      break;
+    }
     case 'save_contact': {
       const { type: _type, ...input } = action;
       const profile = validateContactProfileInput(input);
@@ -1609,7 +1640,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     case 'interior_study':
     case 'read_subject': {
       const quote = getAcademicStudyQuote(next, { subjectId: action.subjectId, optionId: action.optionId,
-        ...(action.type === 'interior_study' ? { interactionId: action.interactionId } : {}) });
+        ...(action.type === 'interior_study' ? { interactionId: action.interactionId } : {}) }, equipmentOwner);
       if (quote.blockedReason || !quote.option || !quote.subject || !next.academics) throw new Error(quote.blockedReason ?? '无法开始学习。');
       const option = quote.option;
       const sample = Math.random();
@@ -1622,7 +1653,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         outcome = quote.outcomes[result < .25 ? 0 : result < .5 ? 1 : 2];
       }
       const energyConsumed = getStudyEnergyCost(minutes) + outcome.extraEnergy;
-      const points = minutes * (outcome.pointsMultiplier * 2) / 2;
+      const equipment = academicEquipment(next, equipmentOwner, action.subjectId, !quote.isCrossMajor);
+      const points = minutes * outcome.pointsMultiplier * equipment.multiplier;
       const playerBefore = { ...next.player };
       advance(next, minutes);
       next.player.energy = adjustEnergy(next.player.energy, -energyConsumed);
@@ -1639,7 +1671,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (!subject) { subject = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(subject); }
       subject.points = (subject.points * 2 + points * 2) / 2;
       const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
-      next.academics.lastGain = { subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
+      next.academics.lastGain = { ...(equipment.equipmentProfile ? { equipmentProfile: equipment.equipmentProfile } : {}), subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
         outcome: outcome.id, channel, interactionId: action.type === 'interior_study' ? action.interactionId : null, energyConsumed, moraleChange: next.player.morale - playerBefore.morale, stressChange: next.player.stress - playerBefore.stress };
       const place = channel === 'bookshop' ? '书店' : getCampusInterior(channel)!.label;
       note(next, `在${place}学习${quote.subject.name} ${minutes} 分钟，消耗 ${energyConsumed} 点精力。${quote.isCrossMajor ? `跨专业阅读：${outcome.label}。` : ''}${activityChangeNote(playerBefore, next.player)}${quote.subject.name}学习进度 +${points}，累计 ${subject.points} 点。`);
@@ -1689,8 +1721,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
 }
 
 /** Public reducers keep the active legacy view as a compatibility projection only. */
-export function reduceState(state: WorldState, action: WorldAction): WorldState {
-  const parsed = parseState(state);
+export function reduceState(state: WorldState, action: WorldAction, ownerOverride?: ProtagonistId): WorldState {
+  const parsed = parseState(state, ownerOverride);
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
   if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
@@ -1728,11 +1760,11 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     settleWeeklyMemory(next);
     return parseState(clearDepartedProtagonistEncounters(next));
   }
-  const next = reduceLegacyState(legacyView(before), action, before);
+  const next = reduceLegacyState(legacyView(before), action, before, ownerOverride);
   const candidate = clearDepartedProtagonistEncounters(finishPersonalChange(before, next, `世界行动：${action.type}`));
   if (action.type === 'interior_interact' && action.booking) syncPerformanceCalendars(candidate, action.booking.id);
   return parseState(action.type === 'encounter' && !(candidate.protagonists && isProtagonistEncounter(action.personId))
-    ? recordNpcEncounter(candidate, action.personId) : candidate);
+    ? recordNpcEncounter(candidate, action.personId) : candidate, ownerOverride);
 }
 /** Verify the actual NPC reply by identity and exact spoken line, not a text keyword heuristic. */
 function verifySocialConsentEvidence(state: WorldState, reply: GeneratedStory): void {
@@ -1784,17 +1816,17 @@ function commitNarrativeMessaging(state: WorldState, actions: readonly StoryActi
   return next;
 }
 
-export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
-  const parsed = parseState(state);
+export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', ownerOverride?: ProtagonistId): WorldState {
+  const parsed = parseState(state, ownerOverride);
   const needsWorld = actions.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
-  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
-  const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
+  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before, ownerOverride), '剧情行动');
+  const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId, before);
   const sent = commitNarrativeMessaging(withSkills, actions, turnId);
   const invited = recordSocialInvitations(sent, actions, turnId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const withAgenda = applySocialAgendaActions(invited,actions,turnId);
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda));
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda), ownerOverride);
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
@@ -1819,7 +1851,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
   const narrativeActions = legacyResult.worldActions ?? [];
-  const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
+  const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId, before);
   const sent = commitNarrativeMessaging(withSkills, narrativeActions, ids.assistantId);
   const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
