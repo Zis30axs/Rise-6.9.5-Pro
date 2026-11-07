@@ -204,6 +204,8 @@ export type WorldAction =
   | { type: 'claim_second_mystery_gift' }
   | { type: 'switch_protagonist'; target: import('../runtime/dual-protagonists').ProtagonistId }
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
+  | { type: 'strategy'; requestId: string; command: import('../runtime/strategy').StrategyCommand }
+  | { type: 'society'; requestId: string; command: import('../runtime/society').SocietyCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
   | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
@@ -301,6 +303,10 @@ export interface OtherSideEvent {
 }
 
 export interface GeneratedStory {
+  /** Validated optional focus changes from the same existing narrative request. */
+  strategyUpdates?: import('../runtime/strategy-narrative').StrategyNarrativeUpdate[];
+  /** Only a real, authorized Otherside milestone can resolve this. */
+  strategyMajor?: import('../runtime/strategy-narrative').StrategyMajorUpdate[];
   otherSide?: OtherSideEvent[];
   returnStory?: string;
   text: string;

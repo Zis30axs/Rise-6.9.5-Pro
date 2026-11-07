@@ -126,6 +126,8 @@ export interface OtherSideOpportunity {
   groups: ProtagonistId[][];
   npcGroups: { protagonists: ProtagonistId[]; locationId: string; npcs: ReturnType<typeof groupNpcs> }[];
   eventHints: { calendar: string[]; relationships: string[]; interactionRecentlyOffered: boolean };
+  /** A completed important focus can offer one dedicated offscreen scene without a random roll. */
+  strategyMajor?: { id: string; owner: ProtagonistId; focusId: string };
 }
 
 const nothing = (probability: number = OTHER_SIDE_RULES.chance): OtherSideOpportunity => ({
@@ -136,6 +138,22 @@ const nothing = (probability: number = OTHER_SIDE_RULES.chance): OtherSideOpport
 export function otherSideOpportunity(state: WorldState): OtherSideOpportunity {
   const p = state.protagonists;
   if (!p) return nothing();
+  // Important focus milestones get a real opportunity, not a forced event or extra LLM call.
+  // Keep location/agenda restrictions; if the owner is controlled, co-located or busy,
+  // the milestone remains pending until a legal off-screen narrative can occur.
+  const pending = p.strategy?.majorQueue?.find(item =>
+    PROTAGONISTS.some(id => id === item.owner) && item.owner !== activeProtagonist(state)
+    && p.strategy?.people[item.owner]?.includeInPrompt
+    && !p.backgroundLife?.people[item.owner as ProtagonistId]?.pending
+    && !sameOtherSidePlace(state, item.owner as ProtagonistId, activeProtagonist(state)));
+  if (pending) {
+    const owner = pending.owner as ProtagonistId, group = [owner];
+    const locationId = point(state, owner).locationId;
+    return { allowed:true, probability:1, sampledCount:1, groups:[group],
+      npcGroups:[{protagonists:group,locationId,npcs:groupNpcs(state,group)}],
+      eventHints:{calendar:[],relationships:[],interactionRecentlyOffered:false},
+      strategyMajor:{id:pending.id,owner,focusId:pending.focusId} };
+  }
   const now = gameMinute(state), turn = p.narrativeTurn ?? 0;
   const history = p.otherSideHistory ?? [], last = history.at(-1);
   if (history.filter(row => Math.floor(row.at / 1440) === Math.floor(now / 1440)).length >= OTHER_SIDE_RULES.maxPerDay) return nothing();

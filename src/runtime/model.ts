@@ -4,6 +4,9 @@ import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteractio
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
+import { commitStrategyCommand } from './strategy-world';
+import { commitSocietyCommand } from './society-world';
+import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
@@ -1826,6 +1829,14 @@ export function reduceState(state: WorldState, action: WorldAction, ownerOverrid
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
   if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
+  if (action?.type === 'strategy') {
+    const prepared = enableProtagonists(before);
+    return parseState(commitStrategyCommand(prepared, action.requestId, action.command));
+  }
+  if (action?.type === 'society') {
+    const prepared = enableProtagonists(before);
+    return parseState(commitSocietyCommand(prepared, action.requestId, action.command));
+  }
   if (action?.type === 'courtroom') {
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
@@ -1930,7 +1941,8 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
-  const needsWorld = result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type));
+  const needsWorld = !!(result.strategyUpdates?.length || result.strategyMajor?.length || result.otherSide?.length ||
+    result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type)));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
@@ -1941,13 +1953,22 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // The chronicle receipt is supplied by the bridge, not the LLM output
   // protocol: keep it out of the strict story parser on BOTH commit paths.
   const { worldChronicleReceipt, ...modelResult } = result;
-  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = modelResult;
+  // Saved turns cannot re-roll an exhausted opportunity, but their exact
+  // structured effects must still match the original narrative receipt.
+  const { otherSide: requestedSide, returnStory: requestedReturn,
+    strategyUpdates: requestedUpdates, strategyMajor: requestedMajor, ...withoutSide } = modelResult;
+  if (alreadyCommitted && (requestedUpdates?.length || requestedMajor?.length)
+    && !hasStrategyNarrativeReceipt(before.protagonists?.strategy, ids.assistantId))
+    throw new Error('重复剧情 ID 不得新增原先没有的国策效果');
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
-      ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
+      ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}),
+      ...(requestedUpdates !== undefined ? { strategyUpdates: requestedUpdates } : {}),
+      ...(requestedMajor !== undefined ? { strategyMajor: requestedMajor } : {}) }
     : validateGeneratedStory(modelResult, before);
-  const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
+  const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
+    strategyUpdates, strategyMajor, ...legacyResult } = validated;
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
   const narrativeActions = legacyResult.worldActions ?? [];
@@ -1959,6 +1980,17 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const settled = acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, narrativeActions, ids.assistantId), narrativeActions, ids.assistantId, withAgenda);
   const sideCommitted = commitOtherSideEvents(before, settled, otherSide ?? [], ids.assistantId, returnStory);
   const next = commitNpcDialogue(before, recordProtagonistNarrative(before, sideCommitted, validated, ids.assistantId), input, validated, ids.assistantId);
+  if (next.protagonists) {
+    const oldStrategy = before.protagonists?.strategy;
+    const newStrategy = next.protagonists.strategy;
+    if (!oldStrategy || !newStrategy) throw new Error('国策存档未初始化，拒绝提交不完整的剧情效果');
+    const saved = commitStrategyNarrative(oldStrategy, newStrategy,
+      strategyUpdates ?? [], strategyMajor ?? [], ids.assistantId);
+    if (saved !== newStrategy) {
+      next.protagonists.strategy = saved;
+      next.protagonists.revision++;
+    }
+  }
   recordWeeklyStory(next, activeProtagonist(next), ids.assistantId, validated.text + (returnStory ? '\n' + returnStory : ''));
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);

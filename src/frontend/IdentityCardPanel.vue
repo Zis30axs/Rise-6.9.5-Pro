@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
+import { identityStrategyDossier } from './identity-strategy';
 import mutsumiStageAsideUrl from '../../assets/downtown-art/characters/mutsumi/uniform/neutral-aside.webp';
 import mutsumiNeutralUrl from '../../assets/downtown-art/characters/mutsumi/uniform/neutral.webp';
 import mutsumiShyUrl from '../../assets/downtown-art/characters/mutsumi/uniform/shy.webp';
@@ -468,6 +469,10 @@ function composeSmsToCardHolder() {
   emit('fillComposer', `给${card.name}发短信：今天有空见一面吗？`);
   emit('closePanel');
 }
+
+const strategyDossier = computed(() => identityStrategyDossier(activeCard.value.id, activeCard.value.personId, props.model.state));
+const strategyTime = (at: number) => '第 ' + (Math.floor(at / 1440) + 1) + ' 天 ' + String(Math.floor(at % 1440 / 60)).padStart(2, '0') + ':' + String(at % 60).padStart(2, '0');
+const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: '完成国策', cancel: '取消国策', bypass: '跳过国策', decision: '执行决议', narrative: '剧情进展', major_event: '重大事件', spirit_expired: '民族精神到期' } as Record<string, string>)[kind] ?? kind;
 </script>
 
 <template>
@@ -978,6 +983,20 @@ function composeSmsToCardHolder() {
     <!-- ====================================================================
          Interactive Visual Relationship Mesh Graph (可视化人际关系网状图)
          ==================================================================== -->
+    <section class="idcard-strategy-section" data-omniscient-dossier>
+      <header><div><h5>全知档案 · 战略与行动</h5><small>真实世界状态，不改变人物自身认知</small></div><b>全知模式</b></header>
+      <div v-if="strategyDossier.owner" class="idcard-strategy-grid">
+        <article><h6>当前国策</h6><strong>{{ strategyDossier.focus?.title ?? '暂无进行中的国策' }}</strong><p v-if="strategyDossier.focus">进度 {{ strategyDossier.focus.percent }}% · {{ strategyDossier.focus.progress }}/{{ strategyDossier.focus.duration }} 分钟</p><p>控制：{{ strategyDossier.controller==='auto'?'AI 托管':'手动' }}</p><small>已完成：{{ strategyDossier.completed.join('、')||'无' }}</small></article>
+        <article><h6>领导者特质</h6><p v-for="x in strategyDossier.traits" :key="x">{{ x }}</p><p v-if="!strategyDossier.traits.length">暂无</p></article>
+        <article><h6>民族精神</h6><p v-for="x in strategyDossier.spirits" :key="x.title">{{ x.title }} · {{ x.expiresAt===null?'持续':strategyTime(x.expiresAt)+' 到期' }}</p><p v-if="!strategyDossier.spirits.length">暂无</p></article>
+      </div>
+      <p v-else>该人物尚无独立国策档案。</p>
+      <article class="idcard-strategy-block"><h6>组织与职位</h6><p v-for="x in strategyDossier.organizations" :key="x.id">{{ x.kind }} · {{ x.title }} · {{ x.detail }}</p><p v-if="!strategyDossier.organizations.length">暂无组织记录</p></article>
+      <details v-if="strategyDossier.owner"><summary>AI View 权重与修正来源</summary><p v-for="x in strategyDossier.weights" :key="x.title">{{ x.title }}：{{ x.value }} <small>{{ x.breakdown.map(y=>y.source+' '+y.operation+y.amount).join(' / ') }}</small></p></details>
+      <details v-if="strategyDossier.owner"><summary>隐藏世界变量</summary><p v-for="[k,v] in strategyDossier.flags" :key="k">{{ k }} = {{ v }}</p><p v-for="[k,v] in strategyDossier.stats" :key="k">{{ k }} = {{ v }}</p></details>
+      <article class="idcard-strategy-block"><h6>真实行动记录</h6><p v-for="x in strategyDossier.history" :key="x.id">{{ strategyTime(x.at) }} · {{ strategyKindLabel(x.kind) }} · {{ x.subject }} {{ x.note??'' }}</p><p v-for="x in strategyDossier.activity" :key="x.id">{{ strategyTime(x.at) }} · {{ x.title }} · {{ x.detail }}</p><p v-for="x in strategyDossier.beats" :key="x.id+'-'+x.text">Otherside · {{ x.text }}</p><p v-if="!strategyDossier.history.length&&!strategyDossier.activity.length&&!strategyDossier.beats.length">暂无行动记录</p></article>
+    </section>
+
     <section class="idcard-mesh-section" aria-label="人际关系网状拓扑图">
       <header class="idcard-mesh-header">
         <div class="idcard-mesh-title-block">
