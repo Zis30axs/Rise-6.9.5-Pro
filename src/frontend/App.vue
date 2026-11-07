@@ -38,6 +38,7 @@ import InvitationBook from './InvitationBook.vue';
 import { invitationCards } from './invitation-book';
 import TransitPanel from './TransitPanel.vue';
 import ConvenienceStore from './ConvenienceStore.vue';
+import StationeryStore from './StationeryStore.vue';
 import InventoryPanel from './InventoryPanel.vue';
 import LocationServices from './LocationServices.vue';
 import LawCareerPanel from './LawCareerPanel.vue';
@@ -52,6 +53,7 @@ import { CONSTRUCTION_BACKEND_JOB_ID } from '../runtime/location-services';
 import AcademicSetup from './AcademicSetup.vue';
 import { academicMajors, getAcademicOverview, getAcademicProgress, getAcademicStudyQuote, getAcademicSubjectById } from '../runtime/academics';
 import { getStoreAvailability } from '../runtime/convenience-store';
+import { r27et1Equipped, studyPointsWithEquipment } from '../runtime/equipment';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
@@ -116,7 +118,7 @@ watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
 watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
-type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'location' | 'law' | 'invitations';
+type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
 const activeIdentityPersonId = ref<string>('bang-mutsumi');
@@ -299,7 +301,7 @@ const civilDateLabel = computed(() => {
   const occasion = occasions.find(item => item.dayOff) ?? occasions[0];
   return `${formatGameDate(day)} · ${gameCalendar(day).weekdayLabel}${occasion ? ' · ' + occasion.name : ''}`;
 });
-const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'idcard' ? '居民身份证与通行证' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
+const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'stationery' ? '文具店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'idcard' ? '居民身份证与通行证' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
 // Phone presentation renders a static front view while all walking remains disabled.
@@ -349,7 +351,7 @@ function closeWindow(restoreFocus = true) {
   const previous = activeWindow.value;
   releasePhone(); activeWindow.value = null; phoneExpanded.value = false; drag = undefined;
   if (restoreFocus && previous) nextTick(() => {
-    const selector = previous === 'store' ? '[data-store-entry]' : `button[aria-label="${nav.find(item => item.id === previous)?.title}"]`;
+    const selector = previous === 'stationery' ? '[data-stationery-entry]' : previous === 'store' ? '[data-store-entry]' : `button[aria-label="${nav.find(item => item.id === previous)?.title}"]`;
     shell.value?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
   });
 }
@@ -358,6 +360,12 @@ function openStore() {
   scene.value?.flushPresence();
   if (walkSyncError.value || !storeAvailable.value) return;
   openWindow('store');
+}
+function openStationery() {
+  if (props.model.busy) return;
+  scene.value?.flushPresence();
+  if (walkSyncError.value || !bookReadingAvailable.value) return;
+  openWindow('stationery');
 }
 function openBookReading() {
   if (props.model.busy || !props.model.state.academics) return;
@@ -931,6 +939,7 @@ onBeforeUnmount(() => {
     <button v-if="!novelMode && nearbyEntrance && !activeWindow && readingMode === 'hidden'" class="campus-entrance" :disabled="model.busy" :aria-label="`进入${nearbyEntrance.label}`" @click="enterInterior(nearbyEntrance.id)"><span aria-hidden="true">⌂</span><span>进入{{ nearbyEntrance.label }}<small>室内探索 · 可随时返回</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && nearbyTransitStop && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-transit-entry aria-label="公交乘车" :disabled="model.busy" @click="openWindow('transit')"><span aria-hidden="true">▣</span><span>公交乘车<small>{{ nearbyTransitStop.label }} · BTR-82A / ZBD-04A</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && storeAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-store-entry aria-label="逛便利店" :disabled="model.busy" @click="openStore"><span aria-hidden="true">▤</span><span>逛便利店<small>选购食物、饮品与日用品</small></span><span aria-hidden="true">↗</span></button>
+    <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-stationery-entry aria-label="逛文具店" :disabled="model.busy" @click="openStationery"><span aria-hidden="true">✒</span><span>逛文具店<small>R-27ET1 · 500 日元一支</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-book-reading-entry :disabled="model.busy" @click="openBookReading"><span aria-hidden="true">▤</span><span>选书阅读<small>本专业巩固 · 跨专业探索</small></span><span aria-hidden="true">↗</span></button>
     <p v-if="localActivityReceipt && readingMode === 'hidden' && !activeWindow && !bedRestPicker && !studyPickerOpen" class="bed-rest-receipt" data-bed-rest-receipt data-local-activity-receipt role="status">{{ localActivityReceipt }}<small>已保存，无需发送对话。</small></p>
     <LivehousePanel v-if="livehouseMode" :key="currentProtagonist" :model="model" :actions="actions" :mode="livehouseMode" @close="livehouseMode = null" />
@@ -950,8 +959,8 @@ onBeforeUnmount(() => {
         <select id="academic-study-subject" v-model="studySubjectId" data-study-subject :disabled="model.busy"><option disabled value="">请选择科目</option><optgroup v-for="major in studySubjectGroups" :key="major.id" :label="`${major.name}${major.id === academicOverview?.major.id ? ' · 本专业' : ' · 跨专业'}`"><option v-for="subject in major.subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option></optgroup></select>
         <p v-if="academicProgress" data-study-goal>当前目标：{{ academicProgress.goal }}<br>{{ academicProgress.stageLabel }} · 已积累 {{ academicProgress.points }} 学习点<template v-if="academicProgress.nextTarget !== null">，下一目标 {{ academicProgress.nextTarget }} 点</template></p>
         <details v-if="academicProgress && !academicProgress.isMajorSubject" class="study-cross-outcomes" data-cross-outcomes open><summary>跨专业阅读 · 可能的收获与代价</summary><p>以下变化叠加在常规学习的精力、精神和压力消耗上。</p><p v-for="outcome in studyQuotes[0].quote.outcomes" :key="outcome.id">{{ outcome.probability * 100 }}% {{ outcome.label }}：学习点 ×{{ outcome.pointsMultiplier }}<template v-if="outcome.extraEnergy">，额外精力 −{{ outcome.extraEnergy }}</template><template v-if="outcome.morale">，精神 {{ outcome.morale > 0 ? '+' : '−' }}{{ Math.abs(outcome.morale) }}</template><template v-if="outcome.stress">，压力 {{ outcome.stress > 0 ? '+' : '−' }}{{ Math.abs(outcome.stress) }}</template></p></details>
-        <p v-else-if="academicProgress">本专业按实际学习分钟积累学习点，各科独立提升。</p>
-        <div class="bed-rest-options"><button v-for="{ option, quote } in studyQuotes" :key="option.id" :data-study-option="option.id" :disabled="model.busy || !!quote.blockedReason" @click="chooseStudy(option.id)"><strong>{{ option.label }}</strong><span>{{ option.minMinutes < 60 ? `${option.minMinutes}–${option.maxMinutes} 分钟` : `${option.minMinutes / 60}–${option.maxMinutes / 60} 小时` }}</span><small>常规精力消耗 {{ getStudyEnergyCost(option.minMinutes) }}–{{ getStudyEnergyCost(option.maxMinutes) }} 点<template v-if="quote.isCrossMajor">，困惑时额外消耗 3 点</template></small><small>学科提升 +{{ option.minMinutes * (quote.isCrossMajor ? .5 : 1) }}–{{ option.maxMinutes * (quote.isCrossMajor ? 1.5 : 1) }} 点</small><small>{{ activityImpact('study', option.minMinutes, option.maxMinutes) }}</small><small v-if="quote.blockedReason">{{ quote.blockedReason }}</small></button></div>
+        <p v-else-if="academicProgress">本专业按实际学习分钟积累学习点，各科独立提升。<template v-if="r27et1Equipped(model.state)"> 当前 R-27ET1 学习点 +25%。</template></p>
+        <div class="bed-rest-options"><button v-for="{ option, quote } in studyQuotes" :key="option.id" :data-study-option="option.id" :disabled="model.busy || !!quote.blockedReason" @click="chooseStudy(option.id)"><strong>{{ option.label }}</strong><span>{{ option.minMinutes < 60 ? `${option.minMinutes}–${option.maxMinutes} 分钟` : `${option.minMinutes / 60}–${option.maxMinutes / 60} 小时` }}</span><small>常规精力消耗 {{ getStudyEnergyCost(option.minMinutes) }}–{{ getStudyEnergyCost(option.maxMinutes) }} 点<template v-if="quote.isCrossMajor">，困惑时额外消耗 3 点</template></small><small>学科提升 +{{ studyPointsWithEquipment(model.state, option.minMinutes * (quote.isCrossMajor ? .5 : 1)) }}–{{ studyPointsWithEquipment(model.state, option.maxMinutes * (quote.isCrossMajor ? 1.5 : 1)) }} 点</small><small>{{ activityImpact('study', option.minMinutes, option.maxMinutes) }}</small><small v-if="quote.blockedReason">{{ quote.blockedReason }}</small></button></div>
         <p class="bed-rest-note">确认时一次抽取时长与跨科结果，保存后不重抽。精力须足够完成本档最长时间和可能的额外消耗；实际变化受状态上下限影响。取消不消耗。</p>
         <p v-if="studyAttempted && model.notice" class="academic-setup-error" data-study-error role="alert">{{ model.notice }}<span>学习结果尚未保存，已保留科目选择，可重试。</span></p>
         <button class="bed-rest-cancel" @click="closeStudyPicker">取消</button>
@@ -993,9 +1002,10 @@ onBeforeUnmount(() => {
       <div v-else-if="activeWindow === 'invitations'" class="window-content"><InvitationBook :key="currentProtagonist" :model="model" :novel-mode="novelMode" :nearby-person-ids="nearbyPeople.flatMap(({ person }) => [person.id, person.contactId ?? ''])" @compose="prepareInvitationAction" @travel="travelFromInvitationBook" /></div>
       <div v-else-if="activeWindow === 'law'" class="window-content"><LawCareerPanel :model="model" :actions="actions" @close="closeWindow(false)" /></div>
       <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
+      <div v-else-if="activeWindow === 'stationery'" class="window-content"><StationeryStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>

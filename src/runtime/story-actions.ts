@@ -8,7 +8,8 @@ import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition } from './world-presence';
 import { personState } from './protagonist-world';
-import { getServiceTakeawayItem, getStoreItem, storeCatalog } from './convenience-store';
+import { getServiceTakeawayItem, getStoreItem, storeCatalog, stationeryCatalog } from './convenience-store';
+import { isEquipmentSlot, canEquipItem } from './equipment';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
@@ -72,10 +73,19 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
     switch ((raw as Record<string, unknown>).type) {
       case 'equip':
       case 'unequip': {
-        const item = record(raw, ['type', 'itemId'], path);
+        const hasSlot = Object.hasOwn(raw, 'slot');
+        const item = record(raw, ['type', 'itemId', ...(hasSlot ? ['slot'] : [])], path);
         const itemId = text(item.itemId, 100, path + '.itemId');
-        if (!getEquipmentItem(itemId)) return invalid(path + '.itemId');
-        return { type: item.type as 'equip' | 'unequip', itemId };
+        if (getEquipmentItem(itemId)) {
+          if (hasSlot && item.slot !== null && item.slot !== 'special') return invalid(path + '.slot');
+          return { type: item.type as 'equip' | 'unequip', itemId,
+            ...(hasSlot ? { slot: item.slot as import('./equipment').EquipmentSlot | null } : {}) };
+        }
+        if (!getStoreItem(itemId)?.equipmentKind) return invalid(path + '.itemId');
+        if (item.type === 'unequip') return { type: 'unequip', itemId };
+        const slot = hasSlot ? item.slot : 'permanent-1';
+        if (slot !== null && (!isEquipmentSlot(slot) || !canEquipItem(itemId, slot))) return invalid(path + '.slot');
+        return { type: 'equip', itemId, slot: slot as import('./equipment').EquipmentSlot | null };
       }
       case 'go_home': {
         record(raw, ['type'], path);
@@ -180,9 +190,9 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
       case 'buy':
       case 'pack': {
         const item = record(raw, ['type', 'itemId', 'quantity'], path);
-        const product = storeCatalog.find(product => product.id === item.itemId);
+        const product = [...storeCatalog, ...stationeryCatalog].find(product => product.id === item.itemId);
         const cafeCup = item.type === 'buy' && typeof item.itemId === 'string' && isCafeStoryItem(state, item.itemId);
-        if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette' || product.category === 'ingredient'))) return invalid(`${path} 商品`);
+        if (typeof item.itemId !== 'string' || (!product && !cafeCup) || (item.type === 'pack' && (!product || product.category === 'cigarette' || product.category === 'ingredient' || product.category === 'stationery'))) return invalid(`${path} 商品`);
         return item.type === 'buy'
           ? { type: 'buy', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) }
           : { type: 'pack', itemId: item.itemId, quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`) };

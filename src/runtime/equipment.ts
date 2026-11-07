@@ -1,5 +1,6 @@
 import type { StoryAction, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
+import { getStoreItem, R27ET1_ITEM_ID } from './convenience-store';
 
 export const CRYCHIC_PHOTO = 'crychic-photo';
 export const equipmentCatalog = Object.freeze([
@@ -54,16 +55,25 @@ export function ensurePersonalKeepsake(state: Pick<WorldState, 'inventory'>, own
     state.inventory.push({ itemId: CRYCHIC_PHOTO, quantity: 1 });
 }
 export function validatePersonalEquipment(state: EquipmentView, owner: ProtagonistId): void {
-  let equipped = 0;
+  let special = 0;
+  const slots = new Set<EquipmentSlot>();
   for (const row of state.inventory) {
     const item = getEquipmentItem(row.itemId);
-    if (item && (!item.owners.includes(owner) || row.quantity !== 1)) throw new Error('合照不属于当前人物。');
-    if (row.equipped !== undefined && (!item || typeof row.equipped !== 'boolean')) throw new Error('物品的装备状态无效。');
-    if (row.equipped) equipped++;
+    if (item) {
+      if (!item.owners.includes(owner) || row.quantity !== 1) throw new Error('合照不属于当前人物。');
+      if (row.equipped !== undefined && typeof row.equipped !== 'boolean') throw new Error('珍藏的装备状态无效。');
+      if (row.equipped === true) special++;
+    } else if (row.equipped !== undefined) {
+      if (!isEquipmentSlot(row.equipped) || !canEquipItem(row.itemId, row.equipped) || slots.has(row.equipped))
+        throw new Error('物品的装备栏无效或重复。');
+      slots.add(row.equipped);
+    }
   }
-  if (equipped > 1) throw new Error('每人只能装备一件物品。');
+  if (special + Number(slots.has('special')) > 1) throw new Error('特殊装备栏只能使用一件物品。');
   const history = state.academics?.lastGain?.equipmentProfile;
   if (history && equipmentProfile(history)?.owner !== owner) throw new Error('学习加成记录不属于当前人物。');
+  if (state.academics?.lastGain?.equipmentId && state.academics.lastGain.equipmentId !== R27ET1_ITEM_ID)
+    throw new Error('学习记录的文具效果无效。');
 }
 export function equipmentQuote(state: EquipmentView, owner: ProtagonistId, itemId: string) {
   const item = getEquipmentItem(itemId);
@@ -79,7 +89,8 @@ export function setEquipment(state: EquipmentView, owner: ProtagonistId, itemId:
   if (quote.equipped === equipped) return false;
   for (const row of state.inventory) {
     if (row.itemId === itemId && equipped) row.equipped = true;
-    else if (row.itemId === itemId || equipped) delete row.equipped;
+    else if (row.itemId === itemId) delete row.equipped;
+    else if (equipped && row.equipped === 'special') delete row.equipped;
   }
   return true;
 }
@@ -89,7 +100,11 @@ export function socialEquipmentMultiplier(before: WorldState, owner: Protagonist
   const view: EquipmentView = { inventory: before.inventory.map(row => ({ ...row })), academics: before.academics };
   for (const action of actions) {
     if (action.type === 'social_skill') return equipmentProfile(equippedProfile(view, owner))?.social ?? 1;
-    if (action.type === 'equip' || action.type === 'unequip') setEquipment(view, owner, action.itemId, action.type === 'equip');
+    if (action.type === 'equip' || action.type === 'unequip') {
+      if (getEquipmentItem(action.itemId)) setEquipment(view, owner, action.itemId, action.type === 'equip');
+      else if (getStoreItem(action.itemId)?.equipmentKind)
+        setEquipmentSlot(view, action.itemId, action.type === 'unequip' ? null : action.slot ?? 'permanent-1');
+    }
   }
   return 1;
 }
@@ -97,6 +112,11 @@ export function socialEquipmentMultiplier(before: WorldState, owner: Protagonist
 export function equipmentContext(state: WorldState) {
   const owner = state.protagonists?.accounts.active ?? 'soyo';
   return state.inventory.flatMap(row => {
+    if (row.itemId === R27ET1_ITEM_ID) return [{
+      itemId: R27ET1_ITEM_ID, name: 'R-27ET1', equipped: r27et1Equipped(state),
+      effects: r27et1Equipped(state) ? { learning: R27ET1_STUDY_BONUS } : null,
+      description: '在书店旁的文具柜台购买；装备到常驻道具栏后，学习点增加 25%，多支不叠加。',
+    }];
     const item = getEquipmentItem(row.itemId);
     if (!item) return [];
     const quote = equipmentQuote(state, owner, item.id);
@@ -104,4 +124,42 @@ export function equipmentContext(state: WorldState) {
       effects: quote.equipped && quote.profile ? { music: quote.profile.music, ...(!quote.profile.musicMajor ? { currentMajor: quote.profile.major } : {}), social: quote.profile.social } : null,
       description: quote.equipped && quote.profile ? quote.profile.description : item.description }];
   });
+}
+
+/** Two permanent tools and one special keepsake slot, per protagonist. */
+export const EQUIPMENT_SLOTS = ['permanent-1', 'permanent-2', 'special'] as const;
+export type EquipmentSlot = typeof EQUIPMENT_SLOTS[number];
+export const R27ET1_STUDY_BONUS = 1.25;
+
+export function isEquipmentSlot(value: unknown): value is EquipmentSlot {
+  return typeof value === 'string' && EQUIPMENT_SLOTS.some(slot => slot === value);
+}
+export function canEquipItem(itemId: string, slot: EquipmentSlot): boolean {
+  if (itemId === CRYCHIC_PHOTO) return slot === 'special';
+  const kind = getStoreItem(itemId)?.equipmentKind;
+  return kind === (slot === 'special' ? 'special' : 'permanent');
+}
+export function equippedItem(state: Pick<WorldState, 'inventory'>, slot: EquipmentSlot): string | null {
+  return state.inventory.find(item => item.equipped === slot || (slot === 'special' && item.equipped === true))?.itemId ?? null;
+}
+export function r27et1Equipped(state: Pick<WorldState, 'inventory'>): boolean {
+  return state.inventory.some(item => item.itemId === R27ET1_ITEM_ID &&
+    item.quantity >= 1 && (item.equipped === 'permanent-1' || item.equipped === 'permanent-2'));
+}
+/** R27ET1 has one shared 25% bonus, regardless of quantity, on the half-point grid. */
+export function studyPointsWithEquipment(state: Pick<WorldState, 'inventory'>, basePoints: number): number {
+  return r27et1Equipped(state) ? Math.round(basePoints * R27ET1_STUDY_BONUS * 2) / 2 : basePoints;
+}
+export function setEquipmentSlot(state: Pick<WorldState, 'inventory'>, itemId: string, slot: EquipmentSlot | null): void {
+  const item = state.inventory.find(row => row.itemId === itemId && row.quantity > 0);
+  if (!item || !getStoreItem(itemId)?.equipmentKind) throw new Error('背包里没有可装备的这件道具。');
+  if (slot !== null && !canEquipItem(itemId, slot)) throw new Error('这件道具不能放在所选装备栏。');
+  if (slot !== null) {
+    for (const row of state.inventory) {
+      if (row.equipped === slot || (slot === 'special' && row.equipped === true)) delete row.equipped;
+    }
+    item.equipped = slot;
+  } else {
+    delete item.equipped;
+  }
 }

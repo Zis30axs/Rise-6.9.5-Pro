@@ -90,6 +90,8 @@ export interface AcademicGain {
   energyConsumed: number | null;
   moraleChange: number | null;
   stressChange: number | null;
+  /** Recorded stationery used for this completed study session. */
+  equipmentId?: string;
 }
 export interface AcademicState {
   majorId: string;
@@ -176,7 +178,7 @@ export interface WorldState {
   cooking?: import('../runtime/cooking').CookingState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
-  inventory: { itemId: string; quantity: number; equipped?: boolean }[];
+  inventory: { itemId: string; quantity: number; equipped?: boolean | import('../runtime/equipment').EquipmentSlot }[];
   academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
   contacts: CharacterContact[];
@@ -201,7 +203,7 @@ export type WorldAction =
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
-  | { type: 'equip_item' | 'unequip_item'; itemId: string }
+  | { type: 'equip_item' | 'unequip_item'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'use_item'; itemId: string }
   | { type: 'cook_begin'; recipeId: string }
   | { type: 'cook_cancel'; sessionId: string }
@@ -254,7 +256,7 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
-  | { type: 'equip' | 'unequip'; itemId: string }
+  | { type: 'equip' | 'unequip'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'use'; itemId: string }
   | { type: 'interact'; interactionId: string }
   | { type: 'study'; subjectId: string; minutes: number }
