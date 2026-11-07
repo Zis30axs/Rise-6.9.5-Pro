@@ -1,4 +1,5 @@
 // Exact RGBA copies; original PNGs remain alongside the lossless derivatives.
+import crychicPhoto from '../../assets/equipment/crychic-photo.webp?inline';
 import mealBasic from '../../assets/store-products/lossless/meal-basic.webp?inline';
 import mealStandard from '../../assets/store-products/lossless/meal-standard.webp?inline';
 import mealPremium from '../../assets/store-products/lossless/meal-premium.webp?inline';
@@ -18,6 +19,7 @@ const images = Object.freeze({
   'snack-basic': snackBasic, 'snack-standard': snackStandard, 'snack-premium': snackPremium,
   'drink-basic': drinkBasic, 'drink-standard': drinkStandard, 'drink-premium': drinkPremium,
   'cigarette-basic': cigaretteBasic, 'cigarette-standard': cigaretteStandard, 'cigarette-premium': cigarettePremium,
+  'crychic-photo': crychicPhoto,
   ...cafeProductImages,
 });
 

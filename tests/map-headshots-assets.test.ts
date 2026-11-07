@@ -4,8 +4,11 @@ import { resolve } from 'node:path';
 
 // Authoritative crop sources: never use the newly generated decorative Grok/Image2 sheets.
 const sourceById: Record<string, string> = {
+  uika: 'assets/downtown-art/characters/uika/casual/neutral.webp',
+  umiri: 'assets/downtown-art/characters/umiri/casual/neutral.webp',
+  nyamu: 'assets/downtown-art/characters/nyamu/casual/neutral.webp',
   tomori: 'assets/downtown-art/characters/tomori/uniform/neutral.webp',
-  sakiko: 'assets/downtown-art/characters/sakiko/casual/neutral.webp',
+  sakiko: 'assets/downtown-art/characters/sakiko/uniform/neutral.webp',
   anon: 'assets/downtown-art/characters/anon/uniform/smile.webp',
   taki: 'assets/downtown-art/characters/taki/uniform/neutral.webp',
   rana: 'assets/downtown-art/characters/raana/uniform/neutral.webp',
@@ -31,7 +34,7 @@ const sourceById: Record<string, string> = {
 };
 
 describe('identity-safe offline map headshots', () => {
-  it('keeps Soyo original headshot and all 23 approved crops without restricting future avatars', () => {
+  it('keeps Soyo original headshot and all approved crops without restricting future avatars', () => {
     const files = new Set(readdirSync(resolve('assets/map-avatars')));
     expect(files.has('soyo.webp')).toBe(true);
     for (const id of Object.keys(sourceById)) expect(files.has(id + '.svg'), id + ' crop missing').toBe(true);

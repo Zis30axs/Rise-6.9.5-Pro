@@ -47,7 +47,7 @@ describe('Margo dialogue portraits', () => {
 
   it('keeps the map avatar on her neutral sprite', () => {
     const neutral = majoExpressionSets['majo-margo']!.expressions.neutral;
-    expect(resolveMapCharacterAvatar({ name: '宝生玛格', personId: 'majo-margo' })).toEqual({ kind: 'sprite', src: neutral });
+    expect(resolveMapCharacterAvatar({ name: '宝生玛格', personId: 'majo-margo' }, true)).toEqual({ kind: 'sprite', src: neutral });
   });
 
   it('records five authored expressions and leaves every other resident unchanged', () => {

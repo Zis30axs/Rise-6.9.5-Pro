@@ -110,8 +110,8 @@ describe('Tomori uniform art', () => {
     const installed = getTomoriArt(downtownArtPack, { speaker: '高松灯', expression: 'neutral' });
     expect(installed).toMatchObject({ id: 'tomori_uniform_neutral', outfit: 'uniform', pose: 'neutral', width: 768, height: 1344, anchor: [384, 1280] });
     expect(installed?.src.startsWith('data:image/webp;base64,')).toBe(true);
-    expect(resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori' })).toEqual({ kind: 'sprite', src: installed?.src });
-    expect(resolveMapCharacterAvatar({ name: '灯' })).toEqual({ kind: 'sprite', src: installed?.src });
-    expect(resolveMapCharacterAvatar({ name: 'Takamatsu Tomori', personId: 'bang-tomori' })?.kind).toBe('sprite');
+    expect(resolveMapCharacterAvatar({ name: '高松灯', personId: 'bang-tomori' }, true)).toEqual({ kind: 'sprite', src: installed?.src });
+    expect(resolveMapCharacterAvatar({ name: '灯' }, true)).toEqual({ kind: 'sprite', src: installed?.src });
+    expect(resolveMapCharacterAvatar({ name: 'Takamatsu Tomori', personId: 'bang-tomori' }, true)?.kind).toBe('sprite');
   });
 });

@@ -24,7 +24,7 @@ export const mutsumiPoseForExpression: Readonly<Record<SakikoExpression, Mutsumi
 });
 
 const speakerNames = new Set([
-  'mutsumi', 'wakaba mutsumi', 'wakaba-mutsumi',
+  'mutsumi', 'wakaba mutsumi', 'wakaba-mutsumi', 'bang-mutsumi',
   '若叶睦', '睦',
 ]);
 const text = (value: unknown): string => typeof value === 'string' ? value.trim().toLowerCase() : '';

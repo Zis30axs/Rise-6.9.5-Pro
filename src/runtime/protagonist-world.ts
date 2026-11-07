@@ -1,3 +1,4 @@
+import { ensurePersonalKeepsake } from './equipment';
 import { parseBandInviteCommand, sendBandInvitation, musicPersonId, type BandInviteCommand } from './livehouse';
 import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
@@ -171,6 +172,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     p.backgroundLife ??= initializeBackgroundLife(next);
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
     p.socialSkills ??= createSocialSkills();
+    for (const owner of PROTAGONISTS) ensurePersonalKeepsake(personState(next, owner), owner);
     p.strategy ??= createStrategyState(gameMinute(next));
     p.society ??= createSocietyState();
     return next;
@@ -190,6 +192,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     devices: { soyo: defaultDevice(), sakiko: defaultDevice(), emma: defaultDevice(), renako: defaultDevice() }, orders: [], operations: [], conversations: [] } };
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
+  for (const owner of PROTAGONISTS) ensurePersonalKeepsake(personState(next, owner), owner);
   next.protagonists!.strategy = createStrategyState(gameMinute(next));
   next.protagonists!.society = createSocietyState();
   // Other viewpoints start unassigned, even when the first protagonist has a major.

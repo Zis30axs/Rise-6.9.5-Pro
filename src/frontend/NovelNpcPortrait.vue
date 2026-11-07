@@ -4,18 +4,23 @@ import { novelNpcAtlases } from './novel-npc-atlases';
 import { resolveNovelNpcEmotion } from './novel-npc-emotions';
 import type { NovelNpcPortraitId } from './novel-npc-portraits';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt, type DowntownArtPack } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiArt, getTomoriArt, type DowntownArtPack } from './downtown-art-runtime';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { isRaanaSpeaker } from './raana-art-policy';
 import { isTakiSpeaker } from './taki-art-policy';
 import { isTomoriSpeaker } from './tomori-art-policy';
 import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
-import { isSakikoSpeaker, type SakikoOutfitMode } from './sakiko-art-policy';
+import { isSakikoSpeaker, resolveSakikoOutfit, type SakikoOutfitMode } from './sakiko-art-policy';
+import { resolveSakikoUniformPortrait } from './sakiko-uniform-art';
+import { resolveSakikoIndoorPortrait } from './sakiko-indoor-art';
 import { resolveMajoExpressionPortrait } from './majo-art';
 import { resolveWatanareExpressionPortrait } from './watanare-art';
 import { resolveFengjinExpressionPortrait } from './fengjin-art';
 import { resolveMarinaExpressionPortrait } from './marina-art';
+import { resolveUikaExpressionPortrait } from './uika-art';
+import { resolveUmiriExpressionPortrait } from './umiri-art';
+import { resolveNyamuExpressionPortrait } from './nyamu-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean; dimmed?: boolean;
@@ -30,10 +35,13 @@ const isRaana = computed(() => isRaanaSpeaker(props.speaker));
 const isTaki = computed(() => isTakiSpeaker(props.speaker));
 const isTomori = computed(() => isTomoriSpeaker(props.speaker));
 const isNagasakiMother = computed(() => isNagasakiMotherSpeaker(props.speaker));
-const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
-const selected = computed(() => getSakikoArt(props.artPack ?? downtownArtPack, {
-  speaker: props.speaker, expression: props.emotion, locationId: props.locationId, outfit: props.outfit,
-}));
+const majoPortrait = computed(() => resolveMajoExpressionPortrait(props.speaker, emotion.value) ?? resolveWatanareExpressionPortrait(props.speaker, emotion.value) ?? resolveFengjinExpressionPortrait(props.speaker, emotion.value) ?? resolveUikaExpressionPortrait(props.speaker, props.emotion) ?? resolveUmiriExpressionPortrait(props.speaker, props.emotion) ?? resolveNyamuExpressionPortrait(props.speaker, props.emotion) ?? resolveMarinaExpressionPortrait(props.speaker, emotion.value));
+const selected = computed(() => {
+  if (!isSakiko.value) return null;
+  return resolveSakikoOutfit(props.outfit, props.locationId) === 'home'
+    ? resolveSakikoIndoorPortrait(props.emotion)
+    : resolveSakikoUniformPortrait(props.emotion);
+});
 const mutsumiSelected = computed(() => getMutsumiArt(props.artPack ?? downtownArtPack, {
   speaker: props.speaker, expression: props.emotion,
 }));

@@ -22,6 +22,7 @@ import margoCafeDayBg from '../../assets/backgrounds/margo-cafe-day.avif?inline'
 import margoCafeNightBg from '../../assets/backgrounds/margo-cafe-night.avif?inline';
 import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
 import clinicNightBg from '../../assets/backgrounds/clinic-night.webp?inline';
+import aquariumDay from '../../assets/backgrounds/aquarium-day.webp?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -51,11 +52,12 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   sports: 'park', promenade: 'park', campus: 'park',
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
+  'haneda-airport': 'commercial', 'sfo-airport': 'commercial', 'california-openai': 'commercial', 'california-market': 'commercial',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
   circle: 'commercial', 'circle-cafe': 'commercial',
   'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'soyo-house': 'bedroom', 'mlm-office': 'commercial',
-  clinic: 'commercial', 'clinic-room': 'commercial',
+  clinic: 'commercial', 'clinic-room': 'commercial', aquarium: 'commercial',
 });
 
 export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
@@ -127,6 +129,8 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
   if (locationId === 'circle-studio') return { id: 'circle-studio-fallback', src: livehouseBg,
     phase: novelBackgroundPhase(hour), imagePhase: 'night', source: 'legacy' };
+  if (locationId === 'aquarium') return { id: 'aquarium-day', src: aquariumDay,
+    phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
   const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
   if (authored) {
     const phase = novelBackgroundPhase(hour);

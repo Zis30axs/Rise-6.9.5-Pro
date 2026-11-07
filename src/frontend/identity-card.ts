@@ -148,7 +148,7 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
   familySummary: '父：若叶（知名喜剧演员） / 母：森美奈美（实力派女演员）',
   signatureText: '若葉 睦',
   quote: '“……黄瓜长得很精神。需要我陪你待一会儿吗？”',
-  traits: ['浅灰绿长发 · 琥珀金瞳', '寡言克制', '园艺与黄瓜栽培', '七弦吉他手', '重情守诺'],
+  traits: ['浅灰绿长发 · 琥珀金瞳', '寡言克制 · 敏锐好奇', '园艺与黄瓜栽培', '七弦吉他手', '深层依赖 · 占有欲'],
   stageProfile: {
     bandName: 'Ave Mujica',
     stageCode: 'Mortis / 莫蒂斯',
@@ -173,10 +173,19 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
     {
       personId: 'soyo',
       name: '长崎素世',
-      roleLabel: '月之森同班同学 · CRYCHIC 旧友',
+      roleLabel: '月之森同班同学 · 隐秘依存',
       affinity: 62,
-      statusTag: '亲近 · 62',
-      note: '在班内与旧乐队时期频繁相处，常成为素世打听消息与倾诉心事的对象。',
+      statusTag: '依存 · 62',
+      note: '在月之森与旧团时期深陷彼此的生活，在少言的外表下对素世怀有深层依赖与隐秘的占有欲，不愿素世被新乐队或他人彻底夺走。',
+      group: 'crychic'
+    },
+    {
+      personId: 'bang-rana',
+      name: '要乐奈',
+      roleLabel: '野猫吉他手 · 探索与浓厚兴趣',
+      affinity: 54,
+      statusTag: '好奇 · 54',
+      note: '对乐奈如野猫般自由随性、不受世俗与规矩束缚的姿态抱有浓厚好奇，偶遇时会主动走近、投以注视或分享抹茶甜点。',
       group: 'crychic'
     },
     {
@@ -265,7 +274,7 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
   ],
   bioParagraphs: [
     '月之森女子学园高等部一年级学生，与长崎素世同班；现作为准大一先修生常驻高田·目白大学城。出身演艺世家，父亲是家喻户晓的喜剧演员若叶，母亲是著名女演员森美奈美。',
-    '性格极其安静内敛，说话总是简短克制，习惯用轻轻点头、递出亲手种的小黄瓜或默默跟在身旁来表达善意。曾担任 CRYCHIC 吉他手，后受丰川祥子之邀加入假面乐队 Ave Mujica，以代号“Mortis”执掌七弦电吉他。'
+    '性格安静克制却绝非被动无为，对外界环境有着敏锐而活跃的探索欲。对如野猫般随性的吉他手要乐奈抱有浓厚兴趣；对长崎素世怀有隐秘的依赖与占有欲。曾担任 CRYCHIC 吉他手，后受丰川祥子之邀加入假面乐队 Ave Mujica，以代号“Mortis”执掌七弦电吉他。'
   ],
   mrzLine1: 'IDJPN519101147<<WAKABA<<MUTSUMI<<<<<<<<<<<<<',
   mrzLine2: '0701148F3003315JPN<<<<<<<<<<TSK20250114M<<08'
@@ -315,19 +324,19 @@ export const SOYO_IDENTITY_CARD: ResidentIdentityCard = {
     {
       personId: 'bang-mutsumi',
       name: '若叶睦',
-      roleLabel: '月之森同班同学 · CRYCHIC 旧友',
+      roleLabel: '月之森同窗 · 内疚与牵挂',
       affinity: 62,
-      statusTag: '亲近 · 62',
-      note: '经常向睦询问祥子的近况，也习惯照顾少言的睦。',
+      statusTag: '牵挂 · 62',
+      note: '虽然日常仍习惯照顾少言的睦，但经历过退还黄瓜的刺痛后，心中暗藏着未曾说清的内疚与复杂关照。',
       group: 'crychic'
     },
     {
       personId: 'sakiko',
       name: '丰川祥子',
-      roleLabel: '旧乐队同伴 · 难以释怀的羁绊',
+      roleLabel: '旧团同伴 · 微妙和解',
       affinity: 68,
-      statusTag: '牵挂 · 68',
-      note: '始终挂念着昔日春日影下的约定与未解开的心结。',
+      statusTag: '克制 · 68',
+      note: '经历过误会解开后重新接触，在日常中保持着带着一丝尴尬与克制的分寸感。',
       group: 'crychic'
     },
     {
@@ -445,10 +454,10 @@ export const SAKIKO_IDENTITY_CARD: ResidentIdentityCard = {
     {
       personId: 'soyo',
       name: '长崎素世',
-      roleLabel: 'CRYCHIC 旧同伴',
+      roleLabel: 'CRYCHIC 旧友 · 微妙和解',
       affinity: 68,
-      statusTag: '复杂 · 68',
-      note: '曾共同创立 CRYCHIC，彼此之间仍有极深的情感牵扯。',
+      statusTag: '克制 · 68',
+      note: '解开家变隐情后重新建立联系，深知昔日伤害仍在，在温情中恪守体面分寸。',
       group: 'crychic'
     },
     {
@@ -468,6 +477,15 @@ export const SAKIKO_IDENTITY_CARD: ResidentIdentityCard = {
       statusTag: '旧约 · 75',
       note: '曾最先读懂灯的笔记并邀请她歌唱，那段时光始终留在心底深处。',
       group: 'crychic'
+    },
+    {
+      personId: 'bang-nyamu',
+      name: '祐天寺若麦',
+      roleLabel: 'Ave Mujica 鼓手 · 商业与舞台',
+      affinity: 52,
+      statusTag: '磨合 · 52',
+      note: '虽历经武道馆揭面风波与商业理念碰撞，但在乐队重组后已形成成熟务实的舞台默契。',
+      group: 'mujica'
     }
   ],
   endorsements: [

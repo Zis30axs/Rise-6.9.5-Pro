@@ -1,23 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import anonAvatarUrl from '../../assets/map-avatars/anon.svg';
-import emmaAvatarUrl from '../../assets/map-avatars/majo-emma.svg';
-import sherryAvatarUrl from '../../assets/map-avatars/majo-sherry.svg';
-import mutsumiAvatarUrl from '../../assets/map-avatars/mutsumi.svg';
-import ranaAvatarUrl from '../../assets/map-avatars/rana.svg';
-import sakikoAvatarUrl from '../../assets/map-avatars/sakiko.svg';
-import soyoAvatarUrl from '../../assets/map-avatars/soyo.webp';
-import takiAvatarUrl from '../../assets/map-avatars/taki.svg';
-import tomoriAvatarUrl from '../../assets/map-avatars/tomori.svg';
-import ajisaiAvatarUrl from '../../assets/map-avatars/wata-ajisai.svg';
-import maiAvatarUrl from '../../assets/map-avatars/wata-mai.svg';
-import renakoAvatarUrl from '../../assets/map-avatars/wata-renako.svg';
+import MapCharacterAvatar from './MapCharacterAvatar.vue';
+import { identityStrategyDossier } from './identity-strategy';
 import mutsumiStageAsideUrl from '../../assets/downtown-art/characters/mutsumi/uniform/neutral-aside.webp';
 import mutsumiNeutralUrl from '../../assets/downtown-art/characters/mutsumi/uniform/neutral.webp';
 import mutsumiShyUrl from '../../assets/downtown-art/characters/mutsumi/uniform/shy.webp';
 import mutsumiSmileUrl from '../../assets/downtown-art/characters/mutsumi/uniform/smile.webp';
 import sakikoSmileUrl from '../../assets/downtown-art/characters/sakiko/casual/smile.webp';
-import type { ProtagonistId } from '../runtime/dual-protagonists';
+import { isProtagonistId, type ProtagonistId } from '../runtime/dual-protagonists';
 import { activeProtagonist as readActiveProtagonist } from '../runtime/protagonist-world';
 import {
   buildIdentityRelationshipMesh,
@@ -35,7 +25,6 @@ import {
   type ResidentIdentityCard
 } from './identity-card';
 import type { ShellActions, ShellModel } from './types';
-import { identityStrategyDossier } from './identity-strategy';
 
 const props = defineProps<{
   model: ShellModel;
@@ -48,29 +37,6 @@ const emit = defineEmits<{
   closePanel: [];
   openSocialPanel: [];
 }>();
-
-const AVATAR_BY_PERSON_ID: Record<string, string> = {
-  'bang-mutsumi': mutsumiAvatarUrl,
-  mutsumi: mutsumiAvatarUrl,
-  sakiko: sakikoAvatarUrl,
-  soyo: soyoAvatarUrl,
-  emma: emmaAvatarUrl,
-  renako: renakoAvatarUrl,
-  'bang-tomori': tomoriAvatarUrl,
-  'bang-taki': takiAvatarUrl,
-  'bang-anon': anonAvatarUrl,
-  'bang-rana': ranaAvatarUrl,
-  'bang-umiri': takiAvatarUrl,
-  'bang-uika': sakikoAvatarUrl,
-  'bang-nyamu': anonAvatarUrl,
-  'majo-sherry': sherryAvatarUrl,
-  'wata-mai': maiAvatarUrl,
-  'wata-ajisai': ajisaiAvatarUrl
-};
-
-function resolveNodeAvatar(personId: string): string {
-  return AVATAR_BY_PERSON_ID[personId] ?? mutsumiAvatarUrl;
-}
 
 const activeProtagonist = computed<ProtagonistId>(() => readActiveProtagonist(props.model.state));
 
@@ -199,9 +165,6 @@ const activeCard = computed<ResidentIdentityCard>(() =>
   resolveIdentityCardById(selectedCardId.value, props.model.state, activeProtagonist.value)
 );
 
-const strategyDossier = computed(() => identityStrategyDossier(activeCard.value.id, activeCard.value.personId, props.model.state));
-const strategyTime = (at:number) => '第 '+(Math.floor(at/1440)+1)+' 天 '+String(Math.floor(at%1440/60)).padStart(2,'0')+':'+String(at%60).padStart(2,'0');
-const strategyKindLabel = (kind:string) => ({start:'开始国策',complete:'完成国策',cancel:'取消国策',bypass:'跳过国策',decision:'执行决议',narrative:'剧情进展',major_event:'重大事件',spirit_expired:'民族精神到期'} as Record<string,string>)[kind]??kind;
 const isMutsumiCard = computed<boolean>(() => activeCard.value.id === 'bang-mutsumi');
 
 /** Formats YYYY.MM.DD into authentic Japanese My Number Card date: 2007年1月14日生 (平成19年) */
@@ -268,8 +231,6 @@ const mutsumiExpressionSpriteUrl = computed<string>(() => {
   if (photoPose.value === 'stage') return mutsumiStageAsideUrl;
   return mutsumiNeutralUrl;
 });
-
-const primaryAvatarUrl = computed<string>(() => resolveNodeAvatar(activeCard.value.id));
 
 const standingPreviewUrl = computed<string>(() => {
   if (activeCard.value.id === 'bang-mutsumi') {
@@ -508,6 +469,10 @@ function composeSmsToCardHolder() {
   emit('fillComposer', `给${card.name}发短信：今天有空见一面吗？`);
   emit('closePanel');
 }
+
+const strategyDossier = computed(() => identityStrategyDossier(activeCard.value.id, activeCard.value.personId, props.model.state));
+const strategyTime = (at: number) => '第 ' + (Math.floor(at / 1440) + 1) + ' 天 ' + String(Math.floor(at % 1440 / 60)).padStart(2, '0') + ':' + String(at % 60).padStart(2, '0');
+const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: '完成国策', cancel: '取消国策', bypass: '跳过国策', decision: '执行决议', narrative: '剧情进展', major_event: '重大事件', spirit_expired: '民族精神到期' } as Record<string, string>)[kind] ?? kind;
 </script>
 
 <template>
@@ -770,11 +735,14 @@ function composeSmsToCardHolder() {
                         height="1170.07"
                       />
                     </svg>
-                    <img
+                    <MapCharacterAvatar
                       v-else
-                      class="jp-portrait-img"
-                      :src="primaryAvatarUrl"
-                      :alt="`${activeCard.name}证件照`"
+                      class="idcard-avatar jp-portrait-img"
+                      :person-id="activeCard.id" :protagonist-id="isProtagonistId(activeCard.id) ? activeCard.id : undefined"
+                      :name="activeCard.name"
+                      role="img"
+                      aria-hidden="false"
+                      :aria-label="`${activeCard.name}证件照`"
                     />
                     <span class="jp-photo-holo-stamp" aria-hidden="true">桜</span>
                   </div>
@@ -819,7 +787,7 @@ function composeSmsToCardHolder() {
                 <!-- Right: Laser Ghost Portrait Watermark & Vertical Notice -->
                 <div class="jp-ghost-col" aria-hidden="true">
                   <div class="jp-ghost-photo">
-                    <img :src="primaryAvatarUrl" alt="" />
+                    <MapCharacterAvatar class="idcard-avatar" :person-id="activeCard.id" :protagonist-id="isProtagonistId(activeCard.id) ? activeCard.id : undefined" :name="activeCard.name" />
                   </div>
                   <span class="jp-jlis-micro">J-LIS</span>
                   <div class="jp-organ-box">
@@ -865,7 +833,7 @@ function composeSmsToCardHolder() {
                       height="1170.07"
                     />
                   </svg>
-                  <img v-else class="jp-portrait-img" :src="primaryAvatarUrl" :alt="activeCard.name" />
+                  <MapCharacterAvatar v-else class="idcard-avatar jp-portrait-img" :person-id="activeCard.id" :protagonist-id="isProtagonistId(activeCard.id) ? activeCard.id : undefined" :name="activeCard.name" role="img" aria-hidden="false" :aria-label="activeCard.name" />
                 </div>
 
                 <div class="jp-stage-fields">
@@ -1012,6 +980,9 @@ function composeSmsToCardHolder() {
       </div>
     </div>
 
+    <!-- ====================================================================
+         Interactive Visual Relationship Mesh Graph (可视化人际关系网状图)
+         ==================================================================== -->
     <section class="idcard-strategy-section" data-omniscient-dossier>
       <header><div><h5>全知档案 · 战略与行动</h5><small>真实世界状态，不改变人物自身认知</small></div><b>全知模式</b></header>
       <div v-if="strategyDossier.owner" class="idcard-strategy-grid">
@@ -1026,9 +997,6 @@ function composeSmsToCardHolder() {
       <article class="idcard-strategy-block"><h6>真实行动记录</h6><p v-for="x in strategyDossier.history" :key="x.id">{{ strategyTime(x.at) }} · {{ strategyKindLabel(x.kind) }} · {{ x.subject }} {{ x.note??'' }}</p><p v-for="x in strategyDossier.activity" :key="x.id">{{ strategyTime(x.at) }} · {{ x.title }} · {{ x.detail }}</p><p v-for="x in strategyDossier.beats" :key="x.id+'-'+x.text">Otherside · {{ x.text }}</p><p v-if="!strategyDossier.history.length&&!strategyDossier.activity.length&&!strategyDossier.beats.length">暂无行动记录</p></article>
     </section>
 
-    <!-- ====================================================================
-         Interactive Visual Relationship Mesh Graph (可视化人际关系网状图)
-         ==================================================================== -->
     <section class="idcard-mesh-section" aria-label="人际关系网状拓扑图">
       <header class="idcard-mesh-header">
         <div class="idcard-mesh-title-block">
@@ -1097,9 +1065,6 @@ function composeSmsToCardHolder() {
               <stop offset="65%" stop-color="rgba(148, 212, 178, 0.06)" />
               <stop offset="100%" stop-color="rgba(14, 24, 21, 0)" />
             </radialGradient>
-            <clipPath v-for="node in meshNodes" :id="`mesh-avatar-clip-${node.id}`" :key="`clip-${node.id}`">
-              <circle :cx="node.x" :cy="node.y" :r="node.isCenter ? 28 : 21" />
-            </clipPath>
           </defs>
 
           <!-- Background Orbital Radar Rings -->
@@ -1184,15 +1149,15 @@ function composeSmsToCardHolder() {
               />
 
               <!-- Character Portrait Image inside Node Circle -->
-              <image
-                :href="resolveNodeAvatar(node.id)"
+              <foreignObject
                 :x="node.x - (node.isCenter ? 28 : 21)"
                 :y="node.y - (node.isCenter ? 28 : 21)"
                 :width="node.isCenter ? 56 : 42"
                 :height="node.isCenter ? 56 : 42"
-                :clip-path="`url(#mesh-avatar-clip-${node.id})`"
-                preserveAspectRatio="xMidYMid slice"
-              />
+                class="idcard-mesh-avatar"
+              >
+                <MapCharacterAvatar class="idcard-avatar" :person-id="node.id" :protagonist-id="isProtagonistId(node.id) ? node.id : undefined" :name="node.name" />
+              </foreignObject>
 
               <!-- Node Border Ring -->
               <circle
@@ -1228,10 +1193,13 @@ function composeSmsToCardHolder() {
         <section v-if="selectedMeshNode" class="idcard-dossier-card">
           <div class="idcard-dossier-head">
             <div class="idcard-inspector-person">
-              <img
-                class="idcard-inspector-avatar"
-                :src="resolveNodeAvatar(selectedMeshNode.id)"
-                :alt="selectedMeshNode.name"
+              <MapCharacterAvatar
+                class="idcard-avatar idcard-inspector-avatar"
+                :person-id="selectedMeshNode.id" :protagonist-id="isProtagonistId(selectedMeshNode.id) ? selectedMeshNode.id : undefined"
+                :name="selectedMeshNode.name"
+                role="img"
+                aria-hidden="false"
+                :aria-label="selectedMeshNode.name"
               />
               <div>
                 <h5>

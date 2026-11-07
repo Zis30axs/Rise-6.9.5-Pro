@@ -3,12 +3,14 @@ import { loadMemorySettings } from './settings';
 import { approximateTokens, requestEmbedding, requestMemoryJson } from './providers';
 import { memoryExtractionInput, memoryExtractionPrompt, parseExtraction } from './extractor';
 import { acquireJob, finalizeJob, ingestSources, memoryStats, one, put, recordPaidJobResponse, resetFailedJobs, rows, saveEmbeddingWithCharge } from './storage';
-import { importantCandidate } from './source';
+import { memoryArchiveBoundary } from './thresholds';
 import { memoryKey } from './types';
 import type { MemoryEvent, MemoryJob, MemorySource, MemoryVector } from './types';
 
 const workingScopes = new Set<string>();
 const pausedScopes = new Set<string>();
+// Only a newly saved foreground LLM turn can authorize early (>75-log) archiving.
+const narrativeSignals = new Set<string>();
 const activeRequests = new Map<string, AbortController>();
 const activeWorkers = new Map<string, Promise<void>>();
 const pauseVersions = new Map<string, number>();
@@ -33,6 +35,7 @@ export function memoryIsPaused(scope: string): boolean { return pausedScopes.has
 /** Stop optional paid activity immediately without touching gameplay or deleting work. */
 export function pauseMemoryWork(scope: string): Promise<void> {
   pausedScopes.add(scope);
+  narrativeSignals.delete(scope);
   pauseVersions.set(scope, memoryPauseVersion(scope) + 1);
   activeRequests.get(scope)?.abort();
   clearWakeup(scope);
@@ -82,25 +85,27 @@ async function schedule(scope: string, settings: MemorySettings, forced = false)
       const rank = (id: string) => id.startsWith('input:') ? 0 : id.startsWith('story:') ? 1 : 2;
       return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
     });
-  if (!pending.length) return;
-  const latestTurn = Math.max(...pending.map(s => s.turn));
+  if (!pending.length) { narrativeSignals.delete(scope); return; }
+  // A main-narrative signal is consumed once. Continuation batches instead
+  // depend on persisted dueThrough; reloading cannot create an early trigger.
+  const narrativeJustCommitted = narrativeSignals.delete(scope);
   const lastScheduled = await meta(scope, 'lastScheduledTurn');
   const dueThrough = await meta(scope, 'dueThrough');
-  const important = settings.important && pending.some(s => importantCandidate(s.text));
-  const due = pending.some(s => s.turn <= dueThrough);
-  if (!forced && latestTurn - lastScheduled < settings.interval && !important && !due) return;
-  const schedulingThrough = forced || important || latestTurn - lastScheduled >= settings.interval
-    ? latestTurn : dueThrough;
+  // Preserve fixed 20-turn checkpoints; >75 unsummarized journals may archive
+  // earlier, but major plot keywords alone must not schedule a summary.
+  const schedulingThrough = memoryArchiveBoundary(pending, lastScheduled, dueThrough,
+    settings.interval, forced, narrativeJustCommitted);
+  if (schedulingThrough === null) return;
   if (schedulingThrough > dueThrough) await setMeta(scope, 'dueThrough', schedulingThrough);
   const eligible = pending.filter(s => s.turn <= schedulingThrough);
   const selected = chunk(eligible, settings.inputBudget);
   if (!selected.length) return;
   const id = 'job:' + selected[0].id + ':' + selected[selected.length - 1].id;
   const job: MemoryJob = { key: memoryKey(scope, id), scope, id,
-    sourceIds: selected.map(s => s.id), toTurn: latestTurn,
+    sourceIds: selected.map(s => s.id), toTurn: Math.max(...selected.map(s => s.turn)),
     state: 'pending', attempts: 0, leaseUntil: 0, error: '', createdAt: Date.now() };
   await put('jobs', job);
-  await setMeta(scope, 'lastScheduledTurn', latestTurn);
+  await setMeta(scope, 'lastScheduledTurn', Math.max(lastScheduled, schedulingThrough));
 }
 async function remainingBudget(scope: string, settings: MemorySettings, extra: number): Promise<boolean> {
   if (settings.budgetUsd <= 0) return true;
@@ -198,12 +203,28 @@ async function runWork(scope: string, settings: MemorySettings): Promise<void> {
     workingScopes.delete(scope);
     if (!pausedScopes.has(scope) && loadMemorySettings().enabled) {
       try {
-        const jobs = (await rows<MemoryJob>('jobs', scope)).filter(j =>
-          j.state === 'pending' || j.state === 'working');
-        if (jobs.length) {
-          const now = Date.now();
-          const next = Math.min(...jobs.map(j => j.leaseUntil || now));
-          wakeup(scope, Math.max(100, next - now));
+        if (narrativeSignals.has(scope)) {
+          // A new normal story finished while an earlier memory worker was busy.
+          // Recheck its now-eligible logs without waiting for another story.
+          wakeup(scope, 1000);
+        } else {
+          const jobs = await rows<MemoryJob>('jobs', scope);
+          const active = jobs.filter(j => j.state === 'pending' || j.state === 'working');
+          if (active.length) {
+            const now = Date.now();
+            const next = Math.min(...active.map(j => j.leaseUntil || now));
+            wakeup(scope, Math.max(100, next - now));
+          } else {
+            // A scheduled window may exceed eight bounded model batches.
+            // Resume the remaining due evidence without requiring another game turn.
+            const through = await meta(scope, 'dueThrough');
+            if (through > 0) {
+              const failed = new Set(jobs.filter(j => j.state === 'failed').flatMap(j => j.sourceIds));
+              const unfinished = (await rows<MemorySource>('sources', scope))
+                .some(s => !s.processed && s.turn <= through && !failed.has(s.id));
+              if (unfinished) wakeup(scope, 1000);
+            }
+          }
         }
       } catch { /* Persistence failure has no impact on gameplay. */ }
     }
@@ -219,9 +240,11 @@ function work(scope: string, settings: MemorySettings): Promise<void> {
   return pending;
 }
 
-export function scheduleMemoryWork(scope: string, sources: MemorySource[]): void {
+export function scheduleMemoryWork(scope: string, sources: MemorySource[],
+  narrativeJustCommitted = false): void {
   const settings = loadMemorySettings();
   if (!settings.enabled) return;
+  if (narrativeJustCommitted) narrativeSignals.add(scope);
   pausedScopes.delete(scope);
   clearWakeup(scope);
   const archived = sources.length ? ingestSources(sources) : Promise.resolve();

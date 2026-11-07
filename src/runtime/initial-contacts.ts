@@ -26,16 +26,16 @@ export const STARTING_RELATION: Record<StartingOwner, Record<string, StartingAff
     'protagonist-sakiko': 'complicated',
     'bang-tomori': 'close',
     'bang-mutsumi': 'close',
-    'bang-anon': 'familiar',
+    'bang-anon': 'close',
     'bang-rana': 'familiar',
-    'bang-taki': 'strained',
+    'bang-taki': 'complicated',
   },
   sakiko: {
     'protagonist-soyo': 'complicated',
     'bang-mutsumi': 'dearest',
-    'bang-uika': 'close',
+    'bang-uika': 'dearest',
     'bang-umiri': 'close',
-    'bang-nyamu': 'strained',
+    'bang-nyamu': 'familiar',
   },
   emma: {
     'majo-yuki': 'dearest',
@@ -82,6 +82,17 @@ const STARTING_AFFINITY_VALUE: Partial<Record<StartingOwner, Readonly<Record<str
 
 /** Optional fact carried into prompts. The affinity number still comes from the table above. */
 const STARTING_RELATION_NOTE: Partial<Record<StartingOwner, Readonly<Record<string, string>>>> = {
+  soyo: {
+    'protagonist-sakiko': '微尴尬的和解（昔日CRYCHIC破裂与解脱后的微妙分寸感，保留温情与试探）',
+    'bang-taki': '欢喜冤家（虽常日常拌嘴，但同历旧团破碎与新团重生，互为可托付后背的默契队友）',
+    'bang-anon': '嘴硬心软（日常互相嫌弃调侃，实则极依赖其打破心防的行动力）',
+    'bang-mutsumi': '暗藏内疚与复杂牵挂（深知睦对自己的依恋，经历过退还黄瓜的刺痛，心怀愧意又不知如何面对）',
+  },
+  sakiko: {
+    'protagonist-soyo': '微尴尬的和解（深知昔日伤害无法轻易抹去，在温情重拾的同时恪守体面分寸）',
+    'bang-uika': '命运支柱（自幼仰望的星光，低谷时无条件接纳与守护自己的避风港）',
+    'bang-nyamu': '商业妥协与舞台默契（虽有揭面旧怨与理念碰撞，但重组后已形成成熟的职业合作协作）',
+  },
   renako: {
     'watanare-ajisai': '恋人（玲奈子与濑名紫阳花、王冢真唯三人知情同意的认真交往）',
     'watanare-mai': '恋人（玲奈子与王冢真唯、濑名紫阳花三人知情同意的认真交往）',

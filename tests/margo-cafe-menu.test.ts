@@ -29,7 +29,7 @@ describe('margo cafe menu', () => {
     expect(getStoreProductImage('cafe-latte')).toMatch(/^data:image\/svg\+xml,/);
     const bought = reduceState(open, { type: 'buy_item', itemId: 'cafe-latte', quantity: 1 });
     expect(bought.player.balance).toBe(open.player.balance - 440);
-    expect(bought.inventory).toEqual([{ itemId: 'cafe-latte', quantity: 1 }]);
+    expect(bought.inventory).toContainEqual({ itemId: 'cafe-latte', quantity: 1 });
 
     expect(() => reduceState({ ...open, clock: { ...open.clock, hour: 3 } }, { type: 'buy_item', itemId: 'cafe-latte', quantity: 1 })).toThrow(/还没开门/);
     const store = { ...open, locationId: 'convenience', scene: { x: 21, z: 56, yaw: 0, areaId: 'convenience', seed: 'save-alpha', encounterId: null } };
@@ -44,7 +44,7 @@ describe('margo cafe menu', () => {
       locationId: 'margo-cafe-room',
       interior: { roomId: 'margo-cafe-room', x: 0, z: 3.8, yaw: 0, activityId: null, lastRest: null, lastStudy: null },
     });
-    expect(reduceState(indoors, { type: 'buy_item', itemId: 'cafe-espresso', quantity: 2 }).inventory).toEqual([{ itemId: 'cafe-espresso', quantity: 2 }]);
+    expect(reduceState(indoors, { type: 'buy_item', itemId: 'cafe-espresso', quantity: 2 }).inventory).toContainEqual({ itemId: 'cafe-espresso', quantity: 2 });
     expect(getMargoCafeOffer(bought, { type: 'wait', minutes: 1 })).toBeNull();
   });
 
@@ -65,7 +65,7 @@ describe('margo cafe menu', () => {
 
     const bought = reduceState(first, { type: 'buy_item', itemId: CAFE_DAILY_SPECIAL_ID, quantity: 1 });
     expect(bought.player.balance).toBe(first.player.balance - CAFE_DAILY_SPECIAL_PRICE);
-    expect(bought.inventory).toEqual([{ itemId: drink.item.id, quantity: 1 }]);
+    expect(bought.inventory).toContainEqual({ itemId: drink.item.id, quantity: 1 });
     expect(getCafeMenu(bought).find(row => row.kind === 'daily')).toMatchObject({ soldOut: true, itemId: drink.item.id });
     expect(() => reduceState(bought, { type: 'buy_item', itemId: CAFE_DAILY_SPECIAL_ID, quantity: 1 })).toThrow(/卖完/);
     expect(() => reduceState(first, { type: 'buy_item', itemId: CAFE_DAILY_SPECIAL_ID, quantity: 2 })).toThrow(/一杯/);

@@ -1,3 +1,5 @@
+import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, isEquipmentSlot, r27et1Equipped, setEquipment, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS, validatePersonalEquipment } from './equipment';
+import type { ProtagonistId } from './dual-protagonists';
 import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
@@ -25,7 +27,7 @@ import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, trigger
 import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
-import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT } from './convenience-store';
+import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT, R27ET1_ITEM_ID } from './convenience-store';
 import { applyCookingBegin, applyCookingCancel, applyCookingSettle, parseCookingState } from './cooking';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, applyWeatherForElapsedDays, dailyEnergyAfter, exposureSeed, outdoorEnergyDrain, outdoorHealthExposure, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
@@ -36,6 +38,9 @@ import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { isCircleVenueRoom } from './circle-venue';
+import { californiaPlaces, internationalLeg, isInternationalLocation, parseCaliforniaState, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID } from './california';
+import { FULL_RESET_ITEM_ID, PRO500_ITEM_ID, MYSTERY_GIFT_RESET_COUNT, mysteryVisitorPresent, parseMysteryVisitorState,
+  secondMysteryVisitorPresent, MAX20X_ITEM_ID, KYC_ITEM_ID, LAST_DECISION_ITEM_ID } from './mystery-visitor';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
 import { CONTACT_PROFILE_LIMITS, isCharacterPortraitId, legacyCharacterProfile, validateContactProfileInput } from './characters';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
@@ -45,9 +50,11 @@ import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengji
 import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
+import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
+import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
-export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
+export const STATE_LIMITS = { journal: 100, story: STORY_RECORD_LIMIT, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
 /** Every outdoor place on the local sandtable. Gate, library, cafe, dorm,
  * teaching and the bus stop keep the primary labels; the remaining existing
  * places use compact numbered markers. */
@@ -74,6 +81,7 @@ export const locations: Location[] = [
     x: (area.minX + area.maxX) / 2, y: (area.minZ + area.maxZ) / 2,
   })),
   ...campusInteriors.map(room => ({ id: room.id, name: room.label, subtitle: '校园室内', description: room.description, x: room.entrance.x, y: room.entrance.z })),
+  ...californiaPlaces.map(place => ({ ...place, x: 0, y: 0 })),
 ];
 
 /** Navigation remains limited to existing, reachable landmarks and authored rooms. */
@@ -90,6 +98,7 @@ export const novelDestinations: readonly NovelDestination[] = [
     return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
   }),
   ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+  ...californiaPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
 ];
 
 export interface NovelTravelQuote {
@@ -133,6 +142,27 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择都营巴士或东京Metro接驳线路。');
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
+    if (isInternationalLocation(next.locationId) || isInternationalLocation(locationId)) {
+      const leg = internationalLeg(next.locationId, locationId);
+      if (!leg) throw new Error('国际旅行只能沿机场与湾区接驳线路逐站前往，不能直接跨境传送。');
+      if (next.interior) throw new Error('请先离开建筑，再前往机场交通站。');
+      quote.minutes = leg.minutes;
+      quote.fare = leg.fare;
+      quote.baseEnergyCost = leg.minutes >= 300 ? 8 : Math.max(2, Math.ceil(leg.minutes / 30));
+      quote.calculatedEnergyCost = Math.round(quote.baseEnergyCost * quote.baseEnergyMultiplier * conditionMultiplier * 100) / 100;
+      quote.energyCost = Math.min(energyUnits(departure.energy), energyUnits(quote.calculatedEnergyCost)) / 100;
+      if (departure.balance < leg.fare) throw new Error(`余额不足，本段行程需要 ${leg.fare} 日元。`);
+      advance(next, leg.minutes);
+      next.player.energy = dailyEnergyAfter(adjustEnergy(departure.energy, -quote.energyCost), state.clock.day, next.clock.day);
+      next.player.balance = departure.balance - leg.fare;
+      quote.foodEnergyCost = state.player.foodEnergy - next.player.foodEnergy;
+      quote.satietyCost = state.player.satiety - next.player.satiety;
+      next.interior = null;
+      next.scene = null;
+      next.locationId = leg.to;
+      note(next, `搭乘${leg.method}抵达${locations.find(place => place.id === leg.to)!.name}，耗时 ${leg.minutes} 分钟，车票 ¥${leg.fare}。`);
+      return { next, quote };
+    }
     // Quote the complete trip even when the real player cannot afford it. This
     // private planning budget is replaced with the real balance before commit.
     next.player = { ...next.player, energy: 100, balance: 1_000_000 };
@@ -264,7 +294,7 @@ export function createInitialState(): WorldState {
     courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
-    inventory: [],
+    inventory: [{ itemId: 'crychic-photo', quantity: 1 }],
     academics: null,
     phone: [],
     contacts: soyoInitialContacts(protagonistNames.sakiko),
@@ -437,7 +467,7 @@ function parseTransitState(value: unknown, clock: WorldState['clock']): TransitS
 
 function academicPoints(value: unknown, path: string): number {
   const result = number(value, path, 0, MAX_ACADEMIC_POINTS, false);
-  if (!Number.isInteger(result * 2)) return invalid(path);
+  if (!Number.isInteger(result * 4)) return invalid(path);
   return result;
 }
 function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: boolean): AcademicState | null {
@@ -478,7 +508,12 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
     return { majorId, subjects, lastGain: null, ...correctionField };
   }
   const extras = ['outcome', 'channel', 'interactionId', 'energyConsumed', 'moraleChange', 'stressChange'];
-  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras)], 'academics.lastGain');
+  const hasEquipment = !legacy && !!item.lastGain && typeof item.lastGain === 'object' && Object.hasOwn(item.lastGain, 'equipmentProfile');
+  const hasStationery = !legacy && !!item.lastGain && typeof item.lastGain === 'object' && Object.hasOwn(item.lastGain, 'equipmentId');
+  const gain = object(item.lastGain, ['subjectId', 'minutes', 'points', 'totalPoints', 'at', ...(legacy ? [] : extras), ...(hasEquipment ? ['equipmentProfile'] : []), ...(hasStationery ? ['equipmentId'] : [])], 'academics.lastGain');
+  const equipmentId = hasStationery ? id(gain.equipmentId, 'academics.lastGain.equipmentId') : null;
+  if (equipmentId !== null && equipmentId !== R27ET1_ITEM_ID) return invalid('academics.lastGain.equipmentId');
+  if (hasEquipment && !equipmentProfile(gain.equipmentProfile)) return invalid('academics.lastGain.equipmentProfile');
   const subjectId = id(gain.subjectId, 'academics.lastGain.subjectId');
   const entry = subjects.find(subject => subject.subjectId === subjectId);
   const isCourtObservation = !legacy && gain.channel === 'court-hearing';
@@ -493,6 +528,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   const total = stamp ? day * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]) : 0;
   if (!stamp || day > 365000 || total > clock.day * 1440 + clock.hour * 60 + clock.minute) return invalid('academics.lastGain.at');
   if (legacy || gain.outcome === null) {
+    if (hasEquipment || hasStationery) return invalid('academics.lastGain 旧记录不应包含装备加成');
     if (points !== minutes || !getAcademicSubject(majorId, subjectId) || (!legacy && extras.some(key => gain[key] !== null))) return invalid('academics.lastGain 旧学习记录不一致');
     return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome: null, channel: null, interactionId: null, energyConsumed: null, moraleChange: null, stressChange: null }, ...correctionField };
   }
@@ -502,6 +538,7 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if (channel !== 'classroom' && channel !== 'study-room' && channel !== 'bookshop' && channel !== 'court-hearing') return invalid('academics.lastGain.channel');
   const interactionId = gain.interactionId === null ? null : id(gain.interactionId, 'academics.lastGain.interactionId');
   if (channel === 'court-hearing') {
+    if (hasEquipment || hasStationery) return invalid('academics.lastGain 法庭旁听不使用装备加成');
     const observe = courtObservationServiceForMinutes(minutes);
     const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
     const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
@@ -521,14 +558,18 @@ function parseAcademics(value: unknown, clock: WorldState['clock'], legacy: bool
   if ((!crossMajor && outcome !== 'normal') || (crossMajor && channel === 'classroom')) return invalid('academics.lastGain 学习渠道或结果不一致');
   const multiplier = outcome === 'inspiration' ? 3 : outcome === 'confusion' ? 1 : 2;
   const energyConsumed = number(gain.energyConsumed, 'academics.lastGain.energyConsumed', 0, 100);
-  if (points * 2 !== minutes * multiplier || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
+  const equipmentMultiplier = hasEquipment ? historicalAcademicMultiplier(gain.equipmentProfile, majorId, subjectId, !crossMajor) : 1;
+  const baseStudyPoints = minutes * multiplier / 2 * equipmentMultiplier;
+  const expectedStudyPoints = equipmentId ? Math.round(baseStudyPoints * R27ET1_STUDY_BONUS * 2) / 2 : baseStudyPoints;
+  if (points !== expectedStudyPoints || energyConsumed !== getStudyEnergyCost(minutes) + (outcome === 'confusion' ? 3 : 0)) return invalid('academics.lastGain 收益或消耗不一致');
   const moraleChange = number(gain.moraleChange, 'academics.lastGain.moraleChange', -100, 100);
   const stressChange = number(gain.stressChange, 'academics.lastGain.stressChange', -100, 100);
   const base = getActivityEffects('study', minutes);
   const morale = base.morale + (outcome === 'inspiration' ? 3 : outcome === 'confusion' ? -4 : 0);
   const stress = base.stress + (outcome === 'inspiration' ? -2 : outcome === 'confusion' ? 5 : 0);
   if (moraleChange < Math.min(0, morale) || moraleChange > Math.max(0, morale) || stressChange < Math.min(0, stress) || stressChange > Math.max(0, stress)) return invalid('academics.lastGain 精神或压力净变化不一致');
-  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange }, ...correctionField };
+  return { majorId, subjects, lastGain: { subjectId, minutes, points, totalPoints, at, outcome, channel, interactionId, energyConsumed, moraleChange, stressChange,
+    ...(hasEquipment ? { equipmentProfile: gain.equipmentProfile as import('./equipment').EquipmentProfileId } : {}), ...(equipmentId ? { equipmentId } : {}) }, ...correctionField };
 }
 
 /** Convert historical money once; a persisted currency tag stops repeat conversions. */
@@ -588,9 +629,14 @@ function clearDepartedProtagonistEncounters(state: WorldState): WorldState {
   return state;
 }
 
-export function parseState(value: unknown): WorldState {
+export function parseState(value: unknown, ownerOverride?: ProtagonistId): WorldState {
   const state = parseStateCore(value, true);
   validateLivehouseLinks(state);
+  for (const owner of state.protagonists ? PROTAGONISTS : [ownerOverride ?? 'soyo'] as ProtagonistId[]) {
+    const personal = state.protagonists ? personState(state, owner) : state;
+    validatePersonalEquipment(personal, owner);
+    ensurePersonalKeepsake(personal, owner);
+  }
   for (const view of protagonistViews(state)) {
     if (!view.scene?.encounterId || !isProtagonistEncounter(view.scene.encounterId)) continue;
     if (view.protagonists && view.scene.encounterId === protagonistSceneId(activeProtagonist(view))) return invalid('scene.encounterId 不能指向当前主角');
@@ -608,10 +654,11 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     const source = value as Record<string, unknown>;
     const hasYen = Object.hasOwn(source, 'currency');
     if (hasYen && source.currency !== 'JPY') return invalid('currency');
-    const { protagonists, currency: _currency, ...rest } = source;
+    const { protagonists, currency: _currency, worldChronicle: worldChronicleRaw, ...rest } = source;
     // Parse all existing ledgers in their previous units before converting once.
     const base = parseStateCore({ ...rest, currency: 'JPY', schema_version: '1.11.0' }, deferProtagonists);
     const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
+      ...(Object.hasOwn(source, 'worldChronicle') ? { worldChronicle: parseWorldChronicleState(worldChronicleRaw) } : {}),
       protagonists: parseProtagonists(protagonists, base, value => parseStateCore(value, deferProtagonists), !hasYen) };
     if (!hasYen) {
       migrateHistoricalMoney(state);
@@ -648,27 +695,38 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
+  const hasWorldChronicle = version === '1.11.0' && Object.hasOwn(value, 'worldChronicle');
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
+  const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
+  const hasMysteryVisitor = version === '1.11.0' && Object.hasOwn(value, 'mysteryVisitor');
+  const hasAnthropicVisitor = version === '1.11.0' && Object.hasOwn(value, 'anthropicVisitor');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
   const inventory: WorldState['inventory'] = [];
   if (hasInventory) {
-    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length) return invalid('inventory');
+    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length + equipmentCatalog.length) return invalid('inventory');
     for (const [index, value] of state.inventory.entries()) {
       const path = `inventory[${index}]`;
-      const item = object(value, ['itemId', 'quantity'], path);
+      const hasEquipped = !!value && typeof value === 'object' && Object.hasOwn(value, 'equipped');
+      const item = object(value, ['itemId', 'quantity', ...(hasEquipped ? ['equipped'] : [])], path);
       const itemId = id(item.itemId, `${path}.itemId`);
-      if (!getStoreItem(itemId) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
-      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, INVENTORY_ITEM_LIMIT) });
+      if ((!getStoreItem(itemId) && !getEquipmentItem(itemId)) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
+      if (hasEquipped && getEquipmentItem(itemId) && typeof item.equipped !== 'boolean') return invalid(`${path}.equipped`);
+      if (hasEquipped && !getEquipmentItem(itemId) &&
+        (!isEquipmentSlot(item.equipped) || !canEquipItem(itemId, item.equipped) ||
+          inventory.some(entry => entry.equipped === item.equipped))) return invalid(`${path}.equipped`);
+      inventory.push({ itemId, quantity: number(item.quantity, `${path}.quantity`, 1, getEquipmentItem(itemId) ? 1 : INVENTORY_ITEM_LIMIT),
+        ...(hasEquipped ? { equipped: (getEquipmentItem(itemId) ? boolean(item.equipped, `${path}.equipped`)
+          : item.equipped as import('./equipment').EquipmentSlot) } : {}) });
     }
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
@@ -678,6 +736,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     weather,
+    ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
@@ -692,6 +751,9 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     npcProfessions: hasNpcProfessions ? parseNpcProfessions(state.npcProfessions) : initialNpcProfessions(),
     ...(hasFengjinClinic ? { fengjinClinic: parseFengjinClinicState(state.fengjinClinic) } : {}),
     ...(hasCooking ? { cooking: parseCookingState(state.cooking) } : {}),
+    ...(hasCalifornia ? { california: parseCaliforniaState(state.california) } : {}),
+    ...(hasMysteryVisitor ? { mysteryVisitor: parseMysteryVisitorState(state.mysteryVisitor) } : {}),
+    ...(hasAnthropicVisitor ? { anthropicVisitor: parseMysteryVisitorState(state.anthropicVisitor) } : {}),
     ...(hasLivehouseVisit ? { livehouseVisit: parseLivehouseVisit(state.livehouseVisit) } : {}),
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
@@ -722,7 +784,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
       const item = object(value, ['id', 'text', 'at'], path);
       return { id: id(item.id, `${path}.id`), text: text(item.text, `${path}.text`, 1000), at: text(item.at, `${path}.at`, 40) };
     }),
-    story: list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
+    story: retainStoryHistory(list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
       const hasParticipants = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'participantIds');
       const hasSideBeats = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'otherSideBeats');
       const hasReturnStory = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'returnStory');
@@ -759,7 +821,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         ...(participantIds ? { participantIds } : {}),
         ...(otherSideBeats ? { otherSideBeats } : {}),
         ...(hasReturnStory ? { returnStory: text(item.returnStory, `${path}.returnStory`, 2000) } : {}) };
-    }),
+    })),
   };
   if (result.scene?.areaId === 'construction-site' && result.locationId === 'neighborhood') result.locationId = 'construction-site';
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
@@ -797,7 +859,8 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState): WorldState {
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState, ownerOverride?: ProtagonistId): WorldState {
+  const equipmentOwner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
   let next = parseStateCore(state, true);
   // The legacy view omits the four-protagonist account owner. The court's
   // active speaker and filing payer must still be the selected protagonist.
@@ -814,6 +877,20 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
   };
   for (const [index, action] of validated.entries()) {
     switch (action.type) {
+      case 'equip':
+      case 'unequip': {
+        if (getEquipmentItem(action.itemId)) {
+          if (action.slot && action.slot !== 'special') throw new Error('珍藏只能放进特殊道具栏。');
+          if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip' && action.slot !== null))
+            note(next, `${action.type === 'equip' && action.slot !== null ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
+        } else if (getStoreItem(action.itemId)?.equipmentKind) {
+          const slot = action.type === 'unequip' || action.slot === null ? null : action.slot ?? 'permanent-1';
+          if (slot !== null && !isEquipmentSlot(slot)) throw new Error('无效装备栏。');
+          setEquipmentSlot(next, action.itemId, slot);
+          note(next, slot === null ? '已卸下随身文具。' : '已装备随身文具。');
+        } else throw new Error('无效装备物品。');
+        break;
+      }
       case 'go_home': {
         const owner = activeProtagonist(worldAuthority ?? next);
         next = reduceLegacyState(next, { type: 'novel_travel', locationId: protagonistHomeRooms[owner] });
@@ -927,7 +1004,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const outcome = !crossMajor || draw >= 50 ? 'normal' : draw < 25 ? 'inspiration' : 'confusion';
         const energyConsumed = getStudyEnergyCost(action.minutes) + (outcome === 'confusion' ? 3 : 0);
         if (next.player.energy < energyConsumed) throw new Error(`精力不足，此次学习需要 ${energyConsumed} 点精力，请先休息。`);
-        const points = action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1);
+        const equipment = academicEquipment(next, equipmentOwner, action.subjectId, !crossMajor);
+        const equipmentId = r27et1Equipped(next) ? R27ET1_ITEM_ID : null;
+        const points = studyPointsWithEquipment(next, action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1) * equipment.multiplier);
         let progress = next.academics.subjects.find(entry => entry.subjectId === action.subjectId);
         if ((progress?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
         const before = { ...next.player };
@@ -939,7 +1018,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         if (!progress) { progress = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(progress); }
         progress.points += points;
         const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
-        next.academics.lastGain = { subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
+        next.academics.lastGain = { ...(equipment.equipmentProfile ? { equipmentProfile: equipment.equipmentProfile } : {}), ...(equipmentId ? { equipmentId } : {}), subjectId: action.subjectId, minutes: action.minutes, points, totalPoints: progress.points, at, outcome, channel,
           interactionId: channel === 'bookshop' ? null : channel === 'classroom' ? 'classroom-notes' : 'study-focus',
           energyConsumed, moraleChange: next.player.morale - before.morale, stressChange: next.player.stress - before.stress };
         clearInteriorActivity();
@@ -1091,7 +1170,7 @@ function commitLegacyStoryTurn(
     { id: ids.userId, role: 'user', text: inputText, ...participantEvidence },
     { id: ids.assistantId, role: 'assistant', text: reply.text, ...participantEvidence },
   );
-  next.story = next.story.slice(-STATE_LIMITS.story);
+  next.story = retainStoryHistory(next.story);
   if (worldActions.length) note(next, `已结算本轮 ${worldActions.length} 项剧情行动。`, actionReceiptId);
   return parseStateCore(next, true);
 }
@@ -1172,10 +1251,52 @@ function activityChangeNote(before: PlayerState, after: PlayerState): string {
  * Structured narrative actions share these transactions; exact-duration rest,
  * study, contextual effects and relationship changes are handled above.
  */
-function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthority?: WorldState): WorldState {
+function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthority?: WorldState, ownerOverride?: ProtagonistId): WorldState {
+  const equipmentOwner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
   const next = parseStateCore(state, true);
   if (!action || typeof action !== 'object') throw new Error('无效行动。');
   switch (action.type) {
+    case 'equip_item':
+    case 'unequip_item': {
+      if (getEquipmentItem(action.itemId)) {
+        if (action.slot && action.slot !== 'special') throw new Error('珍藏只能放进特殊道具栏。');
+        if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip_item' && action.slot !== null))
+          note(next, `${action.type === 'equip_item' && action.slot !== null ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
+      } else if (getStoreItem(action.itemId)?.equipmentKind) {
+        const slot = action.type === 'unequip_item' || action.slot === null ? null : action.slot ?? 'permanent-1';
+        if (slot !== null && !isEquipmentSlot(slot)) throw new Error('无效装备栏。');
+        setEquipmentSlot(next, action.itemId, slot);
+        note(next, slot === null ? '已卸下随身文具。' : '已装备随身文具。');
+      } else throw new Error('无效装备物品。');
+      break;
+    }
+    case 'claim_mystery_gift':
+    case 'claim_second_mystery_gift': {
+      const owner = activeProtagonist(worldAuthority ?? next);
+      const isSecond = action.type === 'claim_second_mystery_gift';
+      const authoritative = { ...next, protagonists: worldAuthority?.protagonists };
+      const present = isSecond ? secondMysteryVisitorPresent(authoritative) : mysteryVisitorPresent(authoritative);
+      if (!present) throw new Error('这位神秘访客此刻并不在附近，或者礼物已领取。');
+      const gifts: readonly (readonly [string, number])[] = isSecond
+        ? [[MAX20X_ITEM_ID, 1], [KYC_ITEM_ID, 1], [LAST_DECISION_ITEM_ID, 1]]
+        : [[FULL_RESET_ITEM_ID, MYSTERY_GIFT_RESET_COUNT], [PRO500_ITEM_ID, 1]];
+      for (const [itemId, quantity] of gifts) {
+        const owned = next.inventory.find(row => row.itemId === itemId)?.quantity ?? 0;
+        if (owned + quantity > INVENTORY_ITEM_LIMIT) throw new Error('背包无法容纳这份神秘礼物。');
+      }
+      for (const [itemId, quantity] of gifts) {
+        const owned = next.inventory.find(row => row.itemId === itemId);
+        if (owned) owned.quantity += quantity;
+        else next.inventory.push({ itemId, quantity });
+      }
+      if (isSecond) next.anthropicVisitor = { claimedBy: { ...next.anthropicVisitor?.claimedBy, [owner]: true } };
+      else next.mysteryVisitor = { claimedBy: { ...next.mysteryVisitor?.claimedBy, [owner]: true } };
+      const giftText = isSecond
+        ? '神秘研究者微笑着递来三张不同的收藏凭证：Max 20x ×1、KYC ×1、Last Decision ×1。奖励已存入背包。'
+        : '神秘访客把一份罕见的礼物交到你手中：Full Reset ×10，以及 Pro 500 ×1。物品已存入背包。';
+      note(next, giftText);
+      next.story.push({ id: `${isSecond ? 'bay-visitor-gift' : 'mystery-gift'}-${owner}-${next.clock.day}-${next.clock.hour}-${next.clock.minute}`, role: 'assistant', text: giftText });
+      next.story = next.story.slice(-STATE_LIMITS.story);
     case 'save_contact': {
       const { type: _type, ...input } = action;
       const profile = validateContactProfileInput(input);
@@ -1205,7 +1326,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       let sequence = 1;
       while (next.story.some(entry => entry.id === `${prefix}${sequence}`)) sequence++;
       next.story.push({ id: `${prefix}${sequence}`, role: 'assistant', text: eventText, participantIds: [contact.id] });
-      next.story = next.story.slice(-STATE_LIMITS.story);
+      next.story = retainStoryHistory(next.story);
       break;
     }
     case 'choose_academics': {
@@ -1259,7 +1380,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
           let sequence = 1;
           let servingId = `cafe-serve.${owner}.${next.clock.day}.${sequence}`;
           while (next.story.some(row => row.id === servingId)) servingId = `cafe-serve.${owner}.${next.clock.day}.${++sequence}`;
-          next.story = [...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }].slice(-STATE_LIMITS.story);
+          next.story = retainStoryHistory([...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }]);
         }
         note(next, cafeQuote.journal);
         break;
@@ -1364,6 +1485,18 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const status = getLocationStatus(next.locationId, next.clock)!;
       const startDay = next.clock.day;
       const visitCommit = quote.livehouse?.commit ?? null;
+      if (quote.service.id === PRO200_CLAIM_SERVICE_ID) {
+        const owned = next.inventory.find(entry => entry.itemId === PRO200_GAME_ITEM_ID);
+        if (owned) owned.quantity += 1;
+        else next.inventory.push({ itemId: PRO200_GAME_ITEM_ID, quantity: 1 });
+        next.california = { claims: { ...(next.california?.claims ?? {}), [activeProtagonistId(next, worldAuthority)]: next.clock.day } };
+      }
+      if (quote.service.id === PRO200_RESELL_SERVICE_ID) {
+        const index = next.inventory.findIndex(entry => entry.itemId === PRO200_GAME_ITEM_ID);
+        if (index < 0) throw new Error('背包中没有可出售的 Pro200 凭证。');
+        if (next.inventory[index].quantity === 1) next.inventory.splice(index, 1);
+        else next.inventory[index].quantity -= 1;
+      }
       advance(next, quote.minutes);
       // The quote already includes elapsed nutrition; replace, never apply twice.
       // Day-change weather is reapplied because this replacement discards the clock step.
@@ -1401,7 +1534,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
           knowledgeReceipt += `法庭论证学习进度 +${gain} 点。`;
         }
       }
-      const settlement = quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
+      const settlement = quote.service.id === PRO200_RESELL_SERVICE_ID ? `出售收藏凭证，收入 ${quote.payout} 日元`
+        : quote.payout ? `领取工资 ${quote.payout} 日元` : quote.price ? `支付 ${quote.price} 日元` : '无需付款';
       const transition = detectIllnessTransition(before, next.player);
       const transitionNote = transition.transitionNote ? ` ${transition.transitionNote}` : '';
       if (quote.service.id === 'clinic-counseling') {
@@ -1607,7 +1741,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
     case 'interior_study':
     case 'read_subject': {
       const quote = getAcademicStudyQuote(next, { subjectId: action.subjectId, optionId: action.optionId,
-        ...(action.type === 'interior_study' ? { interactionId: action.interactionId } : {}) });
+        ...(action.type === 'interior_study' ? { interactionId: action.interactionId } : {}) }, equipmentOwner);
       if (quote.blockedReason || !quote.option || !quote.subject || !next.academics) throw new Error(quote.blockedReason ?? '无法开始学习。');
       const option = quote.option;
       const sample = Math.random();
@@ -1620,7 +1754,10 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
         outcome = quote.outcomes[result < .25 ? 0 : result < .5 ? 1 : 2];
       }
       const energyConsumed = getStudyEnergyCost(minutes) + outcome.extraEnergy;
-      const points = minutes * (outcome.pointsMultiplier * 2) / 2;
+      const equipment = academicEquipment(next, equipmentOwner, action.subjectId, !quote.isCrossMajor);
+      const equipmentId = r27et1Equipped(next) ? R27ET1_ITEM_ID : null;
+      const points = studyPointsWithEquipment(next, minutes * outcome.pointsMultiplier * equipment.multiplier);
+      if ((next.academics.subjects.find(item => item.subjectId === action.subjectId)?.points ?? 0) + points > MAX_ACADEMIC_POINTS) throw new Error('学习进度已到达存档上限。');
       const playerBefore = { ...next.player };
       advance(next, minutes);
       next.player.energy = adjustEnergy(next.player.energy, -energyConsumed);
@@ -1637,7 +1774,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (!subject) { subject = { subjectId: action.subjectId, points: 0 }; next.academics.subjects.push(subject); }
       subject.points = (subject.points * 2 + points * 2) / 2;
       const at = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
-      next.academics.lastGain = { subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
+      next.academics.lastGain = { ...(equipment.equipmentProfile ? { equipmentProfile: equipment.equipmentProfile } : {}), ...(equipmentId ? { equipmentId } : {}), subjectId: subject.subjectId, minutes, points, totalPoints: subject.points, at,
         outcome: outcome.id, channel, interactionId: action.type === 'interior_study' ? action.interactionId : null, energyConsumed, moraleChange: next.player.morale - playerBefore.morale, stressChange: next.player.stress - playerBefore.stress };
       const place = channel === 'bookshop' ? '书店' : getCampusInterior(channel)!.label;
       note(next, `在${place}学习${quote.subject.name} ${minutes} 分钟，消耗 ${energyConsumed} 点精力。${quote.isCrossMajor ? `跨专业阅读：${outcome.label}。` : ''}${activityChangeNote(playerBefore, next.player)}${quote.subject.name}学习进度 +${points}，累计 ${subject.points} 点。`);
@@ -1687,8 +1824,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
 }
 
 /** Public reducers keep the active legacy view as a compatibility projection only. */
-export function reduceState(state: WorldState, action: WorldAction): WorldState {
-  const parsed = parseState(state);
+export function reduceState(state: WorldState, action: WorldAction, ownerOverride?: ProtagonistId): WorldState {
+  const parsed = parseState(state, ownerOverride);
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
   if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
@@ -1734,11 +1871,11 @@ export function reduceState(state: WorldState, action: WorldAction): WorldState 
     settleWeeklyMemory(next);
     return parseState(clearDepartedProtagonistEncounters(next));
   }
-  const next = reduceLegacyState(legacyView(before), action, before);
+  const next = reduceLegacyState(legacyView(before), action, before, ownerOverride);
   const candidate = clearDepartedProtagonistEncounters(finishPersonalChange(before, next, `世界行动：${action.type}`));
   if (action.type === 'interior_interact' && action.booking) syncPerformanceCalendars(candidate, action.booking.id);
   return parseState(action.type === 'encounter' && !(candidate.protagonists && isProtagonistEncounter(action.personId))
-    ? recordNpcEncounter(candidate, action.personId) : candidate);
+    ? recordNpcEncounter(candidate, action.personId) : candidate, ownerOverride);
 }
 /** Verify the actual NPC reply by identity and exact spoken line, not a text keyword heuristic. */
 function verifySocialConsentEvidence(state: WorldState, reply: GeneratedStory): void {
@@ -1790,17 +1927,17 @@ function commitNarrativeMessaging(state: WorldState, actions: readonly StoryActi
   return next;
 }
 
-export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview'): WorldState {
-  const parsed = parseState(state);
+export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', ownerOverride?: ProtagonistId): WorldState {
+  const parsed = parseState(state, ownerOverride);
   const needsWorld = actions.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
-  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before), '剧情行动');
-  const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId);
+  const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before, ownerOverride), '剧情行动');
+  const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId, before);
   const sent = commitNarrativeMessaging(withSkills, actions, turnId);
   const invited = recordSocialInvitations(sent, actions, turnId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const withAgenda = applySocialAgendaActions(invited,actions,turnId);
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda));
+  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda), ownerOverride);
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
@@ -1813,10 +1950,13 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
   // A replay is checked against the stored, signed side-effect receipt rather
   // than re-rolling the probability gate against a state that already advanced.
+  // The chronicle receipt is supplied by the bridge, not the LLM output
+  // protocol: keep it out of the strict story parser on BOTH commit paths.
+  const { worldChronicleReceipt, ...modelResult } = result;
   // Saved turns cannot re-roll an exhausted opportunity, but their exact
   // structured effects must still match the original narrative receipt.
   const { otherSide: requestedSide, returnStory: requestedReturn,
-    strategyUpdates: requestedUpdates, strategyMajor: requestedMajor, ...withoutSide } = result;
+    strategyUpdates: requestedUpdates, strategyMajor: requestedMajor, ...withoutSide } = modelResult;
   if (alreadyCommitted && (requestedUpdates?.length || requestedMajor?.length)
     && !hasStrategyNarrativeReceipt(before.protagonists?.strategy, ids.assistantId))
     throw new Error('重复剧情 ID 不得新增原先没有的国策效果');
@@ -1826,13 +1966,13 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
       ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}),
       ...(requestedUpdates !== undefined ? { strategyUpdates: requestedUpdates } : {}),
       ...(requestedMajor !== undefined ? { strategyMajor: requestedMajor } : {}) }
-    : validateGeneratedStory(result, before);
+    : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
     strategyUpdates, strategyMajor, ...legacyResult } = validated;
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
   const narrativeActions = legacyResult.worldActions ?? [];
-  const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId);
+  const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId, before);
   const sent = commitNarrativeMessaging(withSkills, narrativeActions, ids.assistantId);
   const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
@@ -1855,7 +1995,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   acknowledgeAgendaNarration(before,next);
-  return parseState(next);
+  return parseState(acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt));
 }
 
 

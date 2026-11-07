@@ -111,9 +111,9 @@ describe('魔裁 casual trio standing art', () => {
     const nanoka = majoExpressionSets['majo-nanoka']!.expressions.neutral;
     const arisa = majoExpressionSets['majo-arisa']!.expressions.neutral;
     const milia = majoExpressionSets['majo-milia']!.expressions.neutral;
-    expect(resolveMapCharacterAvatar({ name: '黑部奈叶香', personId: 'majo-nanoka' })).toEqual({ kind: 'sprite', src: nanoka });
-    expect(resolveMapCharacterAvatar({ name: '紫藤亚里沙' })).toEqual({ kind: 'sprite', src: arisa });
-    expect(resolveMapCharacterAvatar({ name: '米莉亚', personId: 'majo-milia' })).toEqual({ kind: 'sprite', src: milia });
+    expect(resolveMapCharacterAvatar({ name: '黑部奈叶香', personId: 'majo-nanoka' }, true)).toEqual({ kind: 'sprite', src: nanoka });
+    expect(resolveMapCharacterAvatar({ name: '紫藤亚里沙' }, true)).toEqual({ kind: 'sprite', src: arisa });
+    expect(resolveMapCharacterAvatar({ name: '米莉亚', personId: 'majo-milia' }, true)).toEqual({ kind: 'sprite', src: milia });
   });
 
   it('keeps Milia\'s earlier anime-seg files and records the new default', () => {

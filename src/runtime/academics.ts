@@ -1,6 +1,9 @@
+import { academicEquipment } from './equipment';
+import type { ProtagonistId } from './dual-protagonists';
 import type { AcademicGain, AcademicState, WorldState } from '../frontend/types';
 import { getCampusInterior, getStudyEnergyCost, INTERIOR_INTERACTION_RANGE, isStudyInteraction, studyDurationOptions } from './campus-interiors';
 import { getLocationStatus } from './location-services';
+import { studyPointsWithEquipment } from './equipment';
 
 export interface AcademicSubject {
   readonly id: string;
@@ -130,7 +133,7 @@ const normalOutcomes: readonly AcademicStudyOutcome[] = Object.freeze([
 ]);
 export interface AcademicStudyRequest { subjectId: string; optionId: string; interactionId?: string }
 /** Read-only eligibility and worst-case cost; random draws belong only to committed actions. */
-export function getAcademicStudyQuote(state: WorldState, request: AcademicStudyRequest) {
+export function getAcademicStudyQuote(state: WorldState, request: AcademicStudyRequest, owner: ProtagonistId = state.protagonists?.accounts.active ?? 'soyo') {
   const subject = getAcademicSubjectById(request.subjectId);
   const option = studyDurationOptions.find(item => item.id === request.optionId) ?? null;
   const isCrossMajor = !!(subject && state.academics && !getAcademicSubject(state.academics.majorId, subject.id));
@@ -158,8 +161,9 @@ export function getAcademicStudyQuote(state: WorldState, request: AcademicStudyR
   if (!blockedReason && !option) blockedReason = '请选择有效的学习时长。';
   if (!blockedReason && state.player.energy < maxEnergyCost) blockedReason = `精力不足，此档学习至少需要 ${maxEnergyCost} 点精力，请先休息。`;
   if (!blockedReason && option && state.clock.day * 1440 + state.clock.hour * 60 + state.clock.minute + option.maxMinutes > 365000 * 1440 + 1439) blockedReason = '已到达最大天数，此档学习无法完整结算。';
+  const equipment = academicEquipment(state, owner, request.subjectId, !isCrossMajor);
   const ownedPoints = state.academics?.subjects.find(item => item.subjectId === request.subjectId)?.points ?? 0;
-  if (!blockedReason && option && (ownedPoints * 2 + option.maxMinutes * (isCrossMajor ? 3 : 2)) > MAX_ACADEMIC_POINTS * 2) blockedReason = '学习进度已到达存档上限，本次学习未结算。';
+  if (!blockedReason && option && ownedPoints + studyPointsWithEquipment(state, option.maxMinutes * (isCrossMajor ? 1.5 : 1) * equipment.multiplier) > MAX_ACADEMIC_POINTS) blockedReason = '学习进度已到达存档上限，本次学习未结算。';
   return { subject, option, isCrossMajor, minMinutes: option?.minMinutes ?? 0,
     maxMinutes: option?.maxMinutes ?? 0, maxEnergyCost, outcomes, blockedReason };
 }
