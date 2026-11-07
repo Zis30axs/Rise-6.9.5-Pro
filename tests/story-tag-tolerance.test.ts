@@ -47,10 +47,16 @@ describe('forgiving story tag extraction', () => {
     expect(reply.phoneMessages).toEqual([]);
   });
 
-  it('accepts ordinary prose when the model omits story tags', () => {
-    const reply = parseGeneratedStory('<think>不要写入这段。</think>普通的中文剧情。', createInitialState());
-    expect(reply.text).toBe('普通的中文剧情。');
-    expect(reply.phoneMessages).toEqual([]);
+  it('requires a nonempty story opener, even in forgiving mode', () => {
+    for (const response of [
+      '普通的中文剧情。',
+      '<think>不要写入这段。</think>普通的中文剧情。',
+      '<phone_messages>[]</phone_messages>',
+      '<konatan_planning~>示例：<story>示例正文</story></konatan_planning~>普通正文。',
+      '<story></story><phone_messages>[]</phone_messages>',
+    ]) {
+      expect(() => parseGeneratedStory(response, createInitialState())).toThrow('包含 <story> 的标签块');
+    }
   });
 
   it('does not relax world action validation', () => {

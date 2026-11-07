@@ -144,6 +144,8 @@ export interface WorldState {
   schema_version: '1.11.0' | '1.12.0' | '1.13.0';
   /** Shared daily forecast. Old saves receive it from the civil date on load. */
   weather?: import('../runtime/weather').WeatherState;
+  /** GMT+8 real-world history dispatch; shared by all protagonists. */
+  worldChronicle?: import('../runtime/world-chronicle').WorldChronicleState;
   /** Added lazily when a dual-protagonist feature is first used. */
   protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };
@@ -306,6 +308,8 @@ export interface GeneratedStory {
   autonomousSmsText?: string | null;
   bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
+  /** Internal runtime delivery receipt; never produced by, or sent to, the LLM. */
+  worldChronicleReceipt?: import('../runtime/world-chronicle').WorldChronicleReceipt;
 }
 
 export type StoryGenerationOptions = {

@@ -2,7 +2,8 @@ import soyoHeadshot from '../../assets/map-avatars/soyo.webp?inline';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { CharacterPortraitId } from './types';
 import { downtownArtPack } from './generated/downtown-art';
-import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getSakikoArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
+import { getAnonArt, getMutsumiArt, getNagasakiMotherArt, getRaanaArt, getTakiArt, getTomoriArt } from './downtown-art-runtime';
+import { resolveSakikoUniformPortrait } from './sakiko-uniform-art';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
 import { isRaanaSpeaker } from './raana-art-policy';
@@ -10,6 +11,9 @@ import { isTakiSpeaker } from './taki-art-policy';
 import { isTomoriSpeaker } from './tomori-art-policy';
 import { isNagasakiMotherSpeaker } from './nagasaki-mother-art-policy';
 import { isMarinaSpeaker, resolveMarinaExpressionPortrait } from './marina-art';
+import { isUikaSpeaker, resolveUikaExpressionPortrait } from './uika-art';
+import { isUmiriSpeaker, resolveUmiriExpressionPortrait } from './umiri-art';
+import { isNyamuSpeaker, resolveNyamuExpressionPortrait } from './nyamu-art';
 import { majoExpressionFor, resolveMajoSpeaker } from './majo-art';
 import { watanareExpressionFor } from './watanare-art';
 import { novelNpcAtlases } from './novel-npc-atlases';
@@ -104,8 +108,7 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
     if (crop) return crop;
   }
   if (person.protagonistId === 'sakiko') {
-    const art = getSakikoArt(downtownArtPack, { speaker: '丰川祥子', expression: 'neutral' });
-    return art ? { kind: 'sprite', src: art.src } : null;
+    return { kind: 'sprite', src: resolveSakikoUniformPortrait('平静').src };
   }
   if (person.protagonistId === 'emma') {
     const src = majoExpressionFor('majo-emma', 'neutral');
@@ -150,6 +153,18 @@ export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHe
   if (!person.protagonistId && (isTomoriSpeaker(person.name) || isTomoriSpeaker(person.personId ?? ''))) {
     const tomoriSpeaker = isTomoriSpeaker(person.personId ?? '') ? person.personId : person.name;
     const art = getTomoriArt(downtownArtPack, { speaker: tomoriSpeaker, expression: 'neutral' });
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isNyamuSpeaker(person.name) || isNyamuSpeaker(person.personId ?? ''))) {
+    const art = resolveNyamuExpressionPortrait(person.personId || person.name, 'neutral');
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isUmiriSpeaker(person.name) || isUmiriSpeaker(person.personId ?? ''))) {
+    const art = resolveUmiriExpressionPortrait(person.personId || person.name, 'neutral');
+    return art ? { kind: 'sprite', src: art.src } : null;
+  }
+  if (!person.protagonistId && (isUikaSpeaker(person.name) || isUikaSpeaker(person.personId ?? ''))) {
+    const art = resolveUikaExpressionPortrait(person.personId || person.name, 'neutral');
     return art ? { kind: 'sprite', src: art.src } : null;
   }
   if (!person.protagonistId && (isMarinaSpeaker(person.name) || isMarinaSpeaker(person.personId ?? ''))) {

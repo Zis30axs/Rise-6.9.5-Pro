@@ -17,7 +17,8 @@ import zlib
 LIMIT = 50_000_000
 MAX_METADATA = 160 * 1024 * 1024
 EXPRESSIONS = ('neutral', 'smile', 'troubled', 'surprised', 'annoyed', 'sad')
-SAKIKO_SPRITES = {f'sakiko_{outfit}_{emotion}' for outfit in ('casual', 'home') for emotion in EXPRESSIONS}
+# Sakiko's uniform and indoor clothes are inline sets, not downtown-pack sprites.
+SAKIKO_SPRITES = set()
 MUTSUMI_POSES = ('neutral', 'neutral_aside', 'neutral_aside_2', 'smile', 'shy', 'surprised')
 MUTSUMI_SPRITES = {f'mutsumi_uniform_{pose}' for pose in MUTSUMI_POSES}
 ANON_POSES = ('shy', 'smile', 'confident', 'wave', 'surprised', 'cheerful')

@@ -1,0 +1,1821 @@
+/* ==========================================================================
+   Authentic 3D Japanese Individual Number Card (个人番号卡 / My Number Card)
+   Standard ISO/IEC 7810 ID-1 Proportions (85.6mm × 54.0mm ≈ 388px × 245px)
+   + Interactive Visual Relationship Mesh Graph
+   ========================================================================== */
+
+.idcard-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #edf2ef;
+  font-family: var(--font-sans, 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Noto Sans SC', 'PingFang SC', sans-serif);
+}
+
+/* Header & Mode Switcher */
+.idcard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(24, 34, 31, 0.92), rgba(16, 22, 26, 0.94));
+  border: 1px solid rgba(138, 178, 158, 0.24);
+}
+
+.idcard-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.idcard-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.idcard-eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: #9ec0ae;
+}
+
+.idcard-main-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #f4f8f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.idcard-native-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #b4c8bd;
+}
+
+.idcard-exemplar-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(132, 179, 152, 0.2);
+  border: 1px solid rgba(154, 204, 175, 0.45);
+  color: #d6f0e0;
+}
+
+.idcard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.idcard-mode-btn,
+.idcard-flip-btn {
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 140ms ease;
+  border: 1px solid rgba(154, 184, 168, 0.28);
+  background: rgba(25, 35, 33, 0.85);
+  color: #d3e2da;
+}
+
+.idcard-mode-btn:hover,
+.idcard-flip-btn:hover {
+  border-color: rgba(174, 212, 191, 0.55);
+  background: rgba(38, 54, 49, 0.92);
+}
+
+.idcard-mode-btn.active {
+  background: linear-gradient(135deg, rgba(216, 114, 148, 0.38), rgba(88, 152, 136, 0.44));
+  border-color: rgba(236, 168, 192, 0.78);
+  color: #ffffff;
+}
+
+.idcard-mode-btn.stage-mode.active {
+  background: linear-gradient(135deg, rgba(138, 39, 58, 0.55), rgba(74, 22, 36, 0.72));
+  border-color: rgba(226, 152, 166, 0.72);
+  color: #fff2f5;
+}
+
+.idcard-flip-btn {
+  background: rgba(212, 180, 118, 0.14);
+  border-color: rgba(222, 190, 128, 0.44);
+  color: #f3dfb6;
+}
+
+/* Roster Switcher Bar */
+.idcard-roster-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.idcard-roster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(145, 168, 158, 0.22);
+  background: rgba(17, 24, 24, 0.78);
+  color: #c7d6ce;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.idcard-roster-chip.active {
+  background: rgba(98, 144, 121, 0.28);
+  border-color: rgba(160, 210, 182, 0.72);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.idcard-roster-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8aa899;
+}
+
+.idcard-roster-dot.mutsumi {
+  background: #98c9ad;
+  box-shadow: 0 0 6px rgba(152, 201, 173, 0.75);
+}
+
+.idcard-roster-badge {
+  font-size: 9.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(142, 192, 164, 0.22);
+  color: #cfeadd;
+}
+
+.idcard-roster-badge.self {
+  background: rgba(214, 180, 118, 0.22);
+  color: #f0dab0;
+}
+
+/* ==========================================================================
+   3D Viewport & Normal-Sized ISO/IEC 7810 ID-1 Card Stage (388px × 245px)
+   ========================================================================== */
+
+.idcard-3d-viewport {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 12px 16px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(168, 204, 188, 0.14), rgba(11, 18, 16, 0.9) 70%),
+    linear-gradient(180deg, rgba(16, 25, 22, 0.92), rgba(11, 16, 15, 0.96));
+  border: 1px solid rgba(156, 196, 174, 0.24);
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.idcard-3d-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.idcard-3d-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.idcard-toolbar-poses {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.idcard-pose-label,
+.idcard-3d-hint {
+  font-size: 11px;
+  color: #9ec0ae;
+}
+
+.idcard-3d-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.idcard-3d-ctrl-btn {
+  min-height: 26px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(154, 190, 171, 0.28);
+  background: rgba(20, 31, 28, 0.85);
+  color: #cfe3d8;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.idcard-3d-ctrl-btn.icon-only {
+  padding: 2px 7px;
+  font-size: 12.5px;
+}
+
+.idcard-3d-ctrl-btn:hover {
+  border-color: rgba(176, 218, 195, 0.62);
+  background: rgba(34, 52, 46, 0.92);
+}
+
+.idcard-3d-ctrl-btn.active {
+  background: rgba(114, 168, 141, 0.34);
+  border-color: rgba(176, 224, 198, 0.78);
+  color: #ffffff;
+}
+
+.idcard-3d-scene {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0;
+}
+
+/* Standard ISO/IEC 7810 ID-1 Physical Card Size (85.6mm × 54.0mm => 388px × 245px) */
+.jp-mynumber-rig {
+  position: relative;
+  width: 388px;
+  height: 245px;
+  max-width: 100%;
+  aspect-ratio: 1.586 / 1;
+  transform-style: preserve-3d;
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  flex-shrink: 0;
+}
+
+.jp-mynumber-rig.is-dragging {
+  transition: none;
+}
+
+/* White/Pearl Polycarbonate Laminate Card Edge Thickness Stack */
+.jp-card-thickness-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  pointer-events: none;
+  background: linear-gradient(135deg, #f4eef0 0%, #d4dfe2 45%, #f5e6ec 75%, #c7d2d6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+}
+
+.jp-mynumber-rig.mode-stage .jp-card-thickness-layer {
+  background: linear-gradient(135deg, #8e384b 0%, #2a121a 45%, #c9a068 75%, #1c0c12 100%);
+  border-color: rgba(232, 162, 178, 0.55);
+}
+
+/* Front & Back Card Surfaces */
+.jp-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS PMincho', 'Noto Serif JP', 'Hiragino Kaku Gothic ProN', serif;
+}
+
+/* ==========================================================================
+   FRONT SURFACE (表面): Authentic Japanese Individual Number Card
+   ========================================================================== */
+
+.jp-card-front {
+  transform: translateZ(3.2px);
+  color: #182028;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255, 212, 228, 0.65), transparent 52%),
+    radial-gradient(circle at 82% 28%, rgba(202, 240, 232, 0.62), transparent 55%),
+    radial-gradient(circle at 55% 78%, rgba(255, 236, 198, 0.58), transparent 58%),
+    linear-gradient(135deg, #fff5f8 0%, #f5fbf9 48%, #fff7eb 100%);
+  border: 1px solid rgba(218, 162, 182, 0.78);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(188, 142, 158, 0.35);
+}
+
+.jp-mynumber-rig.mode-stage .jp-card-front {
+  color: #f6eef0;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(196, 52, 82, 0.32), transparent 48%),
+    radial-gradient(circle at 15% 85%, rgba(212, 174, 104, 0.22), transparent 52%),
+    linear-gradient(135deg, #211118 0%, #150d13 55%, #0e090d 100%);
+  border-color: rgba(226, 148, 166, 0.62);
+}
+
+/* Fine Guilloche Wave Pattern (彩紋地紋) */
+.jp-guilloche-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-radial-gradient(
+      circle at 0% 50%,
+      transparent 0,
+      transparent 5px,
+      rgba(224, 134, 164, 0.065) 5.5px,
+      transparent 6px
+    ),
+    repeating-radial-gradient(
+      circle at 100% 50%,
+      transparent 0,
+      transparent 6px,
+      rgba(86, 178, 162, 0.06) 6.5px,
+      transparent 7px
+    );
+}
+
+/* Diagonal Prismatic Security Ribbon */
+.jp-holo-ribbon {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    transparent 34%,
+    rgba(255, 182, 208, 0.2) 44%,
+    rgba(166, 236, 220, 0.22) 50%,
+    rgba(255, 224, 162, 0.2) 56%,
+    transparent 66%
+  );
+  filter: hue-rotate(var(--holo-hue, 0deg));
+}
+
+.jp-3d-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: radial-gradient(
+    circle at var(--glare-x, 55%) var(--glare-y, 40%),
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.1) 28%,
+    transparent 62%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.jp-front-layout {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 9px 11px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+}
+
+/* Top Row: 氏名 Box + 个人番号卡 Title & Emblem */
+.jp-top-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.jp-name-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #d98ca5;
+  border-radius: 4px;
+  padding: 2px 7px 2px 4px;
+  min-width: 0;
+}
+
+.jp-box-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8c3452;
+  background: #fce0ea;
+  border: 1px solid #dda0b5;
+  border-radius: 2px;
+  padding: 2px 4px;
+  line-height: 1.05;
+  flex-shrink: 0;
+}
+
+.jp-name-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.jp-romaji-furigana {
+  font-family: ui-monospace, 'JetBrains Mono', sans-serif;
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  color: #5c6873;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-kanji-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #12181f;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.jp-card-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(252, 222, 234, 0.9), rgba(244, 236, 212, 0.88));
+  border: 1px solid #d994ac;
+}
+
+.jp-card-title-text {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #7d2948;
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+
+.jp-myna-emblem {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.jp-myna-emblem svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Second Row: 住所 (Address & School Line) */
+.jp-address-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #d98ca5;
+  border-radius: 4px;
+  padding: 3px 7px 3px 4px;
+}
+
+.jp-address-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.jp-address-main {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #182028;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-address-sub {
+  margin: 0;
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 8.5px;
+  color: #465462;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lower Area: Left Photo | Center Details | Right Ghost Portrait */
+.jp-main-lower {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 52px;
+  gap: 7px;
+  align-items: start;
+  flex: 1;
+}
+
+.jp-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.jp-photo-frame {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #dcecf8 0%, #f5f9fc 100%);
+  border: 1px solid #b59aa6;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
+}
+
+.jp-portrait-img,
+.jp-portrait-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jp-photo-holo-stamp {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 800;
+  color: #7c2444;
+  background: conic-gradient(
+    from 30deg,
+    rgba(255, 198, 218, 0.85),
+    rgba(178, 240, 224, 0.85),
+    rgba(255, 232, 168, 0.85),
+    rgba(255, 198, 218, 0.85)
+  );
+  border: 0.8px solid rgba(255, 255, 255, 0.9);
+}
+
+.jp-photo-sec-code {
+  font-family: ui-monospace, 'OCR-B', monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #4f5b66;
+}
+
+/* Center Column: Birthdate, Sex, Mayor + Red Hanko, Validity Ribbon, Electronic Cert Box */
+.jp-center-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.jp-birth-sex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px 5px;
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 3px;
+  border: 0.8px solid rgba(212, 152, 174, 0.55);
+}
+
+.jp-birth-text {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #182028;
+  white-space: nowrap;
+}
+
+.jp-sex-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  color: #182028;
+  flex-shrink: 0;
+}
+
+.jp-box-tag-sm {
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 7.5px;
+  font-weight: 700;
+  padding: 1px 3px;
+  background: #fce0ea;
+  border: 0.8px solid #d99ab0;
+  color: #8c3452;
+  border-radius: 2px;
+}
+
+.jp-mayor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 1px 4px;
+}
+
+.jp-mayor-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.jp-issue-date {
+  font-size: 8px;
+  color: #4b5661;
+}
+
+.jp-mayor-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1a222a;
+}
+
+/* Authentic Japanese Vermilion Square Official Hanko Seal (朱肉公印) */
+.jp-hanko-seal {
+  width: 24px;
+  height: 24px;
+  border: 1.4px solid #d12e2a;
+  border-radius: 2px;
+  color: #d12e2a;
+  background: rgba(209, 46, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'STKaiti', 'KaiTi', 'Yu Mincho', serif;
+  font-size: 6.8px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  transform: rotate(-3deg);
+  flex-shrink: 0;
+}
+
+/* Iconic Teal-Blue Validity Ribbon on Japanese My Number Cards */
+.jp-validity-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #bbe8df 0%, #8fd7cb 100%);
+  border: 1px solid #4ba698;
+  color: #0d3630;
+}
+
+.jp-validity-date {
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.jp-validity-label {
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 7.5px;
+  font-weight: 800;
+  padding: 0.5px 3px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 2px;
+  color: #0e4a41;
+}
+
+/* Electronic Certificate Box */
+.jp-cert-slot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 1px solid #b5c4ce;
+}
+
+.jp-cert-label {
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 6.8px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #3a4a58;
+  flex-shrink: 0;
+}
+
+.jp-cert-val {
+  font-family: ui-monospace, 'JetBrains Mono', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: #1e2c38;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right Column: Ghost Portrait Watermark & J-LIS Micro Box */
+.jp-ghost-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding-top: 2px;
+}
+
+.jp-ghost-photo {
+  width: 36px;
+  height: 44px;
+  border-radius: 3px;
+  overflow: hidden;
+  opacity: 0.34;
+  filter: grayscale(40%) contrast(110%) sepia(20%) hue-rotate(300deg);
+  border: 0.8px dashed #c98da3;
+}
+
+.jp-ghost-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jp-jlis-micro {
+  font-family: ui-monospace, monospace;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #9e5a74;
+}
+
+.jp-organ-box {
+  width: 100%;
+  padding: 2px 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 0.8px solid #d4a6b8;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.jp-organ-box span {
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 6.5px;
+  font-weight: 700;
+  color: #7d2e4c;
+}
+
+.jp-organ-box small {
+  font-size: 6.8px;
+  color: #2c3844;
+  font-weight: 700;
+}
+
+/* Bottom Magenta Security Strip */
+.jp-bottom-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #e77a9f 0%, #d4658b 52%, #c476a4 100%);
+  color: #ffffff;
+  font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.jp-bottom-sign strong {
+  font-family: 'STKaiti', 'KaiTi', 'Yu Mincho', serif;
+  font-size: 10px;
+  color: #fff6d6;
+  margin-left: 3px;
+}
+
+/* ==========================================================================
+   STAGE MODE LAYOUT (Artist Backstage Pass in 388×245 ID-1 Card Size)
+   ========================================================================== */
+
+.jp-stage-layout {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+}
+
+.jp-stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(228, 146, 166, 0.35);
+}
+
+.jp-stage-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.jp-stage-crest {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(214, 72, 102, 0.32);
+  border: 1px solid rgba(242, 168, 184, 0.65);
+  color: #ffd8e2;
+  font-size: 13px;
+}
+
+.jp-stage-brand strong {
+  display: block;
+  font-size: 11px;
+  color: #fff2f5;
+  letter-spacing: 0.05em;
+}
+
+.jp-stage-brand small {
+  display: block;
+  font-size: 8px;
+  color: #d8aeb8;
+}
+
+.jp-stage-level {
+  font-family: ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(226, 184, 106, 0.22);
+  border: 1px solid rgba(242, 204, 132, 0.6);
+  color: #ffe7b8;
+}
+
+.jp-stage-middle {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.jp-photo-frame.stage {
+  height: 112px;
+  background: radial-gradient(circle at 50% 30%, rgba(214, 84, 112, 0.35), rgba(20, 11, 16, 0.95));
+  border-color: rgba(236, 158, 176, 0.65);
+}
+
+.jp-stage-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.jp-stage-codename {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.jp-stage-codename small {
+  font-size: 7.5px;
+  color: #d6a4b2;
+  letter-spacing: 0.08em;
+}
+
+.jp-stage-codename strong {
+  font-size: 15px;
+  color: #ffdce5;
+}
+
+.jp-stage-codename span {
+  font-size: 9px;
+  color: #e4c8d0;
+}
+
+.jp-stage-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 6px;
+}
+
+.jp-stage-dl div {
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(12, 7, 10, 0.62);
+  border: 1px solid rgba(224, 146, 164, 0.24);
+  min-width: 0;
+}
+
+.jp-stage-dl dt {
+  font-size: 7px;
+  color: #cfa2b0;
+}
+
+.jp-stage-dl dd {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff2f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-stage-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(228, 146, 166, 0.28);
+  font-size: 9px;
+  color: #edd0d8;
+}
+
+.jp-stage-quote {
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-stage-sig {
+  font-family: 'STKaiti', 'KaiTi', 'Yu Mincho', serif;
+  font-size: 12px;
+  color: #ffe6b8;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   BACK SURFACE (裏面): Authentic Japanese My Number Card Back
+   ========================================================================== */
+
+.jp-card-back {
+  transform: rotateY(180deg) translateZ(3.2px);
+  color: #1a222a;
+  background:
+    radial-gradient(circle at 82% 20%, rgba(222, 234, 240, 0.7), transparent 55%),
+    linear-gradient(135deg, #f6f7f9 0%, #ebeff2 52%, #f4f1ec 100%);
+  border: 1px solid #b8c2ca;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(130, 142, 152, 0.35);
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+}
+
+.jp-back-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(130, 150, 165, 0.045) 0px,
+    rgba(130, 150, 165, 0.045) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+}
+
+.jp-back-layout {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.jp-back-top {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.jp-back-chip-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Authentic Gold ISO 7816 Contact IC Chip */
+.jp-gold-ic-chip {
+  width: 44px;
+  height: 34px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #f2d794 0%, #c79f4b 48%, #ebd08e 100%);
+  border: 1px solid #9c782c;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 224, 0.8);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1.5px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.jp-gold-ic-chip span {
+  border: 0.7px solid rgba(92, 64, 14, 0.52);
+  border-radius: 1.5px;
+  background: rgba(255, 236, 178, 0.28);
+}
+
+.jp-qr-box {
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  background: #ffffff;
+  border: 1px solid #b5c0c8;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.jp-qr-box svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.jp-back-number-area {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.jp-mynumber-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.jp-mynumber-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1c2630;
+  letter-spacing: 0.08em;
+}
+
+.jp-mynumber-sub {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #5c6b78;
+  letter-spacing: 0.08em;
+}
+
+.jp-mynumber-digits {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: #ffffff;
+  border: 1.2px solid #7d8e9c;
+  border-radius: 4px;
+}
+
+.jp-digit-group {
+  font-family: ui-monospace, 'OCR-B', 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #111820;
+}
+
+.jp-back-holder-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #2b3640;
+}
+
+/* Middle White Box: 追記欄 (Endorsements Box) */
+.jp-tsuiki-box {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  background: #ffffff;
+  border: 1px solid #96a4b0;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.jp-tsuiki-label {
+  background: #e3e9ee;
+  border-right: 1px solid #96a4b0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #2c3a46;
+}
+
+.jp-tsuiki-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.jp-tsuiki-list li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8.5px;
+  line-height: 1.25;
+  color: #1f2933;
+  border-bottom: 0.6px dashed #cdd6de;
+  padding-bottom: 2px;
+}
+
+.jp-tsuiki-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.jp-stamp-circle {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid #d12e2a;
+  color: #d12e2a;
+  font-size: 7px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jp-tsuiki-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jp-tsuiki-text small.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 7.5px;
+  color: #5b6a78;
+  margin-left: 3px;
+}
+
+/* Bottom MRZ Strip */
+.jp-back-mrz {
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: #e6eaee;
+  border: 1px solid #b5c0c9;
+}
+
+.jp-back-mrz p {
+  margin: 0;
+  font-family: ui-monospace, 'OCR-B', 'Courier New', monospace;
+  font-size: 8.2px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.25;
+  color: #24303a;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Trait Subbar & Standing Figure Drawer
+   ========================================================================== */
+
+.idcard-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.idcard-trait-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.idcard-trait-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(30, 44, 39, 0.82);
+  border: 1px solid rgba(146, 184, 163, 0.28);
+  color: #d2e6da;
+}
+
+.idcard-standing-toggle {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(34, 49, 44, 0.85);
+  border: 1px solid rgba(158, 198, 176, 0.36);
+  color: #dff0e6;
+  cursor: pointer;
+}
+
+.idcard-standing-drawer {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(18, 26, 25, 0.9);
+  border: 1px solid rgba(152, 190, 170, 0.28);
+  align-items: center;
+}
+
+.idcard-standing-visual {
+  height: 220px;
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 35%, rgba(146, 192, 168, 0.2), rgba(14, 20, 19, 0.92));
+  border: 1px solid rgba(154, 194, 173, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.idcard-standing-visual img {
+  max-height: 212px;
+  width: auto;
+  object-fit: contain;
+}
+
+.idcard-standing-notes h5 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #eef7f2;
+}
+
+.idcard-standing-notes p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #c3d7cc;
+}
+
+.idcard-standing-notes p:last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Interactive Visual Relationship Mesh Graph (可视化人际关系网状图)
+   ========================================================================== */
+
+.idcard-mesh-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(16, 25, 23, 0.94), rgba(11, 17, 17, 0.96));
+  border: 1px solid rgba(146, 188, 166, 0.26);
+}
+
+.idcard-mesh-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.idcard-mesh-title-block h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #eff8f3;
+}
+
+.idcard-mesh-subtitle {
+  font-size: 11px;
+  color: #9ab9a9;
+}
+
+.idcard-mesh-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.idcard-mesh-filter-btn,
+.idcard-mesh-reset-btn {
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(148, 184, 165, 0.26);
+  background: rgba(20, 31, 28, 0.85);
+  color: #c9ddd2;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.idcard-mesh-filter-btn.active {
+  background: rgba(108, 162, 134, 0.34);
+  border-color: rgba(168, 218, 192, 0.74);
+  color: #ffffff;
+}
+
+.idcard-mesh-filter-btn.mujica.active {
+  background: rgba(154, 48, 72, 0.45);
+  border-color: rgba(232, 152, 170, 0.78);
+}
+
+.idcard-mesh-filter-btn.crychic.active {
+  background: rgba(82, 128, 184, 0.42);
+  border-color: rgba(158, 198, 242, 0.78);
+}
+
+.idcard-mesh-filter-btn.campus.active {
+  background: rgba(188, 152, 88, 0.38);
+  border-color: rgba(234, 202, 136, 0.78);
+}
+
+.idcard-mesh-canvas-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(36, 62, 52, 0.38), rgba(9, 15, 14, 0.95) 75%);
+  border: 1px solid rgba(146, 186, 164, 0.22);
+}
+
+.idcard-mesh-svg {
+  width: 100%;
+  height: auto;
+  max-height: 350px;
+  display: block;
+  touch-action: none;
+}
+
+.idcard-mesh-orbit-ring {
+  fill: none;
+  stroke: rgba(156, 198, 175, 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+}
+
+.idcard-mesh-orbit-ring.outer {
+  stroke: rgba(156, 198, 175, 0.09);
+}
+
+.idcard-mesh-axis-line {
+  stroke: rgba(156, 198, 175, 0.06);
+  stroke-width: 1;
+}
+
+/* Edges in Mesh */
+.idcard-mesh-edge-group {
+  transition: opacity 180ms ease;
+}
+
+.idcard-mesh-edge-group.dimmed {
+  opacity: 0.24;
+}
+
+.idcard-mesh-edge-line {
+  stroke: rgba(144, 204, 172, 0.62);
+  stroke-linecap: round;
+}
+
+.idcard-mesh-edge-group.group-mujica .idcard-mesh-edge-line {
+  stroke: rgba(226, 132, 154, 0.68);
+}
+
+.idcard-mesh-edge-group.group-crychic .idcard-mesh-edge-line {
+  stroke: rgba(138, 186, 232, 0.68);
+}
+
+.idcard-mesh-edge-group.group-campus .idcard-mesh-edge-line {
+  stroke: rgba(226, 192, 128, 0.65);
+}
+
+.idcard-mesh-edge-group.kind-cross .idcard-mesh-edge-line {
+  stroke-dasharray: 4 4;
+  opacity: 0.78;
+}
+
+.idcard-mesh-edge-badge rect {
+  fill: rgba(12, 20, 18, 0.88);
+  stroke: rgba(158, 198, 176, 0.36);
+  stroke-width: 1;
+}
+
+.idcard-mesh-edge-group.kind-cross .idcard-mesh-edge-badge rect {
+  fill: rgba(18, 22, 28, 0.9);
+  stroke: rgba(214, 184, 128, 0.42);
+}
+
+.idcard-mesh-edge-badge text {
+  fill: #d8ece1;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+/* Nodes in Mesh */
+.idcard-mesh-node {
+  cursor: pointer;
+}
+
+.idcard-mesh-node-halo {
+  fill: rgba(152, 214, 180, 0.16);
+  stroke: rgba(176, 232, 202, 0.65);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.idcard-mesh-node.is-protagonist .idcard-mesh-node-halo {
+  fill: rgba(226, 192, 124, 0.18);
+  stroke: rgba(242, 210, 142, 0.85);
+}
+
+.idcard-mesh-node-bg {
+  fill: #182622;
+}
+
+.idcard-mesh-node-ring {
+  fill: none;
+  stroke: #98cbb0;
+  stroke-width: 2;
+}
+
+.idcard-mesh-node.group-mujica .idcard-mesh-node-ring {
+  stroke: #e48fa3;
+}
+
+.idcard-mesh-node.group-crychic .idcard-mesh-node-ring {
+  stroke: #8ab8e6;
+}
+
+.idcard-mesh-node.group-campus .idcard-mesh-node-ring {
+  stroke: #e2c080;
+}
+
+.idcard-mesh-node.is-selected .idcard-mesh-node-ring,
+.idcard-mesh-node.is-center .idcard-mesh-node-ring {
+  stroke-width: 2.8;
+  stroke: #f3dfb6;
+}
+
+.idcard-mesh-node-label-bg {
+  fill: rgba(13, 21, 19, 0.9);
+  stroke: rgba(158, 196, 175, 0.36);
+  stroke-width: 1;
+}
+
+.idcard-mesh-node.is-selected .idcard-mesh-node-label-bg {
+  fill: rgba(42, 68, 56, 0.95);
+  stroke: rgba(236, 206, 144, 0.8);
+}
+
+.idcard-mesh-node-name {
+  fill: #f0f8f3;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.idcard-mesh-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 7px 10px;
+  background: rgba(12, 19, 17, 0.82);
+  border-top: 1px solid rgba(146, 184, 163, 0.16);
+  font-size: 11px;
+  color: #b4ccc0;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-item .dot.mujica {
+  background: #e48fa3;
+}
+
+.legend-item .dot.crychic {
+  background: #8ab8e6;
+}
+
+.legend-item .dot.campus {
+  background: #e2c080;
+}
+
+.legend-item .line-sample.cross {
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed #d6b880;
+  display: inline-block;
+}
+
+/* Inspector & Dossier Grid */
+.idcard-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idcard-dossier-card {
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: rgba(18, 25, 25, 0.86);
+  border: 1px solid rgba(144, 178, 160, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.idcard-dossier-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.idcard-inspector-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.idcard-inspector-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(172, 214, 190, 0.55);
+  background: #172420;
+}
+
+.idcard-inspector-group {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  margin-left: 5px;
+  border-radius: 4px;
+  background: rgba(142, 188, 163, 0.18);
+  color: #bfe0ce;
+}
+
+.idcard-dossier-head h5 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e9f4ee;
+}
+
+.idcard-affinity-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(128, 178, 151, 0.24);
+  border: 1px solid rgba(162, 210, 184, 0.45);
+  color: #dff4e7;
+}
+
+.idcard-bond-role {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d6e8de;
+}
+
+.idcard-affinity-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.idcard-affinity-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #74ab8e, #b8dec8);
+}
+
+.idcard-bond-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #b7ccc0;
+}
+
+.idcard-node-cross-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.idcard-node-cross-chip {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(24, 36, 32, 0.85);
+  border: 1px solid rgba(154, 192, 172, 0.28);
+  color: #cfe5d8;
+  cursor: pointer;
+}
+
+.idcard-node-cross-chip.cross {
+  border-color: rgba(218, 186, 126, 0.38);
+  color: #f0dfb8;
+}
+
+.idcard-inspector-actions {
+  margin-top: 2px;
+}
+
+.idcard-jump-card-btn {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(214, 182, 120, 0.16);
+  border: 1px solid rgba(226, 194, 132, 0.46);
+  color: #f5e2ba;
+  cursor: pointer;
+}
+
+.idcard-jump-card-btn:hover {
+  background: rgba(214, 182, 120, 0.26);
+}
+
+/* Action Footer */
+.idcard-action-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.idcard-feedback-banner {
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(96, 148, 121, 0.24);
+  border: 1px solid rgba(154, 206, 177, 0.45);
+  font-size: 12px;
+  color: #e8f7ee;
+}
+
+.idcard-action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.idcard-action-btn {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(154, 188, 170, 0.32);
+  background: rgba(24, 35, 32, 0.9);
+  color: #e3f0e8;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.idcard-action-btn:hover:not(:disabled) {
+  background: rgba(38, 56, 50, 0.95);
+  border-color: rgba(176, 216, 195, 0.62);
+}
+
+.idcard-action-btn.primary {
+  background: linear-gradient(135deg, rgba(96, 148, 121, 0.48), rgba(56, 94, 76, 0.62));
+  border-color: rgba(168, 218, 190, 0.68);
+  color: #ffffff;
+}
+
+.idcard-action-btn:disabled {
+  opacity: 0.62;
+  cursor: default;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints (Mobile 390x844 & 320x568)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .jp-mynumber-rig {
+    width: 332px;
+    height: 210px;
+  }
+
+  .jp-front-layout {
+    padding: 7px 9px 19px;
+    gap: 4px;
+  }
+
+  .jp-kanji-name {
+    font-size: 14px;
+  }
+
+  .jp-main-lower {
+    grid-template-columns: 68px minmax(0, 1fr) 44px;
+    gap: 5px;
+  }
+
+  .jp-photo-frame {
+    width: 68px;
+    height: 86px;
+  }
+
+  .idcard-dossier-grid,
+  .idcard-standing-drawer {
+    grid-template-columns: 1fr;
+  }
+
+  .idcard-action-buttons {
+    grid-template-columns: 1fr;
+  }
+}

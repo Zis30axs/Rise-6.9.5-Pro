@@ -111,13 +111,13 @@ onMounted(() => { void refresh(); });
     <div class="uc-memory-settings-content">
       <label class="uc-memory-row"><input v-model="settings.enabled" type="checkbox" data-memory-enabled /> 启用长期记忆旁路</label>
       <label class="uc-memory-row"><input v-model="settings.passive" type="checkbox" /> 自动注入相关往事</label>
-      <label>整理间隔（已保存的小说楼数，5–100）
-        <input v-model.number="settings.interval" type="number" min="5" max="100" step="1" data-memory-interval />
+      <label>整理间隔（已保存的小说楼数，20–100）
+        <input v-model.number="settings.interval" type="number" min="20" max="100" step="1" data-memory-interval />
       </label>
       <div class="uc-narrative-buttons">
-        <button v-for="preset in [10, 20, 30]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
+        <button v-for="preset in [20, 30, 40]" :key="preset" type="button" @click="settings.interval = preset">每 {{ preset }} 楼</button>
       </div>
-      <label class="uc-memory-row"><input v-model="settings.important" type="checkbox" data-memory-important /> 重大剧情提前整理</label>
+      <p class="uc-narrative-note">默认每 20 楼（第 20、40、60 楼）整理此前尚未归档的全部历史来源；若修改间隔，则改按所选楼数的固定倍数整理。即使未整理日志超过 75 条，也不会在纯按钮操作期间主动调用模型；只会在下一次正常剧情生成并成功保存后检查是否需要提前归档。未达到条件时不要求总结，重大剧情不再单独触发。原始证据仍会持续安全保存。</p>
       <label>主模型检索方式
         <select v-model="settings.protocol" data-memory-protocol>
           <option value="tools">原生 Tools</option><option value="tags">兼容标签</option>

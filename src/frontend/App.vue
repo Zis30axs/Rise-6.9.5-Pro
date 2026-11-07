@@ -25,6 +25,9 @@ import { resolveMajoSpeaker } from './majo-art';
 import { resolveWatanareSpeaker } from './watanare-art';
 import { resolveFengjinSpeaker } from './fengjin-art';
 import { isMarinaSpeaker } from './marina-art';
+import { isUikaSpeaker } from './uika-art';
+import { isUmiriSpeaker } from './umiri-art';
+import { isNyamuSpeaker } from './nyamu-art';
 import { hasProtagonistPhonePose } from './protagonist-phone-art';
 import { type NovelSegment } from './novel-dialogue';
 import { resolveNovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
@@ -41,6 +44,7 @@ import LawCareerPanel from './LawCareerPanel.vue';
 import PlaceActions from './PlaceActions.vue';
 import CookingMinigame from './CookingMinigame.vue';
 import LivehousePanel from './LivehousePanel.vue';
+import IdentityCardPanel from './IdentityCardPanel.vue';
 import InteractionOverlay from './InteractionOverlay.vue';
 import { runInteraction } from './interaction-action';
 import { completeLocationService, packageLocationService } from './location-service-action';
@@ -112,9 +116,14 @@ watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
 watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
-type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'transit' | 'store' | 'location' | 'law' | 'invitations';
+type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'location' | 'law' | 'invitations';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
+const activeIdentityPersonId = ref<string>('bang-mutsumi');
+function openIdentityCard(personId = 'bang-mutsumi') {
+  activeIdentityPersonId.value = personId;
+  activeWindow.value = 'idcard';
+}
 const phoneExpanded = ref(false);
 const readingMode = ref<ReadingMode>('compact');
 const layoutEditing = ref(false);
@@ -198,7 +207,7 @@ const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? h
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
 function recognizesNovelSpeaker(speaker: string): boolean {
   return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || isMutsumiSpeaker(speaker) || isAnonSpeaker(speaker) || isRaanaSpeaker(speaker) || isTakiSpeaker(speaker) || isTomoriSpeaker(speaker) || isNagasakiMotherSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
-    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isMarinaSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
+    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isUikaSpeaker(speaker) || isUmiriSpeaker(speaker) || isNyamuSpeaker(speaker) || isMarinaSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
       contacts: props.model.state.contacts,
       scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
       encounterId: props.model.state.scene?.encounterId,
@@ -221,6 +230,7 @@ const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'inventory', title: '背包', path: 'M8 6V4a4 4 0 0 1 8 0v2M6 6h12a2 2 0 0 1 2 2v13H4V8a2 2 0 0 1 2-2ZM7 13h10v6H7ZM8 9h8' },
   { id: 'status', title: '状态', path: 'M5 3h14v18H5ZM9 7h6M9 11h6M9 15h3M3 7h4M3 15h4' },
   { id: 'abilities', title: '能力', path: 'm12 2 8.7 5v10L12 22l-8.7-5V7ZM12 2v20M3.3 7l17.4 10M3.3 17 20.7 7m-13.9 2 5.2-3 5.2 3v6L12 18l-5.2-3Z' },
+  { id: 'idcard', title: '证件', path: 'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm5 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-2 8c0-1.7 1.3-3 3-3h2c1.7 0 3 1.3 3 3m3-7h4m-4 4h3' },
 ];
 const currentLocation = computed(() => locations.find(item => item.id === props.model.state.locationId) ?? locations[0]);
 const currentRoom = computed(() => getCampusInterior(props.model.state.interior?.roomId));
@@ -289,7 +299,7 @@ const civilDateLabel = computed(() => {
   const occasion = occasions.find(item => item.dayOff) ?? occasions[0];
   return `${formatGameDate(day)} · ${gameCalendar(day).weekdayLabel}${occasion ? ' · ' + occasion.name : ''}`;
 });
-const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
+const windowTitle = computed(() => activeWindow.value === 'store' ? '便利店' : activeWindow.value === 'transit' ? '公交站' : activeWindow.value === 'idcard' ? '居民身份证与通行证' : activeWindow.value === 'law' ? (props.model.state.locationId==='court-hearing'?'法院 · 案件':'律师事务所 · 案件') : nav.find(item => item.id === activeWindow.value)?.title ?? '');
 const demoPhone = computed(() => !props.model.externalPhoneAvailable && props.model.mode === 'demo');
 const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhone.value);
 // Phone presentation renders a static front view while all walking remains disabled.
@@ -977,14 +987,15 @@ onBeforeUnmount(() => {
     <button v-if="readingMode === 'hidden'" class="resume-reading" aria-label="继续阅读" @click="setReadingMode('compact')">继续阅读 <span v-if="hasNewContent" class="resume-dot">有新内容</span><span aria-hidden="true">↑</span></button>
     <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'">
       <div v-if="activeWindow === 'phone'" class="phone-controls" aria-label="手机显示操作"><button type="button" class="phone-size-toggle" :aria-label="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :title="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :aria-expanded="phoneExpanded" @click="togglePhoneSize"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="phoneExpanded ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5' : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5'" /></svg></button><button type="button" aria-label="查看手机背面" title="查看背面；长按拖动旋转，双指缩放" @click="adjustPhoneView('back')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><circle cx="10" cy="6" r="1"/><circle cx="10" cy="10" r="1"/></svg></button><button type="button" aria-label="手机回正" title="回到正面并恢复大小" @click="adjustPhoneView('front')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button><button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
-      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span v-if="activeWindow!=='law' && activeWindow!=='invitations' && activeWindow!=='abilities'" class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
+      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span v-if="activeWindow!=='law' && activeWindow!=='invitations' && activeWindow!=='abilities' && activeWindow!=='idcard'" class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>
       <div v-else-if="activeWindow === 'transit'" class="window-content"><TransitPanel :model="model" :stop="nearbyTransitStop" :novel-mode="novelMode" @ride="takeTransit" @approach="approachTransitStop" /></div>
       <div v-else-if="activeWindow === 'invitations'" class="window-content"><InvitationBook :key="currentProtagonist" :model="model" :novel-mode="novelMode" :nearby-person-ids="nearbyPeople.flatMap(({ person }) => [person.id, person.contactId ?? ''])" @compose="prepareInvitationAction" @travel="travelFromInvitationBook" /></div>
       <div v-else-if="activeWindow === 'law'" class="window-content"><LawCareerPanel :model="model" :actions="actions" @close="closeWindow(false)" /></div>
       <div v-else-if="activeWindow === 'store'" class="window-content"><ConvenienceStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>

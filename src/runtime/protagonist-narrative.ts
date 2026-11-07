@@ -73,9 +73,11 @@ const omniscientExcerpt = (raw: string, limit: number): string => {
   return text.length <= limit ? text : text.slice(0, leading) + '…' + text.slice(-(limit - leading - 1));
 };
 
-export function omniscientContinuityContext(state: WorldState) {
+/** Ordinary turns keep brief continuity; named characters and authorized side stories retain full evidence. */
+export function omniscientContinuityContext(state: WorldState, focused?: ReadonlySet<ProtagonistId>) {
   if (!state.protagonists) return [];
   return otherProtagonists(activeProtagonist(state)).map(id => {
+    const detailed = focused?.has(id) ?? true;
     const person = personState(state, id);
     const background = state.protagonists!.backgroundLife?.people[id];
     const pending = background?.pending ?? null;
@@ -91,14 +93,14 @@ export function omniscientContinuityContext(state: WorldState) {
         startedAt: formatLifeTime(pending.start), completesAt: formatLifeTime(pending.due),
         plannedDestination: pending.kind === 'travel' ? pending.target : null,
       } : null,
-      recentBackgroundEvents: (background?.events ?? []).slice(-3).map(event => ({
-        at: formatLifeTime(event.at), kind: event.kind, text: omniscientExcerpt(event.text, 220),
+      recentBackgroundEvents: (background?.events ?? []).slice(detailed ? -3 : -1).map(event => ({
+        at: formatLifeTime(event.at), kind: event.kind, text: omniscientExcerpt(event.text, detailed ? 220 : 160),
       })),
-      recentJournal: person.journal.slice(-3).map(entry => ({
-        at: entry.at, text: omniscientExcerpt(entry.text, 270),
+      recentJournal: person.journal.slice(detailed ? -3 : -1).map(entry => ({
+        at: entry.at, text: omniscientExcerpt(entry.text, detailed ? 270 : 180),
       })),
-      recentStory: person.story.slice(-4).map(entry => ({
-        role: entry.role, text: omniscientExcerpt(entry.text, 600),
+      recentStory: person.story.slice(detailed ? -4 : -1).map(entry => ({
+        role: entry.role, text: omniscientExcerpt(entry.text, detailed ? 600 : 240),
       })).filter(entry => entry.text),
     };
   });

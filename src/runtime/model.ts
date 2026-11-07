@@ -44,9 +44,11 @@ import { activeProtagonistId, getGameWeek, parseFengjinClinicState, recordFengji
 import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
+import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
+import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
-export const STATE_LIMITS = { journal: 100, story: 40, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
+export const STATE_LIMITS = { journal: 100, story: STORY_RECORD_LIMIT, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
 /** Every outdoor place on the local sandtable. Gate, library, cafe, dorm,
  * teaching and the bus stop keep the primary labels; the remaining existing
  * places use compact numbered markers. */
@@ -618,10 +620,11 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     const source = value as Record<string, unknown>;
     const hasYen = Object.hasOwn(source, 'currency');
     if (hasYen && source.currency !== 'JPY') return invalid('currency');
-    const { protagonists, currency: _currency, ...rest } = source;
+    const { protagonists, currency: _currency, worldChronicle: worldChronicleRaw, ...rest } = source;
     // Parse all existing ledgers in their previous units before converting once.
     const base = parseStateCore({ ...rest, currency: 'JPY', schema_version: '1.11.0' }, deferProtagonists);
     const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
+      ...(Object.hasOwn(source, 'worldChronicle') ? { worldChronicle: parseWorldChronicleState(worldChronicleRaw) } : {}),
       protagonists: parseProtagonists(protagonists, base, value => parseStateCore(value, deferProtagonists), !hasYen) };
     if (!hasYen) {
       migrateHistoricalMoney(state);
@@ -658,6 +661,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasNpcProfessions = version === '1.11.0' && Object.hasOwn(value, 'npcProfessions');
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
+  const hasWorldChronicle = version === '1.11.0' && Object.hasOwn(value, 'worldChronicle');
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
@@ -666,7 +670,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -691,6 +695,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
     weather,
+    ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
@@ -735,7 +740,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
       const item = object(value, ['id', 'text', 'at'], path);
       return { id: id(item.id, `${path}.id`), text: text(item.text, `${path}.text`, 1000), at: text(item.at, `${path}.at`, 40) };
     }),
-    story: list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
+    story: retainStoryHistory(list(state.story, 'story', STATE_LIMITS.story, (value, path) => {
       const hasParticipants = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'participantIds');
       const hasSideBeats = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'otherSideBeats');
       const hasReturnStory = version === '1.11.0' && !!value && typeof value === 'object' && Object.hasOwn(value, 'returnStory');
@@ -772,7 +777,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         ...(participantIds ? { participantIds } : {}),
         ...(otherSideBeats ? { otherSideBeats } : {}),
         ...(hasReturnStory ? { returnStory: text(item.returnStory, `${path}.returnStory`, 2000) } : {}) };
-    }),
+    })),
   };
   if (result.scene?.areaId === 'construction-site' && result.locationId === 'neighborhood') result.locationId = 'construction-site';
   if (result.phone.some(message => !result.contacts.some(contact => contact.id === message.npcId))) return invalid('phone.npcId 引用');
@@ -1112,7 +1117,7 @@ function commitLegacyStoryTurn(
     { id: ids.userId, role: 'user', text: inputText, ...participantEvidence },
     { id: ids.assistantId, role: 'assistant', text: reply.text, ...participantEvidence },
   );
-  next.story = next.story.slice(-STATE_LIMITS.story);
+  next.story = retainStoryHistory(next.story);
   if (worldActions.length) note(next, `已结算本轮 ${worldActions.length} 项剧情行动。`, actionReceiptId);
   return parseStateCore(next, true);
 }
@@ -1233,7 +1238,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       let sequence = 1;
       while (next.story.some(entry => entry.id === `${prefix}${sequence}`)) sequence++;
       next.story.push({ id: `${prefix}${sequence}`, role: 'assistant', text: eventText, participantIds: [contact.id] });
-      next.story = next.story.slice(-STATE_LIMITS.story);
+      next.story = retainStoryHistory(next.story);
       break;
     }
     case 'choose_academics': {
@@ -1287,7 +1292,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
           let sequence = 1;
           let servingId = `cafe-serve.${owner}.${next.clock.day}.${sequence}`;
           while (next.story.some(row => row.id === servingId)) servingId = `cafe-serve.${owner}.${next.clock.day}.${++sequence}`;
-          next.story = [...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }].slice(-STATE_LIMITS.story);
+          next.story = retainStoryHistory([...next.story, { id: servingId, role: 'assistant' as const, text: EMMA_CAFE_SERVING_TEXT, participantIds: ['majo-margo'] }]);
         }
         note(next, cafeQuote.journal);
         break;
@@ -1833,12 +1838,15 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const alreadyCommitted = before.story.some(row => row.id === ids.assistantId && row.role === 'assistant');
   // A replay is checked against the stored, signed side-effect receipt rather
   // than re-rolling the probability gate against a state that already advanced.
-  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = result;
+  // The chronicle receipt is supplied by the bridge, not the LLM output
+  // protocol: keep it out of the strict story parser on BOTH commit paths.
+  const { worldChronicleReceipt, ...modelResult } = result;
+  const { otherSide: requestedSide, returnStory: requestedReturn, ...withoutSide } = modelResult;
   const validated: GeneratedStory = alreadyCommitted
     ? { ...validateGeneratedStory(withoutSide, before),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
       ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}) }
-    : validateGeneratedStory(result, before);
+    : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory, ...legacyResult } = validated;
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
@@ -1855,7 +1863,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   acknowledgeAgendaNarration(before,next);
-  return parseState(next);
+  return parseState(acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt));
 }
 
 
