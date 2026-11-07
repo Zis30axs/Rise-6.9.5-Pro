@@ -1,0 +1,37 @@
+{
+  "name": "未读之城：Anthropic 公司与第二神秘人",
+  "description": "加州 Anthropic 访客中心、第二位神秘人物与独立的珍藏奖品。",
+  "entries": [
+    {
+      "name": "Anthropic 访客中心",
+      "keys": [
+        "Anthropic",
+        "安思洛皮克",
+        "Claude 公司",
+        "Anthropic 访客中心",
+        "加州研究公司"
+      ],
+      "constant": false,
+      "enabled": true,
+      "content": "Anthropic 访客中心：\n旧金山湾区设有一家名为 Anthropic 的 AI 科技公司。在《未读之城》的架空加州地图中，访客可乘坐湾区市内接驳车从 OpenAI 办公地点或二手交易市场到达其访客中心。那里有展示研究成果的大厅、前台及对外开放的休息区。访客中心是角色卡里的互动地点，真实公司的内部建筑、准入许可和业务不在本设定中作保证；进入地点不意味着能进入实际办公室。旅行的耗时及费用必须由程序结算。",
+      "extensions": {},
+      "comment": "Anthropic 访客中心"
+    },
+    {
+      "name": "第二神秘人物与三张凭证",
+      "keys": [
+        "神秘研究者",
+        "Max20x",
+        "Max 20x",
+        "KYC",
+        "Last Decision",
+        "rare-bay-area-researcher"
+      ],
+      "constant": false,
+      "enabled": true,
+      "content": "第二神秘人物：\n有一位佩戴黑框眼镜、穿深蓝色西装外套、浅蓝色衬衫及深色长裤的男性旅人，举止略带学者气质。身份对玩家保密，他可能在加州或其他地方极低概率出现，也可能在 Anthropic 访客中心周边被碰见。是否实际遇见，必须以程序提供的“附近的人”列表为准，绝不可由语言模型随意生成。\n在玩家与他主动交流并按下收礼确认后，程序会一次性赠予 Max 20x ×1、KYC ×1、Last Decision ×1，独立记录该主角是否领取过。三件礼品均为《未读之城》的架空收藏道具，不是现实账号、订阅额度、身份核验或内部公司权限。不能与第一神秘访客的 Full Reset 和 Pro 500 奖励混淆，也不能重复领取。",
+      "extensions": {},
+      "comment": "第二神秘人物与三张凭证"
+    }
+  ]
+}

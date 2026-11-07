@@ -85,7 +85,9 @@ async function useItem(itemId: string) {
       <article v-for="{ item, quote } in entries" :key="item.id" class="inventory-item" :data-inventory-product="item.id">
         <div class="inventory-item-heading"><StoreProductImage :item-id="item.id" :name="item.name" class="inventory-product-image" /><div class="inventory-item-title"><small>{{ item.brand }}</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-inventory-quantity>{{ quote.owned }} {{ item.useUnit }}</span></div>
         <p v-if="item.equipmentKind" class="inventory-serving">常驻道具 · 装备后学习效率 +25% · 多支不叠加 · 不消耗</p>
-        <p v-else class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
+        <p v-else-if="item.category !== 'collectible'" class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
+        <p v-else-if="item.id === 'pro200-game-voucher'" class="inventory-serving">收藏券 · 可前往湾区二手交易市场出售</p>
+        <p v-else class="inventory-serving">神秘访客赠送的珍藏道具</p>
         <p v-if="!quote.blockedReason" class="inventory-actual-effects" data-use-preview>此次实际变化：<template v-for="(effect, index) in actualChanges(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < actualChanges(quote).length - 1"> · </template></template></p>
         <div v-if="item.equipmentKind" class="inventory-use-row equipment-actions">
           <button v-for="slotId in EQUIPMENT_SLOTS.filter(slot => item.equipmentKind === (slot === 'special' ? 'special' : 'permanent'))"

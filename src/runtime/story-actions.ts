@@ -1,6 +1,7 @@
 import { getEquipmentItem } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { californiaPlaces } from './california';
 import { PROTAGONISTS } from './dual-protagonists';
 import { sceneLocationId } from './scene-context';
 import { campusInteriors } from './campus-interiors';
@@ -36,7 +37,7 @@ function number(value: unknown, min: number, max: number, path: string): number 
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) return invalid(path);
   return value;
 }
-const destinationIds = new Set([...sceneLandmarks.map(item => sceneLocationId(item.id)), ...campusInteriors.map(item => item.id)]);
+const destinationIds = new Set([...sceneLandmarks.map(item => sceneLocationId(item.id)), ...campusInteriors.map(item => item.id), ...californiaPlaces.map(place => place.id)]);
 function destination(value: unknown, path: string): string {
   if (typeof value !== 'string' || !destinationIds.has(value)) return invalid(path);
   return value;

@@ -1,0 +1,182 @@
+import { describe, expect, it } from 'vitest';
+import { californiaPlaces, internationalConnections, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID, PRO200_RESALE_YEN, pro200ClaimBlocked, californiaLocalClock, californiaOffsetMinutes, isCaliforniaLocalLocation } from '../src/runtime/california';
+import { getStoreItem, getPurchaseQuote, getUseItemQuote } from '../src/runtime/convenience-store';
+import { getAdjacentLocations } from '../src/runtime/location-links';
+import { getLocationServiceQuote, getLocationServices, getLocationStatus } from '../src/runtime/location-services';
+import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
+import { validateStoryActions } from '../src/runtime/story-actions';
+import { gameDayFromISO } from '../src/runtime/game-calendar';
+import californiaWorldbook from '../src/worldbook/california.json';
+import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { appiePayBalance } from '../src/runtime/dual-protagonists';
+
+function fundedState() {
+  const state = createInitialState();
+  state.player.balance = 300000;
+  return state;
+}
+
+describe('California airport and fictional Pro200 trade', () => {
+  it('ships optional California worldbook entries in the offline card', () => {
+    expect(californiaWorldbook.entries).toHaveLength(2);
+    for (const entry of californiaWorldbook.entries) {
+      expect(entry.constant).toBe(false);
+      expect(entry.enabled).toBe(true);
+      expect(entry.keys.length).toBeGreaterThan(0);
+      expect(entry.content).not.toMatch(/[\u3040-\u30FF]/);
+    }
+    expect(californiaWorldbook.entries.map(entry => entry.content).join(' ')).toContain('返程须沿同一条航线');
+  });
+
+  it('requires an airport route from Tokyo and charges each leg', () => {
+    expect(californiaPlaces.map(place => place.id)).toEqual([
+      'haneda-airport', 'sfo-airport', 'california-openai', 'california-anthropic', 'california-market',
+    ]);
+    const base = fundedState();
+    const stop = reduceState(base, { type: 'novel_travel', locationId: 'bus-stop' });
+    expect(getAdjacentLocations(stop).map(place => place.id)).toContain('haneda-airport');
+    expect(getNovelTravelQuote(stop, 'sfo-airport').blockedReason).toMatch(/机场|接驳|逐站/);
+
+    const hanedaQuote = getNovelTravelQuote(stop, 'haneda-airport');
+    expect(hanedaQuote.blockedReason).toBeNull();
+    expect(hanedaQuote.fare).toBe(1200);
+    const haneda = reduceState(stop, { type: 'novel_travel', locationId: 'haneda-airport' });
+    expect(haneda.scene).toBeNull();
+    expect(haneda.player.balance).toBe(stop.player.balance - 1200);
+    expect(getAdjacentLocations(haneda).map(place => place.id)).toContain('sfo-airport');
+
+    const flightQuote = getNovelTravelQuote(haneda, 'sfo-airport');
+    expect(flightQuote.fare).toBe(48000);
+    expect(flightQuote.minutes).toBe(600);
+    const sfo = reduceState(haneda, { type: 'novel_travel', locationId: 'sfo-airport' });
+    expect(sfo.locationId).toBe('sfo-airport');
+    expect(sfo.player.balance).toBe(haneda.player.balance - 48000);
+    expect(sfo.journal.at(-1)?.text).toContain('国际航班');
+    expect(getAdjacentLocations(sfo).map(place => place.id)).toContain('california-openai');
+
+    const office = reduceState(sfo, { type: 'novel_travel', locationId: 'california-openai' });
+    expect(office.locationId).toBe('california-openai');
+    const market = reduceState(office, { type: 'novel_travel', locationId: 'california-market' });
+    expect(market.locationId).toBe('california-market');
+    expect(internationalConnections('california-market').map(leg => leg.to)).toEqual(['california-openai', 'california-anthropic']);
+    expect(() => reduceState(market, { type: 'novel_travel', locationId: 'bus-stop' })).toThrow(/国际旅行只能/);
+    expect(parseState(market)).toEqual(market);
+  });
+
+  it('returns through California and Tokyo airports with all fares', () => {
+    const start = fundedState();
+    start.locationId = 'california-market';
+    start.scene = null;
+    start.clock = { day: 16, hour: 12, minute: 0 };
+    expect(getNovelTravelQuote(start, 'haneda-airport').blockedReason).toMatch(/国际旅行只能/);
+    const office = reduceState(start, { type: 'novel_travel', locationId: 'california-openai' });
+    const sfo = reduceState(office, { type: 'novel_travel', locationId: 'sfo-airport' });
+    expect(getNovelTravelQuote(sfo, 'haneda-airport').minutes).toBe(600);
+    const haneda = reduceState(sfo, { type: 'novel_travel', locationId: 'haneda-airport' });
+    const tokyo = reduceState(haneda, { type: 'novel_travel', locationId: 'bus-stop' });
+    expect(tokyo.locationId).toBe('bus-stop');
+    expect(tokyo.player.balance).toBe(start.player.balance - 520 - 2600 - 48000 - 1200);
+    expect(parseState(tokyo)).toEqual(tokyo);
+  });
+
+  it('uses Pacific local time, including daylight-saving transitions', () => {
+    expect(isCaliforniaLocalLocation('sfo-airport')).toBe(true);
+    expect(isCaliforniaLocalLocation('california-market')).toBe(true);
+    expect(isCaliforniaLocalLocation('haneda-airport')).toBe(false);
+    const march = gameDayFromISO('2026-03-08');
+    expect(californiaOffsetMinutes({ day: march, hour: 18, minute: 59 })).toBe(-17 * 60);
+    expect(californiaOffsetMinutes({ day: march, hour: 19, minute: 0 })).toBe(-16 * 60);
+    expect(californiaLocalClock({ day: march, hour: 18, minute: 59 }).hour).toBe(1);
+    expect(californiaLocalClock({ day: march, hour: 19, minute: 0 }).hour).toBe(3);
+    const november = gameDayFromISO('2025-11-02');
+    expect(californiaOffsetMinutes({ day: november, hour: 17, minute: 59 })).toBe(-16 * 60);
+    expect(californiaOffsetMinutes({ day: november, hour: 18, minute: 0 })).toBe(-17 * 60);
+    expect(californiaLocalClock({ day: november, hour: 17, minute: 59 }).hour).toBe(1);
+    expect(californiaLocalClock({ day: november, hour: 18, minute: 0 }).hour).toBe(1);
+  });
+
+  it('forbids boarding a flight without funds or physically being at the airport', () => {
+    const poor = createInitialState();
+    poor.locationId = 'haneda-airport';
+    expect(getNovelTravelQuote(poor, 'sfo-airport').blockedReason).toMatch(/余额不足/);
+    expect(() => reduceState(poor, { type: 'novel_travel', locationId: 'sfo-airport' })).toThrow(/余额不足/);
+    const far = fundedState();
+    expect(getNovelTravelQuote(far, 'california-openai').blockedReason).toMatch(/国际旅行只能/);
+  });
+
+  it('claims a real voucher with a saved 7-day cooldown, then sells exactly one', () => {
+    const office = fundedState();
+    office.locationId = 'california-openai';
+    office.scene = null;
+    office.clock = { day: 2, hour: 5, minute: 0 }; // 13:00 in fictional California local time.
+    expect(getLocationStatus('california-openai', office.clock)?.isOpen).toBe(true);
+    expect(getLocationServices(office).map(service => service.id)).toContain(PRO200_CLAIM_SERVICE_ID);
+    expect(getLocationServiceQuote(office, PRO200_CLAIM_SERVICE_ID).blockedReason).toBeNull();
+
+    const claimed = reduceState(office, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
+    expect(claimed.inventory).toContainEqual({ itemId: PRO200_GAME_ITEM_ID, quantity: 1 });
+    expect(claimed.california?.claims.soyo).toBe(2);
+    expect(parseState(claimed)).toEqual(claimed);
+    expect(getLocationServiceQuote(claimed, PRO200_CLAIM_SERVICE_ID).blockedReason).toMatch(/已经领取/);
+    expect(() => reduceState(claimed, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID })).toThrow(/已经领取/);
+    expect(pro200ClaimBlocked(claimed, 'sakiko')).toBeNull();
+    const nextWeek = parseState({ ...claimed, clock: { ...claimed.clock, day: 9 } });
+    expect(getLocationServiceQuote(nextWeek, PRO200_CLAIM_SERVICE_ID).blockedReason).toBeNull();
+
+    const market = parseState({ ...claimed, locationId: 'california-market' });
+    const quote = getLocationServiceQuote(market, PRO200_RESELL_SERVICE_ID);
+    expect(quote.blockedReason).toBeNull();
+    expect(quote.payout).toBe(PRO200_RESALE_YEN);
+    const sold = reduceState(market, { type: 'location_service', serviceId: PRO200_RESELL_SERVICE_ID });
+    expect(sold.inventory.some(entry => entry.itemId === PRO200_GAME_ITEM_ID)).toBe(false);
+    expect(sold.player.balance).toBe(market.player.balance + PRO200_RESALE_YEN);
+    expect(getLocationServiceQuote(sold, PRO200_RESELL_SERVICE_ID).blockedReason).toMatch(/没有可出售/);
+    expect(() => reduceState(sold, { type: 'location_service', serviceId: PRO200_RESELL_SERVICE_ID })).toThrow(/没有可出售/);
+    expect(parseState(sold)).toEqual(sold);
+  });
+
+  it('credits the active Appie Pay ledger without altering the other characters', () => {
+    const base = fundedState();
+    base.locationId = 'california-openai';
+    base.scene = null;
+    base.clock = { day: 2, hour: 5, minute: 0 };
+    const owned = enableProtagonists(base);
+    const beforeBalances = Object.fromEntries(['soyo', 'sakiko', 'emma', 'renako']
+      .map(id => [id, appiePayBalance(owned.protagonists!.accounts, id as 'soyo' | 'sakiko' | 'emma' | 'renako')]));
+    const claimed = reduceState(owned, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
+    expect(claimed.california?.claims.soyo).toBe(2);
+    const market = parseState({ ...claimed, locationId: 'california-market' });
+    const sold = reduceState(market, { type: 'location_service', serviceId: PRO200_RESELL_SERVICE_ID });
+    expect(appiePayBalance(sold.protagonists!.accounts, 'soyo')).toBe(beforeBalances.soyo + PRO200_RESALE_YEN * 100);
+    for (const id of ['sakiko', 'emma', 'renako'] as const)
+      expect(appiePayBalance(sold.protagonists!.accounts, id)).toBe(beforeBalances[id]);
+    expect(parseState(sold)).toEqual(sold);
+  });
+
+  it('retains each protagonist\'s claim cooldown after changing the controlled character', () => {
+    const base = fundedState();
+    base.clock = { day: 2, hour: 5, minute: 0 };
+    base.locationId = 'california-openai';
+    base.scene = null;
+    const claimed = reduceState(enableProtagonists(base), { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID });
+    const other = reduceState(claimed, { type: 'switch_protagonist', target: 'sakiko' });
+    expect(other.california?.claims.soyo).toBe(2);
+    expect(pro200ClaimBlocked(other, 'sakiko')).toBeNull();
+    expect(pro200ClaimBlocked(other, 'soyo')).toMatch(/已经领取/);
+    const returned = reduceState(other, { type: 'switch_protagonist', target: 'soyo' });
+    expect(returned.california?.claims.soyo).toBe(2);
+    expect(pro200ClaimBlocked(returned, 'soyo')).toMatch(/已经领取/);
+    expect(parseState(returned)).toEqual(returned);
+  });
+
+  it('does not allow buying, using, or inventing vouchers outside their dedicated services', () => {
+    const state = fundedState();
+    expect(getStoreItem(PRO200_GAME_ITEM_ID)?.category).toBe('collectible');
+    expect(getPurchaseQuote(state, PRO200_GAME_ITEM_ID).blockedReason).toBeTruthy();
+    expect(getUseItemQuote({ ...state, inventory: [{ itemId: PRO200_GAME_ITEM_ID, quantity: 1 }] }, PRO200_GAME_ITEM_ID).blockedReason).toMatch(/不能直接使用/);
+    expect(validateStoryActions([{ type: 'service', serviceId: PRO200_CLAIM_SERVICE_ID }], state)).toHaveLength(1);
+    expect(validateStoryActions([{ type: 'service', serviceId: PRO200_RESELL_SERVICE_ID }], state)).toHaveLength(1);
+    expect(() => validateStoryActions([{ type: 'buy', itemId: PRO200_GAME_ITEM_ID, quantity: 1 }], state)).toThrow();
+    expect(() => reduceState(state, { type: 'location_service', serviceId: PRO200_CLAIM_SERVICE_ID })).toThrow(/当前地点/);
+  });
+});

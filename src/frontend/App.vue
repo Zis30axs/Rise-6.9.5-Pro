@@ -56,6 +56,10 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { r27et1Equipped, studyPointsWithEquipment } from '../runtime/equipment';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
+import { isInternationalLocation } from '../runtime/california';
+import { MYSTERY_VISITOR_ID, MYSTERY_VISITOR_NAME, SECOND_MYSTERY_VISITOR_ID, SECOND_MYSTERY_VISITOR_NAME, mysteryVisitorPresent, secondMysteryVisitorPresent } from '../runtime/mystery-visitor';
+import mysteryVisitorPortrait from '../../assets/npc-portraits/mystery-visitor.webp?inline';
+import secondMysteryVisitorPortrait from '../../assets/npc-portraits/mystery-visitor-anthropic.webp?inline';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { agendaTargetProtagonist, agreedMinute, socialMinute } from '../runtime/social-agenda';
 import type { SocialInvitation } from '../runtime/natural-interactions';
@@ -138,7 +142,7 @@ function resetLayout() {
   layoutLease?.reset();
 }
 const presentationMode = ref<PresentationMode>(readPresentationMode());
-const novelMode = computed(() => presentationMode.value === 'novel');
+const novelMode = computed(() => presentationMode.value === 'novel' || isInternationalLocation(props.model.state.locationId));
 const novelHistory = ref(false);
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
 const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
@@ -164,6 +168,8 @@ const studySubjectId = ref('');
 const studyAttempted = ref(false);
 const studyDialog = ref<HTMLElement>();
 const localActivityReceipt = ref('');
+const mysteryDialog = ref<null | 'original' | 'second'>(null);
+const mysteryGiftReceipt = ref('');
 const walkSeed = props.model.state.scene?.seed ?? (globalThis.crypto?.randomUUID?.() || `walk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 // Keep the complete saved population available when reading an earlier scene indoors.
 const portraitPeople = computed(() => {
@@ -203,7 +209,7 @@ const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.val
   scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
   encounterId: props.model.state.scene?.encounterId,
 }));
-function personLabel(person: WorldScenePerson) { return person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
+function personLabel(person: WorldScenePerson) { return person.id === MYSTERY_VISITOR_ID ? MYSTERY_VISITOR_NAME : person.id === SECOND_MYSTERY_VISITOR_ID ? SECOND_MYSTERY_VISITOR_NAME : person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
 const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
@@ -255,11 +261,29 @@ const nearbyTransitStop = computed(() => {
   const point = outdoorArrival();
   return point ? transitStops.find(stop => Math.hypot(stop.x - point.x, stop.z - point.z) <= 6) ?? null : null;
 });
-const nearbyPeople = computed(() => {
+const nearbyPeople = computed<{ person: WorldScenePerson; distance: number }[]>(() => {
   const position = worldScenePosition(props.model.state);
-  if (!position) return [];
-  return scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
-    .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance);
+  const ordinary = position ? scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
+    .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance) : [];
+  // Rare outdoor visitor is computed locally, including overseas novel-only places.
+  const rare: { person: WorldScenePerson; distance: number }[] = [];
+  if (mysteryVisitorPresent(props.model.state)) {
+    rare.push({ person: {
+      id: MYSTERY_VISITOR_ID, name: MYSTERY_VISITOR_NAME, candidateName: MYSTERY_VISITOR_NAME,
+      identity: '身份不明', tags: ['奇遇', '稀有'], description: '一位穿深色针织衫的陌生访客，似乎有话想说。',
+      x: position?.x ?? 0, z: position?.z ?? 0, color: 0x363d50,
+      portraitId: 'claude', contactId: null, isMain: false,
+    }, distance: 2.5 });
+  }
+  if (secondMysteryVisitorPresent(props.model.state)) {
+    rare.push({ person: {
+      id: SECOND_MYSTERY_VISITOR_ID, name: SECOND_MYSTERY_VISITOR_NAME, candidateName: SECOND_MYSTERY_VISITOR_NAME,
+      identity: '身份不明', tags: ['奇遇', '稀有'], description: '一位戴着眼镜、穿深蓝外套的神秘研究者，似乎正思考什么。',
+      x: position?.x ?? 0, z: position?.z ?? 0, color: 0x42516a,
+      portraitId: 'claude', contactId: null, isMain: false,
+    }, distance: 3.0 });
+  }
+  return [...rare, ...ordinary];
 });
 const lastRoomActivity = computed(() => currentRoom.value ? getInteriorActivity(currentRoom.value, props.model.state.interior?.activityId, props.model.state.interior?.lastRest, props.model.state.interior?.lastStudy) : undefined);
 const persistedRoomReceipt = computed(() => {
@@ -441,7 +465,7 @@ function quickRoomActivity(interactionId: string) {
   roomInteract(interactionId, true);
 }
 async function switchPresentationMode(mode: PresentationMode) {
-  if (props.model.busy || mode === presentationMode.value) return;
+  if (props.model.busy || mode === presentationMode.value || (mode === 'scene' && isInternationalLocation(props.model.state.locationId))) return;
   scene.value?.flushPresence();
   if (walkSyncError.value) return;
   closeWindow(false);
@@ -826,9 +850,18 @@ function durationPickerKeydown(event: KeyboardEvent) {
   if (event.shiftKey && event.target === first) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && event.target === last) { event.preventDefault(); first.focus(); }
 }
-watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { livehouseMode.value = null; bedRestPicker.value = false; cookOpen.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
+watch([() => props.model.state.locationId, () => currentProtagonist.value], () => { mysteryDialog.value = null; mysteryGiftReceipt.value = ''; livehouseMode.value = null; bedRestPicker.value = false; cookOpen.value = false; bookReadingPicker.value = false; studyInteractionId.value = ''; studySubjectId.value = ''; localActivityReceipt.value = ''; });
+watch(() => isInternationalLocation(props.model.state.locationId), overseas => {
+  if (overseas && readingMode.value === 'hidden') readingMode.value = 'compact';
+});
 function sceneEncounter(personId: string) {
   if (props.model.busy) return;
+  if (personId === MYSTERY_VISITOR_ID || personId === SECOND_MYSTERY_VISITOR_ID) {
+    if (!(personId === MYSTERY_VISITOR_ID ? mysteryVisitorPresent(props.model.state) : secondMysteryVisitorPresent(props.model.state))) return;
+    mysteryGiftReceipt.value = '';
+    mysteryDialog.value = personId === MYSTERY_VISITOR_ID ? 'original' : 'second';
+    return;
+  }
   scene.value?.flushPresence();
   if (!props.model.state.scene && !props.model.state.interior) {
     const arrival = worldScenePosition(props.model.state);
@@ -842,7 +875,21 @@ function sceneEncounter(personId: string) {
   historyPortrait.value = false;
   void prepareAction(`我向${personLabel(person)}打招呼，想和对方聊几句。请根据我们眼下所在的地方继续当面的对话，不要替我决定下一句话。`);
 }
+function claimMysteryGift() {
+  if (props.model.busy || !mysteryDialog.value) return;
+  const second = mysteryDialog.value === 'second';
+  const present = second ? secondMysteryVisitorPresent(props.model.state) : mysteryVisitorPresent(props.model.state);
+  if (!present) return;
+  props.actions.dispatch({ type: second ? 'claim_second_mystery_gift' : 'claim_mystery_gift' });
+  const awarded = second ? props.model.state.anthropicVisitor : props.model.state.mysteryVisitor;
+  if (awarded?.claimedBy[currentProtagonist.value]) {
+    mysteryGiftReceipt.value = second
+      ? '收到 Max 20x ×1、KYC ×1、Last Decision ×1。奖励已放入当前主角背包。'
+      : '收到 Full Reset ×10、Pro 500 ×1。奖励已放入当前主角背包。';
+  }
+}
 function dismissOverlay() {
+  if (mysteryDialog.value) { mysteryDialog.value = null; return true; }
   if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
   if (props.model.interaction) { props.actions.cancelInteraction?.(); return true; }
@@ -900,7 +947,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="shell" class="uc-shell" :data-presentation-mode="presentationMode" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen || cookOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
+  <div ref="shell" class="uc-shell" :data-presentation-mode="novelMode ? 'novel' : 'scene'" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen || cookOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
     <div v-if="pendingCourtSwitch" class="court-switch-mask" data-court-switch-warning role="alertdialog" aria-modal="true" aria-label="重大事件">
       <section class="court-switch-dialog">
         <h2>当前正在进行重大事件，是否继续？</h2>
@@ -931,7 +978,7 @@ onBeforeUnmount(() => {
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
     <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><span class="chrome-dot">·</span><span class="chrome-weather" :aria-label="weatherLabel">{{ weatherIcon }}{{ weatherLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
-    <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
+    <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy || isInternationalLocation(model.state.locationId)" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
     <button v-if="model.state.locationId==='court-hearing' && !!model.state.courtroom?.active && !activeWindow" type="button"
       class="court-case-launcher" data-court-case-open @click="openWindow('law')">庭审案卷</button>
@@ -1005,11 +1052,28 @@ onBeforeUnmount(() => {
       <div v-else-if="activeWindow === 'stationery'" class="window-content"><StationeryStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId && person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>
     <ProtagonistSwitchOverlay v-if="switchingLease" ref="switchOverlay" :lease="switchingLease" :novel-mode="novelMode" :hour="model.state.clock.hour" :scene="scene" @finished="switchingLease = null; nextTick(() => shell?.querySelector<HTMLElement>('[data-protagonist-select]')?.focus({ preventScroll: true }))" @exit="actions.exit()" />
+    <div v-if="mysteryDialog" class="mystery-visitor-mask" data-mystery-visitor-dialog role="dialog" aria-modal="true" :aria-label="mysteryDialog === 'second' ? SECOND_MYSTERY_VISITOR_NAME : MYSTERY_VISITOR_NAME">
+      <section class="mystery-visitor-panel">
+        <img :src="mysteryDialog === 'second' ? secondMysteryVisitorPortrait : mysteryVisitorPortrait" alt="神秘访客的全身形象" draggable="false" />
+        <div class="mystery-visitor-copy">
+          <small>极其罕见的相遇</small>
+          <h2>{{ mysteryDialog === 'second' ? SECOND_MYSTERY_VISITOR_NAME : MYSTERY_VISITOR_NAME }}</h2>
+          <p v-if="mysteryDialog === 'second'">“Max 20x、KYC、Last Decision。今天它们是你的了。”</p>
+          <p v-else>“我这里有一些特别的东西。你愿意收下吗？”</p>
+          <p v-if="mysteryGiftReceipt" data-mystery-gift-receipt role="status">{{ mysteryGiftReceipt }}</p>
+          <div class="mystery-visitor-actions">
+            <button v-if="!mysteryGiftReceipt" type="button" data-claim-mystery-gift :disabled="model.busy" @click="claimMysteryGift">收下礼物</button>
+            <button v-if="mysteryGiftReceipt" type="button" @click="mysteryDialog=null; openWindow('inventory')">查看背包</button>
+            <button type="button" data-close-mystery-visitor @click="mysteryDialog=null">{{ mysteryGiftReceipt ? '离开' : '暂时告别' }}</button>
+          </div>
+        </div>
+      </section>
+    </div>
     <InteractionOverlay :model="model" :actions="actions" />
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
   </div>
@@ -1018,6 +1082,17 @@ onBeforeUnmount(() => {
 
 
 <style scoped>
+ .mystery-visitor-mask{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:#070911c9;padding:16px}
+.mystery-visitor-panel{display:flex;align-items:stretch;gap:22px;max-width:min(680px,95vw);max-height:88vh;overflow:auto;padding:20px;background:linear-gradient(140deg,#1c2439,#131823);border:1px solid #79839a75;border-radius:18px;color:#f2f4fc;box-shadow:0 12px 70px #000a}
+.mystery-visitor-panel img{height:clamp(200px,48vh,480px);width:auto;max-width:45%;object-fit:contain;align-self:center}
+.mystery-visitor-copy{flex:1;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.mystery-visitor-copy h2{font-size:23px;margin:0}
+.mystery-visitor-copy p{font-size:14px;line-height:1.65;margin:0}
+.mystery-visitor-copy small{letter-spacing:.12em;color:#becbe9}
+.mystery-visitor-actions{display:flex;flex-wrap:wrap;gap:8px}
+.mystery-visitor-actions button{padding:9px 14px;border-radius:9px;border:1px solid #a7b6d7;color:#fff;background:#455578;cursor:pointer}
+.mystery-visitor-actions button:last-child{background:#ffffff10}
+@media(max-width:450px){.mystery-visitor-panel{gap:8px;padding:12px}.mystery-visitor-panel img{max-width:42%;max-height:40vh}.mystery-visitor-copy{min-width:0}.mystery-visitor-copy h2{font-size:18px}}
 .novel-appointment-prompt{margin:6px 12px 8px;padding:10px 14px;background:color-mix(in srgb,var(--card,#fff) 88%,#c6a65d);border:1px solid #9d8a6a66;border-radius:12px;box-shadow:0 3px 14px #0001;position:relative;z-index:1}
 .novel-appointment-prompt p{margin:0 0 8px;font-size:13px;line-height:1.45;color:inherit}
 .novel-appointment-prompt div{display:flex;flex-wrap:wrap;gap:9px}
