@@ -132,8 +132,8 @@ export const WAKABA_MUTSUMI_CARD: ResidentIdentityCard = {
   cardSerial: '5191-1122-0114-07',
   municipality: '东京都文京·丰岛学区 住民基本台帐',
   authorityLabel: '东京都目白台特别学区户籍课 · 月之森学园联署',
-  categoryBadge: '范例档案 · 特邀居民',
-  isExemplar: true,
+  categoryBadge: '学区学生 · 乐团特邀',
+  isExemplar: false,
   schoolOrAffiliation: '月之森女子学园 高等部 · 准大一转入生',
   gradeOrTitle: '高等部一年级（与长崎素世同班）· 园艺与器乐特长',
   studentNo: 'TSK-2025-0114M',
@@ -1360,7 +1360,6 @@ export function getIdentityCardCatalog(
     ...(['soyo', 'sakiko', 'emma', 'renako'] as ProtagonistId[]).filter((id) => id !== activeProtagonist)
   ];
   const list: ResidentIdentityCard[] = [
-    WAKABA_MUTSUMI_CARD,
     ...orderedProtagonists.map((id) => PROTAGONIST_CARDS[id] ?? SOYO_IDENTITY_CARD)
   ];
 
@@ -1384,8 +1383,9 @@ export function resolveIdentityCardById(
   state: WorldState,
   activeProtagonist: ProtagonistId = 'soyo'
 ): ResidentIdentityCard {
+  const defaultCard = PROTAGONIST_CARDS[activeProtagonist] ?? SOYO_IDENTITY_CARD;
   if (!targetIdOrName) {
-    return WAKABA_MUTSUMI_CARD;
+    return defaultCard;
   }
   const trimmed = targetIdOrName.trim();
   const normalized = trimmed.toLowerCase();
@@ -1423,7 +1423,7 @@ export function resolveIdentityCardById(
     });
   }
 
-  return WAKABA_MUTSUMI_CARD;
+  return defaultCard;
 }
 
 export function isCharacterInContacts(
@@ -1550,7 +1550,7 @@ export function buildIdentityRelationshipMesh(
     name: card.name,
     roleLabel: card.gradeOrTitle,
     affinity: 100,
-    statusTag: card.isExemplar ? '范例中心' : '持证人',
+    statusTag: '持证人',
     note: card.quote,
     group: 'center',
     groupLabel: GROUP_LABELS.center,

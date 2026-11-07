@@ -11,33 +11,35 @@ import {
   resolveIdentityCardById
 } from '../src/frontend/identity-card';
 
-describe('identity-card module (Wakaba Mutsumi exemplar)', () => {
-  it('exposes Wakaba Mutsumi as the primary exemplar with both civil and stage (Mortis) profiles', () => {
+describe('identity-card module', () => {
+  it('exposes Wakaba Mutsumi as a full resident profile with civil and stage (Mortis) cards without exemplar tag', () => {
     expect(WAKABA_MUTSUMI_CARD.id).toBe('bang-mutsumi');
     expect(WAKABA_MUTSUMI_CARD.name).toBe('若叶睦');
     expect(WAKABA_MUTSUMI_CARD.nativeName).toBe('若葉 睦');
     expect(WAKABA_MUTSUMI_CARD.birthDate).toBe('2007.01.14');
-    expect(WAKABA_MUTSUMI_CARD.isExemplar).toBe(true);
+    expect(WAKABA_MUTSUMI_CARD.isExemplar).toBeFalsy();
+    expect(WAKABA_MUTSUMI_CARD.categoryBadge).not.toContain('范例');
     expect(WAKABA_MUTSUMI_CARD.stageProfile?.bandName).toBe('Ave Mujica');
     expect(WAKABA_MUTSUMI_CARD.stageProfile?.stageCode).toContain('Mortis');
     expect(WAKABA_MUTSUMI_CARD.mrzLine1).toHaveLength(44);
     expect(WAKABA_MUTSUMI_CARD.mrzLine2).toHaveLength(44);
   });
 
-  it('places Wakaba Mutsumi first in the identity card catalog and includes all 4 protagonists and saved contacts', () => {
+  it('places active protagonist first in the identity card catalog and includes all 4 protagonists and saved contacts', () => {
     const state = createInitialState();
     const catalog = getIdentityCardCatalog(state, 'soyo');
-    expect(catalog[0].id).toBe('bang-mutsumi');
+    expect(catalog[0].id).toBe('soyo');
     expect(catalog.some(c => c.id === 'soyo')).toBe(true);
     expect(catalog.some(c => c.id === 'sakiko')).toBe(true);
     expect(catalog.some(c => c.id === 'emma')).toBe(true);
     expect(catalog.some(c => c.id === 'renako')).toBe(true);
+    expect(catalog.some(c => c.id === 'bang-mutsumi')).toBe(true);
 
     const resolvedByChinese = resolveIdentityCardById('若叶睦', state, 'soyo');
     expect(resolvedByChinese.id).toBe('bang-mutsumi');
 
     const fallback = resolveIdentityCardById('unknown-id', state, 'soyo');
-    expect(fallback.id).toBe('bang-mutsumi');
+    expect(fallback.id).toBe('soyo');
   });
 
   it('computes distinct canon bond details for Soyo (62), Sakiko (78), Emma (56), and Renako (60) and detects contact registration', () => {

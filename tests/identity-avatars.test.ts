@@ -78,6 +78,7 @@ describe('identity and map avatar routing', () => {
     const root = mount(createApp(IdentityCardPanel, {
       model: { state: createInitialState() } as ShellModel,
       actions: { dispatch() {} } as unknown as ShellActions,
+      initialPersonId: 'bang-mutsumi',
     }));
     const sources = people.map(({ id, name }) => {
       const img = root.querySelector(`[data-mesh-node="${id}"] img`)!;

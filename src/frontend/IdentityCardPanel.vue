@@ -44,7 +44,7 @@ const cardCatalog = computed<ResidentIdentityCard[]>(() =>
   getIdentityCardCatalog(props.model.state, activeProtagonist.value)
 );
 
-const selectedCardId = ref<string>(props.initialPersonId || 'bang-mutsumi');
+const selectedCardId = ref<string>(props.initialPersonId || activeProtagonist.value);
 const cardMode = ref<IdentityCardMode>('civil');
 const photoPose = ref<IdentityPhotoPose>('standard');
 const showStandingFigure = ref<boolean>(false);
@@ -157,6 +157,8 @@ watch(
       selectedCardId.value = nextId;
       adjustCard3DView('angled');
       actionFeedback.value = '';
+    } else {
+      selectedCardId.value = activeProtagonist.value;
     }
   }
 );
@@ -485,7 +487,6 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
           <h4 class="idcard-main-title">
             {{ activeCard.name }}
             <span class="idcard-native-name">{{ activeCard.nativeName }}</span>
-            <span v-if="activeCard.isExemplar" class="idcard-exemplar-tag">范例接入</span>
           </h4>
         </div>
         <div class="idcard-header-actions">
@@ -526,15 +527,13 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
           type="button"
           class="idcard-roster-chip"
           :class="{
-            active: item.id === activeCard.id,
-            exemplar: item.isExemplar
+            active: item.id === activeCard.id
           }"
           @click="selectCard(item.id)"
         >
           <span class="idcard-roster-dot" :class="{ mutsumi: item.id === 'bang-mutsumi' }"></span>
           <span class="idcard-roster-name">{{ item.name }}</span>
-          <span v-if="item.isExemplar" class="idcard-roster-badge">范例</span>
-          <span v-else-if="item.id === activeProtagonist" class="idcard-roster-badge self">当前视角</span>
+          <span v-if="item.id === activeProtagonist" class="idcard-roster-badge self">当前视角</span>
         </button>
       </nav>
     </header>
