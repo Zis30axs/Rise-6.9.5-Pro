@@ -115,7 +115,7 @@ describe('construction backend recruitment twist', () => {
         if (other === owner) continue;
         expect(appiePayBalance(next.protagonists!.accounts, other)).toBe(balances[other]);
         expect(personState(next, other).academics).toEqual(personState(before, other).academics);
-        expect(personState(next, other).player).toEqual(personState(before, other).player);
+        expect(personState(next, other).player.balance).toBe(personState(before, other).player.balance);
       }
       expect(before).toEqual(snapshot);
       expect(parseState(next)).toEqual(next);

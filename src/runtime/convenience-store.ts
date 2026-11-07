@@ -11,7 +11,8 @@ export interface StoreItem {
   readonly name: string;
   readonly brand: string;
   readonly tier: 'basic' | 'standard' | 'premium';
-  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine' | 'ingredient' | 'collectible';
+  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine' | 'ingredient' | 'stationery' | 'collectible';
+  readonly equipmentKind?: 'permanent' | 'special';
   readonly price: number;
   readonly packSize: number;
   readonly purchaseUnit: string;
@@ -41,6 +42,24 @@ export const storeCatalog: readonly StoreItem[] = Object.freeze([
   { id: 'medicine-vitality', name: '医用营养机能饮', brand: '力维他', tier: 'standard', category: 'medicine', price: 320, packSize: 1, purchaseUnit: '瓶', useUnit: '瓶', kcal: 150, useMinutes: 2, effects: { energy: 28, health: 15, stress: -8, satiety: 8, morale: 6 } },
   ...cookingIngredientItems,
 ].map(item => Object.freeze({ ...item, effects: Object.freeze(item.effects) })) as StoreItem[]);
+
+/** Reusable stationery items equipped from the backpack. */
+export const R27ET1_ITEM_ID = 'stationery-r27et1';
+export const stationeryCatalog: readonly StoreItem[] = Object.freeze([
+  Object.freeze({ id: R27ET1_ITEM_ID, name: 'R-27ET1', brand: '街角文具店',
+    tier: 'standard' as const, category: 'stationery' as const, equipmentKind: 'permanent' as const,
+    price: 500, packSize: 1, purchaseUnit: '支', useUnit: '支', kcal: 0, useMinutes: 0,
+    effects: Object.freeze({ energy: 0, satiety: 0, stress: 0, health: 0 }) }),
+]);
+
+export function getStationeryAvailability(state: Pick<WorldState, 'locationId' | 'interior' | 'clock'>) {
+  const atCounter = state.locationId === 'bookshop' && !state.interior;
+  const minute = state.clock.hour * 60 + state.clock.minute;
+  const open = minute >= 9 * 60 && minute < 22 * 60;
+  return { available: atCounter && open, blockedReason: !atCounter
+    ? '请先前往街角书店旁的文具店。'
+    : !open ? '文具店已打烊，营业时间 09:00–22:00。' : null };
+}
 
 export const MAX_PURCHASE_QUANTITY = 20;
 export const INVENTORY_ITEM_LIMIT = 999;
@@ -72,7 +91,7 @@ export function getServiceTakeawayItem(serviceId: string): StoreItem | null {
 }
 
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems];
+  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {
@@ -81,12 +100,12 @@ export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'int
 }
 
 export function getPurchaseQuote(state: WorldState, itemId: string, quantity = 1) {
-  const item = storeCatalog.find(item => item.id === itemId) ?? null;
+  const item = [...storeCatalog, ...stationeryCatalog].find(item => item.id === itemId) ?? null;
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= MAX_PURCHASE_QUANTITY;
   const totalPrice = item && validQuantity ? item.price * quantity : 0;
   const unitsAdded = item && validQuantity ? item.packSize * quantity : 0;
-  let blockedReason = !item ? '不存在的商品。' : !validQuantity ? `购买数量必须是 1–${MAX_PURCHASE_QUANTITY} 的整数。` : getStoreAvailability(state).blockedReason;
+  let blockedReason = !item ? '不存在的商品。' : !validQuantity ? `购买数量必须是 1–${MAX_PURCHASE_QUANTITY} 的整数。` : (item?.category === 'stationery' ? getStationeryAvailability(state).blockedReason : getStoreAvailability(state).blockedReason);
   if (!blockedReason && owned + unitsAdded > INVENTORY_ITEM_LIMIT) blockedReason = `每种商品最多保存 ${INVENTORY_ITEM_LIMIT} 个使用单位。`;
   if (!blockedReason && state.player.balance < totalPrice) blockedReason = '余额不足，无法购买这些商品。';
   return { item, quantity, totalPrice, unitsAdded, owned, blockedReason };
@@ -99,6 +118,7 @@ export function getPackItemQuote(state: WorldState, itemId: string, quantity = 1
   let blockedReason = quote.blockedReason;
   if (quote.item?.category === 'cigarette') blockedReason = '只有食物和饮品提供加价打包。';
   if (quote.item?.category === 'ingredient') blockedReason = '食材买下后直接放进背包。';
+  if (quote.item?.category === 'stationery') blockedReason = '文具不能打包为食品。';
   if (!blockedReason && state.player.balance < totalPrice) blockedReason = `余额不足，含打包费共需 ${totalPrice} 元。`;
   return { ...quote, packagingFee, totalPrice, blockedReason };
 }
@@ -115,7 +135,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。'
-    : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '神秘访客的特殊奖励已收藏，当前无法直接使用。' : null;
+    : item.category === 'stationery' ? '这支文具需要装备在常驻道具栏才能生效。' : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '神秘访客的特殊奖励已收藏，当前无法直接使用。' : null;
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';

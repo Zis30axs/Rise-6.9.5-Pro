@@ -50,7 +50,9 @@ describe('八幡海铃 casual art', () => {
     expect(resolveSceneCharacterArt('八幡海铃')?.id).toBe('umiri_casual_neutral');
     expect(resolveSceneCharacterArt('三角初华', '开心')?.id).toBe('uika_casual_happy');
     expect(resolveSceneCharacterArt('丰川祥子')).toBeNull();
-    expect(resolveMapCharacterAvatar({ name: '八幡海铃', personId: 'bang-umiri' })).toEqual({
+    const person = { name: '八幡海铃', personId: 'bang-umiri' };
+    expect(resolveMapCharacterAvatar(person)?.kind).toBe('headshot');
+    expect(resolveMapCharacterAvatar(person, true)).toEqual({
       kind: 'sprite', src: portrait('平静')!.src,
     });
   });

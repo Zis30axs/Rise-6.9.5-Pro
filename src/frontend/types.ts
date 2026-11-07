@@ -77,6 +77,8 @@ export interface PlayerState {
 
 export interface AcademicGain {
   subjectId: string;
+  /** Effect used at settlement, independent of the current equipment. */
+  equipmentProfile?: import('../runtime/equipment').EquipmentProfileId;
   minutes: number;
   points: number;
   totalPoints: number;
@@ -88,12 +90,14 @@ export interface AcademicGain {
   energyConsumed: number | null;
   moraleChange: number | null;
   stressChange: number | null;
+  /** Recorded stationery used for this completed study session. */
+  equipmentId?: string;
 }
 export interface AcademicState {
   majorId: string;
   /** Explicit legacy major correction; allows retained earned points without a fabricated last gain. */
   correction?: { previousMajorId: string; keepProgress: boolean };
-  /** Per-subject progress uses exact half points. */
+  /** Per-subject progress uses exact quarter points; unequipped study retains its original formula. */
   subjects: { subjectId: string; points: number }[];
   lastGain: AcademicGain | null;
 }
@@ -142,6 +146,8 @@ export interface WorldState {
   schema_version: '1.11.0' | '1.12.0' | '1.13.0';
   /** Shared daily forecast. Old saves receive it from the civil date on load. */
   weather?: import('../runtime/weather').WeatherState;
+  /** GMT+8 real-world history dispatch; shared by all protagonists. */
+  worldChronicle?: import('../runtime/world-chronicle').WorldChronicleState;
   /** Added lazily when a dual-protagonist feature is first used. */
   protagonists?: import('../runtime/protagonist-world').ProtagonistWorld;
   clock: { day: number; hour: number; minute: number };
@@ -178,7 +184,7 @@ export interface WorldState {
   anthropicVisitor?: import('../runtime/mystery-visitor').MysteryVisitorState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
-  inventory: { itemId: string; quantity: number }[];
+  inventory: { itemId: string; quantity: number; equipped?: boolean | import('../runtime/equipment').EquipmentSlot }[];
   academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
   contacts: CharacterContact[];
@@ -205,6 +211,7 @@ export type WorldAction =
   | { type: 'pack_item'; itemId: string; quantity: number }
   | { type: 'pack_service'; serviceId: string; quantity: number }
   | { type: 'gift_item'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'equip_item' | 'unequip_item'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'use_item'; itemId: string }
   | { type: 'cook_begin'; recipeId: string }
   | { type: 'cook_cancel'; sessionId: string }
@@ -257,6 +264,7 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'equip' | 'unequip'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'use'; itemId: string }
   | { type: 'interact'; interactionId: string }
   | { type: 'study'; subjectId: string; minutes: number }
@@ -310,6 +318,8 @@ export interface GeneratedStory {
   autonomousSmsText?: string | null;
   bandDecision?: import('../runtime/livehouse').BandDecision;
   weeklySummary?: { week: number; text: string };
+  /** Internal runtime delivery receipt; never produced by, or sent to, the LLM. */
+  worldChronicleReceipt?: import('../runtime/world-chronicle').WorldChronicleReceipt;
 }
 
 export type StoryGenerationOptions = {

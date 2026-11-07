@@ -24,7 +24,7 @@ export const anonPoseForExpression: Readonly<Record<SakikoExpression, AnonPose>>
 });
 
 const speakerNames = new Set([
-  'anon', 'chihaya anon', 'chihaya-anon',
+  'anon', 'chihaya anon', 'chihaya-anon', 'bang-anon',
   '千早爱音', '爱音', '愛音',
 ]);
 const text = (value: unknown): string => typeof value === 'string' ? value.trim().toLowerCase() : '';

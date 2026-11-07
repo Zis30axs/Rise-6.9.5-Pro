@@ -11,8 +11,11 @@ function mapWorldbookResidents(entries: typeof lore.entries) {
     const profession = entry.extensions as typeof entry.extensions & {
       majorId?: string | null; careerId?: string | null; qualification?: string | null;
     };
+    const aliases = entry.extensions.personId === 'majo-meruru'
+      ? ['冰上梅露露', '梅露露', '\u6c37\u4e0a\u30e1\u30eb\u30eb', '\u30e1\u30eb\u30eb', 'Meruru']
+      : entry.keys;
     return {
-      id: entry.extensions.personId!, name: entry.name, aliases: entry.keys,
+      id: entry.extensions.personId!, name: entry.name, aliases,
       profile: entry.content, publicProfile: entry.extensions.publicProfile!,
       anchor: entry.extensions.anchor!, home: entry.extensions.home!,
       /** Every NPC has a professional slot; null is an actual undecided choice. */

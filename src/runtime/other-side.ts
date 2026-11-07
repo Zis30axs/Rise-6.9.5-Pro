@@ -7,6 +7,7 @@ import { agendaTargetProtagonist, residentSocialAgendaPresence } from './social-
 import { gameCalendarOccasions } from './japan-calendar-events';
 import { scenePersonAnchors, getSceneArea, sceneLocationId } from './scene-context';
 import { sceneLandmarks } from '../frontend/scene-layout';
+import { retainStoryHistory } from './story-history';
 import relationLore from '../worldbook/story-arcs-relationships.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-story-arcs.json' with { type: 'json' };
 
@@ -349,7 +350,7 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
         else if (typeof personal.player[field] === 'number') personal.player[field] = affect(personal.player[field], value);
       }
       personal.story.push({ id: eventId, role: 'assistant', text: event.text });
-      personal.story = personal.story.slice(-40);
+      personal.story = retainStoryHistory(personal.story);
       personal.journal.push({ id: eventId, at: stamp(time),
         text: `与此同时，${event.text}`.slice(0, 1000) });
       personal.journal = personal.journal.slice(-100);

@@ -32,6 +32,7 @@ const generatedHeadshots = Object.fromEntries(
 const personAvatarIds: Readonly<Record<string, string>> = {
   '高松灯': 'tomori', '高松燈': 'tomori', '丰川祥子': 'sakiko', '千早爱音': 'anon', '椎名立希': 'taki',
   '要乐奈': 'rana', '若叶睦': 'mutsumi',
+  '三角初华': 'uika', '八幡海铃': 'umiri', '祐天寺若麦': 'nyamu', '喵梦': 'nyamu',
   '樱羽艾玛': 'majo-emma', '二阶堂希罗': 'majo-hiro', '夏目安安': 'majo-anan',
   '城崎诺亚': 'majo-noa', '佐伯米莉亚': 'majo-milia', '宝生玛格': 'majo-margo',
   '黑部奈叶香': 'majo-nanoka', '紫藤亚里沙': 'majo-arisa', '冰上梅露露': 'majo-meruru', '梅露露': 'majo-meruru',
@@ -42,6 +43,9 @@ const personAvatarIds: Readonly<Record<string, string>> = {
 // Match this registered resident's stable world ID even when a saved contact is renamed.
 const personIdHeadshotAliases: Readonly<Record<string, string>> = {
   'bang-tomori': 'tomori',
+  'bang-mutsumi': 'mutsumi', 'bang-anon': 'anon', 'bang-taki': 'taki', 'bang-rana': 'rana',
+  'bang-uika': 'uika', 'bang-umiri': 'umiri', 'bang-nyamu': 'nyamu',
+  emma: 'majo-emma', renako: 'wata-renako',
 };
 const protagonistAvatarIds: Readonly<Record<string, string>> = {
   sakiko: 'sakiko', emma: 'majo-emma', renako: 'wata-renako',
@@ -50,6 +54,7 @@ const protagonistAvatarIds: Readonly<Record<string, string>> = {
 const spriteObjectPosition: Readonly<Record<string, string>> = {
   sakiko: 'center 4%', tomori: 'center 4%', anon: 'center 4%', taki: 'center 4%',
   rana: 'center 4%', mutsumi: 'center 4%',
+  uika: 'center 4%', umiri: 'center 4%', nyamu: 'center 4%',
   'majo-anan': 'center 5%', 'majo-noa': 'center 3%', 'majo-hanna': 'center 12%',
   'majo-meruru': 'center top', 'majo-emma': 'center top', 'majo-hiro': 'center top',
   'majo-margo': 'center top', 'majo-milia': 'center top', 'majo-nanoka': 'center top',
@@ -99,6 +104,10 @@ export type MapAvatarAsset =
 
 /** Only an identity-confirmed sprite (or that pedestrian's saved generic appearance) may appear as a map avatar. */
 export function resolveMapCharacterAvatar(person: MapAvatarIdentity, ignoreNewHeadshot = false): MapAvatarAsset | null {
+  // Stable world IDs take precedence over renamed contact labels.
+  if (person.personId?.startsWith('bang-') && Object.hasOwn(personIdHeadshotAliases, person.personId)) {
+    person = { ...person, name: person.personId };
+  }
   // Preserve Soyo's already authored and approved headshot exactly.
   if (person.protagonistId === 'soyo' || person.personId === 'soyo' || person.name === '长崎素世') {
     return { kind: 'headshot', src: soyoHeadshot };

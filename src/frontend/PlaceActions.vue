@@ -13,7 +13,7 @@ import { formatGameNumber } from './format-game-number';
 import type { ShellModel } from './types';
 
 const props = defineProps<{ model: ShellModel; catalog?: boolean }>();
-const emit = defineEmits<{ travel: [locationId: string]; service: [serviceId: string]; package: [serviceId: string]; activity: [interactionId: string]; store: []; books: []; law: []; map: []; more: []; enter: [roomId: string]; cook: [] }>();
+const emit = defineEmits<{ travel: [locationId: string]; service: [serviceId: string]; package: [serviceId: string]; activity: [interactionId: string]; store: []; stationery: []; books: []; law: []; map: []; more: []; enter: [roomId: string]; cook: [] }>();
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
 const status = computed(() => getLocationStatus(props.model.state.locationId, props.model.state.clock));
 const services = computed(() => getLocationServices(props.model.state).map(service => ({ service, quote: getLocationServiceQuote(props.model.state, service.id) })));
@@ -51,6 +51,7 @@ const activityDisabled = (id: string) => {
         <button v-if="!room && model.state.locationId === 'courthouse'" type="button" data-place-court-enter :disabled="model.busy || !status?.isOpen" @click="emit('enter', 'court-hearing')"><span>进入公开法庭</span><small>{{ status?.isOpen ? '旁听席 · 法庭论证' : '开放 09:00–17:00' }}</small></button>
         <button v-if="room?.id === LAW_OFFICE_ID" type="button" data-place-law @click="emit('law')"><span>案件卷宗与法庭</span><small>调查证据 · 当庭质证 · 雪莉协助</small></button>
         <button v-if="storeAvailable" type="button" data-place-store data-store-entry :disabled="model.busy" @click="emit('store')"><span>逛便利店</span><small>货架 · 买入背包</small></button>
+        <button v-if="atBookshop" type="button" data-stationery-entry data-place-stationery :disabled="model.busy" @click="emit('stationery')"><span>逛文具店</span><small>R-27ET1 · ¥500 / 支</small></button>
         <button v-if="atBookshop" type="button" data-place-books data-book-reading-entry :disabled="model.busy || !status?.isOpen" :title="status?.hoursLabel" @click="emit('books')"><span>选书阅读</span><small>{{ status?.isOpen ? '选择科目与时长' : `开放 ${status?.hoursLabel}` }}</small></button>
         <button v-if="!catalog" type="button" data-place-more @click="emit('more')"><span>{{ services.length || room || storeAvailable || atBookshop ? '查看详情' : '看看此地' }}</span><small>地点与开放时间</small></button>
         <span v-else-if="!services.length && !room && !storeAvailable && !atBookshop" class="place-action-empty">可以在这里停留，或直接说出你的行动。</span>

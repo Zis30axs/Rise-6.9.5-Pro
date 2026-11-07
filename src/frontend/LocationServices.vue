@@ -15,7 +15,7 @@ import { LAW_OFFICE_ID } from '../runtime/law-career';
 import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, californiaLocalClock, isCaliforniaLocalLocation } from '../runtime/california';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
-const emit = defineEmits<{ map: []; store: []; books: []; activities: []; law: []; enter: [roomId: string] }>();
+const emit = defineEmits<{ map: []; store: []; stationery: []; books: []; activities: []; law: []; enter: [roomId: string] }>();
 const status = computed(() => getLocationStatus(props.model.state.locationId, props.model.state.clock));
 const place = computed(() => locations.find(item => item.id === props.model.state.locationId));
 const room = computed(() => getCampusInterior(props.model.state.interior?.roomId));
@@ -141,6 +141,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
       <button v-if="!room && model.state.locationId === 'courthouse'" type="button" data-location-court-enter :disabled="model.busy || !status?.isOpen" @click="emit('enter', 'court-hearing')">进入公开法庭 ↗</button>
       <button v-if="room?.id === LAW_OFFICE_ID" type="button" data-location-law :disabled="model.busy" @click="emit('law')">打开案件卷宗 ↗</button>
       <button v-if="storeAvailable" type="button" data-location-store :disabled="model.busy" @click="emit('store')">打开便利店货架 ↗</button>
+      <button v-if="atBookshop" type="button" data-stationery-entry data-location-stationery :disabled="model.busy" @click="emit('stationery')">逛文具店 ↗</button>
       <button v-if="atBookshop" type="button" data-location-books :disabled="model.busy || !status?.isOpen" @click="emit('books')">选书阅读 ↗</button>
       <button v-if="room" type="button" :disabled="model.busy" @click="emit('activities')">查看上方房间活动 ↑</button>
     </div>

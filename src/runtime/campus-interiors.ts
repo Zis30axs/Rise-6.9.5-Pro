@@ -585,6 +585,22 @@ const campusInteriorRooms: readonly CampusInterior[] = [
         x: 0, z: -1.2, minutes: 0, energyDelta: 0, result: '看过 CiRCLE 练团室的鼓组、音箱和谱架。', prompt: '你看过 CiRCLE 练团室的设备，没有租用，也没有开始演出。' },
     ],
   },
+  {
+    id: 'aquarium', label: '阳光水族馆', parentLocationId: 'commercial',
+    description: '位于东池袋商业区高层顶部的空中水族馆。深蓝通透的弧形全景大水槽前设有静坐长椅，幽蓝水母发光回廊与露天空中企鹅水槽光影静谧梦幻，是城中极受欢迎的约会与散心去处。',
+    entrance: { x: 196, z: 127, yaw: 0 }, bounds, spawn,
+    obstacles: [],
+    interactions: [
+      { id: 'aquarium-bench-rest', label: '在大水槽前长椅静坐', description: '在弧形全景大水槽前的长椅安静坐 20 分钟，仰望鱼群与魔鬼鱼游弋，恢复至多 6 点精力，精神 +8，压力 -12。',
+        x: 0, z: -1.2, minutes: 20, energyDelta: 6, moraleDelta: 8, stressDelta: -12,
+        result: '在全景大水槽前的长椅上静坐了二十分钟，仰望深蓝水光中缓缓掠过的鱼群。',
+        prompt: '你在阳光水族馆的全景大水槽前静坐了二十分钟，程序已推进时间并恢复精力、平复心情。' },
+      { id: 'aquarium-jellyfish-observe', label: '驻足凝视发光水母廊', description: '观察柔光中漂浮脉动的海月水母，不消耗时间或精力。',
+        x: 2.4, z: -1.0, minutes: 0, energyDelta: 0,
+        result: '驻足在幽蓝的水母发光回廊前，静静看着透明伞盖在光影里一张一合。',
+        prompt: '你在阳光水族馆的水母回廊前驻足端详，未消耗时间或精力。' },
+    ],
+  },
 ];
 
 export const campusInteriors: readonly CampusInterior[] = attachCircleBorrowedInteractions(campusInteriorRooms);

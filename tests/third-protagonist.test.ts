@@ -98,6 +98,40 @@ describe('third protagonist accounts and timeline', () => {
     }
   });
 
+  it('retains 60 LLM reply turns plus their inputs for each protagonist across reload and switches', () => {
+    const state = world();
+    const owners = ['soyo', 'sakiko', 'emma', 'renako'] as const;
+    for (const owner of owners) {
+      const personal = personState(state, owner);
+      const opening = personal.story[0]!;
+      // A 61st generated turn must expire the oldest pair, not the opening
+      // or half of a user/reply exchange.
+      personal.story = [opening, ...Array.from({ length: 61 }, (_, index) => [
+        { id: `round-${owner}-${index + 1}-user`, role: 'user' as const, text: `${owner} 第 ${index + 1} 轮玩家输入。` },
+        { id: `round-${owner}-${index + 1}-assistant`, role: 'assistant' as const, text: `${owner} 第 ${index + 1} 轮模型回复。` },
+      ]).flat()];
+    }
+    let current = parseState(JSON.parse(JSON.stringify(state)));
+    for (const target of ['sakiko', 'emma', 'renako', 'soyo'] as const) {
+      current = reduceState(current, { type: 'switch_protagonist', target });
+      expect(current.story).toHaveLength(121);
+      expect(current.story[0]!.id).toContain('opening');
+      expect(current.story[1]!.id).toBe(`round-${target}-2-user`);
+      expect(current.story[2]!.id).toBe(`round-${target}-2-assistant`);
+      expect(current.story[119]!.id).toBe(`round-${target}-61-user`);
+      expect(current.story[120]!.id).toBe(`round-${target}-61-assistant`);
+      current = parseState(JSON.parse(JSON.stringify(current)));
+      for (const owner of owners) {
+        expect(personState(current, owner).story).toHaveLength(121);
+      }
+    }
+    const overLimit = structuredClone(current);
+    overLimit.story.push(...Array.from({ length: 60 }, (_, index) => ({
+      id: `oversize-${index}`, role: 'user' as const, text: '超出结构化存档的安全容量。',
+    })));
+    expect(() => parseState(overLimit)).toThrow();
+  });
+
   it('seeds only the intended contacts and leaves all demo messages and schedules out of a new game', () => {
     const initial = createInitialState();
     expect(initial.contacts.map(contact => contact.id)).toEqual(['protagonist-sakiko', 'bang-tomori', 'bang-anon', 'bang-taki', 'bang-rana', 'bang-mutsumi', 'nagasaki-mother']);
