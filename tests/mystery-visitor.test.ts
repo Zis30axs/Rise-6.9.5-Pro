@@ -39,7 +39,7 @@ describe('extremely rare mysterious visitor and its local gift', () => {
     expect(mysteryVisitorClaimed(awarded)).toBe(true);
     expect(parseState(JSON.parse(JSON.stringify(awarded)))).toEqual(awarded);
     expect(() => reduceState(awarded, { type: 'claim_mystery_gift' })).toThrow(/神秘访客/);
-    expect(original.inventory).toEqual([]);
+    expect(original.inventory).toEqual([{ itemId: 'crychic-photo', quantity: 1 }]);
   });
 
   it('does not let anyone claim items without finding the visitor', () => {

@@ -36,7 +36,7 @@ describe('second mystery visitor and the fictional Anthropic center', () => {
     const original = rareSecondVisitor();
     const received = reduceState(original, { type: 'claim_second_mystery_gift' });
     expect(received.inventory).toEqual([
-      { itemId: MAX20X_ITEM_ID, quantity: 1 },
+      ...original.inventory, { itemId: MAX20X_ITEM_ID, quantity: 1 },
       { itemId: KYC_ITEM_ID, quantity: 1 },
       { itemId: LAST_DECISION_ITEM_ID, quantity: 1 },
     ]);
@@ -48,7 +48,7 @@ describe('second mystery visitor and the fictional Anthropic center', () => {
     expect(secondMysteryVisitorPresent(received)).toBe(false);
     expect(parseState(JSON.parse(JSON.stringify(received)))).toEqual(received);
     expect(() => reduceState(received, { type: 'claim_second_mystery_gift' })).toThrow(/神秘访客/);
-    expect(original.inventory).toHaveLength(0);
+    expect(original.inventory).toEqual([{ itemId: 'crychic-photo', quantity: 1 }]);
   });
 
   it('preserves claimant isolation and refuses unearned rewards', () => {

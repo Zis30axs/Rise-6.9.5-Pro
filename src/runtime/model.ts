@@ -1297,6 +1297,8 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       note(next, giftText);
       next.story.push({ id: `${isSecond ? 'bay-visitor-gift' : 'mystery-gift'}-${owner}-${next.clock.day}-${next.clock.hour}-${next.clock.minute}`, role: 'assistant', text: giftText });
       next.story = next.story.slice(-STATE_LIMITS.story);
+      break;
+    }
     case 'save_contact': {
       const { type: _type, ...input } = action;
       const profile = validateContactProfileInput(input);

@@ -12,7 +12,7 @@ import { atMargoCafe, getCafeMenu } from '../runtime/margo-cafe-menu';
 import StoreProductImage from './StoreProductImage.vue';
 import { runInteraction } from './interaction-action';
 import { LAW_OFFICE_ID } from '../runtime/law-career';
-import { PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, californiaLocalClock, isCaliforniaLocalLocation } from '../runtime/california';
+import { PRO200_RESELL_SERVICE_ID, californiaLocalClock, isCaliforniaLocalLocation } from '../runtime/california';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode: boolean }>();
 const emit = defineEmits<{ map: []; store: []; stationery: []; books: []; activities: []; law: []; enter: [roomId: string] }>();
@@ -133,8 +133,8 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
         <p v-if="takeaway.item && takeaway.blockedReason && takeaway.blockedReason !== quote.blockedReason" class="location-service-blocked">打包：{{ takeaway.blockedReason }}</p>
       </article>
     </div>
-    <p v-if="services.some(({ service }) => !!service.payout && service.id !== PRO200_RESELL_SERVICE_ID)" class="location-service-note">工资在整班结束后发放；请先确认精力充足，也要在收工时间前完成。</p>
-    <p v-if="services.some(({ service }) => !service.payout && service.id !== PRO200_CLAIM_SERVICE_ID)" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。</p>
+    <p v-if="services.some(({ service }) => !!service.payout && service.id !== 'pro200-resell')" class="location-service-note">工资在整班结束后发放；请先确认精力充足，也要在收工时间前完成。</p>
+    <p v-if="services.some(({ service }) => !service.payout && service.id !== 'openai-pro200-claim')" class="location-service-note">“购买并享用”当场结算耗时与效果；“打包带走”加包装费后放入背包，使用时才结算。</p>
     <p v-if="model.state.locationId === 'california-openai' || model.state.locationId === 'california-market'" class="location-service-note">领取的收藏券将放入背包，出售时交付一张并收到相应款项。</p>
     <div v-if="guidance" class="location-guidance" data-location-guidance>
       <p>{{ guidance }}</p>
