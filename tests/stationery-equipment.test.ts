@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { R27ET1_ITEM_ID, getPurchaseQuote, getStationeryAvailability, getUseItemQuote } from '../src/runtime/convenience-store';
-import { equippedItem, r27et1Equipped, studyPointsWithEquipment } from '../src/runtime/equipment';
+import { CRYCHIC_PHOTO, equippedItem, r27et1Equipped, studyPointsWithEquipment } from '../src/runtime/equipment';
 
 const fresh = () => {
   const state = createInitialState();
@@ -90,4 +90,20 @@ describe('R-27ET1 stationery and equipment slots', () => {
     state.inventory[0] = { itemId: R27ET1_ITEM_ID, quantity: 1, equipped: 'special' };
     expect(() => parseState(state)).toThrow();
   });
+  it('keeps a CRYCHIC photo in the special slot while stationery occupies a permanent slot', () => {
+    let state = enableProtagonists(fresh());
+    state = reduceState(state, { type: 'choose_academics', majorId: 'music' });
+    state = reduceState(state, { type: 'buy_item', itemId: R27ET1_ITEM_ID, quantity: 1 });
+    state = reduceState(state, { type: 'equip_item', itemId: CRYCHIC_PHOTO });
+    state = reduceState(state, { type: 'equip_item', itemId: R27ET1_ITEM_ID, slot: 'permanent-1' });
+    expect(equippedItem(state, 'special')).toBe(CRYCHIC_PHOTO);
+    expect(equippedItem(state, 'permanent-1')).toBe(R27ET1_ITEM_ID);
+    expect(state.inventory.find(item => item.itemId === CRYCHIC_PHOTO)?.equipped).toBe(true);
+    expect(r27et1Equipped(state)).toBe(true);
+    expect(parseState(roundTrip(state))).toEqual(state);
+    state = reduceState(state, { type: 'equip_item', itemId: R27ET1_ITEM_ID, slot: null });
+    expect(equippedItem(state, 'special')).toBe(CRYCHIC_PHOTO);
+    expect(equippedItem(state, 'permanent-1')).toBeNull();
+  });
+
 });

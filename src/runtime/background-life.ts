@@ -276,7 +276,7 @@ function complete(state: WorldState, owner: ProtagonistId, activity: BackgroundA
       departure.journal = Array.from({ length: context.journalLength }, (_, index) => ({ id: `bg-route-${index}`, text: '出发时的记录占位，用于确定同一条路线。', at: atLabel(activity.start) }));
       const quote = getNovelTravelQuote(departure, activity.target);
       if (quote.blockedReason || quote.minutes !== minutes || Math.round(quote.fare * 100) !== arrival.fareCents || quote.energyCost !== arrival.energyCost) throw new Error('原路线报价已失效');
-      const checked = reduceState(departure, { type: 'novel_travel', locationId: activity.target });
+      const checked = reduceState(departure, { type: 'novel_travel', locationId: activity.target }, owner);
       if (JSON.stringify([checked.locationId, checked.scene, checked.interior, checked.transit]) !== JSON.stringify([arrival.locationId, arrival.scene, arrival.interior, arrival.transit])) throw new Error('到达记录与实际路线不符');
       pay(state, owner, activity.id, arrival.fareCents, `后台出行：${activity.label}`);
       personal.player.energy = adjustEnergy(personal.player.energy, -arrival.energyCost);
@@ -291,7 +291,7 @@ function complete(state: WorldState, owner: ProtagonistId, activity: BackgroundA
       personal.player.foodEnergy = Math.min(3000, personal.player.foodEnergy + item.kcal);
     } else if (activity.kind === 'study') {
       if (appointment?.source !== 'academic' || appointment.subjectId !== activity.target || activity.start < appointment.start || activity.due > appointment.start + appointment.duration) throw new Error('学习安排与本人课表不一致');
-      const outcome = applyStoryActions(ownedView(state, owner, activity.start), [{ type: 'study', subjectId: activity.target, minutes }], activity.id);
+      const outcome = applyStoryActions(ownedView(state, owner, activity.start), [{ type: 'study', subjectId: activity.target, minutes }], activity.id, owner);
       // Nutrition has already advanced through this interval, once, below.
       const { foodEnergy, satiety } = personal.player;
       personal.player = { ...outcome.player, foodEnergy, satiety };
@@ -407,7 +407,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number, reserved = 
           seen(appointment.key);
           record(state, owner, { id: id('calendar'), at, kind: 'decision', text: `日程「${appointment.title}」的出行暂缓：${quote.blockedReason ?? '当前路线需要本人处理'}。` });
         } else {
-          const arrival = reduceState(view, { type: 'novel_travel', locationId: appointment.locationId });
+          const arrival = reduceState(view, { type: 'novel_travel', locationId: appointment.locationId }, owner);
           plan('travel', quote.minutes, `为日程「${appointment.title}」前往目标地点`, appointment.locationId, appointment.key, { locationId: arrival.locationId, scene: arrival.scene, interior: arrival.interior, transit: arrival.transit, fareCents: Math.round(quote.fare * 100), energyCost: quote.energyCost });
         }
         return;

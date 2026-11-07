@@ -29,7 +29,7 @@ export const DEFAULT_MEMORY_SETTINGS: MemorySettings = {
   enabled: true,
   passive: true,
   interval: 20,
-  important: true,
+  important: false,
   protocol: 'tags',
   tokenBudget: 1200,
   maxLookups: 1,
@@ -59,8 +59,9 @@ function normalizeSettings(raw: unknown): MemorySettings {
   return {
     enabled: v.enabled === undefined ? d.enabled : v.enabled === true,
     passive: v.passive === undefined ? d.passive : v.passive === true,
-    important: v.important === undefined ? d.important : v.important === true,
-    interval: Math.round(bounded(v.interval, d.interval, 5, 100)),
+    // Kept only for backward-compatible settings; early important-only triggers are disabled.
+    important: false,
+    interval: Math.round(bounded(v.interval, d.interval, 20, 100)),
     protocol: v.protocol === 'tools' ? 'tools' : 'tags',
     tokenBudget: Math.round(bounded(v.tokenBudget, d.tokenBudget, 200, 4000)),
     maxLookups: Math.round(bounded(v.maxLookups, d.maxLookups, 1, 2)),
