@@ -1,0 +1,13 @@
+.uc-metropolis-host { position:relative; width:100%; min-width:0; isolation:isolate; container-type:inline-size; container-name:metropolis-layout; }
+.uc-metropolis-host:focus { outline:none; }
+.uc-metropolis-host:focus-visible { outline:1px solid #c6aa7866; outline-offset:4px; }
+.uc-metropolis-host .uc-metropolis-host__journey { width:100%; min-width:0; }
+.uc-metropolis-host .uc-metropolis-host__toolbar { display:flex; align-items:center; min-height:44px; margin:0 0 14px; }
+.uc-metropolis-host .uc-metropolis-host__back { display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:44px; max-width:100%; padding:9px 15px; border:1px solid #c4b18840; border-radius:7px; background:#c8b17c0a; color:#e5d6b7; font:inherit; font-size:12px; line-height:1.5; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.uc-metropolis-host .uc-metropolis-host__back:hover { background:#c8b17c18; border-color:#d2ba826e; }
+.uc-metropolis-host .uc-metropolis-host__back:focus-visible { outline:2px solid #e2c48d; outline-offset:3px; }
+.uc-metropolis-host .uc-metropolis-host__back > span { font-size:17px; line-height:1; }
+@media (max-width:480px) {
+  .uc-metropolis-host .uc-metropolis-host__toolbar { margin-bottom:10px; }
+  .uc-metropolis-host .uc-metropolis-host__back { padding:9px 12px; font-size:11px; }
+}
