@@ -1,0 +1,169 @@
+{
+  "date": "2026-11-08",
+  "status": "targeted-regression-passed",
+  "scope": [
+    "sandbox recovery and resource disposal",
+    "Live2D recovery, loading cancellation and texture ownership",
+    "Xitter identity behavior",
+    "invitation portraits and standing speaker"
+  ],
+  "typecheck": {
+    "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+    "exitCode": 0
+  },
+  "vitest": {
+    "files": 9,
+    "passed": 45,
+    "failed": 0
+  },
+  "browser": {
+    "passed": 4,
+    "failed": 0,
+    "browser": "headless Microsoft Edge Chromium",
+    "host": "existing browser demo with production Lite IIFE and ZIP",
+    "scenarios": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "contextLossRecovery": true,
+        "repeatedMapRefreshes": 3,
+        "globalMapRefresh": true,
+        "cameraUnchanged": true,
+        "headerOverlap": false,
+        "localStorageAndClockUnchanged": true,
+        "noApiOrRemoteRequests": true,
+        "pageErrors": [],
+        "physicalDevice": false
+      },
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "contextLossRecovery": true,
+        "repeatedMapRefreshes": 3,
+        "globalMapRefresh": true,
+        "cameraUnchanged": true,
+        "headerOverlap": false,
+        "localStorageAndClockUnchanged": true,
+        "noApiOrRemoteRequests": true,
+        "pageErrors": [],
+        "physicalDevice": false
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "contextLossRecovery": true,
+        "repeatedMapRefreshes": 3,
+        "globalMapRefresh": true,
+        "cameraUnchanged": true,
+        "headerOverlap": false,
+        "localStorageAndClockUnchanged": true,
+        "noApiOrRemoteRequests": true,
+        "pageErrors": [],
+        "physicalDevice": false
+      },
+      {
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "contextLossRecovery": true,
+        "repeatedMapRefreshes": 3,
+        "globalMapRefresh": true,
+        "cameraUnchanged": true,
+        "headerOverlap": false,
+        "localStorageAndClockUnchanged": true,
+        "noApiOrRemoteRequests": true,
+        "pageErrors": [],
+        "physicalDevice": false
+      }
+    ]
+  },
+  "build": {
+    "exitCode": 0,
+    "outputDirectory": "outputs/graphics-recovery/build"
+  },
+  "packaging": {
+    "report": "release/packaging.json",
+    "verifiedZipMembers": 233,
+    "allZipBytesAndHashesVerified": true,
+    "sourceAndPackageHashesVerified": true
+  },
+  "diffCheckExitCode": 0,
+  "worktrees": [
+    {
+      "path": "D:\\.study\\cc",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\downtown-art-integration\\cc",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "D:\\.study\\cc\\.worktrees\\hoi4-tno-gui-20261108",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "D:\\.study\\cc\\.worktrees\\identity-card-ages-20261108",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "D:\\.study\\cc\\.worktrees\\protagonist-presence-20261025",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "D:\\.study\\cc\\.worktrees\\strategy-panels-isolated-20261108",
+      "directoryExists": true,
+      "gitEntryExists": true
+    },
+    {
+      "path": "D:\\.study\\cc\\.worktrees\\watanare-integration",
+      "directoryExists": true,
+      "gitEntryExists": true
+    }
+  ],
+  "sourceSha256": {
+    "src/frontend/App.vue": "3bf3e4be30b5b9cf40d1bbbf923db46d11ae53ccc424d827de81c41960784aef",
+    "src/frontend/CitySandboxScene.vue": "0b7ee74e5dcd200a4f9059e3fe53ee5b1ee05c3842e6371491889ea80bee8293",
+    "src/frontend/SoyoLive2D.vue": "a84a201101a1ee57f32af9a9c500af976e5175fcbb555efa43c7c8c81fcbfbd9",
+    "src/frontend/WorldMap.vue": "e380a49564bc099f4c31e83c669b7430bf3e74229e3899c569f2970ea70b64ef",
+    "src/frontend/WorldPanels.vue": "e28360246152729f5cb7965e48ebdfc8b941c93d7df195add8dc866ca4584b92",
+    "src/frontend/NovelInvitationPortraits.vue": "7627e7076c839747abc6743f152f82fda23d667af9d9598361c23198a7047842",
+    "src/frontend/live2d-soyo-assets.ts": "e854cdbb27dc4c236c4a3428d1cdc22bd47e4e522e1712ab0a769391ae56549c",
+    "src/frontend/live2d-soyo-runtime.ts": "9f2236b0a0b27943376fadce7345d82e3c395a3184a882995cebb9782cb5f8f9",
+    "src/frontend/dispose-three-tree.ts": "88cec7d007badd4c3f861149825aca108d3bc3a91e22933b9cc07d359e403a0b",
+    "src/frontend/tokyo-sandbox-vfx.ts": "88f7cd6741374cc58c27322c2301175cabc923af61f0d1842f875faef6e7603a",
+    "src/frontend/shell-viewport.css": "ca60b74306de4ef1d8933bc5d0674a888e387ce895a849bb7ec0f9337fa1fb96",
+    "src/frontend/world-map.css": "7b68f1562471e37e4a1fd77af23db7a74f13b495361f43a1b5ba89f508d6ba13",
+    "tests/graphics-recovery.test.ts": "97c648d69dcbe941c2bdd7426dfaae462c98c67843f89e678b9ff6ea2550b3b1",
+    "tests/live2d-soyo-assets.test.ts": "e2f31be6586ac11ea4983c6c3ac3090da40b89971c2ad23e332fd98cbc684fe3",
+    "tests/live2d-soyo-runtime.test.ts": "933d48ecb9ca03d59963a28531ce63686bff1efb415c01a25080db946f441f21",
+    "tests/e2e/graphics-recovery.spec.ts": "4b40298abbae3be91d13bb08d8b1accad3b9356d5e779c26304e0eee6b2352a8",
+    "tests/tokyo-sandbox-camera.test.ts": "6426ea5e9d737f9e7b1009386eff244187558faa3ffb2f334aa7df92acd00a29",
+    "vitest.config.ts": "11845fad91fd9c75be5a5c68d8613a58665dc5bf9efdf9eef05f1657aab8b78a",
+    "playwright.graphics.config.ts": "b0e69ae078eae20287d500e607133bcb1ed1c9d60ef8a48164865003bba344eb"
+  },
+  "limits": {
+    "originalBrowserCrashReproduced": false,
+    "originalOomCauseConfirmed": false,
+    "allProjectTestsRun": false,
+    "trueTavernSaveAudit": false,
+    "physicalTauriTavernTested": false,
+    "agentEditionRun": false,
+    "ciRun": false,
+    "realModelRequests": false,
+    "deployed": false,
+    "committed": false,
+    "worktreeContentComparedToPreDeletion": false
+  }
+}

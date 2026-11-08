@@ -29,7 +29,7 @@ import { instrumentSkill, INSTRUMENT_SKILL_CAP } from '../runtime/livehouse-visi
 import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'society' | 'focus';
-const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean }>();
+const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>();
 const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
 const labels: Record<Panel, string> = {
   phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长', society: '阵营与社交圈', focus: '个人国策与决议',
@@ -135,7 +135,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       </div>
     </template>
 
-    <template v-else-if="panel === 'map'"><WorldMap :model="model" :actions="actions" :novel-mode="novelMode" @travelled="emit('travelled')" /></template>
+    <template v-else-if="panel === 'map'"><WorldMap :model="model" :actions="actions" :novel-mode="novelMode" :refresh-token="refreshToken" @travelled="emit('travelled')" /></template>
 
     <template v-else-if="panel === 'schedule'">
       <AcademicTimetable v-if="model.state.academics" :major-id="model.state.academics.majorId" :day="model.state.clock.day" :hour="model.state.clock.hour" :minute="model.state.clock.minute" :busy="model.busy" :current-location-id="model.state.locationId" :travel-label="novelMode ? '前往课程地点' : '前往建筑入口'" :blocked-reason="courseTravelBlocked" @travel="travelToPlan" />

@@ -5,8 +5,7 @@ import { TOKYO_SANDBOX_MODEL_SHA256 } from './tokyo-sandbox-map';
 import { readLocalAssetBytes } from './local-asset-buffer';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
-let cachedGlbRoot: THREE.Group | undefined;
-let cachedGlbPromise: Promise<THREE.Group> | undefined;
+import { disposeThreeTree } from './dispose-three-tree';
 
 async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -164,42 +163,29 @@ function attachCirclePackGeometry(root: THREE.Group) {
   root.add(group);
 }
 
-async function loadSharedTokyoGlb(assetUrl: string): Promise<THREE.Group> {
-  if (cachedGlbRoot) return cachedGlbRoot;
-  if (!cachedGlbPromise) {
-    cachedGlbPromise = (async () => {
-      let bytes: Uint8Array<ArrayBuffer> | undefined;
-      if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) {
-        bytes = await readIdbCachedGlbBytes();
-      }
-      if (!bytes) {
-        bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
-        if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
-          throw new Error('Tokyo sandbox pack hash mismatch');
-        }
-        checkGlb(bytes);
-        if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) {
-          writeIdbCachedGlbBytes(bytes);
-        }
-      } else {
-        checkGlb(bytes);
-      }
-      const manager = new THREE.LoadingManager();
-      manager.setURLModifier(url => {
-        if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
-        return url;
-      });
-      const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
-      optimizeGlbScene(parsed);
-      attachCirclePackGeometry(parsed);
-      cachedGlbRoot = parsed;
-      return parsed;
-    })().catch(err => {
-      cachedGlbPromise = undefined;
-      throw err;
-    });
+/** Each active view owns its decoded tree and GPU resources. Only local bytes are cached. */
+async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
+  let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
+    ? await readIdbCachedGlbBytes() : undefined;
+  const cached = !!bytes;
+  if (!bytes) bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
+  if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
+    // A damaged local byte cache must not make every later retry fail forever.
+    if (!cached) throw new Error('Tokyo sandbox pack hash mismatch');
+    bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
+    if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) throw new Error('Tokyo sandbox pack hash mismatch');
   }
-  return cachedGlbPromise;
+  checkGlb(bytes);
+  if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) writeIdbCachedGlbBytes(bytes);
+  const manager = new THREE.LoadingManager();
+  manager.setURLModifier(url => {
+    if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
+    return url;
+  });
+  const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
+  optimizeGlbScene(parsed);
+  attachCirclePackGeometry(parsed);
+  return parsed;
 }
 
 import {
@@ -574,150 +560,10 @@ function stepSandboxEntities(
   vfx?.update(dt, nowMs, su30State?.node, playerWorldPos, districtCenter);
 }
 
-interface PersistentSandboxRuntime {
-  canvas: HTMLCanvasElement;
-  renderer: THREE.WebGLRenderer;
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
-  model: THREE.Group;
-  variant: 'glb' | 'procedural';
-  hemiLight: THREE.HemisphereLight;
-  sunLight: THREE.DirectionalLight;
-  trafficGroup: THREE.Group;
-  trafficVehicles: TrafficVehicle[];
-  su30State: Su30FlightState | undefined;
-  gondolaStates: GondolaState[];
-  bakedVehicleStates: BakedVehicleState[];
-  vfxController: TokyoSandboxVfxController;
-  appliedCanvasResolution: TokyoCanvasResolution | undefined;
-  inUse: boolean;
-  contextLost: boolean;
-  gpuPrewarmed: boolean;
-}
-
-let persistentSandboxRuntime: PersistentSandboxRuntime | undefined;
-
-function buildPersistentSandboxRuntime(
-  glbRoot: THREE.Group,
-  modelVariant: 'glb' | 'procedural',
-): PersistentSandboxRuntime {
-  const canvasEl = document.createElement('canvas');
-  canvasEl.className = 'tokyo-sandbox-canvas';
-  canvasEl.setAttribute('aria-hidden', 'true');
-
-  const webglRenderer = new THREE.WebGLRenderer({
-    canvas: canvasEl,
-    alpha: true,
-    antialias: true,
-    powerPreference: 'high-performance',
-  });
-  webglRenderer.outputColorSpace = THREE.SRGBColorSpace;
-  webglRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  webglRenderer.toneMappingExposure = 1.15;
-
-  const webglScene = new THREE.Scene();
-  webglScene.add(glbRoot);
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5);
-  webglScene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(-170, 460, 230);
-  webglScene.add(sun);
-  const perspCamera = new THREE.PerspectiveCamera(50, 1, 0.25, 6500);
-
-  const dynamic = extractDynamicSceneNodes(glbRoot);
-  const traffic = createTrafficForScene(webglScene);
-  const vfx = createTokyoSandboxVfx(webglScene, webglRenderer, glbRoot, hemi, sun);
-  vfx.setAtmosphere('auto', 780);
-  stepSandboxEntities(
-    0,
-    performance.now(),
-    traffic.vehicles,
-    dynamic.bakedVehicleStates,
-    dynamic.gondolaStates,
-    dynamic.su30State,
-    vfx,
-  );
-
-  const rt: PersistentSandboxRuntime = {
-    canvas: canvasEl,
-    renderer: webglRenderer,
-    scene: webglScene,
-    camera: perspCamera,
-    model: glbRoot,
-    variant: modelVariant,
-    hemiLight: hemi,
-    sunLight: sun,
-    trafficGroup: traffic.group,
-    trafficVehicles: traffic.vehicles,
-    su30State: dynamic.su30State,
-    gondolaStates: dynamic.gondolaStates,
-    bakedVehicleStates: dynamic.bakedVehicleStates,
-    vfxController: vfx,
-    appliedCanvasResolution: undefined,
-    inUse: false,
-    contextLost: false,
-    gpuPrewarmed: false,
-  };
-
-  canvasEl.addEventListener('webglcontextlost', event => {
-    event.preventDefault();
-    rt.contextLost = true;
-    if (persistentSandboxRuntime === rt) persistentSandboxRuntime = undefined;
-  });
-
-  return rt;
-}
-
-function prewarmPersistentSandboxGpu(rt: PersistentSandboxRuntime) {
-  if (rt.gpuPrewarmed || rt.contextLost) return;
-  rt.gpuPrewarmed = true;
-  try {
-    frameTokyoMapCamera(rt.camera, {
-      bounds: tokyoDistrictBounds('city'),
-      width: 620,
-      height: 420,
-      bearing: 0,
-      zoom: 1.08,
-      summit: { x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
-    });
-    const res = nativeTokyoCanvasResolution(620, 420, window.devicePixelRatio);
-    rt.appliedCanvasResolution = applyTokyoCanvasResolution(rt.renderer, res, rt.appliedCanvasResolution);
-    rt.renderer.compile?.(rt.scene, rt.camera);
-    rt.renderer.render(rt.scene, rt.camera);
-  } catch {
-    /* Ignore background warmup errors */
-  }
-}
-
-// Staggered background warmup: decode GLB -> create WebGL runtime -> pre-compile shaders & upload VBOs
-if (typeof window !== 'undefined' && tokyoModelAsset && !/jsdom/i.test(navigator?.userAgent ?? '')) {
-  setTimeout(() => {
-    void loadSharedTokyoGlb(tokyoModelAsset)
-      .then(root => {
-        setTimeout(() => {
-          try {
-            if (!persistentSandboxRuntime || persistentSandboxRuntime.contextLost) {
-              persistentSandboxRuntime = buildPersistentSandboxRuntime(root, 'glb');
-            }
-            setTimeout(() => {
-              if (persistentSandboxRuntime && !persistentSandboxRuntime.inUse) {
-                prewarmPersistentSandboxGpu(persistentSandboxRuntime);
-              }
-            }, 45);
-          } catch {
-            /* WebGL unavailable during warmup; handled on map open */
-          }
-        }, 45);
-      })
-      .catch(() => {
-        /* Handled with geometric fallback when map opens */
-      });
-  }, 140);
-}
 </script>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -747,7 +593,7 @@ const props = withDefaults(defineProps<{
   people?: MapPerson[]; roadEvents?: MapEvent[];
   pan?: { x: number; y: number };
   cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
-  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number;
+  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number; refreshToken?: number;
 }>(), {
   scope: 'city',
   position: null,
@@ -756,6 +602,7 @@ const props = withDefaults(defineProps<{
   roadEvents: () => [],
   atmosphereMode: 'auto',
   clockMinutes: 780,
+  refreshToken: 0,
 });
 const emit = defineEmits<{
   select: [districtId: MapDistrictId];
@@ -764,9 +611,10 @@ const emit = defineEmits<{
 }>();
 
 // Static import makes a missing source GLB a build error, never a silent empty glob.
-// Lite extracts this data URL into unread-city-tokyo-sandbox.zip, not the main Lite ZIP.
+// Lite keeps this asset in the existing local asset ZIP.
 const sceneRoot = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
+const canvasGeneration = ref(0);
 const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
 const variant = ref<'glb' | 'procedural'>('glb');
 const activePreset = ref<ResolvedAtmospherePreset>('day');
@@ -788,7 +636,6 @@ type CameraFlight = {
 };
 let cameraFlight: CameraFlight | undefined;
 let epoch = 0;
-let usingPersistentRuntime = false;
 let renderer: THREE.WebGLRenderer | undefined;
 let appliedCanvasResolution: TokyoCanvasResolution | undefined;
 let canvasOwner: Window | undefined;
@@ -801,6 +648,7 @@ let sunLight: THREE.DirectionalLight | undefined;
 let vfxController: TokyoSandboxVfxController | undefined;
 let animFrame = 0;
 let lastTick = 0;
+let lastDraw = 0;
 
 let trafficVehicles: TrafficVehicle[] = [];
 let su30State: Su30FlightState | undefined;
@@ -845,6 +693,11 @@ function loopAnimation(now: number) {
     animFrame = 0;
     return;
   }
+  if (document.hidden || !props.active) { animFrame = 0; return; }
+  if (lastDraw && now - lastDraw < 1000 / 30) {
+    animFrame = requestAnimationFrame(loopAnimation); return;
+  }
+  lastDraw = now;
   const dt = Math.min((now - (lastTick || now)) / 1000, 0.1);
   lastTick = now;
   animateTraffic(dt, now);
@@ -854,32 +707,7 @@ function loopAnimation(now: number) {
   animFrame = requestAnimationFrame(loopAnimation);
 }
 
-function disposeModel(root: THREE.Object3D) {
-  if (root === cachedGlbRoot) {
-    root.removeFromParent();
-    return;
-  }
-  const geometries = new Set<THREE.BufferGeometry>();
-  const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
-  root.traverse(object => {
-    if (!(object instanceof THREE.Mesh)) return;
-    geometries.add(object.geometry);
-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-      materials.add(material);
-      for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value);
-    }
-  });
-  for (const texture of textures) {
-    const bitmap: unknown = texture.source?.data;
-    texture.dispose();
-    if (bitmap && typeof bitmap === 'object' && 'close' in bitmap &&
-        typeof bitmap.close === 'function') bitmap.close();
-  }
-  materials.forEach(material => material.dispose());
-  geometries.forEach(geometry => geometry.dispose());
-  root.removeFromParent();
-}
+const disposeModel = disposeThreeTree;
 
 function stopCameraFlight() {
   const previous = cameraFlight;
@@ -911,82 +739,14 @@ function beginCameraFlight() {
   flight.frame = owner.requestAnimationFrame(step);
 }
 
-function attachPersistentRuntime(rt: PersistentSandboxRuntime) {
-  rt.inUse = true;
-  rt.gpuPrewarmed = true;
-  usingPersistentRuntime = true;
-
-  if (canvas.value && canvas.value !== rt.canvas && canvas.value.parentNode) {
-    canvas.value.replaceWith(rt.canvas);
-  } else if (sceneRoot.value && rt.canvas.parentNode !== sceneRoot.value) {
-    sceneRoot.value.prepend(rt.canvas);
-  }
-  canvas.value = rt.canvas;
-  rt.canvas.style.display = '';
-
-  model = rt.model;
-  variant.value = rt.variant;
-  scene = rt.scene;
-  hemiLight = rt.hemiLight;
-  sunLight = rt.sunLight;
-  camera = rt.camera;
-  renderer = rt.renderer;
-  trafficGroup = rt.trafficGroup;
-  trafficVehicles = rt.trafficVehicles;
-  su30State = rt.su30State;
-  gondolaStates = rt.gondolaStates;
-  bakedVehicleStates = rt.bakedVehicleStates;
-  vfxController = rt.vfxController;
-  appliedCanvasResolution = rt.appliedCanvasResolution;
-
-  const profile = vfxController.setAtmosphere(props.atmosphereMode, props.clockMinutes);
-  activePreset.value = profile.preset;
-  animateTraffic(0, performance.now());
-
-  status.value = 'ready';
-  render();
-
-  if (!animFrame) {
-    lastTick = performance.now();
-    animFrame = requestAnimationFrame(loopAnimation);
-  }
-}
-
-function release(unmounting = false) {
+function release() {
   stopCameraFlight();
   epoch++;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
-  lastTick = 0;
+  lastTick = 0; lastDraw = 0;
+  canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
   districtPins.value = []; placePins.value = []; personPins.value = [];
   eventPins.value = []; leaderLines.value = []; playerPin.value = null;
-
-  if (usingPersistentRuntime && persistentSandboxRuntime) {
-    persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
-    persistentSandboxRuntime.inUse = false;
-    if (unmounting) {
-      persistentSandboxRuntime.canvas.remove();
-    } else {
-      persistentSandboxRuntime.canvas.style.display = 'none';
-    }
-    usingPersistentRuntime = false;
-    vfxController = undefined;
-    trafficGroup = undefined;
-    trafficVehicles = [];
-    su30State = undefined;
-    gondolaStates = [];
-    bakedVehicleStates = [];
-    hemiLight = undefined;
-    sunLight = undefined;
-    model = undefined;
-    scene = undefined;
-    camera = undefined;
-    renderer = undefined;
-    appliedCanvasResolution = undefined;
-    status.value = 'idle';
-    selectedPerson.value = '';
-    cameraPosition.value = '';
-    return;
-  }
 
   if (vfxController) { vfxController.dispose(); vfxController = undefined; }
   if (trafficGroup) { disposeModel(trafficGroup); trafficGroup = undefined; }
@@ -997,8 +757,13 @@ function release(unmounting = false) {
   hemiLight = undefined;
   sunLight = undefined;
   if (model) disposeModel(model);
-  model = undefined; scene?.clear(); scene = undefined; camera = undefined;
-  renderer?.dispose(); renderer = undefined;
+  model = undefined;
+  // Also release any partially initialized effects left behind by a failed load.
+  if (scene) disposeModel(scene);
+  scene = undefined; camera = undefined;
+  const previous = renderer; renderer = undefined;
+  previous?.dispose(); previous?.forceContextLoss();
+  if (canvas.value) { canvas.value.width = 1; canvas.value.height = 1; }
   appliedCanvasResolution = undefined;
   status.value = 'idle';
   selectedPerson.value = '';
@@ -1100,9 +865,6 @@ function render() {
     width, height, canvas.value?.ownerDocument.defaultView?.devicePixelRatio,
   );
   appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
-  if (usingPersistentRuntime && persistentSandboxRuntime) {
-    persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
-  }
 
   const positionHint = props.scope === 'city' ? undefined : props.scope;
   const player = props.position ? projectOldTokyoPosition(props.position, positionHint)
@@ -1299,28 +1061,33 @@ function triggerFlares() {
   vfxController?.triggerSu30Flares(su30State?.node);
 }
 
-defineExpose({ pickAt, triggerFlares });
+function contextLost(event: Event) {
+  event.preventDefault(); event.stopImmediatePropagation();
+  if (event.target !== canvas.value || !renderer) return;
+  release(); status.value = 'fallback';
+}
+function refresh() { release(); return load(); }
+function visibilityChanged() {
+  if (document.hidden) release(); else if (props.active) void load();
+}
+defineExpose({ pickAt, triggerFlares, refresh });
 
 async function load() {
-  if (!props.active || (!canvas.value && !sceneRoot.value) || renderer || status.value === 'loading') return;
-
-  // Instant 0ms synchronous cache hit when persistent GPU runtime is warm
-  if (persistentSandboxRuntime && !persistentSandboxRuntime.inUse && !persistentSandboxRuntime.contextLost) {
-    attachPersistentRuntime(persistentSandboxRuntime);
-    return;
-  }
-
+  if (!props.active || document.hidden || !sceneRoot.value || renderer || status.value === 'loading') return;
   const request = ++epoch;
   status.value = 'loading';
   let pending: THREE.Group | undefined;
   try {
+    canvasGeneration.value++;
+    await nextTick();
+    if (request !== epoch || !props.active || !canvas.value) return;
     const bundled = tokyoModelAsset;
     if (props.previewOnly) {
       pending = createGeometricPreview();
       variant.value = 'procedural';
     } else if (bundled) {
       try {
-        pending = await loadSharedTokyoGlb(bundled);
+        pending = await loadTokyoGlb(bundled);
         variant.value = 'glb';
       } catch (error) {
         console.warn('[UnreadCity] Tokyo GLB decode failed, showing geometric preview', error);
@@ -1333,16 +1100,6 @@ async function load() {
     }
     if (request !== epoch || !props.active) { disposeModel(pending); return; }
 
-    // If not previewOnly and not in jsdom, promote into the persistent GPU runtime cache
-    if (!props.previewOnly && typeof document !== 'undefined' && !/jsdom/i.test(navigator?.userAgent ?? '')) {
-      if (!persistentSandboxRuntime || persistentSandboxRuntime.contextLost) {
-        persistentSandboxRuntime = buildPersistentSandboxRuntime(pending, variant.value);
-      }
-      pending = undefined;
-      attachPersistentRuntime(persistentSandboxRuntime);
-      return;
-    }
-
     if (!canvas.value) { disposeModel(pending); return; }
     model = pending; pending = undefined;
     scene = new THREE.Scene();
@@ -1353,6 +1110,7 @@ async function load() {
     sun.position.set(-170, 460, 230); scene.add(sun);
     sunLight = sun;
     camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
+    canvas.value.addEventListener('webglcontextlost', contextLost, true);
     renderer = new THREE.WebGLRenderer({
       canvas: canvas.value,
       alpha: true,
@@ -1387,7 +1145,8 @@ async function load() {
 }
 function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id); }
 
-watch(() => props.active, active => { if (active) void load(); else release(false); });
+watch(() => props.active, active => { if (active) void load(); else release(); });
+watch(() => props.refreshToken, () => { void refresh(); });
 watch(() => [props.atmosphereMode, props.clockMinutes] as const, ([mode, mins]) => {
   if (vfxController) {
     const profile = vfxController.setAtmosphere(mode, mins);
@@ -1422,12 +1181,14 @@ onMounted(() => {
   // Moving between monitors or changing the browser's display scale may alter
   // DPR without changing the map panel's CSS dimensions.
   canvasOwner?.addEventListener('resize', render);
+  document.addEventListener('visibilitychange', visibilityChanged);
   if (props.active) void load();
 });
 onBeforeUnmount(() => {
   canvasOwner?.removeEventListener('resize', render);
   canvasOwner = undefined;
-  release(true);
+  document.removeEventListener('visibilitychange', visibilityChanged);
+  release();
 });
 </script>
 
@@ -1436,9 +1197,9 @@ onBeforeUnmount(() => {
     :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope"
     :data-tokyo-atmosphere="activePreset"
     :data-tokyo-camera="cameraPosition" :data-tokyo-camera-flight="cameraFlying ? 'flying' : 'idle'">
-    <canvas ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
+    <canvas :key="canvasGeneration" ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
-    <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，请从右侧地点列表选择目的地。</p>
+    <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，可以刷新重试，或从地点列表选择目的地。</p>
     <template v-if="status === 'ready'">
       <svg v-if="leaderLines.length" class="tokyo-sandbox-leaders" aria-hidden="true">
         <line v-for="line in leaderLines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" />

@@ -12,24 +12,30 @@
 :host([data-uc-viewport]) .uc-shell { height:100%; min-height:0; }
 :host([data-uc-viewport]) .composer { min-width:0; }
 :host([data-uc-viewport]) .composer > button { min-height:44px; white-space:nowrap; }
+:host([data-uc-viewport]) .uc-shell .world-chrome .host-actions > .graphics-refresh-button {
+  min-width:44px; min-height:44px; padding:5px; font-size:22px;
+}
 :host([data-uc-viewport]) .room-activity-receipt { max-height:80px; overflow:auto; overscroll-behavior:contain; }
 :host([data-uc-viewport]) .composer-error { flex-shrink:0; max-height:48px; overflow:auto; }
 @media(max-width:760px) {
   :host([data-uc-viewport]) .world-chrome {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
     padding-top:max(10px,var(--uc-safe-top));
     padding-left:max(12px,var(--uc-safe-left));
     padding-right:max(12px,var(--uc-safe-right));
     justify-content:space-between;
-    align-items:flex-start;
-    gap:8px;
+    align-items:center;
+    gap:4px 8px;
   }
   :host([data-uc-viewport]) .world-heading {
-    display:flex; flex-direction:column; align-items:flex-start; flex-wrap:nowrap;
-    gap:5px; min-width:0; flex:1;
+    display:contents;
   }
-  :host([data-uc-viewport]) .topbar-world { padding-top:0; white-space:nowrap; flex-wrap:nowrap; }
+  :host([data-uc-viewport]) .world-heading > .wordmark { grid-column:1; grid-row:1; }
+  :host([data-uc-viewport]) .topbar-world { grid-column:1/-1; grid-row:2; padding-top:0; white-space:nowrap; flex-wrap:nowrap; }
   /* Single reliable switch-chat action lives at top right. */
-  :host([data-uc-viewport]) .host-actions { gap:0; flex-shrink:0; margin-left:auto; }
+  :host([data-uc-viewport]) .host-actions { grid-column:2; grid-row:1; gap:0; flex-shrink:0; margin-left:auto; }
+  :host([data-uc-viewport]) .uc-shell[data-layout-edit=true] .graphics-refresh-button { display:none; }
   :host([data-uc-viewport]) .host-actions > button {
     display:block; min-height:44px; padding:7px 10px;
     border:1px solid #e6d7b277; border-radius:10px; background:#14281fa8;

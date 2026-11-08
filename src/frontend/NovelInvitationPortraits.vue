@@ -8,6 +8,7 @@ defineProps<{
   focus: NovelInvitationPortraitFocus;
   locationId: string;
   active: boolean;
+  refreshToken?: number;
 }>();
 </script>
 
@@ -18,6 +19,7 @@ defineProps<{
     <div class="novel-invitation-portraits__side" data-invitation-side="left"
       :class="{ 'is-speaking': focus.speaking === 'left' }">
       <SoyoLive2D v-if="pair.left.live2d" :speaker="pair.left.speaker" :emotion="focus.leftEmotion"
+        :refresh-token="refreshToken"
         :active="active" :dimmed="focus.speaking !== 'left'" />
       <NovelNpcPortrait v-else :portrait-id="pair.left.portraitId" :speaker="pair.left.speaker"
         :emotion="focus.leftEmotion" :location-id="locationId"
@@ -26,6 +28,7 @@ defineProps<{
     <div class="novel-invitation-portraits__side" data-invitation-side="right"
       :class="{ 'is-speaking': focus.speaking === 'right' }">
       <SoyoLive2D v-if="pair.right.live2d" :speaker="pair.right.speaker" :emotion="focus.rightEmotion"
+        :refresh-token="refreshToken"
         :active="active" :dimmed="focus.speaking !== 'right'" />
       <NovelNpcPortrait v-else :portrait-id="pair.right.portraitId" :speaker="pair.right.speaker"
         :emotion="focus.rightEmotion" :location-id="locationId"

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeThreeTree } from './dispose-three-tree';
 
 export type TokyoAtmosphereMode = 'auto' | 'day' | 'dusk' | 'night' | 'cyber';
 export type ResolvedAtmospherePreset = 'day' | 'dusk' | 'night' | 'cyber';
@@ -382,7 +383,10 @@ export function createTokyoSandboxVfx(
   root.add(horizonRing);
 
   // Retrieve cached GLB catalog (windows, water, and 56 streetlamps) in O(1) on repeat opens
-  const { emissiveEntries, waterMaterials, streetlampPositions } = getModelCatalog(model);
+  const catalog = getModelCatalog(model);
+  // Runtime-only decorations must not accumulate in the cached model catalogue.
+  const emissiveEntries = [...catalog.emissiveEntries];
+  const { waterMaterials, streetlampPositions } = catalog;
 
   // Create instanced glowing bulbs & light pools for all 56 streetlamps
   const glowTex = createRadialGlowTexture();
@@ -1365,18 +1369,18 @@ export function createTokyoSandboxVfx(
     }
   }
 
+  let disposed = false;
   function dispose() {
-    su30LocalVfx.removeFromParent();
+    if (disposed) return;
+    disposed = true;
     scene.fog = null;
-    glowTex.dispose();
-    root.traverse(obj => {
-      if (obj instanceof THREE.Mesh || obj instanceof THREE.Points) {
-        obj.geometry.dispose();
-        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-        mats.forEach(m => m.dispose());
-      }
-    });
-    root.removeFromParent();
+    disposeThreeTree(root, su30LocalVfx);
+    flareMat.dispose();
+    if (!streetlampPositions.length) {
+      bulbGeom.dispose(); poolGeom.dispose(); lampBulbMat.dispose(); lampPoolMat.dispose();
+    }
+    su30Attached = undefined;
+    emissiveEntries.length = 0;
   }
 
   return {

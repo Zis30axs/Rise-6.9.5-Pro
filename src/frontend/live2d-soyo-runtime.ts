@@ -8,27 +8,37 @@ import { fitSoyoPortrait } from './live2d-soyo-fit';
 config.sound = false;
 
 export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: AbortSignal) {
-  const lease = createSoyoAssetLease();
-  const app = new Application({ view: canvas, width: 1, height: 1, backgroundAlpha: 0, antialias: true,
-    autoStart: false, sharedTicker: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), powerPreference: 'low-power' });
+  const lease = await createSoyoAssetLease(signal);
+  let application: Application | undefined;
   let model: Live2DModel | undefined;
+  let modelLoading = false;
   let disposed = false;
   let expressions: ReturnType<typeof createSoyoExpressionController> | undefined;
   const destroy = () => {
     if (disposed) return;
     disposed = true; expressions?.dispose();
     signal?.removeEventListener('abort', destroy);
-    app.stop();
-    app.destroy(false, { children: true, texture: true, baseTexture: true });
-    lease.release();
+    try {
+      application?.stop();
+      application?.destroy(false, { children: true, texture: true, baseTexture: true });
+    } finally {
+      // The loader does not accept AbortSignal. Let a pending local load settle
+      // so its textures can be destroyed, instead of revoking URLs mid-decode.
+      if (!modelLoading) lease.release();
+    }
   };
   try {
     signal?.addEventListener('abort', destroy, { once: true });
     if (signal?.aborted) { destroy(); throw new Error('立绘已关闭。'); }
+    const app = application = new Application({ view: canvas, width: 1, height: 1, backgroundAlpha: 0, antialias: true,
+      autoStart: false, sharedTicker: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), powerPreference: 'low-power' });
     const definition = new Cubism2ModelSettings({ ...getSoyoDefinition(), url: 'soyo.model.json' });
     definition.resolveURL = file => lease.resolve(file);
-    model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
-      idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
+    modelLoading = true;
+    try {
+      model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
+        idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
+    } finally { modelLoading = false; if (disposed) lease.release(); }
     if (disposed) { model.destroy({ children: true, texture: true, baseTexture: true }); throw new Error('立绘已关闭。'); }
     model.anchor.set(0.5, 1);
     app.stage.addChild(model);

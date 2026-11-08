@@ -33,12 +33,12 @@ export function getSoyoAssetReferences(): string[] {
 }
 
 /** Only names from the packaged model may resolve. No model-provided network URLs. */
-export function createSoyoAssetLease() {
+export async function createSoyoAssetLease(signal?: AbortSignal) {
   const allowed = new Set(getSoyoAssetReferences());
   const urls = new Map<string, string>();
   const borrowed = new Set<string>();
   let released = false;
-  return {
+  const lease = {
     resolve(file: string): string {
       if (released) throw new Error('立绘素材已释放。');
       if (!allowed.has(file) || !/^[A-Za-z0-9._-]+$/.test(file)) throw new Error('立绘引用了未打包的素材。');
@@ -66,4 +66,19 @@ export function createSoyoAssetLease() {
       urls.clear();
     },
   };
+  try {
+    // Pixi caches textures by URL. A portrait must own its textures so destroying
+    // the single/paired stage cannot destroy the other stage's cached textures.
+    for (const file of modelDefinition.textures) {
+      if (signal?.aborted) throw new Error('立绘已关闭。');
+      const source = lease.resolve(file);
+      if (!borrowed.has(source)) continue;
+      const response = await fetch(source, { signal });
+      if (!response.ok) throw new Error('立绘素材未完整加载。');
+      const blob = await response.blob();
+      if (signal?.aborted) throw new Error('立绘已关闭。');
+      urls.set(file, URL.createObjectURL(blob));
+    }
+    return lease;
+  } catch (error) { lease.release(); throw error; }
 }

@@ -37,7 +37,7 @@ import type { TokyoAtmosphereMode } from './tokyo-sandbox-vfx';
 import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
 import openAiMark from '../../assets/openai-mark.svg?inline';
 
-const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean }>(), { novelMode: false });
+const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
 const emit = defineEmits<{ travelled: [] }>();
 const locations = mapLocations;
 type Layer = 'district' | 'city' | 'province' | 'country' | 'world';
@@ -58,6 +58,7 @@ type AtlasView = { countryId: string; regionId: string };
 const sandboxScene = ref<{
   pickAt: (clientX: number, clientY: number) => boolean;
   triggerFlares: () => void;
+  refresh: () => Promise<void>;
 }>();
 const atlasScene = ref<{
   pickAt: (clientX: number, clientY: number) => string | undefined;
@@ -649,6 +650,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
               :style="{ opacity: 1 - smooth(depth - 2), pointerEvents: geographicLayer ? 'none' : 'auto' }"
               :aria-hidden="geographicLayer" :inert="geographicLayer">
               <CitySandboxScene ref="sandboxScene" :scope="detailDistrict ?? 'city'" :active="depth < 3"
+                :refresh-token="refreshToken"
                 :bearing="bearing" :view-scale="focusZoom" :pan="pan" :camera-view="sandboxCameraView"
                 :atmosphere-mode="atmosphereMode" :clock-minutes="model.state.clock.hour * 60 + model.state.clock.minute"
                 :width="size.width" :height="size.height"
@@ -675,6 +677,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p id="uc-map-help" class="wm-help">单指或左键{{ !geographicLayer && interactionMode === 'orbit' ? '环视俯仰' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键拖拽环视<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
           <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转">
+            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" @click="sandboxScene?.refresh()">刷新沙盘</button>
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : '平移' }}</button>
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset">{{ pitchPresetLabel }}</button>
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-atmo-pill" :class="{ active: atmosphereMode !== 'auto' }" aria-label="切换沙盘天色与气象" @click="cycleAtmosphereMode">{{ atmosphereLabel }}</button>

@@ -117,10 +117,8 @@ describe('Tokyo GLB map 3D camera gestures', () => {
     expect(scene).toContain('updateSu30Pose(su30State, nowMs)');
     expect(scene).toContain('createTokyoSandboxVfx(');
     expect(scene).toContain('Math.atan2(route.dirX * v.lane, route.dirZ * v.lane)');
-    expect(scene).toContain('loadSharedTokyoGlb(');
-    expect(scene).toContain('persistentSandboxRuntime');
-    expect(scene).toContain('prewarmPersistentSandboxGpu(');
-    expect(scene).toContain('attachPersistentRuntime(');
+    // Recovery/resource ownership is exercised by graphics-recovery.test.ts.
+    // GPU residency and background prewarming are no longer a contract.
   });
 
   it('resolves atmosphere presets by game clock and drives Su-30SM2 supersonic VFX and flares', () => {
