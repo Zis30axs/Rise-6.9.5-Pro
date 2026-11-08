@@ -1,0 +1,74 @@
+{
+  "status": "passed-local-package-integrity",
+  "zipAssetsSha256Verified": 233,
+  "zipAssetBytes": 91505161,
+  "networkImagesPresent": 38,
+  "currentCapabilities": [
+    "data-metropolis-game",
+    "data-game-travel",
+    "data-game-destination",
+    "data-metropolis-journey",
+    "metropolis--game",
+    "uc-metropolis-host",
+    "network_follow",
+    "band:crychic",
+    "CucumberT_T",
+    "readInspected",
+    "peek_chat_append"
+  ],
+  "singleHelperScriptMatchesLite": true,
+  "canonicalAndTauriDataEqual": true,
+  "files": {
+    "immersive-shell.js": {
+      "bytes": 153955689,
+      "sha256": "9602c93edd0038afa968a622454bc85ebcb39d9e80836fcd8cce1c64e1b9dc18"
+    },
+    "immersive-shell-lite.js": {
+      "bytes": 28700014,
+      "sha256": "de33b073cc9c02c9b8a5961ad2e6931837cd55b47a2b0b39108f26c3f6d34304"
+    },
+    "unread-city-lite.png": {
+      "bytes": 41677667,
+      "sha256": "264590e7b39a7f3f219faf7fa5bce7a022756d23ff67b96313ed8da7d622f4eb"
+    },
+    "unread-city-lite-tauri.png": {
+      "bytes": 20427037,
+      "sha256": "d0a71e9e843140a987964dfd1e070a2c363e46bc21536486eccd4ede27fba946"
+    },
+    "unread-city-lite-assets.zip": {
+      "bytes": 91601570,
+      "sha256": "eacdf5ed2130fb760087567c7107cb2b0581ae6031f450190f03277cf09ddf87"
+    }
+  },
+  "browserVerified": {
+    "fullIifeMounted": true,
+    "realTravel": {
+      "from": "gate",
+      "to": "library",
+      "minutes": 15,
+      "energyBefore": 80,
+      "energyAfter": 76.64,
+      "balance": 6560,
+      "modelGenerations": 0
+    },
+    "finalDesktopMapWindow": true,
+    "finalMobile390MapAndQuote": true,
+    "liteZipFileChooserCompleted": false
+  },
+  "physicalTauriTavernTested": false,
+  "realModelCalls": 0,
+  "remoteCiRun": false,
+  "recovery": {
+    "reportRecreatedAfterEnvironmentReset": true,
+    "allArtifactFactsReverifiedFromPreservedFinalPngAndZip": true,
+    "fullAndLiteRecoveredAtExactHistoricalSha256": true,
+    "noDependenciesRebuilt": true
+  },
+  "sourceRecoveryChecks": {
+    "adapterTests": 9,
+    "newUiTests": 4,
+    "existingMapTests": 26,
+    "mapVueTypecheck": "passed",
+    "previewVueTypecheck": "passed"
+  }
+}

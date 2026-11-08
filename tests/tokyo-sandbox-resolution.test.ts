@@ -43,7 +43,7 @@ describe('Tokyo GLB native rendering resolution', () => {
 
   it('keeps the map canvas independent of 3D camera zoom and CSS stage scaling', () => {
     const map = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
-    const world = readFileSync('src/frontend/WorldMap.vue', 'utf8');
+    const world = readFileSync('src/frontend/WorldMapJourney.vue', 'utf8');
     expect(map).toContain('nativeTokyoCanvasResolution(');
     expect(map).toContain('applyTokyoCanvasResolution(');
     expect(map).not.toContain('Math.min(1.4, window.devicePixelRatio');

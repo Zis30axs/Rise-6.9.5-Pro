@@ -16,7 +16,7 @@ vi.mock('../src/frontend/AtlasMapScene.vue', () => ({ default: {
   template: '<div class="atlas-scene-fixture" />',
   methods: { resetView: vi.fn(), pickAt: () => undefined, isHomeRegion: () => true },
 } }));
-import WorldMap from '../src/frontend/WorldMap.vue';
+import WorldMap from '../src/frontend/WorldMapJourney.vue';
 
 let app: App | undefined;
 beforeEach(() => {

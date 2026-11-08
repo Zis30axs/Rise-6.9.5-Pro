@@ -26,7 +26,7 @@ describe('sandbox route event pins', () => {
     expect(leaked.activeId).toBe('library');
     const again = applyRouteEventTap(leaked.activeId, 'library', leaked.gestureAlreadyToggled);
     expect(again.activeId).toBe('');
-    const map = readFileSync('src/frontend/WorldMap.vue', 'utf8');
+    const map = readFileSync('src/frontend/WorldMapJourney.vue', 'utf8');
     expect(map).toContain('openRouteEvent(id, true)');
     expect(map).toContain('openRouteEvent($event, false)');
     expect(map).toContain('[data-map-event]');
