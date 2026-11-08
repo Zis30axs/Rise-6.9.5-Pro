@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { InternationalLeg } from '../runtime/california';
 
 type Place = { id: string; name: string; subtitle: string; description: string };
@@ -11,6 +11,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ travel: [id: string] }>();
 const selectedId = ref(props.locationId);
+watch(() => props.locationId, id => { selectedId.value = id; });
 const selected = computed(() => props.places.find(place => place.id === selectedId.value) ?? props.places[0]);
 const routeToSelected = computed(() => props.routes.find(route => route.to === selectedId.value));
 const cities = [
