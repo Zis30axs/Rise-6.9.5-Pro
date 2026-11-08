@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/runtime/model';
+import { residentById } from '../src/runtime/npc-cast';
+import { characterBirthdays } from '../src/runtime/japan-calendar-events';
 import {
   WAKABA_MUTSUMI_CARD,
   buildContactIdentityCard,
@@ -170,7 +172,7 @@ describe('identity-card module', () => {
     expect(Number(miyokoCard.birthDate.split('.')[0])).toBeLessThan(1990);
     expect(miyokoCard.zodiac).toBe('白羊座');
 
-    // 长崎夫人（素世的母亲长辈，46岁左右）
+    // 长崎夫人（素世的母亲长辈，43岁左右，1982年9月15日生，24岁生下素世）
     const nagasakiMotherCard = buildContactIdentityCard({
       id: 'nagasaki-mother',
       name: '长崎夫人',
@@ -182,9 +184,9 @@ describe('identity-card module', () => {
       sourcePersonId: 'nagasaki-mother',
       isMain: false
     });
-    expect(nagasakiMotherCard.birthDate).toBe('1979.08.12');
+    expect(nagasakiMotherCard.birthDate).toBe('1982.09.15');
     expect(Number(nagasakiMotherCard.birthDate.split('.')[0])).toBeLessThan(1985);
-    expect(nagasakiMotherCard.zodiac).toBe('狮子座');
+    expect(nagasakiMotherCard.zodiac).toBe('处女座');
 
     // 鬼瓦星来（遥奈的高一同班好友，16岁）
     const seiraCard = buildContactIdentityCard({
@@ -241,5 +243,27 @@ describe('identity-card module', () => {
     const familyMesh = buildIdentityRelationshipMesh(renakoCard, state, 'renako', 'family');
     expect(familyMesh.nodes.every(n => n.isCenter || n.group === 'family')).toBe(true);
     expect(familyMesh.nodes.some(n => n.id === 'watanare-haruna')).toBe(true);
+  });
+
+  it('keeps the mother\'s birth date consistent across her card, biography and birthday calendar', () => {
+    const state = createInitialState();
+    const mother = resolveIdentityCardById('nagasaki-mother', state, 'soyo');
+    expect(mother.name).toBe('长崎夫人');
+    expect(mother.birthDate).toBe('1982.09.15');
+    expect(mother.zodiac).toBe('处女座');
+    expect(mother.mrzLine2.slice(0, 8)).toBe('8209153F');
+    expect(resolveIdentityCardById('soyo', state, 'soyo').birthDate).toBe('2007.05.27');
+    expect(residentById('nagasaki-mother')?.profile).toContain('1982年9月15日');
+    expect(residentById('nagasaki-mother')?.profile).toContain('24岁时生下素世');
+    expect(characterBirthdays.find(person => person.personId === 'nagasaki-mother'))
+      .toMatchObject({ month: 9, date: 15 });
+  });
+
+  it('preserves the mother\'s date when an existing contact has a custom ID or display name', () => {
+    const motherContact = createInitialState().contacts.find(contact => contact.id === 'nagasaki-mother')!;
+    const renamed = buildContactIdentityCard({ ...motherContact, id: 'saved-mother', name: '妈妈', sourcePersonId: 'nagasaki-mother' });
+    const named = buildContactIdentityCard({ ...motherContact, id: 'saved-mother', sourcePersonId: null });
+    expect(renamed.birthDate).toBe('1982.09.15');
+    expect(named.birthDate).toBe('1982.09.15');
   });
 });

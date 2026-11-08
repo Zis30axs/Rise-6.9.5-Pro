@@ -1851,7 +1851,7 @@
 }
 
 /* Strategy dossier reuses the existing ID-card layout without replacing map portraits. */
-.idcard-strategy-section { margin: 20px 0; padding: 16px; border: 1px solid rgba(124,153,143,.4); border-radius: 14px; background: rgba(17,34,32,.05); }
+.idcard-strategy-section { margin: 20px 0; padding: 16px; border: 1px solid rgba(56,214,232,.36); border-radius: 12px; color: #daf4f8; background: linear-gradient(180deg, rgba(5,13,22,.95), rgba(7,19,31,.96)), repeating-linear-gradient(0deg, rgba(56,214,232,.035) 0 1px, transparent 1px 26px), repeating-linear-gradient(90deg, rgba(56,214,232,.035) 0 1px, transparent 1px 26px); box-shadow: 0 10px 26px rgba(2,8,16,.55), inset 0 0 22px rgba(56,214,232,.06); }
 .idcard-strategy-section > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 13px; }
 .idcard-strategy-section h5 { font-size: 15px; margin: 0 0 4px; }
 .idcard-strategy-section h6 { margin: 0 0 6px; font-size: 13px; }
@@ -1859,7 +1859,7 @@
 .idcard-strategy-section header small, .idcard-strategy-section article > small { opacity: .76; }
 .idcard-strategy-section header > b { font-size: 11px; white-space: nowrap; }
 .idcard-strategy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 10px; }
-.idcard-strategy-grid article, .idcard-strategy-block { padding: 11px; border: 1px solid rgba(124,153,143,.27); border-radius: 10px; margin: 8px 0; }
+.idcard-strategy-grid article, .idcard-strategy-block { padding: 11px; border: 1px solid rgba(56,214,232,.26); border-radius: 9px; margin: 8px 0; background: rgba(8,22,35,.84); }
 .idcard-strategy-section details { margin: 10px 0; }
 .idcard-strategy-section details p { font-size: 12px; line-height: 1.5; }
 

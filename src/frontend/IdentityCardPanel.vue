@@ -6,7 +6,10 @@ import mutsumiStageAsideUrl from '../../assets/downtown-art/characters/mutsumi/u
 import mutsumiNeutralUrl from '../../assets/downtown-art/characters/mutsumi/uniform/neutral.webp';
 import mutsumiShyUrl from '../../assets/downtown-art/characters/mutsumi/uniform/shy.webp';
 import mutsumiSmileUrl from '../../assets/downtown-art/characters/mutsumi/uniform/smile.webp';
-import sakikoSmileUrl from '../../assets/downtown-art/characters/sakiko/casual/smile.webp';
+import sakikoNeutralUrl from '../../assets/downtown-art/characters/sakiko/uniform/neutral.webp';
+import sakikoSmileUrl from '../../assets/downtown-art/characters/sakiko/uniform/wave.webp';
+import sakikoShyUrl from '../../assets/downtown-art/characters/sakiko/uniform/shy.webp';
+import sakikoStageUrl from '../../assets/downtown-art/characters/sakiko/uniform/confident.webp';
 import { isProtagonistId, type ProtagonistId } from '../runtime/dual-protagonists';
 import { activeProtagonist as readActiveProtagonist } from '../runtime/protagonist-world';
 import {
@@ -207,9 +210,22 @@ function onCardPointerUp(event: PointerEvent) {
 }
 
 function onCardWheel(event: WheelEvent) {
-  event.preventDefault();
+  const target = event.target as HTMLElement | null;
+  if (!target?.closest('.jp-mynumber-rig')) return;
   const delta = event.deltaY < 0 ? 0.04 : -0.04;
-  adjustCardZoom(delta);
+  const next = Math.min(1.18, Math.max(0.84, Number((cardScale.value + delta).toFixed(2))));
+  if (next === cardScale.value) return;
+  event.preventDefault();
+  cardScale.value = next;
+}
+
+function onRosterWheel(event: WheelEvent) {
+  const el = event.currentTarget as HTMLElement | null;
+  if (!el || el.scrollWidth <= el.clientWidth) return;
+  if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+    event.preventDefault();
+    el.scrollLeft += event.deltaY;
+  }
 }
 
 // ============================================================================
@@ -241,8 +257,8 @@ const japaneseBirthLabel = computed<string>(() => {
   const year = Number(parts[0]);
   const month = Number(parts[1]);
   const day = Number(parts[2]);
-  const heisei = year >= 1989 ? `平成${year - 1988}年` : `${year}年`;
-  return `${year}年${month}月${day}日生（${heisei}）`;
+  const era = year >= 1989 ? `平成${year - 1988}年` : year >= 1926 ? `昭和${year - 1925}年` : `${year}年`;
+  return `${year}年${month}月${day}日生（${era}）`;
 });
 
 const japaneseExpiryLabel = computed<string>(() => {
@@ -304,7 +320,10 @@ const standingPreviewUrl = computed<string>(() => {
     return mutsumiExpressionSpriteUrl.value;
   }
   if (activeCard.value.id === 'sakiko') {
-    return sakikoSmileUrl;
+    if (photoPose.value === 'smile') return sakikoSmileUrl;
+    if (photoPose.value === 'shy') return sakikoShyUrl;
+    if (photoPose.value === 'stage') return sakikoStageUrl;
+    return sakikoNeutralUrl;
   }
   return mutsumiNeutralUrl;
 });
@@ -730,7 +749,7 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
       </div>
 
       <!-- Character Roster Quick Horizontal Chips -->
-      <nav class="idcard-roster-bar" aria-label="切换证件持有人">
+      <nav class="idcard-roster-bar" aria-label="切换证件持有人" @wheel="onRosterWheel">
         <button
           v-for="item in filteredCardCatalog"
           :key="item.id"

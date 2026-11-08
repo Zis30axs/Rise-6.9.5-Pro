@@ -845,10 +845,10 @@ const KNOWN_RESIDENT_PROFILES: Record<string, ResidentProfilePreset> = {
     familySummary: '甘织玲奈子与遥奈的母亲，温和包容的长辈',
     quote: '“欢迎来家里玩呀，今晚要不要留下来一起吃晚饭？”'
   },
-  // 邦邦系列 - 素世的母亲长辈（46岁，1979年生）
+  // 邦邦系列 - 素世的母亲长辈（43岁，1982年9月15日生，24岁生下素世）
   'nagasaki-mother': {
-    birthDate: '1979.08.12',
-    zodiac: '狮子座',
+    birthDate: '1982.09.15',
+    zodiac: '处女座',
     bloodType: 'AB型',
     gender: '女',
     schoolOrAffiliation: '东京都港区 都市商贸集团',
@@ -857,8 +857,8 @@ const KNOWN_RESIDENT_PROFILES: Record<string, ResidentProfilePreset> = {
     quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
   },
   '长崎夫人': {
-    birthDate: '1979.08.12',
-    zodiac: '狮子座',
+    birthDate: '1982.09.15',
+    zodiac: '处女座',
     bloodType: 'AB型',
     gender: '女',
     schoolOrAffiliation: '东京都港区 都市商贸集团',
@@ -867,8 +867,8 @@ const KNOWN_RESIDENT_PROFILES: Record<string, ResidentProfilePreset> = {
     quote: '“素世，零用钱和便签放在老地方了，想买什么尽管去买。”'
   },
   'bang-makoto': {
-    birthDate: '1979.08.12',
-    zodiac: '狮子座',
+    birthDate: '1982.09.15',
+    zodiac: '处女座',
     bloodType: 'AB型',
     gender: '女',
     schoolOrAffiliation: '东京都港区 都市商贸集团',
@@ -1329,7 +1329,7 @@ export function buildContactIdentityCard(
       contact.summary || `${contact.name}是当前登记在通讯录中的${gradeOrTitle}。`
     ],
     mrzLine1: `IDJPN${serial.replace(/-/g, '').slice(0, 9)}<<${cleanCode}<<<<<<<<<<<<<<<<<<<`.slice(0, 44),
-    mrzLine2: `${mrzDatePart}2U2908315JPN<<<<<<<<<<<${cleanCode.slice(0, 10)}<<<<02`.slice(0, 44)
+    mrzLine2: `${mrzDatePart}${gender === '女' ? '3F' : gender === '男' ? '3M' : '2U'}2908315JPN<<<<<<<<<<<${cleanCode.slice(0, 10)}<<<<02`.slice(0, 44)
   };
 }
 
