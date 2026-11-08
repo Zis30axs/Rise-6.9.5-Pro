@@ -1,0 +1,77 @@
+{
+  "recordedOn": "2026-11-08",
+  "status": "local-validation-passed-not-deployed",
+  "scope": "Airport district using existing haneda-airport travel; current workspace build",
+  "unit": {
+    "files": 7,
+    "passed": 29,
+    "failed": 0,
+    "report": "vitest-results.json"
+  },
+  "typecheck": "vue-tsc --noEmit passed",
+  "productionBuild": "Vite IIFE and Lite extraction passed",
+  "browser": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "viewports": [
+      "1440x900",
+      "1280x800",
+      "390x844",
+      "320x568"
+    ],
+    "artifact": "release/immersive-shell-lite.js with verified local ZIP",
+    "report": "playwright-results.json",
+    "checks": [
+      "city navigation and GLB rendering",
+      "terminal pin and current player marker",
+      "50 minute / 1200 yen airport transfer and return",
+      "600 minute international route display",
+      "browsing and camera operations preserve saved state",
+      "no horizontal shell overflow or engineering text in map",
+      "no model requests or page errors"
+    ]
+  },
+  "visualReview": [
+    "airport-1440.png",
+    "airport-1280.png",
+    "airport-390.png",
+    "airport-320.png"
+  ],
+  "iterationNotes": [
+    "Initial timer fixture was isolated from the ambient-flight scheduler.",
+    "Tests handle the existing optional-event confirmation.",
+    "Moved scenery to the southern airport site, raised ground over the original slab, and excluded overlapping outer skyline instances."
+  ],
+  "boundaries": {
+    "fullTestSuite": false,
+    "realModel": false,
+    "realTavern": false,
+    "physicalTauriTavern": false,
+    "agentEdition": false,
+    "ci": false,
+    "deployed": false
+  },
+  "artifacts": [
+    {
+      "file": "release/immersive-shell-lite.js",
+      "bytes": 28817796,
+      "sha256": "9ba55980aceb4a3058813a5c953c4bea4592ae733e95bb10cc3dd5f419691f81"
+    },
+    {
+      "file": "release/unread-city-lite.png",
+      "bytes": 41503287,
+      "sha256": "55f87637a36684939f60cb525769e355bcf6560abbb441ddc2d2cfe504ef979c"
+    },
+    {
+      "file": "release/unread-city-lite-tauri.png",
+      "bytes": 20369036,
+      "sha256": "b89d6af8a34f92c60ab3fa98bbfeb9e510884b74d79a7a87312f82575a0074b5"
+    },
+    {
+      "file": "release/unread-city-lite-assets.zip",
+      "bytes": 91601570,
+      "sha256": "7fb0a6dd1241afa11a56e4b82dd5b7d4a88acec8cfc827ecf3eb44870d4afc58"
+    }
+  ]
+}

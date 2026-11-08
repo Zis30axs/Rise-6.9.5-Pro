@@ -23,6 +23,9 @@ import margoCafeNightBg from '../../assets/backgrounds/margo-cafe-night.avif?inl
 import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
 import clinicNightBg from '../../assets/backgrounds/clinic-night.webp?inline';
 import aquariumDay from '../../assets/backgrounds/aquarium-day.webp?inline';
+import hanedaAirportDay from '../../assets/backgrounds/haneda-airport-day.webp?inline';
+import hanedaAirportDusk from '../../assets/backgrounds/haneda-airport-dusk.webp?inline';
+import hanedaAirportNight from '../../assets/backgrounds/haneda-airport-night.webp?inline';
 import { majoDistrictArt, majoInteriorArt } from './majo-art';
 
 export type NovelBackgroundPhase = 'day' | 'dusk' | 'night';
@@ -43,6 +46,10 @@ const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase,
   bedroom: { day: bedroomDay },
 };
 
+const hanedaAirportBackgrounds: Readonly<Record<NovelBackgroundPhase, string>> = {
+  day: hanedaAirportDay, dusk: hanedaAirportDusk, night: hanedaAirportNight,
+};
+
 /** Illustrative reuse only; these pictures do not create or rename world locations. */
 export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>> = Object.freeze({
   gate: 'street', 'south-gate': 'street',
@@ -52,7 +59,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   sports: 'park', promenade: 'park', campus: 'park',
   bookshop: 'commercial', convenience: 'commercial', 'street-cafe': 'commercial',
   'bus-stop': 'street', junction: 'street', neighborhood: 'street', 'city-roads': 'street',
-  'haneda-airport': 'commercial', 'sfo-airport': 'commercial', 'california-openai': 'commercial', 'california-market': 'commercial',
+  'sfo-airport': 'commercial', 'california-openai': 'commercial', 'california-market': 'commercial',
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
   circle: 'commercial', 'circle-cafe': 'commercial',
@@ -101,6 +108,13 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (locationId === 'haneda-airport') {
+    const phase = novelBackgroundPhase(hour);
+    return {
+      id: `haneda-airport-${phase}`, src: hanedaAirportBackgrounds[phase],
+      phase, imagePhase: phase, source: 'user-art',
+    };
+  }
   if (locationId === 'legal-office') {
     const phase = novelBackgroundPhase(hour);
     const isNight = phase === 'night';

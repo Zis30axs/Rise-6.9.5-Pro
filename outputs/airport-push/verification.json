@@ -1,0 +1,42 @@
+{
+  "recordedOn": "2026-11-09",
+  "base": "f7573962739b3c4ff5d6dac3523d44abd5dbff0a",
+  "scope": "Airport-only staged source, art, tests, docs and verification; unrelated worktree changes preserved",
+  "sourceSha256": {
+    "playwright.airport-backgrounds.config.ts": "2db660b2dab1413b1f29b6c13fc924d85d70e1dd9932ec8591cfb9a1931df10a",
+    "playwright.airport.config.ts": "fb2819c2eba3110a3627b009be7586a27cd4a382ba799eaca81f0b72ebdab3af",
+    "scripts/prepare_airport_backgrounds.py": "2779f4a5d6d022bb46e324b41521455575d25755fb04364dfa768a1d0a63b614",
+    "src/frontend/CitySandboxScene.vue": "1513544f85ae655a812c4fc4b25167ea821fe7fae67c3959b8ecb70532ff1fde",
+    "src/frontend/WorldMap.vue": "c33f8b46d5a7412b4aead281fc4e96827767c0402ed5108238a409ef2f010aee",
+    "src/frontend/airport-sandbox-geometry.ts": "5412b8a5881fa58fa0626269b21dcf3880b83391d9260951d757a34cc1a153ea",
+    "src/frontend/airport-sandbox-layout.ts": "344575e34aab28da5d83c3d0bb33c4706ae3073bb940136d7564b1d117cb0a8b",
+    "src/frontend/campus-map-layout.ts": "339be27932794c656b31a5f17c71eee9bef15b6329dcbeea6727ee95e5dd178b",
+    "src/frontend/map-districts.ts": "d29c21d44cf1e0317e112316b4319e0d3ec222e17ba7fcdc2addc968e3dd34ee",
+    "src/frontend/novel-backgrounds.ts": "7799b15d7bc7c56a558e11c353d89678b384335806e1a05c71b0a84157c598ee",
+    "src/frontend/tokyo-sandbox-map.ts": "0e22c87a253cf976c7b3f1b1f08e4e59ef5382a66c1dc7916d7a4b9c81195777",
+    "tests/airport-backdrop.test.ts": "41f97668ec720652c9bd1c02e1125062aff6ba2768f2e3c8464615c5282e4bc3",
+    "tests/airport-sandbox.test.ts": "a5ce3728882eed444c76a3c55a23fb7c08d1a01e953b173252c6a43391ab70f0",
+    "tests/e2e/airport-backdrop.spec.ts": "33be3187198d6a104ceefd5355424576292bf8bd4812adbcdf0cabcfcf19e6cd",
+    "tests/e2e/airport-sandbox.spec.ts": "6a4cbbcb5fc96799abeca0a9f7cb3830080ace91cc2ebe64e2353c638d7e02db",
+    "tests/tokyo-sandbox-map.test.ts": "053c763f1dcffb013fc0b171e063d682d1bceafec72011952d18006441b87cf9"
+  },
+  "partialFiles": [
+    "README.md",
+    "src/frontend/CitySandboxScene.vue",
+    "src/frontend/WorldMap.vue"
+  ],
+  "stagedSourceSnapshot": {
+    "typecheck": "vue-tsc --noEmit passed",
+    "unit": {
+      "files": 7,
+      "passed": 20,
+      "failed": 0,
+      "report": "staged-vitest-results.json"
+    },
+    "resources": "Existing local assets and node_modules reused; source and tests copied from index",
+    "browserRerun": false
+  },
+  "historicalBrowserScope": "Earlier screenshots and packages were built from the complete working tree, including concurrent unrelated changes. They are not exact-commit browser validation.",
+  "ci": "Commit will use [skip ci]; no workflow dispatch",
+  "releaseFiles": "Local bundles and card/ZIP packages remain ignored by existing repository rules"
+}

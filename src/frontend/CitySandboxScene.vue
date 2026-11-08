@@ -6,6 +6,7 @@ import { readLocalAssetBytes } from './local-asset-buffer';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 import { disposeThreeTree } from './dispose-three-tree';
+import { attachAirportGeometry } from './airport-sandbox-geometry';
 
 async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -185,6 +186,7 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
   optimizeGlbScene(parsed);
   attachCirclePackGeometry(parsed);
+  attachAirportGeometry(parsed);
   return parsed;
 }
 
@@ -567,7 +569,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
-import { districtMapPlaces, isMapDistrict, type MapDistrictId } from './map-districts';
+import { districtMapPlaces, isMapDistrict, locationDistrict, type MapDistrictId } from './map-districts';
 import type { MapCameraView } from './campus-map-layout';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; title: string; detail: string; x: number; y: number };
@@ -820,6 +822,7 @@ function createGeometricPreview(): THREE.Group {
   plumeR.position.set(0.95, -0.1, -10.3);
   jet.add(fuselage, wings, plumeL, plumeR);
   root.add(jet);
+  attachAirportGeometry(root);
   return root;
 }
 
@@ -867,8 +870,9 @@ function render() {
   appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
 
   const positionHint = props.scope === 'city' ? undefined : props.scope;
-  const player = props.position ? projectOldTokyoPosition(props.position, positionHint)
-    : tokyoLocationPosition(props.locationId, positionHint);
+  const playerDistrict = locationDistrict(props.locationId);
+  const player = props.position ? projectOldTokyoPosition(props.position, playerDistrict)
+    : tokyoLocationPosition(props.locationId, playerDistrict);
   latestPlayerWorldPos = player ? { x: player.x, z: player.z } : undefined;
 
   renderer.render(scene, camera);

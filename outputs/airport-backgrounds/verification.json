@@ -1,0 +1,135 @@
+{
+  "startedOn": "2026-11-08",
+  "completedOn": "2026-11-09",
+  "timezone": "Asia/Shanghai",
+  "status": "airport-backgrounds-verified-locally-not-installed",
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59",
+    "night": "19:00-05:59"
+  },
+  "images": {
+    "count": 3,
+    "size": [
+      1672,
+      941
+    ],
+    "lossless": true,
+    "pixelIdentical": true,
+    "totalBytes": 5247012
+  },
+  "checks": {
+    "backgroundAndAirportUnitTests": {
+      "files": 6,
+      "passed": 17,
+      "failed": 0
+    },
+    "extendedRun": {
+      "files": 7,
+      "passed": 22,
+      "failed": 1,
+      "report": "vitest-results.json"
+    },
+    "noJapaneseText": {
+      "passed": 1,
+      "report": "no-japanese-results.json"
+    },
+    "typecheck": {
+      "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+      "exitCode": 0
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "directory": "build"
+    },
+    "browser": {
+      "report": "playwright-results.json",
+      "passed": 4,
+      "failed": 0,
+      "viewports": [
+        [
+          1440,
+          900
+        ],
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          844
+        ],
+        [
+          320,
+          568
+        ]
+      ],
+      "phasesPerViewport": [
+        "day",
+        "dusk",
+        "night"
+      ],
+      "screenshotsReviewed": 12,
+      "actualLoadedImageDigestsMatch": true,
+      "horizontalOverflow": false,
+      "gameClockUnchanged": true,
+      "generationCount": 0
+    },
+    "releaseMatchesTestedBundleAndZip": true,
+    "cardContainsTestedScript": true,
+    "cardScriptNormalization": "Only the existing build_card universal newline conversion; all other text is identical.",
+    "airportImagesInOfflineZip": true,
+    "tauriMetadataVerification": {
+      "sourceBytes": 41504711,
+      "bytes": 20367893,
+      "sourceSha256": "175b260cc46bbb1177b390d7136a06647f41e5e06ec5935a51af81c9580adea1",
+      "sha256": "e58f9659bd54463217423e8d1c4a3346efc965e5eee687eb1bb01aa527a68b18",
+      "metadataEncoding": "zTXt/chara/zlib-method-0",
+      "metadataTextBytes": 39062096,
+      "compressedMetadataBytes": 17925277,
+      "metadataTextSha256": "29d3c3cb72dfc668f213beccec7ae195e1551d7a2faadb7fd8a4c5b3c676e685",
+      "decompressedMetadataByteIdentical": true,
+      "allOtherPngChunksByteIdentical": true,
+      "embeddedScriptChanged": false,
+      "tauriNativeImportTested": false,
+      "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern."
+    }
+  },
+  "unrelatedFailure": {
+    "test": "tests/fengjin-clinic.test.ts:149",
+    "error": "国策时钟与权威时间不同步",
+    "baseline": "The same test fails with HEAD:src/frontend/novel-backgrounds.ts loaded instead of the changed selector. Clinic test, model, protagonist-world and strategy-world files match HEAD.",
+    "baselineReport": "clinic-baseline-results.json",
+    "testFixtureFinding": "setTestClock updates backgroundLife.cursor but does not update the strategy cursor.",
+    "fixedInThisTask": false
+  },
+  "scope": {
+    "agentEditionRun": false,
+    "ciRun": false,
+    "realModelTested": false,
+    "fullTavernTested": false,
+    "physicalTauriTavernTested": false,
+    "installed": false,
+    "committed": false,
+    "pushed": false
+  },
+  "visualLimit": "At 320x568 the existing top controls overlap part of the portrait. Background fitting is correct; portrait layout was not changed.",
+  "artifacts": {
+    "immersive-shell-lite.js": {
+      "bytes": 28818813,
+      "sha256": "1c7180b99af55588fd7893c9db3490f254d3c8d13bedf25f990b46e90f35c1b1"
+    },
+    "unread-city-lite.png": {
+      "bytes": 41504711,
+      "sha256": "175b260cc46bbb1177b390d7136a06647f41e5e06ec5935a51af81c9580adea1"
+    },
+    "unread-city-lite-tauri.png": {
+      "bytes": 20367893,
+      "sha256": "e58f9659bd54463217423e8d1c4a3346efc965e5eee687eb1bb01aa527a68b18"
+    },
+    "unread-city-lite-assets.zip": {
+      "bytes": 96849821,
+      "sha256": "fe0cc1df4bcf351560581c7634f1bc688a70640d54fe3d0ab3733bcc2e8e15a3"
+    }
+  }
+}

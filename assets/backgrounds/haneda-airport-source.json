@@ -1,0 +1,86 @@
+{
+  "locationId": "haneda-airport",
+  "kind": "user-provided-images",
+  "encoding": {
+    "format": "WebP",
+    "lossless": true,
+    "method": 6,
+    "exact": true,
+    "resize": false,
+    "crop": false,
+    "pillowVersion": "12.3.0"
+  },
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59",
+    "night": "19:00-05:59"
+  },
+  "images": {
+    "day": {
+      "suppliedFile": "素材/机场/0D62FF4C-7CE9-49CE-8A8D-8EB59546E058.png",
+      "source": {
+        "file": "assets/backgrounds/sources/haneda-airport/0D62FF4C-7CE9-49CE-8A8D-8EB59546E058.png",
+        "bytes": 2226774,
+        "sha256": "cb6719893b0eb6445574adb627adc572cd6ec406bf0cefb640ed0ebe9c2697c9",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "derived": {
+        "file": "assets/backgrounds/haneda-airport-day.webp",
+        "bytes": 1650400,
+        "sha256": "e31c2140fb20ba3e18b8b9ebaf80539cb4db093356ec05c131cd11c70ca48b80",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "pixelIdentical": true
+    },
+    "dusk": {
+      "suppliedFile": "素材/机场/ABE9996E-CBC6-4BBF-B8B9-CB30CE4109FE.png",
+      "source": {
+        "file": "assets/backgrounds/sources/haneda-airport/ABE9996E-CBC6-4BBF-B8B9-CB30CE4109FE.png",
+        "bytes": 2389512,
+        "sha256": "2896bbf3f3c940df7f24194e9708c823ea81e6d6805af278869d1644f3f85ed3",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "derived": {
+        "file": "assets/backgrounds/haneda-airport-dusk.webp",
+        "bytes": 1849146,
+        "sha256": "1d5de044989a62a6e4e09d138f8deec03a819fc1fee9d5d72363300264fc2d2c",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "pixelIdentical": true
+    },
+    "night": {
+      "suppliedFile": "素材/机场/09853CA7-0109-4B94-AB00-939E54242FEB.png",
+      "source": {
+        "file": "assets/backgrounds/sources/haneda-airport/09853CA7-0109-4B94-AB00-939E54242FEB.png",
+        "bytes": 3617762,
+        "sha256": "9b3a609915dd7f7931d9f05f805f4c0d497e5667fb10720d817b6d6510c34ff8",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "derived": {
+        "file": "assets/backgrounds/haneda-airport-night.webp",
+        "bytes": 1747466,
+        "sha256": "36d873f5577495ab128b2b3980c790382e460871be7422872b54bf26c75720c0",
+        "size": [
+          1672,
+          941
+        ]
+      },
+      "pixelIdentical": true
+    }
+  }
+}

@@ -21,12 +21,12 @@ let cachedViewportSize = { width: 620, height: 420 };
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
-import { internationalConnections, isInternationalLocation } from '../runtime/california';
+import { internationalConnections, isInternationalLocation, isCaliforniaLocalLocation } from '../runtime/california';
 import { worldScenePeople, worldScenePosition } from '../runtime/world-presence';
 import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
-import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } from './map-districts';
+import { districtMapPlaces, isMapDistrict, locationDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
@@ -45,7 +45,7 @@ const layers: { id: Layer; name: string; depth: number }[] = [
   { id: 'city', name: '城市', depth: 2 }, { id: 'province', name: '所在区域', depth: 3 },
   { id: 'world', name: '世界', depth: 5 },
 ];
-const depth = ref(isInternationalLocation(props.model.state.locationId) ? 5 : 2);
+const depth = ref(isCaliforniaLocalLocation(props.model.state.locationId) ? 5 : 2);
 const focusZoom = ref(1);
 const bearing = ref(0);
 const sandboxOverhead = ref(0);
@@ -100,7 +100,7 @@ const selectedKind = ref<'country' | 'division' | 'landmark'>('division');
 const search = ref('');
 const showDemoPeople = ref(false);
 const activeEventId = ref('');
-const selectedCity = ref<MapDistrictId>('campus');
+const selectedCity = ref<MapDistrictId>(locationDistrict(props.model.state.locationId));
 const detailDistrict = ref<MapDistrictId | null>(null);
 let cityView: { zoom: number; bearing: number; pan: { x: number; y: number }; overhead: number } | undefined;
 const itineraryDraft = ref('');
@@ -188,7 +188,7 @@ function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
   return status ? `此刻${status.statusLabel} · ${status.hoursLabel}` : '';
 }
-const localDestinations = computed(() => districtMapPlaces(detailDistrict.value ?? 'campus').map(place => ({ ...place, subtitle: place.kind === 'interior' ? '室内入口' : '室外地点' })));
+const localDestinations = computed(() => districtMapPlaces(detailDistrict.value ?? 'campus').map(place => ({ ...place, subtitle: place.id === 'haneda-airport' ? '国际航站楼' : place.kind === 'interior' ? '室内入口' : '室外地点' })));
 function destinationDisabled(id: string) {
   if (props.model.busy) return true;
   if (props.novelMode || isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId)) {

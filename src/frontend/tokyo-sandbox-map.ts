@@ -3,6 +3,7 @@
  */
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { circleSandboxOverlay } from './circle-sandbox-pack';
+import { airportDistrict, airportLandmark } from './airport-sandbox-layout';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtBounds, mapDistricts, type MapDistrictId } from './map-districts';
 
@@ -14,8 +15,8 @@ function withCirclePack<T extends { id: string }>(rows: readonly T[], extra: rea
   const ids = new Set(extra.map(row => row.id));
   return [...rows.filter(row => !ids.has(row.id)), ...extra];
 }
-export const tokyoDistricts = withCirclePack(sandboxData.districts, circleSandboxOverlay.districts);
-export const tokyoLandmarks = withCirclePack(sandboxData.landmarks, circleSandboxOverlay.landmarks);
+export const tokyoDistricts = withCirclePack(sandboxData.districts, [...circleSandboxOverlay.districts, airportDistrict]);
+export const tokyoLandmarks = withCirclePack(sandboxData.landmarks, [...circleSandboxOverlay.landmarks, airportLandmark]);
 export const tokyoCityBounds = {
   minX: Math.min(...tokyoDistricts.map(d => d.minX)),
   maxX: Math.max(...tokyoDistricts.map(d => d.maxX)),

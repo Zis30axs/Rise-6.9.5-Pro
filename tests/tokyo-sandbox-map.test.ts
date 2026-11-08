@@ -30,7 +30,7 @@ describe('Tokyo GLB scenic-coordinate migration', () => {
       if (copied) expect(presented).toEqual(projectOldTokyoPosition(old!));
       else expect(presented).toEqual({ x: landmark.x, z: landmark.z });
     }
-    expect(tokyoDistricts).toHaveLength(9);
+    expect(tokyoDistricts).toHaveLength(10);
     expect(tokyoCityBounds.minX).toBeLessThan(0);
     expect(tokyoCityBounds.maxX).toBeGreaterThan(200);
   });
