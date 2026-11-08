@@ -1,0 +1,436 @@
+/* Included by shell.css inside the shell ShadowRoot; keep selectors local to this panel. */
+.uc-status-hero.tno-status-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(148px, 32%) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  padding: 16px;
+  margin: 0 0 16px;
+  color: #d7f3f7;
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(6, 15, 24, 0.94) 0%, rgba(8, 20, 32, 0.96) 100%),
+    repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.03) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.03) 0 1px, transparent 1px 24px);
+  box-shadow:
+    0 12px 28px rgba(2, 8, 16, 0.55),
+    inset 0 0 24px rgba(56, 214, 232, 0.07);
+  overflow: hidden;
+}
+
+.uc-status-hero .tno-scanline-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(14, 42, 58, 0.16) 3px
+  );
+  opacity: 0.55;
+}
+
+.uc-status-hero .uc-hero-portrait-col,
+.uc-status-hero .uc-hero-details {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.uc-status-hero .uc-hero-portrait {
+  position: relative;
+  min-height: 248px;
+  max-height: 330px;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  place-items: end center;
+  border: 1px solid rgba(56, 214, 232, 0.42);
+  background:
+    radial-gradient(ellipse at 50% 82%, rgba(56, 214, 232, 0.22), rgba(7, 17, 28, 0.92) 70%),
+    linear-gradient(180deg, #07131e 0%, #0d2132 100%);
+  box-shadow: inset 0 0 18px rgba(56, 214, 232, 0.14);
+}
+
+.uc-status-hero .tno-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: #38d6e8;
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+.uc-status-hero .tno-corner-tl { top: 6px; left: 6px; border-width: 2px 0 0 2px; }
+.uc-status-hero .tno-corner-tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+.uc-status-hero .tno-corner-bl { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; }
+.uc-status-hero .tno-corner-br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+.uc-status-hero .uc-hero-portrait img {
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: contrast(1.04) drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
+}
+
+.uc-status-hero .uc-hero-placeholder {
+  margin: auto;
+  font-size: 2rem;
+  color: #38d6e8;
+  opacity: 0.72;
+}
+
+.uc-status-hero .tno-portrait-plate {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, rgba(5, 13, 22, 0.15) 0%, rgba(5, 13, 22, 0.92) 48%);
+  border-top: 1px solid rgba(56, 214, 232, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.uc-status-hero .tno-portrait-plate small {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: #6fdbe8;
+  opacity: 0.85;
+}
+
+.uc-status-hero .tno-portrait-plate strong {
+  font-size: 0.86rem;
+  color: #ecfcff;
+}
+
+.uc-status-hero .uc-hero-details {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.uc-status-hero .uc-hero-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.2);
+}
+
+.uc-status-hero .tno-kicker {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  color: #5ccada;
+  text-transform: uppercase;
+}
+
+.uc-status-hero .uc-hero-heading h2 {
+  font-size: 1.22rem;
+  line-height: 1.3;
+  margin: 3px 0 0;
+  color: #effdff;
+  text-shadow: 0 0 10px rgba(56, 214, 232, 0.25);
+}
+
+.uc-status-hero .tno-heading-badges {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.uc-status-hero .tno-metric-chip {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 214, 232, 0.3);
+  background: rgba(14, 38, 56, 0.72);
+  color: #9be8f2;
+}
+
+.uc-status-hero .uc-hero-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.71rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 214, 232, 0.42);
+  background: rgba(16, 46, 66, 0.78);
+  color: #b7f5fc;
+  white-space: nowrap;
+}
+
+.uc-status-hero .uc-hero-control.auto {
+  border-color: rgba(240, 179, 66, 0.62);
+  background: rgba(62, 42, 12, 0.72);
+  color: #ffd98e;
+}
+
+.uc-status-hero .tno-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38d6e8;
+  box-shadow: 0 0 8px #38d6e8;
+}
+
+.uc-status-hero .uc-hero-control.auto .tno-led {
+  background: #f0b342;
+  box-shadow: 0 0 8px #f0b342;
+}
+
+.uc-status-hero .uc-hero-focus {
+  border: 1px solid rgba(56, 214, 232, 0.28);
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: linear-gradient(135deg, rgba(10, 29, 44, 0.88), rgba(7, 19, 31, 0.92));
+}
+
+.uc-status-hero .uc-hero-focus.active {
+  border-color: rgba(56, 214, 232, 0.68);
+  box-shadow: inset 0 0 16px rgba(56, 214, 232, 0.1);
+}
+
+.uc-status-hero .tno-focus-slot {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.uc-status-hero .tno-focus-emblem {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 179, 66, 0.58);
+  background: radial-gradient(circle at 50% 50%, rgba(28, 56, 78, 0.95), rgba(8, 16, 26, 0.98));
+  box-shadow: 0 0 12px rgba(240, 179, 66, 0.2);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.uc-status-hero .tno-focus-emblem img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.uc-status-hero .tno-focus-glyph {
+  font-size: 1.3rem;
+  color: #f0b342;
+  text-shadow: 0 0 8px rgba(240, 179, 66, 0.55);
+}
+
+.uc-status-hero .uc-hero-focus-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.uc-status-hero .tno-focus-label {
+  color: #7cd9e6;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.uc-status-hero .uc-hero-focus-line strong {
+  text-align: right;
+  font-size: 0.88rem;
+  color: #f7fdff;
+}
+
+.uc-status-hero .uc-hero-progress {
+  height: 9px;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(5, 14, 23, 0.9);
+  overflow: hidden;
+}
+
+.uc-status-hero .uc-hero-progress span {
+  display: block;
+  height: 100%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #2bc4d8 0px,
+      #2bc4d8 8px,
+      #59e8fa 8px,
+      #59e8fa 11px
+    );
+  box-shadow: 0 0 10px rgba(56, 214, 232, 0.65);
+  transition: width 0.22s ease;
+}
+
+.uc-status-hero .tno-focus-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.uc-status-hero .uc-hero-focus small,
+.uc-status-hero .uc-hero-focus p {
+  display: block;
+  margin: 5px 0 0;
+  color: #9dcad2;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.uc-status-hero .uc-hero-traits {
+  margin-top: auto;
+  border: 1px solid rgba(56, 214, 232, 0.24);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: rgba(8, 21, 33, 0.82);
+}
+
+.uc-status-hero .uc-hero-traits summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #bdeff6;
+}
+
+.uc-status-hero .tno-count-pill {
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(16, 46, 66, 0.75);
+  color: #7ee3f0;
+}
+
+.uc-status-hero .uc-hero-trait-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.uc-status-hero .tno-spirit-badge {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  padding: 8px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 214, 232, 0.26);
+  background: rgba(11, 29, 45, 0.85);
+}
+
+.uc-status-hero .tno-spirit-badge.spirit {
+  border-color: rgba(240, 179, 66, 0.38);
+}
+
+.uc-status-hero .tno-spirit-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  color: #38d6e8;
+  border: 1px solid rgba(56, 214, 232, 0.42);
+  background: rgba(6, 17, 28, 0.92);
+}
+
+.uc-status-hero .tno-spirit-badge.spirit .tno-spirit-icon {
+  color: #f0b342;
+  border-color: rgba(240, 179, 66, 0.48);
+}
+
+.uc-status-hero .tno-spirit-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.uc-status-hero .tno-spirit-info strong {
+  font-size: 0.81rem;
+  color: #eefcff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.uc-status-hero .tno-spirit-info ins {
+  text-decoration: none;
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(56, 214, 232, 0.16);
+  color: #7ee3f0;
+}
+
+.uc-status-hero .tno-spirit-badge.spirit .tno-spirit-info ins {
+  background: rgba(240, 179, 66, 0.18);
+  color: #ffd37a;
+}
+
+.uc-status-hero .tno-spirit-info small,
+.uc-status-hero .uc-hero-traits p {
+  font-size: 0.72rem;
+  color: #95c2cb;
+  margin: 0;
+}
+
+@media (max-width: 550px) {
+  .uc-status-hero.tno-status-hero {
+    grid-template-columns: minmax(106px, 35%) minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  .uc-status-hero .uc-hero-portrait {
+    min-height: 196px;
+    max-height: 270px;
+  }
+  /* Keep the portrait beside the name; give the focus and traits the full row. */
+  .uc-status-hero .uc-hero-details {
+    display: contents;
+  }
+  .uc-status-hero .uc-hero-heading,
+  .uc-status-hero .uc-hero-focus,
+  .uc-status-hero .uc-hero-traits {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+  .uc-status-hero .uc-hero-focus,
+  .uc-status-hero .uc-hero-traits {
+    grid-column: 1 / -1;
+  }
+  .uc-status-hero .uc-hero-heading h2 {
+    font-size: 1.04rem;
+  }
+  .uc-status-hero .tno-focus-slot {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 9px;
+  }
+  .uc-status-hero .tno-focus-emblem {
+    width: 42px;
+    height: 42px;
+  }
+}

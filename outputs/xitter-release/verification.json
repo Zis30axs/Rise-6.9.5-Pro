@@ -1,0 +1,227 @@
+{
+  "status": "packaged-and-offline-assets-verified",
+  "networkAssets": [
+    {
+      "file": "avatars/bang-tomori.webp",
+      "placement": "inline",
+      "sha256": "19a1b3778d8a5c1b53f68693d9d0398b59cc4e47f42013c1bad5158f7eea5460"
+    },
+    {
+      "file": "lockscreens/bang-tomori.webp",
+      "placement": "inline",
+      "sha256": "2d022adbfe1623c1e3fb2e4730025518153c6428f727e114c908ed8f66675676"
+    },
+    {
+      "file": "avatars/bang-anon.webp",
+      "placement": "inline",
+      "sha256": "2171e51c81da09fab8818c5d8803535b1b1e900c0bace21147440cc225bbd26f"
+    },
+    {
+      "file": "lockscreens/bang-anon.webp",
+      "placement": "inline",
+      "sha256": "cf1ee122e4de8d3431cea6947eb74d5b25103a609b30848d170309c03cae7066"
+    },
+    {
+      "file": "avatars/bang-taki.webp",
+      "placement": "inline",
+      "sha256": "e30834b407c5e0ec9dfa1a124cc52fe827e3f0e11d80e7d7363394d9198fa6a6"
+    },
+    {
+      "file": "lockscreens/bang-taki.webp",
+      "placement": "inline",
+      "sha256": "4a7983f41494ef682a96c7a4ab9c73e067c5218308b4e8ed7cd5974cb82bf0a1"
+    },
+    {
+      "file": "avatars/bang-rana.webp",
+      "placement": "inline",
+      "sha256": "2d98e68c6269fbda50596bc3212b94daecad2345a1bb0cb2c2ad33f3ac4c7014"
+    },
+    {
+      "file": "lockscreens/bang-rana.webp",
+      "placement": "inline",
+      "sha256": "5fefe3f3babde399eb3dfad41038f4114f4253ac1d7e66832c89f12e3358c5a6"
+    },
+    {
+      "file": "avatars/soyo.webp",
+      "placement": "inline",
+      "sha256": "488f86307a0d3ff68272bf6f253f5a76b147bbbadb21d35c6896e74b6de9098a"
+    },
+    {
+      "file": "lockscreens/soyo.webp",
+      "placement": "inline",
+      "sha256": "cb2b42ba964a406fddc5bde82fab47fe2cba8e46a5c6401dbfb927071d4cc613"
+    },
+    {
+      "file": "avatars/sakiko.webp",
+      "placement": "inline",
+      "sha256": "2db8d0f2d1b05f8133aa1eab23c64b0a779e28b188bbfcd6965f5b225f14be03"
+    },
+    {
+      "file": "lockscreens/sakiko.webp",
+      "placement": "inline",
+      "sha256": "4fbc5e4397500875b0e2aeb80b009508ed2490e962fc62d863e980911f49b162"
+    },
+    {
+      "file": "avatars/bang-mutsumi.webp",
+      "placement": "inline",
+      "sha256": "28a674e327ba8fa99867f0fbe124310e06991bff91430924be90489d846d3ac8"
+    },
+    {
+      "file": "lockscreens/bang-mutsumi.webp",
+      "placement": "inline",
+      "sha256": "3d2dd372bfad71a7b1a9599b1d9ebb30e9c401d3ff86d0fbd38df409eaebd418"
+    },
+    {
+      "file": "avatars/bang-uika.webp",
+      "placement": "inline",
+      "sha256": "b95ceddfe114e68a9d6827502db45133b7fd21fdef07965ba32484cd89d48c0e"
+    },
+    {
+      "file": "lockscreens/bang-uika.webp",
+      "placement": "inline",
+      "sha256": "21c39f8a9f6754cf4ca14f2227fce95a5a8a470264b20f3bb34c19bc93900f14"
+    },
+    {
+      "file": "avatars/bang-umiri.webp",
+      "placement": "inline",
+      "sha256": "334f62d6cfaa87b921f22ecbe3b7ed4cdadda1513f59c3f30dc657c0b4b27b9f"
+    },
+    {
+      "file": "lockscreens/bang-umiri.webp",
+      "placement": "inline",
+      "sha256": "0a4acc289e7653db8b5c31bdc5124bfeddc43d43f473c730a8ac97168b998fd3"
+    },
+    {
+      "file": "avatars/bang-nyamu.webp",
+      "placement": "inline",
+      "sha256": "3ca64b67ce85170e69054631df1422075c5f0e68621736196ccce3034fdc454b"
+    },
+    {
+      "file": "lockscreens/bang-nyamu.webp",
+      "placement": "inline",
+      "sha256": "310b3b384d62bb99c7dfef297b2045fa1ea51a90ddd2ef50b010ea9335e9f192"
+    },
+    {
+      "file": "avatars/majo-anan.webp",
+      "placement": "inline",
+      "sha256": "d3fef11c3d9fefd901a922521485b0147ff49b242dc6f0c508355e16c567db04"
+    },
+    {
+      "file": "avatars/majo-arisa.webp",
+      "placement": "inline",
+      "sha256": "ca71c11281d4b009df5704699151a98e35c2ff0e71a0bdcdc187f60b102beb03"
+    },
+    {
+      "file": "avatars/majo-emma.webp",
+      "placement": "inline",
+      "sha256": "ade3cebdc8a0817103bc17a4f708c858219b00aecdfbabc0f646215b781fcc91"
+    },
+    {
+      "file": "avatars/majo-hanna.webp",
+      "placement": "inline",
+      "sha256": "1bc10e08ec7922894d35b67b2e0b6ac3aa0be44b2e02e2be9049a304165959cc"
+    },
+    {
+      "file": "avatars/majo-hiro.webp",
+      "placement": "inline",
+      "sha256": "d30f49fc5645de106f4ccaec8ac033f84802551032d68b2920a90225b043fc55"
+    },
+    {
+      "file": "avatars/majo-margo.webp",
+      "placement": "inline",
+      "sha256": "08fbec4f7aedbdbf3bc5425e1d5766ec6ac21ad5488ffa8abbb9021968082997"
+    },
+    {
+      "file": "avatars/majo-meruru.webp",
+      "placement": "inline",
+      "sha256": "3c5b8a56c58b66b101764afe172a890b32dff80530b32eb3ab8bbd841bb8aea2"
+    },
+    {
+      "file": "avatars/majo-milia.webp",
+      "placement": "inline",
+      "sha256": "6351904f4a219fe4095b05a0f0268fd912f0aedc4ae7ab4312927cf843b2bc62"
+    },
+    {
+      "file": "avatars/majo-nanoka.webp",
+      "placement": "inline",
+      "sha256": "1ebfbc36ad0c67e93413d9e6e4a39b52f9a07f819c5b3b435cf5aefc7ba037aa"
+    },
+    {
+      "file": "avatars/majo-noa.webp",
+      "placement": "inline",
+      "sha256": "4b13e28fee356ad79b3db77827c0c62e9587889c42133319352f69dea1294dd3"
+    },
+    {
+      "file": "avatars/majo-sherry.webp",
+      "placement": "inline",
+      "sha256": "a1d816b1b22918755b3d9415642ce73cbb8a99704021aefca9e5f1990c9e49ba"
+    },
+    {
+      "file": "avatars/majo-yuki.webp",
+      "placement": "inline",
+      "sha256": "cd850bbe1aa5f237dfe4c003876b6a791087a6c8d6cde4abc57903abbe7fc772"
+    },
+    {
+      "file": "avatars/watanare-ajisai.webp",
+      "placement": "inline",
+      "sha256": "aa62f9aa29e08d19124f239343cde3f6d8950523d0a6586337f7946ba278edae"
+    },
+    {
+      "file": "avatars/watanare-haruna.webp",
+      "placement": "inline",
+      "sha256": "e1d087ed67bdc7a6d68f48d38ceaaf5f702a5e85d3240bcae3ccce451d356ce9"
+    },
+    {
+      "file": "avatars/watanare-kaho.webp",
+      "placement": "inline",
+      "sha256": "e62e4dba6fd60e8225803e4c2597377336b0662f9caee735e3a985f08323229f"
+    },
+    {
+      "file": "avatars/watanare-mai.webp",
+      "placement": "inline",
+      "sha256": "b650ef9f9a54e406b21b6acc61aaebd0606dc2a68287b633d1bf4de27d5313f0"
+    },
+    {
+      "file": "avatars/watanare-renako.webp",
+      "placement": "inline",
+      "sha256": "0e0beb2ca07ac97d29c362b6091e0fc83018e1bb2bd4ee1eff3218090403668b"
+    },
+    {
+      "file": "avatars/watanare-satsuki.webp",
+      "placement": "inline",
+      "sha256": "6073ae24ddab5809bfd476d4bb9af97d29480011a125ac9d2e42a2dc35fab29d"
+    }
+  ],
+  "zipAssetsVerified": 236,
+  "tauriContainer": {
+    "sourceBytes": 41350243,
+    "bytes": 20317208,
+    "sourceSha256": "871a36b05146baceb98644b1b33e2ffde966bec5875b6b4685d85fa73fa390e1",
+    "sha256": "a174ddee10479213e361f5da5501efa9a02e7cdc69d403aad1564fa0f3ca613e",
+    "metadataEncoding": "zTXt/chara/zlib-method-0",
+    "metadataTextBytes": 38907628,
+    "compressedMetadataBytes": 17874592,
+    "metadataTextSha256": "ca7b3ee0c832ef3b964a9b58c60c9a260caee39aa5d8d179cac4a5045c95b85b",
+    "decompressedMetadataByteIdentical": true,
+    "allOtherPngChunksByteIdentical": true,
+    "embeddedScriptChanged": false,
+    "tauriNativeImportTested": false,
+    "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern."
+  },
+  "physicalTauriTavernTested": false,
+  "deployed": false,
+  "files": {
+    "unread-city-lite-assets.zip": {
+      "bytes": 93580500,
+      "sha256": "1b8557aca64af590cb13b222c1647cc8561245d8b0bb0c561ec875b41b3d3b99"
+    },
+    "unread-city-lite-tauri.png": {
+      "bytes": 20317208,
+      "sha256": "a174ddee10479213e361f5da5501efa9a02e7cdc69d403aad1564fa0f3ca613e"
+    },
+    "unread-city-lite.png": {
+      "bytes": 41350243,
+      "sha256": "871a36b05146baceb98644b1b33e2ffde966bec5875b6b4685d85fa73fa390e1"
+    }
+  }
+}

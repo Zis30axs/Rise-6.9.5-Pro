@@ -1,4 +1,4 @@
-import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
+import {phoneArt, networkArt} from 'UNREAD_CITY_PHONE_ART';
 
 const profiles = {
   soyo: {name:'长崎素世', title:'花叶与日常', ink:'#344f43', accent:'#52735f', base:'#f2eedf', fallback:'linear-gradient(145deg,#f2eedf,#adc1a4)', theme:'light', skin:'sky',
@@ -27,13 +27,14 @@ export function worldAppearance(s) {
 export function worldPhoneHome(screen, original) {
   const s=worldPhoneState(screen); if(!s)return original;
   const p=profiles[s.active], a=worldAppearance(s), first=p[a.layout];
-  const rest=[...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>!first.includes(id)&&!p.dock.includes(id));
+  const rest=[...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>id!=='worldpeek'&&!first.includes(id)&&!p.dock.includes(id));
   const pages=[first];for(let i=0;i<rest.length;i+=8)pages.push(rest.slice(i,i+8));
   return {pages,dock:p.dock};
 }
 export function worldPhoneIcon(screen,id,art=phoneArt) {
   const s=worldPhoneState(screen), key=id==='worldpeek'?'peek':id;
   if(!s)return null;
+  if(id==='forum')return networkArt.icon;
   if(id==='twiitch')return art[`${s.active}/icons/twiitch.svg`] || art[`twiitch/icon-${s.active}.svg`] || art['twiitch/icon-default.svg'] || null;
   return art[`${s.active}/icons/${key}.svg`] || null;
 }
@@ -51,7 +52,10 @@ export function applyWorldPhoneTheme(screen,art=phoneArt) {
   screen.dataset.worldOwner=s.active;screen.dataset.worldDevice=s.deviceId;
   screen.dataset.worldLayout=a.layout;screen.dataset.worldWallpaper=a.wallpaper;
   const svg=art[`${s.active}/wallpaper.svg`];
-  const wall=a.wallpaper==='plain'?p.base:svg?`url("data:image/svg+xml,${encodeURIComponent(svg)}"),${p.fallback}`:p.fallback;
+  const raster=networkArt.wallpapers[s.active];
+  const wall=a.wallpaper==='plain'?p.base:raster?`url("${raster}"),${p.fallback}`:svg?`url("data:image/svg+xml,${encodeURIComponent(svg)}"),${p.fallback}`:p.fallback;
+  win.__unreadCityNetworkArt=networkArt.avatars;
+  win.__unreadCityNetworkWordmark=networkArt.wordmark;
   for(const [key,value] of Object.entries({'--wall':wall,'--wall-size':'cover','--wall-pos':'center','--wall-ink':p.ink,'--label-halo':'transparent','--world-accent':p.accent,'--clock-stroke':'transparent','--clock-shadow':'transparent'}))screen.style.setProperty(key,value);
   screen.dataset.clockStyle='shade';screen.dataset.iconStyle='color';
   screen.querySelector('.wallpaper')?.replaceChildren();
@@ -60,6 +64,13 @@ export function applyWorldPhoneTheme(screen,art=phoneArt) {
 export function worldDeviceHeading(s) {
   const p=profiles[s.owner] || profiles.soyo;
   return {title:p.title, device:`${p.name}的手机`};
+}
+
+export function worldPeekWallpaper(s,art=phoneArt) {
+  const p=profiles[s.owner]||profiles.soyo, a=worldAppearance(s);
+  if(a.wallpaper==='plain')return p.base;
+  const raster=networkArt.wallpapers[s.owner], svg=art[`${s.owner}/wallpaper.svg`];
+  return raster?`center / cover no-repeat url("${raster}")`:svg?`center / cover no-repeat url("data:image/svg+xml,${encodeURIComponent(svg)}")`:p.fallback;
 }
 
 export function worldPhoneTheme(screen) {

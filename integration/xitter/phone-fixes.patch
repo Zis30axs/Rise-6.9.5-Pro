@@ -1,0 +1,83 @@
+--- a/core/network.js
++++ b/core/network.js
+@@ -34,7 +34,7 @@
+   return a.id;
+ }
+ export function networkPostVisible(post, network, here, inSpace) {
+-  return !network || post.space === network.space || inSpace(post, here);
++  return network ? post.space === network.space || inSpace(post, here) : inSpace(post, here);
+ }
+ export function buildNetworkRequest({network, mode = 'posts', preset, recent = [], post, reply}) {
+   const label = value => {
+@@ -48,11 +48,11 @@
+   return [{role: 'system', content: [
+     '你正在创作未读之城内的 Xitter。所有内容属于虚构游戏世界，不是现实新闻。',
+     '【固定账号】\n' + accounts.join('\n'),
+-    '固定人物、机构、乐队、杂谈账号的昵称、用户名、邮箱、头像与归属由程序管理，不得创建其替身、另起网名或改写资料。作者和回复对象优先写上表账号 ID。',
++    '固定人物、机构、乐队、杂谈账号的昵称、用户名、邮箱、头像与归属由程序管理，不得创建其替身、另起网名或改写资料。作者和回复对象优先写上表账号 ID。新路人网名不超过30字，不能假冒已登记账号。',
+     '允许随机产生新的普通路人网友，作者写新网名；程序会为其登记永久账号。已有路人重复出现用已有 ID。不得给已登记的世界书人物另造路人账号。',
+     '角色的人设只用于措辞，不构成已经发生的事实。没有提供的个人经历、家庭生活、私聊、他人所在地、秘密身份一律不知道。账号背后的真实身份不得自动被其他网友认出。',
+     '【已经确认的公开信息】\n' + facts.join('\n'),
+-    '媒体、公共机构与乐队只能发布这些已确认的公开信息；不能编造事故、交通中断、预警、演出或乐队重组。每条这类帖子后另写「【依据】公开信息ID」，无依据保持静默。公开帖子可作为网友讨论的内容，但传闻不能冒充机构确认。',
++    '媒体、公共机构与乐队只能发布这些已确认的公开信息；不能编造事故、交通中断、预警、演出或乐队重组。回复只依据当前公开帖子和公开信息，不得借评论发布无来源的公告。每条这类帖子后另写「【依据】公开信息ID」，无依据保持静默。公开帖子可作为网友讨论的内容，但传闻不能冒充机构确认。',
+     'CRYCHIC / @crychic 永久休眠，不发帖、不回复、不点赞、不参与热搜，任何剧情不能使其复活。',
+     `玩家当前账号为 ${network.ownerId}，不得替它发帖或回复。`,
+     '一次刷新统筹所有类别，允许任何账号沉默，也允许没有新帖子。不必每天更新，不要所有账号都出现。',
+--- a/core/forum.js
++++ b/core/forum.js
+@@ -78,6 +78,7 @@
+ 
+ const LINE = /^\s*(?:[-*•]\s*)?[【\[]\s*(热搜|帖子|回复|评论|网名|依据)\s*[】\]]\s*(.*)$/;
+ const SAID = /^([^:：\n]{1,80}?)\s*(?:回复\s*([^:：\n]{1,80}?))?\s*[:：]\s*(.+)$/;
++const NETWORK_SAID = /^((?:person|institution|chatter|band|guest):[a-z0-9_-]+|[^:：\n]{1,80}?)\s*(?:回复\s*((?:person|institution|chatter|band|guest):[a-z0-9_-]+|[^:：\n]{1,80}?))?\s*[:：]\s*(.+)$/;
+ const clean = s => String(s).replace(/<[^>]+>/g, '').trim().replace(/^[「“"](.*)[」”"]$/s, '$1').trim();
+ 
+ /**
+@@ -111,14 +112,14 @@
+       if (mode !== 'posts' || out.posts.length >= FORUM_LIMITS.perRefresh) continue;
+       let parts = rest.split(/[|｜]/).map(s => s.trim());
+       // 「作者：正文」 without the bars: no title.
+-      if (parts.length < 2) { const s = rest.match(SAID); if (!s) continue; parts = [s[1], '', s[3]]; }
++      if (parts.length < 2) { const s = rest.match(network ? NETWORK_SAID : SAID); if (!s) continue; parts = [s[1], '', s[3]]; }
+       if (parts.length === 2) parts = [parts[0], '', parts[1]];
+       const author = real(person(parts[0].replace(/[:：]$/, ''))), title = clean(parts[1]).slice(0, FORUM_LIMITS.title), text = clean(parts.slice(2).join('｜')).slice(0, FORUM_LIMITS.text);
+       if (isUser(author) || !text || (network && networkAccount(network, author)?.dormant)) continue;
+       post = {author, title, text, replies: []};
+       out.posts.push(post);
+     } else {
+-      const s = rest.match(SAID), from = s && real(person(s[1]));
++      const s = rest.match(network ? NETWORK_SAID : SAID), from = s && real(person(s[1]));
+       if (!from || isUser(from) || (network && networkAccount(network, from)?.dormant) || (mode === 'posts' && !post)) continue;
+       const said = clean(s[3]).slice(0, FORUM_LIMITS.reply), list = (post || out).replies;
+       if (said && list.length < 20) list.push({from, to: target(s[2]), text: said});
+@@ -126,10 +127,6 @@
+   }
+   if (network) {
+     out.posts = out.posts.filter(p => !['institution', 'band'].includes(networkAccount(network, p.author)?.kind) || p.evidence?.length);
+-    // Institutions cannot turn a comment into an unsourced announcement.
+-    for (const list of [out.replies, ...out.posts.map(p => p.replies)]) {
+-      for (let i = list.length - 1; i >= 0; i--) if (['institution', 'band'].includes(networkAccount(network, list[i].from)?.kind)) list.splice(i, 1);
+-    }
+   }
+   return out;
+ }
+--- a/ui/forum.js
++++ b/ui/forum.js
+@@ -49,6 +49,7 @@
+       + (busy() ? '<p class="moments-busy" role="status">正在刷新……</p>' : '')
+       + (posts.length ? `<div class="forum-feed">${posts.map(p => card(p, roles)).join('')}</div>`
+         : empty('还没有动态', '写下此刻的想法，或刷新看看大家在聊什么。', 'bubble')));
++    if (ctx.win.__unreadCityNetworkWordmark) { const title = v.root.querySelector('.page-heading h1'); title.innerHTML = ctx.win.__unreadCityNetworkWordmark; title.setAttribute('aria-label', 'Xitter'); title.classList.add('xitter-wordmark'); }
+   }
+   async function renderPost(ticket) {
+     const p = await api.getForumPost(open);
+--- a/ui/phone.css
++++ b/ui/phone.css
+@@ -2543,6 +2543,7 @@
+ :root[data-hosted]:not([data-paint-full]) .today-top{margin-right:2px}
+ .story-contact-portrait {display:block;width:100%;height:210px;object-fit:contain;object-position:center;background:color-mix(in srgb,currentColor 5%,transparent);border-radius:14px;margin:10px 0 16px;}
+ 
++[data-app="forum"] .xitter-wordmark svg{width:116px;height:36px;display:block}
+ /* Xitter identity controls are siblings of post/reply buttons, never nested buttons. */
+ [data-app="forum"] .xitter-identity{display:flex;align-items:center;gap:9px;min-width:0;max-width:100%;padding:0;border:0;background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+ [data-app="forum"] .xitter-identity>span{display:grid;min-width:0;gap:2px;overflow-wrap:anywhere}

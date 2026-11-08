@@ -1,5 +1,6 @@
 import { build } from 'vite';
 import {loadPhoneArt} from './phone_visual_assets.mjs';
+import {loadNetworkArt} from './network_visual_assets.mjs';
 import {adaptPhonePeek} from '../integration/dual-protagonists/phone-peek-build.mjs';
 import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -21,6 +22,7 @@ const tokenizers = { 't5.json': await text('tokenizers/t5.json'), 'qwen.txt': aw
 const licenses = { marked: await text('ui/vendor/marked.LICENSE.txt'), tokenizers: await text('tokenizers/LICENSE-Apache-2.0.txt') };
 const phoneCss = (await Promise.all(['ui/phone.css', 'ui/skins.css'].map(text))).join('\n') + '\n' + await readFile(path.join(root,'integration/dual-protagonists/phone-visuals.css'),'utf8');
 const phoneArt = await loadPhoneArt(root);
+const networkArt = await loadNetworkArt(root);
 const artModule = '\0virtual:unread-city-phone-art';
 const hostCss = (await Promise.all(['style.css', 'floating.css'].map(text))).join('\n');
 // All shipped CSS resources are inline SVG data URLs. Fail closed if upstream
@@ -49,6 +51,7 @@ function replaceOnce(code, from, to, label) {
 const worldAppsModule = '\0virtual:unread-city-world-apps';
 const peekModule = 'virtual:unread-city-phone-peek';
 const peekFile = path.join(root, 'integration/dual-protagonists/phone-peek.js').replaceAll('\\', '/');
+const peekControllerFile = path.join(root, 'integration/dual-protagonists/phone-peek-controller.js').replaceAll('\\', '/');
 const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_CHAT',path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'));
 const dataModule = '\0virtual:unread-city-phone-data';
 let phoneHtml = '';
@@ -56,9 +59,15 @@ const sourceFiles = new Map();
 function plugin(stage) {
   return {
     name: 'unread-city-private-phone',
-    resolveId(id) { if(id === peekModule) return peekFile; if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; if(id === gameClockModule) return gameClockFile; if(id === deviceSettingsModule) return deviceSettingsFile; },
+    resolveId(id) {
+      if(id==='virtual:unread-city-protagonist-peek')return peekControllerFile;
+      if(id==='UNREAD_CITY_PHONE_COMMON')return path.join(phoneRoot,'ui/common.js').replaceAll('\\','/');
+      if(id==='UNREAD_CITY_PEEK_PHONE')return path.join(phoneRoot,'ui/peek-phone.js').replaceAll('\\','/');
+      if(id==='UNREAD_CITY_PHONE_VISUALS')return path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/');
+      if(id === peekModule) return peekFile; if(id === 'UNREAD_CITY_PHONE_ART') return artModule; if (id === 'virtual:unread-city-world-apps') return worldAppsModule; if (id === 'virtual:unread-city-phone-data') return dataModule; if(id === gameClockModule) return gameClockFile; if(id === deviceSettingsModule) return deviceSettingsFile;
+    },
     load(id) {
-      if(id === artModule) return `export const phoneArt=${JSON.stringify(phoneArt)};`;
+      if(id === artModule) return `export const phoneArt=${JSON.stringify(phoneArt)};export const networkArt=${JSON.stringify(networkArt)};`;
       if (id === worldAppsModule) return worldAppsSource;
       if (id === dataModule) return `export const portableData=${JSON.stringify({ version: manifest.version, manifest, hostCss: stage === 'runtime' ? hostCss : '', phoneHtml, tokenizers: stage === 'runtime' ? tokenizers : {}, sounds, soundManifest })};`;
     },
@@ -67,7 +76,7 @@ function plugin(stage) {
       if (id.replaceAll('\\', '/') === gameClockFile || id.replaceAll('\\', '/') === deviceSettingsFile) return;
       if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
        if(id===path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'))return;
-      if(id === peekFile) return;
+      if(id === peekFile || id.replaceAll('\\','/') === peekControllerFile) return;
       const relative = path.relative(phoneRoot, id).replaceAll('\\', '/');
       if (relative.startsWith('../') || path.isAbsolute(relative) || !/^(?:[\w-]+\.js|(?:core|ui|portable)\/[\w./-]+\.js|fish-mobile\/(?:native-host|native-probe|mcp-errors|client)\.js)$/.test(relative) || /(?:^|\/)(?:test|fixtures|node_modules)(?:\/|\.)/.test(relative) || /\.test\.js$/.test(relative)) throw Error(`拒绝打包白名单以外的手机文件：${relative}`);
       sourceFiles.set(relative, createHash('sha256').update(code).digest('hex'));
@@ -123,9 +132,8 @@ function plugin(stage) {
           worlddelivery: {name:'外卖',eyebrow:'Delivery',colors:['#ffdd83','#e59f3e','#fff4c6']},
           worldcalendar: {name:'日历',eyebrow:'Calendar',colors:['#a6c8e8','#577998','#f2d9bd']},
           worldmessages: {name:'消息',eyebrow:'World Messages',colors:['#b8dfcc','#4a9174','#f5c8dc']},
-          worldpeek: {name:'查主角手机',eyebrow:'Peek',colors:['#ffc6e0','#c85a9a','#9fe0ff']},
           twiitch: {name:'Twiitch',eyebrow:'Stream',colors:['#f2d8ff','#a05ce0','#ffd36a']},`, '游戏应用目录');
-        code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages','worldpeek',SLOT,SLOT],", '游戏应用首页');
+        code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages','peek',SLOT,SLOT],", '游戏应用首页');
       }
       if (relative === 'ui/chat.js') {
         code = "import {worldPhoneState} from 'virtual:unread-city-world-apps';\n" + code;

@@ -1,5 +1,8 @@
 #sttts-panel[data-uc-spatial-phone] {overflow:visible!important;transform-style:preserve-3d!important;isolation:auto!important}
 #sttts-panel[data-uc-spatial-phone] > iframe {backface-visibility:hidden!important;-webkit-backface-visibility:hidden!important;border-radius:38px!important}
+#sttts-panel[data-uc-spatial-phone][data-phone-flat=true] {transform-style:flat!important}
+#sttts-panel[data-phone-flat=true] > iframe {z-index:2!important}
+#sttts-panel[data-phone-flat=true] .uc-phone-solid {z-index:1}
 #sttts-panel .uc-phone-solid {position:absolute;transform-style:preserve-3d;pointer-events:none;user-select:none;-webkit-user-select:none}
 .uc-phone-solid > div {position:absolute;box-sizing:border-box;transform-style:preserve-3d}
 .uc-phone-front,.uc-phone-back {inset:0;border-radius:var(--radius);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;touch-action:auto;cursor:grab}

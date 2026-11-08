@@ -1,6 +1,59 @@
 // Restore the original simulated NPC phone, while projecting real game SMS.
 // The protagonist's visible messages always come from the canonical game save.
 const PROTAGONIST_NAMES = new Set(['长崎素世','丰川祥子','樱羽艾玛','甘织玲奈子']);
+const PROTAGONISTS = {soyo:'长崎素世',sakiko:'丰川祥子',emma:'樱羽艾玛',renako:'甘织玲奈子'};
+
+export function peekProtagonist(world, name) {
+  if (!world) return null;
+  return (world.others || []).find(person => person.name === name) ||
+    (world.name === name ? {id:world.owner,name,read:true,reason:''} : null);
+}
+
+/** Project a permission-checked owner view. Never merge an old simulated snapshot. */
+export function protagonistPeekSnapshot(data) {
+  const threads = new Map(), seen = new Set();
+  const unread = new Set((data.messages || []).filter(m=>!m.read).map(m=>m.id));
+  const names = new Map(Object.entries(PROTAGONISTS).map(([id,name])=>['protagonist-'+id,name]));
+  for (const c of data.npcPhone?.contacts || []) names.set(c.contactId,c.name);
+  const stamp = minute => `第 ${Math.floor(minute/1440)+1} 天 ${String(Math.floor(minute/60)%24).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;
+  const add = (key,name,message,from,at) => {
+    if (seen.has(message.id)) return;
+    seen.add(message.id);
+    if (!threads.has(key)) threads.set(key,{id:key,with:name,lines:[],when:'',unread:0});
+    const thread=threads.get(key);
+    thread.lines.push({id:message.id,from,text:message.text,at});
+    if(unread.has(message.id))thread.unread++;
+  };
+  for (const m of data.conversation || []) {
+    const peer = m.from === data.owner ? m.to : m.from;
+    add('protagonist:'+peer,PROTAGONISTS[peer] || peer,m,PROTAGONISTS[m.from] || m.from,m.at);
+  }
+  for (const m of data.npcPhone?.messages || []) {
+    if (m.owner !== data.owner) continue;
+    const contact = (m.channel === 'group' ? data.npcPhone.groups : data.npcPhone.contacts)?.find(c=>c.id===m.targetId);
+    add(m.channel+':'+m.targetId,contact?.name || m.targetId,m,
+      m.direction === 'outgoing' ? data.name : m.speakerName || contact?.name || m.targetId,m.at);
+  }
+  for (const m of data.messages || []) {
+    const contact = data.npcPhone?.contacts?.find(c=>c.contactId===m.npcId);
+    const key = m.npcId?.startsWith('protagonist-') ? 'protagonist:'+m.npcId.slice(12) : 'npc:'+(contact?.id || m.npcId);
+    add(key,names.get(m.npcId) || m.npcId,m,names.get(m.npcId) || m.npcId,historicalGameMinute(m.at));
+  }
+  const chats = [...threads.values()].map(thread => {
+    thread.lines.sort((a,b)=>a.at-b.at);
+    thread.when = stamp(thread.lines.at(-1).at);
+    return thread;
+  }).sort((a,b)=>b.lines.at(-1).at-a.lines.at(-1).at);
+  return {name:data.name,owner:data.owner,canonical:true,at:data.now*60000,chats,
+    photos:[],notes:[],searches:[],cart:[],
+    clock:{time:`${String(data.clock.hour).padStart(2,'0')}:${String(data.clock.minute).padStart(2,'0')}`,date:data.calendarDate.iso},
+    calendar:[...(data.dailyPlans||[]).map(e=>({title:e.title,detail:`${e.time} · ${e.done?'已完成':'待办'}`})),
+      ...(data.calendar||[]).map(e=>({title:e.title,detail:`${stamp(e.start)} · ${e.duration} 分钟`}))],
+    orders:(data.orders||[]).map(o=>({title:data.catalog?.find(c=>c.id===o.itemId)?.name||o.itemId,
+      detail:`¥${(o.totalCents/100).toFixed(2)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}`})),
+    wallet:Object.entries(data.cards||{}).map(([id,cents])=>({title:({gpt:'GPT',claude:'Claude',gemini:'Gemini'})[id]||id,detail:`¥${(cents/100).toFixed(2)}`})),
+  };
+}
 
 export function peekWorld(win) {
   try {
@@ -45,6 +98,8 @@ export function withoutProtagonistChats(snapshot) {
 
 export function visiblePeekSnapshot(snapshot, world, name = snapshot?.name) {
   if (!world || !name) return snapshot;
+  // Playable people require their own inspected view, never this viewer's cache.
+  if (peekProtagonist(world,name) || PROTAGONIST_NAMES.has(name)) return null;
   const contact = peekWorldContact(world, name);
   const messages = peekCanonicalMessages(world, contact);
   // Show an existing real SMS thread even before the first model generation.

@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-08",
+  "rootCause": "Vue scoped component styles were emitted into external CSS, while the single-file card script mounted into a ShadowRoot containing only shell.css?inline. The three panel styles were absent there.",
+  "reproducedBefore": {
+    "panels": [
+      "focus-tree-panel",
+      "society-panel",
+      "strategy-status-hero"
+    ],
+    "viewport": "1440x900",
+    "display": "block",
+    "border": "0px",
+    "embeddedPanelStyle": false,
+    "browserFailures": 3
+  },
+  "fix": [
+    "Move the existing panel styles into CSS imported by shell.css and scope each selector to its own panel root.",
+    "Keep the existing working-tree visual design; remove default model/storage implementation copy.",
+    "At mobile widths, give the status focus and traits full rows below the portrait and name."
+  ],
+  "checks": {
+    "typecheck": {
+      "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+      "status": "passed"
+    },
+    "build": {
+      "command": "node node_modules/vite/bin/vite.js build",
+      "status": "passed"
+    },
+    "nodePanels": {
+      "command": "node --test tests/focus-tree-panel.node.mjs tests/society-panel.node.mjs",
+      "passed": 7
+    },
+    "browser": {
+      "engine": "Playwright Chromium, headless",
+      "mode": "Local packaged IIFE plus manually installed matching Lite ZIP; no Vite component CSS",
+      "viewports": [
+        "1440x900",
+        "1280x800",
+        "390x844",
+        "320x568"
+      ],
+      "initialSuitePassed": 12,
+      "additionalPopulatedStatus": {
+        "beforeNarrowFix": {
+          "passed": 3,
+          "failed": 1,
+          "reason": "320px status traits and focus overflowed the portrait side column"
+        },
+        "afterNarrowFix": {
+          "passed": 4,
+          "failed": 0
+        }
+      },
+      "finalCoverage": "Eight focus/society cases passed before the isolated status CSS adjustment; four populated status cases passed against the final bundle. Repeated runs are not counted as new cases.",
+      "assertions": [
+        "Embedded CSS and actual grid/border/background styles",
+        "Branch images loaded and connector visible",
+        "Start/cancel focus through UI",
+        "Four society tabs and actual circle creation through UI",
+        "Active focus and traits visible",
+        "No horizontal overflow",
+        "No disallowed implementation copy in changed panels",
+        "No uncaught page errors"
+      ],
+      "screenshots": "outputs/strategy-panels-qa/"
+    },
+    "tauriPackaging": {
+      "sourceBytes": 27189739,
+      "bytes": 10217802,
+      "sourceSha256": "f03e05fef39668b48393520c89bc319723c4eba7b63afcc78bd29388f407d7ce",
+      "sha256": "b78fc09178894df10aa795931d9986b2323e8d50d9f768bd1cc7b26f3be2ec59",
+      "metadataEncoding": "zTXt/chara/zlib-method-0",
+      "metadataTextBytes": 24747124,
+      "compressedMetadataBytes": 7775186,
+      "metadataTextSha256": "d3720c186ef7997a75c7cdbf1e39e24cccef536b0a481ef07b3663a840deac57",
+      "decompressedMetadataByteIdentical": true,
+      "allOtherPngChunksByteIdentical": true,
+      "embeddedScriptChanged": false,
+      "tauriNativeImportTested": false,
+      "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern.",
+      "source": "D:\\.study\\cc\\dist\\unread-city-lite.png",
+      "artifact": "D:\\.study\\cc\\dist\\unread-city-strategy-fix-tauri-20261108.png"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "dist/immersive-shell.js",
+      "bytes": 161016945,
+      "sha256": "3bce3ac3ad16b84f5fb30d5f646fcdb0c1d09ff7fafc39692985638853eb8cbc"
+    },
+    {
+      "path": "dist/immersive-shell-lite.js",
+      "bytes": 18084321,
+      "sha256": "e2ceee04509a667d1ba3900324d6d53ca338e3584991c4acac7f5a2943f8cbec"
+    },
+    {
+      "path": "dist/unread-city-lite.png",
+      "bytes": 27189739,
+      "sha256": "f03e05fef39668b48393520c89bc319723c4eba7b63afcc78bd29388f407d7ce"
+    },
+    {
+      "path": "dist/unread-city-strategy-fix-tauri-20261108.png",
+      "bytes": 10217802,
+      "sha256": "b78fc09178894df10aa795931d9986b2323e8d50d9f768bd1cc7b26f3be2ec59"
+    },
+    {
+      "path": "dist/unread-city-lite-assets.zip",
+      "bytes": 93580500,
+      "sha256": "d42aa6fed162c82b714684a32eb69d5a5fff4a41cf5ccef64e2ceecc8670b5ca"
+    }
+  ],
+  "notRun": [
+    "GitHub Actions / CI",
+    "Agent Edition",
+    "Actual model calls",
+    "Native SillyTavern deployment/import",
+    "Physical TauriTavern device validation"
+  ]
+}

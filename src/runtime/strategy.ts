@@ -49,6 +49,12 @@ export interface FocusDefinition {
   onComplete?: readonly StrategyEffect[];
 }
 export interface DecisionDefinition {
+  category?: string;
+  summary?: string;
+  energyCost?: number;
+  instrumentDelta?: number;
+  moraleDelta?: number;
+  stressDelta?: number;
   id: string;
   owner: StrategyOwner;
   title: string;
@@ -131,7 +137,69 @@ export const SPIRIT_CATALOG: readonly SpiritDefinition[] = [
   ] },
 ];
 export const DECISION_CATALOG: readonly DecisionDefinition[] = [
-  { id: 'soyo_sort_memories', owner: 'soyo', title: '整理旧日回忆',
+  { id: 'soyo_practice_bass', owner: 'soyo', title: '练习贝斯', category: '基础训练',
+    summary: '在排练间隙独自反复校准贝斯指法与低音律动，让指尖记住每一处切分。',
+    energyCost: 25, instrumentDelta: 4, moraleDelta: 2, stressDelta: -3,
+    available: { always: true }, cooldownMinutes: 360,
+    effects: [{ type: 'add_stat', key: 'soyo_resolve', amount: 3 }] },
+  { id: 'soyo_brew_black_tea', owner: 'soyo', title: '冲泡红茶平复心绪', category: '身心调适',
+    summary: '温热茶杯与熟悉的大吉岭茶香，把紧绷的呼吸一点点放缓。',
+    energyCost: 15, moraleDelta: 6, stressDelta: -8,
+    available: { always: true }, cooldownMinutes: 480,
+    effects: [{ type: 'add_stat', key: 'soyo_resolve', amount: 2 }, { type: 'remove_spirit', id: 'fragile_resolve' }] },
+  { id: 'soyo_check_band_schedule', owner: 'soyo', title: '确认成员日程与联系', category: '乐队统筹',
+    summary: '梳理大家最近的空余时间与排练安排，提前留好沟通余地。',
+    energyCost: 20, moraleDelta: 3, stressDelta: -2,
+    available: { always: true }, cooldownMinutes: 720,
+    effects: [{ type: 'add_stat', key: 'soyo_resolve', amount: 4 }] },
+  { id: 'sakiko_practice_keyboard', owner: 'sakiko', title: '练习键盘与指法', category: '基础训练',
+    summary: '独自在琴键上反复推敲乐句与指法力度，保持绝不妥协的演奏水准。',
+    energyCost: 25, instrumentDelta: 4, moraleDelta: 3, stressDelta: -3,
+    available: { always: true }, cooldownMinutes: 360,
+    effects: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 3 }] },
+  { id: 'sakiko_draft_arrangement', owner: 'sakiko', title: '推敲新曲编曲分谱', category: '乐队统筹',
+    summary: '在谱纸上细化各声部衔接与舞台戏剧张力，明确下一阶段曲风方向。',
+    energyCost: 30, instrumentDelta: 3, moraleDelta: 4, stressDelta: -2,
+    available: { always: true }, cooldownMinutes: 720,
+    effects: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 5 }] },
+  { id: 'sakiko_evening_walk', owner: 'sakiko', title: '晚风独行整理思绪', category: '身心调适',
+    summary: '在忙碌的课业与工作间隙独自步行片刻，让紧绷的思绪重新沉淀。',
+    energyCost: 15, moraleDelta: 5, stressDelta: -7,
+    available: { always: true }, cooldownMinutes: 480,
+    effects: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 2 }, { type: 'remove_spirit', id: 'fragile_resolve' }] },
+  { id: 'emma_review_case_notes', owner: 'emma', title: '梳理案卷与日常备忘', category: '基础准备',
+    summary: '把近期记下的委托细节与朋友们的近况逐条核对清楚。',
+    energyCost: 25, moraleDelta: 4, stressDelta: -4,
+    available: { always: true }, cooldownMinutes: 360,
+    effects: [{ type: 'add_stat', key: 'emma_trust', amount: 4 }] },
+  { id: 'emma_bake_tea_snacks', owner: 'emma', title: '准备分给大家的茶点', category: '人际关怀',
+    summary: '留出一点精力烤制小点心，为下一次大家的聚会添一份安心感。',
+    energyCost: 20, moraleDelta: 6, stressDelta: -6,
+    available: { always: true }, cooldownMinutes: 480,
+    effects: [{ type: 'add_stat', key: 'emma_trust', amount: 3 }] },
+  { id: 'emma_quiet_reading', owner: 'emma', title: '午后静读舒缓心情', category: '身心调适',
+    summary: '找一处安静角落读几页书，恢复平稳温和的步调。',
+    energyCost: 15, moraleDelta: 5, stressDelta: -7,
+    available: { always: true }, cooldownMinutes: 480,
+    effects: [{ type: 'add_stat', key: 'emma_trust', amount: 2 }] },
+  { id: 'renako_rehearse_chat', owner: 'renako', title: '预演明日聊天话题', category: '基础准备',
+    summary: '在心里把可能聊到的话题过一遍，减少临场接话时的慌乱。',
+    energyCost: 20, moraleDelta: 4, stressDelta: -5,
+    available: { always: true }, cooldownMinutes: 360,
+    effects: [{ type: 'add_stat', key: 'renako_confidence', amount: 3 }] },
+  { id: 'renako_coordination_practice', owner: 'renako', title: '练习器乐与节拍配合', category: '基础训练',
+    summary: '跟着节拍器练习基础指法与节奏稳定性，一点点积累自信。',
+    energyCost: 25, instrumentDelta: 3, moraleDelta: 3, stressDelta: -3,
+    available: { always: true }, cooldownMinutes: 360,
+    effects: [{ type: 'add_stat', key: 'renako_confidence', amount: 4 }] },
+  { id: 'renako_solo_breather', owner: 'renako', title: '独处充电平复紧绷', category: '身心调适',
+    summary: '留给自己一段不用勉强寒暄的独处时间，让呼吸重新变得轻快。',
+    energyCost: 15, moraleDelta: 6, stressDelta: -8,
+    available: { always: true }, cooldownMinutes: 480,
+    effects: [{ type: 'add_stat', key: 'renako_confidence', amount: 2 }] },
+  { id: 'soyo_sort_memories', owner: 'soyo', title: '整理旧日回忆', category: '心境抉择',
+    summary: '翻看旧乐谱与过往留下的排练记录，理清自己真正放不下的部分。',
+    energyCost: 20, moraleDelta: 3, stressDelta: -4,
     available: { completed: 'soyo_face_past' }, cooldownMinutes: 1440,
     effects: [{ type: 'add_stat', key: 'soyo_resolve', amount: 5 }] },
 ];

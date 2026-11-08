@@ -1,0 +1,8 @@
+﻿{
+    "HttpReady":  true,
+    "ProcessId":  37492,
+    "WorkingSetMiB":  155.6,
+    "V8HeapLimitMiB":  3072,
+    "PreviousExit":  "V8 heap limit 2048 MiB",
+    "SustainedGameplayMemoryVerified":  false
+}

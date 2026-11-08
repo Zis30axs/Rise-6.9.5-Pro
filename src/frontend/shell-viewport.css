@@ -17,6 +17,14 @@
 }
 :host([data-uc-viewport]) .room-activity-receipt { max-height:80px; overflow:auto; overscroll-behavior:contain; }
 :host([data-uc-viewport]) .composer-error { flex-shrink:0; max-height:48px; overflow:auto; }
+@media(min-width:761px) {
+  :host([data-uc-viewport]) .floating-window:not(.phone-window) {
+    max-height:calc(var(--uc-viewport-height,100dvh) - 120px);
+  }
+  :host([data-uc-viewport]) .floating-window:not(.phone-window) .window-content {
+    min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  }
+}
 @media(max-width:760px) {
   :host([data-uc-viewport]) .world-chrome {
     display:grid;

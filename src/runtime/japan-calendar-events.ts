@@ -28,6 +28,7 @@ export const residentBirthdays: readonly ResidentBirthday[] = Object.freeze(lore
 /** Calendar identities; playable characters reuse their existing protagonist IDs. */
 const BANG_DREAM_BIRTHDAY_IDS = {
   "长崎素世": "soyo",
+  "长崎夫人": "nagasaki-mother",
   "丰川祥子": "sakiko",
   "高松灯": "bang-tomori",
   "千早爱音": "bang-anon",
@@ -38,7 +39,7 @@ const BANG_DREAM_BIRTHDAY_IDS = {
   "八幡海铃": "bang-umiri",
   "祐天寺若麦": "bang-nyamu"
 } as const;
-/** MyGO!!!!! and Ave Mujica dates are read from the character worldbook, not duplicated here. */
+/** Band members and family birthdays are read from the character worldbook, not duplicated here. */
 export const bangDreamBirthdays: readonly ResidentBirthday[] = Object.freeze(bandLore.entries.flatMap(entry => {
   const personId = BANG_DREAM_BIRTHDAY_IDS[entry.name as keyof typeof BANG_DREAM_BIRTHDAY_IDS];
   if (!personId) return [];

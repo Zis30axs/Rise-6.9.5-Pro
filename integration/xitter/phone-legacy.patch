@@ -1,0 +1,75 @@
+--- a/ui/forum.js
++++ b/ui/forum.js
+@@ -19,15 +19,16 @@
+   let open = '', profileId = '', directory = false, epoch = 0, posts = [];
+   const network = () => readNetwork(ctx.win);
+   const account = who => networkAccount(network(), who);
++  const displayAccount = who => account(who) || ctx.win.parent.__unreadCityWorldPhone?.networkIdentity?.(who);
+   const isMine = who => network() ? who === network().ownerId : who === 'me';
+-  const handle = who => { const a = account(who); return a ? '@' + a.username : '@archived'; };
++  const handle = who => { const a = displayAccount(who); return a ? '@' + a.username : '@archived'; };
+   const profileButton = who => `<button type="button" class="xitter-identity" data-action="network-profile" data-account="${esc(who)}">${face(who,32)}<span><b>${esc(nameOf(who))}</b><small>${esc(handle(who))}</small></span></button>`;
+   const myName = () => api.getState().chat.profile?.name || api.userName?.() || '我';
+   // 网名: everyone shows by their screen name on the board (the user's, set in 论坛 → … → 网名; characters' given or made up once).
+   const net = () => api.getState().chat.netNames || {};
+-  const nameOf = who => network() ? account(who)?.nickname || (who === 'me' ? '旧账号' : net()[who] || who) : who === 'me' ? net().me || myName() : net()[who] || who;
++  const nameOf = who => network() ? displayAccount(who)?.nickname || (who === 'me' ? '旧账号' : net()[who] || who) : who === 'me' ? net().me || myName() : net()[who] || who;
+   const characters = () => new Set((api.chatContacts?.() || []).map(c => c.name));
+-  const face = (who, size) => { const a = account(who), art = ctx.win.__unreadCityNetworkArt || {}; const src = art[a?.avatarId] || art.default; if (network() && src) return `<img class="xitter-avatar" width="${size}" height="${size}" src="${esc(src)}" alt="">`; return who === 'me' ? avatar(myName(), 'none', size, 'me') : avatar(who, ctx.engineOf(who), size); };
++  const face = (who, size) => { const a = displayAccount(who), art = ctx.win.__unreadCityNetworkArt || {}; const src = art[a?.avatarId] || art.default; if (network() && src) return `<img class="xitter-avatar" width="${size}" height="${size}" src="${esc(src)}" alt="">`; return who === 'me' ? avatar(myName(), 'none', size, 'me') : avatar(who, ctx.engineOf(who), size); };
+   const badge = (who, roles) => network() ? (isMine(who) ? '<span class="forum-tag me">我</span>' : ['institution','band'].includes(account(who)?.kind) ? '<span class="forum-tag">官方</span>' : '') : who === 'me' ? '<span class="forum-tag me">我</span>' : roles.has(who) ? '<span class="forum-tag">角色</span>' : '';
+   const busy = () => api.forumBusy?.();
+ 
+@@ -72,12 +73,12 @@
+     v.draw(heading('发现账号', '', 'Xitter') + groups.map(([kind, title]) => `<section class="xitter-directory"><h2>${title}</h2>${n.accounts.filter(a => a.kind === kind).map(a => `<div class="xitter-account-row">${profileButton(a.id)}${a.dormant ? '<span class="forum-tag">休眠</span>' : ''}</div>`).join('')}</section>`).join(''));
+   }
+   async function renderProfile(ticket) {
+-    const n = network(), a = account(profileId);
++    const n = network(), a = displayAccount(profileId);
+     const all = await api.listForum();
+     if (v.disposed || ticket !== epoch) return;
+     posts = all;
+     const id = a?.id || profileId;
+-    const mine = all.filter(p => (account(p.author)?.id || p.author) === id);
++    const mine = all.filter(p => (displayAccount(p.author)?.id || p.author) === id);
+     const follows = n?.follows || [];
+     const following = follows.filter(([from]) => from === id).length;
+     const followers = follows.filter(([,to]) => to === id).length;
+@@ -89,7 +90,7 @@
+       <p>${esc(a?.bio || '这里保存着过去留下的动态。')}</p>
+       <div class="xitter-counts"><span><b>${following}</b> 关注</span><span><b>${followers}</b> 粉丝</span></div>
+       ${a?.dormant ? '<p class="xitter-dormant">休眠中</p>' : ''}
+-      ${a && n && a.id !== n.ownerId ? btn('network-follow', followed ? '已关注' : '关注', followed ? 'secondary' : 'primary', `aria-pressed="${followed}"`) : ''}
++      ${a && n && a.id !== n.ownerId && a.id !== 'legacy:me' ? btn('network-follow', followed ? '已关注' : '关注', followed ? 'secondary' : 'primary', `aria-pressed="${followed}"`) : ''}
+       </section><h2 class="xitter-section-title">动态</h2>${a?.dormant ? '<p class="hint">还没有动态。</p>' : mine.length ? `<div class="forum-feed">${mine.map(p => card(p, characters())).join('')}</div>` : '<p class="hint">还没有动态。</p>'}`);
+   }
+ 
+@@ -168,8 +169,15 @@
+       case 'network-self': profileId = network().ownerId; await render(); break;
+       case 'network-directory': directory = true; await render(); break;
+       case 'network-follow': {
+-        const host = ctx.win.parent.__unreadCityWorldPhone, state = host.read(), n = network();
+-        await host.act({binding: state.binding, revision: state.revision, owner: state.active, requestId: ctx.win.crypto.randomUUID(), command: {type: 'network_follow', accountId: profileId, following: !n.follows.some(([a,b]) => a === n.ownerId && b === profileId)}});
++        const host = ctx.win.parent.__unreadCityWorldPhone, n = network(), target = displayAccount(profileId);
++        if (!target || target.id === 'legacy:me') return;
++        if (!account(profileId)) {
++          const before = host.read();
++          await host.act({binding:before.binding,revision:before.revision,owner:before.active,requestId:ctx.win.crypto.randomUUID(),command:{type:'network_register',nicknames:[target.nickname]}});
++        }
++        const state=host.read();
++        if(state.binding!==n.binding)throw Error('主角或聊天已经切换，请重新打开 Xitter');
++        await host.act({binding: state.binding, revision: state.revision, owner: state.active, requestId: ctx.win.crypto.randomUUID(), command: {type: 'network_follow', accountId: target.id, following: !n.follows.some(([a,b]) => a === n.ownerId && b === target.id)}});
+         await render(); break;
+       }
+       case 'forum-refresh': background(api.forumRefresh(), made => `刷出了 ${made.length} 个新帖子`); break;
+--- a/core/backend.js
++++ b/core/backend.js
+@@ -2011,7 +2011,7 @@
+             replies.forEach((r, i) => post.replies.push(cleanForumReply(r, crypto.randomUUID(), now + i)));
+             post.replies = post.replies.slice(-FORUM_LIMITS.replies);
+             post.heat += replies.length * (20 + Math.round(Math.random() * 80));
+-            post.likes += replies.filter(r => r.from !== 'me').length ? Math.round(Math.random() * 6) : 0;
++            post.likes += replies.filter(r => r.from !== (network?.ownerId || 'me')).length ? Math.round(Math.random() * 6) : 0;
+         }));
+     }
+     // ---------- 查手机 ----------

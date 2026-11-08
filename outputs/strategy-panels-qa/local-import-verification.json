@@ -1,0 +1,21 @@
+{
+  "status": "imported-into-existing-local-card-and-active-edge-profile",
+  "avatar": "未读之城.png",
+  "scriptSha256": "8365a2cf09bce04008ac2f486bcbc002ee10d14d144b34faa0f2ad3b16dfee56",
+  "assetsSha256": "d42aa6fed162c82b714684a32eb69d5a5fff4a41cf5ccef64e2ceecc8670b5ca",
+  "otherCardFieldsUnchanged": true,
+  "coverUnchanged": true,
+  "serverReadbackMatches": true,
+  "backup": "D:\\.study\\cc\\output\\strategy-import\\backup",
+  "browserAssetsInstalled": true,
+  "liveUiReloaded": false,
+  "physicalTauriTavernTested": false,
+  "browserReceipt": {
+    "ok": true,
+    "origin": "http://127.0.0.1:8000",
+    "manifestSha256": "f6da9eb6f4a2f45c149d53ce9a10066ff6d6b1d69974bfb19d6b8e2f52693051",
+    "assets": 236
+  },
+  "chatFilesUnchanged": 15,
+  "settingsUnchanged": true
+}

@@ -1,0 +1,15 @@
+import {build} from 'vite';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {loadNetworkArt} from './network_visual_assets.mjs';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const out=path.join(root,'outputs/xitter-qa');
+const built=await build({configFile:false,logLevel:'error',build:{write:false,minify:true,lib:{entry:path.join(root,'tests/e2e/xitter-fixture.js'),formats:['iife'],name:'XitterQA'},rollupOptions:{output:{inlineDynamicImports:true}}}});
+const js=(Array.isArray(built)?built[0]:built).output.find(x=>x.type==='chunk').code;
+const css=await readFile(path.join(root,'../ST-iPhonie/ui/phone.css'),'utf8');
+const art=await loadNetworkArt(root);
+await mkdir(out,{recursive:true});
+const prelude=`window.__unreadCityNetworkArt=${JSON.stringify(art.avatars)};window.__unreadCityNetworkWordmark=${JSON.stringify(art.wordmark)};`;
+await writeFile(path.join(out,'index.html'),`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Xitter</title><style>${css}\nbody{background:#edf0f5}#app{position:relative;width:min(100%,440px);height:calc(100% - 40px);margin:auto;background:var(--bg)}#back{height:36px;margin:2px 12px}#notice{position:fixed;bottom:0;font-size:12px;pointer-events:none}dialog{max-width:90%;border:1px solid #aab;border-radius:16px}dialog h2{font-size:16px}</style><button id="back">返回</button><main id="app"></main><div id="notice"></div><script src="data:text/javascript;base64,${Buffer.from(prelude+js).toString('base64')}"></script></html>`);
+console.log('Built offline Xitter preview using actual phone UI/backend/parser and world save actions.');

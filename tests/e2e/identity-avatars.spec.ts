@@ -1,6 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [320, 568]]) {
+  test(`mother birth date at ${width}x${height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/tests/e2e/identity-avatars.html');
+    const roster = page.getByRole('navigation', { name: '切换证件持有人' });
+    await roster.getByRole('button', { name: '长崎夫人', exact: true }).click();
+    const birthLabel = page.locator('.jp-birth-text');
+    await expect(birthLabel).toHaveText('1982年9月15日生（昭和57年）');
+    await birthLabel.scrollIntoViewIfNeeded();
+    await expect(birthLabel).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('mother-birth-date.png'), fullPage: true });
+    await roster.getByRole('button', { name: '长崎素世 当前视角', exact: true }).click();
+    await expect(birthLabel).toHaveText('2007年5月27日生（平成19年）');
+    expect(errors).toEqual([]);
+  });
+
   test(`identity portraits, selection and fallback at ${width}x${height}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     const errors: string[] = [];

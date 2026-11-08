@@ -6,4 +6,5 @@ vendor/** -text -whitespace
 assets/live2d-soyo/** -whitespace
 # Unified diffs contain meaningful leading spaces and must retain exact bytes.
 integration/**/*.patch -text -whitespace
+outputs/**/*.patch -text -whitespace
 integration/sillytavern-remote-loading/new-files/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -1,0 +1,15 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "collapsedButtons": 3,
+  "secondaryButtons": 10,
+  "touchTargetsAtLeast44": true,
+  "keyboardAndOutsideDismiss": true,
+  "opensExistingPanel": true,
+  "clockAndUnreadUnchanged": true,
+  "noApiOrRemoteRequests": true,
+  "pageErrors": [],
+  "physicalDeviceTested": false
+}

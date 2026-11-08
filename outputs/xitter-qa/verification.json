@@ -1,0 +1,60 @@
+{
+  "dateLocal": "2026-11-08",
+  "timezone": "Asia/Shanghai",
+  "status": "local-targeted-checks-passed",
+  "scope": "Xitter on the existing ST-iPhonie forum, stable worldbook identities and random guest registration",
+  "typecheck": {
+    "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+    "exitCode": 0
+  },
+  "unitTests": {
+    "command": "node node_modules/vitest/vitest.mjs run tests/network-identities.test.ts tests/xitter.test.js tests/phone-device-settings.test.ts tests/phone-game-clock.test.ts tests/no-japanese.test.ts",
+    "filesPassed": 5,
+    "testsPassed": 31,
+    "exitCode": 0
+  },
+  "browser": {
+    "command": "node node_modules/@playwright/test/cli.js test --config playwright.xitter.config.ts",
+    "fixtureBuild": "node scripts/build_xitter_preview.mjs",
+    "engine": "local Microsoft Edge, headless",
+    "testsPassed": 4,
+    "exitCode": 0,
+    "viewports": [[1440, 900], [1280, 800], [390, 844], [320, 568]],
+    "checks": [
+      "opening and navigation do not generate content",
+      "profile-only email and public nickname/handle display",
+      "follow persists across reload",
+      "post and comment share account identity",
+      "like and unlike use the current saved post",
+      "CRYCHIC profile is dormant, viewable and followable",
+      "switching viewpoint keeps the same public feed identities",
+      "one explicit refresh creates a random guest using a fixed test reply",
+      "all displayed images load locally",
+      "no page errors, external requests, nested buttons or horizontal overflow"
+    ],
+    "limitation": "Isolated actual phone UI/backend/parser and world actions; fixed generation fixture, not a full Tavern or Tauri device session."
+  },
+  "productionBuild": {
+    "command": "node node_modules/vite/bin/vite.js build",
+    "exitCode": 0,
+    "fullScriptBytes": 171636297,
+    "bundleWrittenAtLocal": "2026-11-08 00:50:29",
+    "embeddedPhoneBuild": "node scripts/build_embedded_phone.mjs",
+    "releaseVerification": "../xitter-release/verification.json"
+  },
+  "visualInspection": {
+    "feed": "320-feed.png",
+    "profile": "390-profile.png",
+    "avatarComparison": ["avatars-before.jpg", "avatars-after.jpg"],
+    "wallpapers": "wallpapers.jpg",
+    "method": "Pillow crop and supersampled alpha mask; no image generation"
+  },
+  "randomGuestsPreserved": true,
+  "realModelCalled": false,
+  "agentEditionRun": false,
+  "remoteCiRun": false,
+  "nativeTavernTested": false,
+  "physicalTauriTavernTested": false,
+  "deployed": false,
+  "committedOrPushed": false
+}

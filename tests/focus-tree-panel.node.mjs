@@ -24,4 +24,5 @@ test('two local branch artworks and route lock are present',()=>{
   for(const asset of ['crychic-branch.webp','mygo-branch.webp']) assert.ok(ui.includes(asset));
   assert.ok(ui.includes('focusBranchLocked'));
   assert.ok(ui.includes('互斥路线'));
+  for(const token of ['focus-tree-viewport','focus-detail-modal','openFocusDetail','onTreeWheel','zoomTree','resetTreeView']) assert.ok(ui.includes(token), token);
 });

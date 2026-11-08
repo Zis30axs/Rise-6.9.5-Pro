@@ -1,0 +1,8 @@
+{
+  "shadow": true,
+  "display": "grid",
+  "background": "linear-gradient(rgba(6, 15, 24, 0.94) 0%, rgba(8, 20, 32, 0.96) 100%), repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.03) 0px, rgba(56, 214, 232, 0.03) 1px, rgba(0, 0, 0, 0) 1px, rgba(0, 0, 0, 0) 24px), repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.03) 0px, rgba(56, 214, 232, 0.03) 1px, rgba(0, 0, 0, 0) 1px, rgba(0, 0, 0, 0) 24px)",
+  "border": "1px",
+  "embeddedPanelStyle": true,
+  "externalStylesheets": 0
+}

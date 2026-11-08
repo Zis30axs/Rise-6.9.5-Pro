@@ -6,8 +6,8 @@
   width: 100%;
   max-width: 900px;
   min-width: 0;
-  max-height: 100%;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   overscroll-behavior: contain;
   color: var(--wp-ink);
   font-size: 14px;

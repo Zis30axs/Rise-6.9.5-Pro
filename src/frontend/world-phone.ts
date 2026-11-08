@@ -9,6 +9,8 @@ import { gameCalendar, registrationNotice } from '../runtime/game-calendar';
 import { resolveWeather, weatherNarrative } from '../runtime/weather';
 import { storeCatalog } from '../runtime/convenience-store';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
+import { allNetworkAccounts, guestAccount, networkLegacyAliases, networkOwnerId, resolveNetworkAccount } from '../runtime/network-identities';
+import { pendingWorldChronicle } from '../runtime/world-chronicle';
 
 /** Capability for the embedded phone only. Never exposes the other person's save wholesale. */
 export function createWorldPhoneApi(options: {
@@ -66,18 +68,62 @@ export function createWorldPhoneApi(options: {
     }));
   };
   const listeners=new Set<() => void>();
+  // An open inspection can refresh without repeatedly writing audit/journal entries.
+  // Its capability is local to this phone session; access is checked on every read.
+  const inspections = new Set<string>();
   return Object.freeze({
+    networkIdentity(label: string) {
+      if (!options.current()) throw Error('剧情手机连接已结束');
+      const saved = allNetworkAccounts(options.state().protagonists?.internet);
+      const known = resolveNetworkAccount(label) || saved.find(a => a.id === label || a.nickname === label || '@' + a.username === label);
+      if (known) return {...known};
+      // Historical 'me' had no ownership field. Never attribute it to the current viewpoint.
+      if (label === 'me') return {...guestAccount('旧账号'), id:'legacy:me', username:'archived', email:'archived@post.sov'};
+      try { return guestAccount(label); } catch { return null; }
+    },
+    /** Public-network capability: deliberately excludes private story, SMS, schedules and identities' real names from prompts. */
+    network() {
+      if (!options.current()) throw Error('剧情手机连接已结束');
+      const s = options.state(), active = activeProtagonist(s);
+      return {
+        binding: JSON.stringify([options.session, active]), ownerId: networkOwnerId(active),
+        space: 'unread-city:network:' + options.session,
+        accounts: allNetworkAccounts(s.protagonists?.internet).map(a => ({...a})),
+        legacyAliases: networkLegacyAliases(),
+        follows: (s.protagonists?.internet?.follows ?? []).map(pair => [...pair]),
+        publicFacts: [
+          {id: 'calendar', text: gameCalendar(s.clock.day).iso},
+          {id: 'weather', text: weatherNarrative(resolveWeather(s))},
+          // Reuse the existing publication gates without consuming the story's receipt.
+          ...(pendingWorldChronicle({clock: s.clock})?.events ?? []).map(e => ({id: 'chronicle:' + e.id, text: `${e.availableAtGMT8}：${e.title}。${e.fact}`})),
+        ],
+      };
+    },
     subscribe(callback: () => void) { listeners.add(callback); return () => { listeners.delete(callback); }; },
     notify() { for(const listener of [...listeners]) { try { listener(); } catch { /* A detached phone view cannot stop world state saves. */ } } },
     read() { if(!options.current()) throw Error('剧情手机连接已结束');return view(options.state()); },
+    readInspected(raw: {binding:string;owner:ProtagonistId}) {
+      if (!options.current()) throw Error('剧情手机连接已结束');
+      const s = options.state();
+      if (!raw || raw.binding !== JSON.stringify([options.session, activeProtagonist(s)]) ||
+          !inspections.has(JSON.stringify([raw.binding,raw.owner]))) throw Error('请重新拿起这台手机');
+      const access = phoneAccess(s,raw.owner);
+      if (!access.read) throw Error(access.reason);
+      return view(s,raw.owner);
+    },
     async act(raw: {binding:string;revision:number;requestId:string;owner:ProtagonistId;command:PhoneCommand}) {
       if(!options.current()||options.busy()) throw Error('请等待当前行动结束后再操作手机');
       const s=options.state();
       if(!raw||raw.binding!==JSON.stringify([options.session,activeProtagonist(s)])) throw Error('主角或聊天已经切换，请重新打开应用');
       if(raw.revision!==(s.protagonists?.revision??0)&&!s.protagonists?.operations.some(o=>o.id===raw.requestId)) throw Error('手机状态已更新，请刷新后重试');
+      if (raw.command.type === 'inspect') {
+        const access = phoneAccess(s,raw.owner);
+        if (!access.read) throw Error(access.reason);
+      }
       // Saving a bubble never sends an LLM request. The player can type multiple
       // consecutive messages before explicitly choosing to request a reply.
       const next=options.commit({type:'phone_app',requestId:raw.requestId,owner:raw.owner,command:raw.command});
+      if (raw.command.type === 'inspect') inspections.add(JSON.stringify([raw.binding,raw.owner]));
       return view(next,raw.owner);
     },
     /** Advance actual game time; the saved clock controls delivery/read projection. */

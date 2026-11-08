@@ -34,6 +34,7 @@ import { resolveNovelInvitationPortraitPair, type NovelInvitationPortraitFocus }
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
 import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
 import WorldPanels from './WorldPanels.vue';
+import ToolDock from './ToolDock.vue';
 import InvitationBook from './InvitationBook.vue';
 import { invitationCards } from './invitation-book';
 import TransitPanel from './TransitPanel.vue';
@@ -122,9 +123,10 @@ watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
 watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
-type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations' | 'society' | 'focus';
+type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations' | 'society' | 'focus' | 'decisions';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
+const toolDock = ref<{ close(restoreFocus?: boolean): boolean }>();
 const activeIdentityPersonId = ref<string>('bang-mutsumi');
 function openIdentityCard(personId = 'bang-mutsumi') {
   activeIdentityPersonId.value = personId;
@@ -240,6 +242,7 @@ const nav: { id: WindowPanel; title: string; path: string }[] = [
   { id: 'status', title: '状态', path: 'M5 3h14v18H5ZM9 7h6M9 11h6M9 15h3M3 7h4M3 15h4' },
   { id: 'society', title: '阵营', path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 1 0 7.75' },
   { id: 'focus', title: '国策', path: 'M8 4h12v16H8M4 8h12M4 14h12M4 20h12M12 4v4' },
+  { id: 'decisions', title: '决议', path: 'M14 3l7 7-4 4-7-7 4-4ZM11 8l-8 8v3h3l8-8M3 21h18' },
   { id: 'abilities', title: '能力', path: 'm12 2 8.7 5v10L12 22l-8.7-5V7ZM12 2v20M3.3 7l17.4 10M3.3 17 20.7 7m-13.9 2 5.2-3 5.2 3v6L12 18l-5.2-3Z' },
   { id: 'idcard', title: '证件', path: 'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm5 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-2 8c0-1.7 1.3-3 3-3h2c1.7 0 3 1.3 3 3m3-7h4m-4 4h3' },
 ];
@@ -892,6 +895,7 @@ function claimMysteryGift() {
   }
 }
 function dismissOverlay() {
+  if (toolDock.value?.close(true)) return true;
   if (mysteryDialog.value) { mysteryDialog.value = null; return true; }
   if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
   if (switchingLease.value) { void switchOverlay.value?.skip(); return true; }
@@ -925,6 +929,27 @@ function moveWindow(event: PointerEvent) {
   const top = Math.min(Math.max(70, drag.top + event.clientY - drag.y), Math.max(70, shell.value.clientHeight - drag.height - 20));
   layoutLease?.place(drag.element, { left, top, width: drag.width, height: drag.height });
 }
+function onShellWheel(event: WheelEvent) {
+  if (event.defaultPrevented || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  let node = event.target instanceof HTMLElement ? event.target : null;
+  while (node && node !== shell.value) {
+    if (node.tagName === 'TEXTAREA' || node.getAttribute('data-testid') === 'focus-tree-viewport') return;
+    const style = window.getComputedStyle(node);
+    const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 2;
+    if (canScrollY) return;
+    const canScrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && node.scrollWidth > node.clientWidth + 2 && node.scrollHeight <= node.clientHeight + 6;
+    if (canScrollX) {
+      const canMoveLeft = event.deltaY < 0 && node.scrollLeft > 0;
+      const canMoveRight = event.deltaY > 0 && node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
+      if (canMoveLeft || canMoveRight) {
+        event.preventDefault();
+        node.scrollLeft += event.deltaY;
+        return;
+      }
+    }
+    node = node.parentElement;
+  }
+}
 function endWindowDrag() {
   if (drag) layoutLease?.save(drag.element);
   drag = undefined;
@@ -950,7 +975,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="shell" class="uc-shell" :data-presentation-mode="novelMode ? 'novel' : 'scene'" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen || cookOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist">
+  <div ref="shell" class="uc-shell" :data-presentation-mode="novelMode ? 'novel' : 'scene'" :data-reading-mode="readingMode" :data-active-window="activeWindow ?? ''" :data-phone-expanded="phoneExpanded" :data-rest-picker="bedRestPicker || studyPickerOpen || cookOpen" :data-phone-link-status="model.phoneLinkStatus" :data-current-protagonist="currentProtagonist" @wheel="onShellWheel">
     <div v-if="pendingCourtSwitch" class="court-switch-mask" data-court-switch-warning role="alertdialog" aria-modal="true" aria-label="重大事件">
       <section class="court-switch-dialog">
         <h2>当前正在进行重大事件，是否继续？</h2>
@@ -1018,7 +1043,7 @@ onBeforeUnmount(() => {
         <button class="bed-rest-cancel" @click="closeStudyPicker">取消</button>
       </section>
     </div>
-    <nav class="tool-dock" aria-label="世界面板"><button v-for="item in nav" :key="item.id" :class="{ 'phone-launcher': item.id === 'phone' }" :data-location-entry="item.id === 'location' ? '' : undefined" :data-invitation-entry="item.id === 'invitations' ? '' : undefined" :data-inventory-entry="item.id === 'inventory' ? '' : undefined" :aria-label="item.title" :aria-pressed="activeWindow === item.id" :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息，点击打开手机` : activeWindow === 'phone' ? '收起手机' : '打开手机，阅读时也可使用') : item.id === 'location' ? '查看此地服务与开放时间' : item.id === 'inventory' ? '打开随身背包，使用或查看携带物品' : undefined" @click="openWindow(item.id)"><span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg><span v-if="item.id === 'phone' && unread" class="phone-unread-badge" :data-phone-unread="unread">{{ unread > 99 ? '99+' : unread }}</span></span><span class="tool-label">{{ item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : activeWindow === 'phone' ? '已打开' : '常驻' }}</small></span></button></nav>
+    <ToolDock ref="toolDock" :items="nav" :active="activeWindow" :unread="unread" :editing="layoutEditing" @select="openWindow" />
     <span class="sr-only" role="status" aria-live="polite">{{ unread ? `手机有 ${unread} 条未读消息` : '手机没有未读消息' }}</span>
     <section v-show="readingMode !== 'hidden'" class="reading-layer" data-reading-layer aria-label="小说正文" :class="{ 'reading-expanded': readingMode === 'expanded' }">
       <button type="button" class="reading-resize-grip" data-layout-handle="reading-height" aria-label="上下拖动调整正文高度" title="拖动改变正文高度"><span aria-hidden="true"></span></button>
@@ -1048,7 +1073,7 @@ onBeforeUnmount(() => {
     <button v-if="readingMode === 'hidden'" class="resume-reading" aria-label="继续阅读" @click="setReadingMode('compact')">继续阅读 <span v-if="hasNewContent" class="resume-dot">有新内容</span><span aria-hidden="true">↑</span></button>
     <section v-if="activeWindow" :key="activeWindow" class="floating-window" :class="{ 'phone-window': activeWindow === 'phone' }" :data-window="activeWindow" role="dialog" :aria-label="windowTitle + '窗口'">
       <div v-if="activeWindow === 'phone'" class="phone-controls" aria-label="手机显示操作"><button type="button" class="phone-size-toggle" :aria-label="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :title="phoneExpanded ? (novelMode ? '缩小手机' : '人物同框') : '放大手机'" :aria-expanded="phoneExpanded" @click="togglePhoneSize"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="phoneExpanded ? 'M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5' : 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5'" /></svg></button><button type="button" aria-label="查看手机背面" title="查看背面；长按拖动旋转，双指缩放" @click="adjustPhoneView('back')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><circle cx="10" cy="6" r="1"/><circle cx="10" cy="10" r="1"/></svg></button><button type="button" aria-label="手机回正" title="回到正面并恢复大小" @click="adjustPhoneView('front')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button><button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
-      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span v-if="activeWindow!=='law' && activeWindow!=='invitations' && activeWindow!=='abilities' && activeWindow!=='idcard' && activeWindow!=='society' && activeWindow!=='focus'" class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
+      <header v-else class="window-heading" @pointerdown="startWindowDrag" @pointermove="moveWindow" @pointerup="endWindowDrag" @pointercancel="endWindowDrag"><h1>{{ windowTitle }}</h1><span v-if="activeWindow!=='law' && activeWindow!=='invitations' && activeWindow!=='abilities' && activeWindow!=='idcard' && activeWindow!=='society' && activeWindow!=='focus' && activeWindow!=='decisions'" class="window-demo">演示内容</span><button v-if="activeWindow === 'map'" class="window-transit" data-transit-open @click="openWindow('transit')">公交线路 ↗</button><button :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button></header>
       <template v-if="embeddedPhone"><div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div><div ref="phoneSlot" class="phone-slot" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'"><div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'"><span class="phone-loading-icon" aria-hidden="true">▯</span><strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong><p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p><button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button></div></div></template>
       <div v-else-if="activeWindow === 'transit'" class="window-content"><TransitPanel :model="model" :stop="nearbyTransitStop" :novel-mode="novelMode" @ride="takeTransit" @approach="approachTransitStop" /></div>
       <div v-else-if="activeWindow === 'invitations'" class="window-content"><InvitationBook :key="currentProtagonist" :model="model" :novel-mode="novelMode" :nearby-person-ids="nearbyPeople.flatMap(({ person }) => [person.id, person.contactId ?? ''])" @compose="prepareInvitationAction" @travel="travelFromInvitationBook" /></div>

@@ -1,0 +1,454 @@
+/* Included by shell.css inside the shell ShadowRoot; keep selectors local to this panel. */
+.decisions-panel.tno-decisions-screen {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  background:
+    linear-gradient(180deg, rgba(5, 13, 22, 0.96) 0%, rgba(7, 19, 31, 0.97) 100%),
+    repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px);
+  color: #daf4f8;
+  box-shadow:
+    0 14px 32px rgba(2, 8, 16, 0.6),
+    inset 0 0 28px rgba(56, 214, 232, 0.06);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.decisions-panel .tno-crt-lines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(16, 48, 66, 0.14) 3px
+  );
+  opacity: 0.5;
+}
+
+.decisions-panel > *:not(.tno-crt-lines) {
+  position: relative;
+  z-index: 1;
+}
+
+.decisions-panel .tno-decisions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.25);
+}
+
+.decisions-panel .tno-decisions-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.decisions-panel .tno-decisions-seal {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(240, 179, 66, 0.58);
+  background: radial-gradient(circle at 50% 40%, rgba(56, 42, 14, 0.92), rgba(10, 22, 34, 0.96));
+  color: #ffda85;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 14px rgba(240, 179, 66, 0.25);
+}
+
+.decisions-panel .tno-decisions-seal svg {
+  width: 24px;
+  height: 24px;
+}
+
+.decisions-panel .tno-kicker {
+  display: block;
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  color: #5ccada;
+  margin-bottom: 3px;
+}
+
+.decisions-panel .tno-decisions-header h2 {
+  margin: 0;
+  font-size: 1.18rem;
+  color: #f0fdff;
+  text-shadow: 0 0 10px rgba(56, 214, 232, 0.28);
+}
+
+.decisions-panel .tno-decisions-header p {
+  font-size: 0.76rem;
+  color: #8fc1cb;
+  margin: 2px 0 0;
+}
+
+.decisions-panel .tno-auto-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 179, 66, 0.65);
+  background: rgba(54, 36, 10, 0.82);
+  color: #ffda8b;
+  font-size: 0.75rem;
+}
+
+/* Energy Token Reserve Telemetry */
+.decisions-panel .tno-energy-bank {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(240, 179, 66, 0.36);
+  background: linear-gradient(135deg, rgba(16, 32, 44, 0.92), rgba(8, 20, 32, 0.95));
+  box-shadow: inset 0 0 18px rgba(240, 179, 66, 0.07);
+}
+
+.decisions-panel .tno-energy-main {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.decisions-panel .tno-energy-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.decisions-panel .tno-token-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffd97d;
+}
+
+.decisions-panel .tno-bolt-svg {
+  width: 15px;
+  height: 15px;
+  color: #f5b942;
+}
+
+.decisions-panel .tno-energy-number {
+  font-size: 1.15rem;
+  color: #fff6db;
+  font-variant-numeric: tabular-nums;
+}
+
+.decisions-panel .tno-energy-number small {
+  font-size: 0.74rem;
+  color: #9ec5cf;
+}
+
+.decisions-panel .tno-energy-bar {
+  height: 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(240, 179, 66, 0.45);
+  background: rgba(4, 12, 20, 0.94);
+  overflow: hidden;
+}
+
+.decisions-panel .tno-energy-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e59d2c, #ffd86b);
+  box-shadow: 0 0 10px rgba(240, 179, 66, 0.65);
+  transition: width 0.2s ease;
+}
+
+.decisions-panel .tno-energy-side-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.decisions-panel .tno-mini-stat {
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.22);
+  background: rgba(5, 15, 25, 0.86);
+  display: grid;
+  gap: 2px;
+}
+
+.decisions-panel .tno-mini-stat small {
+  font-size: 0.66rem;
+  color: #7eb6c2;
+}
+
+.decisions-panel .tno-mini-stat strong {
+  font-size: 0.84rem;
+  color: #e9fcff;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Category Filter Bar */
+.decisions-panel .tno-decision-categories {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.uc-shell .decisions-panel button {
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(16, 46, 68, 0.85), rgba(10, 29, 44, 0.92));
+  color: #d9f8fc;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.uc-shell .decisions-panel button:hover:not(:disabled) {
+  border-color: #5ee7f7;
+  box-shadow: 0 0 12px rgba(56, 214, 232, 0.3);
+}
+
+.uc-shell .decisions-panel button.active {
+  border-color: #38d6e8;
+  background: linear-gradient(180deg, rgba(32, 92, 122, 0.92), rgba(18, 56, 78, 0.95));
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 214, 232, 0.32);
+}
+
+.uc-shell .decisions-panel button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Decision Dossier Cards */
+.decisions-panel .tno-decision-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 12px;
+}
+
+.decisions-panel .tno-decision-dossier {
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 214, 232, 0.28);
+  background: linear-gradient(165deg, rgba(10, 27, 42, 0.93), rgba(6, 16, 27, 0.96));
+  box-shadow: inset 0 0 16px rgba(56, 214, 232, 0.05);
+}
+
+.decisions-panel .tno-decision-dossier.ready {
+  border-color: rgba(240, 179, 66, 0.55);
+}
+
+.decisions-panel .tno-dossier-top {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.decisions-panel .tno-dossier-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  border: 1px solid rgba(56, 214, 232, 0.45);
+  background: radial-gradient(circle at 50% 50%, rgba(20, 56, 80, 0.95), rgba(6, 16, 26, 0.98));
+  color: #70ebfa;
+  display: grid;
+  place-items: center;
+}
+
+.decisions-panel .tno-dossier-icon[data-kind='music'] {
+  border-color: rgba(240, 179, 66, 0.6);
+  color: #ffda7d;
+}
+
+.decisions-panel .tno-dossier-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.decisions-panel .tno-dossier-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.decisions-panel .tno-dossier-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.decisions-panel .tno-dossier-title-row h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f3fdff;
+}
+
+.decisions-panel .tno-cost-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 179, 66, 0.65);
+  background: rgba(58, 39, 10, 0.85);
+  color: #ffdc85;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.decisions-panel .tno-cost-token svg {
+  width: 12px;
+  height: 12px;
+}
+
+.decisions-panel .tno-cost-token.insufficient {
+  border-color: rgba(232, 88, 88, 0.65);
+  background: rgba(58, 18, 22, 0.85);
+  color: #ffb0b0;
+}
+
+.decisions-panel .tno-dossier-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.decisions-panel .tno-cat-tag {
+  font-size: 0.67rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 214, 232, 0.3);
+  background: rgba(12, 36, 54, 0.75);
+  color: #9debf8;
+}
+
+.decisions-panel .tno-status-text {
+  font-size: 0.7rem;
+  color: #8cc2ce;
+}
+
+.decisions-panel .tno-dossier-summary {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.48;
+  color: #a5d1da;
+}
+
+.decisions-panel .tno-dossier-effects {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.decisions-panel .tno-effect-badge {
+  font-size: 0.69rem;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(240, 179, 66, 0.42);
+  background: rgba(240, 179, 66, 0.14);
+  color: #ffda8b;
+}
+
+.decisions-panel .tno-effect-badge.instrument {
+  border-color: rgba(56, 214, 232, 0.48);
+  background: rgba(56, 214, 232, 0.14);
+  color: #9ef3ff;
+}
+
+.decisions-panel .tno-effect-badge.morale,
+.decisions-panel .tno-effect-badge.stress {
+  border-color: rgba(114, 224, 168, 0.42);
+  background: rgba(114, 224, 168, 0.12);
+  color: #b4f7d3;
+}
+
+.decisions-panel .tno-dossier-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid rgba(56, 214, 232, 0.18);
+}
+
+.decisions-panel .tno-cooldown-hint {
+  font-size: 0.69rem;
+  color: #7eaab4;
+}
+
+.uc-shell .decisions-panel button.tno-exec-btn {
+  border-color: rgba(240, 179, 66, 0.62);
+  background: linear-gradient(180deg, rgba(64, 44, 12, 0.9), rgba(38, 26, 8, 0.95));
+  color: #ffe299;
+}
+
+.uc-shell .decisions-panel button.tno-exec-btn:hover:not(:disabled) {
+  border-color: #ffd666;
+  box-shadow: 0 0 14px rgba(240, 179, 66, 0.35);
+}
+
+.decisions-panel .tno-decision-feedback {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.52);
+  background: rgba(14, 44, 64, 0.85);
+  color: #d7fbff;
+  font-size: 0.78rem;
+}
+
+.decisions-panel .tno-decision-log {
+  border: 1px solid rgba(56, 214, 232, 0.24);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: rgba(6, 17, 27, 0.86);
+  font-size: 0.76rem;
+}
+
+.decisions-panel .tno-decision-log summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #8ce4f2;
+}
+
+.decisions-panel .tno-decision-log-list {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.decisions-panel .tno-decision-log-list p {
+  margin: 0;
+  font-size: 0.73rem;
+  color: #9ac6cf;
+}
+
+@media (max-width: 620px) {
+  .decisions-panel .tno-energy-bank {
+    grid-template-columns: 1fr;
+  }
+}

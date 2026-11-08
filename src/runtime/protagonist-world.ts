@@ -2,6 +2,7 @@ import { ensurePersonalKeepsake } from './equipment';
 import { parseBandInviteCommand, sendBandInvitation, musicPersonId, performanceMemberIds, type BandInviteCommand } from './livehouse';
 import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
+import { changeNetworkFollow, networkOwnerId, parseInternetState, registerNetworkGuests, type InternetState } from './network-identities';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, PROTAGONIST_PERSON_ID_LIST, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
 import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
 import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts, sakikoInitialBandContacts } from './initial-contacts';
@@ -81,8 +82,12 @@ export interface ProtagonistWorld {
   strategy?: StrategyState;
   /** Optional local circles, coalitions, and formal band advisors; no duplicate band roster. */
   society?: SocietyState;
+  /** Shared public graph; stable identities live in the authored network registry. */
+  internet?: InternetState;
 }
 export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
+  | { type: 'network_follow'; accountId: string; following: boolean }
+  | { type: 'network_register'; nicknames: string[] }
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
   | { type: 'appearance'; appearance: PhoneAppearance }
   | { type: 'device'; locked: boolean; share: DeviceState['share'] }
@@ -206,7 +211,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society'),...optional('internet')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -331,6 +336,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   if (Object.hasOwn(p, 'socialInvitations')) result.socialInvitations = parseSocialInvitations(p.socialInvitations, gameMinute(base));
   result.strategy = Object.hasOwn(p, 'strategy') ? parseStrategyState(p.strategy, gameMinute(base)) : createStrategyState(gameMinute(base));
   result.society = Object.hasOwn(p, 'society') ? parseSocietyState(p.society, gameMinute(base)) : createSocietyState();
+  if (Object.hasOwn(p, 'internet')) result.internet = parseInternetState(p.internet);
   return result;
 }
 function isKnownLocation(locationId: string): boolean {
@@ -492,9 +498,17 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
 }
 function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
+  if (type === 'network_register') {
+    const c = exact(raw, ['type', 'nicknames']);
+    return {type, nicknames: array(c.nicknames, 120, n => string(n, 30))};
+  }
+  if (type === 'network_follow') {
+    const c = exact(raw, ['type', 'accountId', 'following']);
+    return {type, accountId: identifier(c.accountId), following: boolean(c.following)};
+  }
   if (type === 'band_invite') return parseBandInviteCommand(raw);
   if (type === 'send_npc_message' || type === 'send_group_message' || type === 'resolve_contact_request') return parseNpcPhoneCommand(raw);
-  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'peek_chat_append' | 'band_invite'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
+  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'peek_chat_append' | 'band_invite' | 'network_follow' | 'network_register'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
   if(type==='peek_chat_append'){
     const c=exact(raw,['type','npcId','lines']);
     const lines=array(c.lines,6,item=>{
@@ -552,12 +566,14 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
   if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
-  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite','peek_chat_append'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
+  if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite','peek_chat_append','network_follow','network_register'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
   if(!(read?access.read:access.write)) fail(access.reason);
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
+    case 'network_follow': p.internet = changeNetworkFollow(p.internet, networkOwnerId(owner), command.accountId, command.following); break;
+    case 'network_register': p.internet = registerNetworkGuests(p.internet, command.nicknames); break;
     case 'band_invite': sendBandInvitation(s, command, requestId); break;
     case 'peek_chat_append': appendPeekChat(s, owner, command.npcId, command.lines, requestId); break;
     case 'send_npc_message':

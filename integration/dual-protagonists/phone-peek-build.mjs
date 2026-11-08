@@ -3,13 +3,26 @@
 export function adaptPhonePeek(relative, source, replaceOnce) {
   let code=source;
   if(relative==='ui/peek.js'){
-    code="import {peekWorld,visiblePeekSnapshot} from 'virtual:unread-city-phone-peek';\n"+code;
+    code="import {peekWorld,peekProtagonist,visiblePeekSnapshot} from 'virtual:unread-city-phone-peek';\nimport {createProtagonistPeek} from 'virtual:unread-city-protagonist-peek';\n"+code;
+    code=replaceOnce(code,"  const busy = () => api.peekBusy?.();",
+      "  const canonical=createProtagonistPeek(ctx,v,()=>{who='';render();});\n  const busy = () => api.peekBusy?.();",'shared ordinary peek entry');
     code=replaceOnce(code,
       "    const [contacts, peeks] = await Promise.all([api.chatContacts?.() || [], api.listPeeks()]);",
       "    const [phoneContacts, peeks] = await Promise.all([api.chatContacts?.() || [], api.listPeeks()]);\n"
       +"    const world=peekWorld(ctx.win);\n"
-      +"    const contacts=[...new Map([...phoneContacts,...(world?.npcPhone?.contacts||[])].map(c=>[c.name,c])).values()];",
+      +"    const contacts=[...new Map([...phoneContacts,...(world?.npcPhone?.contacts||[]),...(world?.others||[])].map(c=>[c.name,c])).values()].filter(c=>c.name!==world?.name);",
       'game contacts appear in original NPC peek');
+    code=replaceOnce(code,"  async function renderPerson(ticket) {",
+      "  async function renderPerson(ticket) {\n    if(peekProtagonist(peekWorld(ctx.win),who)){canonical.render(who);return;}",'read playable owners through existing permissions');
+    code=replaceOnce(code,"    if (device) return device.back();","    if(canonical.back())return true;\n    canonical.cancel();\n    if (device) return device.back();",'canonical peek back navigation');
+    code=replaceOnce(code,"v.dispose = () => { dispose.call(v);","v.dispose = () => { canonical.dispose(); dispose.call(v);",'canonical peek subscription cleanup');
+    code=replaceOnce(code,"        who = el.dataset.name; await render(); v.root.scrollTop = 0;",
+      "        canonical.cancel(); who = el.dataset.name; await render(); v.root.scrollTop = 0;\n        if(peekProtagonist(peekWorld(ctx.win),who)){await canonical.open(who);break;}",'open actual playable phone');
+    code=replaceOnce(code,"      case 'peek-open': {","      case 'peek-canonical-open': await canonical.open(who); break;\n      case 'peek-open': {",'pick up canonical phone');
+    code=replaceOnce(code,'<p class="hint">都会调用一次模型。</p>','<p class="hint">想接着上次看，还是重新查看？</p>','natural peek refresh wording');
+    code=replaceOnce(code,'<strong>重新编一份</strong>','<strong>重新查看</strong>','natural peek refresh action');
+    code=replaceOnce(code,"${seen.has(c.name) ? '看过 · ' + ago(seen.get(c.name).at) : '还没看过'}",
+      "${peekProtagonist(world,c.name)?(c.read?'可以查看':'暂时无法查看'):seen.has(c.name) ? '看过 · ' + ago(seen.get(c.name).at) : '还没看过'}",'do not advertise simulated protagonist snapshots');
     const read="const s = await api.getPeek(who);";
     if(code.split(read).length-1!==3)throw Error('手机源码已变化，请更新内嵌适配：peek snapshot reads');
     code=code.replaceAll(read,"const s = visiblePeekSnapshot(await api.getPeek(who),peekWorld(ctx.win),who);");
@@ -43,7 +56,7 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
     return code;
   }
   if(relative==='host-apps.js'){
-    code="import {peekWorld,peekWorldContact,peekCanonicalHistory,withoutProtagonistChats,newPeekDialogue} from 'virtual:unread-city-phone-peek';\n"+code;
+    code="import {peekWorld,peekProtagonist,protagonistPeekSnapshot,peekWorldContact,peekCanonicalHistory,withoutProtagonistChats,newPeekDialogue} from 'virtual:unread-city-phone-peek';\n"+code;
     const start="  function peekLook(name, {keep = false} = {}) {";
     const end="  /** Draws one photo of a character's album";
     const i=code.indexOf(start),j=code.indexOf(end,i+start.length);
@@ -52,6 +65,11 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
       "  function peekLook(name, {keep = false} = {}) {",
       "    return run('peek', async ctx => {",
       "      const world=peekWorld(globalThis), gameContact=peekWorldContact(world,name);",
+      "      const protagonist=peekProtagonist(world,name);",
+      "      if(protagonist){",
+      "        const data=await globalThis.__unreadCityWorldPhone.act({binding:world.binding,revision:world.revision,requestId:globalThis.crypto.randomUUID(),owner:protagonist.id,command:{type:'inspect',section:'messages'}});",
+      "        return protagonistPeekSnapshot(data);",
+      "      }",
       "      const key=backend.spaceKey(), {preset,user:tavernUser}=base();",
       "      const user=gameContact ? world.name : tavernUser;",
       "      const activePersona=gameContact ? world.name+'是未读之城当前可操作主角；性格、经历与知识必须依据本游戏当前剧情和世界书，不得沿用酒馆账户的用户人设。' : userPersona();",
@@ -90,6 +108,22 @@ export function adaptPhonePeek(relative, source, replaceOnce) {
       ""
     ].join('\n');
     return code.slice(0,i)+replacement+code.slice(j);
+  }
+  if(relative==='ui/peek-phone.js'){
+    code=replaceOnce(code,"const chats = () => snap.chats.map((c, i) => ({...c, index: i, when: stamp(snap.at, AGO[i] ?? 60 * 24 * (i + 1)), unread: unread(c)}));",
+      "const chats = () => snap.chats.map((c,i)=>({...c,index:i,when:snap.canonical?c.when:stamp(snap.at,AGO[i]??60*24*(i+1)),unread:snap.canonical?c.unread:unread(c)}));",'real timestamps and unread state');
+    code=replaceOnce(code,"const app = APPS[id], now = new Date();",
+      "const app = snap.canonical && ['calendar','cart','settings'].includes(id)?{...APPS[id],open:true,label:({calendar:'日历',cart:'订单',settings:'Appie Pay'})[id]}:APPS[id], now = snap.clock?new Date(snap.clock.date+'T12:00:00'):new Date();",'canonical phone apps');
+    code=replaceOnce(code,"page === 'lock' ? '中国移动' : hhmm(now)","page === 'lock' ? '中国移动' : (snap.clock?.time || hhmm(now))",'inspected phone status time');
+    code=replaceOnce(code,"const now = new Date(), notes = chats()","const now = snap.clock?new Date(snap.clock.date+'T12:00:00'):new Date(), notes = chats()",'inspected phone date');
+    code=replaceOnce(code,'<p class="pp-clock">${hhmm(now)}</p>','<p class="pp-clock">${snap.clock?.time || hhmm(now)}</p>','inspected phone lock time');
+    code=replaceOnce(code,"    const inner = PAGES[page](), onWall = page === 'lock' || page === 'home';",
+      "    const records=snap.canonical&&({calendar:snap.calendar,cart:snap.orders,settings:snap.wallet})[page];\n"
+      +"    const inner=records?`<div class=\"pp-app pp-notes\">${bar(({calendar:'日历',cart:'订单',settings:'Appie Pay'})[page])}<div class=\"pp-body\">${records.length?records.map(r=>`<article class=\"pp-note-row\"><b>${esc(r.title)}</b><p>${esc(r.detail)}</p></article>`).join(''):'<p class=\"pp-empty\">暂无记录</p>'}</div></div>`:PAGES[page](), onWall = page === 'lock' || page === 'home';",'read-only actual calendar wallet orders');
+    code=replaceOnce(code,"wall.style.background = painted(snap.name);","wall.style.background = snap.wallpaperCss || painted(snap.name);",'use inspected owner wallpaper');
+    code=replaceOnce(code,"browser: 'home', cart: 'home', home: 'lock'","browser: 'home', cart: 'home', calendar: 'home', settings: 'home', home: 'lock'",'canonical app back navigation');
+    code=replaceOnce(code,"const timer = setInterval(() => { const el", "const timer = setInterval(() => { if(snap.canonical)return; const el",'keep canonical clock on game time');
+    return code;
   }
   return code;
 }

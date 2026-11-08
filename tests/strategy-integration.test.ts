@@ -30,4 +30,24 @@ describe('offline strategy state integration', () => {
     expect(() => reduceState(first, { type: 'strategy', requestId: 'same-id',
       command: { ...command, includeInPrompt: true } })).toThrow(/重复请求/);
   });
+  it('spends protagonist energy as token to execute foundational decisions such as Soyo practicing bass', () => {
+    const state = enableProtagonists(createInitialState());
+    const startEnergy = state.player.energy;
+    const after = reduceState(state, {
+      type: 'strategy',
+      requestId: 'soyo-bass-1',
+      command: { type: 'choose_decision', owner: 'soyo', decisionId: 'soyo_practice_bass' },
+    });
+    expect(after.player.energy).toBe(startEnergy - 25);
+    expect(after.protagonists?.strategy?.stats.soyo_resolve).toBe(3);
+    expect(after.livehouseVisit?.skill.soyo).toBe(4);
+
+    const lowEnergy = structuredClone(state);
+    lowEnergy.player.energy = 20;
+    expect(() => reduceState(lowEnergy, {
+      type: 'strategy',
+      requestId: 'soyo-bass-low',
+      command: { type: 'choose_decision', owner: 'soyo', decisionId: 'soyo_practice_bass' },
+    })).toThrow(/精力不足/);
+  });
 });

@@ -1,0 +1,378 @@
+/* Included by shell.css inside the shell ShadowRoot; keep selectors local to this panel. */
+.society-panel.tno-society-screen {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  min-width: 0;
+  color: #daf4f8;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  background:
+    linear-gradient(180deg, rgba(5, 13, 22, 0.96) 0%, rgba(7, 19, 31, 0.97) 100%),
+    repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px);
+  box-shadow:
+    0 14px 32px rgba(2, 8, 16, 0.6),
+    inset 0 0 28px rgba(56, 214, 232, 0.06);
+  overflow: hidden;
+}
+
+.society-panel .tno-crt-lines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(16, 48, 66, 0.14) 3px
+  );
+  opacity: 0.5;
+}
+
+.society-panel .society-head,
+.society-panel .society-tabs,
+.society-panel .society-message,
+.society-panel .society-help,
+.society-panel .society-card,
+.society-panel .society-form,
+.society-panel .society-empty {
+  position: relative;
+  z-index: 1;
+}
+
+.society-panel .society-head,
+.society-panel .society-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.society-panel .tno-society-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.25);
+}
+
+.society-panel .tno-kicker,
+.society-panel .tno-card-kicker {
+  display: block;
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  color: #5ccada;
+  margin-bottom: 2px;
+}
+
+.society-panel .society-head h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #f0fdff;
+  text-shadow: 0 0 10px rgba(56, 214, 232, 0.28);
+}
+
+.society-panel .society-head p,
+.society-panel .society-help,
+.society-panel .society-empty,
+.society-panel .society-meta {
+  font-size: 0.77rem;
+  color: #8fc1cb;
+  line-height: 1.55;
+  margin: 2px 0;
+}
+
+.society-panel .tno-head-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.society-panel .tno-total-pill,
+.society-panel .tno-alert-pill {
+  font-size: 0.72rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  background: rgba(12, 36, 54, 0.82);
+  color: #bdf7ff;
+}
+
+.society-panel .tno-alert-pill {
+  border-color: rgba(240, 179, 66, 0.68);
+  background: rgba(58, 39, 10, 0.82);
+  color: #ffda8f;
+}
+
+.society-panel .society-tabs,
+.society-panel .society-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.society-panel .tno-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.society-panel .society-tabs button,
+.society-panel .society-actions button,
+.society-panel .society-form button {
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(14, 41, 62, 0.85), rgba(8, 24, 38, 0.92));
+  color: #d9f8fc;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.society-panel .tno-tabs button {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 9px 11px;
+}
+
+.society-panel .tno-tabs button small {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: #6fd8e6;
+  font-weight: 500;
+}
+
+.society-panel .society-tabs button.active {
+  background: linear-gradient(180deg, rgba(30, 88, 118, 0.92), rgba(16, 52, 74, 0.95));
+  border-color: #38d6e8;
+  box-shadow: 0 0 14px rgba(56, 214, 232, 0.32), inset 0 0 8px rgba(56, 214, 232, 0.2);
+  color: #ffffff;
+}
+
+.society-panel .society-actions button.muted {
+  border-color: rgba(138, 168, 184, 0.35);
+  background: rgba(18, 34, 46, 0.72);
+  color: #9ec0cc;
+}
+
+.uc-shell .society-panel button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.society-panel .society-card,
+.society-panel .society-form {
+  border: 1px solid rgba(56, 214, 232, 0.26);
+  border-radius: 10px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  background: linear-gradient(165deg, rgba(10, 27, 42, 0.9), rgba(6, 16, 27, 0.94));
+  box-shadow: inset 0 0 16px rgba(56, 214, 232, 0.04);
+  min-width: 0;
+}
+
+.society-panel .tno-invite-alert {
+  border-color: rgba(240, 179, 66, 0.6);
+  background: linear-gradient(165deg, rgba(44, 31, 10, 0.85), rgba(18, 16, 14, 0.92));
+}
+
+.society-panel .tno-card-top {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.18);
+}
+
+.society-panel .society-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #f3fdff;
+}
+
+.society-panel .society-card p {
+  margin: 0;
+  font-size: 0.81rem;
+  line-height: 1.5;
+  color: #b4e2eb;
+}
+
+.society-panel .tno-role-badge {
+  font-size: 0.7rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(12, 38, 56, 0.82);
+  color: #9cecf8;
+}
+
+.society-panel .tno-role-badge.founder {
+  border-color: rgba(240, 179, 66, 0.65);
+  background: rgba(58, 40, 10, 0.82);
+  color: #ffdb8e;
+}
+
+.society-panel .tno-member-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(5, 14, 23, 0.72);
+  border: 1px solid rgba(56, 214, 232, 0.16);
+}
+
+.society-panel .tno-strip-label {
+  font-size: 0.73rem;
+  color: #6fd8e6;
+}
+
+.society-panel .society-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 10px;
+}
+
+.society-panel .tno-minister-slot {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.24);
+  background: rgba(6, 17, 28, 0.86);
+}
+
+.society-panel .tno-minister-slot.filled {
+  border-color: rgba(240, 179, 66, 0.55);
+}
+
+.society-panel .tno-minister-head {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.society-panel .tno-minister-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(56, 214, 232, 0.4);
+  background: rgba(12, 36, 54, 0.85);
+  color: #5ee7f7;
+  font-size: 0.88rem;
+}
+
+.society-panel .tno-minister-slot.filled .tno-minister-icon {
+  border-color: rgba(240, 179, 66, 0.6);
+  color: #f0b342;
+}
+
+.society-panel .tno-minister-head ins {
+  display: block;
+  text-decoration: none;
+  font-size: 0.65rem;
+  color: #7eb0bc;
+}
+
+.society-panel .society-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.society-panel .society-field span {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #cdeff6;
+}
+
+.uc-shell .society-panel input,
+.uc-shell .society-panel select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid rgba(56, 214, 232, 0.38);
+  border-radius: 7px;
+  color: #e8fcff;
+  background: rgba(5, 15, 25, 0.92);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.society-panel .society-actions select {
+  flex: 1 1 150px;
+  width: auto;
+}
+
+.society-panel .society-message {
+  padding: 9px 12px;
+  border: 1px solid rgba(56, 214, 232, 0.52);
+  border-radius: 8px;
+  background: rgba(14, 44, 64, 0.85);
+  color: #d7fbff;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.society-panel .tno-pending-row {
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(240, 179, 66, 0.35);
+  background: rgba(42, 29, 10, 0.45);
+}
+
+.society-panel .society-score {
+  display: grid;
+  gap: 5px;
+}
+
+.society-panel .society-score .society-row {
+  font-size: 0.78rem;
+}
+
+.society-panel .society-meter {
+  height: 9px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(4, 12, 20, 0.92);
+}
+
+.society-panel .society-meter span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #2bc4d8 0px,
+    #2bc4d8 8px,
+    #66ecff 8px,
+    #66ecff 11px
+  );
+  box-shadow: 0 0 10px rgba(56, 214, 232, 0.55);
+  border-radius: inherit;
+}
+
+.society-panel .tno-verdict-line {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(240, 179, 66, 0.48);
+  background: rgba(54, 37, 10, 0.65);
+  color: #ffe09e !important;
+  font-weight: 600;
+}
+
+@media (max-width: 540px) {
+  .society-panel .tno-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .society-panel .society-card,
+  .society-panel .society-form {
+    padding: 11px;
+  }
+}

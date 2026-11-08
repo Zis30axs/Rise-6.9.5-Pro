@@ -147,11 +147,36 @@ function retreat() {
     persistCurrentProgress();
   }
 }
+let lastWheelStepAt = 0;
+
+function onDialogueWheel(event: WheelEvent) {
+  const textBox = (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('.novel-dialogue-text');
+  if (textBox && textBox.scrollHeight > textBox.clientHeight + 2) {
+    const canScrollUp = event.deltaY < 0 && textBox.scrollTop > 0;
+    const canScrollDown = event.deltaY > 0 && textBox.scrollTop + textBox.clientHeight < textBox.scrollHeight - 1;
+    if (canScrollUp || canScrollDown) return;
+  }
+  if (sideChoice.value || Math.abs(event.deltaY) < 6) return;
+  const now = Date.now();
+  if (now - lastWheelStepAt < 140) {
+    event.preventDefault();
+    return;
+  }
+  if (event.deltaY < 0 && cursor.value > 0) {
+    event.preventDefault();
+    lastWheelStepAt = now;
+    retreat();
+  } else if (event.deltaY > 0 && canAdvance.value) {
+    event.preventDefault();
+    lastWheelStepAt = now;
+    advance();
+  }
+}
 </script>
 
 <template>
   <div class="novel-dialogue" data-novel-dialogue :data-segment="cursor" :data-segment-count="rows.length"
-    :data-speaker="current?.speaker ?? ''" :data-emotion="current?.emotion ?? ''">
+    :data-speaker="current?.speaker ?? ''" :data-emotion="current?.emotion ?? ''" @wheel="onDialogueWheel">
     <button class="novel-dialogue-text" aria-label="点击推进剧情" :disabled="!canAdvance || !!sideChoice" @click="advance">
       <span class="novel-speaker">{{ current?.speaker || '旁白' }}</span>
       <span class="novel-speech" aria-live="polite">{{ current?.text || '故事即将开始。' }}</span>

@@ -1,0 +1,19 @@
+{
+  "status": "deployed-and-verified",
+  "card_bytes": 41634673,
+  "card_sha256": "0ecb3a4506c989ee62731d062b4fbd2c4681c4235fe88977a4ddc850d2172d18",
+  "only_own_script_changed": true,
+  "cover_preserved": true,
+  "metadata_blocks": [
+    {
+      "key": "chara",
+      "bytes": 39029610
+    }
+  ],
+  "asset_pack_unchanged": true,
+  "browser_reimport_required": false,
+  "verified_assets": 233,
+  "chats_unchanged": true,
+  "chat_files": 18,
+  "user_browser_refresh_performed": false
+}

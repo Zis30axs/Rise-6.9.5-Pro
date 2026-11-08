@@ -1,0 +1,74 @@
+{
+  "verifiedAt": "2026-11-07T17:41:51.021351+00:00",
+  "workspace": "D:\\.study\\cc",
+  "worktree": "D:\\.study\\cc\\.worktrees\\strategy-panels-isolated-20261108",
+  "mergedIntoWorkingDirectory": true,
+  "gitCommitCreated": false,
+  "cardReimported": false,
+  "results": [
+    {
+      "suite": "band, strategy, society and identity Vitest",
+      "passed": 69
+    },
+    {
+      "suite": "additional autonomous SMS and rerun phone UI Vitest",
+      "passed": 45
+    },
+    {
+      "suite": "focus, society and strategy Node checks",
+      "passed": 22
+    },
+    {
+      "suite": "vue-tsc --noEmit",
+      "exitCode": 0
+    },
+    {
+      "suite": "playwright.established-bands.config.ts",
+      "passed": 12,
+      "viewports": [
+        "1440x900",
+        "1280x800",
+        "390x844",
+        "320x568"
+      ],
+      "host": "isolated real-component fixture in ShadowRoot"
+    },
+    {
+      "suite": "phone-messenger.js syntax and changed-file whitespace",
+      "exitCode": 0
+    }
+  ],
+  "behavior": [
+    "MyGO Leader Anon, Soyo bassist",
+    "Ave Mujica Leader and keyboard Sakiko",
+    "Old registry migration preserves IDs and history",
+    "CRYCHIC completion withdraws Soyo from MyGO; cancelling unfinished route keeps membership",
+    "Historical booking snapshots preserved; future Soyo participation and calendar withdrawn",
+    "Cancelled invitations cannot enroll members or request a reply"
+  ],
+  "sourceSha256": {
+    "src/runtime/livehouse.ts": "cd0c1dcf757d3ea53a2a5910122e14c438157cbf0708aa2a27881d02ed139502",
+    "src/runtime/model.ts": "b9ae2982c836510faeeeb0c9e366cb485773406c0b4a92b030acf6a2bf1bb399",
+    "src/runtime/strategy.ts": "31935242545e8e97d7fb3e135377b965bfdde740e1865c3e99d1d00f6852889c",
+    "src/runtime/strategy-narrative.ts": "0115b76a78b8d94b8519f89e473faeb8206aedb94a0ea5f2af04b0c22c56cb86",
+    "src/runtime/bridge.ts": "f737bab00ec258ec84a6a4872b58404ac18c07bf2c306ace1655e100a05354ce",
+    "src/runtime/protagonist-world.ts": "c7c20e47b3f4350712d5b4bed40b5d8da2f87b34415bf1fa97b83d652ce68455",
+    "src/runtime/society.ts": "06fd11c01e88a8136e6b6e04b88a361dc23040d7e98e0b51276e45c91f953386",
+    "src/frontend/identity-strategy.ts": "219527b06f332fae76b1be21b9790b1d1e1aec6d6de0c78540fcad49cc337ca1",
+    "src/frontend/FocusTreePanel.vue": "cd7a93f16c2052a5c4d790e797daffb9d33b3ec55e05c4cf3dbe5c06d83f3db6",
+    "src/frontend/SocietyPanel.vue": "e4d78a0bfbb688010273833ec5b9ad53e22dfeb083c7f5a6d8990b0d40bce036",
+    "src/worldbook/bang-dream-canon.json": "0547206d74cb8bb7660a45495115f5c077f4cd1d086a4a02aab7de1a1f33af51",
+    "integration/dual-protagonists/phone-messenger.js": "7f783fbce4adb71d55118b96f55ab4a8d72b3573ead970d50dae0c75c099f663",
+    "tests/established-bands.test.ts": "92521442edabf98ee5373d58a4910a1c3948239baedcb1b59ca1977b78654dba",
+    "tests/livehouse-ui.test.js": "80b42e41cf4d4208b9895a282af79f78febfec85e8274816e3c4b6519d0f54b0",
+    "tests/e2e/established-bands-fixture.ts": "edf0fd7b74f417ca47823019bea1beb93ab0203c41ab2360909c33a67424a2ad",
+    "tests/e2e/established-bands.spec.ts": "20c84c302aba0b9b3e0c465dae026847806eec6f39536b7bc4bacbba9f9c55a7"
+  },
+  "notRun": [
+    "CI",
+    "Agent Edition",
+    "real LLM",
+    "TauriTavern device",
+    "final card packaging and import"
+  ]
+}

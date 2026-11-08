@@ -1,0 +1,882 @@
+/* Included by shell.css inside the shell ShadowRoot; keep selectors local to this panel. */
+.focus-panel.tno-focus-screen {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 214, 232, 0.36);
+  background:
+    linear-gradient(180deg, rgba(5, 13, 22, 0.96) 0%, rgba(7, 19, 31, 0.97) 100%),
+    repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.035) 0 1px, transparent 1px 28px);
+  color: #daf4f8;
+  box-shadow:
+    0 14px 32px rgba(2, 8, 16, 0.6),
+    inset 0 0 28px rgba(56, 214, 232, 0.06);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.focus-panel .tno-crt-lines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(16, 48, 66, 0.14) 3px
+  );
+  opacity: 0.5;
+}
+
+.focus-panel .focus-top,
+.focus-panel .focus-controls,
+.focus-panel .tno-telemetry-strip,
+.focus-panel .tno-tree-section,
+.focus-panel .tno-decisions-section,
+.focus-panel .focus-history,
+.focus-panel .focus-feedback,
+.focus-panel .focus-note {
+  position: relative;
+  z-index: 1;
+}
+
+.focus-panel .focus-top,
+.focus-panel .focus-row,
+.focus-panel .focus-controls,
+.focus-panel .focus-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-command-bar {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.25);
+}
+
+.focus-panel .tno-kicker {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.09em;
+  color: #5ccada;
+  margin-bottom: 3px;
+}
+
+.focus-panel .focus-top h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #f0fdff;
+  text-shadow: 0 0 10px rgba(56, 214, 232, 0.28);
+}
+
+.focus-panel .focus-top p,
+.focus-panel .focus-note {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #8fc1cb;
+  margin: 2px 0 0;
+}
+
+.focus-panel .focus-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border: 1px solid rgba(56, 214, 232, 0.45);
+  border-radius: 7px;
+  background: rgba(12, 36, 54, 0.82);
+  color: #bdf7ff;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.focus-panel .focus-control.auto {
+  border-color: rgba(240, 179, 66, 0.68);
+  background: rgba(58, 39, 10, 0.78);
+  color: #ffda8f;
+}
+
+.focus-panel .tno-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38d6e8;
+  box-shadow: 0 0 8px #38d6e8;
+}
+
+.focus-panel .focus-control.auto .tno-dot {
+  background: #f0b342;
+  box-shadow: 0 0 8px #f0b342;
+}
+
+.focus-panel .tno-control-strip {
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(56, 214, 232, 0.22);
+  background: rgba(8, 22, 35, 0.85);
+}
+
+.focus-panel .tno-mode-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.uc-shell .focus-panel button {
+  border: 1px solid rgba(56, 214, 232, 0.38);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(16, 46, 68, 0.85), rgba(10, 29, 44, 0.92));
+  color: #d9f8fc;
+  padding: 8px 13px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
+}
+
+.uc-shell .focus-panel button:hover:not(:disabled) {
+  border-color: #5ee7f7;
+  box-shadow: 0 0 12px rgba(56, 214, 232, 0.32);
+}
+
+.uc-shell .focus-panel button.selected {
+  border-color: #38d6e8;
+  background: linear-gradient(180deg, rgba(32, 92, 122, 0.92), rgba(18, 56, 78, 0.95));
+  box-shadow: 0 0 14px rgba(56, 214, 232, 0.35), inset 0 0 8px rgba(56, 214, 232, 0.25);
+  color: #ffffff;
+}
+
+.uc-shell .focus-panel button.tno-danger-btn {
+  border-color: rgba(232, 88, 88, 0.58);
+  background: linear-gradient(180deg, rgba(72, 22, 28, 0.88), rgba(46, 14, 18, 0.92));
+  color: #ffc6c6;
+}
+
+.uc-shell .focus-panel button.tno-secondary-btn {
+  border-color: rgba(140, 198, 210, 0.36);
+  background: rgba(10, 26, 38, 0.88);
+  color: #b4e1ea;
+}
+
+.uc-shell .focus-panel button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.focus-panel .focus-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #a6d8e2;
+  cursor: pointer;
+}
+
+.focus-panel .tno-telemetry-strip {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 10px;
+}
+
+.focus-panel .tno-active-monitor,
+.focus-panel .tno-spirits-rack {
+  padding: 11px 13px;
+  border-radius: 9px;
+  border: 1px solid rgba(56, 214, 232, 0.24);
+  background: rgba(7, 19, 30, 0.88);
+  display: grid;
+  gap: 7px;
+  align-content: start;
+}
+
+.focus-panel .tno-monitor-head,
+.focus-panel .tno-monitor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-monitor-tag {
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: #5ccada;
+}
+
+.focus-panel .tno-monitor-head strong {
+  font-size: 0.88rem;
+  color: #f3fdff;
+}
+
+.focus-panel .tno-monitor-idle {
+  font-size: 0.74rem;
+  color: #7eaab4;
+  margin: 0;
+}
+
+.focus-panel .tno-spirit-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-chip {
+  font-size: 0.73rem;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(14, 41, 60, 0.8);
+  color: #c2f5fc;
+}
+
+.focus-panel .tno-chip.spirit {
+  border-color: rgba(240, 179, 66, 0.48);
+  background: rgba(54, 37, 10, 0.75);
+  color: #ffda8b;
+}
+
+.focus-panel .tno-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.uc-shell .focus-panel h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #ecfcff;
+}
+
+.focus-panel .tno-section-sub {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: #5ccada;
+  margin-top: 2px;
+}
+
+/* Zoom Toolbar */
+.focus-panel .tno-zoom-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.28);
+  background: rgba(6, 18, 28, 0.9);
+}
+
+.uc-shell .focus-panel button.tno-zoom-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.focus-panel .tno-zoom-readout {
+  min-width: 44px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #aaf4ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.uc-shell .focus-panel button.tno-zoom-reset {
+  padding: 5px 10px;
+  font-size: 0.72rem;
+}
+
+/* Interactive Zoom & Pan Viewport */
+.focus-panel .tno-tree-viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 214, 232, 0.28);
+  background:
+    radial-gradient(circle at 50% 15%, rgba(56, 214, 232, 0.12), transparent 68%),
+    repeating-linear-gradient(0deg, rgba(56, 214, 232, 0.04) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(56, 214, 232, 0.04) 0 1px, transparent 1px 32px),
+    rgba(3, 10, 18, 0.92);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.focus-panel .tno-tree-viewport.is-panning {
+  cursor: grabbing;
+}
+
+/* Visual Focus Tree Topology Stage */
+.focus-panel .tno-tree-canvas {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 680px;
+  transform-origin: center center;
+  transition: transform 0.08s ease-out;
+}
+
+.focus-panel .tno-tree-viewport.is-panning .tno-tree-canvas {
+  transition: none;
+}
+
+.focus-panel .tno-tree-root-tier {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-branch-connector {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  padding: 0;
+}
+
+.focus-panel .tno-trunk-line {
+  width: 3px;
+  height: 28px;
+  background: linear-gradient(180deg, #38d6e8, rgba(240, 179, 66, 0.9));
+  box-shadow: 0 0 10px rgba(56, 214, 232, 0.65);
+}
+
+.focus-panel .tno-crossbar-wrap {
+  width: min(82%, 440px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.focus-panel .tno-crossbar-arm {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(232, 88, 88, 0.8), rgba(240, 179, 66, 0.9));
+  box-shadow: 0 0 8px rgba(232, 88, 88, 0.45);
+}
+
+.focus-panel .tno-exclusive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 88, 88, 0.72);
+  background: rgba(52, 14, 20, 0.94);
+  color: #ffb8b8;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 12px rgba(232, 88, 88, 0.35);
+}
+
+.focus-panel .tno-exclusive-badge b {
+  color: #ff6b6b;
+}
+
+.focus-panel .tno-branch-drops {
+  width: min(82%, 440px);
+  display: flex;
+  justify-content: space-between;
+}
+
+.focus-panel .tno-drop-line {
+  width: 3px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(240, 179, 66, 0.9), rgba(56, 214, 232, 0.7));
+  box-shadow: 0 0 8px rgba(56, 214, 232, 0.45);
+}
+
+.focus-panel .tno-tree-branch-tier {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Compact HOI4 / TNO Focus Tree Node (Medallion + Banner Plaque) */
+.uc-shell .focus-panel button.tno-focus-node {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  width: 210px;
+  padding: 4px 6px 8px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+.uc-shell .focus-panel button.tno-focus-node:hover {
+  transform: translateY(-2px);
+  box-shadow: none;
+}
+
+.focus-panel .tno-node-emblem-wrap {
+  position: relative;
+  z-index: 2;
+  margin-bottom: -14px;
+}
+
+.focus-panel .tno-node-medallion,
+.focus-panel .focus-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 214, 232, 0.65);
+  background: radial-gradient(circle at 50% 45%, rgba(24, 64, 90, 0.98), rgba(5, 14, 24, 0.98));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.65),
+    0 0 16px rgba(56, 214, 232, 0.28);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.focus-panel .tno-node-medallion img,
+.focus-panel .focus-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.focus-panel .tno-node-glyph {
+  font-size: 1.65rem;
+  color: #79eeff;
+  text-shadow: 0 0 10px rgba(56, 214, 232, 0.55);
+}
+
+.focus-panel .tno-node-star {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 179, 66, 0.85);
+  background: rgba(46, 30, 6, 0.95);
+  color: #ffd875;
+  font-size: 0.68rem;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 8px rgba(240, 179, 66, 0.5);
+}
+
+.focus-panel .tno-node-plaque {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 18px 10px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.42);
+  background: linear-gradient(180deg, rgba(14, 38, 58, 0.96), rgba(7, 19, 31, 0.98));
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.55),
+    inset 0 0 12px rgba(56, 214, 232, 0.08);
+  display: grid;
+  gap: 6px;
+}
+
+.focus-panel .tno-node-title {
+  display: block;
+  font-size: 0.84rem;
+  line-height: 1.3;
+  color: #f2fdff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.focus-panel .tno-node-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-node-days {
+  font-size: 0.68rem;
+  color: #9ad4e0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(6, 18, 28, 0.78);
+  border: 1px solid rgba(56, 214, 232, 0.2);
+}
+
+.focus-panel .tno-node-progress {
+  margin-top: 2px;
+}
+
+/* Node States on Canvas */
+.uc-shell .focus-panel button.tno-focus-node:hover .tno-node-medallion,
+.uc-shell .focus-panel button.tno-focus-node.selected .tno-node-medallion {
+  border-color: #7cf3ff;
+  box-shadow: 0 0 20px rgba(56, 214, 232, 0.55);
+}
+
+.uc-shell .focus-panel button.tno-focus-node:hover .tno-node-plaque,
+.uc-shell .focus-panel button.tno-focus-node.selected .tno-node-plaque {
+  border-color: #66ebfa;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.65), 0 0 16px rgba(56, 214, 232, 0.35);
+}
+
+.uc-shell .focus-panel button.tno-focus-node.is-done .tno-node-medallion {
+  border-color: rgba(240, 179, 66, 0.88);
+  box-shadow: 0 0 18px rgba(240, 179, 66, 0.4);
+}
+
+.uc-shell .focus-panel button.tno-focus-node.is-done .tno-node-plaque {
+  border-color: rgba(240, 179, 66, 0.68);
+  background: linear-gradient(180deg, rgba(44, 38, 18, 0.94), rgba(18, 22, 24, 0.97));
+}
+
+.uc-shell .focus-panel button.tno-focus-node.is-active .tno-node-medallion {
+  border-color: #46ecff;
+  box-shadow: 0 0 22px rgba(56, 214, 232, 0.68);
+}
+
+.uc-shell .focus-panel button.tno-focus-node.is-active .tno-node-plaque {
+  border-color: #46ecff;
+  box-shadow: 0 0 18px rgba(56, 214, 232, 0.36);
+}
+
+.uc-shell .focus-panel button.tno-focus-node.route-locked,
+.uc-shell .focus-panel button.tno-focus-node.is-locked {
+  opacity: 0.54;
+  filter: grayscale(0.45);
+}
+
+/* General Cards (Decisions & Detail Modal) */
+.focus-panel .focus-card:not(.tno-focus-node) {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  border: 1px solid rgba(56, 214, 232, 0.28);
+  border-radius: 10px;
+  padding: 13px;
+  background: linear-gradient(165deg, rgba(10, 27, 42, 0.92), rgba(6, 16, 27, 0.95));
+  box-shadow: inset 0 0 16px rgba(56, 214, 232, 0.05);
+  min-width: 0;
+}
+
+/* Click-to-Open HOI4/TNO Focus Detail Modal / Inspector */
+.focus-panel .tno-focus-detail-backdrop {
+  position: relative;
+  margin-top: 10px;
+  padding: 4px;
+  animation: tno-detail-fade 0.16s ease-out;
+}
+
+@keyframes tno-detail-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focus-panel .tno-focus-detail-modal {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 11px;
+  border: 1px solid rgba(56, 214, 232, 0.58);
+  background:
+    linear-gradient(180deg, rgba(9, 25, 40, 0.98), rgba(5, 14, 24, 0.99));
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.72),
+    0 0 22px rgba(56, 214, 232, 0.22),
+    inset 0 0 18px rgba(56, 214, 232, 0.08);
+}
+
+.focus-panel .tno-detail-head {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(56, 214, 232, 0.24);
+}
+
+.focus-panel .tno-detail-emblem {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(240, 179, 66, 0.65);
+  background: radial-gradient(circle at 50% 50%, rgba(22, 58, 82, 0.96), rgba(6, 16, 26, 0.98));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-shadow: 0 0 14px rgba(56, 214, 232, 0.25);
+}
+
+.focus-panel .tno-detail-emblem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.focus-panel .tno-detail-title-group {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.focus-panel .tno-detail-title-group h4 {
+  margin: 0;
+  font-size: 1.04rem;
+  color: #f3fdff;
+}
+
+.uc-shell .focus-panel button.tno-detail-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 7px;
+  font-size: 1.15rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.focus-panel .tno-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.focus-panel .tno-detail-box {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 214, 232, 0.22);
+  background: rgba(6, 17, 28, 0.86);
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.focus-panel .tno-detail-label {
+  font-size: 0.63rem;
+  letter-spacing: 0.08em;
+  color: #5ccada;
+}
+
+.focus-panel .tno-detail-actions {
+  padding-top: 8px;
+  border-top: 1px solid rgba(56, 214, 232, 0.2);
+  justify-content: flex-end;
+}
+
+.focus-panel .focus-route-tag {
+  font-size: 0.69rem;
+  color: #ff9c9c;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  margin: 0;
+}
+
+.focus-panel .focus-card h4 {
+  font-size: 0.95rem;
+  margin: 0;
+  color: #f2fdff;
+}
+
+.focus-panel .tno-status-pill {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(14, 42, 62, 0.8);
+  color: #9cecf8;
+  white-space: nowrap;
+}
+
+.focus-panel .tno-status-pill.is-done {
+  border-color: rgba(240, 179, 66, 0.65);
+  background: rgba(62, 44, 12, 0.82);
+  color: #ffdb8e;
+}
+
+.focus-panel .tno-status-pill.is-active {
+  border-color: #38d6e8;
+  background: rgba(22, 74, 98, 0.9);
+  color: #ffffff;
+}
+
+.focus-panel .tno-status-pill.is-locked {
+  border-color: rgba(232, 88, 88, 0.55);
+  background: rgba(58, 18, 22, 0.82);
+  color: #ffb0b0;
+}
+
+.focus-panel .tno-milestone-tag {
+  color: #f0b342;
+  font-weight: 600;
+}
+
+.focus-panel .focus-card p,
+.focus-panel .focus-ai p,
+.focus-panel .tno-duration-line,
+.focus-panel .tno-prereq-line {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  margin: 0;
+  color: #9dcad3;
+  overflow-wrap: anywhere;
+}
+
+.focus-panel .focus-progress {
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 214, 232, 0.35);
+  background: rgba(4, 12, 20, 0.92);
+  overflow: hidden;
+}
+
+.focus-panel .focus-progress span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #2bc4d8 0px,
+    #2bc4d8 8px,
+    #66ecff 8px,
+    #66ecff 11px
+  );
+  box-shadow: 0 0 10px rgba(56, 214, 232, 0.6);
+}
+
+.focus-panel .focus-ai {
+  border-top: 1px solid rgba(56, 214, 232, 0.2);
+  padding-top: 7px;
+  font-size: 0.74rem;
+}
+
+.focus-panel .focus-ai summary,
+.focus-panel .focus-history summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #8ce4f2;
+}
+
+.focus-panel .focus-ai p {
+  padding-top: 5px;
+}
+
+.focus-panel .focus-decisions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.focus-panel .tno-decision-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-decision-card.ready {
+  border-color: rgba(240, 179, 66, 0.55);
+}
+
+.focus-panel .tno-decision-body {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 180px;
+}
+
+.focus-panel .tno-cooldown-badge {
+  font-size: 0.7rem;
+  color: #90c3ce;
+}
+
+.focus-panel .tno-effect-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-effect-chip {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(240, 179, 66, 0.15);
+  border: 1px solid rgba(240, 179, 66, 0.4);
+  color: #ffda8b;
+}
+
+.focus-panel .tno-archive-log {
+  border: 1px solid rgba(56, 214, 232, 0.24);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: rgba(6, 17, 27, 0.86);
+  font-size: 0.78rem;
+}
+
+.focus-panel .tno-log-list {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.focus-panel .focus-history p {
+  font-size: 0.73rem;
+  line-height: 1.5;
+  margin: 0;
+  color: #9ac6cf;
+  overflow-wrap: anywhere;
+}
+
+.focus-panel .focus-feedback {
+  font-size: 0.78rem;
+  padding: 9px 12px;
+  border: 1px solid rgba(56, 214, 232, 0.52);
+  border-radius: 8px;
+  background: rgba(14, 44, 64, 0.85);
+  color: #d7fbff;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .focus-panel .tno-telemetry-strip,
+  .focus-panel .focus-decisions {
+    grid-template-columns: 1fr;
+  }
+  .focus-panel .tno-tree-branch-tier {
+    gap: 18px;
+  }
+  .focus-panel .tno-crossbar-wrap,
+  .focus-panel .tno-branch-drops {
+    width: 92%;
+  }
+}

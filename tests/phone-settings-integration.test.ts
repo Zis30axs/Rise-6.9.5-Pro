@@ -26,7 +26,8 @@ describe('embedded phone Settings privacy integration', () => {
     expect(apps).not.toContain('data-world-field="locked"');
     expect(apps).not.toContain('data-world-field="share"');
     expect(apps).not.toContain("case 'device':");
-    expect(apps).toContain("id==='worldpeek'");
-    expect(apps).toContain("case 'inspect':");
+    expect(apps).not.toContain("worldpeek");
+    const peek = readFileSync('integration/dual-protagonists/phone-peek-controller.js','utf8');
+    expect(peek).toContain("command:{type:'inspect',section:'messages'}");
   });
 });

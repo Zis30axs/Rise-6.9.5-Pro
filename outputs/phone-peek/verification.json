@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-08",
+  "rootCause": "Ordinary peek routed playable protagonists into a per-viewpoint simulated snapshot instead of their canonical phone.",
+  "regressionObservedBeforeFix": true,
+  "unitTests": {"files": 6, "passed": 32},
+  "typecheck": "passed: vue-tsc --noEmit",
+  "embeddedPhoneBuild": "passed",
+  "liteBuild": "passed",
+  "browser": {
+    "engine": "local Edge Chromium",
+    "viewports": ["1440x900", "1280x800", "390x844", "320x568"],
+    "ordinaryPeekAndSwitch": "all four passed; desktop and mobile runs recorded separately",
+    "liveSmsProjection": "passed",
+    "duplicateWrites": 0,
+    "storyGenerationRequests": 0,
+    "backAndFront": "passed",
+    "nativeTouchSwipes": "four passed",
+    "desktop1440ScreenBefore": [280.4053, 606.8260],
+    "desktop1440ScreenAfter": [338, 731],
+    "desktopRestingIframeTransform": "none"
+  },
+  "deploymentRecord": "deployment-after.json",
+  "reusedInstalledAssetPack": true,
+  "realModelTested": false,
+  "tauriHardwareTested": false,
+  "ciOrAgentEditionRun": false
+}

@@ -1,0 +1,18 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "box": {
+    "x": 787,
+    "y": 128,
+    "width": 294,
+    "height": 636
+  },
+  "metrics": {
+    "width": 294,
+    "height": 636,
+    "scroll": 294,
+    "font": "15px"
+  }
+}

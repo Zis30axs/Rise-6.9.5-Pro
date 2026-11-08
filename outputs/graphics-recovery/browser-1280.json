@@ -1,0 +1,15 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "contextLossRecovery": true,
+  "repeatedMapRefreshes": 3,
+  "globalMapRefresh": true,
+  "cameraUnchanged": true,
+  "headerOverlap": false,
+  "localStorageAndClockUnchanged": true,
+  "noApiOrRemoteRequests": true,
+  "pageErrors": [],
+  "physicalDevice": false
+}

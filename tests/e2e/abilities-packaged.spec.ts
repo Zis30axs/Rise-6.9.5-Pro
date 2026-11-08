@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { selectDockAction } from './tool-dock-helpers';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }];
 const host = readFileSync('index.html', 'utf8').replace(
@@ -26,7 +27,7 @@ for (const viewport of viewports) {
     await page.goto('/');
     await page.locator('[data-academic-major="computer-science"]').click();
     await page.locator('[data-academic-confirm]').click();
-    await page.getByRole('button', { name: '能力', exact: true }).click();
+    await selectDockAction(page, '能力');
     const panel = page.locator('[data-abilities-panel]');
     await expect(panel).toBeVisible();
     const style = await panel.evaluate(el => {

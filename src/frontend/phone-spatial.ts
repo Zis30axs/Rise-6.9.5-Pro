@@ -7,9 +7,9 @@ const HOLD_MS = 450, MOVE_SLOP = 8;
 const screenCss = `html[data-uc-spatial-screen],html[data-uc-spatial-screen] body{background:transparent!important}
 html[data-uc-spatial-screen] body{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 html[data-uc-spatial-screen] :is(input,textarea,[contenteditable=true]){user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
-html[data-uc-spatial-screen] .stage{padding:0!important;width:390px!important;height:844px!important}
+html[data-uc-spatial-screen] .stage{padding:0!important;width:100%!important;height:100%!important}
 html[data-uc-spatial-screen] .stage-bar,html[data-uc-spatial-screen] .power-key{display:none!important}
-html[data-uc-spatial-screen] .device{flex:none!important;width:390px!important;height:844px!important;max-width:none!important;padding:0!important;border:0!important;border-radius:38px!important;background:transparent!important;box-shadow:none!important}
+html[data-uc-spatial-screen] .device{flex:none!important;width:100%!important;height:100%!important;max-width:none!important;padding:0!important;border:0!important;border-radius:38px!important;background:transparent!important;box-shadow:none!important}
 html[data-uc-spatial-screen] .screen{border-radius:38px!important}
 html[data-uc-spatial-screen] .island{transition:none}
 html[data-uc-spatial-screen=soyo] .island{min-width:132px;height:27px;top:0;border-radius:0 0 18px 18px}
@@ -50,7 +50,8 @@ export function spatialPhoneLease(lease: PhoneLease, win: Window, anchor: HTMLEl
     if (ended) return;
     const rect = anchor.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const base = Math.min((rect.width - 16) / spec.width, (rect.height - 16) / spec.height) * .87;
+    const desktop = win.matchMedia('(min-width:761px)').matches;
+    const base = Math.min((rect.width - 16) / spec.width, (rect.height - 16) / spec.height) * (desktop ? 1 : .87);
     const scale = fitPhoneScale(spec.width, spec.height, spec.depth, pose, rect.width - 10, rect.height - 10, base * pose.zoom);
     let entry = 1;
     if (opening !== undefined) {
@@ -61,8 +62,16 @@ export function spatialPhoneLease(lease: PhoneLease, win: Window, anchor: HTMLEl
     const transform = `perspective(1800px) scale(${scale * (.6 + .4 * entry)}) rotateX(${pose.pitch + (1 - entry) * 10}deg) rotateY(${pose.yaw - (1 - entry) * 20}deg)`;
     put(solid, 'left', `${rect.width / 2 - spec.width / 2}px`); put(solid, 'top', `${rect.height / 2 - spec.height / 2}px`);
     put(solid, 'transform', transform);
-    put(frame!, 'left', `${rect.width / 2 - 195}px`); put(frame!, 'top', `${rect.height / 2 - 422}px`);
-    put(frame!, 'transform-origin', '50% 50%'); put(frame!, 'transform', `${transform} translateZ(${spec.depth / 2 + 1}px)`);
+    // At rest on desktop, lay out text at the actual screen size. A scaled 3D
+    // iframe rasterizes the whole phone and shrinks normal 16px text to ~11px.
+    const flat = desktop && opening === undefined && Math.abs(pose.yaw) < .01 && Math.abs(pose.pitch) < .01;
+    const screenScale = scale / (1 - scale * (spec.depth / 2 + 1) / 1800);
+    const pixel = (value: number) => Math.round(value * (win.devicePixelRatio || 1)) / (win.devicePixelRatio || 1);
+    const width = flat ? pixel(390 * screenScale) : 390, height = flat ? pixel(844 * screenScale) : 844;
+    put(frame!, 'width', `${width}px`); put(frame!, 'height', `${height}px`);
+    put(frame!, 'left', `${pixel((rect.width - width) / 2)}px`); put(frame!, 'top', `${pixel((rect.height - height) / 2)}px`);
+    put(frame!, 'transform-origin', '50% 50%'); put(frame!, 'transform', flat ? 'none' : `${transform} translateZ(${spec.depth / 2 + 1}px)`);
+    panel!.dataset.phoneFlat = String(flat);
     panel!.dataset.phoneYaw = pose.yaw.toFixed(2); panel!.dataset.phonePitch = pose.pitch.toFixed(2); panel!.dataset.phoneZoom = pose.zoom.toFixed(3); panel!.dataset.phoneScale = scale.toFixed(4);
     panel!.dataset.phoneOpening = String(opening !== undefined); panel!.dataset.phoneGesture = mode;
     // Both decorative faces stay transparent to touch while the screen faces the user.
@@ -166,7 +175,7 @@ export function spatialPhoneLease(lease: PhoneLease, win: Window, anchor: HTMLEl
       ended = true; cancel(); win.cancelAnimationFrame(raf); resize.disconnect(); changes.disconnect();
       remove.forEach(fn => fn()); removeScreen?.(); style.remove(); solid.remove();
       frame!.inert = originalInert;
-      for (const key of ['ucSpatialPhone','phoneYaw','phonePitch','phoneZoom','phoneScale','phoneOpening','phoneGesture','phoneBackFacing']) delete panel!.dataset[key];
+      for (const key of ['ucSpatialPhone','phoneYaw','phonePitch','phoneZoom','phoneScale','phoneOpening','phoneGesture','phoneBackFacing','phoneFlat']) delete panel!.dataset[key];
       lease.release();
     },
   };

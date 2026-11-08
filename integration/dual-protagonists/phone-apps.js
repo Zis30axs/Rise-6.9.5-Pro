@@ -4,7 +4,7 @@ import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
 import {renderWorldMessenger,worldMessageRows,renderBandPanel} from 'UNREAD_CITY_PHONE_CHAT';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
 export {applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'UNREAD_CITY_PHONE_VISUALS';
-const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldpeek:'查主角手机',worldmessages:'消息',twiitch:'Twiitch'};
+const labels = {worldstyle:'桌面与外观',appie:'Appie Pay',worldshop:'购物',worlddelivery:'外卖',worldcalendar:'日历',worldmessages:'消息',twiitch:'Twiitch'};
 const cardNames = {gpt:'GPT Card',claude:'ClaudeCard',gemini:'GeminiCard'};
 const money = cents => '¥' + (cents / 100).toFixed(2);
 // The same UTC day-1 anchor as src/runtime/game-calendar.ts. Host clock stays authoritative.
@@ -222,10 +222,7 @@ function worldApp(ctx,id) {
     html+=`<div class="world-device-header"><div><strong>${esc(identity.device)}</strong><small>${esc(identity.title)}</small></div></div>`;
     if(id==='worldstyle')html+=`<div class="group pad world-appearance"><p class="hint">外观保存在这台手机的剧情存档中。</p>${field('壁纸',`<select data-world-field="wallpaper">${options([['signature',identity.title],['plain','纯色']],appearance.wallpaper)}</select>`)}${field('界面主题',`<select data-world-field="theme">${options([['light','日间'],['dark','夜间'],['system','跟随系统']],appearance.theme)}</select>`)}${field('应用排列',`<select data-world-field="layout">${options([['daily','日常'],['focus','专注']],appearance.layout)}</select>`)}${btn('appearance','保存外观','primary')}</div>`;
     if(pending) html+=`<div class="world-notice">${btn('retry','重试保存','secondary')}${btn('discard','取消本次操作','text-button')}</div>`;
-    if(id==='worldpeek'&&!peek){
-      html+=`<div class="group pad"><h3>${esc(data.other.name)}的手机</h3><p>${esc(data.other.reason||'手机在身边，可以选择查看内容。')}</p><p class="hint">读取与代操作会留下记录。锁屏和许可由手机主人设置。</p><div class="world-tabs">${['wallet','calendar','orders','messages'].map(x=>btn('inspect',({wallet:'Appie Pay',calendar:'日历',orders:'订单',messages:'消息'})[x],'secondary',`data-section="${x}" ${data.other.read?'':'disabled'}`)).join('')}</div></div>`;
-    } else {
-      if(id==='worldpeek')html+=`<p class="world-notice">正在查看${esc(data.name)}的真实手机记录。${btn('own','返回自己的手机','text-button')}</p><div class="world-tabs">${['wallet','calendar','orders','messages'].map(x=>btn('inspect',({wallet:'Appie Pay',calendar:'日历',orders:'订单',messages:'消息'})[x],'secondary',`data-section="${x}"`)).join('')}</div>`;
+    {
       if(section==='appie'||section==='wallet') {
         html+=`<div class="wallet-card"><small>Appie Pay · 游戏账户</small><strong>${money(total(data))}</strong></div><div class="world-cards">${Object.entries(cardNames).map(([key,label])=>`<article class="world-card ${key}" data-card-owner="${data.owner}" aria-label="${esc(data.name)}的${label}"><span class="world-card-art" style='background-image:${worldCardArt(data.owner,key)}' aria-hidden="true"></span><div class="world-card-brand"><span>${label}</span><small>APPIE PAY</small></div><strong class="world-card-balance">${money(data.cards[key])}</strong><div class="world-card-holder"><span>${esc(data.name)}<small> · 游戏账户</small></span><span>•• ${{soyo:'0101',sakiko:'0202',emma:'0303',renako:'0404'}[data.owner]} · ${key.toUpperCase()}</span></div></article>`).join('')}</div><details class="group pad"><summary>卡间转账</summary><div class="world-form">${field('转出卡',`<select data-world-field="from">${cards()}</select>`)}${field('转入卡',`<select data-world-field="to">${options(Object.entries(cardNames),'claude')}</select>`)}${field('金额（元）','<input data-world-field="amount" type="number" min="0.01" step="0.01">')}${btn('transfer','确认转账','primary')}</div></details>${!peek?`<details class="group pad"><summary>联系人转账</summary>${transferArt}<div class="world-form">${field('收款人',`<select data-world-field="payee">${payees()}</select>`)}${field('转出卡',`<select data-world-field="payFrom">${cards()}</select>`)}${field('金额（元）','<input data-world-field="payAmount" type="number" min="0.01" step="0.01">')}${btn('send-transfer','确认转账','primary')}</div><p class="hint">转给另一位主角或已保存的联系人，双边同时入账与扣款，对方会收到通知。</p></details>`:''}<div class="group">${[...data.ledger].reverse().map(e=>`<article class="world-event"><b>${esc(e.note)}</b><p>${money(e.deltaCents)} · ${cardNames[e.card]}</p></article>`).join('')||'<p class="hint">暂无流水</p>'}</div>`;
       }
@@ -315,10 +312,8 @@ function worldApp(ctx,id) {
       case 'appearance':if(await act({type:'appearance',appearance:{wallpaper:formValue('wallpaper'),theme:formValue('theme'),layout:formValue('layout')}}))ctx.win.stTtsPhone?.home?.(true);break;
       case 'retry': await act(pending.command,pending.owner);break;
       case 'discard':pending=null;data=base();peek=false;section=id;render();break;
-      case 'own':refresh();break;
       case 'switch-twiitch':twiitchChannel=el.dataset.channel||'kaguya';twiitch3d=false;render();break;
       case 'toggle-twiitch-3d':twiitch3d=!twiitch3d;render();break;
-      case 'inspect':{const own=base(),owner=own.other.id;data=own;if(await act({type:'inspect',section:el.dataset.section},owner)){peek=true;section=el.dataset.section;render();}break;}
       case 'buy':{const item=data.catalog.find(x=>x.id===el.dataset.item),kind=section==='worlddelivery'?'delivery':'shop',address=formValue('address'),card=formValue('card');if(await ctx.confirm(`确认购买${item.name}？`,`共 ${money(item.price*100+(kind==='delivery'?300:0))}，从 ${cardNames[card]} 支付。`))await act({type:'order',kind,itemId:item.id,quantity:1,card,address});break;}
       case 'cancel':await act({type:'cancel_order',id:el.dataset.id});break;
       case 'receive':await act({type:'receive_order',id:el.dataset.id});break;

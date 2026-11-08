@@ -1,0 +1,55 @@
+--- a/ui/forum.js
++++ b/ui/forum.js
+@@ -18,7 +18,7 @@
+   const {api} = ctx, v = createView(ctx, 'forum');
+   let open = '', profileId = '', directory = false, epoch = 0, posts = [];
+   const network = () => readNetwork(ctx.win);
+-  const account = who => networkAccount(network(), who);
++  const account = who => { const n=network(), direct=networkAccount(n,who); if(direct)return direct; const prior=Object.entries(net()).find(([name,handle])=>name!=='me'&&handle===who&&networkAccount(n,name)); return prior?networkAccount(n,prior[0]):null; };
+   const displayAccount = who => account(who) || ctx.win.parent.__unreadCityWorldPhone?.networkIdentity?.(who);
+   const isMine = who => network() ? who === network().ownerId : who === 'me';
+   const handle = who => { const a = displayAccount(who); return a ? '@' + a.username : '@archived'; };
+@@ -185,7 +185,7 @@
+       case 'forum-options': options(); break;
+       case 'net-names': netNames(); break;
+       case 'open-post': profileId = ''; directory = false; open = el.dataset.id; await render(); v.root.scrollTop = 0; break;
+-      case 'forum-like': { const p = post || await api.getForumPost(open); if (p) { await api.likeForum(open, !p.liked); await render(); } break; }
++      case 'forum-like': { const p = await api.getForumPost(open); if (p) { await api.likeForum(open, !p.liked); await render(); } break; }
+       case 'forum-reply': replyTo(el.dataset.to || ''); break;
+       case 'forum-my-reply': if (await ctx.confirm('删除这条回复？')) { await api.deleteForumReply(open, el.dataset.reply); await render(); } break;
+       case 'forum-delete': if (await ctx.confirm('删除这个帖子？', '帖子和下面的回复会一起删除。')) { await api.deleteForum(open); open = ''; await render(); } break;
+--- a/core/network.js
++++ b/core/network.js
+@@ -5,9 +5,10 @@
+ }
+ export function networkAccount(network, value) {
+   if (!network || !value) return null;
+-  const key = String(value);
++  const key = String(value).trim();
++  if (/^(?:@|band:)?crychic$/i.test(key)) return network.accounts.find(a=>a.id==='band:crychic') || null;
+   const alias = Object.hasOwn(network.legacyAliases || {}, key) ? network.legacyAliases[key] : key;
+-  return network.accounts.find(a => a.id === alias || '@' + a.username === key || a.nickname === key) || null;
++  return network.accounts.find(a => a.id === alias || ('@' + a.username).toLowerCase() === key.toLowerCase() || a.nickname === key) || null;
+ }
+ export const dormantTopic = value => /c[\s._-]*r[\s._-]*y[\s._-]*c[\s._-]*h[\s._-]*i[\s._-]*c/i.test(String(value));
+ export function assertNetworkCurrent(network, root = globalThis) {
+--- a/core/forum.js
++++ b/core/forum.js
+@@ -89,7 +89,7 @@
+   const body = String(reply || '').replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').replace(/```[a-z]*\n?|```/g, '');
+   // Screen names back to who they are ('me' for the user's).
+   const back = new Map(Object.entries(handles).map(([name, handle]) => [handle, name]));
+-  const real = name => network ? networkAccount(network, name)?.id || name : back.get(name) || name;
++  const real = name => network ? (networkAccount(network, name) || networkAccount(network, back.get(name)))?.id || name : back.get(name) || name;
+   const isUser = name => !name || name === user || name === '我' || real(name) === 'me' || (network && real(name) === network.ownerId) || isPlaceholderRole(name);
+   const target = name => { const n = real(person(name)); return !n ? '' : n === user || n === '我' ? 'me' : n; };
+   const out = {hot: [], posts: [], replies: [], names: {}};
+@@ -138,7 +138,7 @@
+   if (!text) throw Error('帖子内容为空');
+   const replies = (Array.isArray(p.replies) ? p.replies : []).slice(-FORUM_LIMITS.replies).map((r, i) => cleanReply(r, r?.id || newId(), Number.isFinite(r?.at) ? r.at : at + i + 1));
+   return {id, kind: 'forum', author, title, text, at, ...(Array.isArray(p.likedBy) ? {likedBy: [...new Set(p.likedBy.filter(x => typeof x === 'string'))]} : {}), source: ['auto', 'me'].includes(p.source) ? p.source : 'auto',
+-    likes: Math.max(0, Math.round(Number(p.likes) || 0)), liked: p.liked === true, heat: Math.max(0, Math.round(Number(p.heat) || 0)), replies, ...(p.space ? {space: clip(p.space, 300)} : {})};
++    likes: Math.max(0, Math.round(Number(p.likes) || 0)), liked: p.liked === true, heat: Math.max(0, Math.round(Number(p.heat) || 0)), replies, ...(p.space ? {space: clip(p.space, 5000)} : {})};
+ }
+ export function cleanReply(r, id, at) {
+   const from = person(r?.from), said = clip(r?.text, FORUM_LIMITS.reply).trim();

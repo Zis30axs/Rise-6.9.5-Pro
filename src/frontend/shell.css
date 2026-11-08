@@ -22,6 +22,12 @@
 @import './story-engine-settings.css';
 @import './protagonist-switch.css';
 @import './identity-card.css';
+/* The shell mounts in a ShadowRoot; component styles must ship in this inline sheet. */
+@import './focus-tree-panel.css';
+@import './decisions-panel.css';
+@import './society-panel.css';
+@import './strategy-status-hero.css';
+@import './tool-dock.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
 .uc-shell *, .uc-shell *::before, .uc-shell *::after { box-sizing:border-box; }
@@ -58,7 +64,7 @@
 .walk-launcher span { font-size:23px; line-height:1; }
 @media(max-width:760px) { .uc-shell .walk-launcher { left:16px; top:86px; padding:7px 13px; } }
 .notice { position:absolute; top:94px; left:50%; transform:translateX(-50%); z-index:90; max-width:min(700px,calc(100% - 36px)); padding:10px 16px!important; background:#4a4128; color:#ffe1a3; box-shadow:0 5px 24px #102c2740; border-radius:8px; font-size:12px; }
-.tool-dock { position:absolute; z-index:80; right:24px; top:50%; transform:translateY(-50%); display:flex; align-items:center; flex-direction:column; gap:8px; }
+.tool-dock { position:absolute; z-index:80; right:24px; top:50%; transform:translateY(-50%); display:flex; align-items:center; flex-direction:column; gap:8px; max-height:calc(100dvh - 110px); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none; }
 .uc-shell .tool-dock button { display:flex; align-items:center; justify-content:center; gap:9px; width:76px; min-height:45px; padding:10px; border:1px solid rgba(223,228,204,.25); border-radius:12px; color:#f0e9d6; background:#193329e8; box-shadow:0 4px 18px #08271a29; font-size:12px; white-space:nowrap; }
 .tool-dock button:hover, .tool-dock button[aria-pressed=true] { background:#ebe5ce; color:#263c2b; }
 .uc-shell .tool-dock .phone-launcher { min-height:65px; gap:7px; border:1px solid #fff1bd; color:#183c2b; background:linear-gradient(145deg,#fff0b8,#e4bb73); box-shadow:0 0 0 3px #eacb8a20,0 6px 22px #0c241b52; font-weight:700; }
@@ -144,7 +150,7 @@
   .host-actions { gap:9px; }
   .uc-shell .host-actions button { min-height:30px; font-size:10px; }
   .host-actions button + button { padding-left:9px; }
-  .tool-dock { right:50%; top:auto; bottom:max(12px,env(safe-area-inset-bottom,0px)); transform:translateX(50%); flex-direction:row; gap:2px; padding:5px; background:#10291ff2; border:1px solid #c1d1ae58; border-radius:19px; box-shadow:0 7px 24px #0b211b57; }
+  .tool-dock { right:50%; top:auto; bottom:max(12px,env(safe-area-inset-bottom,0px)); transform:translateX(50%); flex-direction:row; gap:2px; padding:5px; max-height:none; overflow:visible; background:#10291ff2; border:1px solid #c1d1ae58; border-radius:19px; box-shadow:0 7px 24px #0b211b57; }
   .uc-shell .tool-dock button { width:44px; min-width:44px; min-height:45px; padding:5px 5px; gap:2px; flex-direction:column; border:0; border-radius:13px; background:transparent; box-shadow:none; font-size:10px; }
   .tool-dock button[aria-pressed=true] { background:#e6ddbf; color:#233f2b; }
   .tool-icon svg { width:17px; height:17px; }
@@ -194,7 +200,7 @@
   }
 }
 @media (min-width:761px) {
-  .uc-shell[data-phone-expanded=true] .phone-window { width:min(430px,calc(100% - 140px)); top:76px; height:calc(100dvh - 110px); max-height:calc(100dvh - 110px); }
+  .uc-shell[data-phone-expanded=true] .phone-window { width:min(470px,calc(100% - 140px)); top:56px; height:calc(100dvh - 72px); max-height:calc(100dvh - 72px); }
 }
 .bed-rest-overlay { position:absolute; inset:0; z-index:60; display:grid; place-items:center; padding:82px 16px 96px; background:#10271faa; backdrop-filter:blur(5px); }
 .bed-rest-dialog { width:min(440px,100%); max-height:100%; overflow:auto; overscroll-behavior:contain; border:1px solid #ddc79770; border-radius:18px; padding:24px; background:#1b352c; box-shadow:0 20px 70px #071b1866; }

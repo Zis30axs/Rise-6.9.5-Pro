@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { selectDockAction } from './tool-dock-helpers';
 
 for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
   test(`能力独立入口、分类与状态页分离 ${viewport.width}×${viewport.height}`, async ({ page }, testInfo) => {
@@ -6,13 +7,11 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800
     // Reuse the existing novel Shell fixture; no story generation is involved.
     await page.goto('/tests/e2e/invitation-book.html');
     const stateBefore = await page.evaluate(() => JSON.stringify((window as any).invitationFixture.model.state));
-    const entry = page.getByRole('button', { name: '能力', exact: true });
-    await expect(entry).toBeVisible();
-    await entry.click();
+    await selectDockAction(page, '能力');
 
     const dialog = page.getByRole('dialog', { name: '能力窗口', exact: true });
     await expect(dialog).toBeVisible();
-    await expect(entry).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: '展开菜单' })).toHaveAttribute('aria-expanded', 'false');
     await expect(dialog.getByRole('heading', { name: '能力体系 · 星盘与专长', exact: true })).toBeVisible();
     await expect(dialog.locator('[data-abilities-panel]')).toHaveAttribute('data-skills-owner', 'soyo');
     await expect(dialog.locator('[data-radar-node]')).toHaveCount(6);
@@ -22,7 +21,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800
 
     const panels = dialog.locator('.world-panels');
     expect(await panels.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
-    for (const button of await page.locator('.tool-dock > button').all()) {
+    for (const button of await page.locator('.tool-dock-shortcuts > button').all()) {
       const bounds = await button.boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
@@ -41,21 +40,20 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800
     await dialog.getByText('家常料理与厨艺手记', { exact: true }).scrollIntoViewIfNeeded();
     await expect(dialog.getByText('家常料理与厨艺手记', { exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: '状态', exact: true }).click();
+    await selectDockAction(page, '状态');
     const status = page.getByRole('dialog', { name: '状态窗口', exact: true });
     await expect(status).toBeVisible();
     await expect(status.locator('[data-status-section="body"]')).toBeVisible();
     await expect(status.locator('[data-abilities-panel]')).toHaveCount(0);
     await expect(status).not.toContainText('能力体系 · 星盘与专长');
-    await expect(entry).toHaveAttribute('aria-pressed', 'false');
 
-    await entry.click();
+    await selectDockAction(page, '能力');
     await expect(status).toHaveCount(0);
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: '关闭能力窗口', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await entry.click();
-    await entry.click();
+    await selectDockAction(page, '能力');
+    await selectDockAction(page, '能力');
     await expect(dialog).toHaveCount(0);
     expect(await page.evaluate(() => JSON.stringify((window as any).invitationFixture.model.state))).toBe(stateBefore);
     expect(await page.evaluate(() => (window as any).invitationFixture.dispatched.length)).toBe(0);

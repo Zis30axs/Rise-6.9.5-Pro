@@ -1,0 +1,1609 @@
+diff --git a/src/frontend/App.vue b/src/frontend/App.vue
+--- a/src/frontend/App.vue
++++ b/src/frontend/App.vue
+@@ -142,6 +142,7 @@
+   layoutLease?.reset();
+ }
+ const presentationMode = ref<PresentationMode>(readPresentationMode());
++const graphicsRevision = ref(0);
+ const novelMode = computed(() => presentationMode.value === 'novel' || isInternationalLocation(props.model.state.locationId));
+ const novelHistory = ref(false);
+ const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
+@@ -964,6 +965,7 @@
+     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || undefined" style="display: contents">
+     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
+     <NovelInvitationPortraits v-if="visibleInvitationStage"
++      :refresh-token="graphicsRevision"
+       :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"
+       :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
+     <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage"
+@@ -972,13 +974,14 @@
+     <!-- Preserve the original v-if/v-else-if scene switch. An inactive
+          single-person Live2D remains mounted while the paired stage is shown. -->
+     <SoyoLive2D v-if="novelMode"
++      :refresh-token="graphicsRevision"
+       :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
+       :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
+     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId || cookOpen" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
+     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
+     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
+     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
+-    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><span class="chrome-dot">·</span><span class="chrome-weather" :aria-label="weatherLabel">{{ weatherIcon }}{{ weatherLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
++    <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><span class="chrome-dot">·</span><span class="chrome-weather" :aria-label="weatherLabel">{{ weatherIcon }}{{ weatherLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button v-if="novelMode" class="graphics-refresh-button" aria-label="刷新画面" title="刷新画面" @click="graphicsRevision++">↻</button><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
+     <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
+     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy || isInternationalLocation(model.state.locationId)" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
+     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
+@@ -1055,7 +1058,7 @@
+       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
+       <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
+       <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId && person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
+-      <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
++      <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" :refresh-token="graphicsRevision" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
+     </section>
+     </div>
+     <ProtagonistSwitchOverlay v-if="switchingLease" ref="switchOverlay" :lease="switchingLease" :novel-mode="novelMode" :hour="model.state.clock.hour" :scene="scene" @finished="switchingLease = null; nextTick(() => shell?.querySelector<HTMLElement>('[data-protagonist-select]')?.focus({ preventScroll: true }))" @exit="actions.exit()" />
+diff --git a/src/frontend/CitySandboxScene.vue b/src/frontend/CitySandboxScene.vue
+--- a/src/frontend/CitySandboxScene.vue
++++ b/src/frontend/CitySandboxScene.vue
+@@ -5,8 +5,7 @@
+ import { readLocalAssetBytes } from './local-asset-buffer';
+ import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
+ 
+-let cachedGlbRoot: THREE.Group | undefined;
+-let cachedGlbPromise: Promise<THREE.Group> | undefined;
++import { disposeThreeTree } from './dispose-three-tree';
+ 
+ async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
+   const digest = await crypto.subtle.digest('SHA-256', bytes);
+@@ -164,42 +163,29 @@
+   root.add(group);
+ }
+ 
+-async function loadSharedTokyoGlb(assetUrl: string): Promise<THREE.Group> {
+-  if (cachedGlbRoot) return cachedGlbRoot;
+-  if (!cachedGlbPromise) {
+-    cachedGlbPromise = (async () => {
+-      let bytes: Uint8Array<ArrayBuffer> | undefined;
+-      if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) {
+-        bytes = await readIdbCachedGlbBytes();
+-      }
+-      if (!bytes) {
+-        bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
+-        if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
+-          throw new Error('Tokyo sandbox pack hash mismatch');
+-        }
+-        checkGlb(bytes);
+-        if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) {
+-          writeIdbCachedGlbBytes(bytes);
+-        }
+-      } else {
+-        checkGlb(bytes);
+-      }
+-      const manager = new THREE.LoadingManager();
+-      manager.setURLModifier(url => {
+-        if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
+-        return url;
+-      });
+-      const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
+-      optimizeGlbScene(parsed);
+-      attachCirclePackGeometry(parsed);
+-      cachedGlbRoot = parsed;
+-      return parsed;
+-    })().catch(err => {
+-      cachedGlbPromise = undefined;
+-      throw err;
+-    });
+-  }
+-  return cachedGlbPromise;
++/** Each active view owns its decoded tree and GPU resources. Only local bytes are cached. */
++async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
++  let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
++    ? await readIdbCachedGlbBytes() : undefined;
++  const cached = !!bytes;
++  if (!bytes) bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
++  if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
++    // A damaged local byte cache must not make every later retry fail forever.
++    if (!cached) throw new Error('Tokyo sandbox pack hash mismatch');
++    bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
++    if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) throw new Error('Tokyo sandbox pack hash mismatch');
++  }
++  checkGlb(bytes);
++  if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) writeIdbCachedGlbBytes(bytes);
++  const manager = new THREE.LoadingManager();
++  manager.setURLModifier(url => {
++    if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
++    return url;
++  });
++  const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
++  optimizeGlbScene(parsed);
++  attachCirclePackGeometry(parsed);
++  return parsed;
+ }
+ 
+ import {
+@@ -574,150 +560,10 @@
+   vfx?.update(dt, nowMs, su30State?.node, playerWorldPos, districtCenter);
+ }
+ 
+-interface PersistentSandboxRuntime {
+-  canvas: HTMLCanvasElement;
+-  renderer: THREE.WebGLRenderer;
+-  scene: THREE.Scene;
+-  camera: THREE.PerspectiveCamera;
+-  model: THREE.Group;
+-  variant: 'glb' | 'procedural';
+-  hemiLight: THREE.HemisphereLight;
+-  sunLight: THREE.DirectionalLight;
+-  trafficGroup: THREE.Group;
+-  trafficVehicles: TrafficVehicle[];
+-  su30State: Su30FlightState | undefined;
+-  gondolaStates: GondolaState[];
+-  bakedVehicleStates: BakedVehicleState[];
+-  vfxController: TokyoSandboxVfxController;
+-  appliedCanvasResolution: TokyoCanvasResolution | undefined;
+-  inUse: boolean;
+-  contextLost: boolean;
+-  gpuPrewarmed: boolean;
+-}
+-
+-let persistentSandboxRuntime: PersistentSandboxRuntime | undefined;
+-
+-function buildPersistentSandboxRuntime(
+-  glbRoot: THREE.Group,
+-  modelVariant: 'glb' | 'procedural',
+-): PersistentSandboxRuntime {
+-  const canvasEl = document.createElement('canvas');
+-  canvasEl.className = 'tokyo-sandbox-canvas';
+-  canvasEl.setAttribute('aria-hidden', 'true');
+-
+-  const webglRenderer = new THREE.WebGLRenderer({
+-    canvas: canvasEl,
+-    alpha: true,
+-    antialias: true,
+-    powerPreference: 'high-performance',
+-  });
+-  webglRenderer.outputColorSpace = THREE.SRGBColorSpace;
+-  webglRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+-  webglRenderer.toneMappingExposure = 1.15;
+-
+-  const webglScene = new THREE.Scene();
+-  webglScene.add(glbRoot);
+-  const hemi = new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5);
+-  webglScene.add(hemi);
+-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+-  sun.position.set(-170, 460, 230);
+-  webglScene.add(sun);
+-  const perspCamera = new THREE.PerspectiveCamera(50, 1, 0.25, 6500);
+-
+-  const dynamic = extractDynamicSceneNodes(glbRoot);
+-  const traffic = createTrafficForScene(webglScene);
+-  const vfx = createTokyoSandboxVfx(webglScene, webglRenderer, glbRoot, hemi, sun);
+-  vfx.setAtmosphere('auto', 780);
+-  stepSandboxEntities(
+-    0,
+-    performance.now(),
+-    traffic.vehicles,
+-    dynamic.bakedVehicleStates,
+-    dynamic.gondolaStates,
+-    dynamic.su30State,
+-    vfx,
+-  );
+-
+-  const rt: PersistentSandboxRuntime = {
+-    canvas: canvasEl,
+-    renderer: webglRenderer,
+-    scene: webglScene,
+-    camera: perspCamera,
+-    model: glbRoot,
+-    variant: modelVariant,
+-    hemiLight: hemi,
+-    sunLight: sun,
+-    trafficGroup: traffic.group,
+-    trafficVehicles: traffic.vehicles,
+-    su30State: dynamic.su30State,
+-    gondolaStates: dynamic.gondolaStates,
+-    bakedVehicleStates: dynamic.bakedVehicleStates,
+-    vfxController: vfx,
+-    appliedCanvasResolution: undefined,
+-    inUse: false,
+-    contextLost: false,
+-    gpuPrewarmed: false,
+-  };
+-
+-  canvasEl.addEventListener('webglcontextlost', event => {
+-    event.preventDefault();
+-    rt.contextLost = true;
+-    if (persistentSandboxRuntime === rt) persistentSandboxRuntime = undefined;
+-  });
+-
+-  return rt;
+-}
+-
+-function prewarmPersistentSandboxGpu(rt: PersistentSandboxRuntime) {
+-  if (rt.gpuPrewarmed || rt.contextLost) return;
+-  rt.gpuPrewarmed = true;
+-  try {
+-    frameTokyoMapCamera(rt.camera, {
+-      bounds: tokyoDistrictBounds('city'),
+-      width: 620,
+-      height: 420,
+-      bearing: 0,
+-      zoom: 1.08,
+-      summit: { x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
+-    });
+-    const res = nativeTokyoCanvasResolution(620, 420, window.devicePixelRatio);
+-    rt.appliedCanvasResolution = applyTokyoCanvasResolution(rt.renderer, res, rt.appliedCanvasResolution);
+-    rt.renderer.compile?.(rt.scene, rt.camera);
+-    rt.renderer.render(rt.scene, rt.camera);
+-  } catch {
+-    /* Ignore background warmup errors */
+-  }
+-}
+-
+-// Staggered background warmup: decode GLB -> create WebGL runtime -> pre-compile shaders & upload VBOs
+-if (typeof window !== 'undefined' && tokyoModelAsset && !/jsdom/i.test(navigator?.userAgent ?? '')) {
+-  setTimeout(() => {
+-    void loadSharedTokyoGlb(tokyoModelAsset)
+-      .then(root => {
+-        setTimeout(() => {
+-          try {
+-            if (!persistentSandboxRuntime || persistentSandboxRuntime.contextLost) {
+-              persistentSandboxRuntime = buildPersistentSandboxRuntime(root, 'glb');
+-            }
+-            setTimeout(() => {
+-              if (persistentSandboxRuntime && !persistentSandboxRuntime.inUse) {
+-                prewarmPersistentSandboxGpu(persistentSandboxRuntime);
+-              }
+-            }, 45);
+-          } catch {
+-            /* WebGL unavailable during warmup; handled on map open */
+-          }
+-        }, 45);
+-      })
+-      .catch(() => {
+-        /* Handled with geometric fallback when map opens */
+-      });
+-  }, 140);
+-}
+ </script>
+ 
+ <script setup lang="ts">
+-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
++import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+ import MapCharacterAvatar from './MapCharacterAvatar.vue';
+ import type { CharacterPortraitId } from './types';
+ import type { ProtagonistId } from '../runtime/dual-protagonists';
+@@ -747,7 +593,7 @@
+   people?: MapPerson[]; roadEvents?: MapEvent[];
+   pan?: { x: number; y: number };
+   cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
+-  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number;
++  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number; refreshToken?: number;
+ }>(), {
+   scope: 'city',
+   position: null,
+@@ -756,6 +602,7 @@
+   roadEvents: () => [],
+   atmosphereMode: 'auto',
+   clockMinutes: 780,
++  refreshToken: 0,
+ });
+ const emit = defineEmits<{
+   select: [districtId: MapDistrictId];
+@@ -764,9 +611,10 @@
+ }>();
+ 
+ // Static import makes a missing source GLB a build error, never a silent empty glob.
+-// Lite extracts this data URL into unread-city-tokyo-sandbox.zip, not the main Lite ZIP.
++// Lite keeps this asset in the existing local asset ZIP.
+ const sceneRoot = ref<HTMLElement>();
+ const canvas = ref<HTMLCanvasElement>();
++const canvasGeneration = ref(0);
+ const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
+ const variant = ref<'glb' | 'procedural'>('glb');
+ const activePreset = ref<ResolvedAtmospherePreset>('day');
+@@ -788,7 +636,6 @@
+ };
+ let cameraFlight: CameraFlight | undefined;
+ let epoch = 0;
+-let usingPersistentRuntime = false;
+ let renderer: THREE.WebGLRenderer | undefined;
+ let appliedCanvasResolution: TokyoCanvasResolution | undefined;
+ let canvasOwner: Window | undefined;
+@@ -801,6 +648,7 @@
+ let vfxController: TokyoSandboxVfxController | undefined;
+ let animFrame = 0;
+ let lastTick = 0;
++let lastDraw = 0;
+ 
+ let trafficVehicles: TrafficVehicle[] = [];
+ let su30State: Su30FlightState | undefined;
+@@ -845,6 +693,11 @@
+     animFrame = 0;
+     return;
+   }
++  if (document.hidden || !props.active) { animFrame = 0; return; }
++  if (lastDraw && now - lastDraw < 1000 / 30) {
++    animFrame = requestAnimationFrame(loopAnimation); return;
++  }
++  lastDraw = now;
+   const dt = Math.min((now - (lastTick || now)) / 1000, 0.1);
+   lastTick = now;
+   animateTraffic(dt, now);
+@@ -854,32 +707,7 @@
+   animFrame = requestAnimationFrame(loopAnimation);
+ }
+ 
+-function disposeModel(root: THREE.Object3D) {
+-  if (root === cachedGlbRoot) {
+-    root.removeFromParent();
+-    return;
+-  }
+-  const geometries = new Set<THREE.BufferGeometry>();
+-  const materials = new Set<THREE.Material>();
+-  const textures = new Set<THREE.Texture>();
+-  root.traverse(object => {
+-    if (!(object instanceof THREE.Mesh)) return;
+-    geometries.add(object.geometry);
+-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+-      materials.add(material);
+-      for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value);
+-    }
+-  });
+-  for (const texture of textures) {
+-    const bitmap: unknown = texture.source?.data;
+-    texture.dispose();
+-    if (bitmap && typeof bitmap === 'object' && 'close' in bitmap &&
+-        typeof bitmap.close === 'function') bitmap.close();
+-  }
+-  materials.forEach(material => material.dispose());
+-  geometries.forEach(geometry => geometry.dispose());
+-  root.removeFromParent();
+-}
++const disposeModel = disposeThreeTree;
+ 
+ function stopCameraFlight() {
+   const previous = cameraFlight;
+@@ -911,82 +739,14 @@
+   flight.frame = owner.requestAnimationFrame(step);
+ }
+ 
+-function attachPersistentRuntime(rt: PersistentSandboxRuntime) {
+-  rt.inUse = true;
+-  rt.gpuPrewarmed = true;
+-  usingPersistentRuntime = true;
+-
+-  if (canvas.value && canvas.value !== rt.canvas && canvas.value.parentNode) {
+-    canvas.value.replaceWith(rt.canvas);
+-  } else if (sceneRoot.value && rt.canvas.parentNode !== sceneRoot.value) {
+-    sceneRoot.value.prepend(rt.canvas);
+-  }
+-  canvas.value = rt.canvas;
+-  rt.canvas.style.display = '';
+-
+-  model = rt.model;
+-  variant.value = rt.variant;
+-  scene = rt.scene;
+-  hemiLight = rt.hemiLight;
+-  sunLight = rt.sunLight;
+-  camera = rt.camera;
+-  renderer = rt.renderer;
+-  trafficGroup = rt.trafficGroup;
+-  trafficVehicles = rt.trafficVehicles;
+-  su30State = rt.su30State;
+-  gondolaStates = rt.gondolaStates;
+-  bakedVehicleStates = rt.bakedVehicleStates;
+-  vfxController = rt.vfxController;
+-  appliedCanvasResolution = rt.appliedCanvasResolution;
+-
+-  const profile = vfxController.setAtmosphere(props.atmosphereMode, props.clockMinutes);
+-  activePreset.value = profile.preset;
+-  animateTraffic(0, performance.now());
+-
+-  status.value = 'ready';
+-  render();
+-
+-  if (!animFrame) {
+-    lastTick = performance.now();
+-    animFrame = requestAnimationFrame(loopAnimation);
+-  }
+-}
+-
+-function release(unmounting = false) {
++function release() {
+   stopCameraFlight();
+   epoch++;
+   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
+-  lastTick = 0;
++  lastTick = 0; lastDraw = 0;
++  canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
+   districtPins.value = []; placePins.value = []; personPins.value = [];
+   eventPins.value = []; leaderLines.value = []; playerPin.value = null;
+-
+-  if (usingPersistentRuntime && persistentSandboxRuntime) {
+-    persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
+-    persistentSandboxRuntime.inUse = false;
+-    if (unmounting) {
+-      persistentSandboxRuntime.canvas.remove();
+-    } else {
+-      persistentSandboxRuntime.canvas.style.display = 'none';
+-    }
+-    usingPersistentRuntime = false;
+-    vfxController = undefined;
+-    trafficGroup = undefined;
+-    trafficVehicles = [];
+-    su30State = undefined;
+-    gondolaStates = [];
+-    bakedVehicleStates = [];
+-    hemiLight = undefined;
+-    sunLight = undefined;
+-    model = undefined;
+-    scene = undefined;
+-    camera = undefined;
+-    renderer = undefined;
+-    appliedCanvasResolution = undefined;
+-    status.value = 'idle';
+-    selectedPerson.value = '';
+-    cameraPosition.value = '';
+-    return;
+-  }
+ 
+   if (vfxController) { vfxController.dispose(); vfxController = undefined; }
+   if (trafficGroup) { disposeModel(trafficGroup); trafficGroup = undefined; }
+@@ -997,8 +757,13 @@
+   hemiLight = undefined;
+   sunLight = undefined;
+   if (model) disposeModel(model);
+-  model = undefined; scene?.clear(); scene = undefined; camera = undefined;
+-  renderer?.dispose(); renderer = undefined;
++  model = undefined;
++  // Also release any partially initialized effects left behind by a failed load.
++  if (scene) disposeModel(scene);
++  scene = undefined; camera = undefined;
++  const previous = renderer; renderer = undefined;
++  previous?.dispose(); previous?.forceContextLoss();
++  if (canvas.value) { canvas.value.width = 1; canvas.value.height = 1; }
+   appliedCanvasResolution = undefined;
+   status.value = 'idle';
+   selectedPerson.value = '';
+@@ -1100,9 +865,6 @@
+     width, height, canvas.value?.ownerDocument.defaultView?.devicePixelRatio,
+   );
+   appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
+-  if (usingPersistentRuntime && persistentSandboxRuntime) {
+-    persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;
+-  }
+ 
+   const positionHint = props.scope === 'city' ? undefined : props.scope;
+   const player = props.position ? projectOldTokyoPosition(props.position, positionHint)
+@@ -1299,28 +1061,33 @@
+   vfxController?.triggerSu30Flares(su30State?.node);
+ }
+ 
+-defineExpose({ pickAt, triggerFlares });
++function contextLost(event: Event) {
++  event.preventDefault(); event.stopImmediatePropagation();
++  if (event.target !== canvas.value || !renderer) return;
++  release(); status.value = 'fallback';
++}
++function refresh() { release(); return load(); }
++function visibilityChanged() {
++  if (document.hidden) release(); else if (props.active) void load();
++}
++defineExpose({ pickAt, triggerFlares, refresh });
+ 
+ async function load() {
+-  if (!props.active || (!canvas.value && !sceneRoot.value) || renderer || status.value === 'loading') return;
+-
+-  // Instant 0ms synchronous cache hit when persistent GPU runtime is warm
+-  if (persistentSandboxRuntime && !persistentSandboxRuntime.inUse && !persistentSandboxRuntime.contextLost) {
+-    attachPersistentRuntime(persistentSandboxRuntime);
+-    return;
+-  }
+-
++  if (!props.active || document.hidden || !sceneRoot.value || renderer || status.value === 'loading') return;
+   const request = ++epoch;
+   status.value = 'loading';
+   let pending: THREE.Group | undefined;
+   try {
++    canvasGeneration.value++;
++    await nextTick();
++    if (request !== epoch || !props.active || !canvas.value) return;
+     const bundled = tokyoModelAsset;
+     if (props.previewOnly) {
+       pending = createGeometricPreview();
+       variant.value = 'procedural';
+     } else if (bundled) {
+       try {
+-        pending = await loadSharedTokyoGlb(bundled);
++        pending = await loadTokyoGlb(bundled);
+         variant.value = 'glb';
+       } catch (error) {
+         console.warn('[UnreadCity] Tokyo GLB decode failed, showing geometric preview', error);
+@@ -1332,16 +1099,6 @@
+       variant.value = 'procedural';
+     }
+     if (request !== epoch || !props.active) { disposeModel(pending); return; }
+-
+-    // If not previewOnly and not in jsdom, promote into the persistent GPU runtime cache
+-    if (!props.previewOnly && typeof document !== 'undefined' && !/jsdom/i.test(navigator?.userAgent ?? '')) {
+-      if (!persistentSandboxRuntime || persistentSandboxRuntime.contextLost) {
+-        persistentSandboxRuntime = buildPersistentSandboxRuntime(pending, variant.value);
+-      }
+-      pending = undefined;
+-      attachPersistentRuntime(persistentSandboxRuntime);
+-      return;
+-    }
+ 
+     if (!canvas.value) { disposeModel(pending); return; }
+     model = pending; pending = undefined;
+@@ -1353,6 +1110,7 @@
+     sun.position.set(-170, 460, 230); scene.add(sun);
+     sunLight = sun;
+     camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
++    canvas.value.addEventListener('webglcontextlost', contextLost, true);
+     renderer = new THREE.WebGLRenderer({
+       canvas: canvas.value,
+       alpha: true,
+@@ -1387,7 +1145,8 @@
+ }
+ function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id); }
+ 
+-watch(() => props.active, active => { if (active) void load(); else release(false); });
++watch(() => props.active, active => { if (active) void load(); else release(); });
++watch(() => props.refreshToken, () => { void refresh(); });
+ watch(() => [props.atmosphereMode, props.clockMinutes] as const, ([mode, mins]) => {
+   if (vfxController) {
+     const profile = vfxController.setAtmosphere(mode, mins);
+@@ -1422,12 +1181,14 @@
+   // Moving between monitors or changing the browser's display scale may alter
+   // DPR without changing the map panel's CSS dimensions.
+   canvasOwner?.addEventListener('resize', render);
++  document.addEventListener('visibilitychange', visibilityChanged);
+   if (props.active) void load();
+ });
+ onBeforeUnmount(() => {
+   canvasOwner?.removeEventListener('resize', render);
+   canvasOwner = undefined;
+-  release(true);
++  document.removeEventListener('visibilitychange', visibilityChanged);
++  release();
+ });
+ </script>
+ 
+@@ -1436,9 +1197,9 @@
+     :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope"
+     :data-tokyo-atmosphere="activePreset"
+     :data-tokyo-camera="cameraPosition" :data-tokyo-camera-flight="cameraFlying ? 'flying' : 'idle'">
+-    <canvas ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
++    <canvas :key="canvasGeneration" ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
+     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
+-    <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，请从右侧地点列表选择目的地。</p>
++    <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，可以刷新重试，或从地点列表选择目的地。</p>
+     <template v-if="status === 'ready'">
+       <svg v-if="leaderLines.length" class="tokyo-sandbox-leaders" aria-hidden="true">
+         <line v-for="line in leaderLines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" />
+diff --git a/src/frontend/SoyoLive2D.vue b/src/frontend/SoyoLive2D.vue
+--- a/src/frontend/SoyoLive2D.vue
++++ b/src/frontend/SoyoLive2D.vue
+@@ -1,26 +1,56 @@
+ <script setup lang="ts">
+-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
++import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+ import { isSoyoSpeaker, resolveSoyoEmotion } from './live2d-soyo-assets';
+ import type { SoyoPortrait } from './live2d-soyo-runtime';
+ 
+-const props = withDefaults(defineProps<{ emotion: string; speaker: string; active?: boolean; dimmed?: boolean }>(), { active: true });
++const props = withDefaults(defineProps<{ emotion: string; speaker: string; active?: boolean; dimmed?: boolean; refreshToken?: number }>(), { active: true, refreshToken: 0 });
+ const host = ref<HTMLElement>();
+ const canvas = ref<HTMLCanvasElement>();
+-const status = ref<'loading' | 'ready' | 'error'>('loading');
++const status = ref<'idle' | 'loading' | 'ready' | 'error'>('idle');
++const canvasGeneration = ref(0);
+ const displayedEmotion = ref('平静');
+ const present = computed(() => isSoyoSpeaker(props.speaker));
+ let portrait: SoyoPortrait | undefined;
+ let observer: ResizeObserver | undefined;
+ let dead = false;
+ let updateSequence = 0;
+-const loading = new AbortController();
++let loading: AbortController | undefined;
++let epoch = 0;
++let idleTimer: ReturnType<typeof setTimeout> | undefined;
++const visible = () => props.active && present.value && !document.hidden;
++
++function release() {
++  epoch++; updateSequence++;
++  clearTimeout(idleTimer); idleTimer = undefined;
++  // Stop intentional context destruction from being handled as a new failure.
++  canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
++  loading?.abort(); loading = undefined;
++  portrait?.destroy(); portrait = undefined;
++  status.value = 'idle';
++  if (canvas.value) { canvas.value.width = 1; canvas.value.height = 1; }
++}
++function contextLost(event: Event) {
++  event.preventDefault(); event.stopImmediatePropagation();
++  if (event.target !== canvas.value) return;
++  release(); status.value = 'error';
++}
++function refresh() { release(); return load(); }
+ 
+ function resize() {
+   const bounds = host.value?.getBoundingClientRect();
+   if (bounds) portrait?.resize(bounds.width, bounds.height);
+ }
+ function activity() {
+-  portrait?.setActive(props.active && present.value && !document.hidden);
++  if (dead) return;
++  clearTimeout(idleTimer); idleTimer = undefined;
++  portrait?.setActive(visible());
++  if (visible()) { if (status.value === 'idle') void load(); }
++  else if (portrait || loading) {
++    // A short dialogue turn can reuse the portrait. A covered/hidden stage does
++    // not hold large textures indefinitely alongside the map or paired stage.
++    if (document.hidden || !props.active) release();
++    else idleTimer = setTimeout(release, 15_000);
++  }
+ }
+ async function expression() {
+   if (!portrait || dead) return;
+@@ -29,37 +59,45 @@
+   try {
+     await portrait.setEmotion(emotion);
+     if (!dead && sequence === updateSequence) displayedEmotion.value = emotion;
+-  } catch { if (!dead) status.value = 'error'; }
++  } catch { if (!dead && sequence === updateSequence) { release(); status.value = 'error'; } }
+ }
+-watch(() => [props.emotion, props.speaker], () => { activity(); void expression(); });
++watch(() => [props.emotion, props.speaker], () => { activity(); if (visible()) void expression(); });
+ watch(() => props.active, activity);
+-onMounted(async () => {
++watch(() => props.refreshToken, () => { void refresh(); });
++async function load() {
++  if (dead || !visible() || !host.value || portrait || status.value === 'loading') return;
++  const request = ++epoch;
++  const controller = new AbortController(); loading = controller;
++  status.value = 'loading'; canvasGeneration.value++;
+   try {
++    await nextTick();
+     const { createSoyoPortrait } = await import('./live2d-soyo-runtime');
+-    if (dead || !canvas.value) return;
+-    const ready = await createSoyoPortrait(canvas.value, loading.signal);
+-    if (dead) { ready.destroy(); return; }
++    if (dead || request !== epoch || !canvas.value) return;
++    canvas.value.addEventListener('webglcontextlost', contextLost, true);
++    const ready = await createSoyoPortrait(canvas.value, controller.signal);
++    if (dead || request !== epoch) { ready.destroy(); return; }
+     portrait = ready;
+-    observer = new ResizeObserver(resize); observer.observe(host.value!);
+-    document.addEventListener('visibilitychange', activity);
+     resize(); await expression();
+-    if (dead) return;
++    if (dead || request !== epoch) return;
+     status.value = 'ready'; activity();
+-  } catch { if (!dead) status.value = 'error'; }
++  } catch { if (!dead && request === epoch) { release(); status.value = 'error'; } }
++}
++onMounted(() => {
++  observer = new ResizeObserver(resize); observer.observe(host.value!);
++  document.addEventListener('visibilitychange', activity);
++  activity();
+ });
+ onBeforeUnmount(() => {
+-  dead = true; updateSequence++;
+-  loading.abort();
++  dead = true; release();
+   observer?.disconnect();
+   document.removeEventListener('visibilitychange', activity);
+-  portrait?.destroy(); portrait = undefined;
+ });
+ </script>
+ 
+ <template>
+   <div ref="host" class="soyo-live2d" :class="{ 'is-muted': !present || !active, 'is-dimmed': dimmed }" :data-live2d-status="status"
+     :data-live2d-emotion="displayedEmotion" :data-live2d-speaker-visible="present" aria-hidden="true">
+-    <canvas ref="canvas" class="soyo-live2d-canvas" />
++    <canvas :key="canvasGeneration" ref="canvas" v-show="status === 'ready'" class="soyo-live2d-canvas" />
+     <span v-if="status === 'error'" class="soyo-live2d-error">立绘暂时未能显示</span>
+   </div>
+ </template>
+diff --git a/src/frontend/WorldMap.vue b/src/frontend/WorldMap.vue
+--- a/src/frontend/WorldMap.vue
++++ b/src/frontend/WorldMap.vue
+@@ -37,7 +37,7 @@
+ import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
+ import openAiMark from '../../assets/openai-mark.svg?inline';
+ 
+-const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean }>(), { novelMode: false });
++const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
+ const emit = defineEmits<{ travelled: [] }>();
+ const locations = mapLocations;
+ type Layer = 'district' | 'city' | 'province' | 'country' | 'world';
+@@ -58,6 +58,7 @@
+ const sandboxScene = ref<{
+   pickAt: (clientX: number, clientY: number) => boolean;
+   triggerFlares: () => void;
++  refresh: () => Promise<void>;
+ }>();
+ const atlasScene = ref<{
+   pickAt: (clientX: number, clientY: number) => string | undefined;
+@@ -649,6 +650,7 @@
+               :style="{ opacity: 1 - smooth(depth - 2), pointerEvents: geographicLayer ? 'none' : 'auto' }"
+               :aria-hidden="geographicLayer" :inert="geographicLayer">
+               <CitySandboxScene ref="sandboxScene" :scope="detailDistrict ?? 'city'" :active="depth < 3"
++                :refresh-token="refreshToken"
+                 :bearing="bearing" :view-scale="focusZoom" :pan="pan" :camera-view="sandboxCameraView"
+                 :atmosphere-mode="atmosphereMode" :clock-minutes="model.state.clock.hour * 60 + model.state.clock.minute"
+                 :width="size.width" :height="size.height"
+@@ -675,6 +677,7 @@
+           <p id="uc-map-help" class="wm-help">单指或左键{{ !geographicLayer && interactionMode === 'orbit' ? '环视俯仰' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键拖拽环视<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
+           <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
+           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转">
++            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" @click="sandboxScene?.refresh()">刷新沙盘</button>
+             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : '平移' }}</button>
+             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset">{{ pitchPresetLabel }}</button>
+             <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-atmo-pill" :class="{ active: atmosphereMode !== 'auto' }" aria-label="切换沙盘天色与气象" @click="cycleAtmosphereMode">{{ atmosphereLabel }}</button>
+diff --git a/src/frontend/WorldPanels.vue b/src/frontend/WorldPanels.vue
+--- a/src/frontend/WorldPanels.vue
++++ b/src/frontend/WorldPanels.vue
+@@ -29,7 +29,7 @@
+ import type { ShellActions, ShellModel } from './types';
+ 
+ type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'society' | 'focus';
+-const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean }>();
++const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>();
+ const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
+ const labels: Record<Panel, string> = {
+   phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长', society: '阵营与社交圈', focus: '个人国策与决议',
+@@ -135,7 +135,7 @@
+       </div>
+     </template>
+ 
+-    <template v-else-if="panel === 'map'"><WorldMap :model="model" :actions="actions" :novel-mode="novelMode" @travelled="emit('travelled')" /></template>
++    <template v-else-if="panel === 'map'"><WorldMap :model="model" :actions="actions" :novel-mode="novelMode" :refresh-token="refreshToken" @travelled="emit('travelled')" /></template>
+ 
+     <template v-else-if="panel === 'schedule'">
+       <AcademicTimetable v-if="model.state.academics" :major-id="model.state.academics.majorId" :day="model.state.clock.day" :hour="model.state.clock.hour" :minute="model.state.clock.minute" :busy="model.busy" :current-location-id="model.state.locationId" :travel-label="novelMode ? '前往课程地点' : '前往建筑入口'" :blocked-reason="courseTravelBlocked" @travel="travelToPlan" />
+diff --git a/src/frontend/NovelInvitationPortraits.vue b/src/frontend/NovelInvitationPortraits.vue
+--- a/src/frontend/NovelInvitationPortraits.vue
++++ b/src/frontend/NovelInvitationPortraits.vue
+@@ -8,6 +8,7 @@
+   focus: NovelInvitationPortraitFocus;
+   locationId: string;
+   active: boolean;
++  refreshToken?: number;
+ }>();
+ </script>
+ 
+@@ -18,6 +19,7 @@
+     <div class="novel-invitation-portraits__side" data-invitation-side="left"
+       :class="{ 'is-speaking': focus.speaking === 'left' }">
+       <SoyoLive2D v-if="pair.left.live2d" :speaker="pair.left.speaker" :emotion="focus.leftEmotion"
++        :refresh-token="refreshToken"
+         :active="active" :dimmed="focus.speaking !== 'left'" />
+       <NovelNpcPortrait v-else :portrait-id="pair.left.portraitId" :speaker="pair.left.speaker"
+         :emotion="focus.leftEmotion" :location-id="locationId"
+@@ -26,6 +28,7 @@
+     <div class="novel-invitation-portraits__side" data-invitation-side="right"
+       :class="{ 'is-speaking': focus.speaking === 'right' }">
+       <SoyoLive2D v-if="pair.right.live2d" :speaker="pair.right.speaker" :emotion="focus.rightEmotion"
++        :refresh-token="refreshToken"
+         :active="active" :dimmed="focus.speaking !== 'right'" />
+       <NovelNpcPortrait v-else :portrait-id="pair.right.portraitId" :speaker="pair.right.speaker"
+         :emotion="focus.rightEmotion" :location-id="locationId"
+diff --git a/src/frontend/live2d-soyo-assets.ts b/src/frontend/live2d-soyo-assets.ts
+--- a/src/frontend/live2d-soyo-assets.ts
++++ b/src/frontend/live2d-soyo-assets.ts
+@@ -33,12 +33,12 @@
+ }
+ 
+ /** Only names from the packaged model may resolve. No model-provided network URLs. */
+-export function createSoyoAssetLease() {
++export async function createSoyoAssetLease(signal?: AbortSignal) {
+   const allowed = new Set(getSoyoAssetReferences());
+   const urls = new Map<string, string>();
+   const borrowed = new Set<string>();
+   let released = false;
+-  return {
++  const lease = {
+     resolve(file: string): string {
+       if (released) throw new Error('立绘素材已释放。');
+       if (!allowed.has(file) || !/^[A-Za-z0-9._-]+$/.test(file)) throw new Error('立绘引用了未打包的素材。');
+@@ -66,4 +66,19 @@
+       urls.clear();
+     },
+   };
++  try {
++    // Pixi caches textures by URL. A portrait must own its textures so destroying
++    // the single/paired stage cannot destroy the other stage's cached textures.
++    for (const file of modelDefinition.textures) {
++      if (signal?.aborted) throw new Error('立绘已关闭。');
++      const source = lease.resolve(file);
++      if (!borrowed.has(source)) continue;
++      const response = await fetch(source, { signal });
++      if (!response.ok) throw new Error('立绘素材未完整加载。');
++      const blob = await response.blob();
++      if (signal?.aborted) throw new Error('立绘已关闭。');
++      urls.set(file, URL.createObjectURL(blob));
++    }
++    return lease;
++  } catch (error) { lease.release(); throw error; }
+ }
+diff --git a/src/frontend/live2d-soyo-runtime.ts b/src/frontend/live2d-soyo-runtime.ts
+--- a/src/frontend/live2d-soyo-runtime.ts
++++ b/src/frontend/live2d-soyo-runtime.ts
+@@ -8,27 +8,37 @@
+ config.sound = false;
+ 
+ export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: AbortSignal) {
+-  const lease = createSoyoAssetLease();
+-  const app = new Application({ view: canvas, width: 1, height: 1, backgroundAlpha: 0, antialias: true,
+-    autoStart: false, sharedTicker: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), powerPreference: 'low-power' });
++  const lease = await createSoyoAssetLease(signal);
++  let application: Application | undefined;
+   let model: Live2DModel | undefined;
++  let modelLoading = false;
+   let disposed = false;
+   let expressions: ReturnType<typeof createSoyoExpressionController> | undefined;
+   const destroy = () => {
+     if (disposed) return;
+     disposed = true; expressions?.dispose();
+     signal?.removeEventListener('abort', destroy);
+-    app.stop();
+-    app.destroy(false, { children: true, texture: true, baseTexture: true });
+-    lease.release();
++    try {
++      application?.stop();
++      application?.destroy(false, { children: true, texture: true, baseTexture: true });
++    } finally {
++      // The loader does not accept AbortSignal. Let a pending local load settle
++      // so its textures can be destroyed, instead of revoking URLs mid-decode.
++      if (!modelLoading) lease.release();
++    }
+   };
+   try {
+     signal?.addEventListener('abort', destroy, { once: true });
+     if (signal?.aborted) { destroy(); throw new Error('立绘已关闭。'); }
++    const app = application = new Application({ view: canvas, width: 1, height: 1, backgroundAlpha: 0, antialias: true,
++      autoStart: false, sharedTicker: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), powerPreference: 'low-power' });
+     const definition = new Cubism2ModelSettings({ ...getSoyoDefinition(), url: 'soyo.model.json' });
+     definition.resolveURL = file => lease.resolve(file);
+-    model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
+-      idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
++    modelLoading = true;
++    try {
++      model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
++        idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
++    } finally { modelLoading = false; if (disposed) lease.release(); }
+     if (disposed) { model.destroy({ children: true, texture: true, baseTexture: true }); throw new Error('立绘已关闭。'); }
+     model.anchor.set(0.5, 1);
+     app.stage.addChild(model);
+diff --git a/src/frontend/dispose-three-tree.ts b/src/frontend/dispose-three-tree.ts
+new file mode 100644
+--- /dev/null
++++ b/src/frontend/dispose-three-tree.ts
+@@ -0,0 +1,29 @@
++import * as THREE from 'three';
++
++/** Only pass trees owned by this renderer; deduplicate shared geometry/materials. */
++export function disposeThreeTree(...roots: THREE.Object3D[]) {
++  const geometries = new Set<THREE.BufferGeometry>();
++  const materials = new Set<THREE.Material>();
++  const textures = new Set<THREE.Texture>();
++  const bitmaps = new Set<{ close(): void }>();
++  for (const root of roots) root.traverse(object => {
++    if (object instanceof THREE.InstancedMesh) object.dispose();
++    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
++    geometries.add(object.geometry);
++    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
++      materials.add(material);
++      for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value);
++    }
++  });
++  for (const texture of textures) {
++    const bitmap: unknown = texture.source?.data;
++    texture.dispose();
++    if (bitmap && typeof bitmap === 'object' && 'close' in bitmap && typeof bitmap.close === 'function') {
++      bitmaps.add(bitmap as {close(): void});
++    }
++  }
++  bitmaps.forEach(bitmap => bitmap.close());
++  materials.forEach(material => material.dispose());
++  geometries.forEach(geometry => geometry.dispose());
++  roots.forEach(root => { root.removeFromParent(); root.clear(); });
++}
+diff --git a/src/frontend/tokyo-sandbox-vfx.ts b/src/frontend/tokyo-sandbox-vfx.ts
+--- a/src/frontend/tokyo-sandbox-vfx.ts
++++ b/src/frontend/tokyo-sandbox-vfx.ts
+@@ -1,4 +1,5 @@
+ import * as THREE from 'three';
++import { disposeThreeTree } from './dispose-three-tree';
+ 
+ export type TokyoAtmosphereMode = 'auto' | 'day' | 'dusk' | 'night' | 'cyber';
+ export type ResolvedAtmospherePreset = 'day' | 'dusk' | 'night' | 'cyber';
+@@ -382,7 +383,10 @@
+   root.add(horizonRing);
+ 
+   // Retrieve cached GLB catalog (windows, water, and 56 streetlamps) in O(1) on repeat opens
+-  const { emissiveEntries, waterMaterials, streetlampPositions } = getModelCatalog(model);
++  const catalog = getModelCatalog(model);
++  // Runtime-only decorations must not accumulate in the cached model catalogue.
++  const emissiveEntries = [...catalog.emissiveEntries];
++  const { waterMaterials, streetlampPositions } = catalog;
+ 
+   // Create instanced glowing bulbs & light pools for all 56 streetlamps
+   const glowTex = createRadialGlowTexture();
+@@ -1365,18 +1369,18 @@
+     }
+   }
+ 
++  let disposed = false;
+   function dispose() {
+-    su30LocalVfx.removeFromParent();
++    if (disposed) return;
++    disposed = true;
+     scene.fog = null;
+-    glowTex.dispose();
+-    root.traverse(obj => {
+-      if (obj instanceof THREE.Mesh || obj instanceof THREE.Points) {
+-        obj.geometry.dispose();
+-        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+-        mats.forEach(m => m.dispose());
+-      }
+-    });
+-    root.removeFromParent();
++    disposeThreeTree(root, su30LocalVfx);
++    flareMat.dispose();
++    if (!streetlampPositions.length) {
++      bulbGeom.dispose(); poolGeom.dispose(); lampBulbMat.dispose(); lampPoolMat.dispose();
++    }
++    su30Attached = undefined;
++    emissiveEntries.length = 0;
+   }
+ 
+   return {
+diff --git a/src/frontend/shell-viewport.css b/src/frontend/shell-viewport.css
+--- a/src/frontend/shell-viewport.css
++++ b/src/frontend/shell-viewport.css
+@@ -12,24 +12,30 @@
+ :host([data-uc-viewport]) .uc-shell { height:100%; min-height:0; }
+ :host([data-uc-viewport]) .composer { min-width:0; }
+ :host([data-uc-viewport]) .composer > button { min-height:44px; white-space:nowrap; }
++:host([data-uc-viewport]) .uc-shell .world-chrome .host-actions > .graphics-refresh-button {
++  min-width:44px; min-height:44px; padding:5px; font-size:22px;
++}
+ :host([data-uc-viewport]) .room-activity-receipt { max-height:80px; overflow:auto; overscroll-behavior:contain; }
+ :host([data-uc-viewport]) .composer-error { flex-shrink:0; max-height:48px; overflow:auto; }
+ @media(max-width:760px) {
+   :host([data-uc-viewport]) .world-chrome {
++    display:grid;
++    grid-template-columns:minmax(0,1fr) auto;
+     padding-top:max(10px,var(--uc-safe-top));
+     padding-left:max(12px,var(--uc-safe-left));
+     padding-right:max(12px,var(--uc-safe-right));
+     justify-content:space-between;
+-    align-items:flex-start;
+-    gap:8px;
++    align-items:center;
++    gap:4px 8px;
+   }
+   :host([data-uc-viewport]) .world-heading {
+-    display:flex; flex-direction:column; align-items:flex-start; flex-wrap:nowrap;
+-    gap:5px; min-width:0; flex:1;
++    display:contents;
+   }
+-  :host([data-uc-viewport]) .topbar-world { padding-top:0; white-space:nowrap; flex-wrap:nowrap; }
++  :host([data-uc-viewport]) .world-heading > .wordmark { grid-column:1; grid-row:1; }
++  :host([data-uc-viewport]) .topbar-world { grid-column:1/-1; grid-row:2; padding-top:0; white-space:nowrap; flex-wrap:nowrap; }
+   /* Single reliable switch-chat action lives at top right. */
+-  :host([data-uc-viewport]) .host-actions { gap:0; flex-shrink:0; margin-left:auto; }
++  :host([data-uc-viewport]) .host-actions { grid-column:2; grid-row:1; gap:0; flex-shrink:0; margin-left:auto; }
++  :host([data-uc-viewport]) .uc-shell[data-layout-edit=true] .graphics-refresh-button { display:none; }
+   :host([data-uc-viewport]) .host-actions > button {
+     display:block; min-height:44px; padding:7px 10px;
+     border:1px solid #e6d7b277; border-radius:10px; background:#14281fa8;
+diff --git a/src/frontend/world-map.css b/src/frontend/world-map.css
+--- a/src/frontend/world-map.css
++++ b/src/frontend/world-map.css
+@@ -38,12 +38,13 @@
+ .world-map .wm-person-pin { position:absolute; display:flex; align-items:center; gap:4px; transform:translate(-50%,-100%); padding:4px 6px; color:#f4e7ca; background:#665c86; box-shadow:0 3px 9px #40433333; border:1px solid #e6d5b0; border-radius:6px; z-index:5; font-size:10px; white-space:nowrap; }
+ .world-map .wm-person-pin > i { height:5px; width:5px; border-radius:50%; background:#ebd69c; }
+ .world-map .wm-person-pin > small { font-size:8px; color:#e1d6ed; }
+-.world-map .wm-map-actions { display:grid; grid-template-columns:1fr auto; align-items:center; gap:7px; margin-top:9px; }
+-.world-map .wm-map-actions .wm-help { margin:0; line-height:1.6; grid-column:1/-1; grid-row:2; }
++.world-map .wm-map-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:9px; }
++.world-map .wm-map-actions .wm-help { margin:0; line-height:1.6; flex-basis:100%; order:1; }
+ .world-map .wm-zoom-controls { display:flex; justify-self:start; flex-shrink:0; border-radius:9px; overflow:hidden; background:#f0eedb; border:1px solid #a8b89c; }
+-.world-map .wm-rotate-controls { display:flex; justify-self:end; border:1px solid #9fae94; border-radius:9px; overflow:hidden; background:#e5e8d7; }
++.world-map .wm-rotate-controls { display:flex; flex-wrap:wrap; margin-left:auto; max-width:100%; border:1px solid #9fae94; border-radius:9px; overflow:hidden; background:#e5e8d7; }
+ .world-map .wm-rotate-controls > button { min-width:44px; height:44px; color:#304c3b; font-size:24px; padding:0; }
+ .world-map .wm-rotate-controls > button + button { border-left:1px solid #b4bfa5; }
++.uc-shell .world-map .wm-rotate-controls > button:hover { color:#304c3b; background:#f4f1dc; }
+ .world-map .wm-watermark { position:absolute; left:10px; bottom:6px; height:18px; display:flex; align-items:center; gap:5px; pointer-events:none; z-index:8; padding:1px 5px; border-radius:4px; background:#edf2e7b3; color:#23483d; font:600 10px/1.2 Arial,sans-serif; box-shadow:0 1px 3px #38534213; }
+ .world-map .wm-watermark img { width:15px; height:15px; opacity:.8; }
+ .world-map .wm-local-scale { position:absolute; right:10px; bottom:6px; display:flex; flex-direction:column; align-items:flex-end; color:#294d3d; pointer-events:none; z-index:8; font:9px/1.3 Arial,sans-serif; text-shadow:0 1px #eef3df; }
+diff --git a/tests/graphics-recovery.test.ts b/tests/graphics-recovery.test.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/graphics-recovery.test.ts
+@@ -0,0 +1,114 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { createApp, h, nextTick, reactive, type App } from 'vue';
++import * as THREE from 'three';
++import CitySandboxScene from '../src/frontend/CitySandboxScene.vue';
++import SoyoLive2D from '../src/frontend/SoyoLive2D.vue';
++import { createSoyoPortrait } from '../src/frontend/live2d-soyo-runtime';
++import { createTokyoSandboxVfx } from '../src/frontend/tokyo-sandbox-vfx';
++
++const fake = vi.hoisted(() => ({ renderers: [] as any[], portraits: [] as any[], fail: false }));
++vi.mock('three', async importOriginal => {
++  const real = await importOriginal<typeof import('three')>();
++  return { ...real, WebGLRenderer: class {
++    dispose = vi.fn(); forceContextLoss = vi.fn(); render = vi.fn(); setPixelRatio = vi.fn(); setSize = vi.fn();
++    constructor() { if (fake.fail) throw Error('WebGL unavailable'); fake.renderers.push(this); }
++  }};
++});
++vi.mock('../src/frontend/live2d-soyo-runtime', () => ({
++  createSoyoPortrait: vi.fn(async () => {
++    const portrait = { destroy: vi.fn(), resize: vi.fn(), setActive: vi.fn(), setEmotion: vi.fn(async () => true) };
++    fake.portraits.push(portrait); return portrait;
++  }),
++}));
++const mounted: App[] = [];
++beforeEach(() => { vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} }); });
++function mount(component: any, props: Record<string, unknown>) {
++  const el = document.createElement('div'); document.body.append(el);
++  const app = createApp({ render: () => h(component, props) }); mounted.push(app); app.mount(el); return el;
++}
++afterEach(() => {
++  mounted.splice(0).forEach(app => app.unmount()); document.body.replaceChildren();
++  fake.renderers = []; fake.portraits = []; fake.fail = false; vi.restoreAllMocks(); vi.unstubAllGlobals();
++});
++const mapProps = () => reactive({active:true, previewOnly:true, scope:'city', width:390, height:350,
++  bearing:0, viewScale:1, selectedId:'campus', locationId:'south-gate', busy:false, refreshToken:0});
++
++describe('graphics failure and recovery', () => {
++  it('retries failed map initialization with a fresh canvas and stops/cleans the old renderer', async () => {
++    fake.fail = true; const props=mapProps(); const el=mount(CitySandboxScene, props);
++    await vi.waitFor(() => expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('fallback'));
++    const before=el.querySelector('canvas'); fake.fail=false; props.refreshToken++;
++    await vi.waitFor(() => expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('ready'));
++    expect(el.querySelector('canvas')).not.toBe(before);
++    const renderer=fake.renderers[0]; props.active=false; await nextTick();
++    expect(renderer.dispose).toHaveBeenCalledTimes(1);
++    expect(renderer.forceContextLoss).toHaveBeenCalledTimes(1);
++  });
++  it('detects a lost map context and rebuilds only after the refresh token changes', async () => {
++    const props=mapProps(); const el=mount(CitySandboxScene,props);
++    await vi.waitFor(()=>expect(fake.renderers).toHaveLength(1));
++    const before=el.querySelector('canvas')!;
++    before.dispatchEvent(new Event('webglcontextlost',{cancelable:true}));
++    await nextTick();
++    expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('fallback');
++    expect(fake.renderers[0].dispose).toHaveBeenCalledTimes(1);
++    props.refreshToken++; await vi.waitFor(()=>expect(fake.renderers).toHaveLength(2));
++    expect(el.querySelector('canvas')).not.toBe(before);
++  });
++  it('does not initialize an invisible Live2D, and allows recovery after context loss', async () => {
++    const props=reactive({active:false,speaker:'素世',emotion:'平静',refreshToken:0});
++    const el=mount(SoyoLive2D,props); await new Promise(resolve=>setTimeout(resolve,30));
++    expect(fake.portraits).toHaveLength(0);
++    props.active=true; await vi.waitFor(()=>expect(fake.portraits).toHaveLength(1));
++    const before=el.querySelector('canvas')!;
++    before.dispatchEvent(new Event('webglcontextlost',{cancelable:true})); await nextTick();
++    expect(el.querySelector('[data-live2d-status]')?.getAttribute('data-live2d-status')).toBe('error');
++    expect(fake.portraits[0].destroy).toHaveBeenCalledTimes(1);
++    props.refreshToken++; await vi.waitFor(()=>expect(fake.portraits).toHaveLength(2));
++    expect(el.querySelector('canvas')).not.toBe(before);
++  });
++  it('disposes the aircraft effects as well as the main effects tree exactly once', () => {
++    const scene=new THREE.Scene(),model=new THREE.Group(),aircraft=new THREE.Group(); model.add(aircraft);scene.add(model);
++    const renderer={toneMappingExposure:1} as THREE.WebGLRenderer;
++    const vfx=createTokyoSandboxVfx(scene,renderer,model,new THREE.HemisphereLight(),new THREE.DirectionalLight());
++    vfx.update(.02,1000,aircraft,undefined,undefined);
++    const local=aircraft.getObjectByName('su30-local-vfx')!;
++    const resources=new Set<THREE.BufferGeometry | THREE.Material>();
++    local.traverse(obj=>{if(obj instanceof THREE.Mesh){resources.add(obj.geometry);for(const m of Array.isArray(obj.material)?obj.material:[obj.material])resources.add(m);}});
++    const disposed=[...resources].map(r=>vi.spyOn(r,'dispose'));
++    expect(disposed.length).toBeGreaterThan(0);
++    vfx.dispose();vfx.dispose();
++    for(const spy of disposed)expect(spy).toHaveBeenCalledTimes(1);
++    expect(aircraft.getObjectByName('su30-local-vfx')).toBeUndefined();
++  });
++  it('discards a late Live2D load after the view was covered', async () => {
++    let complete!: (value: Awaited<ReturnType<typeof createSoyoPortrait>>) => void;
++    const late = { destroy: vi.fn(), resize: vi.fn(), setActive: vi.fn(), setEmotion: vi.fn(async () => true) };
++    vi.mocked(createSoyoPortrait).mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
++    const props = reactive({active: true, speaker: '素世', emotion: '平静'});
++    const el = mount(SoyoLive2D, props);
++    await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
++    props.active = false; await nextTick();
++    complete(late);
++    await vi.waitFor(() => expect(late.destroy).toHaveBeenCalledTimes(1));
++    expect(late.resize).not.toHaveBeenCalled();
++    expect(el.querySelector('[data-live2d-status]')?.getAttribute('data-live2d-status')).toBe('idle');
++  });
++  it('releases both graphics views while hidden and reconstructs them on return', async () => {
++    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
++    const map = mount(CitySandboxScene, mapProps());
++    const portrait = mount(SoyoLive2D, {active: true, speaker: '素世', emotion: '平静'});
++    await vi.waitFor(() => { expect(fake.renderers).toHaveLength(1); expect(fake.portraits).toHaveLength(1); });
++    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
++    document.dispatchEvent(new Event('visibilitychange')); await nextTick();
++    expect(fake.renderers[0].dispose).toHaveBeenCalledTimes(1);
++    expect(fake.portraits[0].destroy).toHaveBeenCalledTimes(1);
++    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
++    document.dispatchEvent(new Event('visibilitychange'));
++    await vi.waitFor(() => {
++      expect(map.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('ready');
++      expect(portrait.querySelector('[data-live2d-status]')?.getAttribute('data-live2d-status')).toBe('ready');
++    });
++    expect(fake.renderers).toHaveLength(2); expect(fake.portraits).toHaveLength(2);
++  });
++});
+diff --git a/tests/live2d-soyo-assets.test.ts b/tests/live2d-soyo-assets.test.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/live2d-soyo-assets.test.ts
+@@ -0,0 +1,23 @@
++import { afterEach, expect, it, vi } from 'vitest';
++import { createSoyoAssetLease } from '../src/frontend/live2d-soyo-assets';
++
++// Lite's installed asset URLs are shared by all mounted portrait components.
++vi.mock('../assets/live2d-soyo/texture-0.png?url&inline', () => ({ default: 'blob:installed-soyo-texture' }));
++
++afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
++
++it('gives concurrent Lite portraits independent textures and preserves the installed asset on release', async () => {
++  let serial = 0;
++  const revoke = vi.fn();
++  vi.stubGlobal('URL', { createObjectURL: vi.fn(() => `blob:portrait-${++serial}`), revokeObjectURL: revoke });
++  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => new Blob(['texture']) })));
++  const first = await createSoyoAssetLease(), second = await createSoyoAssetLease();
++  try {
++    expect(first.resolve('texture-0.png')).not.toBe(second.resolve('texture-0.png'));
++    const otherTexture = second.resolve('texture-0.png');
++    first.release();
++    expect(revoke).not.toHaveBeenCalledWith(otherTexture);
++    expect(revoke).not.toHaveBeenCalledWith('blob:installed-soyo-texture');
++    expect(() => second.resolve('../foreign.png')).toThrow();
++  } finally { first.release(); second.release(); }
++});
+diff --git a/tests/live2d-soyo-runtime.test.ts b/tests/live2d-soyo-runtime.test.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/live2d-soyo-runtime.test.ts
+@@ -0,0 +1,44 @@
++import { afterEach, beforeEach, expect, it, vi } from 'vitest';
++import { createSoyoPortrait } from '../src/frontend/live2d-soyo-runtime';
++
++const fake = vi.hoisted(() => ({
++  release: vi.fn(), failApplication: false, applicationDestroy: vi.fn(),
++  loadModel: vi.fn(),
++}));
++vi.mock('../vendor/live2d/cubism2-runtime.js', () => ({}));
++vi.mock('../src/frontend/live2d-soyo-assets', () => ({
++  createSoyoAssetLease: async () => ({ release: fake.release, resolve: (file: string) => `blob:${file}` }),
++  getSoyoDefinition: () => ({}),
++}));
++vi.mock('pixi.js', () => ({ Application: class {
++  stop = vi.fn(); destroy = fake.applicationDestroy;
++  constructor() { if (fake.failApplication) throw new Error('No graphics context'); }
++} }));
++vi.mock('pixi-live2d-display/cubism2', () => ({
++  config: {}, Cubism2ModelSettings: class {},
++  Live2DModel: { from: fake.loadModel }, MotionPreloadStrategy: { NONE: 0 }, MotionPriority: {},
++}));
++beforeEach(() => { fake.failApplication = false; vi.clearAllMocks(); });
++afterEach(() => vi.restoreAllMocks());
++
++it('releases the asset lease when renderer construction fails', async () => {
++  fake.failApplication = true;
++  await expect(createSoyoPortrait(document.createElement('canvas'))).rejects.toThrow('No graphics context');
++  expect(fake.release).toHaveBeenCalledTimes(1);
++});
++
++it('cleans a late model after abort, keeping its URLs alive until decoding settles', async () => {
++  let complete!: (value: { destroy: ReturnType<typeof vi.fn> }) => void;
++  fake.loadModel.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
++  const controller = new AbortController();
++  const loading = createSoyoPortrait(document.createElement('canvas'), controller.signal);
++  const closed = expect(loading).rejects.toThrow('立绘已关闭');
++  await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
++  controller.abort();
++  expect(fake.applicationDestroy).toHaveBeenCalledTimes(1);
++  expect(fake.release).not.toHaveBeenCalled();
++  const model = { destroy: vi.fn() }; complete(model);
++  await closed;
++  expect(model.destroy).toHaveBeenCalledTimes(1);
++  expect(fake.release).toHaveBeenCalledTimes(1);
++});
+diff --git a/tests/e2e/graphics-recovery.spec.ts b/tests/e2e/graphics-recovery.spec.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/e2e/graphics-recovery.spec.ts
+@@ -0,0 +1,95 @@
++import { expect, test, type Locator } from '@playwright/test';
++import { readFileSync, writeFileSync } from 'node:fs';
++
++const folder = 'outputs/graphics-recovery';
++const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 },
++  { width: 390, height: 844 }, { width: 320, height: 568 }];
++const host = readFileSync('index.html', 'utf8').replace('<script type="module" src="/src/frontend/main.ts"></script>',
++  '<script src="/outputs/graphics-recovery/release/immersive-shell-lite.js"></script>');
++async function loseContext(canvas: Locator) {
++  await canvas.evaluate(element => {
++    const view = element as HTMLCanvasElement;
++    const gl = view.getContext('webgl2') ?? view.getContext('webgl');
++    const extension = gl?.getExtension('WEBGL_lose_context');
++    if (!extension) throw new Error('Context loss simulation unavailable');
++    extension.loseContext();
++  });
++}
++for (const viewport of viewports) {
++  test(`packaged graphics recovery ${viewport.width}x${viewport.height}`, async ({ page }) => {
++    await page.setViewportSize(viewport);
++    const errors: string[] = [], requests: string[] = [];
++    page.on('pageerror', error => errors.push(error.message));
++    await page.addInitScript(() => localStorage.setItem('unread-city.presentation-mode.v1', 'novel'));
++    await page.route('http://127.0.0.1:5197/', route => route.fulfill({ contentType: 'text/html', body: host }));
++    await page.route('**/api/**', route => { requests.push(route.request().url()); return route.abort(); });
++    await page.route('https://**', route => { requests.push(route.request().url()); return route.abort(); });
++    await page.goto('/');
++    await page.locator('input[type="file"]').setInputFiles(`${folder}/release/unread-city-lite-assets.zip`);
++    await expect(page.locator('#unread-city-lite-import')).toContainText('已安装', { timeout: 60_000 });
++    await page.reload();
++    await page.locator('[data-academic-major="computer-science"]').click();
++    await page.locator('[data-academic-confirm]').click();
++    const noOverflow = async () => {
++      expect(await page.locator('.uc-shell').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
++      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
++    };
++    const portrait = page.locator('.soyo-live2d');
++    await expect(portrait).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30_000 });
++    const initialState = await page.evaluate(() => JSON.stringify(localStorage));
++    const initialClock = await page.locator('.topbar-world').textContent();
++    requests.length = 0;
++    await loseContext(portrait.locator('canvas'));
++    await expect(portrait).toHaveAttribute('data-live2d-status', 'error');
++    const oldPortrait = await portrait.locator('canvas').elementHandle();
++    await page.getByRole('button', { name: '刷新画面', exact: true }).click();
++    await expect(portrait).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30_000 });
++    expect(await oldPortrait!.evaluate(el => el.isConnected)).toBe(false);
++    await noOverflow();
++    const header = await page.locator('.world-chrome').evaluate(el => {
++      const facts = el.querySelector('.topbar-world')!.getBoundingClientRect();
++      const actions = el.querySelector('.host-actions')!.getBoundingClientRect();
++      const refresh = el.querySelector('.graphics-refresh-button')!.getBoundingClientRect();
++      return { overlap: Math.min(facts.right, actions.right) > Math.max(facts.left, actions.left)
++        && Math.min(facts.bottom, actions.bottom) > Math.max(facts.top, actions.top),
++        refreshWidth: refresh.width, refreshHeight: refresh.height };
++    });
++    expect(header.overlap).toBe(false);
++    expect(header.refreshWidth).toBeGreaterThanOrEqual(44);
++    expect(header.refreshHeight).toBeGreaterThanOrEqual(44);
++    await page.screenshot({ path: `${folder}/portrait-${viewport.width}.png` });
++
++    await page.getByRole('button', { name: '地图', exact: true }).click();
++    const map = page.locator('[data-tokyo-sandbox-status]');
++    await expect(map).toHaveAttribute('data-tokyo-sandbox-status', 'ready', { timeout: 30_000 });
++    await expect(map).toHaveAttribute('data-tokyo-sandbox-model', 'glb');
++    const camera = await map.getAttribute('data-tokyo-camera');
++    await expect(portrait).toHaveAttribute('data-live2d-status', 'idle');
++    await loseContext(map.locator('canvas'));
++    await expect(map).toHaveAttribute('data-tokyo-sandbox-status', 'fallback');
++    for (let i = 0; i < 3; i++) {
++      const old = await map.locator('canvas').elementHandle();
++      await page.getByRole('button', { name: '刷新沙盘', exact: true }).click();
++      await expect(map).toHaveAttribute('data-tokyo-sandbox-status', 'ready', { timeout: 30_000 });
++      expect(await old!.evaluate(el => el.isConnected)).toBe(false);
++    }
++    const oldMap = await map.locator('canvas').elementHandle();
++    await page.getByRole('button', { name: '刷新画面', exact: true }).click();
++    await expect(map).toHaveAttribute('data-tokyo-sandbox-status', 'ready', { timeout: 30_000 });
++    expect(await oldMap!.evaluate(el => el.isConnected)).toBe(false);
++    await expect(map).toHaveAttribute('data-tokyo-camera', camera!);
++    await noOverflow();
++    expect(await page.locator('.wm-map-actions').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
++    await page.screenshot({ path: `${folder}/map-${viewport.width}.png` });
++    await page.locator('.window-heading button[aria-label^="关闭"]').click();
++    await expect(portrait).toHaveAttribute('data-live2d-status', 'ready', { timeout: 30_000 });
++    expect(await page.evaluate(() => JSON.stringify(localStorage))).toEqual(initialState);
++    expect(await page.locator('.topbar-world').textContent()).toEqual(initialClock);
++    expect(requests).toEqual([]);
++    expect(errors).toEqual([]);
++    writeFileSync(`${folder}/browser-${viewport.width}.json`, JSON.stringify({ viewport, contextLossRecovery: true,
++      repeatedMapRefreshes: 3, globalMapRefresh: true, cameraUnchanged: true, headerOverlap: header.overlap,
++      localStorageAndClockUnchanged: true, noApiOrRemoteRequests: true, pageErrors: errors,
++      physicalDevice: false }, null, 2));
++  });
++}
+diff --git a/tests/tokyo-sandbox-camera.test.ts b/tests/tokyo-sandbox-camera.test.ts
+--- a/tests/tokyo-sandbox-camera.test.ts
++++ b/tests/tokyo-sandbox-camera.test.ts
+@@ -117,10 +117,8 @@
+     expect(scene).toContain('updateSu30Pose(su30State, nowMs)');
+     expect(scene).toContain('createTokyoSandboxVfx(');
+     expect(scene).toContain('Math.atan2(route.dirX * v.lane, route.dirZ * v.lane)');
+-    expect(scene).toContain('loadSharedTokyoGlb(');
+-    expect(scene).toContain('persistentSandboxRuntime');
+-    expect(scene).toContain('prewarmPersistentSandboxGpu(');
+-    expect(scene).toContain('attachPersistentRuntime(');
++    // Recovery/resource ownership is exercised by graphics-recovery.test.ts.
++    // GPU residency and background prewarming are no longer a contract.
+   });
+ 
+   it('resolves atmosphere presets by game clock and drives Su-30SM2 supersonic VFX and flares', () => {
+diff --git a/vitest.config.ts b/vitest.config.ts
+--- a/vitest.config.ts
++++ b/vitest.config.ts
+@@ -3,6 +3,7 @@
+ import { unreadCityOfflinePackPlugin } from './offline-pack-plugin';
+ 
+ export default defineConfig({
++  assetsInclude: ['**/*.glb'],
+   plugins: [unreadCityOfflinePackPlugin(), vue()],
+   test: { environment: 'jsdom', include: ['tests/**/*.test.ts', 'tests/**/*.test.js'] },
+ });
+diff --git a/playwright.graphics.config.ts b/playwright.graphics.config.ts
+new file mode 100644
+--- /dev/null
++++ b/playwright.graphics.config.ts
+@@ -0,0 +1,9 @@
++import { defineConfig } from '@playwright/test';
++export default defineConfig({
++  testDir: './tests/e2e', testMatch: 'graphics-recovery.spec.ts', workers: 1, timeout: 120_000,
++  outputDir: 'outputs/graphics-recovery/browser-results',
++  use: { baseURL: 'http://127.0.0.1:5197', browserName: 'chromium',
++    launchOptions: { executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe' } },
++  webServer: { command: 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5197 --strictPort',
++    url: 'http://127.0.0.1:5197', reuseExistingServer: false },
++});
+diff --git a/scripts/build_graphics_recovery_release.py b/scripts/build_graphics_recovery_release.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/build_graphics_recovery_release.py
+@@ -0,0 +1,28 @@
++"""Build a separate review package from the graphics recovery production bundle."""
++from pathlib import Path
++import hashlib
++import json
++from build_lite_release import externalize
++from build_lite_card import build
++from build_tauri_import_card import compress_card_metadata
++
++ROOT = Path(__file__).resolve().parents[1]
++OUT = ROOT / 'outputs/graphics-recovery/release'
++
++def main():
++    source = (OUT.parent / 'build/immersive-shell.js').read_text(encoding='utf-8')
++    script, archive, report = externalize(source, (ROOT / 'scripts/lite_asset_loader.js').read_text(encoding='utf-8'))
++    OUT.mkdir(parents=True, exist_ok=True)
++    (OUT / 'immersive-shell-lite.js').write_text(script, encoding='utf-8')
++    (OUT / 'unread-city-lite-assets.zip').write_bytes(archive)
++    build(OUT / 'immersive-shell-lite.js', OUT / 'unread-city-lite.png')
++    compressed, container = compress_card_metadata((OUT / 'unread-city-lite.png').read_bytes())
++    (OUT / 'unread-city-lite-tauri.png').write_bytes(compressed)
++    report.update(tauriContainer=container, deployed=False, physicalDeviceTested=False)
++    report['files'] = {file.name: {'bytes': file.stat().st_size, 'sha256': hashlib.sha256(file.read_bytes()).hexdigest()}
++                       for file in OUT.iterdir() if file.suffix in ('.png', '.zip', '.js')}
++    (OUT / 'packaging.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
++    print(f'Packaged {report["assets"]} local assets; deployment and device testing not performed.')
++
++if __name__ == '__main__':
++    main()
+diff --git a/integration/graphics-recovery/README.md b/integration/graphics-recovery/README.md
+new file mode 100644
+--- /dev/null
++++ b/integration/graphics-recovery/README.md
+@@ -0,0 +1,35 @@
++# 沙盘与 Live2D 恢复（2026-11-08）
++
++地图操作栏增加「刷新沙盘」，小说顶部的「↻」按钮可刷新立绘及当前打开的沙盘。刷新保留地图范围、朝向和缩放；只重建显示资源，不经过世界行动、存档或内容生成入口。
++
++## 已定位与修复
++
++- 沙盘初始化失败及 WebGL 上下文丢失后，组件进入可重试状态，刷新使用新画布与渲染器。
++- 删除后台沙盘预热和常驻解码模型/GPU 缓存。保留原本地字节缓存；关闭地图、转入其他地图层或隐藏页面时释放资源。重开需要重新载入本地模型，原生 DPR 保留，环境动画上限为 30 fps。
++- 沙盘几何体、材质、纹理、实例对象及战机独立特效由所属视图负责释放。修复战机特效仅被移出场景却未释放，以及缓存材质目录积累运行时条目的问题。
++- Live2D 不再为不可见的初始视图加载；关闭/遮盖视图或隐藏页面时释放。短暂切到其他说话人可保留 15 秒，期间暂停动画。加载期间关闭后，迟到的结果会清理，不重新挂回界面。
++- Lite 原先借用同一纹理 Blob URL，Pixi 按 URL 缓存纹理，单人/双人立绘释放纹理时可能互相影响。现在两份立绘各自持有本地纹理 URL；释放实例不会撤销已安装素材的 URL。
++- 渲染器创建失败会释放素材租约。无法取消的本地 Live2D 解码等待结束后清理，避免先撤销 URL 使解码中途失败。
++- 地图操作可换行，手机顶部日期与操作按钮分行，刷新画面按钮触控区至少 44×44。
++
++## 回归方式
++
++使用 `diagnose` 与 `code-security` 的诊断/资源所有权检查方法；最初的沙盘失败恢复、隐藏 Live2D 初始化和战机资源释放用例均先观察到失败。Lite 双实例纹理隔离用例也先观察到失败。
++
++```text
++node node_modules/vue-tsc/bin/vue-tsc.js --noEmit
++node node_modules/vitest/vitest.mjs run tests/graphics-recovery.test.ts tests/live2d-soyo-assets.test.ts tests/live2d-soyo-runtime.test.ts tests/tokyo-sandbox-camera.test.ts tests/tokyo-sandbox-resolution.test.ts tests/network-identities.test.ts tests/xitter.test.js tests/novel-invitation-portraits.test.ts tests/novel-standing-speaker.test.ts
++node node_modules/vite/bin/vite.js build --outDir outputs/graphics-recovery/build
++python scripts/build_graphics_recovery_release.py
++node node_modules/@playwright/test/cli.js test --config playwright.graphics.config.ts
++```
++
++组件测试使用实际 Vue/Three 场景树与模拟渲染器；浏览器测试使用生产 Lite IIFE、本地 ZIP、真实 WebGL 和项目已有浏览器演示宿主。通过 `WEBGL_lose_context` 分别模拟沙盘和 Live2D 故障，再点击实际恢复按钮；重复刷新、关闭地图回到立绘，检查相机不变、页面错误、远程/API 请求、时钟、布局溢出和顶部重叠。浏览器演示的进度在内存中，localStorage 和时钟检查不等于真实酒馆存档写入审计。
++
++结果、截图、测试与产物哈希见 `outputs/graphics-recovery/verification.json`。产物独立存于 `outputs/graphics-recovery/release/`，未覆盖 Xitter 交付目录、未部署或推送。验证记录中的提交状态对应当时的验证阶段；用户随后要求将本次修复正式提交到当前 `lite` 分支。`outputs/graphics-recovery/debug/` 仅保留迁移前源码和一次性编辑脚本，脚本不得重复执行。
++
++2026-11-08 最终结果：类型检查通过；9 个测试文件共 45 项通过；生产构建通过；233 个 ZIP 素材的字节长度、SHA-256、来源构建及产物哈希全部校验通过。Headless Edge/Chromium 的 1440×900、1280×800、390×844、320×568 四项恢复流程通过，无页面异常、额外远程/API 请求、横向溢出或顶部重叠；沙盘每项连续局部刷新三次，并额外验证顶部刷新入口。桌面与手机截图已复核。
++
++## 验证边界
++
++这次验证了图形故障恢复和明确的资源清理缺陷，未复现用户原始整页崩溃，不能确认原崩溃必为内存溢出，也不能保证设备显存不足时总能重建成功。未运行 CI、GitHub Actions、Agent Edition、真实模型请求或 TauriTavern 真机验收。登记的 7 个 worktree 目录及 Git 入口存在，不代表已经逐文件证明误删前后的内容完全一致。
+diff --git a/outputs/graphics-recovery/verification.json b/outputs/graphics-recovery/verification.json
+new file mode 100644
+--- /dev/null
++++ b/outputs/graphics-recovery/verification.json
+@@ -0,0 +1,169 @@
++{
++  "date": "2026-11-08",
++  "status": "targeted-regression-passed",
++  "scope": [
++    "sandbox recovery and resource disposal",
++    "Live2D recovery, loading cancellation and texture ownership",
++    "Xitter identity behavior",
++    "invitation portraits and standing speaker"
++  ],
++  "typecheck": {
++    "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
++    "exitCode": 0
++  },
++  "vitest": {
++    "files": 9,
++    "passed": 45,
++    "failed": 0
++  },
++  "browser": {
++    "passed": 4,
++    "failed": 0,
++    "browser": "headless Microsoft Edge Chromium",
++    "host": "existing browser demo with production Lite IIFE and ZIP",
++    "scenarios": [
++      {
++        "viewport": {
++          "width": 1440,
++          "height": 900
++        },
++        "contextLossRecovery": true,
++        "repeatedMapRefreshes": 3,
++        "globalMapRefresh": true,
++        "cameraUnchanged": true,
++        "headerOverlap": false,
++        "localStorageAndClockUnchanged": true,
++        "noApiOrRemoteRequests": true,
++        "pageErrors": [],
++        "physicalDevice": false
++      },
++      {
++        "viewport": {
++          "width": 1280,
++          "height": 800
++        },
++        "contextLossRecovery": true,
++        "repeatedMapRefreshes": 3,
++        "globalMapRefresh": true,
++        "cameraUnchanged": true,
++        "headerOverlap": false,
++        "localStorageAndClockUnchanged": true,
++        "noApiOrRemoteRequests": true,
++        "pageErrors": [],
++        "physicalDevice": false
++      },
++      {
++        "viewport": {
++          "width": 390,
++          "height": 844
++        },
++        "contextLossRecovery": true,
++        "repeatedMapRefreshes": 3,
++        "globalMapRefresh": true,
++        "cameraUnchanged": true,
++        "headerOverlap": false,
++        "localStorageAndClockUnchanged": true,
++        "noApiOrRemoteRequests": true,
++        "pageErrors": [],
++        "physicalDevice": false
++      },
++      {
++        "viewport": {
++          "width": 320,
++          "height": 568
++        },
++        "contextLossRecovery": true,
++        "repeatedMapRefreshes": 3,
++        "globalMapRefresh": true,
++        "cameraUnchanged": true,
++        "headerOverlap": false,
++        "localStorageAndClockUnchanged": true,
++        "noApiOrRemoteRequests": true,
++        "pageErrors": [],
++        "physicalDevice": false
++      }
++    ]
++  },
++  "build": {
++    "exitCode": 0,
++    "outputDirectory": "outputs/graphics-recovery/build"
++  },
++  "packaging": {
++    "report": "release/packaging.json",
++    "verifiedZipMembers": 233,
++    "allZipBytesAndHashesVerified": true,
++    "sourceAndPackageHashesVerified": true
++  },
++  "diffCheckExitCode": 0,
++  "worktrees": [
++    {
++      "path": "D:\\.study\\cc",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\downtown-art-integration\\cc",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "D:\\.study\\cc\\.worktrees\\hoi4-tno-gui-20261108",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "D:\\.study\\cc\\.worktrees\\identity-card-ages-20261108",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "D:\\.study\\cc\\.worktrees\\protagonist-presence-20261025",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "D:\\.study\\cc\\.worktrees\\strategy-panels-isolated-20261108",
++      "directoryExists": true,
++      "gitEntryExists": true
++    },
++    {
++      "path": "D:\\.study\\cc\\.worktrees\\watanare-integration",
++      "directoryExists": true,
++      "gitEntryExists": true
++    }
++  ],
++  "sourceSha256": {
++    "src/frontend/App.vue": "3bf3e4be30b5b9cf40d1bbbf923db46d11ae53ccc424d827de81c41960784aef",
++    "src/frontend/CitySandboxScene.vue": "0b7ee74e5dcd200a4f9059e3fe53ee5b1ee05c3842e6371491889ea80bee8293",
++    "src/frontend/SoyoLive2D.vue": "a84a201101a1ee57f32af9a9c500af976e5175fcbb555efa43c7c8c81fcbfbd9",
++    "src/frontend/WorldMap.vue": "e380a49564bc099f4c31e83c669b7430bf3e74229e3899c569f2970ea70b64ef",
++    "src/frontend/WorldPanels.vue": "e28360246152729f5cb7965e48ebdfc8b941c93d7df195add8dc866ca4584b92",
++    "src/frontend/NovelInvitationPortraits.vue": "7627e7076c839747abc6743f152f82fda23d667af9d9598361c23198a7047842",
++    "src/frontend/live2d-soyo-assets.ts": "e854cdbb27dc4c236c4a3428d1cdc22bd47e4e522e1712ab0a769391ae56549c",
++    "src/frontend/live2d-soyo-runtime.ts": "9f2236b0a0b27943376fadce7345d82e3c395a3184a882995cebb9782cb5f8f9",
++    "src/frontend/dispose-three-tree.ts": "88cec7d007badd4c3f861149825aca108d3bc3a91e22933b9cc07d359e403a0b",
++    "src/frontend/tokyo-sandbox-vfx.ts": "88f7cd6741374cc58c27322c2301175cabc923af61f0d1842f875faef6e7603a",
++    "src/frontend/shell-viewport.css": "ca60b74306de4ef1d8933bc5d0674a888e387ce895a849bb7ec0f9337fa1fb96",
++    "src/frontend/world-map.css": "7b68f1562471e37e4a1fd77af23db7a74f13b495361f43a1b5ba89f508d6ba13",
++    "tests/graphics-recovery.test.ts": "97c648d69dcbe941c2bdd7426dfaae462c98c67843f89e678b9ff6ea2550b3b1",
++    "tests/live2d-soyo-assets.test.ts": "e2f31be6586ac11ea4983c6c3ac3090da40b89971c2ad23e332fd98cbc684fe3",
++    "tests/live2d-soyo-runtime.test.ts": "933d48ecb9ca03d59963a28531ce63686bff1efb415c01a25080db946f441f21",
++    "tests/e2e/graphics-recovery.spec.ts": "4b40298abbae3be91d13bb08d8b1accad3b9356d5e779c26304e0eee6b2352a8",
++    "tests/tokyo-sandbox-camera.test.ts": "6426ea5e9d737f9e7b1009386eff244187558faa3ffb2f334aa7df92acd00a29",
++    "vitest.config.ts": "11845fad91fd9c75be5a5c68d8613a58665dc5bf9efdf9eef05f1657aab8b78a",
++    "playwright.graphics.config.ts": "b0e69ae078eae20287d500e607133bcb1ed1c9d60ef8a48164865003bba344eb"
++  },
++  "limits": {
++    "originalBrowserCrashReproduced": false,
++    "originalOomCauseConfirmed": false,
++    "allProjectTestsRun": false,
++    "trueTavernSaveAudit": false,
++    "physicalTauriTavernTested": false,
++    "agentEditionRun": false,
++    "ciRun": false,
++    "realModelRequests": false,
++    "deployed": false,
++    "committed": false,
++    "worktreeContentComparedToPreDeletion": false
++  }
++}

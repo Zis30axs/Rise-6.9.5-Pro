@@ -1,0 +1,97 @@
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[2]
+path = root / 'src/frontend/CitySandboxScene.vue'
+s = path.read_text(encoding='utf-8')
+backup = root / 'outputs/graphics-recovery/CitySandboxScene.before.vue'
+if not backup.exists():
+    backup.write_text(s, encoding='utf-8')
+
+def replace(old, new):
+    global s
+    assert s.count(old) == 1, old[:100]
+    s = s.replace(old, new)
+
+replace("let cachedGlbRoot: THREE.Group | undefined;\nlet cachedGlbPromise: Promise<THREE.Group> | undefined;", "import { disposeThreeTree } from './dispose-three-tree';")
+start = s.index('async function loadSharedTokyoGlb(')
+end = s.index('\nimport {', start)
+s = s[:start] + '''/** Each active view owns its decoded tree and GPU resources. Only local bytes are cached. */
+async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
+  let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
+    ? await readIdbCachedGlbBytes() : undefined;
+  const cached = !!bytes;
+  if (!bytes) bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
+  if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
+    // A damaged local byte cache must not make every later retry fail forever.
+    if (!cached) throw new Error('Tokyo sandbox pack hash mismatch');
+    bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
+    if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) throw new Error('Tokyo sandbox pack hash mismatch');
+  }
+  checkGlb(bytes);
+  if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) writeIdbCachedGlbBytes(bytes);
+  const manager = new THREE.LoadingManager();
+  manager.setURLModifier(url => {
+    if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
+    return url;
+  });
+  const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
+  optimizeGlbScene(parsed);
+  attachCirclePackGeometry(parsed);
+  return parsed;
+}
+''' + s[end:]
+start = s.index('interface PersistentSandboxRuntime')
+end = s.index('</script>', start)
+s = s[:start] + s[end:]
+replace("import { onBeforeUnmount, onMounted, ref, watch } from 'vue';", "import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';")
+replace('  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number;', '  atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number; refreshToken?: number;')
+replace('  clockMinutes: 780,', '  clockMinutes: 780,\n  refreshToken: 0,')
+replace('// Lite extracts this data URL into unread-city-tokyo-sandbox.zip, not the main Lite ZIP.', '// Lite keeps this asset in the existing local asset ZIP.')
+replace("const canvas = ref<HTMLCanvasElement>();", "const canvas = ref<HTMLCanvasElement>();\nconst canvasGeneration = ref(0);")
+replace('let usingPersistentRuntime = false;\n', '')
+replace('let lastTick = 0;', 'let lastTick = 0;\nlet lastDraw = 0;')
+start = s.index('function disposeModel(')
+end = s.index('\nfunction stopCameraFlight', start)
+s = s[:start] + 'const disposeModel = disposeThreeTree;\n' + s[end:]
+start = s.index('function attachPersistentRuntime(')
+end = s.index('function release(', start)
+s = s[:start] + s[end:]
+replace('function release(unmounting = false) {', 'function release() {')
+replace('  lastTick = 0;\n', '  lastTick = 0; lastDraw = 0;\n  canvas.value?.removeEventListener(\'webglcontextlost\', contextLost, true);\n')
+start = s.index('  if (usingPersistentRuntime && persistentSandboxRuntime) {')
+end = s.index('  if (vfxController)', start)
+s = s[:start] + s[end:]
+replace('  renderer?.dispose(); renderer = undefined;', '''  const previous = renderer; renderer = undefined;
+  previous?.dispose(); previous?.forceContextLoss();
+  if (canvas.value) { canvas.value.width = 1; canvas.value.height = 1; }''')
+replace('  if (usingPersistentRuntime && persistentSandboxRuntime) {\n    persistentSandboxRuntime.appliedCanvasResolution = appliedCanvasResolution;\n  }\n', '')
+replace('defineExpose({ pickAt, triggerFlares });', '''function contextLost(event: Event) {
+  event.preventDefault(); event.stopImmediatePropagation();
+  if (event.target !== canvas.value || !renderer) return;
+  release(); status.value = 'fallback';
+}
+function refresh() { release(); return load(); }
+function visibilityChanged() {
+  if (document.hidden) release(); else if (props.active) void load();
+}
+defineExpose({ pickAt, triggerFlares, refresh });''')
+start = s.index('  if (!props.active || (!canvas.value')
+end = s.index('  const request = ++epoch;', start)
+s = s[:start] + "  if (!props.active || document.hidden || !sceneRoot.value || renderer || status.value === 'loading') return;\n" + s[end:]
+replace("  try {\n    const bundled = tokyoModelAsset;", "  try {\n    canvasGeneration.value++;\n    await nextTick();\n    if (request !== epoch || !props.active || !canvas.value) return;\n    const bundled = tokyoModelAsset;")
+replace('await loadSharedTokyoGlb(bundled)', 'await loadTokyoGlb(bundled)')
+start = s.index('    // If not previewOnly and not in jsdom')
+end = s.index('    if (!canvas.value)', start)
+s = s[:start] + s[end:]
+replace('    renderer = new THREE.WebGLRenderer({', "    canvas.value.addEventListener('webglcontextlost', contextLost, true);\n    renderer = new THREE.WebGLRenderer({")
+replace("watch(() => props.active, active => { if (active) void load(); else release(false); });", "watch(() => props.active, active => { if (active) void load(); else release(); });\nwatch(() => props.refreshToken, () => { void refresh(); });")
+replace("  canvasOwner?.addEventListener('resize', render);", "  canvasOwner?.addEventListener('resize', render);\n  document.addEventListener('visibilitychange', visibilityChanged);")
+replace('  release(true);', "  document.removeEventListener('visibilitychange', visibilityChanged);\n  release();")
+replace('<canvas ref="canvas" v-show=', '<canvas :key="canvasGeneration" ref="canvas" v-show=')
+replace('  const dt = Math.min((now - (lastTick || now)) / 1000, 0.1);', '''  if (document.hidden || !props.active) { animFrame = 0; return; }
+  if (lastDraw && now - lastDraw < 1000 / 30) {
+    animFrame = requestAnimationFrame(loopAnimation); return;
+  }
+  lastDraw = now;
+  const dt = Math.min((now - (lastTick || now)) / 1000, 0.1);''')
+path.write_text(s, encoding='utf-8', newline='\n')

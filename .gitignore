@@ -28,3 +28,20 @@ Thumbs.db
 /output/
 claude2api.settings.json
 start-claude2api.ps1
+
+# Reproducible local bundles; keep packaging and verification reports
+/outputs/**/build/
+/outputs/**/release/immersive-shell-lite.js
+/outputs/**/release/unread-city-lite*.png
+/outputs/**/release/unread-city-lite-assets.zip
+/outputs/xitter-release/immersive-shell-lite.js
+/outputs/xitter-release/unread-city-lite*.png
+/outputs/xitter-release/unread-city-lite-assets.zip
+/outputs/xitter-qa/index.html
+
+# Installed-card snapshots can contain personal metadata and chat references
+/outputs/**/installed-card-*.png
+/outputs/**/normalized-card-*.png
+/outputs/**/deployment-before.json
+/outputs/**/.last-run.json
+/outputs/**/*.pid

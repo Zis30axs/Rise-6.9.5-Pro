@@ -4,8 +4,8 @@
  * without an authored pose stays absent rather than borrowing another identity.
  */
 import soyoPhone from '../../assets/protagonist-phone/soyo-phone.webp?inline';
-import sakikoCasualPhone from '../../assets/protagonist-phone/sakiko-casual-phone.webp?inline';
-import sakikoHomePhone from '../../assets/protagonist-phone/sakiko-home-phone.webp?inline';
+import sakikoCasualPhone from '../../assets/downtown-art/characters/sakiko/uniform/thinking.webp?inline';
+import sakikoHomePhone from '../../assets/downtown-art/characters/sakiko/indoor/thinking.webp?inline';
 import emmaPhone from '../../assets/protagonist-phone/emma-phone.webp?inline';
 import renakoPhone from '../../assets/protagonist-phone/renako-phone.webp?inline';
 import { resolveSakikoOutfit, type SakikoOutfit } from './sakiko-art-policy';
@@ -27,8 +27,8 @@ const renako: ProtagonistPhonePose = Object.freeze({ protagonist: 'renako', outf
 const poses: Partial<Record<ProtagonistId, (outfit: SakikoOutfit) => ProtagonistPhonePose>> = Object.freeze({
   soyo: () => soyo,
   sakiko: outfit => outfit === 'home'
-    ? { protagonist: 'sakiko', outfit, src: sakikoHomePhone, width: 1024, height: 1536 }
-    : { protagonist: 'sakiko', outfit, src: sakikoCasualPhone, width: 1024, height: 1536 },
+    ? { protagonist: 'sakiko', outfit, src: sakikoHomePhone, width: 768, height: 1344 }
+    : { protagonist: 'sakiko', outfit, src: sakikoCasualPhone, width: 768, height: 1344 },
   emma: () => emma,
   renako: () => renako,
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { selectDockAction } from './tool-dock-helpers';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { getCampusInterior } from '../../src/runtime/campus-interiors';
 import { personState } from '../../src/runtime/protagonist-world';
@@ -7,7 +8,7 @@ import type { CharacterContact } from '../../src/frontend/types';
 import { mountSwitchHost as mountBaseHost, switchState, viewports, readState, noOverflow } from './switch-map-fixture';
 
 const out = 'outputs/protagonist-presence-qa';
-const tool = (page: Page, name: string) => page.locator('.tool-dock button').filter({ hasText: name });
+const tool = (page: Page, name: string) => ({ click: () => selectDockAction(page, name) });
 
 async function mountSwitchHost(page: Page, options: Parameters<typeof mountBaseHost>[1]) {
   // The production IIFE is under test. Vite's demo bootstrap/HMR must not replace the controlled host.

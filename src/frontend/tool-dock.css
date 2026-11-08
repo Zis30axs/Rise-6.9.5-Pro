@@ -1,0 +1,27 @@
+/* The compact rail keeps its saved position; the menu stays inside the viewport. */
+.uc-shell .tool-dock.tool-dock-collapsible {
+  width:auto; max-height:none; overflow:visible; padding:5px;
+}
+.tool-dock-shortcuts { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.uc-shell .tool-dock .tool-dock-shortcuts > button { flex:none; min-width:76px; min-height:48px; }
+.uc-shell .tool-dock .tool-dock-toggle[aria-expanded=true] { background:#ebe5ce; color:#263c2b; }
+.tool-dock-menu {
+  position:absolute; z-index:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  align-content:start; gap:6px; width:288px; max-height:360px; padding:10px;
+  overflow:auto; overscroll-behavior:contain; scrollbar-width:thin;
+  border:1px solid #c1d1ae80; border-radius:16px; background:#10291ffa;
+  box-shadow:0 8px 28px #081c1b66;
+}
+.uc-shell .tool-dock .tool-dock-menu > button {
+  flex:none; width:100%; min-width:44px; min-height:64px; padding:8px 4px;
+  flex-direction:column; gap:5px; border:1px solid #d1ddc32b;
+  background:#ffffff08; box-shadow:none; font-size:12px; white-space:normal;
+}
+.uc-shell .tool-dock .tool-dock-menu > button:hover,
+.uc-shell .tool-dock .tool-dock-menu > button[aria-pressed=true] { background:#ebe5ce; color:#263c2b; }
+.tool-dock-menu .tool-icon svg { width:21px; height:21px; }
+@media(max-width:760px) {
+  .tool-dock-shortcuts { flex-direction:row; gap:6px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:52px; min-width:52px; min-height:54px; flex:none; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:68px; min-width:68px; }
+}
