@@ -1,0 +1,221 @@
+.metropolis.metropolis--game .mgp {
+  --mgp-ink: #e5eeea;
+  --mgp-muted: #93acb0;
+  --mgp-gold: #dfc493;
+  --mgp-mint: #abd8cd;
+  position: absolute;
+  z-index: 9;
+  top: 92px;
+  bottom: 48px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--mgp-ink);
+  background: linear-gradient(145deg, #17313be8, #091f2bed 65%);
+  border: 1px solid #9fc5c12c;
+  border-top-color: #dfc4936b;
+  border-radius: 13px;
+  box-shadow: 0 16px 48px #00131e35, inset 0 1px 0 #f1e4ba08;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  text-align: left;
+}
+
+.metropolis.metropolis--game .mgp button,
+.metropolis.metropolis--game .mgp input {
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+}
+
+.metropolis.metropolis--game .mgp button {
+  min-height: 44px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.metropolis.metropolis--game .mgp button:focus-visible,
+.metropolis.metropolis--game .mgp input:focus-visible {
+  outline: 2px solid var(--mgp-gold);
+  outline-offset: -3px;
+}
+
+.metropolis.metropolis--game .mgp h2,
+.metropolis.metropolis--game .mgp h3,
+.metropolis.metropolis--game .mgp p {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.metropolis.metropolis--game .mgp-header {
+  display: flex;
+  flex: 0 0 57px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 15px;
+}
+
+.metropolis.metropolis--game .mgp-heading { min-width: 0; flex: 1; }
+.metropolis.metropolis--game .mgp-heading h2 { color: var(--mgp-gold); font-size: 12px; letter-spacing: 1.6px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-heading > span { display: block; margin-top: 2px; color: var(--mgp-muted); font-size: 10px; line-height: 1.4; }
+.metropolis.metropolis--game .mgp-clock { flex: 0 0 auto; color: #e8ddc4; font: 22px/1 Georgia, "Times New Roman", serif; letter-spacing: .3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.metropolis.metropolis--game .mgp-toggle { display: none; align-items: center; justify-content: center; gap: 3px; padding: 0 0 0 8px; color: var(--mgp-mint); background: transparent; font-size: 11px; }
+.metropolis.metropolis--game .mgp-toggle svg { width: 16px; height: 16px; transition: transform .2s ease; }
+.metropolis.metropolis--game .mgp.is-expanded .mgp-toggle svg { transform: rotate(180deg); }
+
+.metropolis.metropolis--game .mgp-current {
+  display: flex;
+  flex: 0 0 57px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: #afd6c808;
+  border: 0;
+  border-top: 1px solid #b3d4c910;
+  border-bottom: 1px solid #b3d4c91c;
+}
+.metropolis.metropolis--game .mgp-current:hover { background: #afd6c814; }
+.metropolis.metropolis--game .mgp-current-copy { display: block; flex: 1; min-width: 0; }
+.metropolis.metropolis--game .mgp-current-copy > small { display: block; color: var(--mgp-muted); font-size: 10px; line-height: 1.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.metropolis.metropolis--game .mgp-current-copy i { margin: 0 5px; font-style: normal; opacity: .65; }
+.metropolis.metropolis--game .mgp-current-copy > strong { display: block; margin-top: 2px; overflow: hidden; color: #d4e9df; font-size: 12px; font-weight: 500; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.metropolis.metropolis--game .mgp-locate { width: 18px; height: 18px; flex-shrink: 0; color: var(--mgp-mint); opacity: .8; }
+
+.metropolis.metropolis--game .mgp-avatar { width: 30px; height: 30px; display: block; flex: 0 0 30px; overflow: hidden; border: 1px solid #c6d7d23b; border-radius: 50%; background: #29404c; }
+.metropolis.metropolis--game .mgp-avatar--player { width: 34px; height: 34px; flex-basis: 34px; border-color: #b6d8ba7a; box-shadow: 0 0 0 3px #abd8cd08; }
+.metropolis.metropolis--game .mgp-avatar .cms-avatar-face { display: grid; place-items: center; position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: inherit; }
+.metropolis.metropolis--game .mgp-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; margin: 0; padding: 0; border: 0; border-radius: 0; }
+.metropolis.metropolis--game .mgp-avatar svg { display: block; width: 100%; height: 100%; }
+.metropolis.metropolis--game .mgp-avatar .cms-avatar-initials { color: #e1e8d9; font-size: 11px; line-height: 1; }
+
+.metropolis.metropolis--game .mgp-content { flex: 1; min-height: 0; overflow: auto; padding: 13px 12px 14px; scrollbar-width: thin; scrollbar-color: #83a7a34d transparent; overscroll-behavior: contain; touch-action: pan-y; }
+.metropolis.metropolis--game .mgp-content::-webkit-scrollbar { width: 4px; height: 4px; }
+.metropolis.metropolis--game .mgp-content::-webkit-scrollbar-thumb { background: #83a7a34d; border-radius: 6px; }
+.metropolis.metropolis--game .mgp-notice { padding: 9px 10px; margin-bottom: 12px; color: #bdd3d1; background: #acd2ca09; border-left: 2px solid #8ebcbb66; font-size: 11px; line-height: 1.7; }
+
+.metropolis.metropolis--game .mgp-selection { padding: 13px; margin-bottom: 13px; background: linear-gradient(135deg, #c9b58012, #9bc6bb06); border: 1px solid #dfc49345; border-radius: 9px; }
+.metropolis.metropolis--game .mgp-selection-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--mgp-gold); font-size: 10px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-current-tag { color: var(--mgp-mint); }
+.metropolis.metropolis--game .mgp-target-tag { color: #aabbb5; }
+.metropolis.metropolis--game .mgp-selection h3 { margin-top: 7px; color: #f0e7cf; font-family: "Songti SC", "Noto Serif CJK SC", SimSun, Georgia, serif; font-size: 18px; line-height: 1.4; overflow-wrap: anywhere; }
+.metropolis.metropolis--game .mgp-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 8px; color: #a8bfbd; font-size: 11px; line-height: 1.7; }
+.metropolis.metropolis--game .mgp-hours { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; color: #bea587; font-size: 10px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-hours > span { display: flex; align-items: center; gap: 6px; }
+.metropolis.metropolis--game .mgp-hours i { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.metropolis.metropolis--game .mgp-hours.is-open { color: #a8d0b7; }
+.metropolis.metropolis--game .mgp-hours small { color: #93aaa9; font-size: 10px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-quote { margin-top: 12px; padding-top: 10px; border-top: 1px solid #c6d2ba1f; }
+.metropolis.metropolis--game .mgp-quote > span { color: #8ea8ac; font-size: 10px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-quote > p { margin-top: 4px; color: #e2d9bf; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.metropolis.metropolis--game .mgp-direction { display: flex; align-items: center; gap: 5px; margin-top: 7px; color: #829d9f; font-size: 10px; line-height: 1.4; }
+.metropolis.metropolis--game .mgp-direction svg { width: 20px; height: 12px; }
+.metropolis.metropolis--game .mgp-reason { margin-top: 9px; color: #cfb997; font-size: 11px; line-height: 1.65; }
+.metropolis.metropolis--game .mgp-error { padding: 9px 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #c8897040; background: #c8897012; color: #ebbb9e; font-size: 11px; line-height: 1.65; overflow-wrap: anywhere; }
+.metropolis.metropolis--game .mgp-travel { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin-top: 11px; padding: 10px 12px; border: 1px solid #dfc493; border-radius: 5px; background: linear-gradient(100deg, #dfc493, #c8b889); color: #17313a; font-size: 12px; font-weight: 600; }
+.metropolis.metropolis--game .mgp-travel:hover:not(:disabled) { background: #efe0b7; color: #152b33; }
+.metropolis.metropolis--game .mgp-travel > span:last-child { flex: 0 0 auto; font-size: 17px; line-height: 1; }
+.metropolis.metropolis--game .mgp-travel:disabled { opacity: .65; cursor: default; }
+.metropolis.metropolis--game .mgp-travel.is-current { border-color: #acd5bc4d; color: #c0d7c6; background: #acd5bc0c; opacity: 1; }
+
+.metropolis.metropolis--game .mgp-search { display: flex; align-items: center; min-height: 44px; margin: 0 0 7px; border: 1px solid #a7c6c126; border-radius: 6px; background: #061c265c; }
+.metropolis.metropolis--game .mgp-search > svg { width: 16px; height: 16px; margin-left: 11px; flex: 0 0 16px; color: #83a3a6; }
+.metropolis.metropolis--game .mgp-search input { display: block; flex: 1; width: 100%; min-width: 0; height: 44px; min-height: 44px; margin: 0; padding: 10px 8px; color: #e1e9df; background: transparent; border: 0; border-radius: 5px; outline: none; font-size: 12px; line-height: 1.5; appearance: none; }
+.metropolis.metropolis--game .mgp-search input::placeholder { color: #7f9da4; opacity: 1; }
+.metropolis.metropolis--game .mgp-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.metropolis.metropolis--game .mgp-clear { flex: 0 0 36px; width: 36px; padding: 0; color: #a1b9b9; background: transparent; font-size: 20px; text-align: center; }
+
+.metropolis.metropolis--game .mgp-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; }
+.metropolis.metropolis--game .mgp-section-heading > h3 { min-width: 0; color: #c6d4cd; font-size: 11px; font-weight: 500; line-height: 1.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.metropolis.metropolis--game .mgp-section-heading > span { flex-shrink: 0; color: #78959d; font-size: 10px; line-height: 1.5; }
+.metropolis.metropolis--game .mgp-district-block { position: relative; padding-top: 1px; margin-bottom: 10px; }
+.metropolis.metropolis--game .mgp-district-block > .mgp-section-heading { min-height: 44px; padding-right: 50px; }
+.metropolis.metropolis--game .mgp-district-block > .mgp-section-heading > span { display: none; }
+.metropolis.metropolis--game .mgp-district-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.metropolis.metropolis--game .mgp-district-all { position: absolute; top: 0; right: 0; min-width: 44px; padding: 0 6px; color: #8da9ac; background: transparent; font-size: 11px; text-align: center; }
+.metropolis.metropolis--game .mgp-district-all.is-active { color: var(--mgp-gold); }
+.metropolis.metropolis--game .mgp-district { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px; padding: 5px 3px; border: 1px solid #a7c6c117; border-radius: 5px; color: #a4bab9; background: #a7c6c105; font-size: 10px; text-align: center; overflow-wrap: anywhere; }
+.metropolis.metropolis--game .mgp-district:hover { background: #b6c8ad0e; border-color: #b8caba35; }
+.metropolis.metropolis--game .mgp-district.is-active { color: #e8d5ac; border-color: #dfc4937a; background: #dfc49315; }
+.metropolis.metropolis--game .mgp-district > i { position: absolute; bottom: 3px; left: calc(50% - 1.5px); width: 3px; height: 3px; border-radius: 50%; background: #abd8cd; }
+
+.metropolis.metropolis--game .mgp-people { padding: 0 0 11px; margin-bottom: 2px; border-bottom: 1px solid #b4cfbf14; }
+.metropolis.metropolis--game .mgp-person-list { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 3px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
+.metropolis.metropolis--game .mgp-person-list::-webkit-scrollbar { display: none; }
+.metropolis.metropolis--game .mgp-person { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; max-width: 170px; padding: 6px 8px 6px 5px; color: #c1d1cd; background: #acc8c008; border: 1px solid #a7c6c11a; border-radius: 7px; }
+.metropolis.metropolis--game .mgp-person:hover { background: #acc8c017; }
+.metropolis.metropolis--game .mgp-person.is-active { color: #e6dcc7; background: #dfc49310; border-color: #dfc4936b; }
+.metropolis.metropolis--game .mgp-person-copy { display: block; min-width: 0; }
+.metropolis.metropolis--game .mgp-person-copy > strong { display: block; overflow: hidden; font-size: 11px; font-weight: 400; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.metropolis.metropolis--game .mgp-person-copy > small { display: block; overflow: hidden; margin-top: 1px; color: #819fa5; font-size: 9px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+
+.metropolis.metropolis--game .mgp-destination-list { display: flex; flex-direction: column; gap: 3px; }
+.metropolis.metropolis--game .mgp-destination { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; min-height: 54px; padding: 8px 6px; border: 1px solid transparent; border-bottom-color: #b5d0c10d; border-radius: 5px; color: #c8d8d2; background: transparent; }
+.metropolis.metropolis--game .mgp-destination:hover { background: #acc8c00b; }
+.metropolis.metropolis--game .mgp-destination.is-selected { border-color: #dfc4934f; background: #dfc4930e; }
+.metropolis.metropolis--game .mgp-place-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 27px; width: 27px; height: 30px; border-radius: 5px; background: #b1c8bb08; color: #9ebeb8; }
+.metropolis.metropolis--game .mgp-place-icon svg { width: 18px; height: 18px; }
+.metropolis.metropolis--game .mgp-destination.is-selected .mgp-place-icon { color: var(--mgp-gold); }
+.metropolis.metropolis--game .mgp-destination-copy { display: block; flex: 1; min-width: 0; }
+.metropolis.metropolis--game .mgp-destination-copy > strong { display: block; overflow: hidden; font-size: 12px; line-height: 1.5; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.metropolis.metropolis--game .mgp-destination-copy > span { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin-top: 3px; color: #839fa3; }
+.metropolis.metropolis--game .mgp-destination-copy small { display: block; min-width: 0; font-size: 10px; line-height: 1.4; }
+.metropolis.metropolis--game .mgp-status-current { color: #b2d3ba; }
+.metropolis.metropolis--game .mgp-status-open { color: #92b3a5; }
+.metropolis.metropolis--game .mgp-destination-arrow { flex: 0 0 auto; margin: 0 1px 0 auto; font-size: 13px; color: #91aaa6; }
+.metropolis.metropolis--game .mgp-empty { padding: 15px 4px; color: #96b0b1; font-size: 11px; line-height: 1.8; }
+.metropolis.metropolis--game .mgp-empty > button { display: flex; align-items: center; gap: 12px; padding: 5px 0; margin-top: 5px; color: var(--mgp-gold); background: transparent; font-size: 11px; }
+
+@media (max-width: 600px) {
+  .metropolis.metropolis--game .mgp { top: auto; bottom: 16px; left: 12px; right: 12px; width: auto; max-height: min(66%, 560px); border-radius: 13px; background: linear-gradient(145deg, #17313bf7, #091f2bf5 65%); }
+  .metropolis.metropolis--game .mgp-header { padding: 7px 12px; }
+  .metropolis.metropolis--game .mgp-toggle { display: flex; }
+  .metropolis.metropolis--game .mgp-current { padding-right: 13px; padding-left: 12px; }
+  .metropolis.metropolis--game .mgp-clock { font-size: 21px; }
+  .metropolis.metropolis--game .mgp-content { display: none; padding: 11px 12px 13px; }
+  .metropolis.metropolis--game .mgp.is-expanded .mgp-content { display: block; }
+  .metropolis.metropolis--game .mgp-district-block { margin-top: 9px; margin-bottom: 7px; }
+  .metropolis.metropolis--game .mgp-district-block > .mgp-section-heading { display: none; }
+  .metropolis.metropolis--game .mgp-district-grid { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
+  .metropolis.metropolis--game .mgp-district-grid::-webkit-scrollbar { display: none; }
+  .metropolis.metropolis--game .mgp-district-all { position: static; flex: 0 0 46px; padding: 6px; border: 1px solid #a7c6c117; border-radius: 5px; background: #a7c6c105; font-size: 11px; }
+  .metropolis.metropolis--game .mgp-district-all.is-active { border-color: #dfc4937a; background: #dfc49315; }
+  .metropolis.metropolis--game .mgp-district { flex: 0 0 auto; max-width: 98px; padding: 7px 11px; font-size: 11px; white-space: nowrap; }
+  .metropolis.metropolis--game .mgp-people { padding-bottom: 8px; }
+  .metropolis.metropolis--game .mgp-selection { padding: 12px; }
+}
+
+@container metropolis-layout (max-width: 600px) {
+  .metropolis.metropolis--game .mgp { top: auto; bottom: 16px; left: 12px; right: 12px; width: auto; max-height: min(66%, 560px); border-radius: 13px; background: linear-gradient(145deg, #17313bf7, #091f2bf5 65%); }
+  .metropolis.metropolis--game .mgp-header { padding: 7px 12px; }
+  .metropolis.metropolis--game .mgp-toggle { display: flex; }
+  .metropolis.metropolis--game .mgp-current { padding-right: 13px; padding-left: 12px; }
+  .metropolis.metropolis--game .mgp-clock { font-size: 21px; }
+  .metropolis.metropolis--game .mgp-content { display: none; padding: 11px 12px 13px; }
+  .metropolis.metropolis--game .mgp.is-expanded .mgp-content { display: block; }
+  .metropolis.metropolis--game .mgp-district-block { margin-top: 9px; margin-bottom: 7px; }
+  .metropolis.metropolis--game .mgp-district-block > .mgp-section-heading { display: none; }
+  .metropolis.metropolis--game .mgp-district-grid { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; }
+  .metropolis.metropolis--game .mgp-district-grid::-webkit-scrollbar { display: none; }
+  .metropolis.metropolis--game .mgp-district-all { position: static; flex: 0 0 46px; padding: 6px; border: 1px solid #a7c6c117; border-radius: 5px; background: #a7c6c105; font-size: 11px; }
+  .metropolis.metropolis--game .mgp-district-all.is-active { border-color: #dfc4937a; background: #dfc49315; }
+  .metropolis.metropolis--game .mgp-district { flex: 0 0 auto; max-width: 98px; padding: 7px 11px; font-size: 11px; white-space: nowrap; }
+  .metropolis.metropolis--game .mgp-people { padding-bottom: 8px; }
+  .metropolis.metropolis--game .mgp-selection { padding: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metropolis.metropolis--game .mgp *, .metropolis.metropolis--game .mgp *::before { transition: none; scroll-behavior: auto; }
+}

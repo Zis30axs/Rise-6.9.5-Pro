@@ -101,7 +101,7 @@ describe('Tokyo GLB map 3D camera gestures', () => {
   });
 
   it('routes the existing pan and pinch values into the GLB camera, not DOM transforms, and animates the Su-30SM2', () => {
-    const world = readFileSync('src/frontend/WorldMap.vue', 'utf8');
+    const world = readFileSync('src/frontend/WorldMapJourney.vue', 'utf8');
     const scene = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
     expect(world).toContain(':pan="pan"');
     expect(world).toContain(':view-scale="focusZoom"');

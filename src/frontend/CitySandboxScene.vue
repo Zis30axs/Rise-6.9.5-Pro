@@ -7,6 +7,10 @@ import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?i
 
 import { disposeThreeTree } from './dispose-three-tree';
 
+// Keep one bundled asset reference: folding repeated equality checks can otherwise
+// duplicate this large data URL into multiple chunks during production builds.
+const bundledTokyoAssetSources = new Set<string>([tokyoModelAsset]);
+
 async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
@@ -165,8 +169,8 @@ function attachCirclePackGeometry(root: THREE.Group) {
 
 /** Each active view owns its decoded tree and GPU resources. Only local bytes are cached. */
 async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
-  let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
-    ? await readIdbCachedGlbBytes() : undefined;
+  const bundledSource = bundledTokyoAssetSources.has(assetUrl) && assetUrl.startsWith('data:');
+  let bytes = bundledSource ? await readIdbCachedGlbBytes() : undefined;
   const cached = !!bytes;
   if (!bytes) bytes = await readLocalAssetBytes(assetUrl, 10_000_000, 'Invalid offline Tokyo model');
   if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) {
@@ -176,7 +180,7 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
     if (await sandboxSha256(bytes) !== TOKYO_SANDBOX_MODEL_SHA256) throw new Error('Tokyo sandbox pack hash mismatch');
   }
   checkGlb(bytes);
-  if (assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')) writeIdbCachedGlbBytes(bytes);
+  if (bundledSource) writeIdbCachedGlbBytes(bytes);
   const manager = new THREE.LoadingManager();
   manager.setURLModifier(url => {
     if (!url.startsWith('blob:')) throw new Error('External Tokyo model resource blocked');
@@ -203,11 +207,13 @@ import {
   readTokyoCameraPose, type TokyoCameraPose,
 } from './tokyo-sandbox-camera';
 import {
-  createTokyoSandboxVfx,
+  createTokyoSandboxVfx, resolveTokyoAtmosphere,
   type ResolvedAtmospherePreset,
   type TokyoAtmosphereMode,
   type TokyoSandboxVfxController,
 } from './tokyo-sandbox-vfx';
+import { createTokyoCanvasRenderer, type TokyoCanvasRenderer } from './tokyo-sandbox-canvas';
+import { createTokyoSandboxCinematic, type TokyoCinematicController } from './tokyo-sandbox-cinematic';
 
 interface TrafficRoute {
   startX: number; endX: number; startZ: number; endZ: number;
@@ -616,7 +622,7 @@ const sceneRoot = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
 const canvasGeneration = ref(0);
 const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
-const variant = ref<'glb' | 'procedural'>('glb');
+const variant = ref<'glb' | 'procedural' | 'canvas'>('glb');
 const activePreset = ref<ResolvedAtmospherePreset>('day');
 const districtPins = ref<DistrictPin[]>([]);
 const placePins = ref<PlacePin[]>([]);
@@ -637,6 +643,7 @@ type CameraFlight = {
 let cameraFlight: CameraFlight | undefined;
 let epoch = 0;
 let renderer: THREE.WebGLRenderer | undefined;
+let canvasRenderer: TokyoCanvasRenderer | undefined;
 let appliedCanvasResolution: TokyoCanvasResolution | undefined;
 let canvasOwner: Window | undefined;
 let scene: THREE.Scene | undefined;
@@ -646,9 +653,14 @@ let trafficGroup: THREE.Group | undefined;
 let hemiLight: THREE.HemisphereLight | undefined;
 let sunLight: THREE.DirectionalLight | undefined;
 let vfxController: TokyoSandboxVfxController | undefined;
+let cinematicController: TokyoCinematicController | undefined;
 let animFrame = 0;
 let lastTick = 0;
 let lastDraw = 0;
+let reducedMotion = false;
+let motionPreference: MediaQueryList | undefined;
+let canvasPreferred = false;
+let requestedEffectUntil = 0;
 
 let trafficVehicles: TrafficVehicle[] = [];
 let su30State: Su30FlightState | undefined;
@@ -689,7 +701,7 @@ function animateTraffic(dt: number, nowMs = 0) {
 }
 
 function loopAnimation(now: number) {
-  if (!status.value || status.value !== 'ready' || !scene || !camera || !renderer) {
+  if (status.value !== 'ready' || !camera || (!renderer && !canvasRenderer)) {
     animFrame = 0;
     return;
   }
@@ -698,11 +710,12 @@ function loopAnimation(now: number) {
     animFrame = requestAnimationFrame(loopAnimation); return;
   }
   lastDraw = now;
-  const dt = Math.min((now - (lastTick || now)) / 1000, 0.1);
+  const dt = Math.max(0, Math.min((now - (lastTick || now)) / 1000, 0.1));
   lastTick = now;
-  animateTraffic(dt, now);
+  if (renderer && (!reducedMotion || now < requestedEffectUntil)) animateTraffic(dt, now);
+  cinematicController?.update(now, reducedMotion);
   if (!cameraFlight) {
-    renderer.render(scene, camera);
+    drawScene(now);
   }
   animFrame = requestAnimationFrame(loopAnimation);
 }
@@ -719,7 +732,7 @@ function stopCameraFlight() {
 function beginCameraFlight() {
   stopCameraFlight();
   const owner = canvas.value?.ownerDocument.defaultView;
-  if (!camera || !renderer || !props.active || props.decorative || !owner ||
+  if (!camera || (!renderer && !canvasRenderer) || !props.active || props.decorative || !owner ||
       owner.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   const flight: CameraFlight = {
     from: readTokyoCameraPose(camera),
@@ -743,12 +756,14 @@ function release() {
   stopCameraFlight();
   epoch++;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
-  lastTick = 0; lastDraw = 0;
+  lastTick = 0; lastDraw = 0; requestedEffectUntil = 0;
   canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
   districtPins.value = []; placePins.value = []; personPins.value = [];
   eventPins.value = []; leaderLines.value = []; playerPin.value = null;
 
   if (vfxController) { vfxController.dispose(); vfxController = undefined; }
+  if (cinematicController) { cinematicController.dispose(); cinematicController = undefined; }
+  if (canvasRenderer) { canvasRenderer.dispose(); canvasRenderer = undefined; }
   if (trafficGroup) { disposeModel(trafficGroup); trafficGroup = undefined; }
   trafficVehicles = [];
   su30State = undefined;
@@ -778,7 +793,8 @@ function createGeometricPreview(): THREE.Group {
       new THREE.MeshStandardMaterial({ color, roughness: .9 }));
     mesh.position.set(x, y, z); root.add(mesh); return mesh;
   };
-  addBox(490, .3, 490, 25, -2.2, -20, '#a6bcae');
+  const backdrop = addBox(490, .3, 490, 25, -2.2, -20, '#a6bcae');
+  backdrop.userData.tokyoBackdrop = true;
   for (const district of tokyoDistricts) {
     const baseColor = new THREE.Color(district.color).lerp(new THREE.Color('#c2cbb7'), .55);
     addBox(district.maxX - district.minX, .14, district.maxZ - district.minZ,
@@ -823,8 +839,22 @@ function createGeometricPreview(): THREE.Group {
   return root;
 }
 
+/** Both display backends consume the same camera; map gestures and pins never fork. */
+function drawScene(now = performance.now()) {
+  if (!camera) return;
+  if (canvasRenderer) {
+    canvasRenderer.render(camera, {
+      width: Math.max(1, props.width), height: Math.max(1, props.height),
+      mode: props.atmosphereMode, clockMinutes: props.clockMinutes,
+      scope: props.scope,
+      selectedDistrict: props.scope === 'city' ? props.selectedId : props.scope,
+      time: Math.max(0, now), reducedMotion,
+    });
+  } else if (renderer && scene) renderer.render(scene, camera);
+}
+
 function render() {
-  if (!props.active || !renderer || !scene || !camera) return;
+  if (!props.active || (!renderer && !canvasRenderer) || !camera) return;
   const width = Math.max(1, props.width), height = Math.max(1, props.height);
   const bounds = tokyoDistrictBounds(props.scope);
   const chosenDistrict = props.scope === 'city'
@@ -864,14 +894,16 @@ function render() {
   const resolution = nativeTokyoCanvasResolution(
     width, height, canvas.value?.ownerDocument.defaultView?.devicePixelRatio,
   );
-  appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
+  if (renderer) {
+    appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
+  }
 
   const positionHint = props.scope === 'city' ? undefined : props.scope;
   const player = props.position ? projectOldTokyoPosition(props.position, positionHint)
     : tokyoLocationPosition(props.locationId, positionHint);
   latestPlayerWorldPos = player ? { x: player.x, z: player.z } : undefined;
 
-  renderer.render(scene, camera);
+  drawScene();
   if (props.decorative) {
     districtPins.value = []; placePins.value = []; personPins.value = [];
     eventPins.value = []; leaderLines.value = []; playerPin.value = null;
@@ -1058,58 +1090,74 @@ function pickAt(clientX: number, clientY: number): boolean {
 }
 
 function triggerFlares() {
-  vfxController?.triggerSu30Flares(su30State?.node);
+  if (canvasRenderer) canvasRenderer.triggerFlares();
+  else if (vfxController) {
+    // A deliberate effects action still completes when ambient motion is paused.
+    requestedEffectUntil = performance.now() + 3400;
+    vfxController.triggerSu30Flares(su30State?.node);
+  }
 }
 
 function contextLost(event: Event) {
   event.preventDefault(); event.stopImmediatePropagation();
   if (event.target !== canvas.value || !renderer) return;
-  release(); status.value = 'fallback';
+  void loadCanvasFallback();
 }
-function refresh() { release(); return load(); }
+function refresh() { canvasPreferred = false; release(); return load(); }
 function visibilityChanged() {
   if (document.hidden) release(); else if (props.active) void load();
 }
+function motionPreferenceChanged(event: MediaQueryListEvent) {
+  reducedMotion = event.matches;
+  if (reducedMotion) stopCameraFlight();
+  cinematicController?.update(performance.now(), reducedMotion);
+  render();
+}
 defineExpose({ pickAt, triggerFlares, refresh });
 
+function startAnimation() {
+  if (animFrame) return;
+  lastTick = performance.now();
+  animFrame = requestAnimationFrame(loopAnimation);
+}
+
+/** A context cannot change from WebGL to 2D; mount a fresh canvas before retrying. */
+async function loadCanvasFallback() {
+  release();
+  canvasPreferred = true;
+  if (!props.active || document.hidden || !sceneRoot.value) return;
+  const request = ++epoch;
+  status.value = 'loading';
+  canvasGeneration.value++;
+  await nextTick();
+  if (request !== epoch || !props.active || !canvas.value) return;
+  try {
+    canvasRenderer = createTokyoCanvasRenderer(canvas.value);
+    camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
+    variant.value = 'canvas';
+    activePreset.value = resolveTokyoAtmosphere(props.atmosphereMode, props.clockMinutes).preset;
+    status.value = 'ready';
+    render();
+    startAnimation();
+  } catch (error) {
+    if (request !== epoch) return;
+    console.warn('[UnreadCity] Tokyo map canvas unavailable', error);
+    release(); status.value = 'fallback';
+  }
+}
+
 async function load() {
-  if (!props.active || document.hidden || !sceneRoot.value || renderer || status.value === 'loading') return;
+  if (!props.active || document.hidden || !sceneRoot.value || renderer || canvasRenderer || status.value === 'loading') return;
+  if (canvasPreferred) return loadCanvasFallback();
   const request = ++epoch;
   status.value = 'loading';
   let pending: THREE.Group | undefined;
+  let pendingVariant: 'glb' | 'procedural' = 'glb';
   try {
     canvasGeneration.value++;
     await nextTick();
     if (request !== epoch || !props.active || !canvas.value) return;
-    const bundled = tokyoModelAsset;
-    if (props.previewOnly) {
-      pending = createGeometricPreview();
-      variant.value = 'procedural';
-    } else if (bundled) {
-      try {
-        pending = await loadTokyoGlb(bundled);
-        variant.value = 'glb';
-      } catch (error) {
-        console.warn('[UnreadCity] Tokyo GLB decode failed, showing geometric preview', error);
-        pending = createGeometricPreview();
-        variant.value = 'procedural';
-      }
-    } else {
-      pending = createGeometricPreview();
-      variant.value = 'procedural';
-    }
-    if (request !== epoch || !props.active) { disposeModel(pending); return; }
-
-    if (!canvas.value) { disposeModel(pending); return; }
-    model = pending; pending = undefined;
-    scene = new THREE.Scene();
-    scene.add(model);
-    hemiLight = new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5);
-    scene.add(hemiLight);
-    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-    sun.position.set(-170, 460, 230); scene.add(sun);
-    sunLight = sun;
-    camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
+    // Detect missing GPU support before decoding the multi-megabyte offline model.
     canvas.value.addEventListener('webglcontextlost', contextLost, true);
     renderer = new THREE.WebGLRenderer({
       canvas: canvas.value,
@@ -1120,26 +1168,55 @@ async function load() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
+    const bundled = bundledTokyoAssetSources.values().next().value;
+    if (props.previewOnly) {
+      pending = createGeometricPreview();
+      pendingVariant = 'procedural';
+    } else if (bundled) {
+      try {
+        pending = await loadTokyoGlb(bundled);
+      } catch (error) {
+        if (request !== epoch || !props.active) return;
+        console.warn('[UnreadCity] Tokyo GLB decode failed, showing geometric preview', error);
+        pending = createGeometricPreview();
+        pendingVariant = 'procedural';
+      }
+    } else {
+      pending = createGeometricPreview();
+      pendingVariant = 'procedural';
+    }
+    if (request !== epoch || !props.active) { disposeModel(pending); return; }
+
+    if (!canvas.value) { disposeModel(pending); return; }
+    variant.value = pendingVariant;
+    model = pending; pending = undefined;
+    scene = new THREE.Scene();
+    scene.add(model);
+    hemiLight = new THREE.HemisphereLight(0xffffff, 0x6e837b, 2.5);
+    scene.add(hemiLight);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    sun.position.set(-170, 460, 230); scene.add(sun);
+    sunLight = sun;
+    camera = new THREE.PerspectiveCamera(50, 1, .25, 6500);
 
     bindDynamicSceneNodes(model);
     initTraffic(scene);
     vfxController = createTokyoSandboxVfx(scene, renderer, model, hemiLight, sunLight);
     const profile = vfxController.setAtmosphere(props.atmosphereMode, props.clockMinutes);
+    cinematicController = createTokyoSandboxCinematic(scene, model);
+    cinematicController.setAtmosphere(profile);
     activePreset.value = profile.preset;
-    animateTraffic(0, performance.now());
+    animateTraffic(0, reducedMotion ? 0 : performance.now());
 
     status.value = 'ready';
     render();
 
-    if (!animFrame) {
-      lastTick = performance.now();
-      animFrame = requestAnimationFrame(loopAnimation);
-    }
+    startAnimation();
   } catch (error) {
     if (pending) disposeModel(pending);
     if (request === epoch) {
       console.warn('[UnreadCity] Tokyo map WebGL unavailable', error);
-      release(); status.value = 'fallback';
+      await loadCanvasFallback();
     }
   }
 }
@@ -1148,18 +1225,17 @@ function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id);
 watch(() => props.active, active => { if (active) void load(); else release(); });
 watch(() => props.refreshToken, () => { void refresh(); });
 watch(() => [props.atmosphereMode, props.clockMinutes] as const, ([mode, mins]) => {
-  if (vfxController) {
-    const profile = vfxController.setAtmosphere(mode, mins);
-    activePreset.value = profile.preset;
-    render();
-  }
+  const profile = vfxController?.setAtmosphere(mode, mins) ?? resolveTokyoAtmosphere(mode, mins);
+  cinematicController?.setAtmosphere(profile);
+  activePreset.value = profile.preset;
+  render();
 });
 watch(() => ({
   scope: props.scope, width: props.width, height: props.height,
   bearing: props.bearing, zoom: props.viewScale,
   panX: props.pan?.x ?? 0, panY: props.pan?.y ?? 0,
   selectedId: props.selectedId, locationId: props.locationId, position: props.position,
-  disabledIds: props.disabledIds, playerId: props.playerId, playerName: props.playerName,
+  busy: props.busy, disabledIds: props.disabledIds, playerId: props.playerId, playerName: props.playerName,
   people: props.people, roadEvents: props.roadEvents,
   cameraView: props.cameraView, decorative: props.decorative,
 }), (next, previous) => {
@@ -1178,6 +1254,9 @@ watch(() => ({
 });
 onMounted(() => {
   canvasOwner = (canvas.value ?? sceneRoot.value)?.ownerDocument.defaultView ?? undefined;
+  motionPreference = canvasOwner?.matchMedia?.('(prefers-reduced-motion: reduce)');
+  reducedMotion = motionPreference?.matches ?? false;
+  motionPreference?.addEventListener('change', motionPreferenceChanged);
   // Moving between monitors or changing the browser's display scale may alter
   // DPR without changing the map panel's CSS dimensions.
   canvasOwner?.addEventListener('resize', render);
@@ -1185,6 +1264,8 @@ onMounted(() => {
   if (props.active) void load();
 });
 onBeforeUnmount(() => {
+  motionPreference?.removeEventListener('change', motionPreferenceChanged);
+  motionPreference = undefined;
   canvasOwner?.removeEventListener('resize', render);
   canvasOwner = undefined;
   document.removeEventListener('visibilitychange', visibilityChanged);

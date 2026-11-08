@@ -3,6 +3,10 @@
 @import './social-skills.css';
 @import './scene.css';
 @import './world-map.css';
+@import './metropolis/metropolis.css';
+@import './metropolis-host.css';
+@import './metropolis/game-map.css';
+@import './metropolis/game-panel.css';
 @import './campus-map.css';
 @import './atlas-scene.css';
 @import './interior.css';

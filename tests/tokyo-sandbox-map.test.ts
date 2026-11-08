@@ -35,7 +35,7 @@ describe('Tokyo GLB scenic-coordinate migration', () => {
     expect(tokyoCityBounds.maxX).toBeGreaterThan(200);
   });
   it('retires old maps from the real map and protagonist switching entrypoints', () => {
-    for (const file of ['WorldMap.vue', 'ProtagonistSwitchOverlay.vue']) {
+    for (const file of ['WorldMapJourney.vue', 'ProtagonistSwitchOverlay.vue']) {
       const text = readFileSync('src/frontend/' + file, 'utf8');
       expect(text).toContain('CitySandboxScene');
       expect(text).not.toContain('<CampusMapScene');

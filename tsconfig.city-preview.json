@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "preview/city-sandbox/**/*.ts",
+    "preview/city-sandbox/**/*.vue",
+    "src/frontend/offline-pack.d.ts"
+  ]
+}
