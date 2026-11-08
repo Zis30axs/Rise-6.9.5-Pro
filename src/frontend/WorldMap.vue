@@ -21,7 +21,7 @@ let cachedViewportSize = { width: 620, height: 420 };
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
-import { internationalConnections, isInternationalLocation } from '../runtime/california';
+import { californiaPlaces, internationalConnections, isCaliforniaLocalLocation, isInternationalLocation } from '../runtime/california';
 import { worldScenePeople, worldScenePosition } from '../runtime/world-presence';
 import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
@@ -30,6 +30,7 @@ import { districtMapPlaces, isMapDistrict, mapDistricts, type MapDistrictId } fr
 import type { ShellActions, ShellModel } from './types';
 import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
+import CaliforniaSandbox from './CaliforniaSandbox.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
@@ -636,7 +637,8 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
 </script>
 
 <template>
-  <div class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
+  <CaliforniaSandbox v-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
+  <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
     <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
     <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
