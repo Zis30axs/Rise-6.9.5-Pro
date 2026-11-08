@@ -5,6 +5,7 @@ export interface Facade { columns: number; rows: number; seed: number; style: 'g
 export interface Face { points: V3[]; color: string; layer: Layer; glow?: number; doubleSided?: boolean; facade?: Facade; }
 export interface Line { points: V3[]; color: string; width: number; layer: Layer; glow?: number; dashed?: boolean; }
 export interface Landmark { id: string; name: string; en: string; category: string; description: string; position: V3; camera: { target: V3; yaw: number; pitch: number; distance: number }; accent: string; }
+export interface SceneMarker { id: string; kind: 'player' | 'person' | 'destination'; name: string; position: V3; detail?: string; accent?: string; }
 export interface Route { id: string; points: V3[]; color: string; kind: 'rail' | 'road' | 'boat'; speed: number; count: number; closed: boolean; }
 export interface World { faces: Face[]; lines: Line[]; landmarks: Landmark[]; routes: Route[]; }
 export interface CameraState { target: V3; yaw: number; pitch: number; distance: number; offsetY?: number; }

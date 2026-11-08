@@ -1,2 +1,5 @@
 @import '../../src/frontend/metropolis/metropolis.css';
 html,body,#app{width:100%;min-height:100%;margin:0;background:#0a1b25}
+
+@import "../../src/frontend/metropolis/game-map.css";
+@import "../../src/frontend/metropolis/game-panel.css";

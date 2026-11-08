@@ -115,3 +115,17 @@
 :host([data-uc-short=true]) .room-activity-receipt,
 :host([data-uc-short=true]) .novel-dialogue-controls { display:none; }
 :host([data-uc-short=true]) .uc-shell .composer textarea { height:44px; min-height:44px; }
+
+/* The map owns its inner scrolling and needs no clearance for the hidden tool dock. */
+:host([data-uc-viewport]) .uc-shell .floating-window[data-window="map"] {
+  inset:max(22px,var(--uc-safe-top)) max(22px,var(--uc-safe-right)) max(22px,var(--uc-safe-bottom)) max(22px,var(--uc-safe-left));
+  width:auto; height:auto; min-height:0; max-height:none; transform:none;
+}
+:host([data-uc-viewport]) .uc-shell .floating-window[data-window="map"] > .window-content {
+  padding:0; min-height:0; overflow:hidden;
+}
+@media(max-width:760px) {
+  :host([data-uc-viewport]) .uc-shell .floating-window[data-window="map"] {
+    inset:max(7px,var(--uc-safe-top)) max(7px,var(--uc-safe-right)) max(7px,var(--uc-safe-bottom)) max(7px,var(--uc-safe-left));
+  }
+}

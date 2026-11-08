@@ -37,15 +37,15 @@ import type { TokyoAtmosphereMode } from './tokyo-sandbox-vfx';
 import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
 import openAiMark from '../../assets/openai-mark.svg?inline';
 
-const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
-const emit = defineEmits<{ travelled: [] }>();
+const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number; initialScope?: 'province' | 'world'; geographicOnly?: boolean }>(), { novelMode: false, geographicOnly: false });
+const emit = defineEmits<{ travelled: []; city: [] }>();
 const locations = mapLocations;
 type Layer = 'district' | 'city' | 'province' | 'country' | 'world';
 const layers: { id: Layer; name: string; depth: number }[] = [
   { id: 'city', name: '城市', depth: 2 }, { id: 'province', name: '所在区域', depth: 3 },
   { id: 'world', name: '世界', depth: 5 },
 ];
-const depth = ref(isInternationalLocation(props.model.state.locationId) ? 5 : 2);
+const depth = ref(props.initialScope === 'world' || isInternationalLocation(props.model.state.locationId) ? 5 : props.initialScope === 'province' ? 3 : 2);
 const focusZoom = ref(1);
 const bearing = ref(0);
 const sandboxOverhead = ref(0);
@@ -142,7 +142,7 @@ const districtCaptions: Record<MapDistrictId, string> = {
 const layerNote = computed(() => localLayer.value ? districtCaptions[cityDetail.value.id] : layer.value === 'city' ? '沿着街巷与河岸，发现城市的不同侧面。' : '从熟悉的街区出发，寻找下一段旅程。');
 const clockLabel = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
-const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
+const minimumDepth = computed(() => props.geographicOnly || geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
 
 const affinityThreshold = 10;
@@ -262,7 +262,7 @@ function clampPan(x: number, y: number) {
 watch([depth, focusZoom], () => { pan.value = clampPan(pan.value.x, pan.value.y); }, { flush: 'sync' });
 function stopAnimation() { if (frame && owner) owner.cancelAnimationFrame(frame); frame = 0; targetDepth = depth.value; }
 function moveDepth(next: number, duration = 0) {
-  stopAnimation(); targetDepth = Math.min(5, Math.max(-2, next));
+  stopAnimation(); targetDepth = Math.min(5, Math.max(props.geographicOnly ? 3 : -2, next));
   if (!owner || !duration || owner.matchMedia('(prefers-reduced-motion: reduce)').matches) { depth.value = targetDepth; return; }
   const from = depth.value, started = now(), destination = targetDepth;
   const tick = () => {
@@ -280,6 +280,7 @@ function clearCameraOffset() {
   sandboxOverhead.value = 0;
 }
 function goToLayer(id: Layer) {
+  if (props.geographicOnly && (id === 'city' || id === 'district')) { emit('city'); return; }
   if (id === 'city' && detailDistrict.value) { returnCity(); return; }
   detailDistrict.value = null;
   clearCameraOffset(); search.value = '';
@@ -289,6 +290,7 @@ function goToLayer(id: Layer) {
 }
 function enterDistrict(id: string) {
   if (!isMapDistrict(id)) return;
+  if (props.geographicOnly) { emit('city'); return; }
   if (!detailDistrict.value) {
     cityView = {
       zoom: focusZoom.value,
@@ -396,16 +398,21 @@ function applyZoomDepth(next: number, duration = 0, anchorOffset?: { x: number; 
     }
     return;
   }
-  const floor = geographicLayer.value && !atlasScene.value?.isHomeRegion() ? 3 : -2;
+  const floor = props.geographicOnly || geographicLayer.value && !atlasScene.value?.isHomeRegion() ? 3 : -2;
   focusZoom.value = next < floor ? Math.min(200, 2 ** (floor - next)) : 1;
   moveDepth(Math.max(floor, next), duration);
+}
+function commitAtlasZoom(view: { depth: number; zoom: number }) {
+  const clampToRegion = props.geographicOnly && view.depth < 3;
+  focusZoom.value = clampToRegion ? Math.min(200, view.zoom * 2 ** (3 - view.depth)) : view.zoom;
+  moveDepth(clampToRegion ? 3 : view.depth);
 }
 function zoomBy(factor: number, animate = true, anchor?: { x: number; y: number }) {
   if (geographicLayer.value && viewport.value && atlasScene.value) {
     const r = viewport.value.getBoundingClientRect(); atlasScene.value.setZoomAnchor(anchor?.x ?? r.left + r.width / 2, anchor?.y ?? r.top + r.height / 2);
     // Depth and residual zoom encode one physical scale. Commit them together;
     // animating only depth would flash the wrong scale for small countries.
-    const view = atlasScene.value.getZoomView(factor); focusZoom.value = view.zoom; moveDepth(view.depth); return;
+    const view = atlasScene.value.getZoomView(factor); commitAtlasZoom(view); return;
   }
   let anchorOffset: { x: number; y: number } | undefined;
   if (anchor && viewport.value) {
@@ -511,7 +518,7 @@ function pointerMove(event: PointerEvent) {
     }
     const ratio = Math.max(.06, distance / gesture.distance);
     if (gesture.atlasSpan && atlasScene.value) {
-      const view = atlasScene.value.getZoomView(ratio, gesture.atlasSpan); focusZoom.value = view.zoom; moveDepth(view.depth);
+      const view = atlasScene.value.getZoomView(ratio, gesture.atlasSpan); commitAtlasZoom(view);
     } else {
       applyZoomDepth(gesture.depth - Math.log2(ratio * gesture.focus), 0, center);
     }
@@ -653,7 +660,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
       <div class="wm-map-column">
         <div ref="viewport" class="wm-viewport" :class="{ 'is-orbit-mode': !geographicLayer && interactionMode === 'orbit' }" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" :data-map-mode="interactionMode" @contextmenu.prevent @dblclick="doubleClick" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage">
-            <div v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
+            <div v-if="!geographicOnly" v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
               :data-map-plane="localLayer ? 'district' : 'city'"
               :style="{ opacity: 1 - smooth(depth - 2), pointerEvents: geographicLayer ? 'none' : 'auto' }"
               :aria-hidden="geographicLayer" :inert="geographicLayer">
