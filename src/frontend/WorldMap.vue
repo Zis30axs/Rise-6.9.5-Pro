@@ -98,7 +98,6 @@ const regionId = ref(TOKYO_REGION_ID);
 const selectedId = ref(TOKYO_REGION_ID || TOKYO_COUNTRY_ID);
 const selectedKind = ref<'country' | 'division' | 'landmark'>('division');
 const search = ref('');
-const showDemoPeople = ref(false);
 const activeEventId = ref('');
 const selectedCity = ref<MapDistrictId>('campus');
 const detailDistrict = ref<MapDistrictId | null>(null);
@@ -134,21 +133,19 @@ const nearbyLandmarks = computed(() => ATLAS_LANDMARKS.filter(item => item.count
 const regionCities = computed(() => mapData.chinaCities?.features.filter(item => item.properties.parentId === regionId.value) ?? []);
 const featureName = (item: Region) => item.properties.name;
 const isUnion = (item: Region) => item.properties.id === 'SUN';
-const layerTitle = computed(() => localLayer.value ? `${cityDetail.value.name} · 详细沙盘` : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
-const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '点击城区，进入对应的详细沙盘' : '浅立体示意地形 · 红线与红点为主角所在区域');
+const layerTitle = computed(() => localLayer.value ? cityDetail.value.name : layer.value === 'city' ? '东京，光影之间' : layer.value === 'world' ? '世界漫游' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
+const districtCaptions: Record<MapDistrictId, string> = {
+  campus: '校园 · 街区 · 南门', home: '住宅街 · 家园 · 接驳站', commercial: '商店 · 街巷 · 住处',
+  downtown: '高层公寓 · 住宅街', 'city-park': '河岸 · 公园 · 绿道',
+  'grand-commercial': '商场 · 演出 · 夜生活', 'takao-mountain': '山林 · 步道 · 温泉', circle: '咖啡厅 · 演出 · 练团室',
+};
+const layerNote = computed(() => localLayer.value ? districtCaptions[cityDetail.value.id] : layer.value === 'city' ? '沿着街巷与河岸，发现城市的不同侧面。' : '从熟悉的街区出发，寻找下一段旅程。');
+const clockLabel = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
 
-// Explicit prototype records only; never infer a location from a contact's status text.
-const personWorldLocationRefs = [{ contactId: 'lin', locationId: 'library', record: '演示记录：在图书馆整理笔记' }];
 const affinityThreshold = 10;
-const demoPeople = computed(() => showDemoPeople.value ? personWorldLocationRefs.flatMap(record => {
-  const contact = props.model.state.contacts.find(item => item.id === record.contactId);
-  const place = locations.find(item => item.id === record.locationId);
-  return contact && place && contact.affinity >= affinityThreshold
-    ? [{ ...record, name: contact.name, personId: contact.sourcePersonId ?? contact.id, portraitId: contact.portraitId, affinity: contact.affinity, place, source: 'demo' as const }] : [];
-}) : []);
 /** Location markers share the talk population; NPC disclosure uses this viewpoint's contacts. */
 const visiblePeople = computed(() => {
   const state = props.model.state;
@@ -163,7 +160,7 @@ const visiblePeople = computed(() => {
       personId: person.id, portraitId: person.portraitId, protagonistId: person.protagonistId, position: point,
       source: person.protagonistId ? 'protagonist' as const : 'scene' as const }];
   }) : [];
-  return [...people, ...demoPeople.value];
+  return people;
 });
 const routeOutlooks = computed(() => new Map(locations.map(place => [place.id, getRouteOutlook(props.model.state, place.id)])));
 const travelMinutes = (locationId: string) => 15 + (routeOutlooks.value.get(locationId)?.extraMinutes ?? 0);
@@ -207,9 +204,10 @@ function destinationNote(id: string) {
 }
 function energyCalculationNote(id: string) {
   const quote = novelQuotes.value.get(id);
-  if (!quote || quote.alreadyThere) return '';
-  const calculation = `${formatGameNumber(quote.baseEnergyCost)} × ${formatGameNumber(quote.baseEnergyMultiplier)} × 状态倍率 ${formatGameNumber(quote.conditionMultiplier)} ≈ ${formatGameNumber(quote.calculatedEnergyCost)} 点精力`;
-  return quote.energyCost < quote.calculatedEnergyCost ? `${calculation}；精力不足仍可前往，实际扣除 ${formatGameNumber(quote.energyCost)}` : calculation;
+  if (!quote || quote.alreadyThere || quote.blockedReason) return '';
+  return quote.energyCost < quote.calculatedEnergyCost
+    ? `按当前状态预计消耗 ${formatGameNumber(quote.calculatedEnergyCost)} 点精力；精力不足仍可前往，实际扣除 ${formatGameNumber(quote.energyCost)} 点。`
+    : `本次出行消耗 ${formatGameNumber(quote.energyCost)} 点精力，已按当前状态计算。`;
 }
 async function travelTo(id: string) {
   if (destinationDisabled(id)) return;
@@ -638,9 +636,19 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
 
 <template>
   <div class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
-    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
-    <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
-    <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
+    <header class="wm-topbar">
+      <div class="wm-atlas-brand"><span class="wm-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m16 4 3.6 8.4L28 16l-8.4 3.6L16 28l-3.6-8.4L4 16l8.4-3.6Z"/><path d="m16 9 1.8 5.2L23 16l-5.2 1.8L16 23l-1.8-5.2L9 16l5.2-1.8Z"/></svg></span><span>城市漫游<small>THE CITY ATLAS</small></span></div>
+      <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
+      <div class="wm-header-clock"><span class="wm-status-light" aria-hidden="true"/><time>{{ clockLabel }}</time><small>此刻</small></div>
+    </header>
+    <div class="wm-title">
+      <div>
+        <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity"><span aria-hidden="true">←</span> 返回城市</button></div>
+        <span v-else class="wm-title-kicker">{{ layer === 'city' ? 'TOKYO · AN EVERYDAY JOURNEY' : 'BEYOND THE CITY' }}</span>
+        <h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p>
+      </div>
+      <div class="wm-heading-location"><small>当前地点</small><span><i aria-hidden="true"/>{{ currentLocation?.name ?? '旅途中' }}</span></div>
+    </div>
     <div class="wm-layout">
       <div class="wm-map-column">
         <div ref="viewport" class="wm-viewport" :class="{ 'is-orbit-mode': !geographicLayer && interactionMode === 'orbit' }" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" :data-map-mode="interactionMode" @contextmenu.prevent @dblclick="doubleClick" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
@@ -669,73 +677,85 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
               <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
             </div>
           </div>
-          <span class="wm-north" aria-hidden="true" :style="{ transform: `rotate(${bearing}deg)` }">N ↑</span>
+          <div v-if="!geographicLayer" class="wm-scene-caption" aria-hidden="true"><span>{{ localLayer ? 'NEIGHBOURHOOD' : 'TOKYO CITY' }}</span><i/><small>{{ localLayer ? cityDetail.shortName : '街巷之间，自有风景' }}</small></div>
+          <span class="wm-north" aria-hidden="true" :style="{ transform: `rotate(${bearing}deg)` }"><b>N</b><svg viewBox="0 0 32 32"><path d="m16 3 7 24-7-5-7 5Z"/></svg></span>
           <div class="wm-watermark" aria-label="Open AI Map"><img :src="openAiMark" alt=""/><span>Open AI Map</span></div>
           <div v-if="!geographicLayer" class="wm-local-scale" aria-label="虚构场景示意比例尺"><span>{{ localScale.label }} · 示意</span><i :style="{width:localScale.width+'px'}" /></div>
         </div>
         <div class="wm-map-actions">
-          <p id="uc-map-help" class="wm-help">单指或左键{{ !geographicLayer && interactionMode === 'orbit' ? '环视俯仰' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键拖拽环视<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
-          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
+          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放">
+            <button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button>
+            <button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button>
+            <button type="button" aria-label="复位地图视图" @click="resetView"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8a8 8 0 1 1-1 7M5 3v5h5"/><path d="m12 8 3 4-3 4-3-4Z"/></svg></button>
+          </div>
           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转">
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" @click="sandboxScene?.refresh()">刷新沙盘</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : '平移' }}</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset">{{ pitchPresetLabel }}</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-atmo-pill" :class="{ active: atmosphereMode !== 'auto' }" aria-label="切换沙盘天色与气象" @click="cycleAtmosphereMode">{{ atmosphereLabel }}</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-flare-pill" aria-label="释放战机热焰弹" @click="triggerJetShow">热焰弹</button>
+            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18m-12-6 3-3 3 3m-9 3-3 3 3 3m12-6 3 3-3 3m-9 3 3 3 3-3"/></svg><span>{{ interactionMode === 'orbit' ? '环视' : '平移' }}</span></button>
+            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 14 9-5 9 5-9 5Zm1-5 8-4 8 4"/></svg><span>{{ pitchPresetLabel }}</span></button>
             <button type="button" aria-label="向左旋转地图" @click="rotateBy(-30)">↶</button>
             <button type="button" aria-label="向右旋转地图" @click="rotateBy(30)">↷</button>
           </div>
+          <div v-if="!geographicLayer" class="wm-atmosphere-controls" data-map-controls aria-label="沙盘氛围">
+            <button type="button" class="wm-mode-pill wm-atmo-pill" :class="{ active: atmosphereMode !== 'auto' }" aria-label="切换沙盘天色与气象" @click="cycleAtmosphereMode"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><span>{{ atmosphereLabel }}</span></button>
+            <button type="button" class="wm-flare-pill" aria-label="释放战机热焰弹" title="释放战机热焰弹" @click="triggerJetShow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4Z"/></svg></button>
+            <button type="button" class="wm-refresh-pill" aria-label="刷新沙盘" title="刷新沙盘" @click="sandboxScene?.refresh()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 0 1 14-4l2 3M20 14a8 8 0 0 1-14 4l-2-3M20 3v6h-6M4 21v-6h6"/></svg></button>
+          </div>
         </div>
+        <p id="uc-map-help" class="wm-help"><span>拖拽{{ !geographicLayer && interactionMode === 'orbit' ? '环视' : '平移' }} · 双指捏合旋转 · 滚轮缩放</span><span>朝向 {{ normalizedBearing }}° <i/> 红点为当前位置</span></p>
         <div v-if="roadEvents.length && localLayer && !novelMode" class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="openRouteEvent(event.id, false)">{{ event.icon }} {{ event.title }}</button></div>
-        <label v-if="localLayer" class="wm-demo-toggle"><input v-model="showDemoPeople" type="checkbox" aria-label="显示演示人物定位"/><span>演示图层：人物定位<small>有明确演示记录，且关系 ≥ {{ affinityThreshold }} 才显示</small></span></label>
-        <p v-if="localLayer" class="wm-boundary-note">演示记录 · 只显示已知且关系达标的位置</p>
         <div v-if="activeEvent && localLayer" class="wm-event-detail" role="status"><h3>{{ activeEvent.title }}</h3><p>{{ activeEvent.detail }}</p><button type="button" @click="activeEventId = ''">收起事件详情</button></div>
       </div>
-      <aside class="wm-details">
+      <aside class="wm-details" :aria-label="localLayer ? '片区地点与出行' : layer === 'city' ? '城市导览' : '远方目的地'">
         <template v-if="localLayer">
-          <div class="wm-location-now"><small>当前地点</small><h3>{{ currentLocation?.name }}</h3></div>
+          <div class="wm-panel-heading"><div><small class="wm-kicker">DISCOVER THE NEIGHBOURHOOD</small><h3>街区目的地</h3></div><span>{{ String(localDestinations.length).padStart(2, '0') }}</span></div>
           <div v-if="model.state.interior && !novelMode" class="wm-detail-note"><p>你在室内，离开房间后可以继续出行。</p><button type="button" class="wm-outline-button" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'leave_interior' })">离开房间，回到入口</button></div>
-          <p v-if="novelMode" class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p>
-          <button v-for="(place, index) in localDestinations" :key="place.id" type="button" class="wm-destination" :data-destination="place.id" :disabled="destinationDisabled(place.id)" @click="travelTo(place.id)"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="venueStatusText(place.id)" :data-destination-hours="place.id">{{ venueStatusText(place.id) }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">{{ destinationNote(place.id) }}</small><small v-if="novelMode && place.id !== model.state.locationId" data-novel-energy-quote>{{ energyCalculationNote(place.id) }}</small></span><span>{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
-          <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点后按预告结算，再继续阅读；跨区使用现有公交路线。</p>
+          <details v-if="novelMode" class="wm-travel-guidance"><summary>出行与精力</summary><p class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p></details>
+          <div class="wm-destinations-list">
+            <button v-for="(place, index) in localDestinations" :key="place.id" type="button" class="wm-destination" :class="{ 'is-current': place.id === model.state.locationId }" :data-destination="place.id" :disabled="destinationDisabled(place.id)" @click="travelTo(place.id)"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="venueStatusText(place.id)" :data-destination-hours="place.id">{{ venueStatusText(place.id) }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">{{ destinationNote(place.id) }}</small><small v-if="novelMode && place.id !== model.state.locationId && energyCalculationNote(place.id)" data-novel-energy-quote>{{ energyCalculationNote(place.id) }}</small></span><span class="wm-destination-arrow">{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
+          </div>
+          <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点即可出发，所需时间、精力与车费见上方提示；跨区可乘公交。</p>
           <p v-if="!novelMode" class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p><p v-if="needsTransitReturn && !novelMode" class="wm-detail-note">当前在校园外，请在附近公交站乘车返回校园。</p>
           <p v-if="!novelMode && !roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
-          <div v-if="visiblePeople.length" class="wm-people-summary"><h3>附近人物</h3><p v-for="person in visiblePeople" :key="person.contactId">{{ person.name }}<small>{{ person.source === 'demo' ? '演示定位' : person.source === 'protagonist' ? '另一主角的实际场景位置' : '现场人物（场景存档）' }}</small></p></div>
+          <div v-if="visiblePeople.length" class="wm-people-summary"><small class="wm-kicker">NEARBY</small><h3>此刻相遇</h3><p v-for="person in visiblePeople" :key="person.contactId"><i aria-hidden="true"/>{{ person.name }}<small>在附近</small></p></div>
         </template>
         <template v-else-if="layer === 'city'">
-          <small class="wm-kicker">现有城市片区</small><h3>{{ cityDetail.name }}</h3><p class="wm-detail-note">{{ cityDetail.description }}</p>
-          <p v-if="venueStatusText(selectedCity)" class="wm-detail-note" :data-destination-hours="selectedCity">{{ venueStatusText(selectedCity) }}</p>
-          <nav class="wm-district-list" aria-label="城市片区"><button v-for="place in cityPlaces" :key="place.id" type="button" :aria-pressed="selectedCity === place.id" @click="enterDistrict(place.id)">{{ place.name }}</button></nav>
+          <div class="wm-panel-heading"><div><small class="wm-kicker">A PLACE FOR EVERY MOOD</small><h3>发现城区</h3></div><span>{{ String(cityPlaces.length).padStart(2, '0') }}</span></div>
+          <p class="wm-panel-intro">从校园日常，到河岸与城市灯火。</p>
+          <nav class="wm-district-list" aria-label="城市片区"><button v-for="(place, index) in cityPlaces" :key="place.id" type="button" :aria-pressed="selectedCity === place.id" @click="enterDistrict(place.id)"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ districtCaptions[place.id] }}</small></span><span class="wm-district-arrow" aria-hidden="true">↗</span></button></nav>
           <template v-if="selectedCity !== 'campus'">
-            <p v-if="novelMode" class="wm-detail-note">{{ destinationNote(selectedCity) }}</p>
-            <p v-if="novelMode" class="wm-detail-note" data-novel-energy-quote>{{ energyCalculationNote(selectedCity) }}</p>
-            <p v-if="novelMode" class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p>
-            <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }}</button>
-            <template v-else><p v-if="cityRoute" class="wm-detail-note">高田接驳站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? '东京Metro联程' : '都营巴士 / 东京Metro' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
+            <div class="wm-selected-district"><small class="wm-kicker">下一站</small><h3>{{ cityDetail.name }}</h3><p v-if="venueStatusText(selectedCity)" class="wm-detail-note" :data-destination-hours="selectedCity">{{ venueStatusText(selectedCity) }}</p>
+              <p v-if="novelMode" class="wm-detail-note">{{ destinationNote(selectedCity) }}</p>
+              <p v-if="novelMode && energyCalculationNote(selectedCity)" class="wm-detail-note" data-novel-energy-quote>{{ energyCalculationNote(selectedCity) }}</p>
+              <details v-if="novelMode" class="wm-travel-guidance"><summary>出行与精力</summary><p class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p></details>
+              <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }} <span aria-hidden="true">↗</span></button>
+              <template v-else><p v-if="cityRoute" class="wm-detail-note">高田接驳站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? '东京Metro联程' : '都营巴士 / 东京Metro' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
+            </div>
           </template>
-          <p class="wm-detail-note">点击地图上的城区，或选择上方片区，进入详细沙盘。</p>
+          <p class="wm-detail-note wm-discovery-note"><i aria-hidden="true"/> 选择城区，探索街道与地点。</p>
         </template>
         <template v-else>
-          <nav class="wm-atlas-breadcrumb" aria-label="地理路径"><button @click="goToLayer('world')">世界</button><span>/</span><button @click="selectCountry(countryId)">{{ currentCountry?.properties.name ?? '国家' }}</button><template v-if="currentRegion"><span>/</span><button @click="selectDivision(regionId)">{{ currentRegion.properties.name }}</button></template></nav>
-          <button type="button" class="wm-home-region" @click="goHome"><i aria-hidden="true"/> 主角所在区域 · 日本东京·丰岛</button>
-          <label class="wm-search"><span>{{ layer === 'world' ? '查找国家 / 地区' : '查找省 / 州 / 一级区域' }}</span><input v-model="search" type="search" placeholder="输入名称" :aria-label="layer === 'world' ? '查找国家或地区' : '查找地图地区'"/></label>
+          <div class="wm-panel-heading"><div><small class="wm-kicker">THE NEXT CHAPTER</small><h3>向远方</h3></div><span aria-hidden="true">↗</span></div>
+          <nav class="wm-atlas-breadcrumb" aria-label="地理路径"><button type="button" @click="goToLayer('world')">世界</button><span>/</span><button type="button" @click="selectCountry(countryId)">{{ currentCountry?.properties.name ?? '国家' }}</button><template v-if="currentRegion"><span>/</span><button type="button" @click="selectDivision(regionId)">{{ currentRegion.properties.name }}</button></template></nav>
+          <button type="button" class="wm-home-region" @click="goHome"><i aria-hidden="true"/> 日本 · 东京 · 丰岛</button>
+          <label class="wm-search"><span>{{ layer === 'world' ? '查找国家 / 地区' : '查找省 / 州 / 一级区域' }}</span><input v-model="search" type="search" placeholder="输入想去的地方" :aria-label="layer === 'world' ? '查找国家或地区' : '查找地图地区'"/></label>
           <p class="wm-coverage">{{ layer === 'world' ? `${mapData.countries.features.length} 个国家与地区` : `${countryDivisions.length} 个一级行政区域` }}</p>
-          <div class="wm-region-list" :aria-label="layer === 'world' ? '国家与地区列表' : '地区列表'"><button v-for="feature in filteredFeatures" :key="feature.properties.id" type="button" :data-atlas-feature-id="feature.properties.id" :class="{ active: selectedId === feature.properties.id }" :aria-pressed="selectedId === feature.properties.id" @click="selectFeature(feature)">{{ featureName(feature) }}<small v-if="isUnion(feature)">苏联 · 架空世界</small></button><p v-if="!filteredFeatures.length" class="wm-detail-note">{{ search ? '未找到对应名称。' : '此地区在当前底图中没有一级区划，保留国家整体浏览。' }}</p></div>
-          <div v-if="activeLandmark" class="wm-selected-region"><small class="wm-kicker">地标 · 微缩模型</small><h3>{{ activeLandmark.name }}</h3><p class="wm-detail-note">{{ activeLandmark.detail }}</p></div>
-          <div v-else-if="selectedFeature" class="wm-selected-region"><small class="wm-kicker">{{ isUnion(selectedFeature) ? '架空世界设定' : '地图浏览' }}</small><h3>{{ featureName(selectedFeature) }}</h3><p v-if="isUnion(selectedFeature)" class="wm-detail-note">本架空世界保留苏维埃社会主义共和国联盟。</p><p v-if="selectedFeature.properties.id === '330000'" class="wm-detail-note">主角所在省份；标记为省域示意，城市尚未命名。</p></div>
-          <div v-if="selectedFeature || activeLandmark" class="wm-journey-actions"><button type="button" @click="draftJourney('visit')">计划访问</button><button type="button" @click="draftJourney('study')">留学意向</button></div>
+          <div class="wm-region-list" :aria-label="layer === 'world' ? '国家与地区列表' : '地区列表'"><button v-for="feature in filteredFeatures" :key="feature.properties.id" type="button" :data-atlas-feature-id="feature.properties.id" :class="{ active: selectedId === feature.properties.id }" :aria-pressed="selectedId === feature.properties.id" @click="selectFeature(feature)">{{ featureName(feature) }}<small v-if="isUnion(feature)">苏联 · 架空世界</small></button><p v-if="!filteredFeatures.length" class="wm-detail-note">{{ search ? '未找到对应名称。' : '这里暂未划分更小的区域，可以继续浏览全境。' }}</p></div>
+          <div v-if="activeLandmark" class="wm-selected-region"><small class="wm-kicker">城市地标</small><h3>{{ activeLandmark.name }}</h3><p class="wm-detail-note">{{ activeLandmark.detail }}</p></div>
+          <div v-else-if="selectedFeature" class="wm-selected-region"><small class="wm-kicker">{{ isUnion(selectedFeature) ? '架空世界' : '目的地' }}</small><h3>{{ featureName(selectedFeature) }}</h3><p v-if="isUnion(selectedFeature)" class="wm-detail-note">本架空世界保留苏维埃社会主义共和国联盟。</p></div>
+          <div v-if="selectedFeature || activeLandmark" class="wm-journey-actions"><button type="button" @click="draftJourney('visit')">计划访问 <span aria-hidden="true">↗</span></button><button type="button" @click="draftJourney('study')">留学意向 <span aria-hidden="true">↗</span></button></div>
           <p v-if="itineraryDraft" class="wm-draft" role="status">{{ itineraryDraft }}</p>
           <div v-if="nearbyLandmarks.length && layer !== 'world'" class="wm-landmark-list"><h3>区域地标</h3><button v-for="item in nearbyLandmarks" :key="item.id" type="button" @click="activateTarget('landmark:' + item.id)">{{ item.name }}<span aria-hidden="true">↗</span></button></div>
-          <p v-if="regionCities.length && layer === 'province'" class="wm-detail-note">省内地名：{{ regionCities.map(item => item.properties.name).join(' · ') }}。所在城市尚未指定。</p>
-          <p class="wm-detail-note">地形为艺术化浅起伏，地标为微缩示意。浏览不会推进时间。</p>
+          <p v-if="regionCities.length && layer === 'province'" class="wm-detail-note">沿途地名：{{ regionCities.map(item => item.properties.name).join(' · ') }}。</p>
+          <p class="wm-detail-note">地形与地标为微缩示意。浏览地图不会推进时间。</p>
         </template>
         <section v-if="novelMode || overseasRoutes.length" class="wm-overseas-routes" aria-label="国际航线">
-          <small class="wm-kicker">海外旅行</small><h3>东京 · 旧金山</h3>
-          <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
-          <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
+          <div class="wm-overseas-heading"><span class="wm-flight-mark" aria-hidden="true">↗</span><div><small class="wm-kicker">ACROSS THE PACIFIC</small><h3>东京 <span>—</span> 旧金山</h3></div></div>
+          <p class="wm-detail-note">经羽田国际机场，飞往太平洋另一端。</p>
+          <details class="wm-travel-guidance"><summary>沿途与抵达</summary><p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p></details>
+          <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站 <span aria-hidden="true">↗</span></button>
           <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
       </aside>
     </div>
+    <footer class="wm-footer"><span>OPEN AI MAP <i/> 城市与生活</span><span>每一条街巷，都有新的故事。</span></footer>
   </div>
 </template>
