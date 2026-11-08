@@ -1,0 +1,136 @@
+{
+  "date": "2026-11-08",
+  "scope": "CRYCHIC backpack image replacement and shared image error fallback",
+  "rootCause": {
+    "file": "assets/equipment/crychic-photo.webp",
+    "oldActualBytes": 7745,
+    "oldDeclaredBytes": 10176,
+    "browserError": "EncodingError: The source image cannot be decoded.",
+    "firstAssetCommit": "8c1be14"
+  },
+  "replacement": {
+    "sameSceneAlternativeCrop": true,
+    "originalFileLosslesslyRecovered": false,
+    "size": [
+      384,
+      384
+    ],
+    "bytes": 23568,
+    "sha256": "4ce5d8e2e9d31118a521d667f81a7946313cfb7b4081d0c4252287f9463ad7d6",
+    "sourceDocumentation": "assets/equipment/README.md",
+    "inlineInLiteScript": true
+  },
+  "unitTests": {
+    "targetedCommand": "node node_modules/vitest/vitest.mjs run --config vitest.equipment.config.mts tests/equipment-ui.test.ts tests/store-product-image.test.ts",
+    "passed": 9,
+    "failed": 0,
+    "beforeFixFailed": 3
+  },
+  "expandedEquipmentRun": {
+    "passed": 43,
+    "failed": 2,
+    "failure": "equipment.test.ts inactive classroom schedule for soyo and sakiko: strategy cursor does not match manually assigned game clock",
+    "runtimeCodeAndFailingTestUnchangedByThisFix": true
+  },
+  "typecheck": {
+    "command": "node node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.equipment.json",
+    "passed": true
+  },
+  "build": {
+    "productionIife": true,
+    "normalCard": true,
+    "tauriCard": true,
+    "zip": true,
+    "verification": "release/photo-packaging-verification.json"
+  },
+  "browser": {
+    "command": "node node_modules/@playwright/test/cli.js test --config playwright.equipment-photo.config.ts",
+    "uniqueScenariosPassed": 4,
+    "narrowScreenScrollRetestPassed": 2,
+    "engine": "desktop Microsoft Edge",
+    "screenshotsVisuallyReviewed": [
+      1440,
+      320
+    ],
+    "results": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "image": {
+          "width": 384,
+          "height": 384,
+          "inline": true
+        },
+        "equipmentToggles": true,
+        "decodeFailureFallback": true,
+        "horizontalOverflow": false,
+        "pageErrors": [],
+        "unexpectedRequests": [],
+        "physicalTauriTavernTested": false
+      },
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "image": {
+          "width": 384,
+          "height": 384,
+          "inline": true
+        },
+        "equipmentToggles": true,
+        "decodeFailureFallback": true,
+        "horizontalOverflow": false,
+        "pageErrors": [],
+        "unexpectedRequests": [],
+        "physicalTauriTavernTested": false
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "image": {
+          "width": 384,
+          "height": 384,
+          "inline": true
+        },
+        "equipmentToggles": true,
+        "decodeFailureFallback": true,
+        "horizontalOverflow": false,
+        "pageErrors": [],
+        "unexpectedRequests": [],
+        "physicalTauriTavernTested": false
+      },
+      {
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "image": {
+          "width": 384,
+          "height": 384,
+          "inline": true
+        },
+        "equipmentToggles": true,
+        "decodeFailureFallback": true,
+        "horizontalOverflow": false,
+        "pageErrors": [],
+        "unexpectedRequests": [],
+        "physicalTauriTavernTested": false
+      }
+    ]
+  },
+  "boundaries": {
+    "deployedToInstalledCard": false,
+    "realSillyTavernTested": false,
+    "physicalTauriTavernTested": false,
+    "realModelCalled": false,
+    "agentEditionRun": false,
+    "ciRun": false,
+    "fullTestSuiteRun": false
+  },
+  "preserved": "Existing unrelated scene-roster and concurrent airport work was not edited or reverted."
+}

@@ -1,0 +1,4 @@
+8da2e36ceb93dc7c7e888be07c3e93deb4beacb0234d7a6fd39b63acfda7df2d  unread-city-lite.png
+cf21180de3220c07e6b7cd5df47913585b6a81e673b3ede3e0a138bb0c17590b  unread-city-lite-tauri.png
+4a82f2393723b64bdc76b4022570115b3780012794f0289787bddddd36abf126  unread-city-lite-assets.zip
+1443d857906b89b9a99d2ae5c5ae15ae9d1d0ede1ffee095c4e029913f7681d9  immersive-shell-lite.js

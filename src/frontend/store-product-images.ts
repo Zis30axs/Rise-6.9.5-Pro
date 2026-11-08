@@ -1,5 +1,6 @@
-// Exact RGBA copies; original PNGs remain alongside the lossless derivatives.
+// CRYCHIC keepsake provenance and processing are documented in assets/equipment/README.md.
 import crychicPhoto from '../../assets/equipment/crychic-photo.webp?inline';
+// Exact RGBA copies; original PNGs remain alongside the lossless derivatives.
 import mealBasic from '../../assets/store-products/lossless/meal-basic.webp?inline';
 import mealStandard from '../../assets/store-products/lossless/meal-standard.webp?inline';
 import mealPremium from '../../assets/store-products/lossless/meal-premium.webp?inline';

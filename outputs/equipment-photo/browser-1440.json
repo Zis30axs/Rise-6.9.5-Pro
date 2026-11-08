@@ -1,0 +1,17 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "image": {
+    "width": 384,
+    "height": 384,
+    "inline": true
+  },
+  "equipmentToggles": true,
+  "decodeFailureFallback": true,
+  "horizontalOverflow": false,
+  "pageErrors": [],
+  "unexpectedRequests": [],
+  "physicalTauriTavernTested": false
+}

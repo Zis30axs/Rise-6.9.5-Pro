@@ -10,6 +10,9 @@
     "src/frontend/interaction-controller.ts",
     "tests/equipment.test.ts",
     "tests/equipment-ui.test.ts",
+    "tests/store-product-image.test.ts",
+    "tests/e2e/equipment-photo.spec.ts",
+    "playwright.equipment-photo.config.ts",
     "vitest.equipment.config.mts"
   ],
   "exclude": []

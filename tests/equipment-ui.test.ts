@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick, reactive, type App } from 'vue';
-vi.mock('../src/frontend/store-product-images', () => ({ getStoreProductImage: (id: string) => id === 'crychic-photo' ? 'data:image/webp;base64,AA==' : null }));
+import { getStoreProductImage } from '../src/frontend/store-product-images';
 import InventoryPanel from '../src/frontend/InventoryPanel.vue';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
@@ -24,7 +24,20 @@ function mount() {
 describe('equipment in the existing backpack',()=>{
   it('renders the CRYCHIC photo artwork in the keepsake card',()=>{
     const {root}=mount();
-    expect(root.querySelector('[data-equipment-item="crychic-photo"] img[data-product-image="crychic-photo"]')?.getAttribute('alt')).toBe('CRYCHIC 合照');
+    const image=root.querySelector('[data-equipment-item="crychic-photo"] img[data-product-image="crychic-photo"]');
+    expect(image?.getAttribute('alt')).toBe('CRYCHIC 合照');
+    expect(image?.getAttribute('src')).toBe(getStoreProductImage('crychic-photo'));
+  });
+  it('keeps the photo identifiable and usable when its image cannot decode',async()=>{
+    const {root,model}=mount();
+    const item=root.querySelector('[data-equipment-item="crychic-photo"]')!;
+    item.querySelector('img')!.dispatchEvent(new Event('error'));await nextTick();
+    expect(item.querySelector('img')).toBeNull();
+    expect(item.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('CRYCHIC 合照');
+    expect(item.querySelector('[data-photo-placeholder]')).not.toBeNull();
+    expect(item.textContent).not.toMatch(/LLM|Agent|模型请求|工程|协议|解码/);
+    (item.querySelector('button') as HTMLButtonElement).click();await nextTick();
+    expect(model.state.inventory[0]?.equipped).toBe(true);
   });
   it('shows the owner-dependent effect and toggles through the saved action without generating',async()=>{
     const {root,model,save,interact}=mount();

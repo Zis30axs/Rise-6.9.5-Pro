@@ -1,0 +1,11 @@
+{
+  "normalAndTauriCardsMatch": true,
+  "embeddedScriptMatchesBuild": true,
+  "repairedPhotoEmbedded": true,
+  "brokenPhotoAbsent": true,
+  "assetCount": 233,
+  "assetLengthsAndSha256Verified": true,
+  "sameAssetEntriesAsPreviousRelease": true,
+  "deployed": false,
+  "physicalTauriTavernTested": false
+}
