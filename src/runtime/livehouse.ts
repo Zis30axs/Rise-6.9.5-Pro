@@ -12,10 +12,19 @@ export type MusicRole = typeof MUSIC_ROLES[number];
 export const musicRoleNames: Record<MusicRole, string> = { vocal: '主唱', guitar: '吉他', bass: '贝斯', drums: '鼓', keyboard: '键盘' };
 export interface MusicProfile { personId: string; source: 'fixed' | 'random'; skills: Record<MusicRole, number> }
 export interface BandMember { personId: string; name: string; role: MusicRole; joinedAt: number }
-export interface BandRecord { id: string; name: string; founder: ProtagonistId; createdAt: number; members: BandMember[] }
+export type BandLeader = ProtagonistId | 'bang-anon';
+export type EstablishedBand = 'mygo' | 'ave-mujica';
+export interface FormerBandMember extends BandMember { leftAt: number }
+export interface BandRecord {
+  id: string; name: string; founder: BandLeader; createdAt: number; members: BandMember[];
+  established?: EstablishedBand;
+  /** The original registration remains evidence when an old save assigned the wrong leader. */
+  registeredBy?: ProtagonistId;
+  formerMembers?: FormerBandMember[];
+}
 export interface PerformanceBooking { id: string; bandId: string; title: string; start: number; duration: number; createdAt: number; owner: ProtagonistId; memberIds: string[] }
-export interface BandInvitation { id: string; bandId: string; from: ProtagonistId; personId: string; name: string; role: MusicRole; messageId: string; at: number; status: 'pending' | 'accepted' | 'declined' | 'later'; reply: string | null }
-export interface LivehouseState { version: 1; bands: BandRecord[]; bookings: PerformanceBooking[]; invitations: BandInvitation[]; profiles: MusicProfile[] }
+export interface BandInvitation { id: string; bandId: string; from: ProtagonistId; personId: string; name: string; role: MusicRole; messageId: string; at: number; status: 'pending' | 'accepted' | 'declined' | 'later' | 'cancelled'; reply: string | null }
+export interface LivehouseState { version: 1; bands: BandRecord[]; bookings: PerformanceBooking[]; invitations: BandInvitation[]; profiles: MusicProfile[]; establishedBandsVersion?: 1 }
 export interface BandRegistrationInput { id: string; name: string; founderRole: MusicRole }
 export interface BookingInput { id: string; bandId: string; title: string; start: number; duration: number }
 export interface BandInviteCommand { type: 'band_invite'; bandId: string; contactId: string; role: MusicRole }
@@ -27,6 +36,7 @@ function obj(x: unknown, keys: string[]): Record<string, unknown> {
   if (!x || typeof x !== 'object' || Array.isArray(x) || Object.keys(x).length !== keys.length || keys.some(k => !Object.hasOwn(x, k))) fail('字段无效');
   return x as Record<string, unknown>;
 }
+const optionalKeys = (raw: unknown, keys: string[]) => keys.filter(k => !!raw && typeof raw === 'object' && Object.hasOwn(raw, k));
 const ident = (x: unknown): string => typeof x === 'string' && /^[A-Za-z0-9][\w:.-]{0,79}$/.test(x) ? x : fail('记录 ID 无效');
 const text = (x: unknown, max = 80): string => typeof x === 'string' && !!x.trim() && x.length <= max && !/[\u0000-\u001f]/.test(x) ? x.trim() : fail('请填写有效名称或回复');
 const replyText = (x: unknown): string => typeof x === 'string' && !!x.trim() && x.length <= 1000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(x) ? x.trim() : fail('邀请回复正文无效');
@@ -40,7 +50,29 @@ function rows<T>(x: unknown, max: number, parse: (x: unknown) => T, key: (x: T) 
   return result;
 }
 export const musicPersonId = (id: ProtagonistId) => id === 'emma' ? 'majo-emma' : id === 'renako' ? 'watanare-renako' : `protagonist-${id}`;
+export const bandLeaderPersonId = (band: Pick<BandRecord, 'founder'>) => band.founder === 'bang-anon' ? 'bang-anon' : musicPersonId(band.founder);
+export const bandLeaderName = (band: Pick<BandRecord, 'founder'>) => band.founder === 'bang-anon' ? '千早爱音' : protagonistNames[band.founder];
 const personOwner = (id: string): ProtagonistId | null => PROTAGONISTS.find(p => musicPersonId(p) === id) ?? protagonistForPerson(id);
+const establishedBands: readonly { key: EstablishedBand; name: string; founder: BandLeader; members: readonly [string, string, MusicRole][] }[] = [
+  { key: 'mygo', name: 'MyGO!!!!!', founder: 'bang-anon', members: [
+    ['protagonist-soyo', '长崎素世', 'bass'], ['bang-anon', '千早爱音', 'guitar'],
+    ['bang-tomori', '高松灯', 'vocal'], ['bang-taki', '椎名立希', 'drums'], ['bang-rana', '要乐奈', 'guitar'],
+  ] },
+  { key: 'ave-mujica', name: 'Ave Mujica', founder: 'sakiko', members: [
+    ['protagonist-sakiko', '丰川祥子', 'keyboard'], ['bang-mutsumi', '若叶睦', 'guitar'],
+    ['bang-uika', '三角初华', 'vocal'], ['bang-umiri', '八幡海铃', 'bass'], ['bang-nyamu', '祐天寺若麦', 'drums'],
+  ] },
+];
+function memberAt(band: BandRecord, personId: string, at: number): boolean {
+  return band.members.some(m => m.personId === personId && m.joinedAt <= at)
+    || !!band.formerMembers?.some(m => m.personId === personId && m.joinedAt <= at && at <= m.leftAt);
+}
+/** Keep the booking's original snapshot; departure withdraws only unfinished participation. */
+export function performanceMemberIds(registry: LivehouseState | undefined, booking: PerformanceBooking): string[] {
+  const former = registry?.bands.find(b => b.id === booking.bandId)?.formerMembers ?? [];
+  return booking.memberIds.filter(id => !former.some(m => m.personId === id && m.joinedAt <= booking.createdAt
+    && m.leftAt >= booking.createdAt && m.leftAt < booking.start + booking.duration));
+}
 export function parseBandRegistration(raw: unknown): BandRegistrationInput {
   const r = obj(raw, ['id', 'name', 'founderRole']); return { id: ident(r.id), name: text(r.name, 40), founderRole: role(r.founderRole) };
 }
@@ -55,46 +87,65 @@ export function parseBandInviteCommand(raw: unknown): BandInviteCommand {
   return { type: 'band_invite', bandId: ident(r.bandId), contactId: ident(r.contactId), role: role(r.role) };
 }
 export function parseLivehouseState(raw: unknown, now: number): LivehouseState {
-  const r = obj(raw, ['version', 'bands', 'bookings', 'invitations', 'profiles']);
+  const r = obj(raw, ['version', 'bands', 'bookings', 'invitations', 'profiles', ...optionalKeys(raw, ['establishedBandsVersion'])]);
   if (r.version !== 1) fail('记录版本无效');
-  const profiles = rows(r.profiles, 300, raw => {
+  if (Object.hasOwn(r, 'establishedBandsVersion') && r.establishedBandsVersion !== 1) fail('既有乐队版本无效');
+  const profiles = rows(r.profiles, 310, raw => {
     const p = obj(raw, ['personId', 'source', 'skills']), skills = obj(p.skills, [...MUSIC_ROLES]);
     if (p.source !== 'fixed' && p.source !== 'random') fail('能力来源无效');
     return { personId: ident(p.personId), source: p.source as MusicProfile['source'], skills: Object.fromEntries(MUSIC_ROLES.map(k => [k, num(skills[k], 0, 100)])) as MusicProfile['skills'] };
   }, p => p.personId);
-  const bands = rows(r.bands, 50, raw => {
-    const b = obj(raw, ['id', 'name', 'founder', 'createdAt', 'members']);
-    const founder = who(b.founder), createdAt = num(b.createdAt, 0, now);
-    const members = rows(b.members, 20, raw => {
-      const m = obj(raw, ['personId', 'name', 'role', 'joinedAt']);
+  const bands: BandRecord[] = rows(r.bands, 52, raw => {
+    const b = obj(raw, ['id', 'name', 'founder', 'createdAt', 'members', ...optionalKeys(raw, ['established', 'registeredBy', 'formerMembers'])]);
+    const definition = establishedBands.find(d => d.key === b.established);
+    if (Object.hasOwn(b, 'established') && !definition) fail('既有乐队无效');
+    const founder: BandLeader = b.founder === 'bang-anon' && definition?.key === 'mygo' ? 'bang-anon' : who(b.founder);
+    if (definition && (founder !== definition.founder || b.name !== definition.name)) fail('既有乐队的名称或 Leader 无效');
+    const createdAt = num(b.createdAt, 0, now);
+    const parseMember = (raw: unknown, former = false) => {
+      const m = obj(raw, ['personId', 'name', 'role', 'joinedAt', ...(former ? ['leftAt'] : [])]);
       const personId = ident(m.personId); if (!profiles.some(p => p.personId === personId)) fail('缺少成员能力记录');
-      return { personId, name: text(m.name), role: role(m.role), joinedAt: num(m.joinedAt, createdAt, now) };
-    }, m => m.personId);
-    if (!members.some(m => m.personId === musicPersonId(founder))) fail('缺少创始成员');
-    return { id: ident(b.id), name: text(b.name, 40), founder, createdAt, members };
+      const joinedAt = num(m.joinedAt, createdAt, now);
+      return { personId, name: text(m.name), role: role(m.role), joinedAt, ...(former ? { leftAt: num(m.leftAt, joinedAt, now) } : {}) };
+    };
+    const members = rows(b.members, definition ? 25 : 20, raw => parseMember(raw), m => m.personId);
+    const formerMembers = Object.hasOwn(b, 'formerMembers')
+      ? rows(b.formerMembers, 100, raw => parseMember(raw, true) as FormerBandMember, m => `${m.personId}:${m.joinedAt}:${m.leftAt}`) : undefined;
+    if (formerMembers?.some(m => members.some(current => current.personId === m.personId && current.joinedAt < m.leftAt))) fail('成员在队时间重叠');
+    if (!members.some(m => m.personId === bandLeaderPersonId({ founder }))) fail('缺少 Leader');
+    const registeredBy = Object.hasOwn(b, 'registeredBy') ? who(b.registeredBy) : undefined;
+    if (registeredBy && (!definition || ![...members, ...(formerMembers ?? [])].some(m => m.personId === musicPersonId(registeredBy) && m.joinedAt === createdAt))) fail('原登记成员无效');
+    return { id: ident(b.id), name: text(b.name, 40), founder, createdAt, members,
+      ...(definition ? { established: definition.key } : {}), ...(registeredBy ? { registeredBy } : {}), ...(formerMembers ? { formerMembers } : {}) };
   }, b => b.id);
   if (new Set(bands.map(b => b.name.normalize('NFKC').toLowerCase())).size !== bands.length) fail('乐队重名');
+  for (const definition of establishedBands) {
+    const count = bands.filter(b => b.established === definition.key).length;
+    if (count > 1 || r.establishedBandsVersion === 1 && count !== 1) fail('既有乐队记录缺失或重复');
+  }
   const bookings = rows(r.bookings, 200, raw => {
     const b = obj(raw, ['id', 'bandId', 'title', 'start', 'duration', 'createdAt', 'owner', 'memberIds']);
     const bandId = ident(b.bandId), band = bands.find(x => x.id === bandId);
     if (!band) fail('预约对应乐队不存在');
     const start = num(b.start), duration = num(b.duration, 1, 240), createdAt = num(b.createdAt, 0, now);
-    const memberIds = rows(b.memberIds, 20, ident, x => x);
+    const memberIds = rows(b.memberIds, band.established ? 25 : 20, ident, x => x);
     const owner = who(b.owner);
-    if (!memberIds.length || !memberIds.includes(musicPersonId(owner)) || memberIds.some(id => !band!.members.some(m => m.personId === id)) || start < createdAt || start + duration > 525599999) fail('预约成员或时间无效');
+    if (!memberIds.length || !memberIds.includes(musicPersonId(owner)) || memberIds.some(id => !memberAt(band, id, createdAt)) || start < createdAt || start + duration > 525599999) fail('预约成员或时间无效');
     return { id: ident(b.id), bandId, title: text(b.title), start, duration, createdAt, owner, memberIds };
   }, b => b.id);
   const invitations = rows(r.invitations, 500, raw => {
     const i = obj(raw, ['id', 'bandId', 'from', 'personId', 'name', 'role', 'messageId', 'at', 'status', 'reply']);
     const bandId = ident(i.bandId), band = bands.find(b => b.id === bandId), from = who(i.from), personId = ident(i.personId);
-    if (!band || !band.members.some(m => m.personId === musicPersonId(from)) || !['pending', 'accepted', 'declined', 'later'].includes(String(i.status))) fail('邀请记录无效');
-    if (i.status === 'accepted' && !band.members.some(m => m.personId === personId)) fail('同意邀请缺少花名册记录');
+    const at = num(i.at, 0, now);
+    if (!band || !memberAt(band, musicPersonId(from), at) || !['pending', 'accepted', 'declined', 'later', 'cancelled'].includes(String(i.status))) fail('邀请记录无效');
+    if (i.status === 'accepted' && ![...band.members, ...(band.formerMembers ?? [])].some(m => m.personId === personId && m.joinedAt >= at)) fail('同意邀请缺少花名册记录');
+    if (i.status === 'cancelled' && !band.formerMembers?.some(m => m.personId === musicPersonId(from) && m.leftAt >= at)) fail('邀请失效缺少退队记录');
     const reply = i.reply === null ? null : replyText(i.reply);
-    if ((i.status === 'pending') !== (reply === null)) fail('邀请回复状态无效');
-    return { id: ident(i.id), bandId, from, personId, name: text(i.name), role: role(i.role), messageId: ident(i.messageId), at: num(i.at, 0, now), status: i.status as BandInvitation['status'], reply };
+    if ((i.status === 'pending' || i.status === 'cancelled') !== (reply === null)) fail('邀请回复状态无效');
+    return { id: ident(i.id), bandId, from, personId, name: text(i.name), role: role(i.role), messageId: ident(i.messageId), at, status: i.status as BandInvitation['status'], reply };
   }, i => i.id);
   if (new Set(invitations.map(i => i.messageId)).size !== invitations.length) fail('重复邀请短信');
-  return { version: 1, bands, bookings, invitations, profiles };
+  return { version: 1, bands, bookings, invitations, profiles, ...(r.establishedBandsVersion === 1 ? { establishedBandsVersion: 1 as const } : {}) };
 }
 
 
@@ -102,8 +153,10 @@ export function parseLivehouseState(raw: unknown, now: number): LivehouseState {
 export function validateLivehouseLinks(s: WorldState): void {
   const registry = s.livehouse;
   if (!registry) return;
-  for (const band of registry.bands) for (const member of band.members) {
-    if (member.personId !== musicPersonId(band.founder) && !registry.invitations.some(i => i.bandId === band.id && i.personId === member.personId && i.status === 'accepted' && i.at <= member.joinedAt)) fail('成员缺少已同意的邀请');
+  for (const band of registry.bands) for (const member of [...band.members, ...(band.formerMembers ?? [])]) {
+    const established = establishedBands.find(d => d.key === band.established)?.members.some(([id, , role]) => id === member.personId && role === member.role && member.joinedAt === band.createdAt);
+    const registered = band.registeredBy && member.personId === musicPersonId(band.registeredBy) && member.joinedAt === band.createdAt;
+    if (member.personId !== bandLeaderPersonId(band) && !established && !registered && !registry.invitations.some(i => i.bandId === band.id && i.personId === member.personId && i.status === 'accepted' && i.at <= member.joinedAt)) fail('成员缺少已同意的邀请');
   }
   for (const invitation of registry.invitations) {
     const actor = personOwner(invitation.personId);
@@ -111,7 +164,7 @@ export function validateLivehouseLinks(s: WorldState): void {
     if (!source || ('from' in source ? source.from !== invitation.from || source.to !== actor || source.replyTo !== null : source.owner !== invitation.from || source.channel !== 'npc' || source.targetId !== invitation.personId || source.direction !== 'outgoing' || source.replyTo !== null)) fail('邀请与原短信不一致');
     if (invitation.status === 'pending') {
       if ('expectsReply' in source ? !source.expectsReply : source.status !== 'pending') fail('待回复邀请的短信已结束');
-    } else {
+    } else if (invitation.status !== 'cancelled') {
       const reply = actor ? s.protagonists?.conversations?.find(m => m.replyTo === source.id) : s.protagonists?.npcPhone?.messages.find(m => m.replyTo === source.id && m.speakerId === invitation.personId);
       if (!reply || reply.text !== invitation.reply) fail('邀请缺少一致的回复记录');
     }
@@ -129,10 +182,10 @@ const fixedSkills: Record<string, Partial<MusicProfile['skills']>> = {
   'bang-marina': { guitar: 90 }, '月岛麻里奈': { guitar: 90 },
 };
 const hash = (s: string) => { let n = 2166136261; for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619); return n >>> 0; };
-function ensureProfile(s: WorldState, personId: string, seed: string, name = '') {
-  const registry = s.livehouse!, saved = registry.profiles.find(p => p.personId === personId);
+function ensureProfile(registry: LivehouseState, personId: string, seed: string, name = '') {
+  const saved = registry.profiles.find(p => p.personId === personId);
   if (saved) return saved;
-  if (registry.profiles.length >= 300) fail('能力记录已满');
+  if (registry.profiles.length >= 310) fail('能力记录已满');
   const canonical = canon.entries.find(e => e.keys.includes(name));
   const fixed = (key: string) => Object.hasOwn(fixedSkills, key) ? fixedSkills[key] : undefined;
   const known = fixed(personId) ?? fixed(canonical?.name ?? '');
@@ -140,6 +193,72 @@ function ensureProfile(s: WorldState, personId: string, seed: string, name = '')
   const profile: MusicProfile = { personId, source: authored ? 'fixed' : 'random', skills: Object.fromEntries(MUSIC_ROLES.map(k => [k, known?.[k] ?? (authored ? 25 : hash(seed + ':' + personId + ':' + k) % 81 + 10)])) as MusicProfile['skills'] };
   registry.profiles.push(profile); return profile;
 }
+
+/** Initial membership is established history, not a newly sent or accepted invitation. */
+function seedEstablishedBands(registry: LivehouseState): void {
+  if (registry.establishedBandsVersion === 1) return;
+  const normalized = (name: string) => name.normalize('NFKC').replace(/[\s!]/g, '').toLowerCase();
+  for (const definition of establishedBands) {
+    let band = registry.bands.find(b => b.established === definition.key)
+      ?? registry.bands.find(b => b.name === definition.name)
+      ?? registry.bands.find(b => normalized(b.name) === normalized(definition.name));
+    if (!band) {
+      if (registry.bands.length >= 52) fail('乐队登记已满');
+      let id = `established-${definition.key}`, suffix = 0;
+      while (registry.bands.some(b => b.id === id)) id = `established-${definition.key}-${++suffix}`;
+      band = { id, name: definition.name, founder: definition.founder, createdAt: 0, members: [], established: definition.key };
+      registry.bands.push(band);
+    } else {
+      if (band.founder !== definition.founder && band.founder !== 'bang-anon') band.registeredBy ??= band.founder;
+      band.established = definition.key;
+      band.name = definition.name;
+      band.founder = definition.founder;
+    }
+    for (const [personId, name, role] of definition.members) {
+      ensureProfile(registry, personId, band.id, name);
+      if (!band.members.some(m => m.personId === personId) && !band.formerMembers?.some(m => m.personId === personId)) {
+        band.members.push({ personId, name, role, joinedAt: band.createdAt });
+      }
+    }
+  }
+  registry.establishedBandsVersion = 1;
+}
+
+export function createInitialLivehouse(): LivehouseState {
+  const registry = empty();
+  seedEstablishedBands(registry);
+  return registry;
+}
+
+/** Runs after the complete save has been assembled, including narrative focus progress. */
+export function reconcileEstablishedBands(state: WorldState): void {
+  const registry = state.livehouse ??= empty();
+  seedEstablishedBands(registry);
+  const strategy = state.protagonists?.strategy;
+  if (!strategy?.people.soyo.completed.includes('soyo_rebuild_crychic')) return;
+  const completion = strategy.history.find(h => h.owner === 'soyo' && h.kind === 'complete' && h.subject === 'soyo_rebuild_crychic');
+  const milestone = strategy.majorQueue?.find(h => h.owner === 'soyo' && h.focusId === 'soyo_rebuild_crychic');
+  if (!completion && !milestone && !strategy.flags.soyo_rebuild_plan_ready) return;
+  const band = registry.bands.find(b => b.established === 'mygo')!;
+  // A saved departure is also the receipt: reloads cannot apply it a second time.
+  if (band.formerMembers?.some(m => m.personId === 'protagonist-soyo')) return;
+  const member = band.members.find(m => m.personId === 'protagonist-soyo');
+  if (!member) return;
+  const completedAt = completion?.at ?? milestone?.at ?? strategy.cursor;
+  const leftAt = Math.max(member.joinedAt, completedAt);
+  (band.formerMembers ??= []).push({ ...member, leftAt });
+  band.members = band.members.filter(m => m.personId !== member.personId);
+  for (const invitation of registry.invitations) {
+    if (invitation.bandId === band.id && invitation.from === 'soyo' && invitation.status === 'pending') invitation.status = 'cancelled';
+  }
+  if (state.protagonists) {
+    const withdrawn = new Set(registry.bookings.filter(b => b.bandId === band.id && b.memberIds.includes(member.personId)
+      && !performanceMemberIds(registry, b).includes(member.personId)).map(b => 'live:' + b.id));
+    state.protagonists.devices.soyo.calendar = state.protagonists.devices.soyo.calendar.filter(e => !withdrawn.has(e.id));
+    if (state.protagonists.society) state.protagonists.society.advisors = state.protagonists.society.advisors.filter(a => a.bandId !== band.id || a.personId !== member.personId);
+  }
+}
+
 export function prepareLivehouseInteraction(s: WorldState, action: Extract<WorldAction, {type:'interior_interact'}>, authority: WorldState): boolean {
   const owner = activeProtagonist(authority), now = gameMinute(s);
   if (action.interactionId === 'livehouse-create-band' ? !action.registration : !action.booking) fail('请先在 Live House 表单填写并确认乐队或演出信息');
@@ -151,16 +270,17 @@ export function prepareLivehouseInteraction(s: WorldState, action: Extract<World
       if (existing.founder !== owner || existing.name !== input.name || existing.members[0]?.role !== input.founderRole) fail('重复登记内容不一致');
       return false;
     }
-    if (registry.bands.length >= 50) fail('乐队登记已满');
+    if (registry.bands.filter(b => !b.established).length >= 50 || registry.bands.length >= 52) fail('乐队登记已满');
     if (registry.bands.some(b => b.name.normalize('NFKC').toLowerCase() === input.name.normalize('NFKC').toLowerCase())) fail('乐队名称已经登记');
     const personId = musicPersonId(owner);
-    ensureProfile(s, personId, input.id);
+    ensureProfile(registry, personId, input.id);
     registry.bands.push({ id: input.id, name: input.name, founder: owner, createdAt: now + 20, members: [{ personId, name: protagonistNames[owner], role: input.founderRole, joinedAt: now + 20 }] });
   } else {
     const input = parseBookingInput(action.booking), registry = s.livehouse ??= empty();
     const existing = registry.bookings.find(b => b.id === input.id);
     if (existing) {
       if (existing.owner !== owner || existing.bandId !== input.bandId || existing.title !== input.title || existing.start !== input.start || existing.duration !== input.duration) fail('重复预约内容不一致');
+      if (!performanceMemberIds(registry, existing).includes(musicPersonId(owner))) fail('你已退出这场演出');
       return false;
     }
     const band = registry.bands.find(b => b.id === input.bandId);
@@ -182,7 +302,7 @@ export function prepareLivehouseInteraction(s: WorldState, action: Extract<World
 }
 export function syncPerformanceCalendars(s: WorldState, bookingId: string): void {
   if (!s.protagonists) return;
-  for (const booking of (s.livehouse?.bookings ?? []).filter(b => b.id === bookingId)) for (const id of booking.memberIds) {
+  for (const booking of (s.livehouse?.bookings ?? []).filter(b => b.id === bookingId)) for (const id of performanceMemberIds(s.livehouse, booking)) {
     const owner = personOwner(id); if (!owner) continue;
     const calendar = s.protagonists.devices[owner].calendar, eventId = 'live:' + booking.id;
     const existing = calendar.find(e => e.id === eventId);
@@ -211,7 +331,7 @@ export function sendBandInvitation(s: WorldState, command: BandInviteCommand, re
   if (actor === owner || band.members.some(m => m.personId === personId)) fail('该人物已经是乐队成员');
   // Invitation eligibility is deliberately stricter than Soyo/Sakiko's management exemption.
   if (actor && personState(s, actor).academics?.majorId !== 'music') fail('邀请的主角必须选择音乐专业');
-  if (band.members.length >= 20 || registry.invitations.length >= 500) fail('成员或邀请记录已满');
+  if (band.members.length >= (band.established ? 25 : 20) || registry.invitations.length >= 500) fail('成员或邀请记录已满');
   if (registry.invitations.some(i => i.bandId === band.id && i.personId === personId && i.status === 'pending')) fail('已发送邀请，请等待对方回复');
   const messageId = `${actor ? 'dual' : 'npc'}:${requestId}`;
   const invitation: BandInvitation = { id: requestId, bandId: band.id, from: owner, personId, name: actor ? protagonistNames[actor] : contact.name, role: command.role, messageId, at: gameMinute(s), status: 'pending', reply: null };
@@ -230,6 +350,7 @@ export function bandReplyContext(s: WorldState, messageId: string) {
   if (!invitation || invitation.from !== activeProtagonist(s) || invitation.status !== 'pending') fail('邀请已处理或不属于当前主角');
   const base = messageId.startsWith('npc:') ? npcPhoneReplyContext(s, messageId) : phoneReplyContext(s, messageId);
   const band = s.livehouse!.bands.find(b => b.id === invitation.bandId)!;
+  if (!band.members.some(m => m.personId === musicPersonId(invitation.from))) fail('邀请人已退出乐队');
   // Relevant fixed musician lore, unlike the broader player context, is safe to give to this NPC.
   const musicianLore = canon.entries.filter(e => e.keys.includes(invitation.name)).map(e => e.content);
   return { ...base, task: 'band_invitation_reply', invitation: { messageId, bandName: band.name, role: musicRoleNames[invitation.role], members: band.members.map(m => ({ name: m.name, role: musicRoleNames[m.role] })) }, musicianLore,
@@ -254,12 +375,14 @@ export function applyBandReply(state: WorldState, messageId: string, reply: stri
     fail('邀请已经处理');
   }
   const actor = personOwner(original.personId);
+  const sourceBand = state.livehouse!.bands.find(b => b.id === original.bandId)!;
+  if (!sourceBand.members.some(m => m.personId === musicPersonId(original.from))) fail('邀请人已退出乐队');
   if (actor && decision === 'accept' && personState(state, actor).academics?.majorId !== 'music') fail('受邀主角已不再修读音乐专业');
   const next = messageId.startsWith('npc:') ? applyNpcPhoneReply(state, messageId, reply, original.personId) : applyPhoneReply(state, messageId, reply);
   const invitation = bandInvitationForMessage(next, messageId)!, band = next.livehouse!.bands.find(b => b.id === invitation.bandId)!;
   if (decision === 'accept' && !band.members.some(m => m.personId === invitation.personId)) {
-    if (band.members.length >= 20) fail('乐队成员已满');
-    ensureProfile(next, invitation.personId, invitation.id, invitation.name);
+    if (band.members.length >= (band.established ? 25 : 20)) fail('乐队成员已满');
+    ensureProfile(next.livehouse!, invitation.personId, invitation.id, invitation.name);
     band.members.push({ personId: invitation.personId, name: invitation.name, role: invitation.role, joinedAt: gameMinute(next) });
   }
   invitation.status = ({ accept: 'accepted', decline: 'declined', later: 'later' } as const)[decision]; invitation.reply = reply;
@@ -277,6 +400,8 @@ export function livehousePhoneView(s: WorldState, owner: ProtagonistId) {
     return !actor || actor !== owner && PROTAGONISTS.includes(actor) && personState(s, actor).academics?.majorId === 'music'
       ? [{ id: c.id, name: c.name }] : [];
   }) : [];
-  return { bands: bands.map(b => ({ ...b, members: b.members.map(m => ({ ...m, profile: registry.profiles.find(p => p.personId === m.personId) })) })), bookings: registry.bookings.filter(b => bands.some(band => band.id === b.bandId)), invitations: registry.invitations.filter(i => i.from === owner || i.personId === personId).map(i => ({ ...i, bandName: registry.bands.find(b => b.id === i.bandId)?.name })),
+  const formerBands = registry.bands.flatMap(b => (b.formerMembers ?? []).filter(m => m.personId === personId).map(m => ({ id: b.id, name: b.name, role: m.role, leftAt: m.leftAt })));
+  return { bands: bands.map(b => ({ ...b, leaderId: bandLeaderPersonId(b), leaderName: bandLeaderName(b), members: b.members.map(m => ({ ...m, profile: registry.profiles.find(p => p.personId === m.personId) })) })), formerBands,
+    bookings: registry.bookings.filter(b => bands.some(band => band.id === b.bandId)).map(b => ({ ...b, memberIds: performanceMemberIds(registry, b) })), invitations: registry.invitations.filter(i => i.from === owner || i.personId === personId).map(i => ({ ...i, bandName: registry.bands.find(b => b.id === i.bandId)?.name })),
     contacts, canManage };
 }

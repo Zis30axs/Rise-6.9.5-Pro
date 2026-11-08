@@ -76,7 +76,7 @@ describe('autonomous SMS safety boundaries', () => {
     expect(next.autonomousSms?.pending).toBeNull();
     expect(JSON.stringify(next.livehouse)).toBe(registry);
     expect(next.livehouse!.invitations[0]!.status).toBe('pending');
-    expect(next.livehouse!.bands[0]!.members).toHaveLength(1);
+    expect(next.livehouse!.bands.find(b=>b.id==='sms-band')!.members).toHaveLength(1);
   });
   it.each(PROTAGONISTS)('delivers only to %s and preserves the other three private inboxes', owner => {
     let s = initial();

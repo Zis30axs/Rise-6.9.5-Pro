@@ -1,5 +1,5 @@
 import { ensurePersonalKeepsake } from './equipment';
-import { parseBandInviteCommand, sendBandInvitation, musicPersonId, type BandInviteCommand } from './livehouse';
+import { parseBandInviteCommand, sendBandInvitation, musicPersonId, performanceMemberIds, type BandInviteCommand } from './livehouse';
 import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, PROTAGONIST_PERSON_ID_LIST, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
@@ -608,7 +608,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       order.status='received';notify(s,owner,`order:${order.id}:received`,`${protagonistNames[who]}已领取订单。`);break;
     }
     case 'calendar_save': {
-      const performances = (s.livehouse?.bookings ?? []).filter(b => b.memberIds.includes(musicPersonId(owner)));
+      const performances = (s.livehouse?.bookings ?? []).filter(b => performanceMemberIds(s.livehouse, b).includes(musicPersonId(owner)));
       const performance = performances.find(b => command.id === 'live:' + b.id);
       if (performance && (command.title !== performance.title || command.locationId !== 'livehouse' || command.start !== performance.start || command.duration !== performance.duration)) fail('已确认演出不能通过编辑日历改写');
       if (performances.some(b => command.id !== 'live:' + b.id && b.start < command.start + command.duration && command.start < b.start + b.duration)) fail('与已确认演出档期冲突');

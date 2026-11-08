@@ -34,6 +34,7 @@ export interface FocusDefinition {
   id: string;
   owner: StrategyOwner;
   title: string;
+  description?: string;
   durationMinutes: number;
   prerequisites?: Condition;
   available?: Condition;
@@ -103,16 +104,16 @@ export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', '
 export const FOCUS_CATALOG: readonly FocusDefinition[] = [
   { id: 'soyo_face_past', owner: 'soyo', title: '面对过去', durationMinutes: 1440, aiWeight: 60,
     onComplete: [{ type: 'set_flag', key: 'soyo_looked_back', value: true }] },
-  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '筹划重建 CRYCHIC', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
+  { id: 'soyo_rebuild_crychic', owner: 'soyo', title: '延续 CRYCHIC', description: '完成后退出 MyGO!!!!!，尝试延续 CRYCHIC。昔日成员是否愿意重聚，仍需各自决定。', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
     prerequisites: { completed: 'soyo_face_past' }, available: { always: true },
     bypass: { flag: 'crychic_reunited' }, aiWeight: 100,
     aiModifiers: [{ when: { flag: 'sakiko_final_break' }, add: -10000 }],
     onComplete: [{ type: 'set_flag', key: 'soyo_rebuild_plan_ready', value: true }] },
-  { id: 'soyo_mygo_future', owner: 'soyo', title: '走向 MyGO!!!!!', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
+  { id: 'soyo_mygo_future', owner: 'soyo', title: '与 MyGO!!!!! 继续前行', description: '以贝斯手的身份留在 MyGO!!!!!，与爱音和同伴们继续向前。', durationMinutes: 4320, important: true, branchGroup: 'soyo_band_future',
     prerequisites: { completed: 'soyo_face_past' }, aiWeight: 90,
-    // This is Soyo's choice to cooperate, not an automatic band membership change.
+    // The existing membership continues; this does not create another band.
     onComplete: [{ type: 'set_flag', key: 'soyo_mygo_plan_ready', value: true }] },
-  { id: 'sakiko_redefine_band', owner: 'sakiko', title: '重新确立乐队方向', durationMinutes: 2880, aiWeight: 100, important: true,
+  { id: 'sakiko_redefine_band', owner: 'sakiko', title: '引领 Ave Mujica', description: '作为 Ave Mujica 的 Leader 与键盘手，与现有成员共同确立接下来的方向。', durationMinutes: 2880, aiWeight: 100, important: true,
     onComplete: [{ type: 'set_flag', key: 'sakiko_band_plan_ready', value: true }] },
   { id: 'emma_daily_circle', owner: 'emma', title: '维系大家的日常', durationMinutes: 2880, aiWeight: 100,
     onComplete: [{ type: 'set_flag', key: 'emma_circle_plan_ready', value: true }] },

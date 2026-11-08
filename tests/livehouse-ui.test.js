@@ -46,6 +46,16 @@ describe('Live House explicit player forms',()=>{
   });
 });
 describe('existing phone Messages band entry',()=>{
+  it.each([['soyo','MyGO!!!!!','千早爱音'],['sakiko','Ave Mujica','丰川祥子']])('shows the existing band and Leader for %s without asking to create it', (owner,bandName,leaderName)=>{
+    const state=reduceState(enableProtagonists(createInitialState()),{type:'switch_protagonist',target:owner});
+    const api=createWorldPhoneApi({session:'established-band-ui',current:()=>true,busy:()=>false,state:()=>state,commit:()=>{throw Error('Read only');}});
+    const root=document.createElement('div');root.innerHTML=renderBandPanel(api.read(),{esc,btn,heading,time});
+    expect(root.textContent).toContain(bandName);
+    expect(root.textContent).toContain('Leader：'+leaderName);
+    expect(root.querySelectorAll('.uc-band-member')).toHaveLength(5);
+    expect(root.textContent).not.toContain('到 Live House 登记乐队后');
+    expect(root.textContent).not.toMatch(/随机能力|固定能力|模型|存档/);
+  });
   it.each(['emma','renako'])('hides all band shortcuts for %s without music eligibility',owner=>{
     let state=reduceState(enableProtagonists(createInitialState()),{type:'switch_protagonist',target:owner});
     const api=createWorldPhoneApi({session:'band-eligibility',current:()=>true,busy:()=>false,state:()=>state,commit:()=>{throw Error('Read only');}});
@@ -71,6 +81,17 @@ describe('existing phone Messages band entry',()=>{
     }
   });
   const data={binding:'qa-soyo',revision:0,owner:'soyo',active:'soyo',name:'素世',now:1000,conversation:[],messages:[],others:[],npcPhone:{contacts:[],groups:[],requests:[],messages:[]},music:{canManage:true,bands:[],bookings:[],invitations:[],contacts:[]}};
+  it('keeps the original SMS visible without offering a reply to an invalidated invitation',()=>{
+    const invitation={bandId:'mygo',name:'友人',role:'guitar',from:'soyo',status:'cancelled',messageId:'npc:old-invite',reply:null};
+    const view={...data,npcPhone:{...data.npcPhone,contacts:[{id:'guest',name:'友人'}],messages:[{id:'npc:old-invite',channel:'npc',targetId:'guest',direction:'outgoing',replyTo:null,status:'pending',at:1000,text:'邀请你加入 MyGO!!!!!。'}]},music:{...data.music,invitations:[invitation]}};
+    const rendered=renderWorldMessenger({data:view,recipient:'npc:guest',mode:'thread',drafts:new Map(),pending:null},{esc,btn,heading,time});
+    const root=document.createElement('div');root.innerHTML=rendered.html;
+    expect(rendered.replyId).toBeNull();expect(root.querySelector('[data-action=request-reply]').disabled).toBe(true);
+    expect(root.textContent).toContain('邀请你加入 MyGO!!!!!。');
+    root.innerHTML=renderBandPanel(view,{esc,btn,heading,time});
+    expect(root.textContent).toContain('邀请人已离队，邀请失效');
+    expect(root.querySelector('[data-action=band-reply]')).toBeNull();
+  });
   it('shows the band entry, fixed saved abilities and escapes user-controlled names and replies',()=>{
     const skills={vocal:25,guitar:25,bass:90,drums:25,keyboard:25};
     const html=renderBandPanel({...data,music:{...data.music,bands:[{id:'one',name:'<img src=x onerror=alert(1)>',members:[{name:'素世',role:'bass',profile:{source:'fixed',skills}}]}],invitations:[{bandId:'one',name:'立希',role:'drums',from:'soyo',status:'pending',messageId:'npc:one',reply:null}]}},{esc,btn,heading,time});

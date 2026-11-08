@@ -98,7 +98,8 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
   }
   const contact=recipients.find(r=>r.key===chosen);
   const rows=worldMessageRows(data,chosen);
-  const lastPending=replyCandidate(rows);
+  const cancelledInvites=new Set((data.music?.invitations||[]).filter(i=>i.status==='cancelled').map(i=>i.messageId));
+  const lastPending=replyCandidate(rows.filter(m=>!cancelledInvites.has(m.id)));
   const draft=drafts.get(chosen)||'';
   const lastRepliedIndex=rows.findLastIndex(m=>m.direction==='outgoing' && (m.status==='answered' || m.answered));
   const bubbles=rows.map((m,index)=>{
@@ -142,11 +143,12 @@ export function renderWorldMessenger({data,recipient,mode,drafts,pending},{esc,b
 export function renderBandPanel(data,{esc,btn,heading,time}) {
   const music=data.music||{bands:[],bookings:[],invitations:[],contacts:[]};
   const roles={vocal:'主唱',guitar:'吉他',bass:'贝斯',drums:'鼓',keyboard:'键盘'};
-  const stateNames={pending:'等待回复',accepted:'已同意并入队',declined:'已拒绝',later:'暂缓'};
+  const stateNames={pending:'等待回复',accepted:'已同意并入队',declined:'已拒绝',later:'暂缓',cancelled:'邀请人已离队，邀请失效'};
   const options=(rows,current)=>rows.map(([id,name])=>'<option value="'+esc(id)+'"'+(id===current?' selected':'')+'>'+esc(name)+'</option>').join('');
   const draft=data.bandDraft||{};
   const roster=music.bands.map(band=>'<article class="uc-band-card"><h3>'+esc(band.name)+'</h3>'
-    +band.members.map(m=>'<details class="uc-band-member" data-band-member="'+esc(band.id+'/'+m.personId)+'"'+(data.bandExpanded?.includes(band.id+'/'+m.personId)?' open':'')+'><summary>'+esc(m.name)+' · '+esc(roles[m.role])+'</summary><p>能力面板 · '+(m.profile?.source==='random'?'已保存的随机能力':'固定能力')+'</p>'
+    +(band.leaderName?'<p>Leader：'+esc(band.leaderName)+'</p>':'')
+    +band.members.map(m=>'<details class="uc-band-member" data-band-member="'+esc(band.id+'/'+m.personId)+'"'+(data.bandExpanded?.includes(band.id+'/'+m.personId)?' open':'')+'><summary>'+esc(m.name)+' · '+esc(roles[m.role])+(band.leaderId&&m.personId===band.leaderId?' · Leader':'')+'</summary><p>演奏能力</p>'
       +Object.entries(roles).map(([key,name])=>'<label>'+name+' <meter min="0" max="100" value="'+Number(m.profile?.skills[key]||0)+'"></meter> '+Number(m.profile?.skills[key]||0)+'/100</label>').join('')+'</details>').join('')+'</article>').join('');
   const form=music.bands.length ? '<section class="uc-band-card"><h3>发送乐队邀请链接</h3>'
     +'<label>乐队<select data-world-field="band"><option value="">请选择乐队</option>'+options(music.bands.map(b=>[b.id,b.name]),draft.band)+'</select></label>'

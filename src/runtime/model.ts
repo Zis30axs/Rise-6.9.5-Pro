@@ -1,6 +1,6 @@
 import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, isEquipmentSlot, r27et1Equipped, setEquipment, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS, validatePersonalEquipment } from './equipment';
 import type { ProtagonistId } from './dual-protagonists';
-import { parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
+import { createInitialLivehouse, reconcileEstablishedBands, parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
 import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
 import { PROTAGONISTS } from './dual-protagonists';
@@ -293,6 +293,7 @@ export function createInitialState(): WorldState {
     lawCareer: initialLawCareer(),
     courtroom: initialCourtroom(),
     npcProfessions: initialNpcProfessions(),
+    livehouse: createInitialLivehouse(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
     inventory: [{ itemId: 'crychic-photo', quantity: 1 }],
     academics: null,
@@ -631,6 +632,8 @@ function clearDepartedProtagonistEncounters(state: WorldState): WorldState {
 
 export function parseState(value: unknown, ownerOverride?: ProtagonistId): WorldState {
   const state = parseStateCore(value, true);
+  validateLivehouseLinks(state);
+  reconcileEstablishedBands(state);
   validateLivehouseLinks(state);
   for (const owner of state.protagonists ? PROTAGONISTS : [ownerOverride ?? 'soyo'] as ProtagonistId[]) {
     const personal = state.protagonists ? personState(state, owner) : state;

@@ -99,12 +99,13 @@ function sourceName(id: string) {
     <p class="focus-note">AI 选择由本地权重计算，重大转折须经合法剧情事件。人物不会自动知晓其他人的秘密。</p>
 
     <h3>个人国策树</h3>
-    <p v-if="hasBranches" class="focus-note">分叉路线：完成其中一条后，另一条将永久锁定。国策完成只代表人物的计划，不会强制其他人加入乐队。</p>
+    <p v-if="hasBranches" class="focus-note">分叉路线：完成其中一条后，另一条将永久锁定。完成「延续 CRYCHIC」后，素世将退出 MyGO!!!!!；昔日成员是否重聚，仍需各自决定。</p>
     <div class="focus-tree" :class="{'has-branches':hasBranches}">
       <article v-for="focus in focuses" :key="focus.id" class="focus-card" :class="{'active':profile.active?.id===focus.id,done:profile.completed.includes(focus.id),'focus-route':!!focus.branchGroup,'route-locked':focusBranchLocked(state,actor,focus)}">
         <figure v-if="focusIcon(focus.id)" class="focus-icon"><img :src="focusIcon(focus.id)!" :alt="`${focus.title}国策图标`" loading="lazy" /></figure>
         <p v-if="focus.branchGroup" class="focus-route-tag">互斥路线 · 二选一</p>
         <div class="focus-row"><h4>{{ focus.title }}</h4><span>{{ status(focus) }}</span></div>
+        <p v-if="focus.description" class="focus-note">{{ focus.description }}</p>
         <p>{{ prerequisites(focus) }}</p>
         <p>计划推进时间：{{ focus.durationMinutes / 1440 }} 游戏日 <span v-if="focus.important"> · 重要里程碑</span></p>
         <div v-if="profile.active?.id===focus.id" class="focus-progress" role="progressbar" :aria-label="focus.title" :aria-valuenow="percentage(focus)" aria-valuemin="0" aria-valuemax="100"><span :style="{width:percentage(focus)+'%'}"></span></div>

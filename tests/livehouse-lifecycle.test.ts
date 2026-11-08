@@ -31,26 +31,26 @@ describe('manual invitation reply transaction',()=>{
   it('uses the dedicated model decision and publishes roster and SMS only after save succeeds',async()=>{
     const x=shell();await x.api.retryReply('npc:invite-one');
     expect(x.generate.mock.calls[0]![2]).toEqual({kind:'band_invitation_reply',messageId:'npc:invite-one'});
-    expect(x.h.model.state.livehouse!.bands[0]!.members).toHaveLength(2);expect(x.state().livehouse!.invitations[0]!.status).toBe('accepted');
+    expect(x.h.model.state.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(2);expect(x.state().livehouse!.invitations[0]!.status).toBe('accepted');
     const count=x.save.mock.calls.length;await x.api.retryReply('npc:invite-one');expect(x.save.mock.calls).toHaveLength(count);expect(x.generate).toHaveBeenCalledTimes(1);
   });
   it('leaves invitation pending on model failure and on save failure, then allows one clean retry',async()=>{
     const x=shell();x.generate.mockRejectedValueOnce(Error('模型中断'));
     await expect(x.api.retryReply('npc:invite-one')).rejects.toThrow(/模型中断/);expect(x.state().livehouse!.invitations[0]!.status).toBe('pending');
     x.fail(true);await expect(x.api.retryReply('npc:invite-one')).rejects.toThrow(/保存失败/);
-    expect(x.h.model.state.livehouse!.bands[0]!.members).toHaveLength(1);expect(x.h.model.state.protagonists!.npcPhone!.messages).toHaveLength(1);
-    x.fail(false);await x.api.retryReply('npc:invite-one');expect(x.state().livehouse!.bands[0]!.members).toHaveLength(2);
+    expect(x.h.model.state.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);expect(x.h.model.state.protagonists!.npcPhone!.messages).toHaveLength(1);
+    x.fail(false);await x.api.retryReply('npc:invite-one');expect(x.state().livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(2);
     expect(x.state().protagonists!.npcPhone!.messages.filter(m=>m.replyTo==='npc:invite-one')).toHaveLength(1);
   });
   it('rejects a generic affirmative without structured acceptance',async()=>{
     const x=shell();x.generate.mockResolvedValueOnce({text:'好！',phoneMessages:[]});
-    await expect(x.api.retryReply('npc:invite-one')).rejects.toThrow(/决定/);expect(x.state().livehouse!.bands[0]!.members).toHaveLength(1);
+    await expect(x.api.retryReply('npc:invite-one')).rejects.toThrow(/决定/);expect(x.state().livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);
   });
   it('drops a late model acceptance after chat switch',async()=>{
     const x=shell();let resolve!:(reply:GeneratedStory)=>void;
     x.generate.mockReturnValueOnce(new Promise(r=>{resolve=r;}));
     const job=x.api.retryReply('npc:invite-one');x.changeSession();resolve({text:'好。',phoneMessages:[],bandDecision:'accept'});await job;
-    expect(x.save).not.toHaveBeenCalled();expect(x.state().livehouse!.bands[0]!.members).toHaveLength(1);
+    expect(x.save).not.toHaveBeenCalled();expect(x.state().livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);
   });
   it('uses strict band_reply parsing in the actual Tavern bridge with isolated character context',async()=>{
     const state=pendingInvitation();let prompt:any;

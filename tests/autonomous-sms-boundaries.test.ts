@@ -178,7 +178,7 @@ describe('autonomous SMS scheduling and state boundaries', () => {
     const next = deliver(s, '我同意加入。');
     expect(next.livehouse).toEqual(s.livehouse);
     expect(next.livehouse!.invitations[0]!.status).toBe('pending');
-    expect(next.livehouse!.bands[0]!.members).toHaveLength(1);
+    expect(next.livehouse!.bands.find(b=>b.id==='sms-band')!.members).toHaveLength(1);
     expect(next.phone).toEqual(s.phone);
     expect(parseState(next)).toEqual(next);
   });

@@ -3,6 +3,7 @@
  * sole membership authority; social circles and cross-group coalitions are
  * voluntary records. No speculative NPC consent is inferred here.
  */
+import type { BandLeader } from './livehouse';
 export type SocialOwner = 'soyo' | 'sakiko' | 'emma' | 'renako';
 export const SOCIAL_OWNERS = ['soyo','sakiko','emma','renako'] as const;
 export type AdvisorSeat = 'music' | 'social' | 'operations';
@@ -49,7 +50,7 @@ export interface SocietyContext {
   actor: SocialOwner;
   personId: string;
   knownPersonIds: readonly string[];
-  bands: readonly { id: string; founder: SocialOwner; members: readonly { personId: string }[] }[];
+  bands: readonly { id: string; founder: BandLeader; members: readonly { personId: string }[] }[];
 }
 export type SocietyCommand =
   | { type: 'create_circle'; id: string; title: string }
@@ -156,7 +157,7 @@ export function parseSocietyState(raw:unknown,now:number):SocietyState {
   for(const application of applications)if(!unions.some(u=>u.id===application.unionId))fail('申请引用不存在的联合体');
   return {version:1,circles,unions,invitations,applications,advisors,contests,receipts,history};
 }
-const groupLeader=(s:SocietyState,context:SocietyContext,groupId:string):SocialOwner|null=>
+const groupLeader=(s:SocietyState,context:SocietyContext,groupId:string):BandLeader|null=>
   groupId.startsWith('circle:')?s.circles.find(c=>`circle:${c.id}`===groupId)?.founder??null:
   groupId.startsWith('band:')?context.bands.find(b=>`band:${b.id}`===groupId)?.founder??null:null;
 

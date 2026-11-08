@@ -126,7 +126,7 @@ export function strategyPromptContext(state: StrategyState | undefined) {
     conditionFlags(def.cancel,relevant);
     conditionFlags(def.bypass,relevant);
     for (const mod of def.aiModifiers ?? []) conditionFlags(mod.when,relevant);
-    return [{owner,focusId:def.id,title:def.title,
+    return [{owner,focusId:def.id,title:def.title,...(def.description?{description:def.description}:{}),
       progress:person.active.progress,duration:def.durationMinutes,
       localFacts:Object.fromEntries(Object.entries(state.flags).filter(([k])=>strategyLocalKey(k,owner)).slice(-8)),
       localStats:Object.fromEntries(Object.entries(state.stats).filter(([k])=>strategyLocalKey(k,owner)).slice(-8)),

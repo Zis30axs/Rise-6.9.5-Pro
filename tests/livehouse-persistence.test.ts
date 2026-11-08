@@ -42,8 +42,8 @@ describe('Live House confirmed registry',()=>{
     expect(livehousePhoneView(createInitialState(),'renako').canManage).toBe(false);
   });
   it('loads older saves without fabricating registrations from legacy success logs or activity IDs',()=>{
-    const old=initial();old.interior!.activityId='livehouse-create-band';old.journal.push({id:'old-success',text:'已经登记成功',at:'第 1 天 17:50'});
-    const next=parseState(JSON.parse(JSON.stringify(old)));expect(next.livehouse).toBeUndefined();
+    const old=initial();delete old.livehouse;old.interior!.activityId='livehouse-create-band';old.journal.push({id:'old-success',text:'已经登记成功',at:'第 1 天 17:50'});
+    const next=parseState(JSON.parse(JSON.stringify(old)));expect(next.livehouse!.bands.map(b=>b.name)).toEqual(['MyGO!!!!!','Ave Mujica']);expect(next.livehouse!.bookings).toEqual([]);expect(next.livehouse!.invitations).toEqual([]);
   });
   it('creates phone calendars lazily even when the old save has not enabled protagonist features',()=>{
     let s=atDesk(createInitialState());s=reduceState(s,register());s=atDesk(s,'book');s=reduceState(s,booking());
@@ -59,8 +59,8 @@ describe('Live House confirmed registry',()=>{
   it('records only the confirmed founder; retries and ordinary activities preserve the record',()=>{
     const before=initial(),next=reduceState(before,register());
     expect(next.player.energy).toBe(before.player.energy-3);
-    expect(next.livehouse!.bands[0]!.members.map(m=>m.personId)).toEqual(['protagonist-soyo']);
-    expect(next.livehouse!.profiles[0]!.skills.bass).toBe(90);
+    expect(next.livehouse!.bands.find(b=>b.id==='band-one')!.members.map(m=>m.personId)).toEqual(['protagonist-soyo']);
+    expect(next.livehouse!.profiles.find(p=>p.personId==='protagonist-soyo')!.skills.bass).toBe(90);
     const repeated=reduceState(next,register());expect(repeated).toEqual(next);
     expect(()=>reduceState(next,register('another-id'))).toThrow(/名称已经/);
     expect(()=>reduceState(next,register('band-one','改名重放'))).toThrow(/重复/);
@@ -76,7 +76,7 @@ describe('Live House confirmed registry',()=>{
       s=reduceState(s,{type:'choose_academics',majorId:'music'});
     }
     s=reduceState(s,register());s=atDesk(s,'book');s=reduceState(s,booking());
-    expect(s.livehouse!.bands[0]!.founder).toBe(owner);expect(s.livehouse!.bookings).toHaveLength(1);
+    expect(s.livehouse!.bands.find(b=>b.id==='band-one')!.founder).toBe(owner);expect(s.livehouse!.bookings).toHaveLength(1);
     expect(s.protagonists!.devices[owner].calendar[0]?.start).toBe(booking().booking!.start);
     const registry=JSON.stringify(s.livehouse);
     for(const target of ['renako','emma','sakiko','soyo'] as const) s=reduceState(s,{type:'switch_protagonist',target});
@@ -122,9 +122,9 @@ describe('Live House confirmed registry',()=>{
   it('rejects invalid saved references, duplicate members, malformed skills, unexpected fields and future creation dates',()=>{
     const s=withBand();
     for(const corrupt of [
-      (s:WorldState)=>s.livehouse!.bands[0]!.members.push(s.livehouse!.bands[0]!.members[0]!),
-      (s:WorldState)=>s.livehouse!.profiles[0]!.skills.bass=101,
-      (s:WorldState)=>s.livehouse!.bands[0]!.createdAt=9999999,
+      (s:WorldState)=>s.livehouse!.bands.find(b=>b.id==='band-one')!.members.push(s.livehouse!.bands.find(b=>b.id==='band-one')!.members[0]!),
+      (s:WorldState)=>s.livehouse!.profiles.find(p=>p.personId==='protagonist-soyo')!.skills.bass=101,
+      (s:WorldState)=>s.livehouse!.bands.find(b=>b.id==='band-one')!.createdAt=9999999,
       (s:WorldState)=>(s.livehouse as any).extra=true,
     ]) {const bad=JSON.parse(JSON.stringify(s));corrupt(bad);expect(()=>parseState(bad)).toThrow();}
   });
@@ -133,24 +133,24 @@ describe('Live House confirmed registry',()=>{
 describe('phone band invitations and ability roster',()=>{
   it('saves a real link message, deduplicates requests, and adds a known musician only after model acceptance',()=>{
     const s=contact(withBand());const sent=invite(s);
-    expect(sent.livehouse!.bands[0]!.members).toHaveLength(1);
+    expect(sent.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);
     expect(sent.protagonists!.npcPhone!.messages.at(-1)!.text).toContain('unread-city://band/band-one');
     expect(reduceState(sent,{type:'phone_app',requestId:'invite-one',owner:'soyo',command:{type:'band_invite',bandId:'band-one',contactId:'taki-contact',role:'drums'}})).toEqual(sent);
     expect(()=>invite(sent,'duplicate-invite')).toThrow(/已发送邀请/);
     const accepted=applyBandReply(parseState(JSON.parse(JSON.stringify(sent))),'npc:invite-one','好，一起练。','accept');
-    expect(accepted.livehouse!.bands[0]!.members).toHaveLength(2);
+    expect(accepted.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(2);
     expect(accepted.livehouse!.profiles.find(p=>p.personId==='taki-contact')!.skills.drums).toBe(94);
     expect(accepted.livehouse!.profiles.find(p=>p.personId==='taki-contact')!.source).toBe('fixed');
     expect(parseState(JSON.parse(JSON.stringify(accepted))).livehouse).toEqual(accepted.livehouse);
     expect(applyBandReply(accepted,'npc:invite-one','好，一起练。','accept')).toEqual(accepted);
     expect(()=>invite(accepted,'already-member')).toThrow(/已经是/);
-    expect(sent.livehouse!.bands[0]!.members).toHaveLength(1);
+    expect(sent.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);
     accepted.contacts.find(c=>c.id==='taki-contact')!.name='改名后的联系人';
     expect(parseState(accepted).livehouse!.profiles.find(p=>p.personId==='taki-contact')!.skills.drums).toBe(94);
   });
   it.each(['decline','later'] as const)('does not enroll on %s or malformed model replies',decision=>{
     const s=invite(contact(withBand()));const next=applyBandReply(s,'npc:invite-one','现在暂时不行。',decision);
-    expect(next.livehouse!.bands[0]!.members).toHaveLength(1);expect(next.livehouse!.profiles).toHaveLength(1);
+    expect(next.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(1);expect(next.livehouse!.profiles).toEqual(s.livehouse!.profiles);
     for(const raw of ['同意','<band_reply>{"messageId":"wrong","decision":"accept","text":"好"}</band_reply>','<band_reply>{"messageId":"npc:invite-one","decision":"accept","text":"好","members":["fake"]}</band_reply>']) expect(()=>parseBandReply(raw,'npc:invite-one')).toThrow();
     expect(()=>applyBandReply(s,'npc:invite-one','好',undefined as any)).toThrow();
   });
@@ -167,7 +167,7 @@ describe('phone band invitations and ability roster',()=>{
     const parsed=parseBandReply('<band_reply>'+JSON.stringify({messageId,decision:'accept',text:content})+'</band_reply>',messageId);
     const accepted=applyBandReply(s,messageId,parsed.text,parsed.bandDecision);
     expect(parseState(JSON.parse(JSON.stringify(accepted))).livehouse!.invitations[0]!.reply).toBe(content);
-    expect(accepted.livehouse!.bands[0]!.members).toHaveLength(2);
+    expect(accepted.livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(2);
   });
   it('randomizes a stranger whose stable ID also happens to be a JavaScript object property name',()=>{
     const s=invite(contact(withBand(),'constructor','普通陌生人'),'stranger-constructor','constructor');
@@ -195,7 +195,7 @@ describe('phone band invitations and ability roster',()=>{
     expect(s.livehouse!.bookings[0]!.memberIds).toContain(musicPersonId('sakiko'));
     expect(s.protagonists!.devices.sakiko.calendar.some(e=>e.id==='live:show-one')).toBe(true);
     s=reduceState(s,{type:'switch_protagonist',target:'sakiko'});
-    expect(livehousePhoneView(s,'sakiko').bands).toHaveLength(1);
+    expect(livehousePhoneView(s,'sakiko').bands.map(b=>b.name)).toEqual(['Ave Mujica','未读乐队']);
     expect(()=>applyBandReply(s,'dual:invite-sakiko','可以。','accept')).toThrow(/来源/);
   });
   it('rejects missing invitation messages or members without an acceptance receipt on reload',()=>{
@@ -208,7 +208,7 @@ describe('phone band invitations and ability roster',()=>{
     s=reduceState(s,{type:'phone_app',requestId:'normal',owner:'soyo',command:{type:'send_npc_message',npcId:'taki-contact',text:'明天有空吗？'}});
     s=applyNpcPhoneReply(s,'npc:normal','我看看。','taki-contact');
     expect(()=>bandReplyContext(s,'npc:invite-one')).not.toThrow();
-    expect(applyBandReply(s,'npc:invite-one','好，一起。','accept').livehouse!.bands[0]!.members).toHaveLength(2);
+    expect(applyBandReply(s,'npc:invite-one','好，一起。','accept').livehouse!.bands.find(b=>b.id==='band-one')!.members).toHaveLength(2);
   });
   it('rejects unlisted contacts and borrowed devices; failed saves can retry without leaving half an invitation',async()=>{
     let saved=contact(withBand()),failSave=true;

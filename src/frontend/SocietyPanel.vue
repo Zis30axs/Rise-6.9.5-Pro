@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import type { ShellActions, ShellModel } from './types';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
-import { musicPersonId } from '../runtime/livehouse';
+import { musicPersonId, bandLeaderName } from '../runtime/livehouse';
 import { allResidentCast } from '../runtime/npc-cast';
 import { createSocietyState, type AdvisorSeat, type SocietyCommand } from '../runtime/society';
 
@@ -123,9 +123,10 @@ function remaining(closesAt: number) {
     <p v-if="feedback" class="society-message" role="status">{{ feedback }}</p>
 
     <template v-if="tab==='bands'">
-      <p class="society-help">正式乐队以 Live House 已确认名册为准。只有创始人可以从真实成员中分配顾问；顾问离队后不会继续生效。</p>
+      <p class="society-help">乐队 Leader 可以从在队成员中任命顾问；成员离队后，也会卸任顾问。</p>
       <article v-for="band in myBands" :key="band.id" class="society-card">
-        <div class="society-row"><h3>{{ band.name }}</h3><small>{{ band.founder===actor?'你是创始人':'你是成员' }}</small></div>
+        <div class="society-row"><h3>{{ band.name }}</h3><small>{{ band.founder===actor?'你是 Leader':'你是成员' }}</small></div>
+        <p>Leader：{{ bandLeaderName(band) }}</p>
         <p>成员：{{ band.members.map(m=>m.name).join('、') }}</p>
         <div class="society-grid">
           <label v-for="seat in seats" :key="seat.id" class="society-field">
