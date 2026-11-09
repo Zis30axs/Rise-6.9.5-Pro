@@ -606,7 +606,7 @@ export function mountShell(
           bridge.save(validated);
           model.state = validated;
         }
-        model.notice = '剧情文本已保存；既有游戏结算不会重算，长期记忆摘要也不会自动改写。';
+        model.notice = '消息已修改。以前发生的行动和其他记录保持不变。';
         return true;
       } catch (error) {
         model.notice = message(error);
