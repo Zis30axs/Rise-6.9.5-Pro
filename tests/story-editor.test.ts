@@ -9,7 +9,7 @@ describe('saved story editing', () => {
       { id: 'player-1', role: 'user' as const, text: '去咖啡馆。' },
       { id: 'reply-1', role: 'assistant' as const, text: '旧剧情。', participantIds: ['protagonist-sakiko'] },
     ];
-    const before = parseState({ ...base, clock: { day: 3, hour: 19, minute: 42 }, story });
+    const before = parseState({ ...base, story });
     const original = JSON.stringify(before);
     const edited = editStoryEntry(before, 'reply-1', '旧剧情。', '已纠正的剧情。');
     expect(edited.story[1]).toMatchObject({ id: 'reply-1', text: '已纠正的剧情。', participantIds: ['protagonist-sakiko'] });
