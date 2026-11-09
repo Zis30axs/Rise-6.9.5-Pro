@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue';
+import NovelLive2DPortrait from './NovelLive2DPortrait.vue';
+import { live2dContext } from './live2d-context';
+import { live2dIdentity } from '../runtime/live2d-identity';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';
@@ -147,6 +150,7 @@ const presentationMode = ref<PresentationMode>(readPresentationMode());
 const graphicsRevision = ref(0);
 const novelMode = computed(() => presentationMode.value === 'novel' || isInternationalLocation(props.model.state.locationId));
 const novelHistory = ref(false);
+provide(live2dContext,()=>({session:props.model.memoryScope,state:props.model.state,enabled:novelMode.value&&!novelHistory.value&&!switchingLease.value}));
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
 const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
 const historyPortrait = ref(false);
@@ -993,15 +997,18 @@ onBeforeUnmount(() => {
       :refresh-token="graphicsRevision"
       :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"
       :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
-    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage"
+    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage && live2dIdentity(portraitLabel) !== 'soyo'"
       :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
       :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
     <!-- Preserve the original v-if/v-else-if scene switch. An inactive
          single-person Live2D remains mounted while the paired stage is shown. -->
-    <SoyoLive2D v-if="novelMode"
+    <NovelLive2DPortrait v-if="novelMode" :speaker="live2dIdentity(portraitLabel) === 'soyo' ? portraitLabel : ''" :emotion="portraitEmotion"
+      :refresh-token="graphicsRevision" :dimmed="portraitDimmed" :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'">
+    <SoyoLive2D
       :refresh-token="graphicsRevision"
       :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
       :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
+    </NovelLive2DPortrait>
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId || cookOpen" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />

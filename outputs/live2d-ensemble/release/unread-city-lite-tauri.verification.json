@@ -1,0 +1,17 @@
+{
+  "sourceBytes": 41537751,
+  "bytes": 20383069,
+  "sourceSha256": "6fc5c8e6f0aab0e12dad1cd3e9d26a304827e41478be6e6c8e4db6ab050b06b1",
+  "sha256": "a635b916f7f603c0b0b75dcd345fc78e92c69f1758b0262dd03f555dda69c7ed",
+  "metadataEncoding": "zTXt/chara/zlib-method-0",
+  "metadataTextBytes": 39095136,
+  "compressedMetadataBytes": 17940453,
+  "metadataTextSha256": "6482866f5cd5f81739da5e0d74a2f633c488ae46d518e65b501a4a27e2cbe19c",
+  "decompressedMetadataByteIdentical": true,
+  "allOtherPngChunksByteIdentical": true,
+  "embeddedScriptChanged": false,
+  "tauriNativeImportTested": false,
+  "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern.",
+  "source": "D:\\.study\\cc\\.worktrees\\issue-86-live2d\\outputs\\live2d-ensemble\\release\\unread-city-lite.png",
+  "artifact": "D:\\.study\\cc\\.worktrees\\issue-86-live2d\\outputs\\live2d-ensemble\\release\\unread-city-lite-tauri.png"
+}

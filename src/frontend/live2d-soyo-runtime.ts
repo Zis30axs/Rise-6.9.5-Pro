@@ -7,8 +7,13 @@ import { fitSoyoPortrait } from './live2d-soyo-fit';
 
 config.sound = false;
 
-export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: AbortSignal) {
-  const lease = await createSoyoAssetLease(signal);
+export interface PortraitSource {
+  definition: ConstructorParameters<typeof Cubism2ModelSettings>[0];
+  lease: {resolve(file:string):string;release():void};
+  emotion(value:string):{expression?:string;motion?:string};
+}
+export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: AbortSignal, source?: PortraitSource) {
+  const lease = source?.lease ?? await createSoyoAssetLease(signal);
   let application: Application | undefined;
   let model: Live2DModel | undefined;
   let modelLoading = false;
@@ -32,12 +37,12 @@ export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: Abo
     if (signal?.aborted) { destroy(); throw new Error('立绘已关闭。'); }
     const app = application = new Application({ view: canvas, width: 1, height: 1, backgroundAlpha: 0, antialias: true,
       autoStart: false, sharedTicker: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), powerPreference: 'low-power' });
-    const definition = new Cubism2ModelSettings({ ...getSoyoDefinition(), url: 'soyo.model.json' });
+    const definition = new Cubism2ModelSettings(source?.definition ?? { ...getSoyoDefinition(), url: 'soyo.model.json' });
     definition.resolveURL = file => lease.resolve(file);
     modelLoading = true;
     try {
       model = await Live2DModel.from(definition, { autoInteract: false, autoUpdate: false,
-        idleMotionGroup: '默认', motionPreload: MotionPreloadStrategy.NONE });
+        idleMotionGroup: source?.emotion('平静').motion ?? '默认', motionPreload: MotionPreloadStrategy.NONE });
     } finally { modelLoading = false; if (disposed) lease.release(); }
     if (disposed) { model.destroy({ children: true, texture: true, baseTexture: true }); throw new Error('立绘已关闭。'); }
     model.anchor.set(0.5, 1);
@@ -53,7 +58,7 @@ export async function createSoyoPortrait(canvas: HTMLCanvasElement, signal?: Abo
       stopMotions: () => portrait.internalModel.motionManager.stopAllMotions(),
       expression: name => portrait.expression(name),
       motion: group => portrait.motion(group, 0, MotionPriority.FORCE),
-    });
+    }, source?.emotion);
     return {
       resize(width: number, height: number) {
         if (disposed || width <= 0 || height <= 0) return;

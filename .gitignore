@@ -45,3 +45,13 @@ start-claude2api.ps1
 /outputs/**/deployment-before.json
 /outputs/**/.last-run.json
 /outputs/**/*.pid
+
+# Reproducible optional-pack visual audits; retain summaries/contact sheets.
+/outputs/live2d-review/
+/outputs/live2d-ensemble/browser/*.zip
+/outputs/live2d-ensemble/browser/*.png
+!/outputs/live2d-ensemble/browser/desktop-single.png
+!/outputs/live2d-ensemble/browser/desktop-paired.png
+!/outputs/live2d-ensemble/browser/mobile-390-paired.png
+!/outputs/live2d-ensemble/browser/mobile-320-paired.png
+!/outputs/live2d-ensemble/browser/native-install-320.png
