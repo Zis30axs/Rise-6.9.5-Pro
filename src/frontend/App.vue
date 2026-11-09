@@ -1145,7 +1145,7 @@ onBeforeUnmount(() => {
         <textarea id="uc-story-edit-input" data-story-edit-input v-model="editingStoryDraft"
           :maxlength="editingStoryRole === 'user' ? 2000 : 6000" rows="10"
           aria-label="编辑剧情正文"></textarea>
-        <p class="story-editor-advice">仅更新选中消息的存档文本，不重播已结算的时间、金钱、位置、好感或游戏行动。旁线剧情、日志和长期记忆中的旧摘要不会自动重写。</p>
+        <p class="story-editor-advice">修改仅影响这条消息的文字。已经发生的事情及其他记录会保留原样。</p>
         <p v-if="editingStoryError" class="story-editor-error" role="alert">{{ editingStoryError }}</p>
         <footer><span>{{ editingStoryDraft.length }} / {{ editingStoryRole === 'user' ? 2000 : 6000 }} 字</span><button type="button" @click="cancelStoryEdit">取消</button><button type="button" class="story-editor-save" :disabled="model.busy || !editingStoryDraft.trim()" @click="saveStoryEdit">保存修改</button></footer>
       </section>
