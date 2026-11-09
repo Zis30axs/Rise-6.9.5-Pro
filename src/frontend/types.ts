@@ -393,6 +393,8 @@ export interface ShellActions {
   cancelInteraction?(): void;
   /** Narrative-only recaps may not submit additional world effects. */
   send(text: string, mode?: 'story' | 'law_narration'): Promise<void>;
+  /** Only replaces the saved story body's text; no world actions are replayed. */
+  editStoryEntry?(entryId: string, expectedText: string, revisedText: string): boolean;
   exit(): void;
   switchChat(): void;
   openPhone(anchor?: HTMLElement): void;
