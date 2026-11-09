@@ -66,11 +66,11 @@ function __ucLiteZipDirectory(file, view) {
   }
   return {count, size, offset};
 }
-async function __ucLiteZipEntries(file, expectedAssets) {
-  if (file.size < 22 || file.size > 250 * 1024 * 1024) throw Error('素材 ZIP 大小异常');
+async function __ucLiteZipEntries(file, expectedAssets, limits = {}) {
+  if (file.size < 22 || file.size > (limits.maxZipBytes || 250 * 1024 * 1024)) throw Error('素材 ZIP 大小异常');
   const tail = new DataView(await file.slice(Math.max(0, file.size - 65557)).arrayBuffer());
   const {count, size, offset} = __ucLiteZipDirectory(file, tail);
-  if (count > 1024 || size > 2 * 1024 * 1024) throw Error('素材 ZIP 目录超出限制');
+  if (count > (limits.maxEntries || 1024) || size > 2 * 1024 * 1024) throw Error('素材 ZIP 目录超出限制');
   const bytes = new Uint8Array(await file.slice(offset, offset + size).arrayBuffer());
   const view = new DataView(bytes.buffer);
   const decode = new TextDecoder('utf-8', {fatal: true});
@@ -83,12 +83,12 @@ async function __ucLiteZipEntries(file, expectedAssets) {
     const nameLength = view.getUint16(at + 28, true), extra = view.getUint16(at + 30, true), comment = view.getUint16(at + 32, true);
     const local = view.getUint32(at + 42, true);
     const next = at + 46 + nameLength + extra + comment;
-    if (next > size || flags & 1 || method !== 0 || packed !== unpacked || local === 0xffffffff) {
+    if (next > size || flags & 1 || !(method === 0 || (limits.deflate && method === 8)) || (method === 0 && packed !== unpacked) || local === 0xffffffff || (limits.maxEntryBytes && unpacked > limits.maxEntryBytes)) {
       throw Error('素材包只能使用未加密、无压缩的标准 ZIP');
     }
     const name = decode.decode(bytes.subarray(at + 46, at + 46 + nameLength));
     if (!/^(manifest\.json|assets\/[0-9a-f]{64})$/.test(name) || entries.has(name)) throw Error('素材 ZIP 路径或文件重复');
-    entries.set(name, {local, length: packed});
+    entries.set(name, {local, length: packed, unpacked, method, name, directory: offset});
     at = next;
   }
   if (at !== size || entries.size !== expectedAssets + 1) throw Error('素材 ZIP 文件数不符合本卡版本');
@@ -97,10 +97,30 @@ async function __ucLiteZipEntries(file, expectedAssets) {
 async function __ucLiteZipRead(file, entry) {
   if (entry.local + 30 > file.size) throw Error('ZIP 数据偏移错误');
   const header = new DataView(await file.slice(entry.local, entry.local + 30).arrayBuffer());
-  if (header.getUint32(0, true) !== 0x04034b50 || header.getUint16(8, true) !== 0) throw Error('ZIP 数据头错误');
+  if (header.getUint32(0, true) !== 0x04034b50 || header.getUint16(8, true) !== (entry.method || 0) || header.getUint16(6, true) & 1) throw Error('ZIP 数据头错误');
   const start = entry.local + 30 + header.getUint16(26, true) + header.getUint16(28, true);
-  if (start + entry.length > file.size) throw Error('ZIP 素材数据越界');
-  return new Uint8Array(await file.slice(start, start + entry.length).arrayBuffer());
+  if (start + entry.length > (entry.directory || file.size)) throw Error('ZIP 素材数据越界');
+  if (entry.name) {
+    const name = new TextDecoder('utf-8', {fatal: true}).decode(await file.slice(entry.local + 30, entry.local + 30 + header.getUint16(26, true)).arrayBuffer());
+    if (name !== entry.name) throw Error('ZIP 文件名不一致');
+  }
+  const blob = file.slice(start, start + entry.length);
+  if (entry.method !== 8) return new Uint8Array(await blob.arrayBuffer());
+  const reader = blob.stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+  const chunks = []; let total = 0;
+  try {
+    for (;;) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > entry.unpacked) throw Error('ZIP 解压大小异常');
+      chunks.push(value);
+    }
+    if (total !== entry.unpacked) throw Error('ZIP 解压数据不完整');
+  } finally { await reader.cancel(); reader.releaseLock(); }
+  const result = new Uint8Array(total); let at = 0;
+  for (const chunk of chunks) { result.set(chunk, at); at += chunk.byteLength; }
+  return result;
 }
 async function __ucLiteSha256(bytes) {
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));

@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-10",
+  "base": "c58239e7efe7ee20e493c7298f89be7428916b5e",
+  "typecheck": "vue-tsc --noEmit passed",
+  "build": "direct Vite build passed; packaged JS syntax checked",
+  "assets": "94 indices, 1931 resources and every hash/reference verified",
+  "unit": {
+    "files": 6,
+    "passed": 27,
+    "failed": 0
+  },
+  "browser": {
+    "fixture": "standalone Vue and parent/iframe fixture in headless Edge",
+    "modelsWithNonemptyPixels": 94,
+    "checks": [
+      "uninstalled fallback",
+      "uninstalled prompt unchanged",
+      "loaded portrait confirms narrative",
+      "installer fits 390",
+      "installer fits 320",
+      "all 94 real models loaded and rendered",
+      "installed pack survives reload",
+      "disable stops prompt",
+      "corrupt update keeps old activation",
+      "missing member keeps old activation",
+      "remove restores fallback and stops prompt",
+      "installer remains in native parent after script frame removal",
+      "native parent installer still works after chat switch",
+      "no external requests",
+      "no uncaught page errors"
+    ],
+    "externalRequests": 0,
+    "uncaughtErrors": 0,
+    "scope": "94-model browser pass precedes final encounter-projection and explicit-activity fixes; rendering and installer unchanged, final unit/type/build checks rerun."
+  },
+  "pack": {
+    "manifestSha256": "edf9356db3f65126cca4be08485f626959edf7de66e6512dd6350b1de66eb671",
+    "zipSha256": "8ff79b83b28ccf2ff124905c93095c048d5a77aaeddfcbbc0b814cf231eb0147",
+    "zipBytes": 54248815,
+    "counts": {
+      "anon": 15,
+      "mutsumi": 4,
+      "nyamu": 2,
+      "raana": 13,
+      "sakiko": 4,
+      "soyo": 14,
+      "taki": 16,
+      "tomori": 16,
+      "uika": 6,
+      "umiri": 4
+    }
+  },
+  "baseComparison": {
+    "baseCommit": "c58239e7efe7ee20e493c7298f89be7428916b5e",
+    "sameAssetRows": true,
+    "assetCount": 236,
+    "baseZipBytes": 96849821,
+    "newZipBytes": 96849821,
+    "baseScriptBytes": 28813754,
+    "newScriptBytes": 28842803,
+    "baseCanonicalPngBytes": 41497939,
+    "newCanonicalPngBytes": 41537751,
+    "baseTauriPngBytes": 20374322,
+    "newTauriPngBytes": 20383069,
+    "scriptGrowthBytes": 29049
+  },
+  "notRun": [
+    "GitHub Actions/CI",
+    "Agent Edition",
+    "real SillyTavern end-to-end dialogue",
+    "physical TauriTavern/iPhone",
+    "real LLM",
+    "exhaustive animation/long-running GPU stress"
+  ],
+  "sourceSha256": {
+    "scripts/build_live2d_extension.py": "2c487cd3fa7011efb51d3b39ef7d350564df06ea25094146e1449074dbbf8c83",
+    "scripts/verify_live2d_extension.py": "3864f37e67ee42e5a56693054124a4c7b479dccbecdcae0e102262e0217fb3cc",
+    "scripts/lite_asset_loader.js": "aa66e48cadde1aa361068e7e932f23f92ff3b664e41ccc87afc2aedcf1876062",
+    "scripts/live2d_asset_loader.js": "e3688d6ed800b34203dd4d30db7e3e37aab55d75f58d902d2f849204b3e5ef50",
+    "scripts/build_lite_release.py": "917a56cc9185a80af9d06a71df96ee657233661c2341087e999b2499070119da",
+    "scripts/build_lite_card.py": "a3bc109a5d8703fc36f123f0251000332f278f413c92b800f458a55bea6a62bf",
+    "src/frontend/NovelLive2DPortrait.vue": "d3c73ee50a569fa7dd89268a500f76dbcd8d6087ee7aae985770df3a2ace38e6",
+    "src/frontend/live2d-ensemble-assets.ts": "f1f30d776f26f383542c946bed10a68a0c6612640ba70dad86d8be4f5a01a35b",
+    "src/frontend/live2d-soyo-runtime.ts": "25cbd27f428b206428b691a2a9d5f7ae7966d3aad67e7e24205a5a0dd09cb301",
+    "src/frontend/live2d-soyo-expression.ts": "f2f55d3670c7eee6dd9a489796e9b907881f16229ae62313e513c21419d6d2d4",
+    "src/frontend/NovelNpcPortrait.vue": "e45af417b7187219123255e003e3afdf96859c592ec4fe52354afb1c95bb13a3",
+    "src/frontend/NovelInvitationPortraits.vue": "780436cbbbbe3ad0d39b9e1f931d410f87914bf6e42cd7f868f428a513bbdd6c",
+    "src/frontend/App.vue": "5bd29de7b66c79348c1aef53e3d501dce61f661f5f52529e979acebebe236355",
+    "src/runtime/live2d-pack.ts": "c97e4538a8159f7f35297268ef072f3541ab974912780589421e954df324b3ee",
+    "src/runtime/live2d-identity.ts": "2491059c76eb73410e590e063be20133c1b97d11a608992a93963a6b316b86ca",
+    "src/runtime/live2d-wardrobe.ts": "3af943f904483e797332bf87c99e2659b0cb615634e6534051a676f1eceb49a3",
+    "src/runtime/bridge.ts": "343b0a3d7b4f396c5a11028761fcd46a5f5f9516f0c254bdebf21bd0ae2c5701"
+  },
+  "artifacts": {
+    "outputs/live2d-ensemble/release/immersive-shell-lite.js": {
+      "bytes": 28842803,
+      "sha256": "466362598c9be641fda18805e632704b6b6772b6589633d42f71f7ff2528f171"
+    },
+    "outputs/live2d-ensemble/release/unread-city-lite.png": {
+      "bytes": 41537751,
+      "sha256": "6fc5c8e6f0aab0e12dad1cd3e9d26a304827e41478be6e6c8e4db6ab050b06b1"
+    },
+    "outputs/live2d-ensemble/release/unread-city-lite-tauri.png": {
+      "bytes": 20383069,
+      "sha256": "a635b916f7f603c0b0b75dcd345fc78e92c69f1758b0262dd03f555dda69c7ed"
+    },
+    "outputs/live2d-ensemble/release/unread-city-lite-assets.zip": {
+      "bytes": 96849821,
+      "sha256": "3c083faafb689d319a5bfb3586a603211cc4a13d94629d53ee7b11e4a499431f"
+    }
+  }
+}

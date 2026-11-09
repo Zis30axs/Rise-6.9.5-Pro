@@ -154,7 +154,8 @@ describe('面对面邀约双立绘（真实场景，不调整日程）', () => {
     expect(app).toContain('<NovelInvitationPortraits v-if="visibleInvitationStage');
     expect(app).toContain('!visibleInvitationStage');
     // The original novel/3D conditional chain must not turn on 3D behind a double portrait.
-    expect(app).toContain('<SoyoLive2D v-if="novelMode"');
+    expect(app).toContain('<NovelLive2DPortrait v-if="novelMode"');
+    expect(app).toContain('<SoyoLive2D');
     expect(app).toContain('v-else-if="model.state.interior"');
     expect(dialogue).toContain('novelInvitationPortraitFocus');
     expect(layout).toContain("return 'invitation-portraits'");
