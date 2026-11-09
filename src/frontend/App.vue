@@ -352,6 +352,10 @@ function beginStoryEdit(entry: ShellModel['state']['story'][number]) {
   editingStoryError.value = '';
   void nextTick(() => shell.value?.querySelector<HTMLTextAreaElement>('[data-story-edit-input]')?.focus({ preventScroll: true }));
 }
+function beginStoryEditById(entryId: string) {
+  const entry = storyEntries.value.find(row => row.id === entryId);
+  if (entry) beginStoryEdit(entry);
+}
 function cancelStoryEdit() {
   editingStoryId.value = null;
   editingStoryOriginal.value = '';
@@ -1092,7 +1096,7 @@ onBeforeUnmount(() => {
         @invitation-focus="invitationPortraitFocus = $event"
         :active="novelMode && !novelHistory" :entries="model.state.story"
         :busy="model.busy" @segment="novelSegment = $event"
-        @history="readEarlier" @switch-side="switchToOtherSide" />
+        @history="readEarlier" @edit="beginStoryEditById" @switch-side="switchToOtherSide" />
       <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><div class="story-entry-toolbar"><span>{{ entry.role === 'user' ? '你的行动' : '剧情回复' }}</span><button type="button" class="story-edit-button" :disabled="model.busy || !!model.interaction || !!switchingLease" :aria-label="`编辑${entry.role === 'user' ? '行动' : '剧情'}消息`" @click="beginStoryEdit(entry)">编辑</button></div><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
   :other-side-beats="entry.otherSideBeats" :return-story="entry.returnStory"
   @segment="readDialogueSegment" @switch-side="switchToOtherSide" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
