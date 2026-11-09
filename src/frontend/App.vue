@@ -8,6 +8,7 @@ import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';
 import NovelDialogue from './NovelDialogue.vue';
 import StoryEntryContent from './StoryEntryContent.vue';
+import PhonePerspectiveReader from './PhonePerspectiveReader.vue';
 import NovelNpcPortrait from './NovelNpcPortrait.vue';
 import NovelInvitationPortraits from './NovelInvitationPortraits.vue';
 import SoyoLive2D from './SoyoLive2D.vue';
@@ -17,6 +18,7 @@ import type { ProtagonistSwitchLease } from './protagonist-switch';
 import type { SwitchSceneHandle } from './switch-camera';
 import { resolveNovelNpcPortrait, standingSpeaker } from './novel-npc-portraits';
 import { isSoyoSpeaker } from './live2d-soyo-assets';
+import { mainStoryEntries, PHONE_SCENE_PREFIX } from '../runtime/phone-scene';
 import { isSakikoSpeaker } from './sakiko-art-policy';
 import { isAnonSpeaker } from './anon-art-policy';
 import { isMutsumiSpeaker } from './mutsumi-art-policy';
@@ -125,7 +127,7 @@ function switchToOtherSide(target: ProtagonistId) {
 watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
-watch(currentProtagonist, protagonist => { cancelStoryEdit(); pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
+watch(currentProtagonist, protagonist => { props.model.phoneSceneJump = undefined; cancelStoryEdit(); pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations' | 'society' | 'focus' | 'decisions';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -341,7 +343,14 @@ const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhon
 // Phone presentation renders a static front view while all walking remains disabled.
 const scenePaused = computed(() => switchingLease.value ? false : !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
-const storyEntries = computed(() => props.model.state.story);
+const storyEntries = computed(() => mainStoryEntries(props.model.state.story));
+const phonePerspective = computed(() => {
+  const target = props.model.phoneSceneJump;
+  const entry = target && props.model.state.story.find(row =>
+    row.role === 'assistant' && row.id === target.id && row.id.startsWith(PHONE_SCENE_PREFIX));
+  return entry && target?.viewpoint ? { entry, viewpoint: target.viewpoint } : null;
+});
+function closePhonePerspective() { props.model.phoneSceneJump = undefined; }
 const editingStoryId = ref<string | null>(null);
 const editingStoryOriginal = ref('');
 const editingStoryDraft = ref('');
@@ -519,7 +528,7 @@ async function switchPresentationMode(mode: PresentationMode) {
     sceneReadingMode = readingMode.value;
     sceneReadingPosition = {
       scroll: readingMode.value === 'hidden' ? savedReadingScroll : storyList.value?.scrollTop ?? 0,
-      follows: followsLatest.value, unread: hasNewContent.value, storyId: props.model.state.story.at(-1)?.id ?? '',
+      follows: followsLatest.value, unread: hasNewContent.value, storyId: storyEntries.value.at(-1)?.id ?? '',
     };
   }
   novelHistory.value = false;
@@ -530,7 +539,7 @@ async function switchPresentationMode(mode: PresentationMode) {
   if (mode === 'scene') {
     savedReadingScroll = sceneReadingPosition.scroll;
     followsLatest.value = sceneReadingPosition.follows;
-    hasNewContent.value = sceneReadingPosition.unread || sceneReadingPosition.storyId !== (props.model.state.story.at(-1)?.id ?? '');
+    hasNewContent.value = sceneReadingPosition.unread || sceneReadingPosition.storyId !== (storyEntries.value.at(-1)?.id ?? '');
     if (sceneReadingMode !== 'hidden' && storyList.value) {
       if (followsLatest.value) jumpToLatest();
       else storyList.value.scrollTop = savedReadingScroll;
@@ -639,22 +648,7 @@ function onStoryScroll() {
   followsLatest.value = list.scrollHeight - list.scrollTop - list.clientHeight < 44;
   if (followsLatest.value) hasNewContent.value = false;
 }
-watch(() => props.model.phoneSceneJump, async target => {
-  if (!target) return;
-  closeWindow(false);
-  novelHistory.value = false;
-  await setReadingMode(novelMode.value ? 'compact' : 'expanded');
-  await nextTick();
-  if (novelMode.value) return; // NovelDialogue selects the requested entry.
-  const list = storyList.value;
-  const entry = [...(list?.querySelectorAll<HTMLElement>('[data-story-id]') ?? [])]
-    .find(node => node.dataset.storyId === target.id);
-  if (!list || !entry) { jumpToLatest(); return; }
-  list.scrollTop += entry.getBoundingClientRect().top - list.getBoundingClientRect().top;
-  savedReadingScroll = list.scrollTop;
-  followsLatest.value = list.scrollHeight - list.scrollTop - list.clientHeight < 44;
-  hasNewContent.value = false;
-}, { flush: 'post' });
+watch(() => props.model.memoryScope, closePhonePerspective);
 function jumpToLatest() {
   const list = storyList.value;
   if (!list || (novelMode.value && !novelHistory.value)) return;
@@ -680,7 +674,7 @@ async function readEarlier() {
   if (storyList.value) storyList.value.scrollTop = 0;
   onStoryScroll();
 }
-watch(() => props.model.state.story.at(-1)?.id, async () => {
+watch(() => storyEntries.value.at(-1)?.id, async () => {
   historyPortrait.value = false;
   const follow = followsLatest.value && readingMode.value !== 'hidden' && (!novelMode.value || novelHistory.value);
   await nextTick();
@@ -1099,9 +1093,9 @@ onBeforeUnmount(() => {
       </section>
       <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :protagonist-id="currentProtagonist" :memory-scope="model.memoryScope"
         :recognizes-speaker="recognizesNovelSpeaker" :invitation-pair="invitationPortraitPair"
-        :focus-target="model.phoneSceneJump" @focus="heldPortrait = $event"
+        @focus="heldPortrait = $event"
         @invitation-focus="invitationPortraitFocus = $event"
-        :active="novelMode && !novelHistory" :entries="model.state.story"
+        :active="novelMode && !novelHistory" :entries="storyEntries"
         :busy="model.busy" @segment="novelSegment = $event"
         @history="readEarlier" @edit="beginStoryEditById" @switch-side="switchToOtherSide" />
       <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><div class="story-entry-toolbar"><span>{{ entry.role === 'user' ? '你的行动' : '剧情回复' }}</span><button type="button" class="story-edit-button" :disabled="model.busy || !!model.interaction || !!switchingLease" :aria-label="`编辑${entry.role === 'user' ? '行动' : '剧情'}消息`" @click="beginStoryEdit(entry)">编辑</button></div><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
@@ -1159,6 +1153,8 @@ onBeforeUnmount(() => {
     </div>
     <InteractionOverlay :model="model" :actions="actions" />
     <AcademicSetup v-if="!model.state.academics" :model="model" :actions="actions" />
+    <PhonePerspectiveReader v-if="phonePerspective" :key="phonePerspective.entry.id + ':' + model.phoneSceneJump?.token"
+      :text="phonePerspective.entry.text" :viewpoint="phonePerspective.viewpoint" @close="closePhonePerspective" />
   </div>
 </template>
 

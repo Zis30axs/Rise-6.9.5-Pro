@@ -52,8 +52,13 @@ export function phoneSceneToNovel(raw: string): string {
   return (written + raw.slice(cursor)).trim();
 }
 
+/** Exclude on-demand SMS perspectives from the normal protagonist story feed. */
+export function mainStoryEntries(entries: WorldState['story']): WorldState['story'] {
+  return entries.filter(entry => !(entry.role === 'assistant' && entry.id.startsWith(PHONE_SCENE_PREFIX)));
+}
+
 /** Append only a canonical, already-saved incoming reply's optional narrative.
- * It remains an assistant story entry, not a message, journal action or NPC fact.
+ * This hidden entry is for optional reading, not a message, journal action or NPC fact.
  */
 export function appendPhoneReplyScene(state: WorldState, replyMessageId: string, rawScene: string): WorldState {
   if (!rawScene.trim()) return state;

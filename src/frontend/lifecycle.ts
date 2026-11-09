@@ -501,7 +501,7 @@ export function mountShell(
     session, current: () => !dead && bridge.session() === session,
     busy: () => model.busy || !!model.switchingProtagonist || doc.hidden, state: snapshot,
     requestReply: requestPhoneReply,
-    openStory(id) { model.phoneSceneJump = { id, token: ++phoneSceneJumpToken }; },
+    openStory(id, viewpoint) { model.phoneSceneJump = { id, viewpoint, token: ++phoneSceneJumpToken }; },
     commit(action) {
       if (model.switchingProtagonist) throw new Error('正在切换主角，请稍候。');
       const next = saveWithSms(reduceState(snapshot(), action));

@@ -381,8 +381,8 @@ export interface ShellModel {
   phoneLinkError: string;
   phoneUnread: number;
   phoneContactUnread: { npcId: string; unread: number }[];
-  /** Transient request to return from a message bubble to its saved novel entry. */
-  phoneSceneJump?: { id: string; token: number };
+  /** On-demand SMS viewpoint, never a main-story reading cursor jump. */
+  phoneSceneJump?: { id: string; token: number; viewpoint: string };
 }
 
 export interface ShellActions {

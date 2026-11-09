@@ -3,7 +3,7 @@ import { createInitialState, parseState, reduceState } from '../src/runtime/mode
 import { applyPhoneReply, enableProtagonists } from '../src/runtime/protagonist-world';
 import { applyNpcPhoneReply } from '../src/runtime/npc-phone';
 import { parsePhoneReply, parseNpcPhoneReply, parsePhoneReplyWithScene } from '../src/runtime/phone-reply';
-import { appendPhoneReplyScene, phoneSceneId } from '../src/runtime/phone-scene';
+import { appendPhoneReplyScene, mainStoryEntries, phoneSceneId } from '../src/runtime/phone-scene';
 import { createWorldPhoneApi } from '../src/frontend/world-phone';
 
 const id = 'npc:42bbbc3d-eac6-4e5c-91a4-1b9dd455abb7';
@@ -65,6 +65,7 @@ describe('optional manual SMS off-screen narrative', () => {
     expect(added.clock).toEqual(before);
     expect(added.protagonists!.npcPhone!.messages.at(-1)?.text).toBe('当然。');
     expect(added.story).toHaveLength(storyLength+1);
+    expect(mainStoryEntries(added.story)).toHaveLength(storyLength);
     expect(added.story.at(-1)).toMatchObject({id:phoneSceneId('npc:scene-npc:reply'),role:'assistant'});
     expect(added.story.at(-1)!.text).toContain('|王冢真唯|开心|周六吗。|');
     expect(added.story.at(-1)!.text).not.toContain('<tts>');
@@ -78,18 +79,18 @@ describe('optional manual SMS off-screen narrative', () => {
     let state=enableProtagonists(createInitialState());
     state=reduceState(state,{type:'phone_app',requestId:'scene-pro',owner:'soyo',command:{type:'send_message',to:'sakiko',text:'你在吗？'}});
     state=appendPhoneReplyScene(applyPhoneReply(state,'dual:scene-pro','我在。'),'dual:scene-pro:reply','祥子放下了书。');
-    const opened:string[]=[];
+    const opened:{id:string;viewpoint:string}[]=[];
     const api=createWorldPhoneApi({
       session:'scene-session',current:()=>true,busy:()=>false,state:()=>state,
-      commit:action=>{state=reduceState(state,action);return state;},openStory:id=>opened.push(id),
+      commit:action=>{state=reduceState(state,action);return state;},openStory:(id,viewpoint)=>opened.push({id,viewpoint}),
     });
     const view=api.read();
     expect(view.phoneScenes).toEqual([{messageId:'dual:scene-pro:reply',storyId:phoneSceneId('dual:scene-pro:reply')}]);
     api.returnToStory({binding:view.binding,storyId:view.phoneScenes[0].storyId});
-    expect(opened).toEqual([phoneSceneId('dual:scene-pro:reply')]);
+    expect(opened).toEqual([{id:phoneSceneId('dual:scene-pro:reply'),viewpoint:'丰川祥子'}]);
     expect(() => api.returnToStory({binding:'wrong',storyId:view.phoneScenes[0].storyId})).toThrow('切换');
     state=reduceState(state,{type:'switch_protagonist',target:'emma'});
     expect(api.read().phoneScenes).toEqual([]);
-    expect(() => api.returnToStory({binding:api.read().binding,storyId:view.phoneScenes[0].storyId})).toThrow('不在当前主角');
+    expect(() => api.returnToStory({binding:api.read().binding,storyId:view.phoneScenes[0].storyId})).toThrow('已不可查看');
   });
 });

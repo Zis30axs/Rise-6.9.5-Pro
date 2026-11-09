@@ -17,7 +17,7 @@ export function createWorldPhoneApi(options: {
   session: string; current(): boolean; busy(): boolean; state(): WorldState;
   commit(action: Extract<WorldAction, {type:'phone_app'|'wait'}>): WorldState;
   requestReply?(messageId: string): Promise<void>;
-  openStory?(id: string): void;
+  openStory?(id: string, viewpoint: string): void;
 }) {
   const view = (s: WorldState, owner = activeProtagonist(s)) => {
     const enabled = enableProtagonists(s), p = enabled.protagonists!, active = activeProtagonist(enabled);
@@ -50,7 +50,7 @@ export function createWorldPhoneApi(options: {
       })) },
       // Only the active protagonist's lived context is visible to the NPC peek LLM.
       peekContext: owner === active ? {
-        recentStory: person.story.slice(-8).map(row => ({role:row.role,text:row.text.slice(0,450)})),
+        recentStory: person.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX)).slice(-8).map(row => ({role:row.role,text:row.text.slice(0,450)})),
         recentJournal: person.journal.slice(-12).map(row => ({text:row.text.slice(0,240)})),
       } : null,
       orders: p.orders.filter(o=>o.owner===owner), messages: person.phone, phoneScenes,
@@ -148,10 +148,12 @@ export function createWorldPhoneApi(options: {
         ...(state.protagonists?.conversations ?? []).filter(row => row.to === owner && row.replyTo !== null),
         ...(state.protagonists?.npcPhone?.messages ?? []).filter(row => row.owner === owner && row.direction === 'incoming' && row.replyTo !== null),
       ];
-      if (typeof raw.storyId !== 'string' || !saved.has(raw.storyId) ||
-          !messages.some(row => phoneSceneId(row.id) === raw.storyId)) throw Error('这段剧情已不在当前主角的正文中');
-      if (!options.openStory) throw Error('当前界面无法打开正文');
-      options.openStory(raw.storyId);
+      const reply = typeof raw.storyId === 'string' ? messages.find(row => phoneSceneId(row.id) === raw.storyId) : undefined;
+      if (!reply || !saved.has(raw.storyId)) throw Error('这段视角记录已不可查看');
+      if (!options.openStory) throw Error('当前界面无法打开视角记录');
+      const viewpoint = 'from' in reply ? protagonistNames[reply.from] :
+        npcPhoneView(state, owner).messages.find(row => row.id === reply.id)?.speakerName ?? '对方';
+      options.openStory(raw.storyId, viewpoint);
     },
     async retryReply(messageId: string) {
       if(!options.current()||options.busy()) throw Error('请等待当前行动结束后重试回复');
