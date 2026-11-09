@@ -1,4 +1,5 @@
 import { equipmentContext, getEquipmentItem } from './equipment';
+import { live2dAppearancePrompt, live2dAppearanceScene } from './live2d-wardrobe';
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
@@ -521,7 +522,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ...(snapshot.locationId === 'livehouse' ? { livehouseBill: livehouseBill(snapshot) } : {}),
         locationDetails: locations.find(location => location.id === snapshot.locationId),
         contactProposal: contactProposalContext(snapshot),
-        scene: worldSceneContext(snapshot),
+        scene: live2dAppearanceScene(ownerSession, snapshot, worldSceneContext(snapshot)),
         airTraffic,
         transit: getTransitContext(snapshot.transit, snapshot.scene, snapshot.interior),
         contacts: snapshot.contacts.map(({ id, name, status, affinity, portraitId, isMain }) => ({ id, name, status: status.slice(0, 120), affinity, portraitId, isMain })),
@@ -580,7 +581,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;
-      const combinedSystemPrompt = taggedPrompts.systemPrompt;
+      const combinedSystemPrompt = taggedPrompts.systemPrompt + (options?.kind === 'contact_introduction' || phoneTask ? '' : live2dAppearancePrompt(ownerSession, snapshot));
       const effectiveSystemPrompt = combinedSystemPrompt + (memoryNarrative && memorySettings.protocol === 'tags'
         ? '\n【记忆查询独立响应例外】当必须查阅历史时，允许只输出 <memory_lookup>JSON</memory_lookup>，此时无需 story 标签；查询结果返回后的下一次生成必须恢复原有完整剧情标签协议。\n' + MEMORY_TAG_INSTRUCTION : '');
       let smsTimeout: ReturnType<typeof setTimeout> | undefined;

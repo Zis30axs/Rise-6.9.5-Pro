@@ -1,0 +1,587 @@
+{
+  "models": [
+    {
+      "id": "036_2024_furisode",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 60551
+    },
+    {
+      "id": "036_birthday_2024_ssr",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 63566
+    },
+    {
+      "id": "036_casual-2023",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 60888
+    },
+    {
+      "id": "036_collabo_a_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 70996
+    },
+    {
+      "id": "036_collabo_d_3_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 67288
+    },
+    {
+      "id": "036_dream_festival_3_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 69450
+    },
+    {
+      "id": "036_live_default",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 64390
+    },
+    {
+      "id": "036_live_event_235_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 63671
+    },
+    {
+      "id": "036_live_event_240_ssr",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 66252
+    },
+    {
+      "id": "036_live_event_250_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 64569
+    },
+    {
+      "id": "036_live_event_286_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 62200
+    },
+    {
+      "id": "036_live_event_289_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 68561
+    },
+    {
+      "id": "036_live_event_297_ur",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 73779
+    },
+    {
+      "id": "036_live_sr_01",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 60805
+    },
+    {
+      "id": "036_school_summer-2023",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 58492
+    },
+    {
+      "id": "036_school_winter-2023",
+      "person": "tomori",
+      "rendered": true,
+      "opaquePixels": 60539
+    },
+    {
+      "id": "037_birthday_2024_ssr",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 63450
+    },
+    {
+      "id": "037_casual-2023",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 68975
+    },
+    {
+      "id": "037_collabo_a_ur",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 74874
+    },
+    {
+      "id": "037_dream_festival_3_ur",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 71768
+    },
+    {
+      "id": "037_live_default",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 73000
+    },
+    {
+      "id": "037_live_event_235_ur",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 72280
+    },
+    {
+      "id": "037_live_event_240_sr",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 72452
+    },
+    {
+      "id": "037_live_event_250_r",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 73581
+    },
+    {
+      "id": "037_live_event_253_ur",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 67353
+    },
+    {
+      "id": "037_live_event_277_sr",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 84182
+    },
+    {
+      "id": "037_live_event_286_sr",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 70879
+    },
+    {
+      "id": "037_live_event_297_sr",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 74695
+    },
+    {
+      "id": "037_live_sr_01",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 69922
+    },
+    {
+      "id": "037_school_summer-2023",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 67395
+    },
+    {
+      "id": "037_school_winter-2023",
+      "person": "anon",
+      "rendered": true,
+      "opaquePixels": 68661
+    },
+    {
+      "id": "038_birthday_2024_ssr",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 61116
+    },
+    {
+      "id": "038_casual-2023",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 63035
+    },
+    {
+      "id": "038_collabo_a_ur",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 68295
+    },
+    {
+      "id": "038_dream_festival_3_ur",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 68893
+    },
+    {
+      "id": "038_live_default",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 60112
+    },
+    {
+      "id": "038_live_event_235_sr",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 63640
+    },
+    {
+      "id": "038_live_event_240_ur",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 65124
+    },
+    {
+      "id": "038_live_event_250_sr",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 59431
+    },
+    {
+      "id": "038_live_event_286_ur",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 69346
+    },
+    {
+      "id": "038_live_event_297_sr",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 61472
+    },
+    {
+      "id": "038_live_sr_01",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 60987
+    },
+    {
+      "id": "038_school_summer-2023",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 59340
+    },
+    {
+      "id": "038_school_winter-2023",
+      "person": "raana",
+      "rendered": true,
+      "opaquePixels": 60454
+    },
+    {
+      "id": "039_birthday_2024_ssr",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 64887
+    },
+    {
+      "id": "039_casual-2023",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 67054
+    },
+    {
+      "id": "039_collabo_a_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 72785
+    },
+    {
+      "id": "039_dream_festival_3_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 67661
+    },
+    {
+      "id": "039_live_default",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 70084
+    },
+    {
+      "id": "039_live_event_235_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 71309
+    },
+    {
+      "id": "039_live_event_240_r",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 67893
+    },
+    {
+      "id": "039_live_event_250_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 73373
+    },
+    {
+      "id": "039_live_event_286_ssr",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 69670
+    },
+    {
+      "id": "039_live_event_289_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 76753
+    },
+    {
+      "id": "039_live_event_297_ur",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 86300
+    },
+    {
+      "id": "039_live_sr_01",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 71427
+    },
+    {
+      "id": "039_school_summer-2023",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 66618
+    },
+    {
+      "id": "039_school_winter-2023",
+      "person": "soyo",
+      "rendered": true,
+      "opaquePixels": 68374
+    },
+    {
+      "id": "040_arbeit",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 60019
+    },
+    {
+      "id": "040_birthday_2024_ssr",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 68875
+    },
+    {
+      "id": "040_casual-2023",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 62422
+    },
+    {
+      "id": "040_collabo_a_ur",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 65323
+    },
+    {
+      "id": "040_dream_festival_3_ur",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 67595
+    },
+    {
+      "id": "040_event_277_story_01",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 61832
+    },
+    {
+      "id": "040_live_default",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 65283
+    },
+    {
+      "id": "040_live_event_235_sr",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 63613
+    },
+    {
+      "id": "040_live_event_240_ur",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 66607
+    },
+    {
+      "id": "040_live_event_250_ssr",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 65225
+    },
+    {
+      "id": "040_live_event_277_ur",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 68177
+    },
+    {
+      "id": "040_live_event_286_r",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 64927
+    },
+    {
+      "id": "040_live_event_297_ur",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 66986
+    },
+    {
+      "id": "040_live_sr_01",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 62841
+    },
+    {
+      "id": "040_school_summer-2023",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 62356
+    },
+    {
+      "id": "040_school_winter-2023",
+      "person": "taki",
+      "rendered": true,
+      "opaquePixels": 64120
+    },
+    {
+      "id": "024_casual-2023",
+      "person": "mutsumi",
+      "rendered": true,
+      "opaquePixels": 65355
+    },
+    {
+      "id": "024_event_297_story_01",
+      "person": "mutsumi",
+      "rendered": true,
+      "opaquePixels": 68831
+    },
+    {
+      "id": "024_school_summer-2023",
+      "person": "mutsumi",
+      "rendered": true,
+      "opaquePixels": 61518
+    },
+    {
+      "id": "024_school_winter-2023",
+      "person": "mutsumi",
+      "rendered": true,
+      "opaquePixels": 63132
+    },
+    {
+      "id": "026_casual-2023",
+      "person": "nyamu",
+      "rendered": true,
+      "opaquePixels": 61011
+    },
+    {
+      "id": "026_event_297_story_01",
+      "person": "nyamu",
+      "rendered": true,
+      "opaquePixels": 63790
+    },
+    {
+      "id": "035_casual-2023",
+      "person": "sakiko",
+      "rendered": true,
+      "opaquePixels": 70501
+    },
+    {
+      "id": "035_event_297_story_01",
+      "person": "sakiko",
+      "rendered": true,
+      "opaquePixels": 75791
+    },
+    {
+      "id": "035_school_summer-2023",
+      "person": "sakiko",
+      "rendered": true,
+      "opaquePixels": 68215
+    },
+    {
+      "id": "035_school_winter-2023",
+      "person": "sakiko",
+      "rendered": true,
+      "opaquePixels": 69867
+    },
+    {
+      "id": "045_casual-2023",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 64392
+    },
+    {
+      "id": "045_casual-2023_nocap",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 63812
+    },
+    {
+      "id": "045_event_297_story_01",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 69171
+    },
+    {
+      "id": "045_school_summer-2023",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 64230
+    },
+    {
+      "id": "045_school_winter-2023",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 66031
+    },
+    {
+      "id": "045_sumimi",
+      "person": "uika",
+      "rendered": true,
+      "opaquePixels": 66221
+    },
+    {
+      "id": "046_casual-2023",
+      "person": "umiri",
+      "rendered": true,
+      "opaquePixels": 62226
+    },
+    {
+      "id": "046_event_297_story_01",
+      "person": "umiri",
+      "rendered": true,
+      "opaquePixels": 65304
+    },
+    {
+      "id": "046_school_summer-2023",
+      "person": "umiri",
+      "rendered": true,
+      "opaquePixels": 62305
+    },
+    {
+      "id": "046_school_winter-2023",
+      "person": "umiri",
+      "rendered": true,
+      "opaquePixels": 64031
+    }
+  ],
+  "checks": [
+    "uninstalled fallback",
+    "uninstalled prompt unchanged",
+    "loaded portrait confirms narrative",
+    "installer fits 390",
+    "installer fits 320",
+    "all 94 real models loaded and rendered",
+    "installed pack survives reload",
+    "disable stops prompt",
+    "corrupt update keeps old activation",
+    "missing member keeps old activation",
+    "remove restores fallback and stops prompt",
+    "installer remains in native parent after script frame removal",
+    "native parent installer still works after chat switch",
+    "no external requests",
+    "no uncaught page errors"
+  ],
+  "externalRequests": [],
+  "errors": []
+}

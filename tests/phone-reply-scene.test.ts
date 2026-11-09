@@ -19,6 +19,35 @@ describe('optional manual SMS off-screen narrative', () => {
       .toEqual({text:'好的'});
   });
 
+  it('accepts a phone tag after unstructured model reasoning', () => {
+    const raw = '[assistant]\n[reasoning]\n思考内容\n[content]\n' + combined;
+    expect(parsePhoneReplyWithScene(raw, id, true)).toEqual({ text: '十点见！', sceneText: narrated });
+  });
+
+  it('chooses the final complete phone tag instead of an example inside planning', () => {
+    const raw = [
+      '[assistant]',
+      '[reasoning]',
+      '准备回复。',
+      '[content]',
+      '<konatan_planning~>',
+      '格式示例：`<phone_reply>{"messageId":"' + id + '","text":"示例内容"}</phone_reply>`',
+      '</konatan_planning~>',
+      '<tucao>只保存正式短信。</tucao>',
+      '<phone_reply>{"messageId":"' + id + '","text":"正式回复"}</phone_reply>',
+      narrated,
+    ].join('\n');
+    expect(parsePhoneReplyWithScene(raw, id, true)).toEqual({ text: '正式回复', sceneText: narrated });
+  });
+
+  it('still rejects missing tags, wrong message IDs and extra action tags', () => {
+    expect(() => parsePhoneReplyWithScene('只有普通正文。', id)).toThrow('phone_reply');
+    expect(() => parsePhoneReplyWithScene('前言\n<phone_reply>{"messageId":"wrong","text":"好的"}</phone_reply>', id))
+      .toThrow('事件 ID');
+    expect(() => parsePhoneReplyWithScene('前言\n' + combined + '<world_actions>[]</world_actions>', id))
+      .toThrow('不允许的标签');
+  });
+
   it('rejects mismatched IDs, extra machine actions, invalid JSON and silence plus prose', () => {
     expect(() => parsePhoneReplyWithScene(combined,'npc:other',true)).toThrow('事件 ID');
     expect(() => parsePhoneReplyWithScene(combined+'<world_actions>[]</world_actions>',id,true)).toThrow('不允许的标签');

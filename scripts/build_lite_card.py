@@ -14,6 +14,7 @@ def build(lite_script: Path, output: Path) -> None:
     data['creator_notes'] += ('\n\n【Lite 外挂素材测试版】完整世界书、玩法与内嵌手机代码保留；'
                               '大体积图像、东京 3D 沙盘模型等均由配套离线 ZIP 安装。'
                               '第一次进入请点击右上角“安装 Lite 素材 ZIP”，安装完成后刷新酒馆页面。'
+                              'MyGO + Ave Mujica Live2D 为独立可选 ZIP，可通过“安装 Live2D 素材 ZIP”启用；不安装也可正常游玩。'
                               '没有素材时使用缺省图像/可能无法显示模型；不联网；未经 iPhone 真机验收。')
     data['extensions']['unread_city']['immersive'].update({
         'bundle': 'lite-offline-zip-v1', 'requires_external_assets': True,
@@ -21,6 +22,7 @@ def build(lite_script: Path, output: Path) -> None:
         'assetPacks': [
             {'id': 'lite-assets', 'archive': 'unread-city-lite-assets.zip', 'required': True,
              'tokyoSandboxIncluded': True},
+            {'id': 'live2d-ensemble', 'archive': 'unread-city-live2d.zip', 'required': False},
         ],
     })
     scripts = data['extensions']['tavern_helper']['scripts']

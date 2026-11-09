@@ -9,7 +9,7 @@ interface ExpressionTarget {
 
 /** Cancel even when the requested expression is already visible: the upstream
  * manager otherwise leaves an older, still-loading expression reserved. */
-export function createSoyoExpressionController(target: ExpressionTarget) {
+export function createSoyoExpressionController(target: ExpressionTarget, resolve: (value:string) => {expression?:string;motion?:string} = value => soyoEmotionMap[resolveSoyoEmotion(value)]) {
   let generation = 0;
   let dead = false;
   return {
@@ -18,10 +18,10 @@ export function createSoyoExpressionController(target: ExpressionTarget) {
       const current = ++generation;
       target.cancelPendingExpression();
       target.stopMotions();
-      const mapping = soyoEmotionMap[resolveSoyoEmotion(value)];
-      const changed = await target.expression(mapping.expression);
+      const mapping = resolve(value);
+      const changed = mapping.expression ? await target.expression(mapping.expression) : false;
       if (dead || current !== generation) return false;
-      await target.motion(mapping.motion);
+      if (mapping.motion) await target.motion(mapping.motion);
       return changed;
     },
     dispose() { dead = true; generation++; target.cancelPendingExpression(); },

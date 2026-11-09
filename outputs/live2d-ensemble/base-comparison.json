@@ -1,0 +1,14 @@
+{
+  "baseCommit": "c58239e7efe7ee20e493c7298f89be7428916b5e",
+  "sameAssetRows": true,
+  "assetCount": 236,
+  "baseZipBytes": 96849821,
+  "newZipBytes": 96849821,
+  "baseScriptBytes": 28813754,
+  "newScriptBytes": 28842803,
+  "baseCanonicalPngBytes": 41497939,
+  "newCanonicalPngBytes": 41537751,
+  "baseTauriPngBytes": 20374322,
+  "newTauriPngBytes": 20383069,
+  "scriptGrowthBytes": 29049
+}
