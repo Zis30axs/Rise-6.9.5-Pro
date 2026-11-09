@@ -96,6 +96,29 @@
 .story-user { margin:18px 0; padding:7px 0 7px 12px; border-left:2px solid #b6a57b; color:#bdc6b0; }
 .story-speaker { font-size:10px; letter-spacing:.08em; color:#d3bb8a; }
 .story-user p { font-family:inherit; font-size:13px; line-height:1.8; text-indent:0; }
+
+.story-entry-toolbar { display:flex; justify-content:flex-end; align-items:center; gap:10px; min-height:25px; margin-bottom:4px; font-size:10px; color:#aab9a6; }
+.story-entry-toolbar > span { margin-right:auto; letter-spacing:.04em; }
+.uc-shell .story-entry-toolbar .story-edit-button { min-width:50px; min-height:28px; padding:3px 9px; border:1px solid #c9b58070; border-radius:7px; color:#f0d7a4; background:#ffffff0b; font-size:11px; }
+.uc-shell .story-entry-toolbar .story-edit-button:disabled { opacity:.4; cursor:not-allowed; }
+.uc-shell .story-entry-toolbar .story-edit-button:not(:disabled):hover { background:#a7935433; }
+.story-editor-mask { position:fixed; inset:0; z-index:175; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(8,15,13,.83); }
+.story-editor-dialog { box-sizing:border-box; display:flex; flex-direction:column; gap:11px; width:min(760px,100%); max-height:92dvh; overflow:auto; padding:22px; border:1px solid #d5bf8c8f; border-radius:14px; background:#193025; box-shadow:0 18px 80px #0009; color:#f0e9d6; }
+.story-editor-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.story-editor-dialog h2 { margin:0; font-size:19px; font-weight:600; }
+.uc-shell .story-editor-dialog header button { width:36px; height:36px; flex-shrink:0; border-radius:50%; background:#ffffff14; font-size:22px; color:#eee9d7; }
+.story-editor-dialog label { font-size:12px; color:#d6c48f; }
+.uc-shell .story-editor-dialog textarea { box-sizing:border-box; display:block; width:100%; min-height:160px; max-height:50dvh; padding:12px; resize:vertical; border:1px solid #a9af9666; border-radius:8px; background:#0e221b; color:#f6efdc; font:14px/1.65 system-ui,sans-serif; white-space:pre-wrap; }
+.uc-shell .story-editor-dialog textarea:focus-visible { outline:2px solid #ddbb79; outline-offset:2px; }
+.story-editor-advice { margin:0; color:#c8cfbc; font-size:12px; line-height:1.6; }
+.story-editor-error { margin:0; color:#ffb7a5; font-size:12px; }
+.story-editor-dialog footer { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
+.story-editor-dialog footer span { margin-right:auto; font-size:11px; color:#afbdad; }
+.uc-shell .story-editor-dialog footer button { min-height:40px; padding:8px 16px; border:1px solid #d6c38c66; border-radius:7px; background:#ffffff0c; color:#eee6cc; font-size:12px; }
+.uc-shell .story-editor-dialog footer .story-editor-save { background:#dfc58e; color:#24382b; font-weight:600; }
+.uc-shell .story-editor-dialog footer button:disabled { opacity:.4; cursor:not-allowed; }
+@media(max-width:600px) { .story-editor-mask { padding:8px; } .story-editor-dialog { padding:14px; max-height:95dvh; } .uc-shell .story-editor-dialog textarea { min-height:180px; max-height:57dvh; } }
+
 .composer { flex-shrink:0; display:flex; align-items:flex-end; gap:14px; padding-top:9px; border-top:1px solid var(--line); }
 .uc-shell .composer textarea { min-width:0; flex:1; min-height:43px; max-height:100px; height:43px; padding:9px 0; resize:vertical; border:0; color:#eee9d7; background:transparent; font-size:14px; line-height:1.65; border-radius:0; }
 .composer textarea::placeholder { color:#9eae98; }
