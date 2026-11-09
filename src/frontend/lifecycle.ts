@@ -10,6 +10,7 @@ import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
+import { editStoryEntry as editSavedStoryEntry } from '../runtime/story-editor';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
 import { spatialPhoneLease } from './phone-spatial';
@@ -587,6 +588,29 @@ export function mountShell(
         if (stillCurrent(request)) model.notice = message(error);
       } finally {
         if (stillCurrent(request)) model.busy = false;
+      }
+    },
+    editStoryEntry(entryId, expectedText, revisedText) {
+      if (dead || doc.hidden || model.busy || model.switchingProtagonist ||
+        pendingInteraction || smsWorking || activePhoneReply || bridge.session() !== session) {
+        model.notice = '当前有未完成的剧情或后台操作，暂时不能编辑，请稍后重试。';
+        return false;
+      }
+      try {
+        const current = snapshot();
+        const edited = editSavedStoryEntry(current, entryId, expectedText, revisedText);
+        if (edited !== current) {
+          // Save the edited transcript directly. Do not stage SMS, advance time,
+          // rerun narrative actions or regenerate the original assistant reply.
+          const validated = parseState(edited);
+          bridge.save(validated);
+          model.state = validated;
+        }
+        model.notice = '消息已修改。以前发生的行动和其他记录保持不变。';
+        return true;
+      } catch (error) {
+        model.notice = message(error);
+        return false;
       }
     },
     exit: () => dispose(),

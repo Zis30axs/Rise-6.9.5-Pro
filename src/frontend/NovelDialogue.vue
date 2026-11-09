@@ -29,6 +29,7 @@ const emit = defineEmits<{
   focus: [focus: { speaker: string; emotion: string; dimmed: boolean }];
   invitationFocus: [focus: NovelInvitationPortraitFocus | null];
   history: [];
+  edit: [entryId: string];
   switchSide: [target: ProtagonistId];
 }>();
 
@@ -60,6 +61,10 @@ const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
 }));
 
 const current = computed(() => rows.value[cursor.value]);
+// A text edit can reduce the number of dialogue segments without changing entry IDs.
+watch(() => rows.value.length, count => {
+  if (count && cursor.value >= count) cursor.value = count - 1;
+});
 const sideChoice = computed(() => current.value?.choiceTargets ?? null);
 const canAdvance = computed(() => cursor.value < rows.value.length - 1);
 const portraitFocus = computed(() => novelPortraitFocus(rows.value, cursor.value, current.value?.viewpoint ?? props.protagonist, props.recognizesSpeaker));
@@ -187,6 +192,7 @@ function onDialogueWheel(event: WheelEvent) {
         @click="emit('switchSide', target)">切换到{{ protagonistNames[target] }}的视角</button>
     </div>
     <div class="novel-dialogue-controls">
+      <button v-if="current" :disabled="busy" aria-label="编辑本条剧情消息" @click="emit('edit', current.entryId)">编辑本条</button>
       <button :disabled="cursor === 0" aria-label="上一句剧情" @click="retreat">上一句</button>
       <button @click="emit('history')">全文回看</button>
       <button v-if="!sideChoice" :disabled="!canAdvance" aria-label="下一句剧情" @click="advance">{{ canAdvance ? '点击继续 ▸' : busy ? '等待下一段…' : '本段已读完' }}</button>

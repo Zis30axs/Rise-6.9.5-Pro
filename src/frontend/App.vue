@@ -125,7 +125,7 @@ function switchToOtherSide(target: ProtagonistId) {
 watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
-watch(currentProtagonist, protagonist => { pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
+watch(currentProtagonist, protagonist => { cancelStoryEdit(); pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations' | 'society' | 'focus' | 'decisions';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -342,6 +342,39 @@ const embeddedPhone = computed(() => activeWindow.value === 'phone' && !demoPhon
 const scenePaused = computed(() => switchingLease.value ? false : !props.model.state.academics || studyPickerOpen.value || (activeWindow.value === 'phone' ? false : props.model.busy || readingMode.value === 'expanded' || !!activeWindow.value));
 const unread = computed(() => demoPhone.value ? props.model.state.phone.filter(item => !item.read).length : props.model.phoneUnread);
 const storyEntries = computed(() => props.model.state.story);
+const editingStoryId = ref<string | null>(null);
+const editingStoryOriginal = ref('');
+const editingStoryDraft = ref('');
+const editingStoryRole = ref<'user' | 'assistant'>('assistant');
+const editingStoryError = ref('');
+function beginStoryEdit(entry: ShellModel['state']['story'][number]) {
+  if (props.model.busy || props.model.switchingProtagonist || props.model.interaction || switchingLease.value) return;
+  editingStoryId.value = entry.id;
+  editingStoryOriginal.value = entry.text;
+  editingStoryDraft.value = entry.text;
+  editingStoryRole.value = entry.role;
+  editingStoryError.value = '';
+  void nextTick(() => shell.value?.querySelector<HTMLTextAreaElement>('[data-story-edit-input]')?.focus({ preventScroll: true }));
+}
+function beginStoryEditById(entryId: string) {
+  const entry = storyEntries.value.find(row => row.id === entryId);
+  if (entry) beginStoryEdit(entry);
+}
+function cancelStoryEdit() {
+  editingStoryId.value = null;
+  editingStoryOriginal.value = '';
+  editingStoryDraft.value = '';
+  editingStoryError.value = '';
+}
+function saveStoryEdit() {
+  const id = editingStoryId.value;
+  if (!id || props.model.busy || props.model.switchingProtagonist || props.model.interaction) return;
+  if (props.actions.editStoryEntry?.(id, editingStoryOriginal.value, editingStoryDraft.value)) {
+    cancelStoryEdit();
+  } else {
+    editingStoryError.value = props.model.notice || '保存失败，请重新打开编辑器重试。';
+  }
+}
 const dismissedMeetingPrompts = ref<string[]>([]);
 const meetingPrompt = computed(() => {
   const state=props.model.state, now=socialMinute(state);
@@ -899,6 +932,7 @@ function claimMysteryGift() {
   }
 }
 function dismissOverlay() {
+  if (editingStoryId.value) { cancelStoryEdit(); return true; }
   if (toolDock.value?.close(true)) return true;
   if (mysteryDialog.value) { mysteryDialog.value = null; return true; }
   if (pendingCourtSwitch.value) { pendingCourtSwitch.value=null; return true; }
@@ -1069,8 +1103,8 @@ onBeforeUnmount(() => {
         @invitation-focus="invitationPortraitFocus = $event"
         :active="novelMode && !novelHistory" :entries="model.state.story"
         :busy="model.busy" @segment="novelSegment = $event"
-        @history="readEarlier" @switch-side="switchToOtherSide" />
-      <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
+        @history="readEarlier" @edit="beginStoryEditById" @switch-side="switchToOtherSide" />
+      <div v-show="!novelMode || novelHistory" ref="storyList" class="story-list" role="log" :aria-live="followsLatest ? 'polite' : 'off'" aria-label="故事记录" :aria-busy="model.busy" @scroll="onStoryScroll"><article v-for="entry in storyEntries" :key="entry.id" class="story-entry" :class="{ 'story-user': entry.role === 'user' }" :data-story-id="entry.id"><div class="story-entry-toolbar"><span>{{ entry.role === 'user' ? '你的行动' : '剧情回复' }}</span><button type="button" class="story-edit-button" :disabled="model.busy || !!model.interaction || !!switchingLease" :aria-label="`编辑${entry.role === 'user' ? '行动' : '剧情'}消息`" @click="beginStoryEdit(entry)">编辑</button></div><StoryEntryContent :text="entry.text" :role="entry.role" :protagonist="protagonistNames[currentProtagonist]"
   :other-side-beats="entry.otherSideBeats" :return-story="entry.returnStory"
   @segment="readDialogueSegment" @switch-side="switchToOtherSide" /></article><p v-if="!storyEntries.length" class="empty-story">{{ currentLocation.description }} 你想从什么开始？</p></div>
       <button v-if="hasNewContent && (!novelMode || novelHistory)" class="new-content" @click="jumpToLatest">有新内容 <span aria-hidden="true">↓</span></button>
@@ -1109,6 +1143,18 @@ onBeforeUnmount(() => {
             <button type="button" data-close-mystery-visitor @click="mysteryDialog=null">{{ mysteryGiftReceipt ? '离开' : '暂时告别' }}</button>
           </div>
         </div>
+      </section>
+    </div>
+    <div v-if="editingStoryId" class="story-editor-mask" data-story-editor @click.self="cancelStoryEdit">
+      <section class="story-editor-dialog" role="dialog" aria-modal="true" aria-label="编辑剧情消息" @keydown.ctrl.enter.prevent="saveStoryEdit">
+        <header><h2>编辑{{ editingStoryRole === 'user' ? '你的行动' : '剧情回复' }}</h2><button type="button" aria-label="关闭剧情编辑" @click="cancelStoryEdit">×</button></header>
+        <label for="uc-story-edit-input">正文</label>
+        <textarea id="uc-story-edit-input" data-story-edit-input v-model="editingStoryDraft"
+          :maxlength="editingStoryRole === 'user' ? 2000 : 6000" rows="10"
+          aria-label="编辑剧情正文"></textarea>
+        <p class="story-editor-advice">修改仅影响这条消息的文字。已经发生的事情及其他记录会保留原样。</p>
+        <p v-if="editingStoryError" class="story-editor-error" role="alert">{{ editingStoryError }}</p>
+        <footer><span>{{ editingStoryDraft.length }} / {{ editingStoryRole === 'user' ? 2000 : 6000 }} 字</span><button type="button" @click="cancelStoryEdit">取消</button><button type="button" class="story-editor-save" :disabled="model.busy || !editingStoryDraft.trim()" @click="saveStoryEdit">保存修改</button></footer>
       </section>
     </div>
     <InteractionOverlay :model="model" :actions="actions" />
