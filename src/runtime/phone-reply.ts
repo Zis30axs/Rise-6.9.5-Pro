@@ -90,7 +90,10 @@ export interface ParsedPhoneReply {
 
 export function parsePhoneReplyWithScene(raw: unknown, messageId: string, allowSilence = false): ParsedPhoneReply {
   if (typeof raw !== 'string' || raw.length > 20_000) throw new Error('短信回复格式无效。');
-  const matched = /^\s*<phone_reply>([\s\S]*?)<\/phone_reply>([\s\S]*)$/i.exec(raw);
+  // Model reasoning/presets may precede the payload, including quoted protocol examples.
+  // Use the final complete tag pair and discard everything before it.
+  const matches = [...raw.matchAll(/<phone_reply>([\s\S]*?)<\/phone_reply>/gi)];
+  const matched = matches.at(-1);
   if (!matched) throw new Error('短信回复缺少正确的 phone_reply 标签。');
   let parsed: unknown;
   try { parsed = JSON.parse(matched[1]!); }
@@ -112,7 +115,7 @@ export function parsePhoneReplyWithScene(raw: unknown, messageId: string, allowS
   if (message !== null && (!message || message.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(message))) {
     throw new Error('短信内容无效。');
   }
-  let sceneText = matched[2]!.trim();
+  let sceneText = raw.slice((matched.index ?? 0) + matched[0].length).trim();
   const wrapped = /^<story>([\s\S]*?)<\/story>$/i.exec(sceneText);
   if (wrapped) sceneText = wrapped[1]!.trim();
   if (sceneText && (sceneText.length > 6000 ||
