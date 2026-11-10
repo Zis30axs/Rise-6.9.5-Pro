@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-10",
+  "status": "local-checks-passed",
+  "unitTests": 24,
+  "browsers": {
+    "browser": {
+      "passed": 24,
+      "scope": "Controlled viewport changes; real CSS, viewport lease, original phone host and spatial phone renderer. No Agent Edition, real LLM or physical Tauri device."
+    },
+    "packaged-browser": {
+      "passed": 9,
+      "scope": "Production Lite IIFE and embedded phone on a fixture Tavern host; simulated keyboard viewport events, not physical TauriTavern. Phone close uses DOM click because the existing optional Live2D installer overlaps the desktop close control."
+    }
+  },
+  "cardScriptMatchesFinalBuild": true,
+  "tauriMetadataLossless": true,
+  "scriptComparison": "UTF-8 text with universal newline normalization, matching build_card input handling",
+  "assetPacks": [
+    {
+      "id": "lite-assets",
+      "archive": "unread-city-lite-assets.zip",
+      "required": true,
+      "tokyoSandboxIncluded": true
+    },
+    {
+      "id": "live2d-ensemble",
+      "archive": "unread-city-live2d.zip",
+      "required": false
+    }
+  ],
+  "artifacts": {
+    "immersive-shell-lite.js": {
+      "bytes": 28846982,
+      "sha256": "69b370b7981682f34efccff2e3c5661493b53c5bbcb4e9389e961a099e3c294b"
+    },
+    "unread-city-lite.png": {
+      "bytes": 41543451,
+      "sha256": "adecad5eb74817cfc6bfe41e70eb543a3d784df0cd8650a0fd10b55faab2326b"
+    },
+    "unread-city-lite-tauri-keyboard.png": {
+      "bytes": 20384171,
+      "sha256": "559b7d2b610bc9c74ae332df0df56a3b61ed99b766bff8f7aece53cd46d5aa1f"
+    },
+    "unread-city-lite-assets.zip": {
+      "bytes": 96849821,
+      "sha256": "3cc3ee740a1dcdf9de11dd95c14586e3a1e5474b0870ed41949526de8dc01739"
+    }
+  },
+  "notRun": [
+    "physical TauriTavern/iPhone keyboard and import",
+    "GitHub Actions/CI",
+    "Agent Edition",
+    "real LLM",
+    "legacy full release verifier"
+  ],
+  "deployed": false
+}

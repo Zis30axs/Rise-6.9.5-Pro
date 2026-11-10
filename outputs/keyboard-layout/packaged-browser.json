@@ -1,0 +1,772 @@
+{
+  "scope": "Production Lite IIFE and embedded phone on a fixture Tavern host; simulated keyboard viewport events, not physical TauriTavern. Phone close uses DOM click because the existing optional Live2D installer overlaps the desktop close control.",
+  "cases": [
+    {
+      "width": 390,
+      "height": 844,
+      "target": "novel",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": null,
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": null,
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone-expanded",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 94.1875
+        },
+        "dock": {
+          "left": 97,
+          "top": 766,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "novel",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": null,
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": null,
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone-expanded",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 92.578125
+        },
+        "dock": {
+          "left": 62,
+          "top": 490,
+          "width": 196,
+          "height": 66
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "target": "novel",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 268,
+          "top": 818,
+          "width": 788.4375,
+          "height": 43
+        },
+        "phone": null,
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 268,
+          "top": 818,
+          "width": 788.4375,
+          "height": 43
+        },
+        "phone": null,
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "target": "phone",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 398,
+          "top": 818,
+          "width": 528.4375,
+          "height": 43
+        },
+        "phone": {
+          "left": 1012,
+          "top": 161,
+          "width": 281,
+          "height": 609
+        },
+        "scale": "0.7181",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 398,
+          "top": 818,
+          "width": 528.4375,
+          "height": 43
+        },
+        "phone": {
+          "left": 1012,
+          "top": 161,
+          "width": 281,
+          "height": 609
+        },
+        "scale": "0.7181",
+        "modelCalls": 0
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "target": "phone-expanded",
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "draftPreserved": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 398,
+          "top": 818,
+          "width": 528.4375,
+          "height": 43
+        },
+        "phone": {
+          "left": 925,
+          "top": 131,
+          "width": 338,
+          "height": 731
+        },
+        "scale": "0.8605",
+        "modelCalls": 0
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "shell": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1440,
+          "height": 98.796875
+        },
+        "dock": {
+          "left": 1330,
+          "top": 362.25,
+          "width": 86,
+          "height": 175.5
+        },
+        "input": {
+          "left": 398,
+          "top": 818,
+          "width": 528.4375,
+          "height": 43
+        },
+        "phone": {
+          "left": 925,
+          "top": 131,
+          "width": 338,
+          "height": 731
+        },
+        "scale": "0.8605",
+        "modelCalls": 0
+      }
+    }
+  ],
+  "errors": [],
+  "blockedRequests": []
+}

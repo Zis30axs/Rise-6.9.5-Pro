@@ -31,7 +31,7 @@ describe('novel NPC portrait stage regression', () => {
     const css = readFileSync('src/frontend/novel-npc-portrait.css', 'utf8');
     expect(css).toMatch(/\.novel-npc-portrait\s*\{[^}]*inset:\s*90px 110px 24px 0/s);
     expect(css).toMatch(/@media\s*\(max-width:\s*760px\)\s*\{\s*\.novel-npc-portrait\s*\{\s*inset:\s*146px 12px 84px;/);
-    expect(css).toMatch(/@media\s*\(max-height:\s*670px\) and \(max-width:\s*760px\)\s*\{\s*\.novel-npc-portrait\s*\{\s*inset:\s*118px 12px 24px;/);
+    expect(css).toMatch(/:where\(:host\(\[data-uc-max-height~="670"\]\)\)\s*\.novel-npc-portrait\s*\{\s*inset:\s*118px 12px 24px;/);
     expect(css).toMatch(/\.novel-npc-portrait__sprite\s*\{[^}]*object-fit:\s*contain;/s);
   });
 });

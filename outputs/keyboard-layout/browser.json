@@ -1,0 +1,3399 @@
+{
+  "scope": "Controlled viewport changes; real CSS, viewport lease, original phone host and spatial phone renderer. No Agent Edition, real LLM or physical Tauri device.",
+  "cases": [
+    {
+      "width": 390,
+      "height": 844,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 71
+        },
+        "dock": {
+          "left": 10,
+          "top": 766,
+          "width": 370,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 146,
+          "width": 366,
+          "height": 614
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 390,
+          "height": 409
+        },
+        "pairedPortraits": {
+          "left": 8,
+          "top": 142,
+          "width": 374,
+          "height": 608
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 350,
+          "height": 654
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 71
+        },
+        "dock": {
+          "left": 8,
+          "top": 490,
+          "width": 304,
+          "height": 66
+        },
+        "portrait": {
+          "left": 12,
+          "top": 118,
+          "width": 296,
+          "height": 426
+        },
+        "live2d": {
+          "left": 153.59375,
+          "top": 52,
+          "width": 166.40625,
+          "height": 206
+        },
+        "pairedPortraits": {
+          "left": 6,
+          "top": 112,
+          "width": 308,
+          "height": 421
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 280,
+          "height": 378
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 394,
+          "top": 122,
+          "width": 340,
+          "height": 246
+        },
+        "phone": {
+          "left": 513,
+          "top": 135,
+          "width": 102,
+          "height": 221
+        },
+        "scale": "0.2614",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 394,
+          "top": 122,
+          "width": 340,
+          "height": 246
+        },
+        "phone": {
+          "left": 513,
+          "top": 135,
+          "width": 102,
+          "height": 221
+        },
+        "scale": "0.2614",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 394,
+          "top": 122,
+          "width": 340,
+          "height": 246
+        },
+        "phone": {
+          "left": 513,
+          "top": 135,
+          "width": 102,
+          "height": 221
+        },
+        "scale": "0.2614",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 394,
+          "top": 122,
+          "width": 340,
+          "height": 246
+        },
+        "phone": {
+          "left": 513,
+          "top": 135,
+          "width": 102,
+          "height": 221
+        },
+        "scale": "0.2614",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 264,
+          "top": 108,
+          "width": 470,
+          "height": 266
+        },
+        "phone": {
+          "left": 444,
+          "top": 121,
+          "width": 111,
+          "height": 240
+        },
+        "scale": "0.2841",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 264,
+          "top": 108,
+          "width": 470,
+          "height": 266
+        },
+        "phone": {
+          "left": 444,
+          "top": 121,
+          "width": 111,
+          "height": 240
+        },
+        "scale": "0.2841",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 264,
+          "top": 108,
+          "width": 470,
+          "height": 266
+        },
+        "phone": {
+          "left": 444,
+          "top": 121,
+          "width": 111,
+          "height": 240
+        },
+        "scale": "0.2841",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 390
+        },
+        "input": {
+          "left": 118,
+          "top": 318,
+          "width": 540,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 844,
+          "height": 86
+        },
+        "dock": {
+          "left": 744,
+          "top": 136,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 734,
+          "height": 276
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 734,
+          "height": 0
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 760,
+          "height": 194
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 804,
+          "height": 200
+        },
+        "slot": {
+          "left": 264,
+          "top": 108,
+          "width": 470,
+          "height": 266
+        },
+        "phone": {
+          "left": 444,
+          "top": 121,
+          "width": 111,
+          "height": 240
+        },
+        "scale": "0.2841",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 559,
+          "top": 141,
+          "width": 354,
+          "height": 581
+        },
+        "phone": {
+          "left": 610,
+          "top": 160,
+          "width": 252,
+          "height": 544
+        },
+        "scale": "0.6420",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 559,
+          "top": 141,
+          "width": 354,
+          "height": 581
+        },
+        "phone": {
+          "left": 610,
+          "top": 160,
+          "width": 252,
+          "height": 544
+        },
+        "scale": "0.6420",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 559,
+          "top": 141,
+          "width": 354,
+          "height": 581
+        },
+        "phone": {
+          "left": 610,
+          "top": 160,
+          "width": 252,
+          "height": 544
+        },
+        "scale": "0.6420",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 559,
+          "top": 141,
+          "width": 354,
+          "height": 581
+        },
+        "phone": {
+          "left": 610,
+          "top": 160,
+          "width": 252,
+          "height": 544
+        },
+        "scale": "0.6420",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 443,
+          "top": 108,
+          "width": 470,
+          "height": 644
+        },
+        "phone": {
+          "left": 538,
+          "top": 128,
+          "width": 280,
+          "height": 605
+        },
+        "scale": "0.7136",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 443,
+          "top": 108,
+          "width": 470,
+          "height": 644
+        },
+        "phone": {
+          "left": 538,
+          "top": 128,
+          "width": 280,
+          "height": 605
+        },
+        "scale": "0.7136",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": true,
+      "heldThroughBlur": true,
+      "recovered": true,
+      "nativeRestored": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 443,
+          "top": 108,
+          "width": 470,
+          "height": 644
+        },
+        "phone": {
+          "left": 538,
+          "top": 128,
+          "width": 280,
+          "height": 605
+        },
+        "scale": "0.7136",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 768
+        },
+        "input": {
+          "left": 118,
+          "top": 686,
+          "width": 720,
+          "height": 43
+        },
+        "chrome": {
+          "left": 0,
+          "top": 0,
+          "width": 1024,
+          "height": 92
+        },
+        "dock": {
+          "left": 924,
+          "top": 325,
+          "width": 76,
+          "height": 118
+        },
+        "portrait": {
+          "left": 0,
+          "top": 90,
+          "width": 914,
+          "height": 654
+        },
+        "live2d": {
+          "left": 0,
+          "top": 70,
+          "width": 914,
+          "height": 368
+        },
+        "pairedPortraits": {
+          "left": 42,
+          "top": 118,
+          "width": 940,
+          "height": 572
+        },
+        "fixed": {
+          "left": 20,
+          "top": 100,
+          "width": 984,
+          "height": 578
+        },
+        "slot": {
+          "left": 443,
+          "top": 108,
+          "width": 470,
+          "height": 644
+        },
+        "phone": {
+          "left": 538,
+          "top": 128,
+          "width": 280,
+          "height": 605
+        },
+        "scale": "0.7136",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}

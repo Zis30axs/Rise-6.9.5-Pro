@@ -48,6 +48,12 @@ start-claude2api.ps1
 
 # Reproducible optional-pack visual audits; retain summaries/contact sheets.
 /outputs/live2d-review/
+
+# Keyboard regression screenshots are reproducible; retain representative evidence.
+/outputs/keyboard-layout/*.png
+!/outputs/keyboard-layout/before-320-phone-layout.png
+!/outputs/keyboard-layout/after-320-phone-layout.png
+!/outputs/keyboard-layout/packaged-390-phone-expanded.png
 /outputs/live2d-ensemble/browser/*.zip
 /outputs/live2d-ensemble/browser/*.png
 !/outputs/live2d-ensemble/browser/desktop-single.png

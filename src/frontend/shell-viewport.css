@@ -10,6 +10,9 @@
 }
 :host([data-uc-viewport]) #unread-city-app,
 :host([data-uc-viewport]) .uc-shell { height:100%; min-height:0; }
+/* Fixed dialogs and menus belong to the stable Shell, not the keyboard-sized
+   native layout viewport. Layout containment establishes their containing block. */
+:host([data-uc-viewport]) .uc-shell { contain:layout; }
 :host([data-uc-viewport]) .composer { min-width:0; }
 :host([data-uc-viewport]) .composer > button { min-height:44px; white-space:nowrap; }
 :host([data-uc-viewport]) .uc-shell .world-chrome .host-actions > .graphics-refresh-button {

@@ -31,11 +31,7 @@
   .novel-npc-portrait[data-majo-portrait] { inset: 146px 12px 84px; }
   .novel-npc-portrait.protagonist-phone-pose { inset: 133px 12px 84px; }
 }
-@media (max-height: 670px) and (max-width: 760px) {
-  .novel-npc-portrait { inset: 118px 12px 24px; }
-  .novel-npc-portrait[data-sakiko-sprite], .novel-npc-portrait[data-mutsumi-sprite], .novel-npc-portrait[data-anon-sprite], .novel-npc-portrait[data-raana-sprite], .novel-npc-portrait[data-taki-sprite] { inset: 72px 12px 24px; }
-  .novel-npc-portrait[data-majo-portrait] { inset: 118px 12px 24px; }
-  .novel-npc-portrait.protagonist-phone-pose { inset: 72px 12px 24px; }
+@media (max-width: 760px) {:where(:host([data-uc-max-height~="670"])) .novel-npc-portrait{ inset: 118px 12px 24px; }:where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-sakiko-sprite], :where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-mutsumi-sprite], :where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-anon-sprite], :where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-raana-sprite], :where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-taki-sprite]{ inset: 72px 12px 24px; }:where(:host([data-uc-max-height~="670"])) .novel-npc-portrait[data-majo-portrait]{ inset: 118px 12px 24px; }:where(:host([data-uc-max-height~="670"])) .novel-npc-portrait.protagonist-phone-pose{ inset: 72px 12px 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .novel-npc-portrait { transition: none; }

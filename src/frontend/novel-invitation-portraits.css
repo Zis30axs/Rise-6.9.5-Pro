@@ -43,8 +43,7 @@
 @media (max-width: 760px) {
   .novel-invitation-portraits { inset: 142px 8px 94px; gap: 2px; }
 }
-@media (max-height: 670px) and (max-width: 760px) {
-  .novel-invitation-portraits { inset: 112px 6px 35px; }
+@media (max-width: 760px) {:where(:host([data-uc-max-height~="670"])) .novel-invitation-portraits{ inset: 112px 6px 35px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .novel-invitation-portraits__side { transition: none; }

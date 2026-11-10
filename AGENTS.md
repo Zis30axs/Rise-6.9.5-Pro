@@ -1,5 +1,11 @@
 # 工程记忆入口
 
+## 系统键盘覆盖整个固定前端（2026-11-10）
+
+- 手机系统键盘弹出时，整个沉浸前端保持输入前的布局尺寸与屏幕位置，包括正文、输入框、工具栏、人物立绘、浮层和内嵌手机；键盘覆盖原页面，不压缩手机或推高输入框。
+- `shell-viewport.ts` 统一维护稳定高度、安全区与高度断点。高度样式使用 `--uc-viewport-height` 和 `data-uc-max-height`，不要重新引入直接随键盘变化的高度媒体查询。固定浮层也必须以 Shell 为包含块。
+- 横竖屏切换、普通桌面窗口调整与退出后的原生输入仍保留；不改变输入内容、发送行为、手机源仓库或存档。验证范围见 `integration/keyboard-layout/README.md`，浏览器模拟不等于 TauriTavern 真机验收。
+
 ## Xitter 与永久网络身份（2026-11-08）
 
 - 复用独立手机仓库 ST-iPhonie 的原论坛、AppStore、发帖和回复；内部应用键仍是 `forum`。`src/runtime/network-identities.ts` 管理全部世界书 `personId` 的固定账号、昵称、用户名、虚构邮箱和头像键，关注与路人登记复用 `phone_app` 事务和共享 `protagonists.internet`。

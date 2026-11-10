@@ -1,0 +1,803 @@
+{
+  "scope": "Controlled viewport changes; real CSS, viewport lease, original phone host and spatial phone renderer. No Agent Edition, real LLM or physical Tauri device.",
+  "cases": [
+    {
+      "width": 390,
+      "height": 844,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 279.875,
+          "width": 366,
+          "height": 474.109375
+        },
+        "phone": {
+          "left": 106.04132080078125,
+          "top": 324.3592834472656,
+          "width": 177.9173583984375,
+          "height": 385.0314025878906
+        },
+        "scale": "0.4529",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": false,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 590
+        },
+        "phone": {
+          "left": 83.53691864013672,
+          "top": 189.78245544433594,
+          "width": 222.9261474609375,
+          "height": 482.43505859375
+        },
+        "scale": "0.5675",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 390,
+          "height": 844
+        },
+        "input": {
+          "left": 28,
+          "top": 689,
+          "width": 262,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 366,
+          "height": 330
+        },
+        "phone": {
+          "left": 134.02542114257812,
+          "top": 114.04476928710938,
+          "width": 121.94915771484375,
+          "height": 263.91046142578125
+        },
+        "scale": "0.3104",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "novel",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "novel",
+      "layoutResize": true,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": 0,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "phone": {
+          "left": 0,
+          "top": -55,
+          "width": 0,
+          "height": 0
+        },
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone",
+      "layoutResize": true,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 205.359375,
+          "width": 296,
+          "height": 272.625
+        },
+        "phone": {
+          "left": 110.16687774658203,
+          "top": 233.515380859375,
+          "width": 99.66625213623047,
+          "height": 215.68798828125
+        },
+        "scale": "0.2537",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone-expanded",
+      "layoutResize": false,
+      "stable": true,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "target": "phone-expanded",
+      "layoutResize": true,
+      "stable": false,
+      "before": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 314
+        },
+        "phone": {
+          "left": 102.13240814208984,
+          "top": 167.7686004638672,
+          "width": 115.73517608642578,
+          "height": 250.4628143310547
+        },
+        "scale": "0.2946",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      },
+      "after": {
+        "root": {
+          "left": 0,
+          "top": 0,
+          "width": 320,
+          "height": 568
+        },
+        "input": {
+          "left": 28,
+          "top": 413,
+          "width": 192,
+          "height": 56
+        },
+        "slot": {
+          "left": 12,
+          "top": 136,
+          "width": 296,
+          "height": 54
+        },
+        "phone": {
+          "left": 152.62091064453125,
+          "top": 92.03089904785156,
+          "width": 14.7581787109375,
+          "height": 31.938201904296875
+        },
+        "scale": "0.0376",
+        "short": "false",
+        "draft": "小说草稿",
+        "phoneDraft": "手机草稿"
+      }
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}

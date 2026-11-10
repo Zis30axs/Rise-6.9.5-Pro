@@ -1120,8 +1120,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
  .mystery-visitor-mask{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:#070911c9;padding:16px}
-.mystery-visitor-panel{display:flex;align-items:stretch;gap:22px;max-width:min(680px,95vw);max-height:88vh;overflow:auto;padding:20px;background:linear-gradient(140deg,#1c2439,#131823);border:1px solid #79839a75;border-radius:18px;color:#f2f4fc;box-shadow:0 12px 70px #000a}
-.mystery-visitor-panel img{height:clamp(200px,48vh,480px);width:auto;max-width:45%;object-fit:contain;align-self:center}
+.mystery-visitor-panel{display:flex;align-items:stretch;gap:22px;max-width:min(680px,95vw);max-height:calc(var(--uc-viewport-height,100vh) * 0.88);overflow:auto;padding:20px;background:linear-gradient(140deg,#1c2439,#131823);border:1px solid #79839a75;border-radius:18px;color:#f2f4fc;box-shadow:0 12px 70px #000a}
+.mystery-visitor-panel img{height:clamp(200px,calc(var(--uc-viewport-height,100vh) * 0.48),480px);width:auto;max-width:45%;object-fit:contain;align-self:center}
 .mystery-visitor-copy{flex:1;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:14px}
 .mystery-visitor-copy h2{font-size:23px;margin:0}
 .mystery-visitor-copy p{font-size:14px;line-height:1.65;margin:0}
@@ -1129,7 +1129,7 @@ onBeforeUnmount(() => {
 .mystery-visitor-actions{display:flex;flex-wrap:wrap;gap:8px}
 .mystery-visitor-actions button{padding:9px 14px;border-radius:9px;border:1px solid #a7b6d7;color:#fff;background:#455578;cursor:pointer}
 .mystery-visitor-actions button:last-child{background:#ffffff10}
-@media(max-width:450px){.mystery-visitor-panel{gap:8px;padding:12px}.mystery-visitor-panel img{max-width:42%;max-height:40vh}.mystery-visitor-copy{min-width:0}.mystery-visitor-copy h2{font-size:18px}}
+@media(max-width:450px){.mystery-visitor-panel{gap:8px;padding:12px}.mystery-visitor-panel img{max-width:42%;max-height:calc(var(--uc-viewport-height,100vh) * 0.40)}.mystery-visitor-copy{min-width:0}.mystery-visitor-copy h2{font-size:18px}}
 .novel-appointment-prompt{margin:6px 12px 8px;padding:10px 14px;background:color-mix(in srgb,var(--card,#fff) 88%,#c6a65d);border:1px solid #9d8a6a66;border-radius:12px;box-shadow:0 3px 14px #0001;position:relative;z-index:1}
 .novel-appointment-prompt p{margin:0 0 8px;font-size:13px;line-height:1.45;color:inherit}
 .novel-appointment-prompt div{display:flex;flex-wrap:wrap;gap:9px}

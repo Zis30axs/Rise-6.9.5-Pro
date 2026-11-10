@@ -7,7 +7,7 @@
 .novel-place>div{display:flex;flex-direction:column}.novel-place small{font-size:10px;letter-spacing:.16em}.novel-place strong{font:22px/1.5 "Songti SC","SimSun",serif;letter-spacing:.1em}
 .uc-shell .novel-place button{min-height:44px;padding:8px 14px;border:1px solid #f0dfba80;border-radius:24px;background:#1d3027bb;color:#fff0d4;font-size:12px}
 .uc-shell[data-presentation-mode=novel] .world-vignette{background:linear-gradient(180deg,#121c2c99,transparent 30%,transparent 55%,#17212e77)}
-.uc-shell[data-presentation-mode=novel] .reading-layer{left:50%;transform:translateX(-50%);width:min(960px,calc(100% - 180px));height:280px;max-height:calc(100dvh - 240px);background:linear-gradient(135deg,#1c2636f2,#1d2733ed);border-color:#e6d9ba6b;box-shadow:0 10px 50px #0005}
+.uc-shell[data-presentation-mode=novel] .reading-layer{left:50%;transform:translateX(-50%);width:min(960px,calc(100% - 180px));height:280px;max-height:calc(var(--uc-viewport-height,100dvh) - 240px);background:linear-gradient(135deg,#1c2636f2,#1d2733ed);border-color:#e6d9ba6b;box-shadow:0 10px 50px #0005}
 .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded{top:160px;height:auto;max-height:none}
 .novel-dialogue{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .uc-shell .novel-dialogue-text{flex:1;min-height:0;overflow:auto;text-align:left;padding:10px 0;cursor:pointer;display:flex;flex-direction:column;gap:6px;color:#f4efdf}
@@ -15,7 +15,7 @@
 .novel-speaker{color:#efd8a8;font-size:12px;letter-spacing:.1em;flex:none}.novel-speech{font:20px/1.9 "Songti SC","SimSun",serif;white-space:pre-wrap;overflow-wrap:anywhere}
 .novel-dialogue-controls{display:flex;justify-content:flex-end;align-items:center;gap:16px;flex:none}.uc-shell .novel-dialogue-controls button{min-height:44px;font-size:11px;color:#e4d3b1}.novel-dialogue-controls button:first-child{margin-right:auto}
 .novel-activities{flex:none;position:relative;font-size:12px;color:#e6d4af}.novel-activities summary{min-height:32px;display:flex;align-items:center;cursor:pointer}.novel-activities summary::before{content:'▸';margin-right:7px}.novel-activities[open] summary::before{content:'▾'}
-.novel-activities>div{position:absolute;z-index:5;bottom:100%;left:0;display:flex;gap:5px;flex-wrap:wrap;width:min(450px,100%);max-height:min(320px,52dvh);overflow-y:auto;overscroll-behavior:contain;padding:8px;border:1px solid #e8d3a66b;border-radius:12px;background:#202d3bf5;box-shadow:0 -6px 24px #0004}.uc-shell .novel-activities button{min-height:44px;padding:7px 10px;background:#ffffff0c;border-radius:7px}
+.novel-activities>div{position:absolute;z-index:5;bottom:100%;left:0;display:flex;gap:5px;flex-wrap:wrap;width:min(450px,100%);max-height:min(320px,calc(var(--uc-viewport-height,100dvh) * 0.52));overflow-y:auto;overscroll-behavior:contain;padding:8px;border:1px solid #e8d3a66b;border-radius:12px;background:#202d3bf5;box-shadow:0 -6px 24px #0004}.uc-shell .novel-activities button{min-height:44px;padding:7px 10px;background:#ffffff0c;border-radius:7px}
 .novel-activities button small{display:block;font-size:10px;line-height:1.6;color:#d1c5ac}.novel-activities button:disabled{opacity:.5;cursor:default}
 .uc-shell .novel-activities-close{flex-basis:100%;text-align:right;background:transparent;color:#ebd2a2}
 @media(max-width:760px){
@@ -25,7 +25,7 @@
  .uc-shell[data-presentation-mode=scene] .campus-entrance{top:190px}
  .uc-shell[data-reading-mode=hidden] .presentation-switch{left:12px;bottom:145px;top:auto}
  .novel-place{top:143px;left:16px;right:auto;gap:8px}.novel-place>div{display:none}.uc-shell .novel-place button{font-size:11px;padding:5px 11px}
- .uc-shell[data-presentation-mode=novel] .reading-layer{left:12px;right:12px;bottom:126px;transform:none;width:auto;height:300px;max-height:calc(100dvh - 330px);padding:10px 15px 8px}
+ .uc-shell[data-presentation-mode=novel] .reading-layer{left:12px;right:12px;bottom:126px;transform:none;width:auto;height:300px;max-height:calc(var(--uc-viewport-height,100dvh) - 330px);padding:10px 15px 8px}
  .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded{top:143px;max-height:none;height:auto}
  .uc-shell[data-presentation-mode=novel] .reading-layer:not(.reading-expanded) .reading-heading{display:none}
  /* Keep all room activities between the location controls and the bottom dock,
@@ -34,8 +34,7 @@
  .novel-speech{font-size:17px;line-height:1.8}.novel-dialogue-controls{gap:10px}.novel-dialogue-text{padding:7px 0!important}.novel-speaker{font-size:11px}.novel-activities summary{min-height:28px}
  .uc-shell[data-presentation-mode=novel] .composer{padding-top:6px;gap:8px}.uc-shell[data-presentation-mode=novel] .composer textarea{font-size:16px;resize:none}
 }
-@media(max-height:670px) and (max-width:760px){
- .uc-shell[data-presentation-mode=novel] .reading-layer:not(.reading-expanded){height:180px}
+@media (max-width:760px) {:where(:host([data-uc-max-height~="670"])) .uc-shell[data-presentation-mode=novel] .reading-layer:not(.reading-expanded){height:180px}
 }
 
 /* Optional simultaneous-world viewpoint choice, only after a committed event. */

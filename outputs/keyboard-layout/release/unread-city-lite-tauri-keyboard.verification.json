@@ -1,0 +1,17 @@
+{
+  "sourceBytes": 41543451,
+  "bytes": 20384171,
+  "sourceSha256": "adecad5eb74817cfc6bfe41e70eb543a3d784df0cd8650a0fd10b55faab2326b",
+  "sha256": "559b7d2b610bc9c74ae332df0df56a3b61ed99b766bff8f7aece53cd46d5aa1f",
+  "metadataEncoding": "zTXt/chara/zlib-method-0",
+  "metadataTextBytes": 39100836,
+  "compressedMetadataBytes": 17941555,
+  "metadataTextSha256": "92eab932f52fd7d05daa62e3ce7b5bbe6b776277bf506cc820862b54291b4672",
+  "decompressedMetadataByteIdentical": true,
+  "allOtherPngChunksByteIdentical": true,
+  "embeddedScriptChanged": false,
+  "tauriNativeImportTested": false,
+  "compatibility": "Tauri-specific import alternative; retain canonical tEXt PNG for SillyTavern.",
+  "source": "D:\\.study\\cc\\.worktrees\\keyboard-layout\\dist\\unread-city-lite.png",
+  "artifact": "D:\\.study\\cc\\.worktrees\\keyboard-layout\\outputs\\keyboard-layout\\release\\unread-city-lite-tauri-keyboard.png"
+}
