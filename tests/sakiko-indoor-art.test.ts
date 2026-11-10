@@ -11,6 +11,8 @@ describe('丰川祥子 indoor clothes', () => {
   it('wears the new private clothes only in the Toyokawa house and salon', () => {
     expect(resolveSakikoOutfit('auto', 'toyokawa-house')).toBe('home');
     expect(resolveSakikoOutfit('auto', 'toyokawa-salon')).toBe('home');
+    // Kiyoaki's house is Sakiko's second home, so the private clothes apply there too.
+    expect(resolveSakikoOutfit('auto', 'kiyoaki-house')).toBe('home');
     expect(resolveSakikoOutfit('auto', 'downtown')).toBe('casual');
     expect(resolveSakikoOutfit('auto', 'park')).toBe('casual');
     expect(resolveSakikoOutfit('home', 'park')).toBe('home');

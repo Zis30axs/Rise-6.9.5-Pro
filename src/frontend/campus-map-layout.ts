@@ -38,6 +38,7 @@ export const mapBuildings: readonly MapBuilding[] = [
   { id: 'building:downtown-office-south', x: -82, z: 157, width: 22, depth: 17, height: 18.6, color: '#9ba9a0' },
   { id: 'building:downtown-shop-east', x: 87, z: 226, width: 17, depth: 18, height: 13.2, color: '#aa8770' },
   { id: 'building:toyokawa-residence', x: 50, z: 235, width: 24, depth: 20, height: 12.8, color: '#b7ac8b' },
+  { id: 'building:kiyoaki-residence', x: 64, z: 206, width: 12, depth: 10, height: 7, color: '#b7ac8b' },
   { id: 'building:soyo-luxury-tower', x: -76, z: 162, width: 18, depth: 16, height: 28.5, color: '#e8dec8' },
   { id: 'building:mejirodai-royal-west', x: -24, z: 242, width: 20, depth: 14, height: 31.0, color: '#dfd3bc' },
   { id: 'building:mejirodai-royal-east', x: 18, z: 242, width: 20, depth: 14, height: 29.5, color: '#dfd3bc' },

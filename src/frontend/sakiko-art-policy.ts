@@ -32,7 +32,9 @@ export function resolveSakikoExpression(value: unknown): SakikoExpression {
 /** Explicit selection wins. An unknown mode cannot create an arbitrary file path. */
 export function resolveSakikoOutfit(mode: unknown, locationId: unknown): SakikoOutfit {
   if (mode === 'casual' || mode === 'home') return mode;
-  return locationId === 'toyokawa-house' || locationId === 'toyokawa-salon' ? 'home' : 'casual';
+  // Toyokawa interiors and Kiyoaki's house are both home for Sakiko: the mansion is
+  // her residence, Kiyoaki's apartment is her second home where she may stay overnight.
+  return locationId === 'toyokawa-house' || locationId === 'toyokawa-salon' || locationId === 'kiyoaki-house' ? 'home' : 'casual';
 }
 export function selectSakikoSprite(options: {
   speaker: unknown; expression: unknown; locationId?: unknown; outfit?: unknown;

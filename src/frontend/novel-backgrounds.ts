@@ -63,7 +63,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   'pocket-park': 'park', 'city-park': 'park', home: 'street', commercial: 'commercial', downtown: 'commercial', 'grand-commercial': 'commercial',
   'takao-mountain': 'park', 'takao-summit': 'park', 'takao-teahouse': 'park', 'takao-onsen': 'commercial',
   circle: 'commercial', 'circle-cafe': 'commercial',
-  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'soyo-house': 'bedroom', 'mlm-office': 'commercial',
+  'dorm-room': 'bedroom', classroom: 'classroom', 'study-room': 'classroom', 'toyokawa-house': 'bedroom', 'kiyoaki-house': 'bedroom', 'soyo-house': 'bedroom', 'mlm-office': 'commercial',
   clinic: 'commercial', 'clinic-room': 'commercial', aquarium: 'commercial',
 });
 
