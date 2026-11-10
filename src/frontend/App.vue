@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRe
 import NovelLive2DPortrait from './NovelLive2DPortrait.vue';
 import { live2dContext } from './live2d-context';
 import { live2dIdentity } from '../runtime/live2d-identity';
+import { createSandboxCache, sandboxCacheKey } from './CitySandboxScene.vue';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';
@@ -84,6 +85,8 @@ import { streetRoutes } from './scene-world';
 import { getNearbyTransitStop, transitStops, transitVehicles } from '../runtime/transit';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
+const sandboxCache = createSandboxCache();
+provide(sandboxCacheKey, sandboxCache);
 const currentProtagonist = computed(() => activeProtagonist(props.model.state));
 const switchingLease = shallowRef<ProtagonistSwitchLease | null>(null);
 const switchOverlay = ref<{ skip(): Promise<void> }>();
@@ -127,7 +130,7 @@ function switchToOtherSide(target: ProtagonistId) {
 watch(() => props.model.switchingProtagonist, pending => {
   if (pending === false && switchingLease.value) switchingLease.value = null;
 });
-watch(currentProtagonist, protagonist => { props.model.phoneSceneJump = undefined; cancelStoryEdit(); pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; }, { flush: 'post' });
+watch(currentProtagonist, protagonist => { props.model.phoneSceneJump = undefined; cancelStoryEdit(); pendingCourtSwitch.value=null; cookOpen.value = false; closeWindow(false); draft.value = ''; localActivityReceipt.value = ''; novelHistory.value = false; historyPortrait.value = false; heldPortrait.value = null; invitationPortraitFocus.value = null; novelSegment.value = { speaker: protagonistNames[protagonist], emotion: '平静', text: '' }; });
 type WindowPanel = 'phone' | 'map' | 'schedule' | 'inventory' | 'status' | 'abilities' | 'idcard' | 'transit' | 'store' | 'stationery' | 'location' | 'law' | 'invitations' | 'society' | 'focus' | 'decisions';
 type ReadingMode = 'compact' | 'expanded' | 'hidden';
 const activeWindow = ref<WindowPanel | null>(null);
@@ -152,7 +155,7 @@ const presentationMode = ref<PresentationMode>(readPresentationMode());
 const graphicsRevision = ref(0);
 const novelMode = computed(() => presentationMode.value === 'novel' || isInternationalLocation(props.model.state.locationId));
 const novelHistory = ref(false);
-provide(live2dContext,()=>({session:props.model.memoryScope,state:props.model.state,enabled:novelMode.value&&!novelHistory.value&&!switchingLease.value}));
+provide(live2dContext,()=>({session:props.model.memoryScope,state:props.model.state,enabled:novelMode.value&&!novelHistory.value}));
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
 const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
 const historyPortrait = ref(false);
@@ -998,6 +1001,7 @@ onMounted(async () => {
   await nextTick(); jumpToLatest();
 });
 onBeforeUnmount(() => {
+  sandboxCache.close();
   switchingLease.value?.release();
   unmounting = true; phoneMountRevision++;
   props.actions.setDismissHandler?.(undefined);
@@ -1026,6 +1030,7 @@ onBeforeUnmount(() => {
       :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"
       :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
     <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage && live2dIdentity(portraitLabel) !== 'soyo'"
+      :refresh-token="graphicsRevision"
       :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
       :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
     <!-- Preserve the original v-if/v-else-if scene switch. An inactive

@@ -5,11 +5,11 @@ const __UC_LIVE2D_PACK__ = __UC_LIVE2D_DESCRIPTOR__;
 function __ucLive2dCreateApi() {
   const descriptor = __UC_LIVE2D_PACK__;
   const dbName = 'unread-city-live2d-v1';
-  let manifest = null, enabled = false, generation = 0, queue = Promise.resolve();
+  let manifest = null, enabled = false, hydrating = true, generation = 0, queue = Promise.resolve();
   const listeners = new Set();
   const emit = () => { generation++; for (const fn of listeners) { try { fn(); } catch (error) { console.error(error); } } };
   const serial = fn => { const result = queue.then(fn); queue = result.catch(() => {}); return result; };
-  const status = () => ({ installed: !!manifest, enabled: !!manifest && enabled, generation,
+  const status = () => ({ installed: !!manifest, enabled: !!manifest && enabled, hydrating, generation,
     pack: descriptor.sha, models: manifest && enabled ? manifest.models : [] });
   async function readManifest(bytes) {
     if (bytes.byteLength !== descriptor.manifestBytes || await __ucLiteSha256(bytes) !== descriptor.sha) throw Error('请选择与本卡匹配的 Live2D 素材包');
@@ -49,16 +49,17 @@ function __ucLive2dCreateApi() {
       } finally { db.close(); }
     }); },
     hydrate() { return serial(async () => {
-      const db = await __ucLiteDb(dbName);
+      let db;
       try {
+        db = await __ucLiteDb(dbName);
         const ready = await __ucLiteRead(db, 'meta', 'ready');
         if (!ready || ready.sha !== descriptor.sha) return;
         const candidate = await readManifest(ready.bytes);
         // Bounded sequential verification; never creates model/texture URLs.
         for (const row of candidate.assets) await verify(await __ucLiteRead(db, 'assets', row.sha256), row);
-        manifest = candidate; enabled = ready.enabled === true; emit();
-      } catch (error) { manifest = null; enabled = false; emit(); console.warn('[UnreadCity Live2D]', error); }
-      finally { db.close(); }
+        manifest = candidate; enabled = ready.enabled === true;
+      } catch (error) { manifest = null; enabled = false; console.warn('[UnreadCity Live2D]', error); }
+      finally { db?.close(); hydrating = false; emit(); }
     }); },
     setEnabled(value) { return serial(async () => {
       if (!manifest) return;

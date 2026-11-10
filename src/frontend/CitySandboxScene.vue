@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as THREE from 'three';
+import type { InjectionKey } from 'vue';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TOKYO_SANDBOX_MODEL_SHA256 } from './tokyo-sandbox-map';
 import { readLocalAssetBytes } from './local-asset-buffer';
@@ -164,7 +165,7 @@ function attachCirclePackGeometry(root: THREE.Group) {
   root.add(group);
 }
 
-/** Each active view owns its decoded tree and GPU resources. Only local bytes are cached. */
+/** Cold-load a private decoded tree; the Shell cache retains its complete runtime between openings. */
 async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
     ? await readIdbCachedGlbBytes() : undefined;
@@ -562,10 +563,74 @@ function stepSandboxEntities(
   vfx?.update(dt, nowMs, su30State?.node, playerWorldPos, districtCenter);
 }
 
+interface SandboxRuntime {
+  canvas: HTMLCanvasElement;
+  renderer: THREE.WebGLRenderer;
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  model: THREE.Group;
+  variant: 'glb' | 'procedural';
+  previewOnly: boolean;
+  hemiLight: THREE.HemisphereLight;
+  sunLight: THREE.DirectionalLight;
+  trafficGroup: THREE.Group;
+  trafficVehicles: TrafficVehicle[];
+  su30State: Su30FlightState | undefined;
+  gondolaStates: GondolaState[];
+  bakedVehicleStates: BakedVehicleState[];
+  vfxController: TokyoSandboxVfxController;
+  resolution: TokyoCanvasResolution | undefined;
+}
+
+function disposeSandboxRuntime(runtime: SandboxRuntime) {
+  runtime.vfxController.dispose();
+  disposeThreeTree(runtime.scene);
+  runtime.renderer.dispose(); runtime.renderer.forceContextLoss();
+  runtime.canvas.remove(); runtime.canvas.width = runtime.canvas.height = 1;
+}
+
+/** One idle renderer per Shell, exclusively transferred between map views.
+ * It owns its decoded tree and GPU resources; active views never share them.
+ * No animation runs while parked. Leaving the Shell or hiding the page frees it. */
+export function createSandboxCache() {
+  let idle: SandboxRuntime | undefined, closed = false;
+  const take = () => {
+    const runtime = idle; idle = undefined;
+    if (runtime) {
+      runtime.canvas.removeEventListener('webglcontextlost', lost, true);
+      runtime.canvas.ownerDocument.removeEventListener('visibilitychange', visibility);
+      runtime.canvas.ownerDocument.defaultView?.removeEventListener('pagehide', clear);
+    }
+    return runtime;
+  };
+  function clear() { const runtime = take(); if (runtime) disposeSandboxRuntime(runtime); }
+  function visibility() { if (idle?.canvas.ownerDocument.hidden) clear(); }
+  function lost(event: Event) { event.preventDefault(); event.stopImmediatePropagation(); clear(); }
+  return {
+    take(previewOnly: boolean) {
+      const runtime = take();
+      if (runtime && (closed || runtime.previewOnly !== previewOnly || runtime.canvas.ownerDocument.hidden)) {
+        disposeSandboxRuntime(runtime); return undefined;
+      }
+      return runtime;
+    },
+    park(runtime: SandboxRuntime) {
+      clear();
+      if (closed || runtime.canvas.ownerDocument.hidden) { disposeSandboxRuntime(runtime); return; }
+      idle = runtime; runtime.canvas.remove();
+      runtime.canvas.addEventListener('webglcontextlost', lost, true);
+      runtime.canvas.ownerDocument.addEventListener('visibilitychange', visibility);
+      runtime.canvas.ownerDocument.defaultView?.addEventListener('pagehide', clear);
+    },
+    clear,
+    close() { closed = true; clear(); },
+  };
+}
+export const sandboxCacheKey: InjectionKey<ReturnType<typeof createSandboxCache>> = Symbol('sandbox-cache');
 </script>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -615,8 +680,10 @@ const emit = defineEmits<{
 // Static import makes a missing source GLB a build error, never a silent empty glob.
 // Lite keeps this asset in the existing local asset ZIP.
 const sceneRoot = ref<HTMLElement>();
+const canvasHost = ref<HTMLElement>();
 const canvas = ref<HTMLCanvasElement>();
-const canvasGeneration = ref(0);
+const sharedCache = inject(sandboxCacheKey, undefined);
+const runtimeCache = sharedCache ?? createSandboxCache();
 const status = ref<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
 const variant = ref<'glb' | 'procedural'>('glb');
 const activePreset = ref<ResolvedAtmospherePreset>('day');
@@ -741,7 +808,7 @@ function beginCameraFlight() {
   flight.frame = owner.requestAnimationFrame(step);
 }
 
-function release() {
+function release(retain = false) {
   stopCameraFlight();
   epoch++;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
@@ -749,6 +816,18 @@ function release() {
   canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
   districtPins.value = []; placePins.value = []; personPins.value = [];
   eventPins.value = []; leaderLines.value = []; playerPin.value = null;
+
+  const parked = retain && status.value === 'ready' && (props.previewOnly || variant.value === 'glb') &&
+    canvas.value && renderer && scene && camera && model && hemiLight && sunLight && trafficGroup && vfxController
+    ? { canvas: canvas.value, renderer, scene, camera, model, hemiLight, sunLight, trafficGroup, vfxController,
+        variant: variant.value, previewOnly: !!props.previewOnly, trafficVehicles, su30State, gondolaStates,
+        bakedVehicleStates, resolution: appliedCanvasResolution } satisfies SandboxRuntime : undefined;
+  if (parked) {
+    runtimeCache.park(parked);
+    renderer = undefined; scene = undefined; camera = undefined; model = undefined;
+    hemiLight = undefined; sunLight = undefined; trafficGroup = undefined; vfxController = undefined;
+    canvas.value = undefined;
+  }
 
   if (vfxController) { vfxController.dispose(); vfxController = undefined; }
   if (trafficGroup) { disposeModel(trafficGroup); trafficGroup = undefined; }
@@ -766,6 +845,7 @@ function release() {
   const previous = renderer; renderer = undefined;
   previous?.dispose(); previous?.forceContextLoss();
   if (canvas.value) { canvas.value.width = 1; canvas.value.height = 1; }
+  canvas.value?.remove(); canvas.value = undefined;
   appliedCanvasResolution = undefined;
   status.value = 'idle';
   selectedPerson.value = '';
@@ -1070,19 +1150,36 @@ function contextLost(event: Event) {
   if (event.target !== canvas.value || !renderer) return;
   release(); status.value = 'fallback';
 }
-function refresh() { release(); return load(); }
+function refresh() { release(); runtimeCache.clear(); return load(); }
 function visibilityChanged() {
   if (document.hidden) release(); else if (props.active) void load();
 }
 defineExpose({ pickAt, triggerFlares, refresh });
 
 async function load() {
-  if (!props.active || document.hidden || !sceneRoot.value || renderer || status.value === 'loading') return;
+  if (!props.active || document.hidden || !sceneRoot.value || !canvasHost.value || renderer || status.value === 'loading') return;
   const request = ++epoch;
   status.value = 'loading';
   let pending: THREE.Group | undefined;
   try {
-    canvasGeneration.value++;
+    const cached = runtimeCache.take(!!props.previewOnly);
+    if (cached) {
+      canvas.value = cached.canvas; canvasHost.value.replaceChildren(cached.canvas);
+      renderer = cached.renderer; scene = cached.scene; camera = cached.camera; model = cached.model;
+      hemiLight = cached.hemiLight; sunLight = cached.sunLight; trafficGroup = cached.trafficGroup;
+      vfxController = cached.vfxController; variant.value = cached.variant;
+      trafficVehicles = cached.trafficVehicles; su30State = cached.su30State;
+      gondolaStates = cached.gondolaStates; bakedVehicleStates = cached.bakedVehicleStates;
+      appliedCanvasResolution = cached.resolution;
+      canvas.value.addEventListener('webglcontextlost', contextLost, true);
+      activePreset.value = vfxController.setAtmosphere(props.atmosphereMode, props.clockMinutes).preset;
+      status.value = 'ready'; render();
+      lastTick = performance.now(); animFrame = requestAnimationFrame(loopAnimation);
+      return;
+    }
+    const element = sceneRoot.value.ownerDocument.createElement('canvas');
+    element.className = 'tokyo-sandbox-canvas'; element.setAttribute('aria-hidden', 'true');
+    canvas.value = element; canvasHost.value.replaceChildren(element);
     await nextTick();
     if (request !== epoch || !props.active || !canvas.value) return;
     const bundled = tokyoModelAsset;
@@ -1149,7 +1246,7 @@ async function load() {
 }
 function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id); }
 
-watch(() => props.active, active => { if (active) void load(); else release(); });
+watch(() => props.active, active => { if (active) void load(); else release(true); });
 watch(() => props.refreshToken, () => { void refresh(); });
 watch(() => [props.atmosphereMode, props.clockMinutes] as const, ([mode, mins]) => {
   if (vfxController) {
@@ -1192,7 +1289,8 @@ onBeforeUnmount(() => {
   canvasOwner?.removeEventListener('resize', render);
   canvasOwner = undefined;
   document.removeEventListener('visibilitychange', visibilityChanged);
-  release();
+  if (!sharedCache) runtimeCache.close();
+  release(true);
 });
 </script>
 
@@ -1201,7 +1299,7 @@ onBeforeUnmount(() => {
     :data-tokyo-sandbox-model="variant" :data-tokyo-sandbox-scope="scope"
     :data-tokyo-atmosphere="activePreset"
     :data-tokyo-camera="cameraPosition" :data-tokyo-camera-flight="cameraFlying ? 'flying' : 'idle'">
-    <canvas :key="canvasGeneration" ref="canvas" v-show="status === 'ready'" class="tokyo-sandbox-canvas" aria-hidden="true" />
+    <div ref="canvasHost" v-show="status === 'ready'" class="tokyo-sandbox-renderer" />
     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，可以刷新重试，或从地点列表选择目的地。</p>
     <template v-if="status === 'ready'">

@@ -42,6 +42,7 @@
 
 /* Tokyo sandbox UI is part of shell.css: the packaged character card has no external stylesheet. */
 .world-map .tokyo-sandbox-scene { position:absolute; inset:0; width:100%; height:100%; overflow:hidden; }
+.world-map .tokyo-sandbox-renderer { position:absolute; inset:0; }
 .world-map .tokyo-sandbox-canvas { width:100%; height:100%; display:block; pointer-events:none; }
 .world-map .tokyo-sandbox-pin {
   position:absolute; z-index:3; display:flex; align-items:center; justify-content:center; gap:4px;

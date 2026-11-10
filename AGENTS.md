@@ -1,5 +1,11 @@
 # 工程记忆入口
 
+## 沙盘缓存与 Live2D 切换（2026-11-11）
+
+- 普通收起沙盘保留一个暂停的完整模型与 GPU 实例，Shell 内独占复用；只缓存 GLB 字节不能避免重开卡顿。后台隐藏、上下文丢失、手动刷新与 Shell 退出才回收。并发地图不共用活动实例。
+- Live2D 素材恢复与加载期间不显示默认校服或静态回退；切换动画保留本人 Live2D，身份切换清空旧说话人。相同服装不因环境触发变化重建，短暂遮挡只暂停。
+- 实现、单脚本样式要求和验证边界见 `integration/render-retention/README.md`。现有 Edge 与本地酒馆已检查，不代表 Tauri 手机真机验收；未运行 CI/Agent Edition。
+
 ## Xitter 与永久网络身份（2026-11-08）
 
 - 复用独立手机仓库 ST-iPhonie 的原论坛、AppStore、发帖和回复；内部应用键仍是 `forum`。`src/runtime/network-identities.ts` 管理全部世界书 `personId` 的固定账号、昵称、用户名、虚构邮箱和头像键，关注与路人登记复用 `phone_app` 事务和共享 `protagonists.internet`。

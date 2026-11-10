@@ -1,0 +1,89 @@
+{
+  "date": "2026-11-11",
+  "isolatedSourceBase": "4a1db74",
+  "isolatedSourceValidation": {
+    "vitest": {
+      "passed": 64,
+      "failed": 0,
+      "files": [
+        "graphics-recovery.test.ts",
+        "live2d-ensemble-assets.test.ts",
+        "live2d-ensemble.test.ts",
+        "live2d-hydration.test.ts",
+        "live2d-portrait-lifecycle.test.ts",
+        "live2d-protagonist-switch.test.ts",
+        "novel-invitation-portraits.test.ts",
+        "sandbox-cache-lifecycle.test.ts",
+        "tokyo-sandbox-camera.test.ts",
+        "tokyo-sandbox-resolution.test.ts"
+      ]
+    },
+    "typecheck": "passed-after-generating-existing-embedded-phone",
+    "viteBuild": "passed",
+    "liteAssetExternalization": "passed",
+    "assets": 236
+  },
+  "priorIntegratedValidation": {
+    "unitTestsPassed": 80,
+    "scope": "Rendering fix with previously prepared keyboard fix and local scene roster/worldbook changes",
+    "actualGraphicsFixture": {
+      "browser": "existing desktop Edge process; no new browser",
+      "checksPassed": 40,
+      "uncaughtErrors": 0,
+      "containerSizes": [
+        [
+          1440,
+          900
+        ],
+        [
+          390,
+          844
+        ],
+        [
+          320,
+          568
+        ]
+      ],
+      "timings": [
+        {
+          "width": 1440,
+          "coldMs": 2174.5,
+          "warmMs": [
+            27.399999976158142,
+            38.60000002384186,
+            39.89999997615814
+          ]
+        },
+        {
+          "width": 390,
+          "coldMs": 0,
+          "warmMs": [
+            22.199999928474426,
+            19.200000047683716,
+            20.299999952316284
+          ]
+        },
+        {
+          "width": 320,
+          "coldMs": 0,
+          "warmMs": [
+            23.799999952316284,
+            22.59999990463257,
+            25.600000023841858
+          ]
+        }
+      ],
+      "limitations": "Container sizes, not mobile hardware or emulated viewport; timings are not production SillyTavern measurements"
+    },
+    "localSillyTavern": {
+      "matchingScriptVerifiedByServer": true,
+      "corePackImported": true,
+      "sandboxReopensChecked": 2,
+      "optionalLive2dPackPreserved": true
+    }
+  },
+  "physicalTauriTested": false,
+  "realLlmCalled": false,
+  "agentEditionRun": false,
+  "ciRun": false
+}

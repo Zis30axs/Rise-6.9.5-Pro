@@ -34,13 +34,24 @@ const mapProps = () => reactive({active:true, previewOnly:true, scope:'city', wi
   bearing:0, viewScale:1, selectedId:'campus', locationId:'south-gate', busy:false, refreshToken:0});
 
 describe('graphics failure and recovery', () => {
+  it('resumes a briefly covered sandbox without rebuilding its renderer or canvas', async () => {
+    const props=mapProps(); const el=mount(CitySandboxScene,props);
+    await vi.waitFor(()=>expect(fake.renderers).toHaveLength(1));
+    const canvas=el.querySelector('canvas'),renderer=fake.renderers[0];
+    props.active=false; await nextTick();
+    props.active=true; await nextTick();
+    await vi.waitFor(()=>expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('ready'));
+    expect(fake.renderers).toHaveLength(1);
+    expect(renderer.dispose).not.toHaveBeenCalled();
+    expect(el.querySelector('canvas')).toBe(canvas);
+  });
   it('retries failed map initialization with a fresh canvas and stops/cleans the old renderer', async () => {
     fake.fail = true; const props=mapProps(); const el=mount(CitySandboxScene, props);
     await vi.waitFor(() => expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('fallback'));
     const before=el.querySelector('canvas'); fake.fail=false; props.refreshToken++;
     await vi.waitFor(() => expect(el.querySelector('[data-tokyo-sandbox-status]')?.getAttribute('data-tokyo-sandbox-status')).toBe('ready'));
     expect(el.querySelector('canvas')).not.toBe(before);
-    const renderer=fake.renderers[0]; props.active=false; await nextTick();
+    const renderer=fake.renderers[0]; props.refreshToken++; await nextTick();
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
     expect(renderer.forceContextLoss).toHaveBeenCalledTimes(1);
   });

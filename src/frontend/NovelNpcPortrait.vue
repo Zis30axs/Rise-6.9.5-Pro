@@ -25,7 +25,7 @@ import { resolveNyamuExpressionPortrait } from './nyamu-art';
 
 const props = withDefaults(defineProps<{
   portraitId: NovelNpcPortraitId | null; speaker: string; emotion: string; active?: boolean; dimmed?: boolean;
-  locationId?: string; outfit?: SakikoOutfitMode; artPack?: DowntownArtPack;
+  locationId?: string; outfit?: SakikoOutfitMode; artPack?: DowntownArtPack; refreshToken?: number;
 }>(), { active: true, locationId: '', outfit: 'auto' });
 const clipId = useId();
 const emotion = computed(() => resolveNovelNpcEmotion(props.emotion));
@@ -91,7 +91,7 @@ function imageFailed(event: Event) {
 </script>
 
 <template>
-  <NovelLive2DPortrait :speaker="speaker" :emotion="props.emotion" :active="active" :dimmed="dimmed">
+  <NovelLive2DPortrait :speaker="speaker" :emotion="props.emotion" :active="active" :dimmed="dimmed" :refresh-token="refreshToken">
   <div v-if="majoPortrait" class="novel-npc-portrait" :class="{ 'is-muted': !active, 'is-dimmed': dimmed }"
     data-npc-portrait="majo" :data-npc-speaker="speaker" :data-npc-emotion="emotion"
     :data-majo-portrait="majoPortrait.personId" :data-majo-exact="majoPortrait.exact" aria-hidden="true">

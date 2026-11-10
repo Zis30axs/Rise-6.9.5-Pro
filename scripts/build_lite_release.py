@@ -126,7 +126,7 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     optional = optional.replace('__UC_LIVE2D_DESCRIPTOR__', json.dumps(descriptor, separators=(',', ':')))
     host_script = '(function(){\n' + shared + optional + '\n})();'
     loader += '\n' + '(function(){let host=window;try{if(window.parent.document.body)host=window.parent;}catch{}\n' \
-        + 'if(host.__UC_LIVE2D__?.status().pack!==' + json.dumps(descriptor['sha']) + '){\n' \
+        + 'if(host.__UC_LIVE2D__?.status().pack!==' + json.dumps(descriptor['sha']) + '||typeof host.__UC_LIVE2D__?.status().hydrating!=="boolean"){\n' \
         + 'const script=host.document.createElement("script");script.textContent=' + json.dumps(host_script) + ';\n' \
         + '(host.document.head||host.document.body).append(script);script.remove();}\n' \
         + 'globalThis.__UC_LIVE2D__=host.__UC_LIVE2D__;})();\n'
