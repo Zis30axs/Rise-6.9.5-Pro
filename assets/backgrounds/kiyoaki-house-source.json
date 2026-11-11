@@ -1,0 +1,56 @@
+{
+  "locationId": "kiyoaki-house",
+  "source": {
+    "day": {
+      "kind": "user-provided-image",
+      "file": "kiyoaki-house-day.jpg",
+      "mime": "image/jpeg",
+      "width": 1179,
+      "height": 664,
+      "bytes": 271589,
+      "sha256": "79e1646500acac9a6e2de7525032b28427a674e10c0f13e3de92be2dc8556228"
+    },
+    "night": {
+      "kind": "user-provided-image",
+      "file": "kiyoaki-house-night.jpg",
+      "mime": "image/jpeg",
+      "width": 1179,
+      "height": 664,
+      "bytes": 232580,
+      "sha256": "c7cce17ecbab722e63d2db9cddfaa86cbb92e12a1d3e6a4dc03ba98af3845eac"
+    }
+  },
+  "derived": {
+    "day": {
+      "file": "kiyoaki-house-day.webp",
+      "mime": "image/webp",
+      "width": 1179,
+      "height": 664,
+      "bytes": 99500,
+      "sha256": "fb7ec7b933083ceef3a9c6616c7baa3f25784c853db5ecc954860faf75afaecd"
+    },
+    "night": {
+      "file": "kiyoaki-house-night.webp",
+      "mime": "image/webp",
+      "width": 1179,
+      "height": 664,
+      "bytes": 74174,
+      "sha256": "083f3afc5db70c0e54e0f231f196c22449e651e0cebf9b26a5f8eb81b732d5bd"
+    }
+  },
+  "encoding": {
+    "format": "WebP",
+    "quality": 84,
+    "method": 6,
+    "maxSize": [
+      1280,
+      960
+    ]
+  },
+  "selection": {
+    "day": "06:00-16:59",
+    "dusk": "17:00-18:59 (night image)",
+    "night": "19:00-05:59"
+  },
+  "target": "novel mode kiyoaki-house only"
+}

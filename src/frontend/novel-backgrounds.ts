@@ -22,6 +22,8 @@ import margoCafeDayBg from '../../assets/backgrounds/margo-cafe-day.avif?inline'
 import margoCafeNightBg from '../../assets/backgrounds/margo-cafe-night.avif?inline';
 import clinicDayBg from '../../assets/backgrounds/clinic-day.webp?inline';
 import clinicNightBg from '../../assets/backgrounds/clinic-night.webp?inline';
+import kiyoakiHouseDayBg from '../../assets/backgrounds/kiyoaki-house-day.webp?inline';
+import kiyoakiHouseNightBg from '../../assets/backgrounds/kiyoaki-house-night.webp?inline';
 import aquariumDay from '../../assets/backgrounds/aquarium-day.webp?inline';
 import hanedaAirportDay from '../../assets/backgrounds/haneda-airport-day.webp?inline';
 import hanedaAirportDusk from '../../assets/backgrounds/haneda-airport-dusk.webp?inline';
@@ -133,6 +135,15 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
       phase,
       imagePhase: isNight ? 'night' : 'day',
       source: 'user-art',
+    };
+  }
+  if (locationId === 'kiyoaki-house') {
+    const phase = novelBackgroundPhase(hour);
+    const isDay = phase === 'day';
+    return {
+      id: isDay ? 'kiyoaki-house-day' : 'kiyoaki-house-night',
+      src: isDay ? kiyoakiHouseDayBg : kiyoakiHouseNightBg,
+      phase, imagePhase: isDay ? 'day' : 'night', source: 'user-art',
     };
   }
   // This locally supplied construction photo depicts daylight in every game-time phase.
