@@ -487,6 +487,11 @@ export function createCampusWorld(scene: THREE.Scene) {
   box(4.4, 3.2, 0.16, palette.glass, 50, 1.9, 224.85);
   solidBox('toyokawa-exterior-door', 50, 224.85, 4.4, 0.16);
   tag(residence, 'observe');
+  // Kiyoaki's small apartment near Mejirodai; Sakiko's second home.
+  const kiyoakiResidence = build(64, 206, 12, 7, 10, 2, 4, palette.facade, 'kiyoaki-residence');
+  box(4.4, 3.2, 0.16, palette.glass, 64, 1.9, 200.85);
+  solidBox('kiyoaki-exterior-door', 64, 200.85, 4.4, 0.16);
+  tag(kiyoakiResidence, 'observe');
   for (const [x, z] of [[-99, 244], [-60, 245], [94, 243], [15, 238], [-42, 225]]) tree(x, z, 1.35, Math.abs(x) % 4);
   box(114, 0.025, 92, palette.grass, 188, 0, -160);
   // Reapply the park avenue above its turf; the lake has a real collision shore.

@@ -194,6 +194,22 @@ const campusInteriorRooms: readonly CampusInterior[] = [
     ],
   },
   {
+    id: 'kiyoaki-house', label: '清告家', parentLocationId: 'downtown',
+    description: '丰川清告住在目白台附近的一处小公寓。室内简洁安静，客厅连着一间可供祥子留宿的小房间；祥子可自由往来丰川宅邸与清告家两地。',
+    entrance: { x: 64, z: 196, yaw: 0 }, bounds, spawn,
+    obstacles: [
+      { id: 'kiyoaki-sofa', kind: 'bed', minX: -4.8, maxX: -2.4, minZ: -3.4, maxZ: -1.6 },
+      { id: 'kiyoaki-table', kind: 'desk', minX: 0.4, maxX: 2.6, minZ: 0.4, maxZ: 1.8 },
+      { id: 'kiyoaki-shelf', kind: 'shelf', minX: 3, maxX: 5.4, minZ: -4.2, maxZ: -2.6 },
+    ],
+    interactions: [
+      { id: 'kiyoaki-room-observe', label: '看看清告家的客厅', description: '观察客厅与留宿小房间的陈设，不翻看父亲的私人物品。',
+        x: 0, z: -2, minutes: 0, energyDelta: 0, result: '看了看清告家客厅与留宿小房间的陈设，没有动用父亲的私人物品。', prompt: '你已在清告家观察客厅与留宿小房间的陈设，没有翻看丰川清告的私人物品，也没有替父女安排任何决定。请基于在场事实叙述。' },
+      { id: 'kiyoaki-sofa-rest', label: '在沙发上休息', description: '在客厅沙发上休息 30 分钟，恢复至多 6 点精力。',
+        x: -3.4, z: -0.8, minutes: 30, energyDelta: 6, result: '在清告家的沙发上休息了半小时。', prompt: '你在清告家的沙发上休息了半小时，程序已推进 30 分钟并恢复至多 6 点精力。' },
+    ],
+  },
+  {
     id: 'nanoka-honoka-home', label: '黑部姐妹的家', parentLocationId: 'home',
     description: '杂司谷住宅区的黑部家公寓，奈叶香和已大学毕业的姐姐穗奈香住在这里。客厅连着厨房与书架，走廊通向她们各自的卧室。',
     entrance: { x: -203, z: 130, yaw: 0 }, bounds, spawn,
