@@ -3,6 +3,7 @@ import sakikoWave from '../../assets/downtown-art/characters/sakiko/indoor/wave.
 import sakikoConfident from '../../assets/downtown-art/characters/sakiko/indoor/confident.webp?inline';
 import sakikoThinking from '../../assets/downtown-art/characters/sakiko/indoor/thinking.webp?inline';
 import sakikoShy from '../../assets/downtown-art/characters/sakiko/indoor/shy.webp?inline';
+import sakikoPhone from '../../assets/downtown-art/characters/sakiko/indoor/phone.webp?inline';
 import type { SakikoExpression } from './sakiko-art-policy';
 
 export const SAKIKO_INDOOR_WIDTH = 768;
@@ -11,7 +12,7 @@ export const SAKIKO_INDOOR_ANCHOR = [384, 1280] as const;
 
 /** Indoor private clothes. Replaces the old home sprites at the Toyokawa house and salon. */
 export const sakikoIndoorOutfit = 'home' as const;
-export const sakikoIndoorPoses = Object.freeze(['neutral', 'wave', 'confident', 'thinking', 'shy'] as const);
+export const sakikoIndoorPoses = Object.freeze(['neutral', 'wave', 'confident', 'thinking', 'shy', 'phone'] as const);
 export type SakikoIndoorPose = (typeof sakikoIndoorPoses)[number];
 
 const poseSrc: Readonly<Record<SakikoIndoorPose, string>> = Object.freeze({
@@ -20,6 +21,7 @@ const poseSrc: Readonly<Record<SakikoIndoorPose, string>> = Object.freeze({
   confident: sakikoConfident,
   thinking: sakikoThinking,
   shy: sakikoShy,
+  phone: sakikoPhone,
 });
 
 const poseForRaw: Readonly<Record<string, { pose: SakikoIndoorPose; exact: boolean }>> = Object.freeze({
@@ -39,6 +41,8 @@ const poseForRaw: Readonly<Record<string, { pose: SakikoIndoorPose; exact: boole
   '生气': { pose: 'shy', exact: false }, '不满': { pose: 'shy', exact: false }, '不悦': { pose: 'shy', exact: false }, '严肃': { pose: 'shy', exact: false },
   surprised: { pose: 'wave', exact: false }, '惊讶': { pose: 'wave', exact: false }, '慌张': { pose: 'wave', exact: false },
   smile: { pose: 'neutral', exact: true },
+  phone: { pose: 'phone', exact: true }, '拿手机': { pose: 'phone', exact: true },
+  '手机': { pose: 'phone', exact: true }, '看手机': { pose: 'phone', exact: true },
 });
 
 const expressionForPose: Readonly<Record<SakikoIndoorPose, SakikoExpression>> = Object.freeze({
@@ -47,6 +51,7 @@ const expressionForPose: Readonly<Record<SakikoIndoorPose, SakikoExpression>> = 
   confident: 'smile',
   thinking: 'troubled',
   shy: 'troubled',
+  phone: 'neutral',
 });
 
 export function sakikoIndoorPoseFor(emotion: string): { pose: SakikoIndoorPose; exact: boolean } {

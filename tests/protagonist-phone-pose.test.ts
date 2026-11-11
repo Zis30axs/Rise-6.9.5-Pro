@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveProtagonistPhonePose } from '../src/frontend/protagonist-phone-art';
+import { resolveSakikoIndoorPortrait } from '../src/frontend/sakiko-indoor-art';
 
 describe('resolveProtagonistPhonePose', () => {
   it('shows each protagonist their own phone pose', () => {
@@ -39,5 +40,11 @@ describe('resolveProtagonistPhonePose', () => {
     expect(sakiko.src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(renako.src.startsWith('data:image/webp;base64,')).toBe(true);
     expect(new Set([soyo.src, sakiko.src, renako.src]).size).toBe(3);
+  });
+
+  it('shows Sakiko the new phone-in-hand art at home', () => {
+    const home = resolveProtagonistPhonePose('sakiko', { locationId: 'toyokawa-house' });
+    expect(home?.src).toBe(resolveSakikoIndoorPortrait('phone').src);
+    expect(home?.src).not.toBe(resolveSakikoIndoorPortrait('思考').src);
   });
 });

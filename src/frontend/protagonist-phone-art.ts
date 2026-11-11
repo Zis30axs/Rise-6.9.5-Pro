@@ -5,7 +5,7 @@
  */
 import soyoPhone from '../../assets/protagonist-phone/soyo-phone.webp?inline';
 import sakikoCasualPhone from '../../assets/downtown-art/characters/sakiko/uniform/thinking.webp?inline';
-import sakikoHomePhone from '../../assets/downtown-art/characters/sakiko/indoor/thinking.webp?inline';
+import sakikoHomePhone from '../../assets/downtown-art/characters/sakiko/indoor/phone.webp?inline';
 import emmaPhone from '../../assets/protagonist-phone/emma-phone.webp?inline';
 import renakoPhone from '../../assets/protagonist-phone/renako-phone.webp?inline';
 import { resolveSakikoOutfit, type SakikoOutfit } from './sakiko-art-policy';

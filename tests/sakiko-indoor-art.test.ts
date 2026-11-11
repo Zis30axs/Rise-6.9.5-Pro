@@ -43,6 +43,23 @@ describe('丰川祥子 indoor clothes', () => {
     expect(indoor('默认').id).toBe('sakiko_indoor_neutral');
   });
 
+  it('resolves the phone pose to the new indoor phone art', () => {
+    const phone = indoor('phone');
+    expect(phone.id).toBe('sakiko_indoor_phone');
+    expect(phone.pose).toBe('phone');
+    expect(phone.exact).toBe(true);
+    expect(phone.outfit).toBe('home');
+    expect(phone.src.startsWith('data:image/webp;base64,')).toBe(true);
+    expect(phone.width).toBe(768);
+    expect(phone.height).toBe(1344);
+    expect(phone.src).not.toBe(indoor('平静').src);
+    expect(phone.src).not.toBe(indoor('思考').src);
+    expect(indoor('拿手机').src).toBe(phone.src);
+    expect(indoor('手机').src).toBe(phone.src);
+    const atHome = resolveProtagonistPhonePose('sakiko', { locationId: 'toyokawa-house' });
+    expect(atHome?.src).toBe(phone.src);
+  });
+
   it('keeps the phone CG separate from the standing indoor clothes', () => {
     const atHome = resolveProtagonistPhonePose('sakiko', { locationId: 'toyokawa-house' });
     const outside = resolveProtagonistPhonePose('sakiko', { locationId: 'downtown' });
