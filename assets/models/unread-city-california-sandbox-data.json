@@ -1,0 +1,3154 @@
+{
+  "title": "加州 · 全州立体沙盘数据集",
+  "exportedAt": "2026-11-12T18:18:32.000Z",
+  "currentClock": "17:30",
+  "projection": {
+    "type": "equirectangular",
+    "lonCenter": -119.25,
+    "latCenter": 37.25,
+    "unitsPerDegreeLat": 50.526,
+    "unitsPerDegreeLon": 40.34,
+    "note": "x = (lon - lonCenter) * unitsPerDegreeLon, z = (latCenter - lat) * unitsPerDegreeLat; x east, z south, y up; 1 unit is about 2.2 km."
+  },
+  "districts": [
+    {
+      "id": "bay-area",
+      "name": "旧金山湾区",
+      "shortName": "湾区",
+      "description": "旧金山湾区的城市群：国际机场、OpenAI 与 Anthropic 的访客大厅、湾区二手交易市场。",
+      "x": -123.04,
+      "z": -20.21,
+      "minX": -143.21,
+      "maxX": -102.87,
+      "minZ": -53.05,
+      "maxZ": 12.63,
+      "color": 4946575
+    },
+    {
+      "id": "north-coast",
+      "name": "北海岸",
+      "shortName": "北海岸",
+      "description": "加州北海岸：尤里卡港城与海岸红杉森林。",
+      "x": -159.34,
+      "z": -146.53,
+      "minX": -207.75,
+      "maxX": -110.94,
+      "minZ": -240.0,
+      "maxZ": -53.05,
+      "color": 5208666
+    },
+    {
+      "id": "sacramento-valley",
+      "name": "萨克拉门托谷地",
+      "shortName": "萨克拉门托谷地",
+      "description": "北加州内陆谷地：州府萨克拉门托与通往沙斯塔山的雷丁。",
+      "x": -100.85,
+      "z": -126.32,
+      "minX": -131.11,
+      "maxX": -70.6,
+      "minZ": -189.47,
+      "maxZ": -63.16,
+      "color": 9083483
+    },
+    {
+      "id": "sierra-nevada",
+      "name": "内华达山脉",
+      "shortName": "内华达山脉",
+      "description": "加州东部的花岗岩山脉：优胜美地国家公园与惠特尼峰。",
+      "x": 4.03,
+      "z": -20.21,
+      "minX": -50.43,
+      "maxX": 58.49,
+      "minZ": -128.84,
+      "maxZ": 88.42,
+      "color": 9272683
+    },
+    {
+      "id": "central-valley",
+      "name": "中央谷地",
+      "shortName": "中央谷地",
+      "description": "加州中部的农业谷地：弗雷斯诺与通往塞拉山脉南段的路口。",
+      "x": -50.43,
+      "z": 12.63,
+      "minX": -110.94,
+      "maxX": 10.09,
+      "minZ": -63.16,
+      "maxZ": 88.42,
+      "color": 10134622
+    },
+    {
+      "id": "central-coast",
+      "name": "中央海岸",
+      "shortName": "中央海岸",
+      "description": "太平洋中央海岸：蒙特雷海湾、渔港与水族馆。",
+      "x": -80.68,
+      "z": 75.79,
+      "minX": -131.11,
+      "maxX": -30.26,
+      "minZ": 12.63,
+      "maxZ": 138.95,
+      "color": 6195850
+    },
+    {
+      "id": "southern-california",
+      "name": "南加州",
+      "shortName": "南加州",
+      "description": "南加州都会区：洛杉矶与圣迭戈的太平洋沿岸城市。",
+      "x": 20.17,
+      "z": 181.89,
+      "minX": -50.43,
+      "maxX": 90.77,
+      "minZ": 123.79,
+      "maxZ": 240.0,
+      "color": 11565647
+    },
+    {
+      "id": "desert",
+      "name": "莫哈韦沙漠",
+      "shortName": "沙漠",
+      "description": "加州东南部的沙漠盆地：死亡谷国家公园的盐滩与荒漠山脉。",
+      "x": 149.26,
+      "z": 136.42,
+      "minX": 90.77,
+      "maxX": 207.75,
+      "minZ": 32.84,
+      "maxZ": 240.0,
+      "color": 13215850
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "sfo-airport",
+      "name": "旧金山国际机场",
+      "subtitle": "加州 · 入境大厅",
+      "district": "bay-area",
+      "x": -126.22,
+      "z": -18.76,
+      "desc": "旧金山湾区的国际航空门户，可以搭乘机场接驳车前往市区，也可以购票返回东京。",
+      "services": [
+        {
+          "id": "sfo-spotting",
+          "label": "在观景台看飞机起降",
+          "minutes": 30,
+          "price": 0,
+          "result": "在观景台看了一会儿飞机起降，湾区的海风吹走了旅途的疲惫。",
+          "energyDelta": -2,
+          "moraleDelta": 6,
+          "stressDelta": -4
+        }
+      ]
+    },
+    {
+      "id": "california-openai",
+      "name": "OpenAI 办公地点",
+      "subtitle": "加州 · 旧金山",
+      "district": "bay-area",
+      "x": -126.67,
+      "z": -26.17,
+      "desc": "OpenAI 访客大厅设有专门的登记柜台，开放时可申请领取 Pro200 收藏券。",
+      "services": [
+        {
+          "id": "openai-pro200-claim",
+          "label": "登记领取 Pro200 收藏券",
+          "minutes": 15,
+          "price": 0,
+          "result": "在访客大厅的登记柜台领取了一张 Pro200 收藏券。",
+          "energyDelta": -1,
+          "moraleDelta": 10,
+          "stressDelta": 0
+        }
+      ]
+    },
+    {
+      "id": "california-anthropic",
+      "name": "Anthropic 访客中心",
+      "subtitle": "加州 · 旧金山",
+      "district": "bay-area",
+      "x": -127.19,
+      "z": -27.23,
+      "desc": "湾区另一家 AI 公司，设有安静的访客大厅与研究展示区。神秘研究者偶尔会在附近出现。",
+      "services": [
+        {
+          "id": "anthropic-visit",
+          "label": "参观研究展示区",
+          "minutes": 40,
+          "price": 0,
+          "result": "在安静的访客大厅里看了研究展示，顺便在窗边发了一会儿呆。",
+          "energyDelta": -3,
+          "moraleDelta": 8,
+          "stressDelta": -5
+        }
+      ]
+    },
+    {
+      "id": "california-market",
+      "name": "湾区二手交易市场",
+      "subtitle": "加州 · 旧金山",
+      "district": "bay-area",
+      "x": -127.85,
+      "z": -26.52,
+      "desc": "湾区的收藏品交易市场，常有商人收购各式纪念券，其中也包括 Pro200。",
+      "services": [
+        {
+          "id": "pro200-resell",
+          "label": "出售 Pro200 收藏券",
+          "minutes": 10,
+          "price": 0,
+          "result": "把一张 Pro200 收藏券卖给了市场里的收藏商。",
+          "energyDelta": 0,
+          "moraleDelta": 4,
+          "stressDelta": 0
+        }
+      ]
+    },
+    {
+      "id": "california-eureka",
+      "name": "尤里卡",
+      "subtitle": "加州 · 北海岸",
+      "district": "north-coast",
+      "x": -198.22,
+      "z": -179.47,
+      "desc": "北海岸港城，周边分布着古老的海岸红杉森林。",
+      "services": [
+        {
+          "id": "eureka-old-town",
+          "label": "漫步老城木板路",
+          "minutes": 40,
+          "price": 0,
+          "result": "沿着老城的木板路慢慢走，红杉林的气息从海边飘过来。",
+          "energyDelta": -3,
+          "moraleDelta": 7,
+          "stressDelta": -5
+        }
+      ]
+    },
+    {
+      "id": "california-redding",
+      "name": "雷丁",
+      "subtitle": "加州 · 北部内陆",
+      "district": "sacramento-valley",
+      "x": -126.74,
+      "z": -168.58,
+      "desc": "北加州内陆交通节点，可前往沙斯塔山与湖区。",
+      "services": [
+        {
+          "id": "redding-sundial",
+          "label": "走过日晷桥",
+          "minutes": 35,
+          "price": 0,
+          "result": "走过横跨萨克拉门托河的日晷桥，在河边坐了一会儿。",
+          "energyDelta": -3,
+          "moraleDelta": 7,
+          "stressDelta": -4
+        }
+      ]
+    },
+    {
+      "id": "california-sacramento",
+      "name": "萨克拉门托",
+      "subtitle": "加州 · 州府",
+      "district": "sacramento-valley",
+      "x": -90.54,
+      "z": -67.28,
+      "desc": "加利福尼亚州首府，萨克拉门托河与美国河交汇处的城市。",
+      "services": [
+        {
+          "id": "sacramento-capitol",
+          "label": "参观州议会大厦",
+          "minutes": 45,
+          "price": 0,
+          "result": "在州议会大厦前逛了一圈，两条河交汇处的风很舒服。",
+          "energyDelta": -3,
+          "moraleDelta": 7,
+          "stressDelta": -4
+        }
+      ]
+    },
+    {
+      "id": "california-yosemite",
+      "name": "优胜美地国家公园",
+      "subtitle": "加州 · 内华达山脉",
+      "district": "sierra-nevada",
+      "x": -13.86,
+      "z": -25.06,
+      "desc": "花岗岩峭壁、瀑布与高山森林构成的国家公园。",
+      "services": [
+        {
+          "id": "yosemite-falls",
+          "label": "徒步观赏瀑布",
+          "minutes": 90,
+          "price": 0,
+          "result": "沿着山谷步道走到瀑布脚下，花岗岩峭壁在头顶耸立。",
+          "energyDelta": -8,
+          "moraleDelta": 14,
+          "stressDelta": -10
+        }
+      ]
+    },
+    {
+      "id": "california-fresno",
+      "name": "弗雷斯诺",
+      "subtitle": "加州 · 中央谷地",
+      "district": "central-valley",
+      "x": -21.67,
+      "z": 25.88,
+      "desc": "中央谷地城市，通往优胜美地与塞拉山脉南段。",
+      "services": [
+        {
+          "id": "fresno-market",
+          "label": "逛农夫市集",
+          "minutes": 40,
+          "price": 0,
+          "result": "在农夫市集买了些中央谷地的水果，边走边吃。",
+          "energyDelta": -2,
+          "moraleDelta": 8,
+          "stressDelta": -4
+        }
+      ]
+    },
+    {
+      "id": "california-monterey",
+      "name": "蒙特雷",
+      "subtitle": "加州 · 中央海岸",
+      "district": "central-coast",
+      "x": -106.69,
+      "z": 32.83,
+      "desc": "太平洋海湾城市，以海岸线、渔港与水族馆闻名。",
+      "services": [
+        {
+          "id": "monterey-aquarium",
+          "label": "参观水族馆",
+          "minutes": 60,
+          "price": 0,
+          "result": "在水族馆看了海獭和水母，出来时正好赶上海边的落日。",
+          "energyDelta": -4,
+          "moraleDelta": 12,
+          "stressDelta": -8
+        }
+      ]
+    },
+    {
+      "id": "california-los-angeles",
+      "name": "洛杉矶",
+      "subtitle": "加州 · 南部都会区",
+      "district": "southern-california",
+      "x": 40.59,
+      "z": 161.57,
+      "desc": "南加州大型都会区，连接海岸、影视工业与山地社区。",
+      "services": [
+        {
+          "id": "la-walk",
+          "label": "在星光大道散步",
+          "minutes": 50,
+          "price": 0,
+          "result": "沿着星光大道散步，街头艺人和棕榈树一路不断。",
+          "energyDelta": -4,
+          "moraleDelta": 9,
+          "stressDelta": -3
+        }
+      ]
+    },
+    {
+      "id": "california-death-valley",
+      "name": "死亡谷国家公园",
+      "subtitle": "加州 · 莫哈韦沙漠",
+      "district": "desert",
+      "x": 96.14,
+      "z": 39.77,
+      "desc": "极端干旱的沙漠盆地、盐滩与荒漠山脉。",
+      "services": [
+        {
+          "id": "death-valley-sunset",
+          "label": "观赏盐滩日落",
+          "minutes": 45,
+          "price": 0,
+          "result": "站在盐滩上看太阳沉进荒漠山脉，整个盆地都变成了金色。",
+          "energyDelta": -3,
+          "moraleDelta": 11,
+          "stressDelta": -6
+        }
+      ]
+    },
+    {
+      "id": "california-san-diego",
+      "name": "圣迭戈",
+      "subtitle": "加州 · 南部海岸",
+      "district": "southern-california",
+      "x": 84.27,
+      "z": 229.1,
+      "desc": "南加州海滨城市，靠近美墨边境。",
+      "services": [
+        {
+          "id": "san-diego-boardwalk",
+          "label": "在海滨步道散步",
+          "minutes": 45,
+          "price": 0,
+          "result": "沿着海滨步道慢慢走，海风里带着咸味，港口的船进进出出。",
+          "energyDelta": -3,
+          "moraleDelta": 9,
+          "stressDelta": -6
+        }
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "id": "building:sfo-airport:0",
+      "name": "旧金山国际机场",
+      "x": -128.13,
+      "z": -15.1,
+      "width": 6.26,
+      "depth": 4.76,
+      "height": 3.81,
+      "floors": 1,
+      "color": "#477487",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:1",
+      "name": "旧金山国际机场",
+      "x": -122.06,
+      "z": -17.61,
+      "width": 4.2,
+      "depth": 4.68,
+      "height": 3.14,
+      "floors": 1,
+      "color": "#426c7f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:2",
+      "name": "旧金山国际机场",
+      "x": -128.19,
+      "z": -14.13,
+      "width": 3.9,
+      "depth": 3.65,
+      "height": 3.19,
+      "floors": 1,
+      "color": "#558aa2",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:3",
+      "name": "旧金山国际机场",
+      "x": -124.58,
+      "z": -25.68,
+      "width": 4.04,
+      "depth": 3.18,
+      "height": 3.13,
+      "floors": 1,
+      "color": "#4e7f95",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:4",
+      "name": "旧金山国际机场",
+      "x": -121.6,
+      "z": -19.64,
+      "width": 6.24,
+      "depth": 4.88,
+      "height": 3.69,
+      "floors": 1,
+      "color": "#467185",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:5",
+      "name": "旧金山国际机场",
+      "x": -133.08,
+      "z": -14.95,
+      "width": 5.18,
+      "depth": 5.66,
+      "height": 3.16,
+      "floors": 1,
+      "color": "#558ba3",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:6",
+      "name": "旧金山国际机场",
+      "x": -126.56,
+      "z": -11.95,
+      "width": 3.49,
+      "depth": 4.85,
+      "height": 2.67,
+      "floors": 1,
+      "color": "#4c7c91",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:7",
+      "name": "旧金山国际机场",
+      "x": -129.12,
+      "z": -22.28,
+      "width": 6.56,
+      "depth": 6.72,
+      "height": 3.81,
+      "floors": 1,
+      "color": "#477387",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:8",
+      "name": "旧金山国际机场",
+      "x": -128.45,
+      "z": -18.79,
+      "width": 5.58,
+      "depth": 5.52,
+      "height": 3.82,
+      "floors": 1,
+      "color": "#5488a0",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:9",
+      "name": "旧金山国际机场",
+      "x": -130.08,
+      "z": -16.31,
+      "width": 4.29,
+      "depth": 6.08,
+      "height": 3.83,
+      "floors": 1,
+      "color": "#508298",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:sfo-airport:runway",
+      "name": "机场跑道",
+      "x": -126.22,
+      "z": -18.76,
+      "width": 26.0,
+      "depth": 3.5,
+      "height": 0.8,
+      "floors": 1,
+      "color": "#3a3f44",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:0",
+      "name": "OpenAI 办公地点",
+      "x": -122.76,
+      "z": -29.02,
+      "width": 5.19,
+      "depth": 6.87,
+      "height": 4.35,
+      "floors": 1,
+      "color": "#426c7f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:1",
+      "name": "OpenAI 办公地点",
+      "x": -131.65,
+      "z": -25.11,
+      "width": 4.13,
+      "depth": 6.33,
+      "height": 4.21,
+      "floors": 1,
+      "color": "#487488",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:2",
+      "name": "OpenAI 办公地点",
+      "x": -121.89,
+      "z": -24.72,
+      "width": 6.75,
+      "depth": 6.42,
+      "height": 2.55,
+      "floors": 1,
+      "color": "#5488a0",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:3",
+      "name": "OpenAI 办公地点",
+      "x": -125.68,
+      "z": -26.65,
+      "width": 5.29,
+      "depth": 3.95,
+      "height": 2.22,
+      "floors": 1,
+      "color": "#457083",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:4",
+      "name": "OpenAI 办公地点",
+      "x": -127.09,
+      "z": -28.96,
+      "width": 5.25,
+      "depth": 3.88,
+      "height": 4.63,
+      "floors": 2,
+      "color": "#457184",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:5",
+      "name": "OpenAI 办公地点",
+      "x": -124.84,
+      "z": -24.66,
+      "width": 5.75,
+      "depth": 4.5,
+      "height": 4.48,
+      "floors": 1,
+      "color": "#4d7e93",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:6",
+      "name": "OpenAI 办公地点",
+      "x": -129.21,
+      "z": -23.48,
+      "width": 4.22,
+      "depth": 4.87,
+      "height": 4.77,
+      "floors": 2,
+      "color": "#436d80",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-openai:7",
+      "name": "OpenAI 办公地点",
+      "x": -129.67,
+      "z": -21.61,
+      "width": 4.78,
+      "depth": 3.2,
+      "height": 3.36,
+      "floors": 1,
+      "color": "#436d80",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:0",
+      "name": "Anthropic 访客中心",
+      "x": -123.44,
+      "z": -25.89,
+      "width": 5.35,
+      "depth": 4.11,
+      "height": 4.47,
+      "floors": 1,
+      "color": "#4f8197",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:1",
+      "name": "Anthropic 访客中心",
+      "x": -127.09,
+      "z": -29.32,
+      "width": 6.68,
+      "depth": 6.54,
+      "height": 2.89,
+      "floors": 1,
+      "color": "#477488",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:2",
+      "name": "Anthropic 访客中心",
+      "x": -122.63,
+      "z": -24.21,
+      "width": 3.39,
+      "depth": 5.79,
+      "height": 2.5,
+      "floors": 1,
+      "color": "#53879f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:3",
+      "name": "Anthropic 访客中心",
+      "x": -132.11,
+      "z": -27.38,
+      "width": 4.8,
+      "depth": 5.56,
+      "height": 3.24,
+      "floors": 1,
+      "color": "#568ca4",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:4",
+      "name": "Anthropic 访客中心",
+      "x": -122.69,
+      "z": -28.1,
+      "width": 4.23,
+      "depth": 4.8,
+      "height": 4.39,
+      "floors": 1,
+      "color": "#53879f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:5",
+      "name": "Anthropic 访客中心",
+      "x": -126.64,
+      "z": -25.53,
+      "width": 3.25,
+      "depth": 6.49,
+      "height": 3.91,
+      "floors": 1,
+      "color": "#558aa2",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:6",
+      "name": "Anthropic 访客中心",
+      "x": -128.08,
+      "z": -28.34,
+      "width": 3.09,
+      "depth": 3.37,
+      "height": 2.18,
+      "floors": 1,
+      "color": "#51859b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-anthropic:7",
+      "name": "Anthropic 访客中心",
+      "x": -129.65,
+      "z": -22.57,
+      "width": 5.19,
+      "depth": 3.82,
+      "height": 2.19,
+      "floors": 1,
+      "color": "#568ca4",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:0",
+      "name": "湾区二手交易市场",
+      "x": -127.94,
+      "z": -20.32,
+      "width": 6.31,
+      "depth": 4.51,
+      "height": 8.4,
+      "floors": 3,
+      "color": "#40697b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:1",
+      "name": "湾区二手交易市场",
+      "x": -127.42,
+      "z": -19.41,
+      "width": 4.52,
+      "depth": 4.37,
+      "height": 5.77,
+      "floors": 2,
+      "color": "#4d7e93",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:2",
+      "name": "湾区二手交易市场",
+      "x": -130.06,
+      "z": -33.02,
+      "width": 3.4,
+      "depth": 4.91,
+      "height": 7.79,
+      "floors": 3,
+      "color": "#4c7c91",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:3",
+      "name": "湾区二手交易市场",
+      "x": -119.92,
+      "z": -23.95,
+      "width": 5.57,
+      "depth": 5.66,
+      "height": 4.57,
+      "floors": 2,
+      "color": "#467386",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:4",
+      "name": "湾区二手交易市场",
+      "x": -121.53,
+      "z": -22.94,
+      "width": 5.2,
+      "depth": 3.83,
+      "height": 5.9,
+      "floors": 2,
+      "color": "#558aa2",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:5",
+      "name": "湾区二手交易市场",
+      "x": -122.0,
+      "z": -33.24,
+      "width": 3.23,
+      "depth": 6.31,
+      "height": 4.15,
+      "floors": 1,
+      "color": "#4c7c92",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:6",
+      "name": "湾区二手交易市场",
+      "x": -126.79,
+      "z": -31.85,
+      "width": 4.08,
+      "depth": 4.34,
+      "height": 11.62,
+      "floors": 4,
+      "color": "#4e8096",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:7",
+      "name": "湾区二手交易市场",
+      "x": -128.41,
+      "z": -20.68,
+      "width": 5.82,
+      "depth": 5.07,
+      "height": 7.37,
+      "floors": 2,
+      "color": "#4c7c92",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:8",
+      "name": "湾区二手交易市场",
+      "x": -125.57,
+      "z": -28.81,
+      "width": 3.04,
+      "depth": 5.18,
+      "height": 11.64,
+      "floors": 4,
+      "color": "#4e7f95",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:9",
+      "name": "湾区二手交易市场",
+      "x": -132.17,
+      "z": -31.01,
+      "width": 4.23,
+      "depth": 3.32,
+      "height": 11.09,
+      "floors": 4,
+      "color": "#52869d",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:10",
+      "name": "湾区二手交易市场",
+      "x": -127.44,
+      "z": -33.98,
+      "width": 6.43,
+      "depth": 3.94,
+      "height": 6.15,
+      "floors": 2,
+      "color": "#40697b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:11",
+      "name": "湾区二手交易市场",
+      "x": -124.69,
+      "z": -33.21,
+      "width": 5.65,
+      "depth": 5.41,
+      "height": 8.76,
+      "floors": 3,
+      "color": "#467185",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:12",
+      "name": "湾区二手交易市场",
+      "x": -129.76,
+      "z": -26.5,
+      "width": 6.49,
+      "depth": 3.16,
+      "height": 11.18,
+      "floors": 4,
+      "color": "#426b7e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:13",
+      "name": "湾区二手交易市场",
+      "x": -134.16,
+      "z": -33.02,
+      "width": 5.08,
+      "depth": 3.77,
+      "height": 8.9,
+      "floors": 3,
+      "color": "#4b7a8f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:14",
+      "name": "湾区二手交易市场",
+      "x": -121.45,
+      "z": -18.79,
+      "width": 5.62,
+      "depth": 3.3,
+      "height": 2.12,
+      "floors": 1,
+      "color": "#487589",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:15",
+      "name": "湾区二手交易市场",
+      "x": -121.96,
+      "z": -21.51,
+      "width": 6.88,
+      "depth": 5.99,
+      "height": 3.76,
+      "floors": 1,
+      "color": "#51839a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:16",
+      "name": "湾区二手交易市场",
+      "x": -135.59,
+      "z": -28.65,
+      "width": 5.58,
+      "depth": 6.75,
+      "height": 2.87,
+      "floors": 1,
+      "color": "#457083",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:17",
+      "name": "湾区二手交易市场",
+      "x": -121.87,
+      "z": -25.64,
+      "width": 4.98,
+      "depth": 4.98,
+      "height": 10.16,
+      "floors": 3,
+      "color": "#4e7f95",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:18",
+      "name": "湾区二手交易市场",
+      "x": -132.75,
+      "z": -32.55,
+      "width": 6.07,
+      "depth": 4.19,
+      "height": 8.55,
+      "floors": 3,
+      "color": "#558aa2",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:19",
+      "name": "湾区二手交易市场",
+      "x": -131.13,
+      "z": -34.27,
+      "width": 5.24,
+      "depth": 5.49,
+      "height": 6.48,
+      "floors": 2,
+      "color": "#477387",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:20",
+      "name": "湾区二手交易市场",
+      "x": -128.09,
+      "z": -26.84,
+      "width": 3.11,
+      "depth": 4.27,
+      "height": 9.6,
+      "floors": 3,
+      "color": "#467386",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:21",
+      "name": "湾区二手交易市场",
+      "x": -135.14,
+      "z": -31.29,
+      "width": 5.85,
+      "depth": 6.19,
+      "height": 2.57,
+      "floors": 1,
+      "color": "#467286",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:22",
+      "name": "湾区二手交易市场",
+      "x": -133.76,
+      "z": -23.54,
+      "width": 3.54,
+      "depth": 5.78,
+      "height": 4.18,
+      "floors": 1,
+      "color": "#53879e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:23",
+      "name": "湾区二手交易市场",
+      "x": -131.52,
+      "z": -19.72,
+      "width": 5.51,
+      "depth": 5.98,
+      "height": 5.56,
+      "floors": 2,
+      "color": "#436d80",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:24",
+      "name": "湾区二手交易市场",
+      "x": -129.78,
+      "z": -25.15,
+      "width": 5.96,
+      "depth": 6.43,
+      "height": 11.77,
+      "floors": 4,
+      "color": "#446f82",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:25",
+      "name": "湾区二手交易市场",
+      "x": -126.03,
+      "z": -31.56,
+      "width": 4.0,
+      "depth": 3.4,
+      "height": 12.25,
+      "floors": 4,
+      "color": "#51849b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:26",
+      "name": "湾区二手交易市场",
+      "x": -132.82,
+      "z": -19.18,
+      "width": 5.68,
+      "depth": 5.71,
+      "height": 4.97,
+      "floors": 2,
+      "color": "#4b7a8f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:27",
+      "name": "湾区二手交易市场",
+      "x": -127.77,
+      "z": -23.66,
+      "width": 3.02,
+      "depth": 3.22,
+      "height": 5.42,
+      "floors": 2,
+      "color": "#4b798e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:28",
+      "name": "湾区二手交易市场",
+      "x": -126.83,
+      "z": -18.76,
+      "width": 6.94,
+      "depth": 6.34,
+      "height": 8.21,
+      "floors": 3,
+      "color": "#52869d",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:29",
+      "name": "湾区二手交易市场",
+      "x": -122.99,
+      "z": -21.16,
+      "width": 6.48,
+      "depth": 5.36,
+      "height": 7.4,
+      "floors": 2,
+      "color": "#467185",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:30",
+      "name": "湾区二手交易市场",
+      "x": -122.92,
+      "z": -33.71,
+      "width": 4.73,
+      "depth": 3.25,
+      "height": 5.79,
+      "floors": 2,
+      "color": "#477488",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:31",
+      "name": "湾区二手交易市场",
+      "x": -125.78,
+      "z": -33.16,
+      "width": 4.34,
+      "depth": 5.14,
+      "height": 4.69,
+      "floors": 2,
+      "color": "#40687a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:32",
+      "name": "湾区二手交易市场",
+      "x": -132.44,
+      "z": -24.67,
+      "width": 6.04,
+      "depth": 3.03,
+      "height": 2.27,
+      "floors": 1,
+      "color": "#53869e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:33",
+      "name": "湾区二手交易市场",
+      "x": -120.59,
+      "z": -29.33,
+      "width": 5.87,
+      "depth": 3.58,
+      "height": 5.67,
+      "floors": 2,
+      "color": "#53879e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:0",
+      "name": "尤里卡",
+      "x": -197.26,
+      "z": -184.08,
+      "width": 6.74,
+      "depth": 4.24,
+      "height": 2.84,
+      "floors": 1,
+      "color": "#456b4f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:1",
+      "name": "尤里卡",
+      "x": -200.18,
+      "z": -174.74,
+      "width": 4.08,
+      "depth": 4.04,
+      "height": 2.54,
+      "floors": 1,
+      "color": "#507c5b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:2",
+      "name": "尤里卡",
+      "x": -202.96,
+      "z": -178.62,
+      "width": 3.38,
+      "depth": 3.64,
+      "height": 2.71,
+      "floors": 1,
+      "color": "#598965",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:3",
+      "name": "尤里卡",
+      "x": -197.28,
+      "z": -175.38,
+      "width": 6.57,
+      "depth": 3.89,
+      "height": 2.15,
+      "floors": 1,
+      "color": "#4b7456",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:4",
+      "name": "尤里卡",
+      "x": -197.88,
+      "z": -179.88,
+      "width": 4.58,
+      "depth": 5.23,
+      "height": 3.87,
+      "floors": 1,
+      "color": "#568562",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:5",
+      "name": "尤里卡",
+      "x": -199.87,
+      "z": -179.78,
+      "width": 6.77,
+      "depth": 3.17,
+      "height": 4.84,
+      "floors": 2,
+      "color": "#517c5c",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:6",
+      "name": "尤里卡",
+      "x": -193.01,
+      "z": -175.85,
+      "width": 4.83,
+      "depth": 5.5,
+      "height": 2.66,
+      "floors": 1,
+      "color": "#4c7556",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:7",
+      "name": "尤里卡",
+      "x": -203.53,
+      "z": -174.51,
+      "width": 6.2,
+      "depth": 6.85,
+      "height": 2.76,
+      "floors": 1,
+      "color": "#507b5b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:8",
+      "name": "尤里卡",
+      "x": -201.36,
+      "z": -183.0,
+      "width": 5.41,
+      "depth": 3.94,
+      "height": 2.78,
+      "floors": 1,
+      "color": "#4a7254",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-eureka:9",
+      "name": "尤里卡",
+      "x": -194.26,
+      "z": -175.3,
+      "width": 5.27,
+      "depth": 6.17,
+      "height": 2.63,
+      "floors": 1,
+      "color": "#578663",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:0",
+      "name": "雷丁",
+      "x": -124.23,
+      "z": -165.71,
+      "width": 4.31,
+      "depth": 5.19,
+      "height": 3.74,
+      "floors": 1,
+      "color": "#90a15f",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:1",
+      "name": "雷丁",
+      "x": -129.02,
+      "z": -171.09,
+      "width": 4.85,
+      "depth": 3.9,
+      "height": 3.25,
+      "floors": 1,
+      "color": "#9cae67",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:2",
+      "name": "雷丁",
+      "x": -125.19,
+      "z": -169.2,
+      "width": 5.65,
+      "depth": 5.53,
+      "height": 2.91,
+      "floors": 1,
+      "color": "#7c8a52",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:3",
+      "name": "雷丁",
+      "x": -127.3,
+      "z": -169.18,
+      "width": 4.17,
+      "depth": 4.05,
+      "height": 2.93,
+      "floors": 1,
+      "color": "#9cae67",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:4",
+      "name": "雷丁",
+      "x": -131.21,
+      "z": -169.54,
+      "width": 5.41,
+      "depth": 3.87,
+      "height": 2.18,
+      "floors": 1,
+      "color": "#879759",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:5",
+      "name": "雷丁",
+      "x": -131.36,
+      "z": -169.51,
+      "width": 4.22,
+      "depth": 3.82,
+      "height": 3.89,
+      "floors": 1,
+      "color": "#98aa64",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:6",
+      "name": "雷丁",
+      "x": -125.41,
+      "z": -167.84,
+      "width": 3.0,
+      "depth": 4.23,
+      "height": 3.5,
+      "floors": 1,
+      "color": "#96a863",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:7",
+      "name": "雷丁",
+      "x": -127.27,
+      "z": -172.06,
+      "width": 5.16,
+      "depth": 3.5,
+      "height": 2.13,
+      "floors": 1,
+      "color": "#98aa65",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:8",
+      "name": "雷丁",
+      "x": -130.29,
+      "z": -172.95,
+      "width": 3.31,
+      "depth": 3.34,
+      "height": 3.09,
+      "floors": 1,
+      "color": "#89985a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-redding:9",
+      "name": "雷丁",
+      "x": -124.31,
+      "z": -171.67,
+      "width": 6.56,
+      "depth": 3.83,
+      "height": 2.29,
+      "floors": 1,
+      "color": "#7a8951",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:0",
+      "name": "萨克拉门托",
+      "x": -85.92,
+      "z": -66.16,
+      "width": 6.42,
+      "depth": 5.13,
+      "height": 2.55,
+      "floors": 1,
+      "color": "#879759",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:1",
+      "name": "萨克拉门托",
+      "x": -96.34,
+      "z": -69.45,
+      "width": 5.12,
+      "depth": 3.95,
+      "height": 3.32,
+      "floors": 1,
+      "color": "#8c9c5c",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:2",
+      "name": "萨克拉门托",
+      "x": -87.25,
+      "z": -67.46,
+      "width": 6.04,
+      "depth": 3.09,
+      "height": 5.32,
+      "floors": 2,
+      "color": "#808f54",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:3",
+      "name": "萨克拉门托",
+      "x": -92.23,
+      "z": -67.02,
+      "width": 3.57,
+      "depth": 5.1,
+      "height": 7.77,
+      "floors": 3,
+      "color": "#798750",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:4",
+      "name": "萨克拉门托",
+      "x": -93.8,
+      "z": -71.64,
+      "width": 3.8,
+      "depth": 6.12,
+      "height": 5.61,
+      "floors": 2,
+      "color": "#7e8d53",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:5",
+      "name": "萨克拉门托",
+      "x": -89.63,
+      "z": -68.72,
+      "width": 3.75,
+      "depth": 5.12,
+      "height": 7.78,
+      "floors": 3,
+      "color": "#8a995b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:6",
+      "name": "萨克拉门托",
+      "x": -89.07,
+      "z": -65.23,
+      "width": 4.72,
+      "depth": 4.6,
+      "height": 5.76,
+      "floors": 2,
+      "color": "#8a9a5b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:7",
+      "name": "萨克拉门托",
+      "x": -90.31,
+      "z": -67.17,
+      "width": 4.19,
+      "depth": 4.84,
+      "height": 4.68,
+      "floors": 2,
+      "color": "#94a662",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:8",
+      "name": "萨克拉门托",
+      "x": -93.61,
+      "z": -65.98,
+      "width": 6.74,
+      "depth": 4.51,
+      "height": 5.99,
+      "floors": 2,
+      "color": "#94a562",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:9",
+      "name": "萨克拉门托",
+      "x": -96.67,
+      "z": -66.58,
+      "width": 6.19,
+      "depth": 3.25,
+      "height": 2.47,
+      "floors": 1,
+      "color": "#88985a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:10",
+      "name": "萨克拉门托",
+      "x": -89.99,
+      "z": -71.36,
+      "width": 5.45,
+      "depth": 3.79,
+      "height": 3.24,
+      "floors": 1,
+      "color": "#798750",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:11",
+      "name": "萨克拉门托",
+      "x": -93.81,
+      "z": -67.87,
+      "width": 4.17,
+      "depth": 6.0,
+      "height": 5.11,
+      "floors": 2,
+      "color": "#798750",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:12",
+      "name": "萨克拉门托",
+      "x": -86.81,
+      "z": -64.98,
+      "width": 3.02,
+      "depth": 4.68,
+      "height": 4.53,
+      "floors": 2,
+      "color": "#92a360",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:13",
+      "name": "萨克拉门托",
+      "x": -91.88,
+      "z": -64.62,
+      "width": 6.58,
+      "depth": 5.58,
+      "height": 5.75,
+      "floors": 2,
+      "color": "#9aac65",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:14",
+      "name": "萨克拉门托",
+      "x": -86.13,
+      "z": -72.85,
+      "width": 4.65,
+      "depth": 5.85,
+      "height": 2.58,
+      "floors": 1,
+      "color": "#9bad66",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-sacramento:15",
+      "name": "萨克拉门托",
+      "x": -92.42,
+      "z": -73.49,
+      "width": 3.33,
+      "depth": 3.9,
+      "height": 3.02,
+      "floors": 1,
+      "color": "#7e8d53",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-yosemite:0",
+      "name": "花岗岩峭壁",
+      "x": -13.860896336841906,
+      "z": -25.055999999999944,
+      "width": 9.0,
+      "depth": 9.0,
+      "height": 22.0,
+      "floors": 1,
+      "color": "#8d7d6b",
+      "roofType": "peak",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:0",
+      "name": "弗雷斯诺",
+      "x": -27.27,
+      "z": 28.51,
+      "width": 3.9,
+      "depth": 3.82,
+      "height": 3.94,
+      "floors": 1,
+      "color": "#98a25d",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:1",
+      "name": "弗雷斯诺",
+      "x": -24.16,
+      "z": 21.58,
+      "width": 6.23,
+      "depth": 4.18,
+      "height": 2.51,
+      "floors": 1,
+      "color": "#949d5a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:2",
+      "name": "弗雷斯诺",
+      "x": -18.96,
+      "z": 30.82,
+      "width": 6.24,
+      "depth": 5.36,
+      "height": 3.14,
+      "floors": 1,
+      "color": "#919b59",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:3",
+      "name": "弗雷斯诺",
+      "x": -23.59,
+      "z": 31.04,
+      "width": 6.08,
+      "depth": 5.29,
+      "height": 2.18,
+      "floors": 1,
+      "color": "#abb668",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:4",
+      "name": "弗雷斯诺",
+      "x": -20.48,
+      "z": 27.53,
+      "width": 4.33,
+      "depth": 3.62,
+      "height": 6.74,
+      "floors": 2,
+      "color": "#9faa61",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:5",
+      "name": "弗雷斯诺",
+      "x": -16.89,
+      "z": 24.34,
+      "width": 3.19,
+      "depth": 4.52,
+      "height": 2.53,
+      "floors": 1,
+      "color": "#909958",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:6",
+      "name": "弗雷斯诺",
+      "x": -24.89,
+      "z": 29.96,
+      "width": 3.73,
+      "depth": 3.45,
+      "height": 2.32,
+      "floors": 1,
+      "color": "#afba6b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:7",
+      "name": "弗雷斯诺",
+      "x": -15.95,
+      "z": 24.66,
+      "width": 3.79,
+      "depth": 3.55,
+      "height": 3.7,
+      "floors": 1,
+      "color": "#858d51",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:8",
+      "name": "弗雷斯诺",
+      "x": -26.84,
+      "z": 28.67,
+      "width": 3.99,
+      "depth": 4.07,
+      "height": 3.84,
+      "floors": 1,
+      "color": "#858d51",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:9",
+      "name": "弗雷斯诺",
+      "x": -25.39,
+      "z": 30.05,
+      "width": 5.48,
+      "depth": 6.49,
+      "height": 3.49,
+      "floors": 1,
+      "color": "#919a58",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:10",
+      "name": "弗雷斯诺",
+      "x": -24.47,
+      "z": 24.62,
+      "width": 4.59,
+      "depth": 4.27,
+      "height": 2.0,
+      "floors": 1,
+      "color": "#9da760",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:11",
+      "name": "弗雷斯诺",
+      "x": -24.59,
+      "z": 25.3,
+      "width": 6.72,
+      "depth": 5.44,
+      "height": 3.91,
+      "floors": 1,
+      "color": "#adb86a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:12",
+      "name": "弗雷斯诺",
+      "x": -27.04,
+      "z": 21.03,
+      "width": 5.85,
+      "depth": 5.6,
+      "height": 2.56,
+      "floors": 1,
+      "color": "#9ea860",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-fresno:13",
+      "name": "弗雷斯诺",
+      "x": -17.01,
+      "z": 19.87,
+      "width": 5.74,
+      "depth": 5.27,
+      "height": 3.95,
+      "floors": 1,
+      "color": "#8d9756",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:0",
+      "name": "蒙特雷",
+      "x": -101.42,
+      "z": 35.72,
+      "width": 5.02,
+      "depth": 4.06,
+      "height": 2.36,
+      "floors": 1,
+      "color": "#578080",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:1",
+      "name": "蒙特雷",
+      "x": -108.87,
+      "z": 37.57,
+      "width": 5.28,
+      "depth": 4.14,
+      "height": 3.5,
+      "floors": 1,
+      "color": "#639191",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:2",
+      "name": "蒙特雷",
+      "x": -111.33,
+      "z": 32.39,
+      "width": 6.97,
+      "depth": 3.42,
+      "height": 2.36,
+      "floors": 1,
+      "color": "#517777",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:3",
+      "name": "蒙特雷",
+      "x": -108.96,
+      "z": 27.74,
+      "width": 4.15,
+      "depth": 4.73,
+      "height": 2.56,
+      "floors": 1,
+      "color": "#679898",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:4",
+      "name": "蒙特雷",
+      "x": -103.49,
+      "z": 32.35,
+      "width": 6.77,
+      "depth": 5.31,
+      "height": 2.47,
+      "floors": 1,
+      "color": "#5e8a8a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:5",
+      "name": "蒙特雷",
+      "x": -102.92,
+      "z": 28.27,
+      "width": 3.45,
+      "depth": 3.37,
+      "height": 2.69,
+      "floors": 1,
+      "color": "#6c9e9e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:6",
+      "name": "蒙特雷",
+      "x": -112.16,
+      "z": 35.43,
+      "width": 4.1,
+      "depth": 4.04,
+      "height": 3.38,
+      "floors": 1,
+      "color": "#5e8a8a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:7",
+      "name": "蒙特雷",
+      "x": -102.09,
+      "z": 34.71,
+      "width": 6.47,
+      "depth": 4.51,
+      "height": 2.1,
+      "floors": 1,
+      "color": "#517777",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:8",
+      "name": "蒙特雷",
+      "x": -103.6,
+      "z": 36.32,
+      "width": 3.26,
+      "depth": 5.17,
+      "height": 3.48,
+      "floors": 1,
+      "color": "#699a9a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-monterey:9",
+      "name": "蒙特雷",
+      "x": -107.08,
+      "z": 37.66,
+      "width": 5.01,
+      "depth": 4.03,
+      "height": 2.46,
+      "floors": 1,
+      "color": "#689999",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:0",
+      "name": "洛杉矶",
+      "x": 44.44,
+      "z": 167.79,
+      "width": 3.79,
+      "depth": 5.35,
+      "height": 8.68,
+      "floors": 3,
+      "color": "#a7744b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:1",
+      "name": "洛杉矶",
+      "x": 34.21,
+      "z": 154.64,
+      "width": 5.21,
+      "depth": 3.45,
+      "height": 7.22,
+      "floors": 2,
+      "color": "#ac774d",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:2",
+      "name": "洛杉矶",
+      "x": 43.03,
+      "z": 159.31,
+      "width": 5.36,
+      "depth": 5.87,
+      "height": 5.73,
+      "floors": 2,
+      "color": "#ba8153",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:3",
+      "name": "洛杉矶",
+      "x": 48.05,
+      "z": 159.8,
+      "width": 5.91,
+      "depth": 4.39,
+      "height": 3.67,
+      "floors": 1,
+      "color": "#c68959",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:4",
+      "name": "洛杉矶",
+      "x": 48.25,
+      "z": 167.19,
+      "width": 7.0,
+      "depth": 5.47,
+      "height": 7.42,
+      "floors": 2,
+      "color": "#976944",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:5",
+      "name": "洛杉矶",
+      "x": 48.11,
+      "z": 155.91,
+      "width": 6.6,
+      "depth": 6.3,
+      "height": 7.53,
+      "floors": 3,
+      "color": "#ba8154",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:6",
+      "name": "洛杉矶",
+      "x": 37.4,
+      "z": 163.91,
+      "width": 4.51,
+      "depth": 3.22,
+      "height": 4.07,
+      "floors": 1,
+      "color": "#ae794e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:7",
+      "name": "洛杉矶",
+      "x": 42.08,
+      "z": 165.36,
+      "width": 3.87,
+      "depth": 3.63,
+      "height": 8.71,
+      "floors": 3,
+      "color": "#986944",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:8",
+      "name": "洛杉矶",
+      "x": 36.85,
+      "z": 164.62,
+      "width": 4.22,
+      "depth": 5.22,
+      "height": 3.4,
+      "floors": 1,
+      "color": "#c98b5a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:9",
+      "name": "洛杉矶",
+      "x": 32.81,
+      "z": 160.18,
+      "width": 5.3,
+      "depth": 6.59,
+      "height": 8.28,
+      "floors": 3,
+      "color": "#a37149",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:10",
+      "name": "洛杉矶",
+      "x": 43.82,
+      "z": 157.55,
+      "width": 4.1,
+      "depth": 6.89,
+      "height": 4.76,
+      "floors": 2,
+      "color": "#ae794e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:11",
+      "name": "洛杉矶",
+      "x": 47.55,
+      "z": 159.92,
+      "width": 6.24,
+      "depth": 4.32,
+      "height": 5.67,
+      "floors": 2,
+      "color": "#be8455",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:12",
+      "name": "洛杉矶",
+      "x": 47.81,
+      "z": 166.55,
+      "width": 6.35,
+      "depth": 3.97,
+      "height": 2.44,
+      "floors": 1,
+      "color": "#c38758",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:13",
+      "name": "洛杉矶",
+      "x": 43.89,
+      "z": 166.2,
+      "width": 5.22,
+      "depth": 4.95,
+      "height": 8.07,
+      "floors": 3,
+      "color": "#9b6c46",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:14",
+      "name": "洛杉矶",
+      "x": 43.03,
+      "z": 165.0,
+      "width": 6.04,
+      "depth": 3.21,
+      "height": 12.34,
+      "floors": 4,
+      "color": "#ca8c5b",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:15",
+      "name": "洛杉矶",
+      "x": 38.56,
+      "z": 154.64,
+      "width": 4.79,
+      "depth": 6.95,
+      "height": 6.35,
+      "floors": 2,
+      "color": "#a17048",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:16",
+      "name": "洛杉矶",
+      "x": 38.07,
+      "z": 163.03,
+      "width": 6.85,
+      "depth": 6.7,
+      "height": 3.22,
+      "floors": 1,
+      "color": "#be8455",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:17",
+      "name": "洛杉矶",
+      "x": 41.71,
+      "z": 161.86,
+      "width": 5.96,
+      "depth": 6.68,
+      "height": 10.27,
+      "floors": 3,
+      "color": "#c78a59",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:18",
+      "name": "洛杉矶",
+      "x": 47.86,
+      "z": 157.15,
+      "width": 6.99,
+      "depth": 5.41,
+      "height": 7.27,
+      "floors": 2,
+      "color": "#b27b50",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:19",
+      "name": "洛杉矶",
+      "x": 41.44,
+      "z": 159.49,
+      "width": 3.57,
+      "depth": 5.16,
+      "height": 5.93,
+      "floors": 2,
+      "color": "#966843",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:20",
+      "name": "洛杉矶",
+      "x": 39.04,
+      "z": 163.17,
+      "width": 3.33,
+      "depth": 5.51,
+      "height": 5.66,
+      "floors": 2,
+      "color": "#a9754c",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:21",
+      "name": "洛杉矶",
+      "x": 43.92,
+      "z": 167.33,
+      "width": 4.53,
+      "depth": 3.66,
+      "height": 8.3,
+      "floors": 3,
+      "color": "#a5734a",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:22",
+      "name": "洛杉矶",
+      "x": 39.04,
+      "z": 165.03,
+      "width": 5.73,
+      "depth": 6.6,
+      "height": 12.42,
+      "floors": 4,
+      "color": "#ae784e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:23",
+      "name": "洛杉矶",
+      "x": 41.04,
+      "z": 160.25,
+      "width": 4.43,
+      "depth": 6.64,
+      "height": 13.81,
+      "floors": 5,
+      "color": "#c58959",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:24",
+      "name": "洛杉矶",
+      "x": 38.93,
+      "z": 164.48,
+      "width": 3.68,
+      "depth": 5.63,
+      "height": 9.0,
+      "floors": 3,
+      "color": "#c08556",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:25",
+      "name": "洛杉矶",
+      "x": 40.1,
+      "z": 159.98,
+      "width": 4.06,
+      "depth": 6.36,
+      "height": 2.24,
+      "floors": 1,
+      "color": "#ad784e",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:26",
+      "name": "洛杉矶",
+      "x": 36.26,
+      "z": 164.31,
+      "width": 4.94,
+      "depth": 6.9,
+      "height": 3.31,
+      "floors": 1,
+      "color": "#c28757",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-los-angeles:27",
+      "name": "洛杉矶",
+      "x": 36.76,
+      "z": 156.64,
+      "width": 6.55,
+      "depth": 3.21,
+      "height": 4.85,
+      "floors": 2,
+      "color": "#996a45",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:0",
+      "name": "圣迭戈",
+      "x": 88.24,
+      "z": 229.46,
+      "width": 6.31,
+      "depth": 6.03,
+      "height": 2.72,
+      "floors": 1,
+      "color": "#be8455",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:1",
+      "name": "圣迭戈",
+      "x": 89.12,
+      "z": 227.16,
+      "width": 3.09,
+      "depth": 4.83,
+      "height": 3.8,
+      "floors": 1,
+      "color": "#bf8456",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:2",
+      "name": "圣迭戈",
+      "x": 82.55,
+      "z": 235.37,
+      "width": 6.52,
+      "depth": 5.83,
+      "height": 5.35,
+      "floors": 2,
+      "color": "#bc8254",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:3",
+      "name": "圣迭戈",
+      "x": 79.7,
+      "z": 233.46,
+      "width": 6.4,
+      "depth": 6.74,
+      "height": 3.13,
+      "floors": 1,
+      "color": "#b98053",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:4",
+      "name": "圣迭戈",
+      "x": 84.76,
+      "z": 231.38,
+      "width": 3.39,
+      "depth": 5.28,
+      "height": 6.66,
+      "floors": 2,
+      "color": "#9e6e47",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:5",
+      "name": "圣迭戈",
+      "x": 79.61,
+      "z": 232.8,
+      "width": 5.22,
+      "depth": 4.75,
+      "height": 6.06,
+      "floors": 2,
+      "color": "#9c6c46",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:6",
+      "name": "圣迭戈",
+      "x": 89.01,
+      "z": 223.43,
+      "width": 6.12,
+      "depth": 6.15,
+      "height": 5.21,
+      "floors": 2,
+      "color": "#966843",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:7",
+      "name": "圣迭戈",
+      "x": 86.61,
+      "z": 224.28,
+      "width": 3.95,
+      "depth": 3.09,
+      "height": 2.46,
+      "floors": 1,
+      "color": "#b37c50",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:8",
+      "name": "圣迭戈",
+      "x": 77.9,
+      "z": 225.46,
+      "width": 6.35,
+      "depth": 5.08,
+      "height": 5.46,
+      "floors": 2,
+      "color": "#b77f52",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:9",
+      "name": "圣迭戈",
+      "x": 85.15,
+      "z": 223.37,
+      "width": 4.97,
+      "depth": 6.52,
+      "height": 3.5,
+      "floors": 1,
+      "color": "#9d6d46",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:10",
+      "name": "圣迭戈",
+      "x": 81.74,
+      "z": 232.76,
+      "width": 3.81,
+      "depth": 4.64,
+      "height": 7.49,
+      "floors": 2,
+      "color": "#976944",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:11",
+      "name": "圣迭戈",
+      "x": 87.25,
+      "z": 224.64,
+      "width": 5.74,
+      "depth": 6.08,
+      "height": 4.82,
+      "floors": 2,
+      "color": "#9e6e47",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:12",
+      "name": "圣迭戈",
+      "x": 85.35,
+      "z": 228.28,
+      "width": 4.05,
+      "depth": 5.67,
+      "height": 7.66,
+      "floors": 3,
+      "color": "#c28757",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:13",
+      "name": "圣迭戈",
+      "x": 88.98,
+      "z": 230.49,
+      "width": 5.78,
+      "depth": 5.01,
+      "height": 2.72,
+      "floors": 1,
+      "color": "#ba8154",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:14",
+      "name": "圣迭戈",
+      "x": 84.34,
+      "z": 230.33,
+      "width": 6.59,
+      "depth": 4.6,
+      "height": 5.69,
+      "floors": 2,
+      "color": "#986a44",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-san-diego:15",
+      "name": "圣迭戈",
+      "x": 87.03,
+      "z": 224.85,
+      "width": 5.23,
+      "depth": 5.0,
+      "height": 5.21,
+      "floors": 2,
+      "color": "#b77f52",
+      "roofType": "flat",
+      "roomId": ""
+    },
+    {
+      "id": "building:california-market:golden-gate",
+      "name": "金门大桥",
+      "x": -130.23,
+      "z": -28.79,
+      "width": 5.0,
+      "depth": 26.0,
+      "height": 14.0,
+      "floors": 1,
+      "color": "#c0362c",
+      "roofType": "landmark",
+      "roomId": "",
+      "kind": "landmark",
+      "landmarkId": "golden-gate",
+      "desc": "横跨金门海峡的悬索桥，国际橘色的桥身是旧金山最醒目的地标。"
+    },
+    {
+      "id": "building:california-los-angeles:hollywood-sign",
+      "name": "好莱坞标志",
+      "x": 37.46,
+      "z": 157.4,
+      "width": 21.0,
+      "depth": 1.0,
+      "height": 2.4,
+      "floors": 1,
+      "color": "#f2f2ec",
+      "roofType": "landmark",
+      "roomId": "",
+      "kind": "landmark",
+      "landmarkId": "hollywood-sign",
+      "desc": "好莱坞山脊上的白色字母标志，洛杉矶的象征。"
+    },
+    {
+      "id": "building:california-market:transamerica",
+      "name": "泛美金字塔",
+      "x": -127.18,
+      "z": -27.55,
+      "width": 7.0,
+      "depth": 7.0,
+      "height": 24.2,
+      "floors": 1,
+      "color": "#d9d9d9",
+      "roofType": "landmark",
+      "roomId": "",
+      "kind": "landmark",
+      "landmarkId": "transamerica",
+      "desc": "旧金山市中心的金字塔形摩天楼，尖顶直插云霄。"
+    },
+    {
+      "id": "building:california-los-angeles:griffith",
+      "name": "格里菲斯天文台",
+      "x": 38.31,
+      "z": 158.23,
+      "width": 11.0,
+      "depth": 5.0,
+      "height": 5.1,
+      "floors": 1,
+      "color": "#e8e0cc",
+      "roofType": "landmark",
+      "roomId": "",
+      "kind": "landmark",
+      "landmarkId": "griffith",
+      "desc": "格里菲斯公园山顶的白色圆顶天文台，俯瞰洛杉矶全城。"
+    }
+  ],
+  "roads": [
+    {
+      "x": -126.0,
+      "z": -19.0,
+      "width": 60,
+      "depth": 6,
+      "kind": "road"
+    },
+    {
+      "x": -126.0,
+      "z": -8.0,
+      "width": 60,
+      "depth": 6,
+      "kind": "road"
+    },
+    {
+      "x": -118.0,
+      "z": -19.0,
+      "width": 6,
+      "depth": 46,
+      "kind": "road"
+    },
+    {
+      "x": -108.0,
+      "z": -19.0,
+      "width": 6,
+      "depth": 46,
+      "kind": "walk"
+    },
+    {
+      "x": 84.0,
+      "z": 229.0,
+      "width": 52,
+      "depth": 6,
+      "kind": "road"
+    },
+    {
+      "x": 84.0,
+      "z": 240.0,
+      "width": 52,
+      "depth": 6,
+      "kind": "walk"
+    },
+    {
+      "x": -100.0,
+      "z": -100.0,
+      "width": 44,
+      "depth": 6,
+      "kind": "road"
+    }
+  ],
+  "routes": [
+    {
+      "id": "route:sfo-airport:california-sacramento",
+      "from": "sfo-airport",
+      "to": "california-sacramento",
+      "method": "城际铁路",
+      "minutes": 125,
+      "fare": 4200,
+      "points": [
+        {
+          "x": -126.22,
+          "z": -18.76
+        },
+        {
+          "x": -114.33,
+          "z": -34.93
+        },
+        {
+          "x": -102.43,
+          "z": -51.11
+        },
+        {
+          "x": -90.54,
+          "z": -67.28
+        }
+      ]
+    },
+    {
+      "id": "route:sfo-airport:california-eureka",
+      "from": "sfo-airport",
+      "to": "california-eureka",
+      "method": "沿海长途巴士",
+      "minutes": 300,
+      "fare": 7800,
+      "points": [
+        {
+          "x": -126.22,
+          "z": -18.76
+        },
+        {
+          "x": -134.22,
+          "z": -36.62
+        },
+        {
+          "x": -142.22,
+          "z": -54.47
+        },
+        {
+          "x": -150.22,
+          "z": -72.33
+        },
+        {
+          "x": -158.22,
+          "z": -90.19
+        },
+        {
+          "x": -166.22,
+          "z": -108.04
+        },
+        {
+          "x": -174.22,
+          "z": -125.9
+        },
+        {
+          "x": -182.22,
+          "z": -143.76
+        },
+        {
+          "x": -190.22,
+          "z": -161.61
+        },
+        {
+          "x": -198.22,
+          "z": -179.47
+        }
+      ]
+    },
+    {
+      "id": "route:california-sacramento:california-redding",
+      "from": "california-sacramento",
+      "to": "california-redding",
+      "method": "北上城际铁路",
+      "minutes": 165,
+      "fare": 3900,
+      "points": [
+        {
+          "x": -90.54,
+          "z": -67.28
+        },
+        {
+          "x": -97.78,
+          "z": -87.54
+        },
+        {
+          "x": -105.02,
+          "z": -107.8
+        },
+        {
+          "x": -112.26,
+          "z": -128.06
+        },
+        {
+          "x": -119.5,
+          "z": -148.32
+        },
+        {
+          "x": -126.74,
+          "z": -168.58
+        }
+      ]
+    },
+    {
+      "id": "route:california-sacramento:california-yosemite",
+      "from": "california-sacramento",
+      "to": "california-yosemite",
+      "method": "山地观光巴士",
+      "minutes": 210,
+      "fare": 5200,
+      "points": [
+        {
+          "x": -90.54,
+          "z": -67.28
+        },
+        {
+          "x": -71.37,
+          "z": -56.73
+        },
+        {
+          "x": -52.2,
+          "z": -46.17
+        },
+        {
+          "x": -33.03,
+          "z": -35.62
+        },
+        {
+          "x": -13.86,
+          "z": -25.06
+        }
+      ]
+    },
+    {
+      "id": "route:california-sacramento:california-fresno",
+      "from": "california-sacramento",
+      "to": "california-fresno",
+      "method": "中央谷地城际铁路",
+      "minutes": 180,
+      "fare": 4600,
+      "points": [
+        {
+          "x": -90.54,
+          "z": -67.28
+        },
+        {
+          "x": -79.06,
+          "z": -51.75
+        },
+        {
+          "x": -67.58,
+          "z": -36.23
+        },
+        {
+          "x": -56.11,
+          "z": -20.7
+        },
+        {
+          "x": -44.63,
+          "z": -5.17
+        },
+        {
+          "x": -33.15,
+          "z": 10.35
+        },
+        {
+          "x": -21.67,
+          "z": 25.88
+        }
+      ]
+    },
+    {
+      "id": "route:sfo-airport:california-monterey",
+      "from": "sfo-airport",
+      "to": "california-monterey",
+      "method": "海岸线巴士",
+      "minutes": 145,
+      "fare": 3600,
+      "points": [
+        {
+          "x": -126.22,
+          "z": -18.76
+        },
+        {
+          "x": -119.71,
+          "z": -1.56
+        },
+        {
+          "x": -113.2,
+          "z": 15.63
+        },
+        {
+          "x": -106.69,
+          "z": 32.83
+        }
+      ]
+    },
+    {
+      "id": "route:california-fresno:california-yosemite",
+      "from": "california-fresno",
+      "to": "california-yosemite",
+      "method": "国家公园接驳车",
+      "minutes": 105,
+      "fare": 2100,
+      "points": [
+        {
+          "x": -21.67,
+          "z": 25.88
+        },
+        {
+          "x": -19.07,
+          "z": 8.9
+        },
+        {
+          "x": -16.46,
+          "z": -8.08
+        },
+        {
+          "x": -13.86,
+          "z": -25.06
+        }
+      ]
+    },
+    {
+      "id": "route:california-fresno:california-los-angeles",
+      "from": "california-fresno",
+      "to": "california-los-angeles",
+      "method": "南下城际铁路",
+      "minutes": 260,
+      "fare": 6200,
+      "points": [
+        {
+          "x": -21.67,
+          "z": 25.88
+        },
+        {
+          "x": -12.78,
+          "z": 45.26
+        },
+        {
+          "x": -3.88,
+          "z": 64.65
+        },
+        {
+          "x": 5.01,
+          "z": 84.03
+        },
+        {
+          "x": 13.91,
+          "z": 103.42
+        },
+        {
+          "x": 22.8,
+          "z": 122.8
+        },
+        {
+          "x": 31.7,
+          "z": 142.19
+        },
+        {
+          "x": 40.59,
+          "z": 161.57
+        }
+      ]
+    },
+    {
+      "id": "route:california-los-angeles:california-death-valley",
+      "from": "california-los-angeles",
+      "to": "california-death-valley",
+      "method": "沙漠长途巴士",
+      "minutes": 270,
+      "fare": 6800,
+      "points": [
+        {
+          "x": 40.59,
+          "z": 161.57
+        },
+        {
+          "x": 48.53,
+          "z": 144.17
+        },
+        {
+          "x": 56.46,
+          "z": 126.77
+        },
+        {
+          "x": 64.4,
+          "z": 109.37
+        },
+        {
+          "x": 72.33,
+          "z": 91.97
+        },
+        {
+          "x": 80.27,
+          "z": 74.57
+        },
+        {
+          "x": 88.2,
+          "z": 57.17
+        },
+        {
+          "x": 96.14,
+          "z": 39.77
+        }
+      ]
+    },
+    {
+      "id": "route:california-los-angeles:california-san-diego",
+      "from": "california-los-angeles",
+      "to": "california-san-diego",
+      "method": "太平洋沿岸城际铁路",
+      "minutes": 150,
+      "fare": 3400,
+      "points": [
+        {
+          "x": 40.59,
+          "z": 161.57
+        },
+        {
+          "x": 51.51,
+          "z": 178.45
+        },
+        {
+          "x": 62.43,
+          "z": 195.33
+        },
+        {
+          "x": 73.35,
+          "z": 212.22
+        },
+        {
+          "x": 84.27,
+          "z": 229.1
+        }
+      ]
+    },
+    {
+      "id": "route:sfo-airport:california-openai",
+      "from": "sfo-airport",
+      "to": "california-openai",
+      "method": "湾区机场接驳车",
+      "minutes": 65,
+      "fare": 2600,
+      "points": [
+        {
+          "x": -126.22,
+          "z": -18.76
+        },
+        {
+          "x": -126.44,
+          "z": -22.47
+        },
+        {
+          "x": -126.67,
+          "z": -26.17
+        }
+      ]
+    },
+    {
+      "id": "route:california-openai:california-market",
+      "from": "california-openai",
+      "to": "california-market",
+      "method": "湾区有轨电车",
+      "minutes": 25,
+      "fare": 520,
+      "points": [
+        {
+          "x": -126.67,
+          "z": -26.17
+        },
+        {
+          "x": -127.26,
+          "z": -26.34
+        },
+        {
+          "x": -127.85,
+          "z": -26.52
+        }
+      ]
+    },
+    {
+      "id": "route:california-openai:california-anthropic",
+      "from": "california-openai",
+      "to": "california-anthropic",
+      "method": "湾区市内接驳车",
+      "minutes": 20,
+      "fare": 450,
+      "points": [
+        {
+          "x": -126.67,
+          "z": -26.17
+        },
+        {
+          "x": -126.93,
+          "z": -26.7
+        },
+        {
+          "x": -127.19,
+          "z": -27.23
+        }
+      ]
+    },
+    {
+      "id": "route:california-anthropic:california-market",
+      "from": "california-anthropic",
+      "to": "california-market",
+      "method": "湾区市内接驳车",
+      "minutes": 15,
+      "fare": 350,
+      "points": [
+        {
+          "x": -127.19,
+          "z": -27.23
+        },
+        {
+          "x": -127.52,
+          "z": -26.88
+        },
+        {
+          "x": -127.85,
+          "z": -26.52
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "id": "mount-whitney",
+      "name": "惠特尼峰",
+      "x": 38.63,
+      "z": 33.93,
+      "radius": 18,
+      "height": 44
+    },
+    {
+      "id": "mount-shasta",
+      "name": "沙斯塔山",
+      "x": -118.8,
+      "z": -210.15,
+      "radius": 14,
+      "height": 30
+    },
+    {
+      "id": "mount-san-gorgonio",
+      "name": "圣戈尔戈尼奥峰",
+      "x": 97.85,
+      "z": 159.2,
+      "radius": 12,
+      "height": 22
+    },
+    {
+      "id": "mount-san-jacinto",
+      "name": "圣哈辛托峰",
+      "x": 103.7,
+      "z": 173.57,
+      "radius": 12,
+      "height": 20
+    },
+    {
+      "id": "mount-lassen",
+      "name": "拉森峰",
+      "x": -91.12,
+      "z": -163.82,
+      "radius": 11,
+      "height": 20
+    },
+    {
+      "id": "mount-tamalpais",
+      "name": "塔玛佩斯山",
+      "x": -135.0,
+      "z": -34.02,
+      "radius": 10,
+      "height": 8
+    }
+  ],
+  "characters": []
+}
