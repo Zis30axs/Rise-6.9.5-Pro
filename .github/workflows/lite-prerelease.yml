@@ -90,6 +90,8 @@ jobs:
           assert r['approvedNewArtExternalized']==len(manifest['assets'])
           assert r['tokyoSandboxSeparatePack'] is False and r['tokyoSandboxInCoreZip'] is True
           assert r['tokyoSandboxArchive']=='unread-city-lite-assets.zip'
+          assert r['californiaSandboxSeparatePack'] is False and r['californiaSandboxInCoreZip'] is True
+          assert r['californiaSandboxArchive']=='unread-city-lite-assets.zip'
           print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources;',r['approvedNewArtExternalized'],'downtown art')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts
