@@ -226,4 +226,42 @@ describe('cooking entry', () => {
     app.unmount();
     host.remove();
   });
+
+  it('draws all three dial bands on the needle track with the needle reaching them', async () => {
+    const started = begin(createInitialState());
+    const model = reactive({
+      mode: 'demo', state: started, busy: false, notice: '', connection: '', externalPhoneAvailable: false,
+      externalPhoneOpen: false, phoneStatus: 'idle', phoneError: '', phoneSource: 'none', phoneLinkStatus: 'idle',
+      phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [],
+    }) as ShellModel;
+    const actions = {
+      dispatch(action: WorldAction) {
+        try {
+          model.state = reduceState(model.state, action);
+          model.notice = '';
+        } catch (error) {
+          model.notice = error instanceof Error ? error.message : '失败';
+        }
+      },
+    };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const app = createApp(CookingMinigame, { model, actions, onClose: () => undefined });
+    app.mount(host);
+    await nextTick();
+    for (const selector of ['.cook-zone-fail', '.cook-zone-normal', '.cook-zone-perfect']) {
+      const path = host.querySelector<SVGPathElement>(selector);
+      expect(path).toBeTruthy();
+      // Sweep flag 1 draws the arc over the top of the dial (the needle's
+      // semicircle); sweep 0 draws it below the viewBox, invisible.
+      expect(path!.getAttribute('d')).toContain('A 86 86 0 0 1');
+    }
+    const needle = host.querySelector<SVGLineElement>('[data-cook-needle]');
+    expect(needle).toBeTruthy();
+    const dx = 110 - Number(needle!.getAttribute('x2'));
+    const dy = 118 - Number(needle!.getAttribute('y2'));
+    expect(Math.hypot(dx, dy)).toBeCloseTo(86, 5);
+    app.unmount();
+    host.remove();
+  });
 });

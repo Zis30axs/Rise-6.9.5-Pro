@@ -24,9 +24,9 @@ function point(pos: number, radius = 86) {
 function arc(from: number, to: number) {
   const start = point(from);
   const end = point(to);
-  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A 86 86 0 0 0 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A 86 86 0 0 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
 }
-const needle = computed(() => point(position.value, 74));
+const needle = computed(() => point(position.value, 86));
 const dial = computed(() => {
   const zones = active.value;
   if (!zones) return null;
