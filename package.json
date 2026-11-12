@@ -22,7 +22,7 @@
     "card:art": "python scripts/build_downtown_art.py --require-ready && npm run card && python scripts/build_tauri_import_card.py --source dist/unread-city.png --output dist/unread-city-downtown-art-tauri.png && python scripts/verify_downtown_art.py --root assets/downtown-art --manifest integration/downtown-art/manifest.json --card dist/unread-city-downtown-art-tauri.png --report outputs/downtown-art-release.json",
     "kaguya:model": "node scripts/prepare_kaguya_live_model.mjs",
     "kaguya:demo": "node scripts/prepare_kaguya_live_model.mjs --check && node scripts/build_kaguya_live_demo.mjs",
-    "prebuild": "python scripts/verify_tokyo_model.py",
+    "prebuild": "python scripts/verify_tokyo_model.py && python scripts/verify_california_model.py",
     "postbuild": "python scripts/build_lite_release.py && python scripts/build_lite_card.py",
     "lite:build": "python scripts/build_tokyo_lite.py"
   },
