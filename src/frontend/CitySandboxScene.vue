@@ -8,6 +8,7 @@ import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?i
 
 import { disposeThreeTree } from './dispose-three-tree';
 import { attachAirportGeometry } from './airport-sandbox-geometry';
+import { createCircleSandboxGeometry } from './circle-sandbox-geometry';
 
 async function sandboxSha256(bytes: Uint8Array<ArrayBuffer>) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -139,32 +140,6 @@ function writeIdbCachedGlbBytes(bytes: Uint8Array<ArrayBuffer>) {
   }
 }
 
-/** Boxes from the CiRCLE pack, drawn on top of the fixed city model. */
-function attachCirclePackGeometry(root: THREE.Group) {
-  if (root.getObjectByName('circle-sandbox-pack')) return;
-  const group = new THREE.Group();
-  group.name = 'circle-sandbox-pack';
-  for (const building of circleSandboxOverlay.buildings) {
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(building.width, building.height, building.depth),
-      new THREE.MeshStandardMaterial({ color: building.color, roughness: 0.86 }),
-    );
-    mesh.position.set(building.x, building.height / 2, building.z);
-    mesh.name = building.id;
-    group.add(mesh);
-  }
-  for (const road of circleSandboxOverlay.roads) {
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(road.width, 0.1, road.depth),
-      new THREE.MeshStandardMaterial({ color: road.kind === 'road' ? '#52676d' : '#e4dac1', roughness: 0.9 }),
-    );
-    mesh.position.set(road.x, -0.95, road.z);
-    mesh.rotation.y = road.rotationY ?? 0;
-    group.add(mesh);
-  }
-  root.add(group);
-}
-
 /** Cold-load a private decoded tree; the Shell cache retains its complete runtime between openings. */
 async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
@@ -186,7 +161,8 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   });
   const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
   optimizeGlbScene(parsed);
-  attachCirclePackGeometry(parsed);
+  // The hash-pinned Tokyo GLB's base slab ends at y = -0.05.
+  parsed.add(createCircleSandboxGeometry(circleSandboxOverlay, -.05));
   attachAirportGeometry(parsed);
   return parsed;
 }
@@ -866,15 +842,16 @@ function createGeometricPreview(): THREE.Group {
     addBox(district.maxX - district.minX, .14, district.maxZ - district.minZ,
       (district.maxX + district.minX) / 2, -1.6, (district.maxZ + district.minZ) / 2, baseColor);
   }
-  for (const road of [...sandboxData.roads, ...circleSandboxOverlay.roads]) {
+  for (const road of sandboxData.roads) {
     const item = addBox(road.width, .1, road.depth, road.x, -.95, road.z,
       road.kind === 'road' ? '#52676d' : '#e4dac1');
     item.rotation.y = road.rotationY ?? 0;
   }
-  for (const building of [...sandboxData.buildings, ...circleSandboxOverlay.buildings]) {
+  for (const building of sandboxData.buildings) {
     addBox(building.width, building.height, building.depth,
       building.x, building.height / 2, building.z, building.color);
   }
+  root.add(createCircleSandboxGeometry(circleSandboxOverlay, -1.53));
   const { mountains } = sandboxData;
   for (const [x, z, height] of [
     [mountains.x, mountains.z, mountains.height],

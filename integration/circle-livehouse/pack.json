@@ -7,11 +7,11 @@
   "manifestSchema": "unread-city-lite-assets-v1",
   "loader": "src/frontend/circle-sandbox-pack.ts",
   "compression": "STORE",
-  "payloadBytes": 2493,
-  "payloadSha256": "c1050db474e1d64fc725f478ea6434f36bd3d158bd8c26f47ea46e49e1d6ac08",
-  "manifestSha256": "68e67109770291d50dcf0302df321931aae17698f3103c8f575e9cca047a6f0c",
-  "zipBytes": 3106,
-  "zipSha256": "a672bc73e7e571e842daef38fee08bc9b99954dc0339fce8d7ebe3633804f62e",
+  "payloadBytes": 2495,
+  "payloadSha256": "a304ea6bce04e9793369d133d975181c44569b981d1d691dd73a21699b92c5c3",
+  "manifestSha256": "cc16d2c29e294037919db93e04cd01c0c4ac44fac262e08701cf347860810deb",
+  "zipBytes": 3107,
+  "zipSha256": "70df77dd2104be6dd26b765ad2c815d13366be6b59fec9739f28057eb9f7d5f9",
   "mime": "application/json",
   "consumer": "src/frontend/tokyo-sandbox-map.ts"
 }

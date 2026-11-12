@@ -1,10 +1,10 @@
 import circlePackDataUrl from '../../assets/circle-livehouse/packs/unread-city-circle-sandbox.zip?offline-pack';
 
 export const CIRCLE_PACK_ARCHIVE = 'assets/circle-livehouse/packs/unread-city-circle-sandbox.zip';
-export const CIRCLE_PACK_PAYLOAD_SHA256 = 'c1050db474e1d64fc725f478ea6434f36bd3d158bd8c26f47ea46e49e1d6ac08';
-export const CIRCLE_PACK_MANIFEST_SHA256 = '68e67109770291d50dcf0302df321931aae17698f3103c8f575e9cca047a6f0c';
-export const CIRCLE_PACK_ZIP_SHA256 = 'a672bc73e7e571e842daef38fee08bc9b99954dc0339fce8d7ebe3633804f62e';
-export const CIRCLE_PACK_ZIP_BYTES = 3106;
+export const CIRCLE_PACK_PAYLOAD_SHA256 = "a304ea6bce04e9793369d133d975181c44569b981d1d691dd73a21699b92c5c3";
+export const CIRCLE_PACK_MANIFEST_SHA256 = "cc16d2c29e294037919db93e04cd01c0c4ac44fac262e08701cf347860810deb";
+export const CIRCLE_PACK_ZIP_SHA256 = "70df77dd2104be6dd26b765ad2c815d13366be6b59fec9739f28057eb9f7d5f9";
+export const CIRCLE_PACK_ZIP_BYTES = 3107;
 
 const SHA256_K = new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
