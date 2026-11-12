@@ -31,6 +31,9 @@ describe('California airport and fictional Pro200 trade', () => {
   it('requires an airport route from Tokyo and charges each leg', () => {
     expect(californiaPlaces.map(place => place.id)).toEqual([
       'haneda-airport', 'sfo-airport', 'california-openai', 'california-anthropic', 'california-market',
+      'california-sacramento', 'california-eureka', 'california-redding', 'california-yosemite',
+      'california-fresno', 'california-monterey', 'california-los-angeles', 'california-death-valley',
+      'california-san-diego',
     ]);
     const base = fundedState();
     const stop = reduceState(base, { type: 'novel_travel', locationId: 'bus-stop' });

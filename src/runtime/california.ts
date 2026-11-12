@@ -10,6 +10,15 @@ export const californiaPlaces = [
   { id: 'california-openai', name: 'OpenAI 办公地点', subtitle: '加州 · 旧金山', description: 'OpenAI 访客大厅设有专门的登记柜台，开放时可申请领取 Pro200 收藏券。' },
   { id: 'california-anthropic', name: 'Anthropic 访客中心', subtitle: '加州 · 旧金山', description: '湾区另一家 AI 公司，设有安静的访客大厅与研究展示区。神秘研究者偶尔会在附近出现。' },
   { id: 'california-market', name: '湾区二手交易市场', subtitle: '加州 · 旧金山', description: '湾区的收藏品交易市场，常有商人收购各式纪念券，其中也包括 Pro200。' },
+  { id: 'california-sacramento', name: '萨克拉门托', subtitle: '加州 · 州府', description: '加利福尼亚州首府，萨克拉门托河与美国河交汇处的城市。' },
+  { id: 'california-eureka', name: '尤里卡', subtitle: '加州 · 北海岸', description: '北海岸港城，周边分布着古老的海岸红杉森林。' },
+  { id: 'california-redding', name: '雷丁', subtitle: '加州 · 北部内陆', description: '北加州内陆交通节点，可前往沙斯塔山与湖区。' },
+  { id: 'california-yosemite', name: '优胜美地国家公园', subtitle: '加州 · 内华达山脉', description: '花岗岩峭壁、瀑布与高山森林构成的国家公园。' },
+  { id: 'california-fresno', name: '弗雷斯诺', subtitle: '加州 · 中央谷地', description: '中央谷地城市，通往优胜美地与塞拉山脉南段。' },
+  { id: 'california-monterey', name: '蒙特雷', subtitle: '加州 · 中央海岸', description: '太平洋海湾城市，以海岸线、渔港与水族馆闻名。' },
+  { id: 'california-los-angeles', name: '洛杉矶', subtitle: '加州 · 南部都会区', description: '南加州大型都会区，连接海岸、影视工业与山地社区。' },
+  { id: 'california-death-valley', name: '死亡谷国家公园', subtitle: '加州 · 莫哈韦沙漠', description: '极端干旱的沙漠盆地、盐滩与荒漠山脉。' },
+  { id: 'california-san-diego', name: '圣迭戈', subtitle: '加州 · 南部海岸', description: '南加州海滨城市，靠近美墨边境。' },
 ] as const;
 
 const foreignLocationIds: ReadonlySet<string> = new Set(californiaPlaces.map(place => place.id));
@@ -36,6 +45,16 @@ const travelLegs: readonly InternationalLeg[] = [
   { from: 'california-openai', to: 'california-market', minutes: 25, fare: 520, method: '湾区有轨电车' },
   { from: 'california-openai', to: 'california-anthropic', minutes: 20, fare: 450, method: '湾区市内接驳车' },
   { from: 'california-anthropic', to: 'california-market', minutes: 15, fare: 350, method: '湾区市内接驳车' },
+  { from: 'sfo-airport', to: 'california-sacramento', minutes: 125, fare: 4200, method: '城际铁路' },
+  { from: 'sfo-airport', to: 'california-eureka', minutes: 300, fare: 7800, method: '沿海长途巴士' },
+  { from: 'california-sacramento', to: 'california-redding', minutes: 165, fare: 3900, method: '北上城际铁路' },
+  { from: 'california-sacramento', to: 'california-yosemite', minutes: 210, fare: 5200, method: '山地观光巴士' },
+  { from: 'california-sacramento', to: 'california-fresno', minutes: 180, fare: 4600, method: '中央谷地城际铁路' },
+  { from: 'sfo-airport', to: 'california-monterey', minutes: 145, fare: 3600, method: '海岸线巴士' },
+  { from: 'california-fresno', to: 'california-yosemite', minutes: 105, fare: 2100, method: '国家公园接驳车' },
+  { from: 'california-fresno', to: 'california-los-angeles', minutes: 260, fare: 6200, method: '南下城际铁路' },
+  { from: 'california-los-angeles', to: 'california-death-valley', minutes: 270, fare: 6800, method: '沙漠长途巴士' },
+  { from: 'california-los-angeles', to: 'california-san-diego', minutes: 150, fare: 3400, method: '太平洋沿岸城际铁路' },
 ];
 
 export function internationalLeg(from: string, to: string): InternationalLeg | null {
