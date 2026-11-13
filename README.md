@@ -1,5 +1,14 @@
 # 未读之城 / Unread City
 
+## 加州旅行沙盘素材接入（2026-11-13）
+
+基于 `feat/lite-california-statewide-sandbox-20261109`，将用户提供的 HTML/GLB 接入现有加州地图：支持湾区、硅谷、洛杉矶、地点近景和全州，保留旅行与存档接口；缩放、选点和观景只改变视图。模型仅保存一份，来源见 [素材说明](assets/california-sandbox/README.md)。样式随 Shell 内嵌，模型兼容 IIFE data URL 与 Lite 离线 ZIP 的 Blob URL；无 WebGL 时保留二维轮廓和路线。
+
+同时补齐该分支原 `model.ts` 礼物领取 case 缺少的 `break` 和闭合括号，使运行时恢复解析；旧旅行测试的五地点精确列表改为核心地点包含检查，兼容该分支既有的全州目的地。
+
+本地全仓类型检查、17 项定向测试、组件 IIFE 构建及 1440×900 / 1280×800 / 390×844 / 320×568 四视口检查见 [验收记录](outputs/california-sandbox-20261113/README.md)。完整应用构建因缺少独立手机源码生成的 `src/frontend/generated/embedded-phone` 阻断，未生成或发布新版角色卡，未运行 CI、Agent Edition 或 TauriTavern 真机验收。
+
+
 ## 手机“我的乐队”入口资格（2026-11-02）
 
 联系人列表、聊天工具栏及邀请消息中的乐队快捷入口统一读取手机主人的现有音乐资格：素世、祥子保留豁免，艾玛、玲奈子仅在本人选择音乐专业后显示。切换到无资格主角时收起已打开的乐队页；既有名册、短信和邀请记录仍保留。

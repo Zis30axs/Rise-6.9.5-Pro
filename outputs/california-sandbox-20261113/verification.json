@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-13",
+  "scope": "Built CaliforniaSandbox component IIFE inside Shadow DOM; real runtime route catalog, test host handles travel emit; no full game, LLM, phone or Tauri verification.",
+  "fallbackAndContextRestore": true,
+  "offAtlasSelection": true,
+  "results": [
+    {
+      "width": 1440,
+      "height": 900,
+      "renderer": "webgl",
+      "canvasWidth": 1068,
+      "overflow": false,
+      "errors": [],
+      "controls": true,
+      "previewTravelEvent": true,
+      "propArrival": true,
+      "sightExit": true,
+      "remainingCanvases": 0
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "renderer": "webgl",
+      "canvasWidth": 908,
+      "overflow": false,
+      "errors": [],
+      "controls": true,
+      "previewTravelEvent": true,
+      "propArrival": true,
+      "sightExit": true,
+      "remainingCanvases": 0
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "renderer": "webgl",
+      "canvasWidth": 346,
+      "overflow": false,
+      "errors": [],
+      "controls": true,
+      "previewTravelEvent": true,
+      "propArrival": true,
+      "sightExit": true,
+      "remainingCanvases": 0
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "renderer": "webgl",
+      "canvasWidth": 276,
+      "overflow": false,
+      "errors": [],
+      "controls": true,
+      "previewTravelEvent": true,
+      "propArrival": true,
+      "sightExit": true,
+      "remainingCanvases": 0
+    }
+  ]
+}
