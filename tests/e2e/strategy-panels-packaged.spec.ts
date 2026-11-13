@@ -27,7 +27,9 @@ for (const viewport of viewports) {
       await page.route('**/api/**', route => route.abort());
       await page.route('https://**', route => route.abort());
       await page.goto('/');
-      await page.locator('input[type="file"]').setInputFiles('dist/unread-city-lite-assets.zip');
+      const chooser = page.waitForEvent('filechooser');
+      await page.locator('#unread-city-lite-import').click();
+      await (await chooser).setFiles('dist/unread-city-lite-assets.zip');
       await expect(page.locator('#unread-city-lite-import')).toHaveText('✅ 已安装，请刷新页面', { timeout: 60_000 });
       await page.reload();
       await page.locator('[data-academic-major="computer-science"]').click();
@@ -35,7 +37,9 @@ for (const viewport of viewports) {
       if (panelName === '状态') {
         // Initialize a real active focus and traits through the same controls as a player.
         await selectDockAction(page, '国策');
-        await page.getByTestId('focus-tree-panel').getByRole('button', { name: '开始国策', exact: true }).first().click();
+        const focus = page.getByTestId('focus-tree-panel');
+        await focus.locator('[data-focus-id="soyo_face_past"]').click();
+        await focus.getByTestId('focus-detail-modal').getByRole('button', { name: '开始国策', exact: true }).click();
       }
       await selectDockAction(page, panelName);
       const id = panelName === '国策' ? 'focus-tree-panel' : panelName === '阵营' ? 'society-panel' : 'strategy-status-hero';
@@ -62,21 +66,35 @@ for (const viewport of viewports) {
       await expect(panel).not.toContainText(/LLM|world_actions|不额外请求模型|本地 AI|写入本地|本地组织管理/);
 
       if (panelName === '国策') {
-        const branches = panel.locator('.tno-tree-branch-tier');
-        await branches.scrollIntoViewIfNeeded();
-        expect(await branches.evaluate(el => getComputedStyle(el).display)).toBe('grid');
-        const artwork = branches.locator('img');
+        const tree = panel.getByTestId('focus-tree-viewport');
+        await expect(tree.locator('[data-focus-id]')).toHaveCount(7);
+        await expect(tree.locator('path[data-from][data-to]')).toHaveCount(6);
+        const artwork = tree.locator('.tno-focus-node img');
         await expect(artwork).toHaveCount(2);
         for (const img of await artwork.all()) {
           await expect.poll(() => img.evaluate(el => el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0)).toBe(true);
         }
-        const trunk = panel.locator('.tno-trunk-line');
-        expect(await trunk.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(0);
+        const edge = tree.locator('path[data-from="soyo_mygo_bass"][data-to="soyo_mygo_rehearsal"]');
+        expect(await edge.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(0);
+        const detail = panel.getByTestId('focus-detail-modal');
+        const followUp = tree.locator('[data-focus-id="soyo_mygo_rehearsal"]');
+        await followUp.click();
+        await expect(detail).toContainText('需要完成：重写贝斯声部');
+        await expect(detail.getByRole('button', { name: '开始国策', exact: true })).toBeDisabled();
+        await expect(detail).not.toContainText(/soyo_|world_actions|LLM/);
+        await detail.getByRole('button', { name: '关闭国策详情' }).click();
+        await expect(followUp).toBeFocused();
+
+        const rootFocus = tree.locator('[data-focus-id="soyo_face_past"]');
+        await panel.getByRole('button', { name: '放大国策树' }).click();
+        await panel.getByRole('button', { name: '重置视图' }).click();
+        await expect.poll(() => tree.evaluate(el => el.scrollLeft + el.scrollTop)).toBe(0);
         await page.screenshot({ path: `${filename}-tree.png` });
-        await panel.getByRole('button', { name: '开始国策', exact: true }).first().click();
-        await expect(panel.getByRole('button', { name: '取消国策', exact: true }).first()).toBeVisible();
-        await panel.getByRole('button', { name: '取消国策', exact: true }).first().click();
-        await expect(panel.getByRole('button', { name: '开始国策', exact: true }).first()).toBeEnabled();
+        await rootFocus.click();
+        await detail.getByRole('button', { name: '开始国策', exact: true }).click();
+        await expect(detail.getByRole('button', { name: '取消国策', exact: true })).toBeVisible();
+        await detail.getByRole('button', { name: '取消国策', exact: true }).click();
+        await expect(detail.getByRole('button', { name: '开始国策', exact: true })).toBeEnabled();
       } else if (panelName === '阵营') {
         const tabs = panel.getByRole('navigation', { name: '组织管理分类' });
         expect(await tabs.evaluate(el => getComputedStyle(el).display)).toBe('grid');
