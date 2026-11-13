@@ -1,0 +1,10 @@
+{
+  "data": {
+    "result": "[[\"renderer\",\"webgl\"],[\"unknown current pins\",0],[\"selected state\",\"true\"],[\"sight callbacks\",[\"apple-park\",null,\"apple-park\",null]],[\"destroy children\",0],[\"known current pins\",1],[\"off-atlas selected pins\",0],[\"off-atlas state\",\"true\"],[\"off-atlas sight\",null]]",
+    "finished": "true"
+  },
+  "blob": {
+    "result": "[[\"renderer\",\"webgl\"],[\"unknown current pins\",0],[\"selected state\",\"true\"],[\"sight callbacks\",[\"apple-park\",null,\"apple-park\",null]],[\"destroy children\",0],[\"known current pins\",1],[\"off-atlas selected pins\",0],[\"off-atlas state\",\"true\"],[\"off-atlas sight\",null]]",
+    "finished": "true"
+  }
+}

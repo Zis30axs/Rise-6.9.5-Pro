@@ -29,8 +29,8 @@ import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, locationDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CitySandboxScene from './CitySandboxScene.vue';
-import CaliforniaSandboxScene from './CaliforniaSandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
+import CaliforniaSandbox from './CaliforniaSandbox.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
@@ -638,11 +638,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
 </script>
 
 <template>
-  <CaliforniaSandboxScene v-if="isCaliforniaLocalLocation(model.state.locationId)"
-    :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes"
-    :busy="model.busy" :atmosphere-mode="atmosphereMode"
-    :clock-minutes="model.state.clock.hour * 60 + model.state.clock.minute"
-    @travel="travelTo" />
+  <CaliforniaSandbox v-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
   <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
     <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>

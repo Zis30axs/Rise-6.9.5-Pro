@@ -2,6 +2,14 @@
 
 本文件收录原 `README.md` 顶部的倒序更新日志（2026-10-18 至 2026-11-09），原文逐字搬移，未改写。最新进展在最前；当前有效的关键决定另见 `README.md` 的“当前关键决定”一节。
 
+## 加州旅行沙盘素材接入（2026-11-13）
+
+基于 `feat/lite-california-statewide-sandbox-20261109`，将用户提供的 HTML/GLB 接入现有加州地图：支持湾区、硅谷、洛杉矶、地点近景和全州，保留旅行与存档接口；缩放、选点和观景只改变视图。模型仅保存一份，来源见 [素材说明](assets/california-sandbox/README.md)。样式随 Shell 内嵌，模型兼容 IIFE data URL 与 Lite 离线 ZIP 的 Blob URL；无 WebGL 时保留二维轮廓和路线。
+
+同时补齐该分支原 `model.ts` 礼物领取 case 缺少的 `break` 和闭合括号，使运行时恢复解析；旧旅行测试的五地点精确列表改为核心地点包含检查，兼容该分支既有的全州目的地。
+
+17 项定向测试、组件 IIFE 构建及 1440×900 / 1280×800 / 390×844 / 320×568 四视口检查见 [验收记录](outputs/california-sandbox-20261113/README.md)。全仓类型检查仍受既有 `LocationServices.vue` 两处类型错误及缺失手机生成文件阻断；完整应用构建因缺少独立手机源码生成的 `src/frontend/generated/embedded-phone` 阻断，未生成或发布新版角色卡，未运行 CI、Agent Edition 或 TauriTavern 真机验收。
+
 ## 羽田机场沙盘区与三时段背景（2026-11-09）
 
 城市地图新增「羽田机场区」，包含航站楼、塔台、停机坪、客机和跑道；地点入口与当前位置复用已有羽田机场，保留南门接驳和旧金山航线的真实耗时与票价。小说背景接入用户提供的白天、黄昏、夜晚三张航站楼图，按游戏时钟切换，原尺寸无损保存。实现与验证范围见 [机场区说明](integration/airport-district/README.md)，含背景的角色卡和素材在 `outputs/airport-backgrounds/release/`。尚未安装到酒馆，未做 TauriTavern 真机验收。

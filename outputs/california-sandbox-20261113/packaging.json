@@ -1,0 +1,12 @@
+{
+  "componentIifeBuild": "passed",
+  "fullApplicationBuild": "blocked: missing src/frontend/generated/embedded-phone; separate ST-iPhonie source not present",
+  "model": [
+    {
+      "mime": "model/gltf-binary",
+      "bytes": 9322272,
+      "matchedExistingLiteExtractionPattern": true
+    }
+  ],
+  "externalModelFiles": []
+}
