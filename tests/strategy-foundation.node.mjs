@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   STRATEGY_OWNERS, FOCUS_CATALOG, createStrategyState, parseStrategyState,
   applyStrategyCommand, settleStrategyState, checkCondition, calculateModifier,
-  focusWeight, canStartFocus,
+  focusWeight, canStartFocus, focusBranchLocked,
 } from '../src/runtime/strategy.ts';
 
 const command = (s, c, id) => applyStrategyCommand(s,c,id);
@@ -104,4 +104,48 @@ test('CRYCHIC and MyGO are mutually exclusive Soyo branch focuses',()=>{
   const old=createStrategyState(0);
   old.people.soyo.completed=['soyo_face_past','soyo_rebuild_crychic'];
   assert.equal(canStartFocus(old,'soyo',mygo),false,'old completed route locks newly added branch');
+});
+
+const routes = [
+  ['soyo', 'soyo_face_past', 'soyo_mygo_future', 'soyo_mygo_bass', 'soyo_mygo_rehearsal', 'soyo_rebuild_crychic', 'soyo_crychic_score', 'soyo_resolve', 10],
+  ['sakiko', 'sakiko_redefine_band', 'sakiko_write_overture', 'sakiko_stage_draft', 'sakiko_stage_draft', 'sakiko_leave_room', 'sakiko_rehearsal_draft', 'sakiko_resolve', 11],
+  ['emma', 'emma_daily_circle', 'emma_small_tea_table', 'emma_tea_invitation', 'emma_tea_invitation', 'emma_check_in_notes', 'emma_time_to_listen', 'emma_trust', 11],
+  ['renako', 'renako_small_circle', 'renako_one_invitation', 'renako_own_pace', 'renako_own_pace', 'renako_group_idea', 'renako_group_plan', 'renako_confidence', 11],
+];
+const focusById = new Map(FOCUS_CATALOG.map(focus => [focus.id, focus]));
+
+for (const [owner, root, first, next, milestone, alternative, alternativeNext, stat, reward] of routes) {
+  test(`${owner} can extend an old save through a complete route and lock its alternative`, () => {
+    let state = createStrategyState(0);
+    state.people[owner].completed = [root];
+    delete state.majorQueue;
+    state = parseStrategyState(state, 0);
+    assert.equal(canStartFocus(state, owner, focusById.get(first)), true);
+    assert.equal(canStartFocus(state, owner, focusById.get(alternative)), true);
+    assert.equal(canStartFocus(state, owner, focusById.get(next)), false);
+    assert.equal(focusBranchLocked(state, owner, focusById.get(alternativeNext)), false);
+
+    for (const id of new Set([first, next, milestone])) {
+      state = command(state, { type: 'start_focus', owner, focusId: id }, `start:${id}`);
+      const finishAt = state.cursor + focusById.get(id).durationMinutes;
+      state = settleStrategyState(state, finishAt);
+      assert.ok(state.people[owner].completed.includes(id));
+      assert.equal(canStartFocus(state, owner, focusById.get(alternative)), false);
+      assert.equal(focusBranchLocked(state, owner, focusById.get(alternativeNext)), true);
+    }
+    assert.equal(state.stats[stat], reward);
+    assert.equal(state.majorQueue.filter(row => row.focusId === milestone).length, 1);
+    assert.deepEqual(parseStrategyState(JSON.parse(JSON.stringify(state)), state.cursor), state);
+    for (const other of STRATEGY_OWNERS.filter(id => id !== owner)) {
+      assert.deepEqual(state.people[other].completed, []);
+    }
+  });
+}
+
+test('a legacy completed CRYCHIC route unlocks its new follow-up and not the MyGO route', () => {
+  const state = createStrategyState(0);
+  state.people.soyo.completed = ['soyo_face_past', 'soyo_rebuild_crychic'];
+  const saved = parseStrategyState(state, 0);
+  assert.equal(canStartFocus(saved, 'soyo', focusById.get('soyo_crychic_score')), true);
+  assert.equal(focusBranchLocked(saved, 'soyo', focusById.get('soyo_mygo_rehearsal')), true);
 });

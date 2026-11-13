@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import crychicBranchIcon from './assets/focus/crychic-branch.webp';
 import mygoBranchIcon from './assets/focus/mygo-branch.webp';
 import type { ShellActions, ShellModel } from './types';
@@ -17,8 +17,6 @@ const clockText = computed(() => `D${props.model.state.clock.day} · ${String(pr
 const state = computed(() => props.model.state.protagonists?.strategy ?? createStrategyState(minute.value));
 const profile = computed(() => state.value.people[actor.value]);
 const focuses = computed(() => FOCUS_CATALOG.filter(row => row.owner === actor.value));
-const rootFocuses = computed(() => focuses.value.filter(row => !row.branchGroup));
-const branchFocuses = computed(() => focuses.value.filter(row => !!row.branchGroup));
 const decisions = computed(() => DECISION_CATALOG.filter(row => row.owner === actor.value));
 const history = computed(() => state.value.history.filter(row => row.owner === actor.value).slice(-12).reverse());
 const current = computed(() => FOCUS_CATALOG.find(row => row.id === profile.value.active?.id) ?? null);
@@ -37,96 +35,151 @@ const focusGlyph = (id: string): string => {
   return '◈';
 };
 const hasBranches = computed(() => focuses.value.some(f => !!f.branchGroup));
-const rootCompleted = computed(() => rootFocuses.value.length > 0 && rootFocuses.value.every(f => profile.value.completed.includes(f.id)));
 const feedback = ref('');
 let serial = 0;
 
-// Interactive HOI4/TNO Focus Tree Zoom, Pan & Click-to-Inspect State
-const MIN_TREE_ZOOM = 0.55;
+const MIN_TREE_ZOOM = 0.5;
 const MAX_TREE_ZOOM = 1.85;
-const treeZoom = ref(1);
-const treePanX = ref(0);
-const treePanY = ref(0);
+const COLUMN_WIDTH = 208;
+const ROW_HEIGHT = 168;
+const NODE_HEIGHT = 136;
+const TREE_INSET = 8;
+
+const treeLayout = computed(() => {
+  const nodes = new Map(focuses.value.map(focus => [focus.id, { focus, x: 0, y: 0 }]));
+  const children = new Map<string, string[]>();
+  const roots: string[] = [];
+  for (const { focus } of nodes.values()) {
+    const condition = focus.prerequisites;
+    const parent = condition && 'completed' in condition ? condition.completed : null;
+    if (!parent || !nodes.has(parent)) {
+      roots.push(focus.id);
+      continue;
+    }
+    const siblings = children.get(parent) ?? [];
+    siblings.push(focus.id);
+    children.set(parent, siblings);
+  }
+
+  let nextColumn = 0;
+  let maxDepth = 0;
+  const links: { from: string; to: FocusDefinition; path: string }[] = [];
+  function place(id: string, depth: number): number {
+    const node = nodes.get(id)!;
+    const childIds = children.get(id) ?? [];
+    const childXs = childIds.map(child => place(child, depth + 1));
+    node.x = childXs.length ? (childXs[0] + childXs.at(-1)!) / 2 : (++nextColumn - 0.5) * COLUMN_WIDTH;
+    node.y = TREE_INSET + depth * ROW_HEIGHT;
+    maxDepth = Math.max(maxDepth, depth);
+    const endY = node.y + ROW_HEIGHT;
+    const bend = node.y + (NODE_HEIGHT + ROW_HEIGHT) / 2;
+    childIds.forEach((to, index) => links.push({
+      from: id, to: nodes.get(to)!.focus,
+      path: `M ${node.x} ${node.y + NODE_HEIGHT} V ${bend} H ${childXs[index]} V ${endY}`,
+    }));
+    return node.x;
+  }
+  roots.forEach(id => place(id, 0));
+
+  return {
+    nodes: [...nodes.values()].sort((a, b) => a.y - b.y || a.x - b.x),
+    links,
+    width: Math.max(1, nextColumn) * COLUMN_WIDTH,
+    height: maxDepth * ROW_HEIGHT + NODE_HEIGHT + TREE_INSET * 2,
+  };
+});
+
+const treeViewport = ref<HTMLElement | null>(null);
+const focusDetail = ref<HTMLElement | null>(null);
+const viewportWidth = ref(0);
+const manualZoom = ref<number | null>(null);
+const treeZoom = computed(() => manualZoom.value ?? clampZoom(Math.min(1, (viewportWidth.value || treeLayout.value.width) / treeLayout.value.width)));
 const isPanningTree = ref(false);
 const selectedFocusId = ref<string | null>(null);
 const selectedFocus = computed(() => focuses.value.find(row => row.id === selectedFocusId.value) ?? null);
 
-let panPointerId: number | null = null;
-let panStartClientX = 0;
-let panStartClientY = 0;
-let panOriginX = 0;
-let panOriginY = 0;
-let panMoved = false;
+let observer: ResizeObserver | undefined;
+let pan: { pointerId: number; x: number; y: number; left: number; top: number } | null = null;
+let detailTrigger: HTMLElement | null = null;
+
+onMounted(() => {
+  const viewport = treeViewport.value;
+  if (!viewport) return;
+  observer = new ResizeObserver(() => { viewportWidth.value = viewport.clientWidth; });
+  observer.observe(viewport);
+});
+onBeforeUnmount(() => observer?.disconnect());
 
 watch(actor, () => {
   selectedFocusId.value = null;
+  detailTrigger = null;
   resetTreeView();
 });
 
 function clampZoom(next: number): number {
-  return Math.min(MAX_TREE_ZOOM, Math.max(MIN_TREE_ZOOM, Math.round(next * 100) / 100));
+  return Math.min(MAX_TREE_ZOOM, Math.max(MIN_TREE_ZOOM, next));
 }
 
-function zoomTree(delta: number) {
-  treeZoom.value = clampZoom(treeZoom.value + delta);
+async function zoomTree(delta: number) {
+  const viewport = treeViewport.value;
+  if (!viewport) return;
+  const previous = treeZoom.value;
+  const width = treeLayout.value.width;
+  const height = treeLayout.value.height;
+  const x = viewport.scrollLeft + Math.min(viewport.clientWidth, width * previous) / 2;
+  const y = viewport.scrollTop + Math.min(viewport.clientHeight, height * previous) / 2;
+  manualZoom.value = clampZoom(Math.round((previous + delta) * 100) / 100);
+  await nextTick();
+  const scale = treeZoom.value / previous;
+  viewport.scrollTo(x * scale - viewport.clientWidth / 2, y * scale - viewport.clientHeight / 2);
 }
 
 function resetTreeView() {
-  treeZoom.value = 1;
-  treePanX.value = 0;
-  treePanY.value = 0;
+  manualZoom.value = null;
+  treeViewport.value?.scrollTo(0, 0);
 }
 
 function onTreeWheel(event: WheelEvent) {
-  const delta = event.deltaY < 0 ? 0.12 : -0.12;
-  treeZoom.value = clampZoom(treeZoom.value + delta);
+  if (!event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  void zoomTree(event.deltaY < 0 ? 0.12 : -0.12);
 }
 
 function onTreePointerDown(event: PointerEvent) {
-  if (event.button !== 0) return;
-  const target = event.target as HTMLElement | null;
-  if (target?.closest('.tno-focus-node, button, a, summary')) return;
+  const viewport = treeViewport.value;
+  if (!viewport || event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('button')) return;
   isPanningTree.value = true;
-  panPointerId = event.pointerId;
-  panStartClientX = event.clientX;
-  panStartClientY = event.clientY;
-  panOriginX = treePanX.value;
-  panOriginY = treePanY.value;
-  panMoved = false;
-  (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
+  pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
+  viewport.setPointerCapture(event.pointerId);
 }
 
 function onTreePointerMove(event: PointerEvent) {
-  if (!isPanningTree.value || panPointerId !== event.pointerId) return;
-  const dx = event.clientX - panStartClientX;
-  const dy = event.clientY - panStartClientY;
-  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true;
-  treePanX.value = Math.max(-360, Math.min(360, panOriginX + dx));
-  treePanY.value = Math.max(-260, Math.min(260, panOriginY + dy));
+  if (pan?.pointerId !== event.pointerId) return;
+  treeViewport.value?.scrollTo(pan.left - (event.clientX - pan.x), pan.top - (event.clientY - pan.y));
 }
 
 function onTreePointerUp(event: PointerEvent) {
-  if (panPointerId !== event.pointerId) return;
+  if (pan?.pointerId !== event.pointerId) return;
   isPanningTree.value = false;
-  panPointerId = null;
-  (event.currentTarget as HTMLElement | null)?.releasePointerCapture?.(event.pointerId);
+  pan = null;
 }
 
-function openFocusDetail(focusId: string) {
-  if (panMoved) {
-    panMoved = false;
+async function openFocusDetail(focusId: string, event: MouseEvent) {
+  if (selectedFocusId.value === focusId) {
+    closeFocusDetail();
     return;
   }
-  selectedFocusId.value = selectedFocusId.value === focusId ? null : focusId;
+  detailTrigger = event.currentTarget as HTMLElement;
+  selectedFocusId.value = focusId;
+  await nextTick();
+  focusDetail.value?.focus();
 }
 
 function closeFocusDetail() {
   selectedFocusId.value = null;
+  detailTrigger?.focus();
+  detailTrigger = null;
 }
-
-const treeStageStyle = computed(() => ({
-  transform: `translate(${treePanX.value}px, ${treePanY.value}px) scale(${treeZoom.value})`,
-}));
 
 function dispatch(command: StrategyCommand) {
   if (props.model.busy) return;
@@ -228,6 +281,9 @@ const historyKindLabel: Readonly<Record<string, string>> = {
   narrative: '剧情联动',
   major_event: '关键节点',
 };
+const historySubjectTitles = new Map(
+  [...FOCUS_CATALOG, ...DECISION_CATALOG, ...SPIRIT_CATALOG].map(row => [row.id, row.title]),
+);
 </script>
 
 <template>
@@ -301,46 +357,55 @@ const historyKindLabel: Readonly<Record<string, string>> = {
           <span class="tno-section-sub">FOCUS TOPOLOGY // 已完成 {{ profile.completed.length }} / {{ focuses.length }} · 点击国策节点查看详情</span>
         </div>
         <div class="tno-zoom-toolbar" role="toolbar" aria-label="国策树缩放控制">
-          <button type="button" class="tno-zoom-btn" title="缩小国策树" :disabled="treeZoom <= MIN_TREE_ZOOM" @click="zoomTree(-0.15)">−</button>
+          <button type="button" class="tno-zoom-btn" aria-label="缩小国策树" :disabled="treeZoom <= MIN_TREE_ZOOM" @click="zoomTree(-0.15)">−</button>
           <span class="tno-zoom-readout">{{ Math.round(treeZoom * 100) }}%</span>
-          <button type="button" class="tno-zoom-btn" title="放大国策树" :disabled="treeZoom >= MAX_TREE_ZOOM" @click="zoomTree(0.15)">+</button>
+          <button type="button" class="tno-zoom-btn" aria-label="放大国策树" :disabled="treeZoom >= MAX_TREE_ZOOM" @click="zoomTree(0.15)">+</button>
           <button type="button" class="tno-zoom-reset" title="重置缩放与位置" @click="resetTreeView()">重置视图</button>
         </div>
       </div>
-      <p v-if="hasBranches" class="focus-note">分叉路线：完成其中一条后，另一条将永久锁定。完成「延续 CRYCHIC」后，素世将退出 MyGO!!!!!；昔日成员是否重聚，仍需各自决定。</p>
+      <p v-if="hasBranches" class="focus-note">互斥路线只能完成其中一条。另一条及其后续计划届时会锁定。</p>
 
       <div
+        ref="treeViewport"
         class="tno-tree-viewport"
         :class="{ 'is-panning': isPanningTree }"
         data-testid="focus-tree-viewport"
-        @wheel.prevent="onTreeWheel"
+        aria-label="国策路线图"
+        tabindex="0"
+        @wheel="onTreeWheel"
         @pointerdown="onTreePointerDown"
         @pointermove="onTreePointerMove"
-        @pointerup="onTreePointerUp"
-        @pointercancel="onTreePointerUp"
+        @lostpointercapture="onTreePointerUp"
       >
-        <div class="focus-tree tno-tree-canvas" :class="{ 'has-branches': hasBranches }" :style="treeStageStyle">
-          <!-- Root Tier Nodes (Compact HOI4/TNO Emblem + Title Plaque) -->
-          <div v-if="rootFocuses.length" class="tno-tree-root-tier">
+        <div v-if="focuses.length" class="tno-tree-space" :style="{ width: treeLayout.width * treeZoom + 'px', height: treeLayout.height * treeZoom + 'px' }">
+          <div
+            class="focus-tree tno-tree-canvas"
+            :style="{ width: treeLayout.width + 'px', height: treeLayout.height + 'px', transform: 'scale(' + treeZoom + ')' }"
+          >
+            <svg class="tno-tree-links" :viewBox="'0 0 ' + treeLayout.width + ' ' + treeLayout.height" aria-hidden="true">
+              <path
+                v-for="link in treeLayout.links"
+                :key="link.to.id"
+                :d="link.path"
+                :class="{ unlocked: profile.completed.includes(link.from), locked: focusBranchLocked(state, actor, link.to) }"
+                :data-from="link.from"
+                :data-to="link.to.id"
+              />
+            </svg>
             <button
-              v-for="focus in rootFocuses"
+              v-for="{ focus, x, y } in treeLayout.nodes"
               :key="focus.id"
               type="button"
-              class="focus-card tno-focus-node root-node"
-              :class="[
-                statusClass(focus),
-                {
-                  active: profile.active?.id === focus.id,
-                  done: profile.completed.includes(focus.id),
-                  selected: selectedFocusId === focus.id,
-                }
-              ]"
+              class="focus-card tno-focus-node"
+              :class="[statusClass(focus), { selected: selectedFocusId === focus.id }]"
+              :style="{ left: x + 'px', top: y + 'px', height: NODE_HEIGHT + 'px' }"
+              :data-focus-id="focus.id"
               :aria-expanded="selectedFocusId === focus.id"
-              @click="openFocusDetail(focus.id)"
+              @click="openFocusDetail(focus.id, $event)"
             >
               <div class="tno-node-emblem-wrap">
                 <div class="tno-node-medallion">
-                  <img v-if="focusIcon(focus.id)" :src="focusIcon(focus.id)!" :alt="`${focus.title}国策图标`" loading="lazy" />
+                  <img v-if="focusIcon(focus.id)" :src="focusIcon(focus.id)!" alt="" loading="lazy" />
                   <span v-else class="tno-node-glyph" aria-hidden="true">{{ focusGlyph(focus.id) }}</span>
                 </div>
                 <span v-if="focus.important" class="tno-node-star" title="重要里程碑">★</span>
@@ -357,71 +422,12 @@ const historyKindLabel: Readonly<Record<string, string>> = {
               </div>
             </button>
           </div>
-
-          <!-- TNO Tactical Branch Connector & Mutual Exclusion Bridge -->
-          <div v-if="hasBranches && branchFocuses.length" class="tno-branch-connector" :class="{ unlocked: rootCompleted }" aria-hidden="true">
-            <div class="tno-trunk-line"></div>
-            <div class="tno-crossbar-wrap">
-              <span class="tno-crossbar-arm left"></span>
-              <span class="tno-exclusive-badge">
-                <b>&lt;!&gt;</b> 互斥路线 · 二选一
-              </span>
-              <span class="tno-crossbar-arm right"></span>
-            </div>
-            <div class="tno-branch-drops">
-              <span class="tno-drop-line left"></span>
-              <span class="tno-drop-line right"></span>
-            </div>
-          </div>
-
-          <!-- Branch Tier Nodes (Compact HOI4/TNO Emblem + Title Plaque) -->
-          <div v-if="branchFocuses.length" class="tno-tree-branch-tier">
-            <button
-              v-for="focus in branchFocuses"
-              :key="focus.id"
-              type="button"
-              class="focus-card tno-focus-node focus-route"
-              :class="[
-                statusClass(focus),
-                {
-                  active: profile.active?.id === focus.id,
-                  done: profile.completed.includes(focus.id),
-                  'route-locked': focusBranchLocked(state, actor, focus),
-                  selected: selectedFocusId === focus.id,
-                }
-              ]"
-              :aria-expanded="selectedFocusId === focus.id"
-              @click="openFocusDetail(focus.id)"
-            >
-              <div class="tno-node-emblem-wrap">
-                <figure v-if="focusIcon(focus.id)" class="focus-icon tno-node-medallion">
-                  <img :src="focusIcon(focus.id)!" :alt="`${focus.title}国策图标`" loading="lazy" />
-                </figure>
-                <div v-else class="tno-node-medallion">
-                  <span class="tno-node-glyph" aria-hidden="true">{{ focusGlyph(focus.id) }}</span>
-                </div>
-                <span v-if="focus.important" class="tno-node-star" title="重要里程碑">★</span>
-              </div>
-              <div class="tno-node-plaque">
-                <strong class="tno-node-title">{{ focus.title }}</strong>
-                <div class="tno-node-meta">
-                  <span class="tno-status-pill" :class="statusClass(focus)">{{ status(focus) }}</span>
-                  <span class="tno-node-days">{{ focus.durationMinutes / 1440 }} 日</span>
-                </div>
-                <div v-if="profile.active?.id === focus.id" class="focus-progress tno-node-progress" role="progressbar" :aria-label="focus.title" :aria-valuenow="percentage(focus)" aria-valuemin="0" aria-valuemax="100">
-                  <span :style="{ width: percentage(focus) + '%' }"></span>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <p v-if="!focuses.length" class="focus-note">当前人物尚未登记个人国策。</p>
         </div>
+        <p v-else class="focus-note">当前人物尚未登记个人国策。</p>
       </div>
 
-      <!-- Click-to-Open HOI4/TNO Focus Detail Modal / Inspector -->
-      <div v-if="selectedFocus" class="tno-focus-detail-backdrop" data-testid="focus-detail-modal" @click.self="closeFocusDetail">
-        <article class="tno-focus-detail-modal" role="dialog" :aria-label="`${selectedFocus.title} · 国策详情`">
+      <div v-if="selectedFocus" class="tno-focus-detail-backdrop" data-testid="focus-detail-modal">
+        <article ref="focusDetail" class="tno-focus-detail-modal" role="region" tabindex="-1" :aria-label="selectedFocus.title + ' · 国策详情'" @keydown.esc.stop="closeFocusDetail">
           <header class="tno-detail-head">
             <div class="tno-detail-emblem">
               <img v-if="focusIcon(selectedFocus.id)" :src="focusIcon(selectedFocus.id)!" :alt="`${selectedFocus.title}国策图标`" />
@@ -505,7 +511,7 @@ const historyKindLabel: Readonly<Record<string, string>> = {
         <p v-for="trait in traits" :key="trait.id">★ 领导者特质：{{ trait.title }}</p>
         <p v-for="spirit in spirits" :key="spirit.id">❖ 个人精神：{{ spirit.title }}</p>
         <p v-for="entry in history" :key="entry.id">
-          [第 {{ Math.floor(entry.at / 1440) + 1 }} 天] · {{ historyKindLabel[entry.kind] ?? entry.kind }} · {{ entry.subject }}<span v-if="entry.note">：{{ entry.note }}</span>
+          [第 {{ Math.floor(entry.at / 1440) + 1 }} 天] · {{ historyKindLabel[entry.kind] }}<span v-if="historySubjectTitles.has(entry.subject)"> · {{ historySubjectTitles.get(entry.subject) }}</span><span v-if="entry.note">：{{ entry.note }}</span>
         </p>
         <p v-if="!history.length && !traits.length && !spirits.length">暂无记录。</p>
       </div>

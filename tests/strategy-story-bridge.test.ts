@@ -44,6 +44,20 @@ describe('story/strategy transaction', () => {
     expect(() => parseGeneratedStory(fake, world)).toThrow(/非当前主角的国策更新/);
   });
 
+  it('supplies the completed follow-up plan only for an authorized offscreen milestone', () => {
+    const world = enableProtagonists(createInitialState());
+    const strategy = world.protagonists!.strategy!;
+    const owner = 'sakiko';
+    const focusId = 'sakiko_stage_draft';
+    strategy.people[owner].completed = ['sakiko_redefine_band', 'sakiko_write_overture', focusId];
+    strategy.majorQueue!.push({ id: `major:${owner}:${strategy.cursor}:${focusId}`, owner, focusId, at: strategy.cursor });
+    expect(otherSideOpportunity(world).strategyMajor).toBeUndefined();
+    strategy.people[owner].includeInPrompt = true;
+    expect(otherSideOpportunity(world).strategyMajor).toMatchObject({
+      focusId, title: '拟定新章的舞台', description: expect.stringContaining('舞台草案'),
+    });
+  });
+
   it('commits one authorized focus milestone through Otherside, without exposing it as personal knowledge', () => {
     const world = enableProtagonists(createInitialState()), strategy=world.protagonists!.strategy!;
     const at = strategy.cursor;

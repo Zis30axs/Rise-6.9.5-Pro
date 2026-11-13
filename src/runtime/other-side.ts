@@ -8,6 +8,7 @@ import { gameCalendarOccasions } from './japan-calendar-events';
 import { scenePersonAnchors, getSceneArea, sceneLocationId } from './scene-context';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { retainStoryHistory } from './story-history';
+import { FOCUS_CATALOG } from './strategy';
 import relationLore from '../worldbook/story-arcs-relationships.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-story-arcs.json' with { type: 'json' };
 
@@ -127,7 +128,7 @@ export interface OtherSideOpportunity {
   npcGroups: { protagonists: ProtagonistId[]; locationId: string; npcs: ReturnType<typeof groupNpcs> }[];
   eventHints: { calendar: string[]; relationships: string[]; interactionRecentlyOffered: boolean };
   /** A completed important focus can offer one dedicated offscreen scene without a random roll. */
-  strategyMajor?: { id: string; owner: ProtagonistId; focusId: string };
+  strategyMajor?: { id: string; owner: ProtagonistId; focusId: string; title: string; description?: string };
 }
 
 const nothing = (probability: number = OTHER_SIDE_RULES.chance): OtherSideOpportunity => ({
@@ -146,13 +147,15 @@ export function otherSideOpportunity(state: WorldState): OtherSideOpportunity {
     && p.strategy?.people[item.owner]?.includeInPrompt
     && !p.backgroundLife?.people[item.owner as ProtagonistId]?.pending
     && !sameOtherSidePlace(state, item.owner as ProtagonistId, activeProtagonist(state)));
-  if (pending) {
+  const focus = pending && FOCUS_CATALOG.find(row => row.id === pending.focusId);
+  if (pending && focus) {
     const owner = pending.owner as ProtagonistId, group = [owner];
     const locationId = point(state, owner).locationId;
     return { allowed:true, probability:1, sampledCount:1, groups:[group],
       npcGroups:[{protagonists:group,locationId,npcs:groupNpcs(state,group)}],
       eventHints:{calendar:[],relationships:[],interactionRecentlyOffered:false},
-      strategyMajor:{id:pending.id,owner,focusId:pending.focusId} };
+      strategyMajor: { id: pending.id, owner, focusId: pending.focusId, title: focus.title,
+        ...(focus.description ? { description: focus.description } : {}) } };
   }
   const now = gameMinute(state), turn = p.narrativeTurn ?? 0;
   const history = p.otherSideHistory ?? [], last = history.at(-1);

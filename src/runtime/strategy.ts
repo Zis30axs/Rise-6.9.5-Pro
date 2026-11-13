@@ -106,7 +106,7 @@ export const STRATEGY_FLAGS = [
 ] as const;
 export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', 'renako_confidence'] as const;
 
-/** Demonstration routes are plans, not forced claims about other people's choices. */
+/** Focuses advance personal plans. Other characters make their own choices. */
 export const FOCUS_CATALOG: readonly FocusDefinition[] = [
   { id: 'soyo_face_past', owner: 'soyo', title: '面对过去', durationMinutes: 1440, aiWeight: 60,
     onComplete: [{ type: 'set_flag', key: 'soyo_looked_back', value: true }] },
@@ -119,12 +119,60 @@ export const FOCUS_CATALOG: readonly FocusDefinition[] = [
     prerequisites: { completed: 'soyo_face_past' }, aiWeight: 90,
     // The existing membership continues; this does not create another band.
     onComplete: [{ type: 'set_flag', key: 'soyo_mygo_plan_ready', value: true }] },
+  { id: 'soyo_crychic_score', owner: 'soyo', title: '翻开旧日乐谱', description: '重读 CRYCHIC 的旧谱，分清哪些乐句值得留到下一次排练。',
+    durationMinutes: 1440, aiWeight: 90, prerequisites: { completed: 'soyo_rebuild_crychic' },
+    onComplete: [{ type: 'add_stat', key: 'soyo_resolve', amount: 4 }] },
+  { id: 'soyo_crychic_invitation', owner: 'soyo', title: '把邀约写在纸上', description: '写好一份排练邀约，给昔日队友留出各自回答的空间。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'soyo_crychic_score' },
+    onComplete: [{ type: 'add_stat', key: 'soyo_resolve', amount: 6 }] },
+  { id: 'soyo_mygo_bass', owner: 'soyo', title: '重写贝斯声部', description: '在现有曲目的空拍里试几种新的低音走法，留待与队友合奏时比较。',
+    durationMinutes: 1440, aiWeight: 90, prerequisites: { completed: 'soyo_mygo_future' },
+    onComplete: [{ type: 'add_stat', key: 'soyo_resolve', amount: 4 }] },
+  { id: 'soyo_mygo_rehearsal', owner: 'soyo', title: '写下下一次合奏', description: '为 MyGO!!!!! 准备下一轮排练提案，把想和大家一起试的段落标出来。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'soyo_mygo_bass' },
+    onComplete: [{ type: 'add_stat', key: 'soyo_resolve', amount: 6 }] },
   { id: 'sakiko_redefine_band', owner: 'sakiko', title: '引领 Ave Mujica', description: '作为 Ave Mujica 的 Leader 与键盘手，与现有成员共同确立接下来的方向。', durationMinutes: 2880, aiWeight: 100, important: true,
     onComplete: [{ type: 'set_flag', key: 'sakiko_band_plan_ready', value: true }] },
+  { id: 'sakiko_write_overture', owner: 'sakiko', title: '从序曲写起', description: '先定下新曲的主旋律，再把舞台上需要的留白写进编曲。',
+    durationMinutes: 1440, aiWeight: 95, branchGroup: 'sakiko_mujica_direction', prerequisites: { completed: 'sakiko_redefine_band' },
+    onComplete: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 5 }] },
+  { id: 'sakiko_stage_draft', owner: 'sakiko', title: '拟定新章的舞台', description: '把编曲、灯光和转场写成一份可以带去商量的舞台草案。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'sakiko_write_overture' },
+    onComplete: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 6 }] },
+  { id: 'sakiko_leave_room', owner: 'sakiko', title: '给队友留出声音', description: '先记下想请队友各自谈谈的问题，把暂时拿不定主意的部分留到排练时讨论。',
+    durationMinutes: 1440, aiWeight: 85, branchGroup: 'sakiko_mujica_direction', prerequisites: { completed: 'sakiko_redefine_band' },
+    onComplete: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 4 }] },
+  { id: 'sakiko_rehearsal_draft', owner: 'sakiko', title: '为合奏留下试音时间', description: '把不同的编曲方向列进排练提案，准备在合奏里逐一比较。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'sakiko_leave_room' },
+    onComplete: [{ type: 'add_stat', key: 'sakiko_resolve', amount: 7 }] },
   { id: 'emma_daily_circle', owner: 'emma', title: '维系大家的日常', durationMinutes: 2880, aiWeight: 100,
     onComplete: [{ type: 'set_flag', key: 'emma_circle_plan_ready', value: true }] },
+  { id: 'emma_small_tea_table', owner: 'emma', title: '准备一张茶桌', description: '写下几样好分给大家的茶点，想想谁也许愿意过来坐一会儿。',
+    durationMinutes: 1440, aiWeight: 95, branchGroup: 'emma_daily_direction', prerequisites: { completed: 'emma_daily_circle' },
+    onComplete: [{ type: 'add_stat', key: 'emma_trust', amount: 5 }] },
+  { id: 'emma_tea_invitation', owner: 'emma', title: '留一个空座位', description: '备好一份可以随时婉拒的茶会邀约，让想来的人自己选时间。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'emma_small_tea_table' },
+    onComplete: [{ type: 'add_stat', key: 'emma_trust', amount: 6 }] },
+  { id: 'emma_check_in_notes', owner: 'emma', title: '把近况记在本子上', description: '回顾最近亲耳听到的烦恼，记下还有哪些事情该亲自问一声。',
+    durationMinutes: 1440, aiWeight: 85, branchGroup: 'emma_daily_direction', prerequisites: { completed: 'emma_daily_circle' },
+    onComplete: [{ type: 'add_stat', key: 'emma_trust', amount: 4 }] },
+  { id: 'emma_time_to_listen', owner: 'emma', title: '留出倾听的时间', description: '在自己的日程里留些空白，等朋友愿意开口时再好好听完。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'emma_check_in_notes' },
+    onComplete: [{ type: 'add_stat', key: 'emma_trust', amount: 7 }] },
   { id: 'renako_small_circle', owner: 'renako', title: '组建小小的社交圈', durationMinutes: 2880, aiWeight: 100,
     onComplete: [{ type: 'set_flag', key: 'renako_circle_plan_ready', value: true }] },
+  { id: 'renako_one_invitation', owner: 'renako', title: '先约一个人', description: '想好一条可以亲口说出的邀约，从两个人都自在的安排开始。',
+    durationMinutes: 1440, aiWeight: 95, branchGroup: 'renako_social_direction', prerequisites: { completed: 'renako_small_circle' },
+    onComplete: [{ type: 'add_stat', key: 'renako_confidence', amount: 5 }] },
+  { id: 'renako_own_pace', owner: 'renako', title: '说出自己的步调', description: '想好怎样告诉朋友什么时候想见面，什么时候需要一个人休息。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'renako_one_invitation' },
+    onComplete: [{ type: 'add_stat', key: 'renako_confidence', amount: 6 }] },
+  { id: 'renako_group_idea', owner: 'renako', title: '准备一个共同话题', description: '从大家聊过的话题里挑一个自己也喜欢的，准备在下次相遇时主动提起。',
+    durationMinutes: 1440, aiWeight: 85, branchGroup: 'renako_social_direction', prerequisites: { completed: 'renako_small_circle' },
+    onComplete: [{ type: 'add_stat', key: 'renako_confidence', amount: 4 }] },
+  { id: 'renako_group_plan', owner: 'renako', title: '为小聚写下提案', description: '拟一份几个人都能参与的小聚安排，等大家自己决定是否赴约。',
+    durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'renako_group_idea' },
+    onComplete: [{ type: 'add_stat', key: 'renako_confidence', amount: 7 }] },
 ];
 export const TRAIT_CATALOG: readonly TraitDefinition[] = [
   { id: 'soyo_crychic_obsession', title: 'CRYCHIC 的执念', modifiers: [
@@ -382,11 +430,19 @@ export function focusWeight(state: StrategyState, owner: StrategyOwner, focus: F
   }
   return {value:Math.round(value*100)/100,breakdown:score.breakdown};
 }
-/** Exclusive branches share the same owner and permanently lock after completion. */
+/** A completed alternative locks its sibling and the sibling's dependent route. */
 export function focusBranchLocked(state: StrategyState,owner: StrategyOwner, focus: FocusDefinition): boolean {
-  if (!focus.branchGroup) return false;
-  return FOCUS_CATALOG.some(other => other.owner===owner && other.id!==focus.id &&
-    other.branchGroup===focus.branchGroup && state.people[owner].completed.includes(other.id));
+  const completed = state.people[owner].completed;
+  const seen = new Set<string>();
+  let current: FocusDefinition | undefined = focus;
+  while (current?.owner === owner && !completed.includes(current.id) && !seen.has(current.id)) {
+    seen.add(current.id);
+    const { id, branchGroup, prerequisites }: FocusDefinition = current;
+    if (branchGroup && FOCUS_CATALOG.some(other => other.owner === owner && other.id !== id &&
+      other.branchGroup === branchGroup && completed.includes(other.id))) return true;
+    current = prerequisites && 'completed' in prerequisites ? focusById.get(prerequisites.completed) : undefined;
+  }
+  return false;
 }
 export function canStartFocus(state: StrategyState,owner: StrategyOwner, focus: FocusDefinition): boolean {
   const p=state.people[owner],ctx={state,owner};
