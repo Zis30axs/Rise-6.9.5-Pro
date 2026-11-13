@@ -4,7 +4,7 @@
 
 ## 已完成的本地验证
 
-- `npx vue-tsc --noEmit`：全仓类型检查通过。原分支 `model.ts` 礼物领取分支漏写结束语句和闭合括号，本次以两行修复恢复解析。
+- `npx vue-tsc --noEmit`：全仓类型检查未通过；`LocationServices.vue:136–137` 两处既有模板类型错误，以及缺少 `generated/embedded-phone` 仍阻断检查。原分支 `model.ts` 礼物领取分支漏写结束语句和闭合括号，本次以两行修复恢复解析。
 - `npx vitest run tests/california-pro200.test.ts tests/california-sandbox.test.ts tests/no-japanese.test.ts`：17 项通过，覆盖真实运行时旅行费用、领取、交易、剧情礼物、原始 GLB 完整性、组件旅行事件、忙碌状态与地点同步。
 - `node scripts/verify_california_sandbox.mjs`：独立构建组件生产 IIFE，在 Shadow DOM 中验证 Shell 内嵌样式及模型。检查 1440×900、1280×800、390×844、320×568 的首屏、滚动、地图控制、地点预览、旅行事件、到达状态、观景退出及销毁；截图按尺寸命名，结构化结果见 `verification.json`。
 - 浏览器验证 WebGL 丢失后的 Canvas 降级及恢复，截图 `canvas-fallback.png`。data URL 与本地 Blob URL 两种加载、未知地点标记及重复销毁结果见 `renderer-check.json`。

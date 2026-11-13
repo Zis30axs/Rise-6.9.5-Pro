@@ -6,7 +6,7 @@
 
 同时补齐该分支原 `model.ts` 礼物领取 case 缺少的 `break` 和闭合括号，使运行时恢复解析；旧旅行测试的五地点精确列表改为核心地点包含检查，兼容该分支既有的全州目的地。
 
-本地全仓类型检查、17 项定向测试、组件 IIFE 构建及 1440×900 / 1280×800 / 390×844 / 320×568 四视口检查见 [验收记录](outputs/california-sandbox-20261113/README.md)。完整应用构建因缺少独立手机源码生成的 `src/frontend/generated/embedded-phone` 阻断，未生成或发布新版角色卡，未运行 CI、Agent Edition 或 TauriTavern 真机验收。
+17 项定向测试、组件 IIFE 构建及 1440×900 / 1280×800 / 390×844 / 320×568 四视口检查见 [验收记录](outputs/california-sandbox-20261113/README.md)。全仓类型检查仍受既有 `LocationServices.vue` 两处类型错误及缺失手机生成文件阻断；完整应用构建因缺少独立手机源码生成的 `src/frontend/generated/embedded-phone` 阻断，未生成或发布新版角色卡，未运行 CI、Agent Edition 或 TauriTavern 真机验收。
 
 
 ## 手机“我的乐队”入口资格（2026-11-02）

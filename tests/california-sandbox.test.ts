@@ -62,7 +62,7 @@ describe('California uploaded map assets', () => {
   });
 
   it('uses known runtime destinations and routes without copying demo economy or model base64', () => {
-    const ids = new Set(californiaPlaces.map(place => place.id));
+    const ids = new Set<string>(californiaPlaces.map(place => place.id));
     expect(sandbox.landmarks).toHaveLength(13);
     for (const sight of sandbox.sights) expect(sight.desc).not.toMatch(/单独建模|比例夸张|沙盘以|共用.*近景/);
     for (const place of sandbox.landmarks) {
