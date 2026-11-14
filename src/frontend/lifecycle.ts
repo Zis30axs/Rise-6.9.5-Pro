@@ -10,6 +10,7 @@ import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
+import { notebookPageFromDraft, writeNotebook } from '../runtime/notebook';
 import { editStoryEntry as editSavedStoryEntry } from '../runtime/story-editor';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
@@ -584,10 +585,19 @@ export function mountShell(
         const safeReply = mode === 'law_narration'
           ? { text: reply.text, phoneMessages: [], worldChronicleReceipt: reply.worldChronicleReceipt }
           : reply;
-        const next = commitStoryTurn(snapshot(), trimmed, safeReply, { userId: storyId(), assistantId: storyId() });
+        const ids = { userId: storyId(), assistantId: storyId() };
+        const next = commitStoryTurn(snapshot(), trimmed, safeReply, ids);
         saveWithSms(next);
         worldPhone.notify();
         if (storyPhone) void storyPhone.sync().catch(() => {});
+        if (mode === 'story' && reply.notebookPages?.length) {
+          try {
+            await writeNotebook(session, reply.notebookPages.map((draft, i) =>
+              notebookPageFromDraft(draft, next, ids.assistantId, i)));
+          } catch (error) {
+            if (stillCurrent(request)) model.notice = '剧情已保存，但手账归档失败：' + message(error);
+          }
+        }
       } catch (error) {
         if (stillCurrent(request)) model.notice = message(error);
       } finally {

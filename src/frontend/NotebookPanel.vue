@@ -12,7 +12,7 @@ const props = defineProps<{ model: ShellModel }>();
 const scope = computed(() => props.model.memoryScope
   || (props.model.mode === 'demo' ? 'demo:notebook' : ''));
 const people = computed(() => notebookPeople(props.model.state));
-const selectedId = ref(activeProtagonist(props.model.state));
+const selectedId = ref<string>(activeProtagonist(props.model.state));
 const search = ref('');
 const title = ref('');
 const body = ref('');

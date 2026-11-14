@@ -135,6 +135,7 @@ const STORY_PROTOCOL_PARTS = [
   COURT_PROMPT_RULES.resolution,
 
   MANDATORY_CHARACTER_SPEECH_RULE,
+  '人物手账是少量真实事件驱动的个人记录。若本轮明确出现本人有必要记下的经历且知道人物稳定 ID，可在 phone_messages 后追加一次 <notebook_pages>[{"personId":"已知稳定人物ID","title":"中文短标题","text":"本人独立的中文手账正文"}]</notebook_pages>，最多两页，每位人物一页；日常无事不要凑数。手账属于人物主观想法，可有偏见但不得虚构未发生的行动，不能写入其他主角的未知事实。没有准确 ID 就省略。不要把该标签正文写进小说文本。',
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',

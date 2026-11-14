@@ -2012,7 +2012,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
       ...(requestedMajor !== undefined ? { strategyMajor: requestedMajor } : {}) }
     : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
-    strategyUpdates, strategyMajor, ...legacyResult } = validated;
+    strategyUpdates, strategyMajor, notebookPages: _notebookPages, ...legacyResult } = validated;
   const narrativeActions = legacyResult.worldActions ?? [];
   if (!alreadyCommitted && narrativeActions.some(action => action.type === 'mutsumi_balance')
     && !mutsumiBalanceOpportunity(before, input, { worldActions: narrativeActions }).allowed) {

@@ -308,6 +308,8 @@ export interface OtherSideEvent {
 }
 
 export interface GeneratedStory {
+  /** Optional character-authored pages; not world actions or character knowledge grants. */
+  notebookPages?: import('../runtime/notebook').NotebookDraft[];
   /** Validated optional focus changes from the same existing narrative request. */
   strategyUpdates?: import('../runtime/strategy-narrative').StrategyNarrativeUpdate[];
   /** Only a real, authorized Otherside milestone can resolve this. */
