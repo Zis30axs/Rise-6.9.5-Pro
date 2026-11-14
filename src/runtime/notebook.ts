@@ -167,9 +167,15 @@ export async function writeNotebook(scope: string, pages: readonly NotebookPage[
   const db = await openBook(), tx = db.transaction('pages', 'readwrite');
   const finished = transactionDone(tx);
   const store = tx.objectStore('pages');
-  for (const page of pages) {
-    // Stable source-based keys make retries idempotent.
-    store.put({ ...page, scope, key: JSON.stringify([scope, page.id]) } satisfies StoredPage);
+  const unique = new Map(pages.map(page => [page.id, page]));
+  for (const page of unique.values()) {
+    // Never revise a committed page, including when a model turn is retried.
+    // The read and conditional add stay inside one serialized IDB transaction.
+    const key = JSON.stringify([scope, page.id]);
+    const query = store.get(key);
+    query.onsuccess = () => {
+      if (!query.result) store.add({ ...page, scope, key } satisfies StoredPage);
+    };
   }
   await finished;
 }
