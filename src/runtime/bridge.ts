@@ -16,6 +16,7 @@ import { FOCUS_CATALOG } from './strategy';
 import { weeklyMemoryContext } from './weekly-memory';
 import { memoryBootstrap, memoryCommitted, memoryPromptContext, reportMemoryOutboxWarning } from './long-term-memory';
 import { collectCommittedSources } from './long-term-memory/source';
+import { notebookPeople } from './notebook';
 import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, readSavedMemoryOutbox, outboxOverflowCount } from './long-term-memory/outbox';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
@@ -609,7 +610,16 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       );
       const prompt = taggedPrompts.userPrompt;
       const combinedSystemPrompt = taggedPrompts.systemPrompt + (options?.kind === 'contact_introduction' || phoneTask ? '' : live2dAppearancePrompt(ownerSession, snapshot));
-      const effectiveSystemPrompt = combinedSystemPrompt + (memoryNarrative && memorySettings.protocol === 'tags'
+      // Give the model a small, grounded set of stable author IDs without
+      // exposing every resident or sending private notebooks into prompts.
+      const notebookAuthors = options ? '' : notebookPeople(snapshot)
+        .filter(person => person.group === '主角' ||
+          input.includes(person.name) || recentNarrativeText.includes(person.name))
+        .slice(0, 14).map(person => person.id + '=' + person.name).join('、');
+      const effectiveSystemPrompt = combinedSystemPrompt + (notebookAuthors
+        ? '\n【本轮手账可用人物ID】' + notebookAuthors +
+          '。仅在角色经历了真实事件且自愿记录时，才使用对应人物ID；否则不输出手账。' : '') +
+        (memoryNarrative && memorySettings.protocol === 'tags'
         ? '\n【记忆查询独立响应例外】当必须查阅历史时，允许只输出 <memory_lookup>JSON</memory_lookup>，此时无需 story 标签；查询结果返回后的下一次生成必须恢复原有完整剧情标签协议。\n' + MEMORY_TAG_INSTRUCTION : '');
       let smsTimeout: ReturnType<typeof setTimeout> | undefined;
       try {

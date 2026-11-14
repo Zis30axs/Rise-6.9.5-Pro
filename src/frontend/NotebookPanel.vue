@@ -92,7 +92,10 @@ async function downloadBackup() {
       link.click();
       link.remove();
       notice.value = '已准备好手账备份文件。';
-    } finally { URL.revokeObjectURL(url); }
+    } finally {
+      // Safari/WebView may not start the download until after the click task.
+      setTimeout(() => URL.revokeObjectURL(url), 15_000);
+    }
   } catch (error) { notice.value = error instanceof Error ? error.message : '导出失败。'; }
 }
 async function uploadBackup(event: Event) {
