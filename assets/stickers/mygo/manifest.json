@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "mygo-five-piece",
+  "name": "MYGO!",
+  "type": "sticker-pack",
+  "buildIncluded": false,
+  "description": "用户上传的五张独立透明 PNG，按画面字母 M/Y/G/O/! 排序。",
+  "stickers": [
+    {
+      "id": "mygo-m",
+      "symbol": "M",
+      "file": "mygo-m.png",
+      "source": "IMG_3222.png",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 44275,
+      "sha256": "fea4e391d4726ae23eda2e17de575089ac79490b2f426c35df770427ad89c6b7"
+    },
+    {
+      "id": "mygo-y",
+      "symbol": "Y",
+      "file": "mygo-y.png",
+      "source": "IMG_3223.png",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 44372,
+      "sha256": "35bfad022a24789c4a7d1e45619263305d4f626f20fb61284cbaa78202d8a9ae"
+    },
+    {
+      "id": "mygo-g",
+      "symbol": "G",
+      "file": "mygo-g.png",
+      "source": "IMG_3224.png",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 42775,
+      "sha256": "7bbf5806b4ee85ded60f996690b032b60d54142113601892b789be07472f3ebd"
+    },
+    {
+      "id": "mygo-o",
+      "symbol": "O",
+      "file": "mygo-o.png",
+      "source": "IMG_3225.png",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 50287,
+      "sha256": "9b638523a8b49aacee45bd90a3c485eb51ecd6d6a4608d83f8e37acb19d7146a"
+    },
+    {
+      "id": "mygo-exclamation",
+      "symbol": "!",
+      "file": "mygo-exclamation.png",
+      "source": "IMG_3226.png",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 55498,
+      "sha256": "cc579c2429878f8556c129b047071fcf89055c56c7c5f1d1f9c8e59427d80343"
+    }
+  ]
+}
