@@ -30,6 +30,10 @@ TOKYO_SANDBOX_ARCHIVE = 'unread-city-lite-assets.zip'
 CALIFORNIA_SANDBOX_SHA256 = '24eb0ab6cb69735614de7db4d3166e12320be43950fa8d013583afe00b66e5eb'
 CALIFORNIA_SANDBOX_BYTES = 9_322_272
 CALIFORNIA_SANDBOX_ARCHIVE = 'unread-city-lite-assets.zip'
+# Beijing's canonical 19.6 MB source model belongs to the same offline Lite asset pack.
+BEIJING_SANDBOX_SHA256 = 'fc03c2a90e26e48dde2adf4c9f53135c365618497bd4b722db14404b5ab6d66d'
+BEIJING_SANDBOX_BYTES = 19_601_140
+BEIJING_SANDBOX_ARCHIVE = 'unread-city-lite-assets.zip'
 
 
 def digest(data: bytes) -> str:
@@ -117,6 +121,11 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     )]
     if len(california) != 1:
         raise ValueError('加州沙盘 GLB 缺失或未被拆分进 Lite ZIP：请确认已提交 assets/california-sandbox/sandbox.glb 再构建前端')
+    beijing = [row for row in entries if row['bytes'] == BEIJING_SANDBOX_BYTES and row['mime'] in (
+        'model/gltf-binary', 'application/octet-stream'
+    )]
+    if len(beijing) != 1 or beijing[0]['sha256'] != BEIJING_SANDBOX_SHA256:
+        raise ValueError('北京 GLB 缺失或与用户上传原始模型不一致：请确认前端使用 sandbox.glb?inline')
     total = sum(row['bytes'] for row in entries)
     if len(entries) < 18 or total < MIN_REMOVED_BYTES or len(compact) >= len(source) - 15_000_000:
         raise ValueError(f'Lite resource extraction too small: {len(entries)} resources, {total} bytes')
@@ -167,6 +176,10 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
               'californiaSandboxBytes': CALIFORNIA_SANDBOX_BYTES, 'californiaSandboxExternalized': True,
               'californiaSandboxSeparatePack': False, 'californiaSandboxInCoreZip': True,
               'californiaSandboxArchive': 'unread-city-lite-assets.zip',
+              'beijingSandboxBytes': BEIJING_SANDBOX_BYTES,
+              'beijingSandboxExternalized': True,
+              'beijingSandboxInCoreZip': True,
+              'beijingSandboxArchive': BEIJING_SANDBOX_ARCHIVE,
               'circleSandboxZipSha256': circle_sha, 'circleSandboxZipBytes': len(circle_zip),
               'circleSandboxInCoreZip': True, 'marinaPortraitsExternalized': 4,
               'uikaCasualPortraitsExternalized': 5, 'umiriCasualPortraitsExternalized': 5,

@@ -62,7 +62,7 @@ describe('California airport and fictional Pro200 trade', () => {
     const market = reduceState(office, { type: 'novel_travel', locationId: 'california-market' });
     expect(market.locationId).toBe('california-market');
     expect(internationalConnections('california-market').map(leg => leg.to)).toEqual(['california-openai', 'california-anthropic']);
-    expect(() => reduceState(market, { type: 'novel_travel', locationId: 'bus-stop' })).toThrow(/国际旅行只能/);
+    expect(() => reduceState(market, { type: 'novel_travel', locationId: 'bus-stop' })).toThrow(/跨城市旅行只能/);
     expect(parseState(market)).toEqual(market);
   });
 
@@ -71,7 +71,7 @@ describe('California airport and fictional Pro200 trade', () => {
     start.locationId = 'california-market';
     start.scene = null;
     start.clock = { day: 16, hour: 12, minute: 0 };
-    expect(getNovelTravelQuote(start, 'haneda-airport').blockedReason).toMatch(/国际旅行只能/);
+    expect(getNovelTravelQuote(start, 'haneda-airport').blockedReason).toMatch(/跨城市旅行只能/);
     const office = reduceState(start, { type: 'novel_travel', locationId: 'california-openai' });
     const sfo = reduceState(office, { type: 'novel_travel', locationId: 'sfo-airport' });
     expect(getNovelTravelQuote(sfo, 'haneda-airport').minutes).toBe(600);
@@ -104,7 +104,7 @@ describe('California airport and fictional Pro200 trade', () => {
     expect(getNovelTravelQuote(poor, 'sfo-airport').blockedReason).toMatch(/余额不足/);
     expect(() => reduceState(poor, { type: 'novel_travel', locationId: 'sfo-airport' })).toThrow(/余额不足/);
     const far = fundedState();
-    expect(getNovelTravelQuote(far, 'california-openai').blockedReason).toMatch(/国际旅行只能/);
+    expect(getNovelTravelQuote(far, 'california-openai').blockedReason).toMatch(/跨城市旅行只能/);
   });
 
   it('claims a real voucher with a saved 7-day cooldown, then sells exactly one', () => {

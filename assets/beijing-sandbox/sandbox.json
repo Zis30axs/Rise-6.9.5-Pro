@@ -1,0 +1,2035 @@
+{
+  "schemaVersion": 1,
+  "id": "beijing",
+  "name": "北京市",
+  "center": [
+    116.4,
+    39.931
+  ],
+  "coordinates": {
+    "system": "local-equirectangular",
+    "upAxis": "Y",
+    "eastAxis": "+X",
+    "southAxis": "+Z",
+    "lonMultiplier": 850,
+    "latMultiplier": 1110,
+    "approxMetersPerUnit": 100,
+    "geometryScale": "stylized"
+  },
+  "bounds": {
+    "minX": -117,
+    "maxX": 91,
+    "minZ": -105,
+    "maxZ": 91
+  },
+  "startId": "beijing-forbidden-city",
+  "model": "unread-city-beijing-sandbox.glb",
+  "categories": [
+    {
+      "name": "中轴古城",
+      "color": "#ae543a"
+    },
+    {
+      "name": "园林水岸",
+      "color": "#557951"
+    },
+    {
+      "name": "现代北京",
+      "color": "#3a7385"
+    },
+    {
+      "name": "交通枢纽",
+      "color": "#7e6c56"
+    }
+  ],
+  "places": [
+    {
+      "id": "beijing-bell-drum",
+      "name": "钟鼓楼",
+      "subtitle": "东城 · 地安门外",
+      "category": 0,
+      "description": "沿地安门外大街向北，红墙鼓楼与灰砖钟楼相对，是老城中轴线的北端。",
+      "lonLat": [
+        116.3966,
+        39.9418
+      ],
+      "x": -2.89,
+      "y": 7.5,
+      "z": -11.99,
+      "modelNode": "poi-beijing-bell-drum"
+    },
+    {
+      "id": "beijing-nanluoguxiang",
+      "name": "南锣鼓巷",
+      "subtitle": "东城 · 交道口",
+      "category": 0,
+      "description": "从南锣鼓巷转进东西向的支巷，能看到灰瓦院墙、木门和围着院心布置的四合院。临主巷的几间房也开着沿街小店。",
+      "lonLat": [
+        116.40315,
+        39.93733
+      ],
+      "x": 2.68,
+      "y": 1.4,
+      "z": -7.03,
+      "aliases": [
+        "南锣",
+        "胡同",
+        "四合院",
+        "老城民居"
+      ],
+      "modelNode": "poi-beijing-nanluoguxiang"
+    },
+    {
+      "id": "beijing-jingshan",
+      "name": "景山公园",
+      "subtitle": "西城 · 景山前街",
+      "category": 0,
+      "description": "从万春亭往南，可以俯瞰故宫层层铺开的金色屋顶。",
+      "lonLat": [
+        116.3967,
+        39.9251
+      ],
+      "x": -2.81,
+      "y": 11,
+      "z": 6.55,
+      "modelNode": "poi-beijing-jingshan"
+    },
+    {
+      "id": "beijing-forbidden-city",
+      "name": "故宫博物院",
+      "subtitle": "东城 · 故宫",
+      "category": 0,
+      "description": "午门、太和殿与神武门沿中轴排列，金瓦红墙之间是一重又一重院落。",
+      "lonLat": [
+        116.397,
+        39.9166
+      ],
+      "x": -2.55,
+      "y": 7,
+      "z": 15.98,
+      "modelNode": "poi-beijing-forbidden-city"
+    },
+    {
+      "id": "beijing-tiananmen",
+      "name": "天安门广场",
+      "subtitle": "东城 · 长安街",
+      "category": 0,
+      "description": "长安街南侧的开阔广场，向北可望见天安门城楼，向南通往正阳门。",
+      "lonLat": [
+        116.3975,
+        39.9055
+      ],
+      "x": -2.13,
+      "y": 2.7,
+      "z": 28.3,
+      "modelNode": "poi-beijing-tiananmen"
+    },
+    {
+      "id": "beijing-qianmen",
+      "name": "前门大街",
+      "subtitle": "东城 · 正阳门以南",
+      "category": 0,
+      "description": "走过正阳门，沿前门大街向南，街巷两侧是老字号和沿街店铺。",
+      "lonLat": [
+        116.3974,
+        39.8946
+      ],
+      "x": -2.21,
+      "y": 4,
+      "z": 40.4,
+      "modelNode": "poi-beijing-qianmen"
+    },
+    {
+      "id": "beijing-temple-of-heaven",
+      "name": "天坛公园",
+      "subtitle": "东城 · 天坛东路",
+      "category": 0,
+      "description": "苍松古柏之间，祈年殿的三层蓝瓦圆顶格外醒目。",
+      "lonLat": [
+        116.4066,
+        39.8822
+      ],
+      "x": 5.61,
+      "y": 8,
+      "z": 54.17,
+      "modelNode": "poi-beijing-temple-of-heaven"
+    },
+    {
+      "id": "beijing-yongdingmen",
+      "name": "永定门",
+      "subtitle": "东城 · 中轴南端",
+      "category": 0,
+      "description": "永定门城楼位于老城中轴南端，向北连着中轴道路，向南临近护城河。",
+      "lonLat": [
+        116.3981,
+        39.8725
+      ],
+      "x": -1.62,
+      "y": 7,
+      "z": 64.93,
+      "modelNode": "poi-beijing-yongdingmen"
+    },
+    {
+      "id": "beijing-shichahai",
+      "name": "什刹海",
+      "subtitle": "西城 · 鼓楼西侧",
+      "category": 1,
+      "description": "在前海、后海沿岸散步，可由银锭桥转入水边胡同。",
+      "lonLat": [
+        116.3849,
+        39.9429
+      ],
+      "x": -12.84,
+      "y": 1.5,
+      "z": -13.21,
+      "modelNode": "poi-beijing-shichahai"
+    },
+    {
+      "id": "beijing-beihai",
+      "name": "北海公园",
+      "subtitle": "西城 · 文津街",
+      "category": 1,
+      "description": "琼华岛上的白塔高出树冠，湖面将白塔、长廊与城墙隔开。",
+      "lonLat": [
+        116.3891,
+        39.9258
+      ],
+      "x": -9.27,
+      "y": 9,
+      "z": 5.77,
+      "modelNode": "poi-beijing-beihai"
+    },
+    {
+      "id": "beijing-summer-palace",
+      "name": "颐和园",
+      "subtitle": "海淀 · 昆明湖",
+      "category": 1,
+      "description": "从万寿山佛香阁向南是昆明湖，长廊随湖岸展开，十七孔桥通向南湖岛。",
+      "lonLat": [
+        116.2744,
+        39.9973
+      ],
+      "x": -106.76,
+      "y": 10,
+      "z": -73.59,
+      "modelNode": "poi-beijing-summer-palace"
+    },
+    {
+      "id": "beijing-yuanmingyuan",
+      "name": "圆明园",
+      "subtitle": "海淀 · 清华西路",
+      "category": 1,
+      "description": "水系和园路串起旧日园址，西洋楼遗址保留着石构断垣。",
+      "lonLat": [
+        116.31,
+        40.0053
+      ],
+      "x": -76.5,
+      "y": 2,
+      "z": -82.47,
+      "modelNode": "poi-beijing-yuanmingyuan"
+    },
+    {
+      "id": "beijing-peking-university",
+      "name": "北京大学未名湖",
+      "subtitle": "海淀 · 燕园",
+      "category": 1,
+      "description": "博雅塔立在未名湖东南岸。湖边石径经过低矮的燕园院落，转过岸角就能见到塔影。",
+      "lonLat": [
+        116.30528,
+        39.98972
+      ],
+      "x": -80.51,
+      "y": 7.0,
+      "z": -65.18,
+      "aliases": [
+        "北大",
+        "燕园",
+        "未名湖",
+        "博雅塔"
+      ],
+      "modelNode": "poi-beijing-peking-university"
+    },
+    {
+      "id": "beijing-tsinghua-university",
+      "name": "清华大学大礼堂",
+      "subtitle": "海淀 · 清华园",
+      "category": 1,
+      "description": "大礼堂的圆顶和古典柱廊面向草坪。顺着草地中的道路向南，经过日晷便是清华园二校门。",
+      "lonLat": [
+        116.3261,
+        40.003
+      ],
+      "x": -62.82,
+      "y": 6.6,
+      "z": -79.92,
+      "aliases": [
+        "清华",
+        "清华园",
+        "清华大礼堂",
+        "二校门"
+      ],
+      "modelNode": "poi-beijing-tsinghua-university"
+    },
+    {
+      "id": "beijing-olympic",
+      "name": "奥林匹克公园",
+      "subtitle": "朝阳 · 奥林匹克公园",
+      "category": 2,
+      "description": "城市中轴线向北延伸至奥林匹克公园，公共步道将体育场馆和北侧森林公园串联起来。",
+      "lonLat": [
+        116.3934,
+        39.994
+      ],
+      "x": -5.61,
+      "y": 2,
+      "z": -69.93,
+      "aliases": [
+        "奥体",
+        "奥林匹克中心"
+      ],
+      "modelNode": "poi-beijing-olympic"
+    },
+    {
+      "id": "beijing-bird-nest",
+      "name": "鸟巢",
+      "subtitle": "朝阳 · 国家体育场",
+      "category": 2,
+      "description": "国家体育场外侧交错的钢构包围着椭圆看台，可以从广场上看清整座建筑的轮廓。",
+      "lonLat": [
+        116.3965,
+        39.9916
+      ],
+      "x": -2.98,
+      "y": 7,
+      "z": -67.27,
+      "aliases": [
+        "国家体育场",
+        "奥体",
+        "Bird Nest"
+      ],
+      "modelNode": "poi-beijing-bird-nest"
+    },
+    {
+      "id": "beijing-water-cube",
+      "name": "水立方",
+      "subtitle": "朝阳 · 国家游泳中心",
+      "category": 2,
+      "description": "国家游泳中心的蓝色外立面由不规则的泡状单元组成，入夜后尤为显眼。",
+      "lonLat": [
+        116.38417,
+        39.99158
+      ],
+      "x": -13.46,
+      "y": 5.2,
+      "z": -67.24,
+      "aliases": [
+        "国家游泳中心",
+        "冰立方",
+        "奥体",
+        "Water Cube"
+      ],
+      "modelNode": "poi-beijing-water-cube"
+    },
+    {
+      "id": "beijing-olympic-tower",
+      "name": "奥林匹克塔",
+      "subtitle": "朝阳 · 奥林匹克森林公园南侧",
+      "category": 2,
+      "description": "从场馆向北走，五根高低错落的塔柱在森林公园南侧展开，塔冠像五朵大小不同的花。",
+      "lonLat": [
+        116.38784,
+        40.00651
+      ],
+      "x": -10.34,
+      "y": 12,
+      "z": -83.82,
+      "aliases": [
+        "奥体",
+        "奥林匹克公园瞭望塔",
+        "大钉子"
+      ],
+      "modelNode": "poi-beijing-olympic-tower"
+    },
+    {
+      "id": "beijing-ice-ribbon",
+      "name": "冰丝带",
+      "subtitle": "朝阳 · 国家速滑馆",
+      "category": 2,
+      "description": "椭圆形的速滑馆外包着一圈圈起伏的玻璃带，入夜后环绕场馆的线条会亮起。",
+      "lonLat": [
+        116.371414,
+        40.015892
+      ],
+      "x": -24.3,
+      "y": 5.0,
+      "z": -94.23,
+      "aliases": [
+        "国家速滑馆",
+        "速滑馆",
+        "奥体",
+        "冬奥"
+      ],
+      "modelNode": "poi-beijing-ice-ribbon"
+    },
+    {
+      "id": "beijing-ncp",
+      "name": "国家大剧院",
+      "subtitle": "西城 · 西长安街",
+      "category": 2,
+      "description": "水面托着一座银色椭球，从长安街一侧就能看到壳体与倒影。",
+      "lonLat": [
+        116.3831,
+        39.903
+      ],
+      "x": -14.37,
+      "y": 4.1,
+      "z": 31.08,
+      "modelNode": "poi-beijing-ncp"
+    },
+    {
+      "id": "beijing-wangfujing",
+      "name": "王府井",
+      "subtitle": "东城 · 王府井大街",
+      "category": 2,
+      "description": "从长安街拐入王府井大街，百货、书店和小吃铺沿街展开。",
+      "lonLat": [
+        116.4119,
+        39.9134
+      ],
+      "x": 10.11,
+      "y": 5.0,
+      "z": 19.54,
+      "modelNode": "poi-beijing-wangfujing"
+    },
+    {
+      "id": "beijing-sanlitun",
+      "name": "三里屯太古里",
+      "subtitle": "朝阳 · 三里屯路",
+      "category": 2,
+      "description": "低层商铺以巷道和庭院相连，咖啡店和餐馆围着开放街区。",
+      "lonLat": [
+        116.4542,
+        39.9368
+      ],
+      "x": 46.07,
+      "y": 5.5,
+      "z": -6.44,
+      "modelNode": "poi-beijing-sanlitun"
+    },
+    {
+      "id": "beijing-liangma-river",
+      "name": "亮马河",
+      "subtitle": "朝阳 · 亮马桥水岸",
+      "category": 1,
+      "description": "从亮马桥一带沿河向东，步道、桥下空间和亲水平台连接起三里屯与蓝色港湾。",
+      "lonLat": [
+        116.4642,
+        39.9507
+      ],
+      "x": 54.57,
+      "y": 2.2,
+      "z": -21.87,
+      "aliases": [
+        "亮马桥",
+        "亮马河国际风情水岸"
+      ],
+      "modelNode": "poi-beijing-liangma-river"
+    },
+    {
+      "id": "beijing-798-art-zone",
+      "name": "798艺术区",
+      "subtitle": "朝阳 · 酒仙桥",
+      "category": 2,
+      "description": "沿旧厂房之间的巷道走，锯齿形屋顶和红砖烟囱仍在，画廊与展厅散布在不同车间里。",
+      "lonLat": [
+        116.48978,
+        39.98294
+      ],
+      "x": 76.31,
+      "y": 5.8,
+      "z": -57.65,
+      "aliases": [
+        "798",
+        "大山子",
+        "七九八"
+      ],
+      "modelNode": "poi-beijing-798-art-zone"
+    },
+    {
+      "id": "beijing-cbd",
+      "name": "国贸",
+      "subtitle": "朝阳 · 建国门外",
+      "category": 2,
+      "description": "国贸一带高楼连成天际线。从建国路向北，可以看到光华路上的中国尊和央视总部。",
+      "lonLat": [
+        116.4618,
+        39.9087
+      ],
+      "x": 52.53,
+      "y": 2.25,
+      "z": 24.75,
+      "modelNode": "poi-beijing-cbd"
+    },
+    {
+      "id": "beijing-cctv-headquarters",
+      "name": "央视总部大楼",
+      "subtitle": "朝阳 · 东三环中路",
+      "category": 2,
+      "description": "两座倾斜塔楼通过悬挑的顶部连成一个不规则的环。站在楼外抬头，可以看到中间透空的轮廓和交错的钢结构。",
+      "lonLat": [
+        116.45805,
+        39.91347
+      ],
+      "x": 49.34,
+      "y": 13,
+      "z": 19.46,
+      "aliases": [
+        "电视台",
+        "央视",
+        "中央电视台",
+        "央视大楼",
+        "大裤衩",
+        "CCTV"
+      ],
+      "modelNode": "poi-beijing-cctv-headquarters"
+    },
+    {
+      "id": "beijing-china-zun",
+      "name": "中国尊",
+      "subtitle": "朝阳 · 光华路",
+      "category": 2,
+      "description": "中信大厦取形于古代青铜尊，塔身中段收腰，近顶部重新展开。",
+      "lonLat": [
+        116.46028,
+        39.91139
+      ],
+      "x": 51.24,
+      "y": 17.7,
+      "z": 21.77,
+      "aliases": [
+        "中信大厦",
+        "中信总部",
+        "CITIC Tower"
+      ],
+      "modelNode": "poi-beijing-china-zun"
+    },
+    {
+      "id": "beijing-central-tv-tower",
+      "name": "中央电视塔",
+      "subtitle": "海淀 · 西三环中路",
+      "category": 2,
+      "description": "中央广播电视塔立在玉渊潭西侧。细长塔身托起一圈观景层，顶部是一段红白相间的天线。",
+      "lonLat": [
+        116.30028,
+        39.91806
+      ],
+      "x": -84.76,
+      "y": 16.6,
+      "z": 14.36,
+      "aliases": [
+        "电视台",
+        "电视塔",
+        "中央广播电视塔",
+        "央视塔"
+      ],
+      "modelNode": "poi-beijing-central-tv-tower"
+    },
+    {
+      "id": "beijing-yuyuantan",
+      "name": "玉渊潭公园",
+      "subtitle": "海淀 · 西三环中路",
+      "category": 1,
+      "description": "沿湖岸走过樱园和跨湖桥，向西能看见中央电视塔高出树冠。",
+      "lonLat": [
+        116.3109,
+        39.9177
+      ],
+      "x": -75.74,
+      "y": 2,
+      "z": 14.76,
+      "modelNode": "poi-beijing-yuyuantan"
+    },
+    {
+      "id": "beijing-beijing-station",
+      "name": "北京站",
+      "subtitle": "东城 · 北京站街",
+      "category": 3,
+      "description": "北京站站房面向北广场，两端钟楼是从街面辨认车站的标志。",
+      "lonLat": [
+        116.4272,
+        39.9034
+      ],
+      "x": 23.12,
+      "y": 5,
+      "z": 30.64,
+      "modelNode": "poi-beijing-beijing-station"
+    },
+    {
+      "id": "beijing-beijing-west",
+      "name": "北京西站",
+      "subtitle": "丰台 · 莲花池东路",
+      "category": 3,
+      "description": "北广场正对大跨度站房，中部的楼亭和下方层层展开的站前车道构成车站的正面轮廓。",
+      "lonLat": [
+        116.32206,
+        39.89491
+      ],
+      "x": -66.25,
+      "y": 6.6,
+      "z": 40.06,
+      "aliases": [
+        "西客站",
+        "北京西",
+        "西站"
+      ],
+      "modelNode": "poi-beijing-beijing-west"
+    },
+    {
+      "id": "beijing-fangzhuang",
+      "name": "方庄",
+      "subtitle": "丰台 · 方庄街区",
+      "category": 2,
+      "description": "沿小区外的街道走过底层商铺，转进林荫步道，能看到不同年代的板楼、住宅塔楼和楼间小院。",
+      "lonLat": [
+        116.42129,
+        39.86014
+      ],
+      "x": 18.1,
+      "y": 3.8,
+      "z": 78.65,
+      "aliases": [
+        "居民楼",
+        "小区",
+        "住宅",
+        "居民区",
+        "住宅区"
+      ],
+      "modelNode": "poi-beijing-fangzhuang"
+    },
+    {
+      "id": "beijing-beijing-south",
+      "name": "北京南站",
+      "subtitle": "丰台 · 永外大街",
+      "category": 3,
+      "description": "北京南站的大跨度椭圆屋顶覆盖站房和站台，南广场与城市道路相接。",
+      "lonLat": [
+        116.3782,
+        39.8652
+      ],
+      "x": -18.53,
+      "y": 5,
+      "z": 73.04,
+      "modelNode": "poi-beijing-beijing-south"
+    }
+  ],
+  "routes": [
+    {
+      "from": "beijing-bell-drum",
+      "to": "beijing-shichahai",
+      "minutes": 12,
+      "method": "步行",
+      "points": [
+        [
+          -2.89,
+          -11.99
+        ],
+        [
+          -5,
+          -12
+        ],
+        [
+          -10,
+          -11
+        ],
+        [
+          -12.84,
+          -13.21
+        ]
+      ]
+    },
+    {
+      "from": "beijing-bell-drum",
+      "to": "beijing-nanluoguxiang",
+      "minutes": 13,
+      "method": "步行",
+      "points": [
+        [
+          -2.89,
+          -11.99
+        ],
+        [
+          -1.4,
+          -7.03
+        ],
+        [
+          0.85,
+          -7.03
+        ],
+        [
+          2.68,
+          -7.03
+        ]
+      ]
+    },
+    {
+      "from": "beijing-nanluoguxiang",
+      "to": "beijing-jingshan",
+      "minutes": 19,
+      "method": "步行",
+      "points": [
+        [
+          2.68,
+          -7.03
+        ],
+        [
+          2.68,
+          -4.7
+        ],
+        [
+          3.7,
+          -1
+        ],
+        [
+          1.2,
+          3.8
+        ],
+        [
+          -2.81,
+          6.55
+        ]
+      ]
+    },
+    {
+      "from": "beijing-bell-drum",
+      "to": "beijing-jingshan",
+      "minutes": 25,
+      "method": "步行",
+      "points": [
+        [
+          -2.89,
+          -11.99
+        ],
+        [
+          -3,
+          -7
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2.81,
+          6.55
+        ]
+      ]
+    },
+    {
+      "from": "beijing-shichahai",
+      "to": "beijing-beihai",
+      "minutes": 23,
+      "method": "步行",
+      "points": [
+        [
+          -12.84,
+          -13.21
+        ],
+        [
+          -13,
+          -8
+        ],
+        [
+          -12,
+          -2
+        ],
+        [
+          -9.27,
+          5.77
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beihai",
+      "to": "beijing-jingshan",
+      "minutes": 14,
+      "method": "步行",
+      "points": [
+        [
+          -9.27,
+          5.77
+        ],
+        [
+          -8,
+          6
+        ],
+        [
+          -2.81,
+          6.55
+        ]
+      ]
+    },
+    {
+      "from": "beijing-jingshan",
+      "to": "beijing-forbidden-city",
+      "minutes": 15,
+      "method": "步行",
+      "points": [
+        [
+          -2.81,
+          6.55
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          -2.55,
+          15.98
+        ]
+      ]
+    },
+    {
+      "from": "beijing-forbidden-city",
+      "to": "beijing-tiananmen",
+      "minutes": 22,
+      "method": "步行",
+      "points": [
+        [
+          -2.55,
+          15.98
+        ],
+        [
+          1,
+          21
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          -2.13,
+          28.3
+        ]
+      ]
+    },
+    {
+      "from": "beijing-tiananmen",
+      "to": "beijing-qianmen",
+      "minutes": 15,
+      "method": "步行",
+      "points": [
+        [
+          -2.13,
+          28.3
+        ],
+        [
+          -2,
+          32
+        ],
+        [
+          -2.21,
+          40.4
+        ]
+      ]
+    },
+    {
+      "from": "beijing-qianmen",
+      "to": "beijing-temple-of-heaven",
+      "minutes": 28,
+      "method": "步行",
+      "points": [
+        [
+          -2.21,
+          40.4
+        ],
+        [
+          -1,
+          46
+        ],
+        [
+          3,
+          46
+        ],
+        [
+          5.61,
+          54.17
+        ]
+      ]
+    },
+    {
+      "from": "beijing-qianmen",
+      "to": "beijing-yongdingmen",
+      "minutes": 34,
+      "method": "步行",
+      "points": [
+        [
+          -2.21,
+          40.4
+        ],
+        [
+          -1,
+          49
+        ],
+        [
+          -1,
+          60
+        ],
+        [
+          -1.62,
+          64.93
+        ]
+      ]
+    },
+    {
+      "from": "beijing-temple-of-heaven",
+      "to": "beijing-yongdingmen",
+      "minutes": 20,
+      "method": "步行",
+      "points": [
+        [
+          5.61,
+          54.17
+        ],
+        [
+          6,
+          61
+        ],
+        [
+          0,
+          63
+        ],
+        [
+          -1.62,
+          64.93
+        ]
+      ]
+    },
+    {
+      "from": "beijing-tiananmen",
+      "to": "beijing-ncp",
+      "minutes": 9,
+      "method": "步行",
+      "points": [
+        [
+          -2.13,
+          28.3
+        ],
+        [
+          -7,
+          28
+        ],
+        [
+          -14,
+          28
+        ],
+        [
+          -14.37,
+          31.08
+        ]
+      ]
+    },
+    {
+      "from": "beijing-tiananmen",
+      "to": "beijing-wangfujing",
+      "minutes": 19,
+      "method": "步行",
+      "points": [
+        [
+          -2.13,
+          28.3
+        ],
+        [
+          5,
+          28
+        ],
+        [
+          10,
+          27
+        ],
+        [
+          10.11,
+          19.54
+        ]
+      ]
+    },
+    {
+      "from": "beijing-wangfujing",
+      "to": "beijing-beijing-station",
+      "minutes": 19,
+      "method": "市内交通",
+      "points": [
+        [
+          10.11,
+          19.54
+        ],
+        [
+          15,
+          21
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          23.12,
+          30.64
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beijing-station",
+      "to": "beijing-cbd",
+      "minutes": 19,
+      "method": "市内交通",
+      "points": [
+        [
+          23.12,
+          30.64
+        ],
+        [
+          33,
+          29
+        ],
+        [
+          39,
+          24
+        ],
+        [
+          52.53,
+          24.75
+        ]
+      ]
+    },
+    {
+      "from": "beijing-cbd",
+      "to": "beijing-china-zun",
+      "minutes": 7,
+      "method": "步行",
+      "points": [
+        [
+          52.53,
+          24.75
+        ],
+        [
+          54,
+          23.4
+        ],
+        [
+          51.24,
+          21.77
+        ]
+      ]
+    },
+    {
+      "from": "beijing-china-zun",
+      "to": "beijing-cctv-headquarters",
+      "minutes": 9,
+      "method": "步行",
+      "points": [
+        [
+          51.24,
+          21.77
+        ],
+        [
+          54.8,
+          20
+        ],
+        [
+          53,
+          18
+        ],
+        [
+          49.34,
+          19.46
+        ]
+      ]
+    },
+    {
+      "from": "beijing-cctv-headquarters",
+      "to": "beijing-sanlitun",
+      "minutes": 20,
+      "method": "市内交通",
+      "points": [
+        [
+          49.34,
+          19.46
+        ],
+        [
+          46,
+          12
+        ],
+        [
+          45,
+          1
+        ],
+        [
+          46.07,
+          -6.44
+        ]
+      ]
+    },
+    {
+      "from": "beijing-liangma-river",
+      "to": "beijing-sanlitun",
+      "minutes": 17,
+      "method": "步行",
+      "points": [
+        [
+          54.57,
+          -21.87
+        ],
+        [
+          51,
+          -12
+        ],
+        [
+          52,
+          -18
+        ],
+        [
+          46.07,
+          -6.44
+        ]
+      ]
+    },
+    {
+      "from": "beijing-liangma-river",
+      "to": "beijing-798-art-zone",
+      "minutes": 25,
+      "method": "市内交通",
+      "points": [
+        [
+          54.57,
+          -21.87
+        ],
+        [
+          63,
+          -28
+        ],
+        [
+          72,
+          -44
+        ],
+        [
+          74,
+          -53
+        ],
+        [
+          76.31,
+          -57.65
+        ]
+      ]
+    },
+    {
+      "from": "beijing-798-art-zone",
+      "to": "beijing-olympic",
+      "minutes": 31,
+      "method": "市内交通",
+      "points": [
+        [
+          76.31,
+          -57.65
+        ],
+        [
+          57,
+          -57
+        ],
+        [
+          36,
+          -62
+        ],
+        [
+          16,
+          -66
+        ],
+        [
+          -5.61,
+          -69.93
+        ]
+      ]
+    },
+    {
+      "from": "beijing-cbd",
+      "to": "beijing-sanlitun",
+      "minutes": 24,
+      "method": "市内交通",
+      "points": [
+        [
+          52.53,
+          24.75
+        ],
+        [
+          53,
+          7
+        ],
+        [
+          49,
+          -5
+        ],
+        [
+          46.07,
+          -6.44
+        ]
+      ]
+    },
+    {
+      "from": "beijing-sanlitun",
+      "to": "beijing-olympic",
+      "minutes": 37,
+      "method": "市内交通",
+      "points": [
+        [
+          46.07,
+          -6.44
+        ],
+        [
+          50,
+          -20
+        ],
+        [
+          44,
+          -42
+        ],
+        [
+          24,
+          -61
+        ],
+        [
+          5,
+          -68
+        ],
+        [
+          -5.61,
+          -69.93
+        ]
+      ]
+    },
+    {
+      "from": "beijing-bell-drum",
+      "to": "beijing-olympic",
+      "minutes": 32,
+      "method": "市内交通",
+      "points": [
+        [
+          -2.89,
+          -11.99
+        ],
+        [
+          -2,
+          -24
+        ],
+        [
+          -1,
+          -42
+        ],
+        [
+          -2,
+          -58
+        ],
+        [
+          -5.61,
+          -69.93
+        ]
+      ]
+    },
+    {
+      "from": "beijing-olympic",
+      "to": "beijing-bird-nest",
+      "minutes": 8,
+      "method": "步行",
+      "points": [
+        [
+          -5.61,
+          -69.93
+        ],
+        [
+          -4,
+          -68
+        ],
+        [
+          -2.98,
+          -67.27
+        ]
+      ]
+    },
+    {
+      "from": "beijing-olympic",
+      "to": "beijing-water-cube",
+      "minutes": 9,
+      "method": "步行",
+      "points": [
+        [
+          -5.61,
+          -69.93
+        ],
+        [
+          -10,
+          -70
+        ],
+        [
+          -13.46,
+          -67.24
+        ]
+      ]
+    },
+    {
+      "from": "beijing-olympic",
+      "to": "beijing-olympic-tower",
+      "minutes": 16,
+      "method": "步行",
+      "points": [
+        [
+          -5.61,
+          -69.93
+        ],
+        [
+          -7,
+          -75
+        ],
+        [
+          -8,
+          -81
+        ],
+        [
+          -10.34,
+          -83.82
+        ]
+      ]
+    },
+    {
+      "from": "beijing-olympic-tower",
+      "to": "beijing-ice-ribbon",
+      "minutes": 23,
+      "method": "步行",
+      "points": [
+        [
+          -10.34,
+          -83.82
+        ],
+        [
+          -14,
+          -88
+        ],
+        [
+          -21,
+          -91
+        ],
+        [
+          -24.3,
+          -94.23
+        ]
+      ]
+    },
+    {
+      "from": "beijing-water-cube",
+      "to": "beijing-olympic-tower",
+      "minutes": 19,
+      "method": "步行",
+      "points": [
+        [
+          -13.46,
+          -67.24
+        ],
+        [
+          -15,
+          -74
+        ],
+        [
+          -12,
+          -82
+        ],
+        [
+          -10.34,
+          -83.82
+        ]
+      ]
+    },
+    {
+      "from": "beijing-bird-nest",
+      "to": "beijing-water-cube",
+      "minutes": 12,
+      "method": "步行",
+      "points": [
+        [
+          -2.98,
+          -67.27
+        ],
+        [
+          -7,
+          -64
+        ],
+        [
+          -12,
+          -64
+        ],
+        [
+          -13.46,
+          -67.24
+        ]
+      ]
+    },
+    {
+      "from": "beijing-olympic",
+      "to": "beijing-yuanmingyuan",
+      "minutes": 33,
+      "method": "市内交通",
+      "points": [
+        [
+          -5.61,
+          -69.93
+        ],
+        [
+          -17,
+          -71
+        ],
+        [
+          -35,
+          -75
+        ],
+        [
+          -61,
+          -78
+        ],
+        [
+          -76.5,
+          -82.47
+        ]
+      ]
+    },
+    {
+      "from": "beijing-ice-ribbon",
+      "to": "beijing-tsinghua-university",
+      "minutes": 32,
+      "method": "市内交通",
+      "points": [
+        [
+          -24.3,
+          -94.23
+        ],
+        [
+          -34,
+          -96
+        ],
+        [
+          -49,
+          -91
+        ],
+        [
+          -62.82,
+          -79.92
+        ]
+      ]
+    },
+    {
+      "from": "beijing-tsinghua-university",
+      "to": "beijing-yuanmingyuan",
+      "minutes": 18,
+      "method": "市内交通",
+      "points": [
+        [
+          -62.82,
+          -79.92
+        ],
+        [
+          -68,
+          -82
+        ],
+        [
+          -74,
+          -84
+        ],
+        [
+          -76.5,
+          -82.47
+        ]
+      ]
+    },
+    {
+      "from": "beijing-tsinghua-university",
+      "to": "beijing-peking-university",
+      "minutes": 29,
+      "method": "步行",
+      "points": [
+        [
+          -62.82,
+          -79.92
+        ],
+        [
+          -63,
+          -76
+        ],
+        [
+          -74,
+          -71
+        ],
+        [
+          -80.51,
+          -65.18
+        ]
+      ]
+    },
+    {
+      "from": "beijing-peking-university",
+      "to": "beijing-summer-palace",
+      "minutes": 31,
+      "method": "市内交通",
+      "points": [
+        [
+          -80.51,
+          -65.18
+        ],
+        [
+          -90,
+          -58
+        ],
+        [
+          -99,
+          -61
+        ],
+        [
+          -106.76,
+          -73.59
+        ]
+      ]
+    },
+    {
+      "from": "beijing-yuanmingyuan",
+      "to": "beijing-summer-palace",
+      "minutes": 18,
+      "method": "市内交通",
+      "points": [
+        [
+          -76.5,
+          -82.47
+        ],
+        [
+          -86,
+          -81
+        ],
+        [
+          -94,
+          -78
+        ],
+        [
+          -106.76,
+          -73.59
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beihai",
+      "to": "beijing-yuyuantan",
+      "minutes": 34,
+      "method": "市内交通",
+      "points": [
+        [
+          -9.27,
+          5.77
+        ],
+        [
+          -24,
+          8
+        ],
+        [
+          -44,
+          6
+        ],
+        [
+          -62,
+          10
+        ],
+        [
+          -70,
+          13
+        ],
+        [
+          -75.74,
+          14.76
+        ]
+      ]
+    },
+    {
+      "from": "beijing-yuyuantan",
+      "to": "beijing-central-tv-tower",
+      "minutes": 17,
+      "method": "步行",
+      "points": [
+        [
+          -75.74,
+          14.76
+        ],
+        [
+          -77,
+          20
+        ],
+        [
+          -83,
+          19
+        ],
+        [
+          -84.76,
+          14.36
+        ]
+      ]
+    },
+    {
+      "from": "beijing-central-tv-tower",
+      "to": "beijing-summer-palace",
+      "minutes": 36,
+      "method": "市内交通",
+      "points": [
+        [
+          -84.76,
+          14.36
+        ],
+        [
+          -86,
+          -4
+        ],
+        [
+          -86,
+          -32
+        ],
+        [
+          -92,
+          -52
+        ],
+        [
+          -106.76,
+          -73.59
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beihai",
+      "to": "beijing-summer-palace",
+      "minutes": 42,
+      "method": "市内交通",
+      "points": [
+        [
+          -9.27,
+          5.77
+        ],
+        [
+          -18,
+          5
+        ],
+        [
+          -32,
+          0
+        ],
+        [
+          -55,
+          -15
+        ],
+        [
+          -78,
+          -37
+        ],
+        [
+          -98,
+          -52
+        ],
+        [
+          -106.76,
+          -73.59
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beijing-west",
+      "to": "beijing-yuyuantan",
+      "minutes": 28,
+      "method": "市内交通",
+      "points": [
+        [
+          -66.25,
+          40.06
+        ],
+        [
+          -68,
+          29
+        ],
+        [
+          -68,
+          24
+        ],
+        [
+          -72,
+          21
+        ],
+        [
+          -75.74,
+          14.76
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beijing-west",
+      "to": "beijing-ncp",
+      "minutes": 30,
+      "method": "市内交通",
+      "points": [
+        [
+          -66.25,
+          40.06
+        ],
+        [
+          -55,
+          37
+        ],
+        [
+          -44,
+          30
+        ],
+        [
+          -25,
+          29
+        ],
+        [
+          -14.37,
+          31.08
+        ]
+      ]
+    },
+    {
+      "from": "beijing-beijing-west",
+      "to": "beijing-beijing-south",
+      "minutes": 27,
+      "method": "市内交通",
+      "points": [
+        [
+          -66.25,
+          40.06
+        ],
+        [
+          -58,
+          47
+        ],
+        [
+          -47,
+          57
+        ],
+        [
+          -32,
+          65
+        ],
+        [
+          -18.53,
+          73.04
+        ]
+      ]
+    },
+    {
+      "from": "beijing-temple-of-heaven",
+      "to": "beijing-fangzhuang",
+      "minutes": 29,
+      "method": "市内交通",
+      "points": [
+        [
+          5.61,
+          54.17
+        ],
+        [
+          10,
+          63
+        ],
+        [
+          16,
+          71
+        ],
+        [
+          18.1,
+          75
+        ],
+        [
+          18.1,
+          78.65
+        ]
+      ]
+    },
+    {
+      "from": "beijing-fangzhuang",
+      "to": "beijing-beijing-south",
+      "minutes": 27,
+      "method": "市内交通",
+      "points": [
+        [
+          18.1,
+          78.65
+        ],
+        [
+          14.5,
+          72.7
+        ],
+        [
+          4.6,
+          72.8
+        ],
+        [
+          -7,
+          74.4
+        ],
+        [
+          -18.53,
+          73.04
+        ]
+      ]
+    },
+    {
+      "from": "beijing-yongdingmen",
+      "to": "beijing-beijing-south",
+      "minutes": 23,
+      "method": "市内交通",
+      "points": [
+        [
+          -1.62,
+          64.93
+        ],
+        [
+          -8,
+          67
+        ],
+        [
+          -12,
+          69
+        ],
+        [
+          -18.53,
+          73.04
+        ]
+      ]
+    },
+    {
+      "from": "beijing-ncp",
+      "to": "beijing-beijing-south",
+      "minutes": 25,
+      "method": "市内交通",
+      "points": [
+        [
+          -14.37,
+          31.08
+        ],
+        [
+          -20,
+          38
+        ],
+        [
+          -21,
+          50
+        ],
+        [
+          -20,
+          62
+        ],
+        [
+          -18.53,
+          73.04
+        ]
+      ]
+    }
+  ],
+  "tours": [
+    {
+      "name": "沿中轴走",
+      "stops": [
+        "beijing-bell-drum",
+        "beijing-jingshan",
+        "beijing-forbidden-city",
+        "beijing-tiananmen",
+        "beijing-qianmen",
+        "beijing-temple-of-heaven",
+        "beijing-yongdingmen"
+      ]
+    },
+    {
+      "name": "胡同散步",
+      "stops": [
+        "beijing-shichahai",
+        "beijing-bell-drum",
+        "beijing-nanluoguxiang",
+        "beijing-jingshan"
+      ]
+    },
+    {
+      "name": "三处水岸",
+      "stops": [
+        "beijing-shichahai",
+        "beijing-beihai",
+        "beijing-summer-palace"
+      ]
+    },
+    {
+      "name": "从燕园到清华园",
+      "stops": [
+        "beijing-summer-palace",
+        "beijing-peking-university",
+        "beijing-tsinghua-university",
+        "beijing-yuanmingyuan"
+      ]
+    },
+    {
+      "name": "从老城到天际线",
+      "stops": [
+        "beijing-ncp",
+        "beijing-tiananmen",
+        "beijing-wangfujing",
+        "beijing-beijing-station",
+        "beijing-cbd",
+        "beijing-china-zun",
+        "beijing-cctv-headquarters",
+        "beijing-sanlitun",
+        "beijing-olympic",
+        "beijing-bird-nest",
+        "beijing-water-cube",
+        "beijing-olympic-tower"
+      ]
+    }
+  ],
+  "focusAreas": [
+    {
+      "name": "老城胡同",
+      "places": [
+        "beijing-nanluoguxiang",
+        "beijing-bell-drum",
+        "beijing-shichahai"
+      ],
+      "view": {
+        "x": 5.5,
+        "z": -8.1,
+        "yaw": -0.37,
+        "tilt": 0.82,
+        "zoom": 12.4
+      }
+    },
+    {
+      "name": "方庄居民区",
+      "places": [
+        "beijing-fangzhuang",
+        "beijing-temple-of-heaven",
+        "beijing-beijing-south"
+      ],
+      "view": {
+        "x": 18.0,
+        "z": 80.6,
+        "yaw": -0.54,
+        "tilt": 0.68,
+        "zoom": 11.5
+      }
+    },
+    {
+      "name": "奥体场馆",
+      "places": [
+        "beijing-water-cube",
+        "beijing-bird-nest",
+        "beijing-olympic-tower",
+        "beijing-ice-ribbon",
+        "beijing-olympic"
+      ]
+    },
+    {
+      "name": "国贸天际线",
+      "places": [
+        "beijing-cctv-headquarters",
+        "beijing-china-zun",
+        "beijing-cbd",
+        "beijing-sanlitun"
+      ]
+    },
+    {
+      "name": "海淀校园",
+      "places": [
+        "beijing-peking-university",
+        "beijing-tsinghua-university",
+        "beijing-yuanmingyuan",
+        "beijing-summer-palace"
+      ]
+    },
+    {
+      "name": "朝阳街区",
+      "places": [
+        "beijing-798-art-zone",
+        "beijing-liangma-river",
+        "beijing-sanlitun"
+      ]
+    },
+    {
+      "name": "玉渊潭",
+      "places": [
+        "beijing-central-tv-tower",
+        "beijing-yuyuantan",
+        "beijing-beijing-west"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "name": "联合国教科文组织 · 北京中轴线地图",
+      "url": "https://whc.unesco.org/en/list/1714/maps/"
+    },
+    {
+      "name": "北京市政府 · 中轴线沿线景点",
+      "url": "https://english.beijing.gov.cn/travellinginbeijing/citytours/202006/t20200608_1918916.html"
+    },
+    {
+      "name": "北京市政府 · 奥林匹克公园",
+      "url": "https://english.beijing.gov.cn/travellinginbeijing/focus/202012/t20201214_2164198.html"
+    },
+    {
+      "name": "北京市政府 · 颐和园",
+      "url": "https://english.beijing.gov.cn/specials/strollthroughbeijing/imperialgardens/202611/t20261109_4938611.html"
+    },
+    {
+      "name": "OMA · 央视总部大楼",
+      "url": "https://www.oma.com/projects/cctv-headquarters"
+    },
+    {
+      "name": "KPF · 中国尊",
+      "url": "https://www.kpf.com/project/citic-tower-china-zun"
+    },
+    {
+      "name": "北京市政府 · 中央电视塔",
+      "url": "https://english.beijing.gov.cn/travellinginbeijing/attractions/202603/t20260320_4562520.html"
+    },
+    {
+      "name": "北京市政府 · 玉渊潭公园",
+      "url": "https://english.beijing.gov.cn/beijinginfo/culture/beijingtownscape/parks/202401/t20240116_3536974.html"
+    },
+    {
+      "name": "北京大学 · 燕园地标",
+      "url": "https://www.pku.edu.cn/visit.html"
+    },
+    {
+      "name": "清华大学 · 大礼堂",
+      "url": "https://www.redweb.tsinghua.edu.cn/info/1023/1780.htm"
+    },
+    {
+      "name": "北京市政府 · 798艺术区",
+      "url": "https://english.beijing.gov.cn/forum/2026citytour/citytourright/202610/t20261002_4889380.html"
+    },
+    {
+      "name": "北京市政府 · 亮马河",
+      "url": "https://english.beijing.gov.cn/travellinginbeijing/attractions/202603/t20260323_4563863.html"
+    },
+    {
+      "name": "北京市旅游 · 南锣鼓巷的胡同与四合院",
+      "url": "https://english.visitbeijing.com.cn/article/4FYfqejIeRN"
+    },
+    {
+      "name": "北京市政府 · 什刹海步行线路",
+      "url": "https://english.beijing.gov.cn/travellinginbeijing/hotroutes/202406/t20240627_3730281.html"
+    },
+    {
+      "name": "Mapcarta · 方庄街区",
+      "url": "https://mapcarta.com/N8987580503"
+    },
+    {
+      "name": "Olympedia · 国家速滑馆",
+      "url": "https://www.olympedia.org/venues/2140"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
 import { californiaPlaces, internationalConnections, isInternationalLocation, isCaliforniaLocalLocation } from '../runtime/california';
+import { beijingPlaces, beijingConnections, isBeijingLocation } from '../runtime/beijing';
 import { worldSceneRoster, worldScenePosition } from '../runtime/world-presence';
 import { getSceneArea, sceneLocationId, scenePersonLabel } from '../runtime/scene-context';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
@@ -32,6 +33,7 @@ import type { ShellActions, ShellModel } from './types';
 import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
 import CaliforniaSandbox from './CaliforniaSandbox.vue';
+import BeijingSandbox from './BeijingSandbox.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
@@ -41,6 +43,9 @@ import openAiMark from '../../assets/openai-mark.svg?inline';
 
 const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
 const emit = defineEmits<{ travelled: [] }>();
+const showBeijing = ref(isBeijingLocation(props.model.state.locationId));
+watch(() => props.model.state.locationId, id => { showBeijing.value = isBeijingLocation(id); });
+function beijingQuote(id: string) { return getNovelTravelQuote(props.model.state, id); }
 const locations = mapLocations;
 type Layer = 'district' | 'city' | 'province' | 'country' | 'world';
 const layers: { id: Layer; name: string; depth: number }[] = [
@@ -176,6 +181,7 @@ const cityDetail = computed(() => cityPlaces.find(place => place.id === selected
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
 const novelQuotes = computed(() => new Map(novelDestinations.map(place => [place.id, getNovelTravelQuote(props.model.state, place.id)])));
 const overseasRoutes = computed(() => internationalConnections(props.model.state.locationId));
+const beijingRoutes = computed(() => beijingConnections(props.model.state.locationId));
 function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
   return status ? `此刻${status.statusLabel} · ${status.hoursLabel}` : '';
@@ -183,7 +189,7 @@ function venueStatusText(locationId: string) {
 const localDestinations = computed(() => districtMapPlaces(detailDistrict.value ?? 'campus').map(place => ({ ...place, subtitle: place.id === 'haneda-airport' ? '国际航站楼' : place.kind === 'interior' ? '室内入口' : '室外地点' })));
 function destinationDisabled(id: string) {
   if (props.model.busy) return true;
-  if (props.novelMode || isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId)) {
+  if (props.novelMode || isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId) || isBeijingLocation(id) || isBeijingLocation(props.model.state.locationId)) {
     const quote = novelQuotes.value.get(id);
     return !quote || quote.alreadyThere || !!quote.blockedReason;
   }
@@ -205,7 +211,7 @@ function energyCalculationNote(id: string) {
 }
 async function travelTo(id: string) {
   if (destinationDisabled(id)) return;
-  const overseas = isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId);
+  const overseas = isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId) || isBeijingLocation(id) || isBeijingLocation(props.model.state.locationId);
   const saved = await runInteraction(props.model, props.actions, { type: props.novelMode || overseas ? 'novel_travel' : 'travel', locationId: id });
   if (saved && (props.novelMode || overseas)) emit('travelled');
 }
@@ -629,7 +635,8 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
 </script>
 
 <template>
-  <CaliforniaSandbox v-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
+  <BeijingSandbox v-if="showBeijing" :location-id="model.state.locationId" :routes="beijingRoutes" :clock="model.state.clock" :quote="beijingQuote" :busy="model.busy" @travel="travelTo" @back="showBeijing = false" />
+  <CaliforniaSandbox v-else-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
   <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
     <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
@@ -735,6 +742,12 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
           <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
           <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
+        </section>
+        <section v-if="novelMode || beijingRoutes.length || isBeijingLocation(model.state.locationId)" class="wm-overseas-routes" aria-label="北京旅行">
+          <small class="wm-kicker">中国 · 北京</small><h3>北京城市沙盘</h3>
+          <p class="wm-detail-note">可先预览故宫、水立方、央视总部、南锣鼓巷和方庄街区。出行必须沿开放的旅行连接逐站进行，预览不会结算。</p>
+          <button type="button" class="wm-outline-button" data-bj-preview @click="showBeijing = true">打开北京沙盘{{ isBeijingLocation(model.state.locationId) ? '' : '（预览）' }}</button>
+          <button v-for="leg in beijingRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-beijing-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
       </aside>
     </div>
