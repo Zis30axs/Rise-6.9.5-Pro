@@ -8,6 +8,7 @@ const emit = defineEmits<{ close: [] }>();
 
 const position = ref(0);
 const sweeping = ref(false);
+const readyOnly = ref(false);
 const finished = ref<{ tierLabel: string; dishName: string } | null>(null);
 let frame = 0;
 let origin = 0;
@@ -15,6 +16,8 @@ let alive = true;
 
 const session = computed(() => openCookingSession(props.model.state));
 const recipes = computed(() => cookingRecipeOptions(props.model.state));
+const readyRecipes = computed(() => recipes.value.filter(recipe => !recipe.blockedReason));
+const visibleRecipes = computed(() => readyOnly.value ? readyRecipes.value : recipes.value);
 const active = computed(() => session.value);
 
 function point(pos: number, radius = 86) {
@@ -87,7 +90,7 @@ function leave() {
 <template>
   <div class="bed-rest-overlay" @click.self="emit('close')">
     <section class="bed-rest-dialog cook-dialog" role="dialog" aria-modal="true" aria-label="下厨" data-cooking @click.stop>
-      <header><small>厨房</small><h2>下厨</h2><p>指针来回摆。看准了再停。</p></header>
+      <header><small>厨房</small><h2>下厨</h2><p v-if="active">指针来回摆。看准了再停。</p></header>
       <div v-if="finished" class="cook-result" data-cook-result>
         <h3>{{ finished.tierLabel }}</h3>
         <p>{{ finished.dishName }}已经放进背包。</p>
@@ -108,12 +111,21 @@ function leave() {
         <button type="button" class="bed-rest-cancel" data-cook-cancel @click="leave">先不煮了</button>
       </template>
       <template v-else>
+        <div class="cook-filter" role="group" aria-label="菜谱筛选">
+          <button type="button" :aria-pressed="!readyOnly" @click="readyOnly = false">全部菜谱</button>
+          <button type="button" :aria-pressed="readyOnly" @click="readyOnly = true">现在能做（{{ readyRecipes.length }}）</button>
+        </div>
         <div class="cook-recipes">
-          <button v-for="recipe in recipes" :key="recipe.id" type="button" class="cook-recipe" :data-cook-recipe="recipe.id" :disabled="model.busy || !!recipe.blockedReason" :title="recipe.blockedReason ?? recipe.blurb" @click="begin(recipe.id)">
+          <button v-for="recipe in visibleRecipes" :key="recipe.id" type="button" class="cook-recipe" :data-cook-recipe="recipe.id" :disabled="model.busy || !!recipe.blockedReason" :title="recipe.blurb" @click="begin(recipe.id)">
             <strong>{{ recipe.name }}</strong>
             <span>难度 {{ recipe.difficulty }} · {{ recipe.minutes }} 分钟 · 精力 −{{ recipe.energyCost }}</span>
-            <small>{{ recipe.blockedReason ?? recipe.ingredients.map(item => `${item.name} ${item.owned}/${item.needed}`).join(' · ') }}</small>
+            <small>食材折合 ¥{{ recipe.ingredientCost }}</small>
+            <small class="cook-ingredients" aria-label="食材库存和所需份数">
+              <span v-for="item in recipe.ingredients" :key="item.id" :class="{ 'cook-missing': item.owned < item.needed }">{{ item.name }} {{ item.owned }}/{{ item.needed }}</span>
+            </small>
+            <small v-if="recipe.blockedReason">{{ recipe.blockedReason }}</small>
           </button>
+          <p v-if="!visibleRecipes.length" role="status">现在没有能做的菜。</p>
         </div>
         <button type="button" class="bed-rest-cancel" data-cook-close @click="emit('close')">离开</button>
       </template>

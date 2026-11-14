@@ -1,0 +1,73 @@
+{
+  "baseCommit": "085ee24e249162098dda407d947502ee297b5881",
+  "testedCodeCommit": "4ca77c74fc4e4254f26d8d4ea34fd12b56300722",
+  "presentation": "novel",
+  "browser": "Chromium / Playwright",
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "verified": [
+        "24 items, packs, purchase",
+        "16 recipes, scroll, filter",
+        "two portions consumed, result saved",
+        "cookbook layout"
+      ],
+      "screenshots": {
+        "shelf": "1440x900-shelf.webp",
+        "cook": "1440x900-cook.webp"
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "verified": [
+        "24 items, packs, purchase",
+        "16 recipes, scroll, filter",
+        "two portions consumed, result saved",
+        "cookbook layout"
+      ],
+      "screenshots": {
+        "shelf": "1280x800-shelf.webp",
+        "cook": "1280x800-cook.webp"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "verified": [
+        "24 items, packs, purchase",
+        "16 recipes, scroll, filter",
+        "two portions consumed, result saved",
+        "cookbook layout"
+      ],
+      "screenshots": {
+        "shelf": "390x844-shelf.webp",
+        "cook": "390x844-cook.webp"
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "verified": [
+        "24 items, packs, purchase",
+        "16 recipes, scroll, filter",
+        "two portions consumed, result saved",
+        "cookbook layout"
+      ],
+      "screenshots": {
+        "shelf": "320x568-shelf.webp",
+        "cook": "320x568-cook.webp"
+      }
+    }
+  ],
+  "vitest": {
+    "filesPassed": 6,
+    "testsPassed": 43
+  },
+  "typecheckPassed": true,
+  "embeddedPhoneBuildPassed": true,
+  "productionBundlePassed": true,
+  "realTavernSessionTested": false,
+  "physicalTauriTavernTested": false
+}

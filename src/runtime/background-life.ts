@@ -344,7 +344,7 @@ function choose(state: WorldState, owner: ProtagonistId, at: number, reserved = 
     const foods = getInventoryCatalog().filter(item => item.category !== 'cigarette' && item.effects.satiety > 0 && current.inventory.some(row => row.itemId === item.id && row.quantity > 0));
     const food = foods.find(item => item.category === 'meal') ?? foods[0];
     if (food) { plan('meal', food.useMinutes, `吃了自己背包中的${food.name}`, food.id); return true; }
-    const outstanding = p.orders.some(order => order.owner === owner && (order.status === 'paid' || order.status === 'delivered') && storeCatalog.some(item => item.id === order.itemId && item.category !== 'cigarette'));
+    const outstanding = p.orders.some(order => order.owner === owner && (order.status === 'paid' || order.status === 'delivered') && storeCatalog.some(item => item.id === order.itemId && item.category !== 'cigarette' && item.category !== 'ingredient'));
     if (!outstanding && p.devices[owner].notifications.length < 198 && p.orders.length < 500 && p.operations.length < 1998) {
       const preference = owner === 'soyo' ? ['meal-standard', 'meal-basic'] : ['meal-basic', 'meal-standard'];
       const item = preference.map(itemId => storeCatalog.find(item => item.id === itemId)!).find(item => FICTIONAL_CARDS.some(card => p.accounts.people[owner].cards[card] >= Math.round((item.price + TOKYO_DELIVERY_FEE) * 100)));

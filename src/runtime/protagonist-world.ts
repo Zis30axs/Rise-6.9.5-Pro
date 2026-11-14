@@ -4,7 +4,8 @@ import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneComma
 import type { StoryAction, WorldState, WorldAction } from '../frontend/types';
 import { changeNetworkFollow, networkOwnerId, parseInternetState, registerNetworkGuests, type InternetState } from './network-identities';
 import { appiePayBalance, applyCardTransaction, EMMA_START_CENTS, FICTIONAL_CARDS, makeDualLedger, PROTAGONISTS, PROTAGONIST_PERSON_IDS, PROTAGONIST_PERSON_ID_LIST, protagonistForPerson, recordPhoneAccess, RENAKO_START_CENTS, type DualProtagonistLedger, type FictionalCardId, type ProtagonistId } from './dual-protagonists';
-import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog } from './convenience-store';
+import { initialPlayerNeeds, INVENTORY_ITEM_LIMIT, storeCatalog, type StoreItem } from './convenience-store';
+import { legacyCookingIngredientPrices } from './cooking-catalog';
 import { emmaInitialFriendContacts, knownProtagonistContact, renakoInitialFriendContacts, sakikoInitialBandContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { getCampusInterior } from './campus-interiors';
@@ -144,6 +145,16 @@ const array = <T>(x: unknown, max: number, parse: (x: unknown) => T): T[] => Arr
 const distinct = <T extends {id: string}>(rows: T[]): T[] => new Set(rows.map(x => x.id)).size === rows.length ? rows : fail('重复 ID');
 const share = (x: unknown): DeviceState['share'] => x === 'none' || x === 'read' || x === 'write' ? x : fail('共享范围无效');
 const money = (x: number) => { const result = Math.round(x * 100); if (Math.abs(result / 100 - x) > 1e-7) fail('金额最多两位小数'); return integer(result); };
+
+function orderPackSize(item: StoreItem, order: Pick<PhoneOrder, 'quantity' | 'kind' | 'totalCents'>, legacyMoney = false): number {
+  const fee = order.kind === 'delivery' ? TOKYO_DELIVERY_FEE : 0;
+  const divisor = legacyMoney ? TOKYO_MONEY_FACTOR : 1;
+  const totalAt = (price: number) => money((price * order.quantity + fee) / divisor);
+  if (order.totalCents === totalAt(item.price)) return item.packSize;
+  const legacyPrice = legacyCookingIngredientPrices.get(item.id);
+  if (legacyPrice !== undefined && order.totalCents === totalAt(legacyPrice)) return 1;
+  return fail('订单金额无效');
+}
 
 function defaultDevice(): DeviceState { return { locked: false, share: 'none', calendar: [], notifications: [] }; }
 function emmaPersonalState(s: Pick<WorldState, 'scene' | 'clock'>): PersonalState {
@@ -298,8 +309,9 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     const o = exact(raw,['id','owner','actor','kind','itemId','quantity','card','totalCents','address','due','status']);
     const item = storeCatalog.find(x => x.id === o.itemId); if (!item || !['shop','delivery'].includes(String(o.kind)) || !['paid','delivered','received','cancelled'].includes(String(o.status))) return fail('订单无效');
     const quantity = integer(o.quantity,20,1), totalCents = integer(o.totalCents);
-    if (totalCents !== money((legacyMoney ? item.price / TOKYO_MONEY_FACTOR : item.price) * quantity + (o.kind === 'delivery' ? (legacyMoney ? TOKYO_DELIVERY_FEE / TOKYO_MONEY_FACTOR : TOKYO_DELIVERY_FEE) : 0))) fail('订单金额无效');
-    return {id:identifier(o.id),owner:actor(o.owner),actor:actor(o.actor),kind:o.kind as PhoneOrder['kind'],itemId:item.id,quantity,card:card(o.card),totalCents,address:string(o.address,80),due:integer(o.due,525600000),status:o.status as PhoneOrder['status']};
+    const kind = o.kind as PhoneOrder['kind'];
+    orderPackSize(item, { kind, quantity, totalCents }, legacyMoney);
+    return {id:identifier(o.id),owner:actor(o.owner),actor:actor(o.actor),kind,itemId:item.id,quantity,card:card(o.card),totalCents,address:string(o.address,80),due:integer(o.due,525600000),status:o.status as PhoneOrder['status']};
   }));
   const operations = distinct(array(p.operations,2000,raw => {
     const r=exact(raw,['id','actor','owner','command']); return {id:identifier(r.id),actor:actor(r.actor),owner:actor(r.owner),command:string(r.command,2000)};
@@ -676,7 +688,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
     case 'receive_order': {
       const order=p.orders.find(x=>x.id===command.id&&x.owner===owner);if(!order) fail('订单不存在');if(order.status==='received') break;
       if(order.status!=='delivered'||s.locationId!==order.address) fail('请在配送完成后到收货地点领取');
-      const item=storeCatalog.find(x=>x.id===order.itemId)!,existing=s.inventory.find(x=>x.itemId===item.id),quantity=(existing?.quantity??0)+item.packSize*order.quantity;
+      const item=storeCatalog.find(x=>x.id===order.itemId)!,existing=s.inventory.find(x=>x.itemId===item.id),quantity=(existing?.quantity??0)+orderPackSize(item,order)*order.quantity;
       if(quantity>INVENTORY_ITEM_LIMIT) fail('背包容量不足');if(existing) existing.quantity=quantity;else s.inventory.push({itemId:item.id,quantity});
       order.status='received';notify(s,owner,`order:${order.id}:received`,`${protagonistNames[who]}已领取订单。`);break;
     }

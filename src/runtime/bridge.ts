@@ -143,7 +143,7 @@ const STORY_PROTOCOL_PARTS = [
   `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、store.items、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   COURT_PROMPT_RULES.observation,
-  '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用；{"type":"buy","itemId":"商品ID","quantity":1}在便利店买日用品，或在街角书店旁的文具店按价购买文具，均直接进背包，需先实际到场且营业。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 取自 cafeMenu，quantity 为 1–20。{"type":"use","itemId":"商品ID"}仅使用食品或消耗品，消耗一单位。不可对可装备文具执行 use。购买不自动使用；不得重复收费、增加学习点。',
+  '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用；{"type":"buy","itemId":"商品ID","quantity":1}在便利店买日用品，或在街角书店旁的文具店按价购买文具，均直接进背包，需先实际到场且营业。buy 的 quantity 是包装数量，每包包含 packSize 个使用单位，未列出时为 1。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 取自 cafeMenu，quantity 为 1–20。{"type":"use","itemId":"商品ID"}仅使用可直接食用的成品或消耗品，消耗一单位。烹饪食材和可装备文具不可 use。购买不自动使用；不得重复收费、增加学习点。',
   '装备格式：{"type":"equip","itemId":"stationery-r27et1","slot":"permanent-1"}将背包中的文具放入常驻道具栏；另一个常驻道具栏为 permanent-2，特殊道具栏为 special；slot=null 表示卸下。同栏新道具替换旧道具，旧道具留背包；只可装备自身持有、分类匹配的道具。R-27ET1 是导弹造型的学习用笔，500 日元一支；装备后本专业及跨专业学习点 +25%（按半点取整），多支不叠加。学习的精确结果由程序结算。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
@@ -411,7 +411,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const alreadyInNarrative = new Set([...narrative.recentLife, ...narrative.knownExchanges].map(entry => entry.id));
       const storeAvailability = getStoreAvailability(snapshot);
       const minimalStore = storeAvailability.available || topics.shopping
-        ? storeCatalog.map(({ id, name, price, category }) => ({ id, name, price, category })) : [];
+        ? storeCatalog.map(({ id, name, price, category, packSize }) => ({ id, name, price, category, ...(packSize > 1 ? { packSize } : {}) })) : [];
       // Small permanent ID/name index keeps natural-language shopping possible
       // even when an indirect request doesn't match the topic hint regex.
       const storeNameIndex = storeCatalog.map(({ id, name }) => ({ id, name }));

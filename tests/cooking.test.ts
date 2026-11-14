@@ -5,12 +5,13 @@ import type { ShellModel, WorldAction, WorldState } from '../src/frontend/types'
 import { getCampusInterior } from '../src/runtime/campus-interiors';
 import {
   COOK_TRACK_END, COOK_ZONE_WIDTHS, cookingDishItems, cookingIngredientItems, cookingLlmPayload,
-  cookingRecipeOptions, judgeCooking, kitchenAt, kitchenResidences, openCookingSession, placeCookingZones,
+  cookingRecipeOptions, cookingRecipes, judgeCooking, kitchenAt, kitchenResidences, openCookingSession, placeCookingZones,
   zoneWidths, type CookingSession,
 } from '../src/runtime/cooking';
-import { getInventoryCatalog, storeCatalog } from '../src/runtime/convenience-store';
+import { getInventoryCatalog, getUseItemQuote, storeCatalog } from '../src/runtime/convenience-store';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists, personState, protagonistNames } from '../src/runtime/protagonist-world';
+import { TOKYO_DELIVERY_FEE } from '../src/runtime/tokyo-world';
 
 function pantry(quantity = 2): WorldState['inventory'] {
   return cookingIngredientItems.map(item => ({ itemId: item.id, quantity }));
@@ -80,6 +81,41 @@ describe('cooking zones', () => {
 });
 
 describe('cooking settlement', () => {
+  it('buys packs and uses the exact recipe portions only on successful settlement', () => {
+    const market = { ...createInitialState(), locationId: 'convenience' };
+    const bought = reduceState(market, { type: 'buy_item', itemId: 'ingredient-egg', quantity: 1 });
+    expect(bought.player.balance).toBe(market.player.balance - 144);
+    expect(bought.inventory).toContainEqual({ itemId: 'ingredient-egg', quantity: 6 });
+    expect(() => reduceState(bought, { type: 'use_item', itemId: 'ingredient-egg' })).toThrow(/下厨/);
+
+    const ingredients = [{ itemId: 'ingredient-rice', quantity: 1 }, { itemId: 'ingredient-egg', quantity: 1 },
+      { itemId: 'ingredient-vegetable', quantity: 1 }, { itemId: 'ingredient-soy', quantity: 1 }];
+    const short = atKitchen(bought, 'emma-yuki-home', ingredients);
+    const start = { type: 'cook_begin', recipeId: 'egg-fried-rice' } as const;
+    const option = cookingRecipeOptions(short).find(recipe => recipe.id === start.recipeId)!;
+    expect(option.ingredients).toContainEqual({ id: 'ingredient-egg', name: '鸡蛋', owned: 1, needed: 2 });
+    expect(option.ingredientCost).toBe(193);
+    expect(option.blockedReason).toMatch(/食材/);
+    expect(() => reduceState(short, start)).toThrow(/食材/);
+
+    const stocked = { ...short, inventory: short.inventory.map(row => row.itemId === 'ingredient-egg' ? { ...row, quantity: 3 } : row) };
+    const started = reduceState(stocked, start);
+    const session = openCookingSession(started)!;
+    const stop = { type: 'cook_settle', sessionId: session.id, position: session.perfectHi } as const;
+    expect(() => reduceState({ ...started, inventory: ingredients }, stop)).toThrow(/食材/);
+    expect(ingredients[0]?.quantity).toBe(1);
+    const done = reduceState(started, stop);
+    expect(done.inventory.filter(row => row.itemId.startsWith('ingredient-') || row.itemId.startsWith('dish-'))).toEqual([
+      { itemId: 'ingredient-egg', quantity: 1 }, { itemId: 'dish-egg-fried-rice-perfect', quantity: 1 },
+    ]);
+    expect(done.player.balance).toBe(started.player.balance);
+    expect(cookingLlmPayload(done)?.ingredients).toContainEqual({ id: 'ingredient-egg', name: '鸡蛋', quantity: 2 });
+    const saved = parseState(JSON.parse(JSON.stringify(done)));
+    const eaten = reduceState(saved, { type: 'use_item', itemId: 'dish-egg-fried-rice-perfect' });
+    expect(eaten.inventory).toEqual(saved.inventory.filter(row => row.itemId !== 'dish-egg-fried-rice-perfect'));
+    expect(eaten.player).toEqual(getUseItemQuote(saved, 'dish-egg-fried-rice-perfect').playerAfter);
+  });
+
   it('refuses to start without ingredients and consumes nothing', () => {
     const state = atKitchen(createInitialState(), 'emma-yuki-home', [{ itemId: 'ingredient-miso', quantity: 1 }]);
     expect(cookingRecipeOptions(state).find(recipe => recipe.id === 'miso-soup')?.blockedReason).toMatch(/食材/);
@@ -169,6 +205,53 @@ describe('cooking settlement', () => {
     const encoded = JSON.stringify(facts);
     expect(encoded).not.toMatch(/world_actions|buy_item|use_item|cook_settle|cook_begin|扣除|写入背包|消耗食材|inventory|setQuantity/);
     expect(Object.keys(facts ?? {})).not.toContain('inventory');
+  });
+});
+
+describe('cooking catalog balance', () => {
+  it('keeps portions purchasable, provides a reason to cook, and preserves the time trade-off', () => {
+    const options = cookingRecipeOptions(atKitchen(createInitialState()));
+    const ingredients = new Map(cookingIngredientItems.map(item => [item.id, item]));
+    const used = new Set(cookingRecipes.flatMap(recipe => recipe.ingredients.map(item => item.id)));
+    expect(used).toEqual(new Set(ingredients.keys()));
+    const bento = storeCatalog.find(item => item.id === 'meal-standard')!;
+    for (const recipe of cookingRecipes) {
+      const { perfect, normal, fail } = recipe.dishes;
+      expect(new Set(recipe.ingredients.map(item => item.id)).size).toBe(recipe.ingredients.length);
+      for (const { id, quantity } of recipe.ingredients) {
+        expect(ingredients.has(id)).toBe(true);
+        expect(Number.isInteger(quantity) && quantity > 0).toBe(true);
+      }
+      expect(fail.kcal).toBeLessThan(normal.kcal);
+      expect(normal.kcal).toBeLessThan(perfect.kcal);
+      expect(fail.effects.satiety).toBeLessThan(normal.effects.satiety);
+      expect(normal.effects.satiety).toBeLessThan(perfect.effects.satiety);
+      expect(fail.effects.stress).toBeGreaterThan(0);
+      expect(normal.effects.energy - recipe.energyCost).toBeGreaterThan(0);
+      if (normal.kcal >= 400) {
+        expect(options.find(option => option.id === recipe.id)!.ingredientCost).toBeLessThan(bento.price);
+        expect(recipe.minutes + normal.useMinutes).toBeGreaterThan(bento.useMinutes);
+        expect(normal.effects.energy - recipe.energyCost).toBeLessThan(bento.effects.energy);
+      }
+    }
+  });
+
+  it('loads previous phone orders and delivers the package size paid for', () => {
+    const state = parseState(enableProtagonists(createInitialState()));
+    const placed = reduceState(state, { type: 'phone_app', owner: 'soyo', requestId: 'egg-order',
+      command: { type: 'order', kind: 'delivery', itemId: 'ingredient-egg', card: 'gpt', quantity: 2, address: state.locationId } });
+    expect(placed.protagonists!.orders[0]?.totalCents).toBe((144 * 2 + TOKYO_DELIVERY_FEE) * 100);
+    const saved = JSON.stringify(placed);
+    const previous = JSON.parse(saved) as WorldState;
+    previous.protagonists!.orders[0]!.totalCents = (150 * 2 + TOKYO_DELIVERY_FEE) * 100;
+    const invalid = JSON.parse(saved) as WorldState;
+    invalid.protagonists!.orders[0]!.totalCents += 1;
+    expect(() => parseState(invalid)).toThrow(/订单金额/);
+    const receive = (input: WorldState) => reduceState(reduceState(parseState(input), { type: 'wait', minutes: 30 }), {
+      type: 'phone_app', owner: 'soyo', requestId: 'egg-receive', command: { type: 'receive_order', id: 'egg-order' },
+    });
+    expect(receive(JSON.parse(saved)).inventory).toContainEqual({ itemId: 'ingredient-egg', quantity: 12 });
+    expect(receive(previous).inventory).toContainEqual({ itemId: 'ingredient-egg', quantity: 2 });
   });
 });
 

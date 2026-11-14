@@ -405,7 +405,7 @@ const cookingStats = computed(() => {
   return {
     settledTotal,
     recipeCount,
-    recipes: cookingRecipes.slice(0, 6),
+    recipes: cookingRecipes,
     percent: Math.min(100, Math.round((settledTotal / Math.max(1, recipeCount)) * 100)),
   };
 });
