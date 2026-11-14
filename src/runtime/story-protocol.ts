@@ -128,7 +128,7 @@ export function validateOtherSideEvents(value: unknown, state: WorldState): Othe
 }
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
-export function validateGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
+export function validateGeneratedStory(value: unknown, state: WorldState, replayTurnId?: string): GeneratedStory {
   const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide', 'returnStory', 'strategyUpdates', 'strategyMajor']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
@@ -162,7 +162,7 @@ export function validateGeneratedStory(value: unknown, state: WorldState): Gener
     parsed.returnStory = text(result.returnStory, STORY_OUTPUT_LIMITS.storyReturnText, '回到当前视角的正文');
   }
   if (Object.hasOwn(result, 'contactRequests')) parsed.contactRequests = validateContactProposals(result.contactRequests);
-  if (Object.prototype.hasOwnProperty.call(result, 'worldActions')) parsed.worldActions = validateStoryActions(result.worldActions, state);
+  if (Object.prototype.hasOwnProperty.call(result, 'worldActions')) parsed.worldActions = validateStoryActions(result.worldActions, state, replayTurnId);
   if (Object.prototype.hasOwnProperty.call(result, 'worldEvents')) {
     if (!Array.isArray(result.worldEvents) || result.worldEvents.length > STORY_OUTPUT_LIMITS.worldEvents) return invalid('世界事件数量');
     parsed.worldEvents = result.worldEvents.map((value, index) => {
@@ -264,7 +264,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
 }
 
 /** Both legacy JSON and tagged narrative share one strict validation path. */
-export function parseGeneratedStory(value: unknown, state: WorldState): GeneratedStory {
+export function parseGeneratedStory(value: unknown, state: WorldState, replayTurnId?: string): GeneratedStory {
   if (typeof value !== 'string' || !value.trim() || value.length > STORY_OUTPUT_LIMITS.protocolText) return invalid('回复为空或过长');
   let source = value.trim();
   if (source.startsWith('```')) {
@@ -285,6 +285,6 @@ export function parseGeneratedStory(value: unknown, state: WorldState): Generate
     ...(Object.prototype.hasOwnProperty.call(envelope, 'weekly_summary') ? { weeklySummary: envelope.weekly_summary } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_updates') ? { strategyUpdates: envelope.strategy_updates } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_major') ? { strategyMajor: envelope.strategy_major } : {}),
-  }, state);
+  }, state, replayTurnId);
 }
 

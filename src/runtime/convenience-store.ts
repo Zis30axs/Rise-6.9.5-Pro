@@ -90,8 +90,28 @@ export function getServiceTakeawayItem(serviceId: string): StoreItem | null {
       stress: service.effects.stress, health: service.effects.health, morale: service.effects.morale } };
 }
 
+export const MUTSUMI_CUCUMBER_ITEM_ID = 'mutsumi-cucumber';
+
+/** Special items obtained via NPC traits rather than retail shelves. */
+export const npcTraitGiftItems: readonly StoreItem[] = Object.freeze([
+  Object.freeze({
+    id: MUTSUMI_CUCUMBER_ITEM_ID,
+    name: '若叶睦种的小黄瓜',
+    brand: '若叶宅邸温室',
+    tier: 'standard' as const,
+    category: 'snack' as const,
+    price: 0,
+    packSize: 1,
+    purchaseUnit: '根',
+    useUnit: '根',
+    kcal: 45,
+    useMinutes: 5,
+    effects: Object.freeze({ energy: 8, satiety: 10, stress: -5, health: 4, morale: 5 }),
+  }),
+]);
+
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems];
+  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems, ...npcTraitGiftItems];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {

@@ -7,6 +7,8 @@ import { agendaTargetResident, residentSocialAgendaPresence } from './social-age
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentGroupById, residentGroupForNpc, residentPresence, WATANARE_GROUP_ID, WATANARE_GROUP_NAME, WATANARE_QUINTET_IDS } from './npc-cast';
 import { affinityRelation } from './affinity-tiers';
+import { mutsumiBalanceStatus, mutsumiBalanceValue } from './mutsumi-balance';
+import { MUTSUMI_OWNER_ID } from './strategy';
 
 export interface ContactProposal {
   kind: 'contact' | 'group';
@@ -399,10 +401,21 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   const extraGroupProtagonists = source.channel === 'group'
     ? social.groups.filter(g => g.id === source.targetId && !baseGroupMembers.some(m => m.id === PROTAGONIST_PERSON_IDS[g.owner])).map(g => ({ id: g.owner, name: protagonistNames[g.owner] }))
     : [];
+  const mutsumiBalance = actorId === MUTSUMI_OWNER_ID
+    ? mutsumiBalanceStatus(mutsumiBalanceValue(s.protagonists?.strategy))
+    : null;
   return {
     task: 'reply_to_npc_sms', actor: { id: actorId, name: resident?.name ?? contact?.name ?? meeting?.name,
       worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null,
-      bond: contact ? affinityRelation(contact.affinity, contact.relationNote) : null },
+      bond: contact ? affinityRelation(contact.affinity, contact.relationNote) : null,
+      ...(mutsumiBalance ? {
+        mutsumiBalance: {
+          value: mutsumiBalance.value,
+          tierLabel: mutsumiBalance.tierLabel,
+          posture: mutsumiBalance.narrativeHint,
+        },
+      } : {}),
+    },
     sender: { id: source.owner, name: protagonistNames[source.owner] },
     message: source, clock: s.clock, minute: gameMinute(s),
     invitation: s.protagonists?.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,

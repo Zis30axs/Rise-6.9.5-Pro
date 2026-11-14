@@ -2,6 +2,7 @@ import { socialEquipmentMultiplier } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { adjustEnergy } from './energy';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
+import { advisorModifierMultiplier } from './npc-traits';
 
 export const SOCIAL_SKILL_IDS = ['perception', 'empathy', 'expression', 'persuasion', 'organizing', 'mediation'] as const;
 export type SocialSkillId = typeof SOCIAL_SKILL_IDS[number];
@@ -284,8 +285,10 @@ export function applySocialSkillTurn(state: WorldState, actions: readonly StoryA
   const person = skillState.people[owner];
   const earnedToday = person.daily.day === next.clock.day ? person.daily.earned : 0;
   const multiplier = socialEquipmentMultiplier(equipmentBefore, owner, actions);
+  const advisorRate = advisorModifierMultiplier(equipmentBefore, owner, 'social_xp_rate');
+  const combinedMultiplier = advisorRate === 1 ? multiplier : multiplier * advisorRate;
   const previousRemainder = person.xpRemainders?.[award.skillId] ?? 0;
-  const quarters = quote.possibleXp * multiplier * 4 + previousRemainder;
+  const quarters = Math.round(quote.possibleXp * combinedMultiplier * 4) + previousRemainder;
   const wanted = Math.floor(quarters / 4);
   const room = Math.max(0, Math.min(DAILY_XP_CAP - earnedToday, XP_CAP - person.xp[award.skillId]));
   const gained = Math.min(wanted, room);

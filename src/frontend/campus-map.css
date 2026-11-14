@@ -132,6 +132,9 @@
   gap:12px; padding:5px 12px; background:#284e43eb; color:#fff1cc;
   border:1px solid #c2bc91; border-radius:8px; font-size:12px;
 }
+.world-map .tokyo-sandbox-person-detail { max-width:calc(100% - 24px); box-sizing:border-box; height:54px; overflow:hidden; }
+.world-map .tokyo-sandbox-person-detail button { flex:none; }
+.world-map .tokyo-sandbox-person[data-map-person-kind="passerby"] .cms-avatar-face { border-style:dashed; border-color:#bdc6b2; }
 .world-map .tokyo-sandbox-person-detail button { min-width:44px; min-height:44px; }
 .world-map .tokyo-sandbox-fallback {
   position:absolute; top:50%; left:50%; width:min(280px,85%);
@@ -159,3 +162,13 @@
   }
   .world-map .wm-mode-pill { padding:0 7px !important; font-size:10px !important; }
 }
+
+/* Dimensions match the shared collision boxes, including mobile hit targets. */
+.world-map .tokyo-sandbox-pin,.world-map .tokyo-sandbox-caption { box-sizing:border-box; width:128px; height:44px; min-height:44px; overflow:hidden; }
+.world-map .tokyo-sandbox-pin:not(.compact) > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.world-map .tokyo-sandbox-pin.compact { width:44px; height:44px; min-width:44px; min-height:44px; max-width:44px; }
+.world-map .wm-label-filters { display:flex; flex-wrap:wrap; gap:4px 12px; margin:10px 0; padding:4px 10px; border:1px solid #a8b79455; border-radius:8px; }
+.world-map .wm-label-filters legend { padding:0 5px; font-size:11px; }
+.world-map .wm-label-filters label { display:flex; align-items:center; gap:6px; min-height:44px; font-size:12px; cursor:pointer; }
+.world-map .wm-label-filters input { width:16px; height:16px; accent-color:#527555; }
+.world-map .wm-road-list summary { display:flex; align-items:center; min-height:44px; font-size:12px; cursor:pointer; }

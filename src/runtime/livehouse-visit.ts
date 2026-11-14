@@ -1,6 +1,7 @@
 import type { WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { PROTAGONISTS } from './dual-protagonists';
+import { advisorModifierMultiplier } from './npc-traits';
 import { residentPresence } from './npc-cast';
 import type { LocationService, LocationServiceEffects } from './location-services';
 
@@ -280,7 +281,12 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   const together = serviceId.endsWith('-band');
   const partners = practicePartners(state);
   const joined = together ? partners.filter(person => person.eligible && person.contactId) : [];
-  const gain = practiceGain(skillBefore, hours, joined.length > 0);
+  const baseGain = practiceGain(skillBefore, hours, joined.length > 0);
+  const advisorRate = advisorModifierMultiplier(authority ?? state, owner, 'practice_skill_rate');
+  const room = Math.max(0, INSTRUMENT_SKILL_CAP - skillBefore);
+  const gain = advisorRate === 1 || baseGain === 0
+    ? baseGain
+    : Math.min(room, Math.max(1, Math.round(baseGain * advisorRate)));
   let blockedCode: LivehouseBlockedCode | null = together && joined.length === 0 ? 'no_partner' : null;
   const names = joined.map(person => person.name).join('、');
   const rent = priced(plan.price);

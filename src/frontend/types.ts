@@ -182,6 +182,8 @@ export interface WorldState {
   mysteryVisitor?: import('../runtime/mystery-visitor').MysteryVisitorState;
   /** Independent receipts for the second mysterious visitor. */
   anthropicVisitor?: import('../runtime/mystery-visitor').MysteryVisitorState;
+  /** Per-protagonist daily meeting & trait gift receipts; absent in older saves. */
+  npcGiftDaily?: import('../runtime/npc-gift-traits').NpcGiftDailyState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number; equipped?: boolean | import('../runtime/equipment').EquipmentSlot }[];
@@ -206,6 +208,7 @@ export type WorldAction =
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | { type: 'strategy'; requestId: string; command: import('../runtime/strategy').StrategyCommand }
   | { type: 'society'; requestId: string; command: import('../runtime/society').SocietyCommand }
+  | { type: 'faction_focus'; requestId: string; command: import('../runtime/faction-focus').FactionFocusCommand }
   | ({ type: 'save_contact' } & ContactProfileInput)
   | { type: 'choose_academics'; majorId: string }
   | { type: 'correct_academics'; majorId: string; keepProgress: boolean }
@@ -266,6 +269,8 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'npc_trait_gift'; npcId: string; itemId: string; quantity: number; traitId: string; reason: string }
+  | { type: 'mutsumi_balance'; delta: number; reason: string }
   | { type: 'equip' | 'unequip'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }
   | { type: 'use'; itemId: string }
   | { type: 'interact'; interactionId: string }

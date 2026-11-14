@@ -612,16 +612,19 @@ import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { districtMapPlaces, isMapDistrict, locationDistrict, type MapDistrictId } from './map-districts';
 import type { MapCameraView } from './campus-map-layout';
+import { arrangeMapLabels, type MapLabelCandidate } from './map-label-layout';
 
 type MapEvent = { id: string; kind: string; label: string; icon: string; title: string; detail: string; x: number; y: number };
 type MapPerson = {
   contactId: string; name: string; personId?: string; portraitId?: CharacterPortraitId;
   protagonistId?: ProtagonistId; place?: { id: string };
   position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo';
+  kind?: 'person' | 'passerby';
+  districtId?: MapDistrictId;
 };
 type Pin = { id: string; name: string; x: number; y: number };
 type AnchoredPin = Pin & { anchorX: number; anchorY: number };
-type DistrictPin = Pin & { available: boolean; selected: boolean };
+type DistrictPin = AnchoredPin & { available: boolean; selected: boolean };
 type PlacePin = AnchoredPin & { disabled: boolean; current: boolean; number: number; compact: boolean };
 type PersonPin = AnchoredPin & MapPerson;
 type EventPin = AnchoredPin & { icon: string; kind: string; label: string; title: string };
@@ -634,6 +637,7 @@ const props = withDefaults(defineProps<{
   disabledIds?: string[];
   playerName?: string; playerId?: ProtagonistId;
   people?: MapPerson[]; roadEvents?: MapEvent[];
+  showPlaces?: boolean;
   pan?: { x: number; y: number };
   cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
   atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number; refreshToken?: number;
@@ -643,6 +647,7 @@ const props = withDefaults(defineProps<{
   disabledIds: () => [],
   people: () => [],
   roadEvents: () => [],
+  showPlaces: true,
   atmosphereMode: 'auto',
   clockMinutes: 780,
   refreshToken: 0,
@@ -651,6 +656,7 @@ const emit = defineEmits<{
   select: [districtId: MapDistrictId];
   travel: [locationId: string]; event: [eventId: string];
   scale: [value: { metersPerPixel: number }];
+  overflow: [count: number];
 }>();
 
 // Static import makes a missing source GLB a build error, never a silent empty glob.
@@ -668,7 +674,7 @@ const placePins = ref<PlacePin[]>([]);
 const personPins = ref<PersonPin[]>([]);
 const eventPins = ref<EventPin[]>([]);
 const leaderLines = ref<LeaderLine[]>([]);
-const playerPin = ref<Pin | null>(null);
+const playerPin = ref<AnchoredPin | null>(null);
 const selectedPerson = ref('');
 const cameraPosition = ref('');
 const cameraFlying = ref(false);
@@ -948,7 +954,7 @@ function render() {
     districtPins.value = tokyoDistricts.flatMap(district => {
       const p = project(district.x, district.z, 16);
       return p.visible ? [{
-        id: district.id, name: district.shortName, x: p.x, y: p.y,
+        id: district.id, name: district.shortName, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
         available: isMapDistrict(district.id), selected: props.selectedId === district.id,
       }] : [];
     });
@@ -956,30 +962,15 @@ function render() {
     districtPins.value = [];
   }
 
-  const places = props.scope === 'city' ? [] : districtMapPlaces(props.scope);
-  const occupiedPlaces: { x: number; y: number }[] = [];
-  const separate = (anchor: { x: number; y: number }, occupied: { x: number; y: number }[], gap: number, offsets: number[][]) => {
-    const placed = offsets
-      .map(([dx, dy]) => ({
-        x: Math.max(24, Math.min(width - 24, anchor.x + dx)),
-        y: Math.max(24, Math.min(height - 24, anchor.y + dy)),
-      }))
-      .find(cand => occupied.every(other => Math.hypot(cand.x - other.x, cand.y - other.y) >= gap))
-      ?? { x: anchor.x, y: anchor.y };
-    occupied.push(placed);
-    return placed;
-  };
+  const places = props.scope === 'city' || !props.showPlaces ? [] : districtMapPlaces(props.scope);
   placePins.value = places.flatMap((place, index) => {
     const point = tokyoLocationPosition(place.id, positionHint);
     if (!point) return [];
     const p = project(point.x, point.z, TOKYO_PIN_ELEVATION);
     if (!p.visible) return [];
     const compact = index >= 6 || width < 520;
-    const placed = separate(p, occupiedPlaces, compact ? 26 : 34, [
-      [0, 0], [0, -26], [0, 26], [-32, -16], [32, -16], [-32, 16], [32, 16], [0, -48], [0, 48],
-    ]);
     return [{
-      id: place.id, name: place.name, x: placed.x, y: placed.y, anchorX: p.x, anchorY: p.y,
+      id: place.id, name: place.name, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
       compact, number: index + 1,
       current: place.id === props.locationId,
       disabled: props.busy || place.id === props.locationId || props.disabledIds.includes(place.id),
@@ -987,39 +978,63 @@ function render() {
   });
   const playerScreen = player ? project(player.x, player.z, TOKYO_PIN_ELEVATION) : null;
   playerPin.value = playerScreen?.visible
-    ? { id: 'player', name: props.playerName || '当前位置', x: playerScreen.x, y: playerScreen.y } : null;
+    ? { id: 'player', name: props.playerName || '当前位置', x: playerScreen.x, y: playerScreen.y, anchorX: playerScreen.x, anchorY: playerScreen.y } : null;
 
-  const busyPins: { x: number; y: number }[] = playerPin.value ? [playerPin.value] : [];
   personPins.value = props.scope === 'city' ? [] : props.people.flatMap(person => {
+    if (person.districtId && person.districtId !== props.scope) return [];
     const world = person.position
-      ? projectOldTokyoPosition(person.position, positionHint)
+      ? projectOldTokyoPosition(person.position, person.districtId ?? positionHint)
       : (person.place ? tokyoLocationPosition(person.place.id, positionHint) : undefined);
     if (!world) return [];
     const point = project(world.x, world.z, TOKYO_PIN_ELEVATION);
     if (!point.visible) return [];
-    const chosen = separate(point, busyPins, 44, [[0, 0], [-46, 0], [46, 0], [0, -46], [0, 46], [-46, -46], [46, -46]]);
-    return [{ ...person, id: person.contactId, name: person.name, x: chosen.x, y: chosen.y, anchorX: point.x, anchorY: point.y }];
+    return [{ ...person, id: person.contactId, name: person.name, x: point.x, y: point.y, anchorX: point.x, anchorY: point.y }];
   });
-  const eventOccupied = [...placePins.value.map(pin => ({ x: pin.x, y: pin.y })), ...busyPins];
   eventPins.value = props.scope === 'city' ? [] : props.roadEvents.flatMap(event => {
+    if (locationDistrict(event.id) !== props.scope) return [];
     const destination = tokyoLocationPosition(event.id, positionHint);
     const world = destination && player
       ? { x: (destination.x + player.x) / 2, z: (destination.z + player.z) / 2 }
       : projectOldTokyoPosition({ x: event.x, z: event.y }, positionHint);
     const p = project(world.x, world.z, TOKYO_PIN_ELEVATION);
     if (!p.visible) return [];
-    const placed = separate(p, eventOccupied, 36, [
-      [0, 0], [0, -28], [0, 28], [-28, 0], [28, 0],
-    ]);
     return [{
       id: event.id, name: event.icon, icon: event.icon, kind: event.kind,
       label: event.label, title: event.title,
-      x: placed.x, y: placed.y, anchorX: p.x, anchorY: p.y,
+      x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
     }];
   });
+  const candidates: MapLabelCandidate[] = [
+    ...(playerPin.value ? [{ ...playerPin.value, id: 'player', width: 44, height: 44, priority: 0 }] : []),
+    ...personPins.value.map(pin => ({ ...pin, id: 'person:' + pin.id, width: 44, height: 44,
+      priority: pin.protagonistId ? 1 : pin.kind === 'passerby' ? 3 : 1.5 })),
+    ...placePins.value.map(pin => ({ ...pin, id: 'place:' + pin.id, width: pin.compact ? 44 : 128,
+      height: 44, priority: pin.current ? 2 : 4 })),
+    ...eventPins.value.map(pin => ({ ...pin, id: 'event:' + pin.id, width: 44, height: 44, priority: 5 })),
+    ...districtPins.value.map(pin => ({ ...pin, id: 'district:' + pin.id, width: 128, height: 44,
+      priority: pin.available ? 2 : 6 })),
+  ];
+  const layout = arrangeMapLabels(candidates, width, height, [
+    { x: width - 24, y: 23, width: 48, height: 46 },
+    { x: width / 2, y: height - 32, width, height: 64 },
+  ]);
+  function placeLabels<T extends AnchoredPin>(pins: T[], prefix: string): T[] {
+    return pins.flatMap(pin => {
+      const box = layout.get(prefix + pin.id);
+      return box ? [{ ...pin, x: box.x, y: box.y }] : [];
+    });
+  }
+  districtPins.value = placeLabels(districtPins.value, 'district:');
+  placePins.value = placeLabels(placePins.value, 'place:');
+  personPins.value = placeLabels(personPins.value, 'person:');
+  eventPins.value = placeLabels(eventPins.value, 'event:');
+  if (playerPin.value) playerPin.value = placeLabels([playerPin.value], '')[0] ?? null;
+  emit('overflow', candidates.length - layout.size);
   const leaderFor = (id: string, pin: AnchoredPin) => Math.hypot(pin.x - pin.anchorX, pin.y - pin.anchorY) > 2
     ? [{ id, x1: pin.anchorX, y1: pin.anchorY, x2: pin.x, y2: pin.y }] : [];
   leaderLines.value = [
+    ...districtPins.value.flatMap(pin => leaderFor('district:' + pin.id, pin)),
+    ...(playerPin.value ? leaderFor('player', playerPin.value) : []),
     ...placePins.value.flatMap(pin => leaderFor('place:' + pin.id, pin)),
     ...personPins.value.flatMap(pin => leaderFor('person:' + pin.contactId, pin)),
     ...eventPins.value.flatMap(pin => leaderFor('event:' + pin.id, pin)),
@@ -1238,7 +1253,7 @@ watch(() => ({
   panX: props.pan?.x ?? 0, panY: props.pan?.y ?? 0,
   selectedId: props.selectedId, locationId: props.locationId, position: props.position,
   disabledIds: props.disabledIds, playerId: props.playerId, playerName: props.playerName,
-  people: props.people, roadEvents: props.roadEvents,
+  people: props.people, roadEvents: props.roadEvents, showPlaces: props.showPlaces,
   cameraView: props.cameraView, decorative: props.decorative,
 }), (next, previous) => {
   if (next.scope !== previous.scope) {
@@ -1314,6 +1329,7 @@ onBeforeUnmount(() => {
         class="tokyo-sandbox-avatar tokyo-sandbox-person"
         :class="{ selected: selectedPerson === person.contactId }"
         :data-map-person-id="person.contactId"
+        :data-map-person-kind="person.kind ?? 'person'"
         :aria-label="'查看人物：' + person.name"
         :style="{ left: person.x + 'px', top: person.y + 'px' }"
         @click="selectedPerson = selectedPerson === person.contactId ? '' : person.contactId">
@@ -1323,7 +1339,7 @@ onBeforeUnmount(() => {
       <div v-if="selectedPerson && personPins.some(person => person.contactId === selectedPerson)"
         class="tokyo-sandbox-person-detail" role="status">
         {{ personPins.find(person => person.contactId === selectedPerson)?.name }}
-        <button type="button" @click="selectedPerson = ''">×</button>
+        <button type="button" aria-label="关闭人物信息" @click="selectedPerson = ''">×</button>
       </div>
     </template>
   </div>

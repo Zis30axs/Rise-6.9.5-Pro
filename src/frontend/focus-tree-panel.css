@@ -123,6 +123,44 @@
   background: rgba(8, 22, 35, 0.85);
 }
 
+.focus-panel .tno-command-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focus-panel .tno-viewer-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focus-panel .tno-viewer-label {
+  font-size: 0.72rem;
+  color: rgba(169, 233, 245, 0.82);
+  white-space: nowrap;
+}
+
+.focus-panel .tno-viewer-select {
+  max-width: 210px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 214, 232, 0.38);
+  background: rgba(10, 29, 44, 0.94);
+  color: #dcf8fc;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.focus-panel .tno-npc-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .focus-panel .tno-mode-buttons {
   display: flex;
   gap: 8px;
@@ -815,4 +853,96 @@
   .focus-panel .focus-decisions {
     grid-template-columns: 1fr;
   }
+}
+
+.focus-panel .tno-bop-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(56, 214, 232, 0.3);
+  background: linear-gradient(135deg, rgba(10, 32, 34, 0.86), rgba(14, 24, 42, 0.9));
+}
+
+.focus-panel .tno-bop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.focus-panel .tno-bop-head strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.86rem;
+  color: #e6fbff;
+}
+
+.focus-panel .tno-bop-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(24, 58, 76, 0.9);
+  border: 1px solid rgba(90, 212, 232, 0.4);
+  color: #b7eef8;
+}
+
+.focus-panel .tno-bop-pill.is-self {
+  background: rgba(34, 96, 68, 0.88);
+  border-color: rgba(104, 224, 152, 0.52);
+  color: #c2f9da;
+}
+
+.focus-panel .tno-bop-pill.is-mortis {
+  background: rgba(116, 44, 74, 0.88);
+  border-color: rgba(240, 118, 160, 0.56);
+  color: #ffd5e4;
+}
+
+.focus-panel .tno-bop-poles {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #96cbd6;
+}
+
+.focus-panel .tno-bop-track {
+  position: relative;
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(72, 187, 120, 0.6) 0%, rgba(140, 176, 196, 0.35) 50%, rgba(226, 88, 134, 0.62) 100%);
+  border: 1px solid rgba(155, 224, 240, 0.32);
+}
+
+.focus-panel .tno-bop-center-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1px;
+  background: rgba(235, 251, 255, 0.72);
+}
+
+.focus-panel .tno-bop-needle {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border: 2px solid #0e2432;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+}
+
+.focus-panel .tno-bop-summary {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #b7dde6;
 }

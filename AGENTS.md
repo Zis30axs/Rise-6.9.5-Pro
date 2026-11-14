@@ -6,6 +6,12 @@
 - Live2D 素材恢复与加载期间不显示默认校服或静态回退；切换动画保留本人 Live2D，身份切换清空旧说话人。相同服装不因环境触发变化重建，短暂遮挡只暂停。
 - 实现、单脚本样式要求和验证边界见 `integration/render-retention/README.md`。现有 Edge 与本地酒馆已检查，不代表 Tauri 手机真机验收；未运行 CI/Agent Edition。
 
+## 沙盘与叙事在场名单（2026-11-08）
+
+- `worldScenePeople` 仍是实际位置来源；`selectSceneRoster` / `worldSceneRoster` 统一沙盘、地点列表与 `scene.nearbyPeople`。室外固定人物与联系人 35 米内优先，随机行人 18 米内最多 8 人；固定人物不再被随机行人截断。好感不决定实际可见性，身份知情、同房间、赴约执行、离场和限制仍遵从原存档。
+- 7 米交流、原有手机接触权限不变；地点列表标出远处人物，模型收到 `canTalk` 与 `knownToPlayer`，不能把远望写成已经交谈或得知秘密。地图标签筛选不改变模型名单，不增加请求，不修改时钟或存档。
+- 人物、行人、地点、路况标签共用避让，移动头像有引线，短画布整齐排列；收起标签保留完整列表。说明与验证边界见 `integration/scene-roster/README.md`，优先于历史的地图好感筛选和最近 8 人规则。
+
 ## Xitter 与永久网络身份（2026-11-08）
 
 - 复用独立手机仓库 ST-iPhonie 的原论坛、AppStore、发帖和回复；内部应用键仍是 `forum`。`src/runtime/network-identities.ts` 管理全部世界书 `personId` 的固定账号、昵称、用户名、虚构邮箱和头像键，关注与路人登记复用 `phone_app` 事务和共享 `protagonists.internet`。

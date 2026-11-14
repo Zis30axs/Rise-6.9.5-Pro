@@ -5,22 +5,45 @@ import mygoBranchIcon from './assets/focus/mygo-branch.webp';
 import type { ShellActions, ShellModel } from './types';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import {
-  FOCUS_CATALOG, DECISION_CATALOG, TRAIT_CATALOG, SPIRIT_CATALOG,
-  canStartFocus, checkCondition, createStrategyState, focusWeight, focusBranchLocked,
-  type FocusDefinition, type DecisionDefinition, type StrategyCommand, type StrategyEffect,
+  FOCUS_CATALOG, DECISION_CATALOG, MUTSUMI_OWNER_ID, TRAIT_CATALOG, SPIRIT_CATALOG,
+  canStartFocus, checkCondition, createGameStrategyState, focusWeight, focusBranchLocked, mutsumiBalanceValue,
+  type FocusDefinition, type DecisionDefinition, type StrategyCommand, type StrategyEffect, type StrategyOwner,
 } from '../runtime/strategy';
+import { mutsumiBalanceStatus } from '../runtime/mutsumi-balance';
+import {
+  NPC_CIRCLE_STAT_LABELS,
+  NPC_FOCUS_DIRECTORY,
+  NPC_FOCUS_OWNER_NAMES,
+} from '../runtime/npc-focuses';
+import {
+  PRESET_NPC_TRAIT_CATALOG,
+  activeBandAdvisorTraits,
+  advisorDecisionAdjustments,
+  formatNpcTraitModifiers,
+  npcSelfExternalModifiers,
+} from '../runtime/npc-traits';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
-const actor = computed(() => activeProtagonist(props.model.state));
+const activeActor = computed(() => activeProtagonist(props.model.state));
+const viewTarget = ref<'active' | string>('active');
+const viewingNpc = computed(() => viewTarget.value !== 'active' && !!NPC_FOCUS_OWNER_NAMES[viewTarget.value]);
+const actor = computed<StrategyOwner>(() => viewingNpc.value ? viewTarget.value : activeActor.value);
+const viewerName = computed(() => viewingNpc.value ? (NPC_FOCUS_OWNER_NAMES[viewTarget.value] ?? viewTarget.value) : protagonistNames[activeActor.value]);
 const minute = computed(() => (props.model.state.clock.day - 1) * 1440 + props.model.state.clock.hour * 60 + props.model.state.clock.minute);
 const clockText = computed(() => `D${props.model.state.clock.day} · ${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
-const state = computed(() => props.model.state.protagonists?.strategy ?? createStrategyState(minute.value));
+const state = computed(() => props.model.state.protagonists?.strategy ?? createGameStrategyState(minute.value));
 const profile = computed(() => state.value.people[actor.value]);
+const mutsumiBalance = computed(() =>
+  actor.value === MUTSUMI_OWNER_ID ? mutsumiBalanceStatus(mutsumiBalanceValue(state.value)) : null,
+);
 const focuses = computed(() => FOCUS_CATALOG.filter(row => row.owner === actor.value));
-const decisions = computed(() => DECISION_CATALOG.filter(row => row.owner === actor.value));
+const decisions = computed(() => viewingNpc.value ? [] : DECISION_CATALOG.filter(row => row.owner === activeActor.value));
 const history = computed(() => state.value.history.filter(row => row.owner === actor.value).slice(-12).reverse());
 const current = computed(() => FOCUS_CATALOG.find(row => row.id === profile.value.active?.id) ?? null);
-const traits = computed(() => profile.value.traits.flatMap(id => TRAIT_CATALOG.filter(row => row.id === id)));
+const traits = computed(() => viewingNpc.value
+  ? (PRESET_NPC_TRAIT_CATALOG[actor.value] ?? []).map(item => ({ id: item.id, title: item.title, modifiers: item.modifiers }))
+  : profile.value.traits.flatMap(id => TRAIT_CATALOG.filter(row => row.id === id)));
+const activeAdvisorTraits = computed(() => viewingNpc.value ? [] : activeBandAdvisorTraits(props.model.state, activeActor.value));
 const spirits = computed(() => profile.value.spirits.flatMap(item => SPIRIT_CATALOG.filter(row => row.id === item.id)));
 const focusArtwork: Readonly<Record<string, string>> = {
   soyo_rebuild_crychic: crychicBranchIcon,
@@ -196,7 +219,8 @@ function dispatch(command: StrategyCommand) {
 }
 
 function setControl(controller: 'manual' | 'auto', includeInPrompt = profile.value.includeInPrompt) {
-  dispatch({ type: 'set_control', owner: actor.value, controller, includeInPrompt });
+  if (viewingNpc.value) return;
+  dispatch({ type: 'set_control', owner: activeActor.value, controller, includeInPrompt });
 }
 
 function available(focus: FocusDefinition) { return canStartFocus(state.value, actor.value, focus); }
@@ -229,17 +253,22 @@ function prerequisites(focus: FocusDefinition) {
   return checkCondition(condition, { state: state.value, owner: actor.value }) ? '前置条件已满足' : '前置条件尚未满足';
 }
 
+function effectiveDecisionCost(decision: DecisionDefinition): number {
+  return advisorDecisionAdjustments(props.model.state, activeActor.value, decision).energyCost;
+}
+
 function decisionAvailable(decision: DecisionDefinition) {
+  if (viewingNpc.value) return false;
   const used = profile.value.decisionUsedAt[decision.id];
-  const cost = decision.energyCost ?? 0;
+  const cost = effectiveDecisionCost(decision);
   return profile.value.controller === 'manual'
     && props.model.state.player.energy >= cost
-    && checkCondition(decision.available, { state: state.value, owner: actor.value })
+    && checkCondition(decision.available, { state: state.value, owner: activeActor.value })
     && (used === undefined || !!decision.cooldownMinutes && minute.value - used >= decision.cooldownMinutes);
 }
 
 function decisionDescription(decision: DecisionDefinition) {
-  const cost = decision.energyCost ?? 0;
+  const cost = effectiveDecisionCost(decision);
   const costLabel = cost > 0 ? `消耗 ${cost} 精力 · ` : '';
   const last = profile.value.decisionUsedAt[decision.id];
   if (last === undefined) return `${costLabel}${props.model.state.player.energy < cost ? '当前精力不足' : '尚未执行'}`;
@@ -255,18 +284,36 @@ function effectLabel(effect: StrategyEffect): string {
       sakiko_resolve: '祥子决心',
       emma_trust: '艾玛信赖',
       renako_confidence: '玲奈子自信',
+      ...NPC_CIRCLE_STAT_LABELS,
     };
     return `${statNames[effect.key] ?? effect.key} ${effect.amount >= 0 ? '+' : ''}${effect.amount}`;
   }
   if (effect.type === 'set_flag') return '推进关键阶段路线';
   if (effect.type === 'add_spirit') return `获得精神状态：${SPIRIT_CATALOG.find(s => s.id === effect.id)?.title ?? effect.id}`;
+  if (effect.type === 'shift_balance') {
+    return effect.delta < 0
+      ? `心境倾向若叶睦（本我） ${effect.delta}`
+      : `心境倾向 Mortis（舞台护盾） +${effect.delta}`;
+  }
   return '移除精神状态';
 }
 
-function weight(focus: FocusDefinition) { return focusWeight(state.value, actor.value, focus); }
+function weight(focus: FocusDefinition) {
+  return focusWeight(
+    state.value,
+    actor.value,
+    focus,
+    viewingNpc.value ? npcSelfExternalModifiers(actor.value) : undefined,
+  );
+}
 
 function sourceName(id: string) {
-  if (id.startsWith('trait:')) return TRAIT_CATALOG.find(x => x.id === id.slice(6))?.title ?? id;
+  if (id.startsWith('trait:')) {
+    const traitId = id.slice(6);
+    const npcTrait = PRESET_NPC_TRAIT_CATALOG[actor.value]?.find(x => x.id === traitId);
+    if (npcTrait) return npcTrait.title;
+    return TRAIT_CATALOG.find(x => x.id === traitId)?.title ?? id;
+  }
   if (id.startsWith('spirit:')) return SPIRIT_CATALOG.find(x => x.id === id.slice(7))?.title ?? id;
   return '国策条件';
 }
@@ -280,10 +327,12 @@ const historyKindLabel: Readonly<Record<string, string>> = {
   spirit_expired: '精神消退',
   narrative: '剧情联动',
   major_event: '关键节点',
+  balance: '心境偏移',
 };
-const historySubjectTitles = new Map(
-  [...FOCUS_CATALOG, ...DECISION_CATALOG, ...SPIRIT_CATALOG].map(row => [row.id, row.title]),
-);
+const historySubjectTitles = new Map([
+  ...[...FOCUS_CATALOG, ...DECISION_CATALOG, ...SPIRIT_CATALOG].map(row => [row.id, row.title] as const),
+  ['mutsumi_balance', '心境天平'] as const,
+]);
 </script>
 
 <template>
@@ -294,10 +343,19 @@ const historySubjectTitles = new Map(
     <header class="focus-top tno-command-bar">
       <div class="tno-command-title">
         <small class="tno-kicker">NATIONAL FOCUS &amp; DIRECTIVES // 战略终端 · {{ clockText }}</small>
-        <h2>{{ protagonistNames[actor] }} · 个人国策</h2>
-        <p>为接下来的日子选择一条路线。</p>
+        <h2>{{ viewerName }} · 个人国策</h2>
+        <p>{{ viewingNpc ? '此人物的个人国策与生活轨迹正随时间独立推进。' : '为接下来的日子选择一条路线。' }}</p>
       </div>
       <div class="tno-command-status">
+        <label class="tno-viewer-picker">
+          <span class="tno-viewer-label">档案切换</span>
+          <select v-model="viewTarget" class="tno-viewer-select" aria-label="切换查看主角或城中人物国策" data-testid="focus-target-select">
+            <option value="active">当前主角 · {{ protagonistNames[activeActor] }}</option>
+            <optgroup v-for="group in NPC_FOCUS_DIRECTORY" :key="group.label" :label="group.label">
+              <option v-for="member in group.members" :key="member.id" :value="member.id">{{ member.name }}</option>
+            </optgroup>
+          </select>
+        </label>
         <span class="focus-control" :class="{ auto: profile.controller === 'auto' }">
           <i class="tno-dot" aria-hidden="true"></i>
           {{ profile.controller === 'auto' ? 'AI 托管中' : '手动控制' }}
@@ -306,7 +364,7 @@ const historySubjectTitles = new Map(
     </header>
 
     <!-- TNO Control Console & Prompt Sync -->
-    <div class="focus-controls tno-control-strip">
+    <div v-if="!viewingNpc" class="focus-controls tno-control-strip">
       <div class="tno-mode-buttons">
         <button type="button" :class="{ selected: profile.controller === 'manual' }" :disabled="model.busy" @click="setControl('manual')">接管人物</button>
         <button type="button" :class="{ selected: profile.controller === 'auto' }" :disabled="model.busy" @click="setControl('auto')">启用 AI 托管</button>
@@ -315,6 +373,10 @@ const historySubjectTitles = new Map(
         <input type="checkbox" :checked="profile.includeInPrompt" :disabled="model.busy" @change="setControl(profile.controller, ($event.target as HTMLInputElement).checked)">
         <span>允许已授权国策影响下一轮剧情</span>
       </label>
+    </div>
+    <div v-else class="focus-controls tno-control-strip tno-npc-banner">
+      <span class="tno-monitor-idle">当前正在浏览城中人物的个人国策轨迹；可缩放或点击节点查看条件与倾向权重。</span>
+      <button type="button" class="tno-secondary-btn" @click="viewTarget = 'active'">返回当前主角</button>
     </div>
 
     <!-- Active Focus & Spirits Telemetry Strip -->
@@ -330,7 +392,7 @@ const historySubjectTitles = new Map(
           </div>
           <div class="tno-monitor-foot">
             <small>完成度 {{ percentage(current) }}%（{{ (profile.active.progress / 1440).toFixed(1) }} / {{ current.durationMinutes / 1440 }} 游戏日）</small>
-            <button v-if="profile.controller === 'manual'" type="button" class="tno-danger-btn" :disabled="model.busy" @click="dispatch({type:'cancel_focus',owner:actor})">取消国策</button>
+            <button v-if="!viewingNpc && profile.controller === 'manual'" type="button" class="tno-danger-btn" :disabled="model.busy" @click="dispatch({type:'cancel_focus',owner:activeActor})">取消国策</button>
           </div>
         </template>
         <p v-else class="tno-monitor-idle">点击树上任意国策图标查看详情与启动条件。</p>
@@ -344,6 +406,34 @@ const historySubjectTitles = new Map(
         </div>
         <p v-else class="tno-monitor-idle">当前无生效中的特殊精神修正。</p>
       </div>
+    </section>
+
+    <section v-if="mutsumiBalance" class="tno-bop-panel" data-testid="mutsumi-balance-panel" aria-label="若叶睦心境天平">
+      <div class="tno-bop-head">
+        <div>
+          <span class="tno-monitor-tag">BALANCE OF MIND // 心境天平</span>
+          <strong>{{ mutsumiBalance.poleLeft }} ↔ {{ mutsumiBalance.poleRight }}</strong>
+        </div>
+        <span class="tno-bop-pill" :class="`is-${mutsumiBalance.side}`">
+          {{ mutsumiBalance.tierLabel }}（{{ mutsumiBalance.value > 0 ? `+${mutsumiBalance.value}` : mutsumiBalance.value }}）
+        </span>
+      </div>
+      <div class="tno-bop-poles">
+        <span>{{ mutsumiBalance.poleLeft }} (-100)</span>
+        <span>{{ mutsumiBalance.poleRight }} (+100)</span>
+      </div>
+      <div
+        class="tno-bop-track"
+        role="meter"
+        :aria-label="`心境天平：${mutsumiBalance.tierLabel}`"
+        :aria-valuenow="mutsumiBalance.value"
+        aria-valuemin="-100"
+        aria-valuemax="100"
+      >
+        <span class="tno-bop-center-tick" aria-hidden="true"></span>
+        <span class="tno-bop-needle" :style="{ left: mutsumiBalance.markerPercent + '%' }"></span>
+      </div>
+      <p class="tno-bop-summary">{{ mutsumiBalance.summary }}</p>
     </section>
 
     <p v-if="feedback" role="status" class="focus-feedback">{{ feedback }}</p>
@@ -473,8 +563,8 @@ const historySubjectTitles = new Map(
           </details>
 
           <footer class="focus-actions tno-detail-actions">
-            <button v-if="profile.active?.id === selectedFocus.id && profile.controller === 'manual'" type="button" class="tno-danger-btn" :disabled="model.busy" @click="dispatch({type:'cancel_focus',owner:actor})">取消国策</button>
-            <button v-else-if="!profile.completed.includes(selectedFocus.id)" type="button" class="tno-start-btn" :disabled="model.busy || profile.controller === 'auto' || !!profile.active || !available(selectedFocus)" @click="dispatch({type:'start_focus',owner:actor,focusId:selectedFocus.id})">开始国策</button>
+            <button v-if="!viewingNpc && profile.active?.id === selectedFocus.id && profile.controller === 'manual'" type="button" class="tno-danger-btn" :disabled="model.busy" @click="dispatch({type:'cancel_focus',owner:activeActor})">取消国策</button>
+            <button v-else-if="!viewingNpc && !profile.completed.includes(selectedFocus.id)" type="button" class="tno-start-btn" :disabled="model.busy || profile.controller === 'auto' || !!profile.active || !available(selectedFocus)" @click="dispatch({type:'start_focus',owner:activeActor,focusId:selectedFocus.id})">开始国策</button>
             <button type="button" class="tno-secondary-btn" @click="closeFocusDetail">关闭窗口</button>
           </footer>
         </article>
@@ -482,7 +572,7 @@ const historySubjectTitles = new Map(
     </section>
 
     <!-- TNO Decisions Console -->
-    <section class="tno-decisions-section">
+    <section v-if="!viewingNpc" class="tno-decisions-section">
       <div class="tno-section-head">
         <h3>决议</h3>
         <span class="tno-section-sub">EXECUTIVE DECISIONS // 可随时执行的个人行动指令</span>
@@ -498,7 +588,7 @@ const historySubjectTitles = new Map(
               <span v-for="(eff, idx) in decision.effects" :key="idx" class="tno-effect-chip">{{ effectLabel(eff) }}</span>
             </div>
           </div>
-          <button type="button" class="tno-start-btn" :disabled="model.busy || !decisionAvailable(decision)" @click="dispatch({type:'choose_decision',owner:actor,decisionId:decision.id})">执行决议</button>
+          <button type="button" class="tno-start-btn" :disabled="model.busy || !decisionAvailable(decision)" @click="dispatch({type:'choose_decision',owner:activeActor,decisionId:decision.id})">执行决议</button>
         </article>
         <p v-if="!decisions.length" class="focus-note">暂时没有符合这条路线的个人决议。</p>
       </div>
@@ -509,11 +599,12 @@ const historySubjectTitles = new Map(
       <summary>领导者特质、个人精神与国策记录</summary>
       <div class="tno-log-list">
         <p v-for="trait in traits" :key="trait.id">★ 领导者特质：{{ trait.title }}</p>
+        <p v-for="adv in activeAdvisorTraits" :key="`${adv.personId}:${adv.trait.id}`">{{ adv.trait.icon }} 顾问特质（{{ adv.personName }} · {{ adv.bandName }}）：{{ adv.trait.title }} · {{ formatNpcTraitModifiers(adv.trait).join('、') }}</p>
         <p v-for="spirit in spirits" :key="spirit.id">❖ 个人精神：{{ spirit.title }}</p>
         <p v-for="entry in history" :key="entry.id">
           [第 {{ Math.floor(entry.at / 1440) + 1 }} 天] · {{ historyKindLabel[entry.kind] }}<span v-if="historySubjectTitles.has(entry.subject)"> · {{ historySubjectTitles.get(entry.subject) }}</span><span v-if="entry.note">：{{ entry.note }}</span>
         </p>
-        <p v-if="!history.length && !traits.length && !spirits.length">暂无记录。</p>
+        <p v-if="!history.length && !traits.length && !activeAdvisorTraits.length && !spirits.length">暂无记录。</p>
       </div>
     </details>
   </section>

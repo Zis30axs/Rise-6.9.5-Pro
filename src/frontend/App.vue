@@ -75,8 +75,8 @@ import { formatGameDate, gameCalendar } from '../runtime/game-calendar';
 import { resolveWeather, WEATHER_EFFECTS } from '../runtime/weather';
 import { gameCalendarOccasions } from '../runtime/japan-calendar-events';
 import { getAdjacentLocations } from '../runtime/location-links';
-import { getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
-import { worldScenePeople, worldScenePosition, type WorldScenePerson } from '../runtime/world-presence';
+import { getScenePeople, hiddenProtagonistPersons, scenePersonLabel, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { worldScenePeople, worldScenePosition, worldSceneRoster, type WorldScenePerson } from '../runtime/world-presence';
 import type { PlayerState, ShellActions, ShellModel } from './types';
 import { PROTAGONISTS, type ProtagonistId } from '../runtime/dual-protagonists';
 import { bedRestOptions, campusInteriors, getCampusInterior, getInteriorActivity, studyDurationOptions, isStudyInteraction, getStudyEnergyCost } from '../runtime/campus-interiors';
@@ -221,7 +221,7 @@ const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.val
   scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
   encounterId: props.model.state.scene?.encounterId,
 }));
-function personLabel(person: WorldScenePerson) { return person.id === MYSTERY_VISITOR_ID ? MYSTERY_VISITOR_NAME : person.id === SECOND_MYSTERY_VISITOR_ID ? SECOND_MYSTERY_VISITOR_NAME : person.protagonistId ? protagonistNames[person.protagonistId] : person.contactId || person.identity === '咖啡馆店主' ? person.name : `陌生${person.identity}`; }
+function personLabel(person: WorldScenePerson) { return person.id === MYSTERY_VISITOR_ID ? MYSTERY_VISITOR_NAME : person.id === SECOND_MYSTERY_VISITOR_ID ? SECOND_MYSTERY_VISITOR_NAME : person.protagonistId ? protagonistNames[person.protagonistId] : scenePersonLabel(person); }
 const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
@@ -276,10 +276,10 @@ const nearbyTransitStop = computed(() => {
   const point = outdoorArrival();
   return point ? transitStops.find(stop => Math.hypot(stop.x - point.x, stop.z - point.z) <= 6) ?? null : null;
 });
+const sceneRoster = computed(() => worldSceneRoster(props.model.state, scenePeople.value));
 const nearbyPeople = computed<{ person: WorldScenePerson; distance: number }[]>(() => {
   const position = worldScenePosition(props.model.state);
-  const ordinary = position ? scenePeople.value.map(person => ({ person, distance: Math.hypot(person.x - position.x, person.z - position.z) }))
-    .filter(item => item.distance <= SCENE_ENCOUNTER_DISTANCE).sort((a, b) => a.distance - b.distance) : [];
+  const ordinary = sceneRoster.value.filter(row => row.canTalk);
   // Rare outdoor visitor is computed locally, including overseas novel-only places.
   const rare: { person: WorldScenePerson; distance: number }[] = [];
   if (mysteryVisitorPresent(props.model.state)) {
@@ -300,6 +300,11 @@ const nearbyPeople = computed<{ person: WorldScenePerson; distance: number }[]>(
   }
   return [...rare, ...ordinary];
 });
+const locationPeople = computed(() => [
+  ...nearbyPeople.value.filter(row => !sceneRoster.value.some(item => item.person.id === row.person.id))
+    .map(row => ({ ...row, kind: 'person' as const, canTalk: true })),
+  ...sceneRoster.value,
+]);
 const lastRoomActivity = computed(() => currentRoom.value ? getInteriorActivity(currentRoom.value, props.model.state.interior?.activityId, props.model.state.interior?.lastRest, props.model.state.interior?.lastStudy) : undefined);
 const persistedRoomReceipt = computed(() => {
   const activity = lastRoomActivity.value;
@@ -1122,7 +1127,20 @@ onBeforeUnmount(() => {
       <div v-else-if="activeWindow === 'stationery'" class="window-content"><StationeryStore :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'inventory'" class="window-content"><InventoryPanel :model="model" :actions="actions" /></div>
       <div v-else-if="activeWindow === 'idcard'" class="window-content"><IdentityCardPanel :model="model" :actions="actions" :initial-person-id="activeIdentityPersonId" @fill-composer="text => { closeWindow(false); void prepareAction(text); }" @close-panel="closeWindow()" @open-social-panel="openWindow('location')" /></div>
-      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" /><section class="nearby-people" data-nearby-people><h2>身边的人</h2><p v-if="!nearbyPeople.length">身边暂时没有可以搭话的人，换个地方走走吧。</p><div v-for="{person, distance} in nearbyPeople" :key="person.id"><span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ person.contactId ? person.description : person.identity }}</small></span><button :disabled="model.busy" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button><button v-if="person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button><button v-if="!person.protagonistId && person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button></div></section><p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
+      <div v-else-if="activeWindow === 'location'" class="window-content"><PlaceActions :model="model" catalog @enter="enterInterior" @law="openWindow('law')" @travel="travelAdjacent" @service="quickLocationService" @package="quickPackageService" @activity="quickRoomActivity" @store="openStore" @stationery="openStationery" @books="openBookReading" @map="openWindow('map')" @cook="openCooking" />
+        <section class="nearby-people" data-nearby-people>
+          <h2>附近的人</h2><p v-if="!locationPeople.length">附近暂时没有人。</p>
+          <template v-for="({person, distance, kind, canTalk}, index) in locationPeople" :key="person.id">
+            <h3 v-if="index === 0 || kind !== locationPeople[index - 1]?.kind">{{ kind === 'person' ? '人物' : '过往行人' }}</h3>
+            <div :data-visible-person="person.id" :data-person-kind="kind">
+              <span><strong>{{ personLabel(person) }}</strong><small>{{ Math.round(distance * 10) / 10 }} 米 · {{ canTalk ? '身边' : '远处' }} · {{ person.contactId ? person.description : person.identity }}</small></span>
+              <button :disabled="model.busy || !canTalk" :data-talk-person="person.id" @click="sceneEncounter(person.id)">交流</button>
+              <button v-if="canTalk && person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-idcard-person="person.id" @click="openIdentityCard(person.id)">证件</button>
+              <button v-if="canTalk && !person.protagonistId && person.id !== MYSTERY_VISITOR_ID && person.id !== SECOND_MYSTERY_VISITOR_ID" :disabled="model.busy" :data-save-person="person.id" @click="saveEncounterContact(person.id)">{{ person.contactId ? '档案' : '建档' }}</button>
+            </div>
+          </template>
+        </section>
+        <p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" :refresh-token="graphicsRevision" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" /></div>
     </section>
     </div>

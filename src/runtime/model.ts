@@ -6,6 +6,7 @@ import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTr
 import { PROTAGONISTS } from './dual-protagonists';
 import { commitStrategyCommand } from './strategy-world';
 import { commitSocietyCommand } from './society-world';
+import { commitFactionFocusCommand } from './faction-focus-world';
 import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
@@ -51,6 +52,8 @@ import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
+import { acknowledgeNpcGiftDaily, parseNpcGiftDailyState } from './npc-gift-traits';
+import { applyMutsumiBalanceTurn, hasMutsumiBalanceReceipt, mutsumiBalanceOpportunity } from './mutsumi-balance';
 import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
@@ -657,11 +660,12 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     const source = value as Record<string, unknown>;
     const hasYen = Object.hasOwn(source, 'currency');
     if (hasYen && source.currency !== 'JPY') return invalid('currency');
-    const { protagonists, currency: _currency, worldChronicle: worldChronicleRaw, ...rest } = source;
+    const { protagonists, currency: _currency, worldChronicle: worldChronicleRaw, npcGiftDaily: npcGiftDailyRaw, ...rest } = source;
     // Parse all existing ledgers in their previous units before converting once.
     const base = parseStateCore({ ...rest, currency: 'JPY', schema_version: '1.11.0' }, deferProtagonists);
     const state: WorldState = { ...base, schema_version: '1.13.0', currency: 'JPY',
       ...(Object.hasOwn(source, 'worldChronicle') ? { worldChronicle: parseWorldChronicleState(worldChronicleRaw) } : {}),
+      ...(Object.hasOwn(source, 'npcGiftDaily') ? { npcGiftDaily: parseNpcGiftDailyState(npcGiftDailyRaw) } : {}),
       protagonists: parseProtagonists(protagonists, base, value => parseStateCore(value, deferProtagonists), !hasYen) };
     if (!hasYen) {
       migrateHistoricalMoney(state);
@@ -699,6 +703,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasFengjinClinic = version === '1.11.0' && Object.hasOwn(value, 'fengjinClinic');
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
   const hasWorldChronicle = version === '1.11.0' && Object.hasOwn(value, 'worldChronicle');
+  const hasNpcGiftDaily = version === '1.11.0' && Object.hasOwn(value, 'npcGiftDaily');
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
   const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
@@ -710,7 +715,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasNpcGiftDaily ? ['npcGiftDaily'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -740,6 +745,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     clock: parsedClock,
     weather,
     ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
+    ...(hasNpcGiftDaily ? { npcGiftDaily: parseNpcGiftDailyState(state.npcGiftDaily) } : {}),
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
     interior: parsedInterior,
@@ -969,6 +975,23 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
+      case 'npc_trait_gift': {
+        const item = getStoreItem(action.itemId)!;
+        const entry = next.inventory.find(row => row.itemId === action.itemId);
+        if (entry) {
+          if (entry.quantity + action.quantity > INVENTORY_ITEM_LIMIT)
+            throw new Error(`${item.name} 最多保存 ${INVENTORY_ITEM_LIMIT} 个使用单位。`);
+          entry.quantity += action.quantity;
+        } else {
+          next.inventory.push({ itemId: action.itemId, quantity: action.quantity });
+        }
+        const giver = next.contacts.find(c => c.id === action.npcId || c.sourcePersonId === action.npcId)?.name ?? '若叶睦';
+        note(next, `${giver}在今日初次见面时递来 ${action.quantity} ${item.useUnit}${item.name}：${action.reason}`);
+        break;
+      }
+      case 'mutsumi_balance':
+        // Settled atomically onto protagonists.strategy after legacy reduction merges.
+        break;
       case 'use': next = reduceLegacyState(next, { type: 'use_item', itemId: action.itemId }); break;
       case 'interact':
         if (action.interactionId === 'dorm-rest' || isStudyInteraction(action.interactionId)) throw new Error('休息或学习请使用包含明确分钟数的剧情行动。');
@@ -1092,11 +1115,17 @@ function commitLegacyStoryTurn(
   if (typeof input !== 'string' || !input.trim() || input.length > STATE_LIMITS.inputText || input.includes('\u0000')) {
     throw new Error(`请输入 1–${STATE_LIMITS.inputText} 字的行动。`);
   }
-  const reply = validateGeneratedStory(result, worldAuthority?.protagonists ? { ...next, protagonists:worldAuthority.protagonists } : next);
-  verifySocialConsentEvidence(worldAuthority ?? next, reply);
   // Leave room for the stable message suffix within the 128-char save ID limit.
   const validId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
   if (!ids || !validId(ids.userId) || !validId(ids.assistantId) || ids.userId === ids.assistantId) throw new Error('剧情记录 ID 无效；本轮未写入。');
+  const existingUser = next.story.find(entry => entry.id === ids.userId);
+  const existingAssistant = next.story.find(entry => entry.id === ids.assistantId);
+  const reply = validateGeneratedStory(
+    result,
+    worldAuthority?.protagonists ? { ...next, protagonists: worldAuthority.protagonists } : next,
+    existingAssistant?.role === 'assistant' ? ids.assistantId : undefined,
+  );
+  verifySocialConsentEvidence(worldAuthority ?? next, reply);
   const inputText = input.trim();
   const flightId = `${ids.assistantId}:airliner`;
   const hasFlight = reply.worldEvents?.length === 1;
@@ -1106,8 +1135,6 @@ function commitLegacyStoryTurn(
   const actionReceiptId = `${actionPrefix}${storyActionFingerprint(worldActions)}`;
   const recordedActions = next.journal.filter(entry => entry.id.startsWith(actionPrefix));
   const unchangedActions = worldActions.length ? recordedActions.length === 1 && recordedActions[0].id === actionReceiptId : recordedActions.length === 0;
-  const existingUser = next.story.find(entry => entry.id === ids.userId);
-  const existingAssistant = next.story.find(entry => entry.id === ids.assistantId);
   if (existingUser || existingAssistant) {
     if (existingUser?.role === 'user' && existingUser.text === inputText && existingAssistant?.role === 'assistant' && existingAssistant.text === reply.text) {
       const unchanged = reply.phoneMessages.every((message, index) => {
@@ -1842,6 +1869,10 @@ export function reduceState(state: WorldState, action: WorldAction, ownerOverrid
     const prepared = enableProtagonists(before);
     return parseState(commitSocietyCommand(prepared, action.requestId, action.command));
   }
+  if (action?.type === 'faction_focus') {
+    const prepared = enableProtagonists(before);
+    return parseState(commitFactionFocusCommand(prepared, action.requestId, action.command));
+  }
   if (action?.type === 'courtroom') {
     const prepared = enableProtagonists(before);
     const feeQuote = action.phase === 'confirm-filing' ? prepared.courtroom?.filing : null;
@@ -1934,7 +1965,7 @@ function commitNarrativeMessaging(state: WorldState, actions: readonly StoryActi
 
 export function applyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', ownerOverride?: ProtagonistId): WorldState {
   const parsed = parseState(state, ownerOverride);
-  const needsWorld = actions.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type));
+  const needsWorld = actions.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact','mutsumi_balance'].includes(action.type));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   const after = finishPersonalChange(before, applyLegacyStoryActions(legacyView(before), actions, turnId, before, ownerOverride), '剧情行动');
   const withSkills = applySocialSkillTurn(clearDepartedProtagonistEncounters(after), actions, turnId, before);
@@ -1942,12 +1973,14 @@ export function applyStoryActions(state: WorldState, actions: readonly StoryActi
   const invited = recordSocialInvitations(sent, actions, turnId,
     id => worldScenePeople(sent).find(person => person.id === id)?.name ?? null);
   const withAgenda = applySocialAgendaActions(invited,actions,turnId);
-  return parseState(acknowledgeCourtTransfers(applyStoryTransferLegs(withAgenda, actions, turnId), actions, turnId, withAgenda), ownerOverride);
+  const withGiftDaily = acknowledgeNpcGiftDaily(before, withAgenda, actions, turnId);
+  const withTransfers = acknowledgeCourtTransfers(applyStoryTransferLegs(withGiftDaily, actions, turnId), actions, turnId, withGiftDaily);
+  return parseState(applyMutsumiBalanceTurn(before, withTransfers, actions, turnId), ownerOverride);
 }
 export function commitStoryTurn(state: WorldState, input: string, result: GeneratedStory, ids: {userId: string; assistantId: string}, now = Date.now()): WorldState {
   const parsed = parseState(state);
   const needsWorld = !!(result.strategyUpdates?.length || result.strategyMajor?.length || result.otherSide?.length ||
-    result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact'].includes(action.type)));
+    result.worldActions?.some(action => ['social_skill','social_invite','social_agenda','send_sms','exchange_contact','mutsumi_balance'].includes(action.type)));
   const before = needsWorld ? enableProtagonists(parsed) : parsed;
   // The legacy single-protagonist reducer cannot validate a world-level weekly
   // summary; commit its ordinary story/actions first, then atomically apply the
@@ -1965,8 +1998,11 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   if (alreadyCommitted && (requestedUpdates?.length || requestedMajor?.length)
     && !hasStrategyNarrativeReceipt(before.protagonists?.strategy, ids.assistantId))
     throw new Error('重复剧情 ID 不得新增原先没有的国策效果');
+  const requestedBalance = !!modelResult.worldActions?.some(action => !!action && typeof action === 'object' && (action as { type?: string }).type === 'mutsumi_balance');
+  if (alreadyCommitted && requestedBalance && !hasMutsumiBalanceReceipt(before.protagonists?.strategy, ids.assistantId))
+    throw new Error('重复剧情 ID 不得新增原先没有的心境天平效果');
   const validated: GeneratedStory = alreadyCommitted
-    ? { ...validateGeneratedStory(withoutSide, before),
+    ? { ...validateGeneratedStory(withoutSide, before, ids.assistantId),
       ...(requestedSide !== undefined ? { otherSide: requestedSide } : {}),
       ...(requestedReturn !== undefined ? { returnStory: requestedReturn } : {}),
       ...(requestedUpdates !== undefined ? { strategyUpdates: requestedUpdates } : {}),
@@ -1974,9 +2010,13 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
     : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
     strategyUpdates, strategyMajor, ...legacyResult } = validated;
+  const narrativeActions = legacyResult.worldActions ?? [];
+  if (!alreadyCommitted && narrativeActions.some(action => action.type === 'mutsumi_balance')
+    && !mutsumiBalanceOpportunity(before, input, { worldActions: narrativeActions }).allowed) {
+    throw new Error('本轮未触发若叶睦心境交涉条件，禁止提交 mutsumi_balance');
+  }
   const reservedOtherSide = new Set((otherSide ?? []).flatMap(event => event.protagonists));
   const finished = clearDepartedProtagonistEncounters(finishPersonalChange(before, commitLegacyStoryTurn(legacyView(before), input, legacyResult, ids, now, before), '剧情结算', reservedOtherSide));
-  const narrativeActions = legacyResult.worldActions ?? [];
   const withSkills = applySocialSkillTurn(finished, narrativeActions, ids.assistantId, before);
   const sent = commitNarrativeMessaging(withSkills, narrativeActions, ids.assistantId);
   const invited = recordSocialInvitations(sent, narrativeActions, ids.assistantId,
@@ -2000,7 +2040,10 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   captureNewJournalEvidence(finished, next);
   applyWeeklySummary(next, result.weeklySummary);
   acknowledgeAgendaNarration(before,next);
-  return parseState(acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt));
+  const withChronicle = acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt);
+  const withGiftDaily = acknowledgeNpcGiftDaily(before, withChronicle, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
+  const withBalance = applyMutsumiBalanceTurn(before, withGiftDaily, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
+  return parseState(withBalance);
 }
 
 

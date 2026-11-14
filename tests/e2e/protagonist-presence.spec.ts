@@ -52,7 +52,7 @@ for (const viewport of viewports) {
     const avatar = page.getByRole('button', { name: '查看人物：丰川祥子', exact: true });
     await expect(avatar).toBeVisible();
     await avatar.click();
-    await expect(page.locator('.cms-person-detail')).toContainText('丰川祥子');
+    await expect(page.locator('.tokyo-sandbox-person-detail')).toContainText('丰川祥子');
     await expect(avatar.locator('[data-map-avatar-kind="sprite"] img')).toBeVisible();
     await page.screenshot({ path: `${out}/${size}-sports-map.png` });
     await noOverflow(page);
@@ -111,8 +111,7 @@ test('same room protagonist appears on map and can be selected for conversation'
   const avatar = page.getByRole('button', { name: '查看人物：丰川祥子', exact: true });
   await expect(avatar).toBeVisible();
   await avatar.click();
-  await expect(page.locator('.cms-person-detail')).toContainText('丰川祥子');
-  await expect(page.locator('.cms-person-detail')).toContainText('她在这里');
+  await expect(page.locator('.tokyo-sandbox-person-detail')).toContainText('丰川祥子');
   await page.screenshot({ path: `${out}/same-room-map.png` });
   await tool(page, '地点').click();
   const row = page.locator('[data-nearby-people] > div').filter({ hasText: '丰川祥子' });
@@ -121,7 +120,7 @@ test('same room protagonist appears on map and can be selected for conversation'
   expect(errors).toEqual([]);
 });
 
-test('map NPC affinity follows the current protagonist and excludes unknown passers-by', async ({ page }) => {
+test('visible people remain present across viewpoints regardless of affinity', async ({ page }) => {
   const state = sportsState();
   const people = getScenePeople(state.scene!, [], state.clock).filter(person => person.id.startsWith('ped-')).slice(8, 10);
   expect(people).toHaveLength(2);
@@ -133,16 +132,16 @@ test('map NPC affinity follows the current protagonist and excludes unknown pass
   personState(state, 'sakiko').contacts = [contact(people[0]!, 10), contact(people[1]!, 9)];
   const { errors } = await mountSwitchHost(page, { state });
   await campusMap(page);
-  await expect(page.getByRole('button', { name: `查看人物：${people[0]!.name}`, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: `查看人物：${people[0]!.name}`, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: `查看人物：${people[1]!.name}`, exact: true })).toBeVisible();
-  await expect(page.locator('[data-map-person-id]')).toHaveCount(2);
+  expect(await page.locator('[data-map-person-id]').count()).toBeGreaterThanOrEqual(3);
   await page.keyboard.press('Escape');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('[data-protagonist-select]').selectOption('sakiko');
   await expect(page.locator('.uc-shell')).toHaveAttribute('data-current-protagonist', 'sakiko');
   await campusMap(page);
   await expect(page.getByRole('button', { name: `查看人物：${people[0]!.name}`, exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: `查看人物：${people[1]!.name}`, exact: true })).toHaveCount(0);
-  await expect(page.locator('[data-map-person-id]')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: `查看人物：${people[1]!.name}`, exact: true })).toBeVisible();
+  expect(await page.locator('[data-map-person-id]').count()).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);
 });

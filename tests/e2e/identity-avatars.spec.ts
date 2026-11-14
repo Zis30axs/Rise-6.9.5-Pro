@@ -12,6 +12,13 @@ for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [320, 568]]
     await expect(birthLabel).toHaveText('1982年9月15日生（昭和57年）');
     await birthLabel.scrollIntoViewIfNeeded();
     await expect(birthLabel).toBeVisible();
+    const dossier = page.locator('[data-omniscient-dossier]');
+    const npcTraits = dossier.locator('.idcard-npc-trait-card');
+    await expect(npcTraits).toHaveCount(2);
+    await expect(dossier).toContainText('法务部般的分寸与体面');
+    await expect(dossier).not.toContainText(/LLM|world_actions|MVU|worldbook/i);
+    const fitsViewport = await dossier.evaluate(el => el.getBoundingClientRect().right <= window.innerWidth + 1);
+    expect(fitsViewport).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('mother-birth-date.png'), fullPage: true });
     await roster.getByRole('button', { name: '长崎素世 当前视角', exact: true }).click();
     await expect(birthLabel).toHaveText('2007年5月27日生（平成19年）');

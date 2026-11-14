@@ -3,8 +3,29 @@
  * Four playable owners are bootstrapped today; other registered characters can be added
  * through a catalog without changing the condition/modifier/state machinery.
  */
+import { NPC_CIRCLE_STATS, NPC_FOCUS_CATALOG } from './npc-focuses.ts';
+
+export const MUTSUMI_OWNER_ID = 'bang-mutsumi' as const;
+export const MUTSUMI_BOP_MIN = -100;
+export const MUTSUMI_BOP_MAX = 100;
+export const MUTSUMI_BOP_INITIAL = 15;
+export const MUTSUMI_BOP_BASELINE = 10;
+
+export function clampMutsumiBalance(value: number): number {
+  return Math.max(MUTSUMI_BOP_MIN, Math.min(MUTSUMI_BOP_MAX, Math.round(value)));
+}
+
+export function mutsumiBalanceValue(strategy?: StrategyState | null): number {
+  const raw = strategy?.people?.[MUTSUMI_OWNER_ID]?.balance;
+  return typeof raw === 'number' && Number.isFinite(raw) ? clampMutsumiBalance(raw) : MUTSUMI_BOP_INITIAL;
+}
+
 export type StrategyOwner = 'soyo' | 'sakiko' | 'emma' | 'renako' | (string & {});
 const DEFAULT_OWNERS = ['soyo', 'sakiko', 'emma', 'renako'] as const;
+export const PLAYABLE_STRATEGY_OWNERS = DEFAULT_OWNERS;
+export function isPlayableStrategyOwner(owner: StrategyOwner): owner is (typeof DEFAULT_OWNERS)[number] {
+  return (DEFAULT_OWNERS as readonly string[]).includes(owner);
+}
 export type Condition =
   | { always: boolean }
   | { all: readonly Condition[] }
@@ -14,8 +35,15 @@ export type Condition =
   | { stat: string; gte?: number; lte?: number }
   | { completed: string }
   | { hasSpirit: string }
-  | { hasTrait: string };
-export type ModifierTarget = 'focus_ai_weight' | 'focus_progress_rate' | 'social_xp_rate';
+  | { hasTrait: string }
+  | { balance: { gte?: number; lte?: number } };
+export type ModifierTarget =
+  | 'focus_ai_weight'
+  | 'focus_progress_rate'
+  | 'social_xp_rate'
+  | 'practice_skill_rate'
+  | 'decision_energy_cost'
+  | 'decision_stress_relief';
 export interface StrategyModifier {
   target: ModifierTarget;
   operation: 'add' | 'multiply';
@@ -23,13 +51,32 @@ export interface StrategyModifier {
   focusId?: string;
   when?: Condition;
 }
+export interface ExternalStrategyModifierSource {
+  source: string;
+  modifier: StrategyModifier;
+}
+export type ExternalStrategyModifiers = Partial<Record<StrategyOwner, readonly ExternalStrategyModifierSource[]>>;
+export const MODIFIER_TARGET_LABELS: Readonly<Record<ModifierTarget, string>> = {
+  focus_ai_weight: '国策倾向权重',
+  focus_progress_rate: '国策推进效率',
+  social_xp_rate: '社交经验获取',
+  practice_skill_rate: '练琴熟练获取',
+  decision_energy_cost: '行动精力消耗',
+  decision_stress_relief: '行动减压效果',
+};
+export function formatStrategyModifier(item: StrategyModifier): string {
+  const value = item.operation === 'multiply' ? `× ${item.amount}` : `${item.amount >= 0 ? '+' : ''}${item.amount}`;
+  return `${MODIFIER_TARGET_LABELS[item.target]} ${value}`;
+}
 export interface SpiritDefinition { id: string; title: string; modifiers: readonly StrategyModifier[]; activeWhen?: Condition }
 export interface TraitDefinition { id: string; title: string; modifiers: readonly StrategyModifier[] }
 export type StrategyEffect =
   | { type: 'set_flag'; key: string; value: boolean }
   | { type: 'add_stat'; key: string; amount: number }
   | { type: 'add_spirit'; id: string; durationMinutes?: number }
-  | { type: 'remove_spirit'; id: string };
+  | { type: 'remove_spirit'; id: string }
+  | { type: 'shift_balance'; delta: number };
+export interface FocusAiModifier { when: Condition; add: number }
 export interface FocusDefinition {
   id: string;
   owner: StrategyOwner;
@@ -45,7 +92,7 @@ export interface FocusDefinition {
   important?: boolean;
   /** Completing any focus in a branch permanently locks the alternatives. */
   branchGroup?: string;
-  aiModifiers?: readonly { when: Condition; add: number }[];
+  aiModifiers?: readonly FocusAiModifier[];
   onComplete?: readonly StrategyEffect[];
 }
 export interface DecisionDefinition {
@@ -72,12 +119,14 @@ export interface StrategyPerson {
   traits: string[];
   spirits: SpiritInstance[];
   decisionUsedAt: Record<string, number>;
+  /** Mutsumi-exclusive psychological balance [-100 Self .. +100 Mortis]. */
+  balance?: number;
 }
 export interface StrategyHistory {
   id: string;
   at: number;
   owner: StrategyOwner;
-  kind: 'start' | 'complete' | 'cancel' | 'bypass' | 'decision' | 'spirit_expired' | 'narrative' | 'major_event';
+  kind: 'start' | 'complete' | 'cancel' | 'bypass' | 'decision' | 'spirit_expired' | 'narrative' | 'major_event' | 'balance';
   subject: string;
   note?: string;
 }
@@ -104,7 +153,13 @@ export const STRATEGY_FLAGS = [
   'sakiko_final_break', 'crychic_reunited', 'soyo_looked_back', 'soyo_rebuild_plan_ready',
   'sakiko_band_plan_ready', 'emma_circle_plan_ready', 'renako_circle_plan_ready', 'soyo_mygo_plan_ready',
 ] as const;
-export const STRATEGY_STATS = ['soyo_resolve', 'sakiko_resolve', 'emma_trust', 'renako_confidence'] as const;
+export const STRATEGY_STATS = [
+  'soyo_resolve',
+  'sakiko_resolve',
+  'emma_trust',
+  'renako_confidence',
+  ...NPC_CIRCLE_STATS,
+] as const;
 
 /** Focuses advance personal plans. Other characters make their own choices. */
 export const FOCUS_CATALOG: readonly FocusDefinition[] = [
@@ -173,6 +228,7 @@ export const FOCUS_CATALOG: readonly FocusDefinition[] = [
   { id: 'renako_group_plan', owner: 'renako', title: '为小聚写下提案', description: '拟一份几个人都能参与的小聚安排，等大家自己决定是否赴约。',
     durationMinutes: 2880, aiWeight: 85, important: true, prerequisites: { completed: 'renako_group_idea' },
     onComplete: [{ type: 'add_stat', key: 'renako_confidence', amount: 7 }] },
+  ...NPC_FOCUS_CATALOG,
 ];
 export const TRAIT_CATALOG: readonly TraitDefinition[] = [
   { id: 'soyo_crychic_obsession', title: 'CRYCHIC 的执念', modifiers: [
@@ -264,7 +320,7 @@ export const strategyLocalKey = (key: string, owner?: StrategyOwner): boolean =>
   (!owner || key.startsWith(`focus:${owner}:`));
 const MAX_DYNAMIC_KEYS = 32;
 const MAX_MINUTE = 525599999;
-const HISTORY_LIMIT = 300;
+const HISTORY_LIMIT = 600;
 const RECEIPT_LIMIT = 160;
 function fail(message: string): never { throw new Error(`国策状态无效：${message}`); }
 const record = (value: unknown, keys: readonly string[], label: string): Record<string, unknown> => {
@@ -281,8 +337,8 @@ const unique = (items: string[], label: string) => {
   if (new Set(items).size !== items.length) fail(`${label} 重复`);
   return items;
 };
-function personDefault(owner: StrategyOwner): StrategyPerson {
-  return { controller: 'manual', includeInPrompt: false, active: null, completed: [],
+function personDefault(owner: StrategyOwner, controller: 'manual' | 'auto' = 'manual'): StrategyPerson {
+  return { controller, includeInPrompt: false, active: null, completed: [],
     traits: owner === 'soyo' ? ['soyo_crychic_obsession'] : [], spirits: [], decisionUsedAt: {} };
 }
 export function createStrategyState(at: number): StrategyState {
@@ -290,6 +346,16 @@ export function createStrategyState(at: number): StrategyState {
   return { version: 1, cursor: at, flags: {}, stats: {},
     people: Object.fromEntries(STRATEGY_OWNERS.map(owner => [owner, personDefault(owner)])) as Record<StrategyOwner, StrategyPerson>,
     receipts: [], history: [], majorQueue: [] };
+}
+
+/** Game runtime initializer: protagonists start under manual control, preset NPCs advance autonomously. */
+export function createGameStrategyState(at: number): StrategyState {
+  const base = createStrategyState(at);
+  for (const owner of STRATEGY_OWNERS) {
+    if (!isPlayableStrategyOwner(owner)) base.people[owner].controller = 'auto';
+  }
+  base.people[MUTSUMI_OWNER_ID].balance = MUTSUMI_BOP_INITIAL;
+  return base;
 }
 
 /** Reject malformed or forged fields before they enter the authoritative save. */
@@ -314,10 +380,20 @@ export function parseStrategyState(raw: unknown, at: number): StrategyState {
     if (!(permittedStats.has(key) || strategyLocalKey(key))) fail('变量名');
     stats[key] = boundedInt(value, -10000, 10000, `变量 ${key}`);
   }
-  const peopleRaw = record(s.people, STRATEGY_OWNERS, '人物');
+  const rawPeopleObj = s.people && typeof s.people === 'object' && !Array.isArray(s.people)
+    ? s.people as Record<string, unknown> : fail('人物');
+  if (Object.keys(rawPeopleObj).some(key => !STRATEGY_OWNERS.includes(key))
+    || DEFAULT_OWNERS.some(key => !Object.hasOwn(rawPeopleObj, key))) fail('人物 字段');
   const people = {} as Record<StrategyOwner, StrategyPerson>;
   for (const owner of STRATEGY_OWNERS) {
-    const p = record(peopleRaw[owner], ['controller','includeInPrompt','active','completed','traits','spirits','decisionUsedAt'], `人物 ${owner}`);
+    if (!Object.hasOwn(rawPeopleObj, owner)) {
+      people[owner] = personDefault(owner, 'auto');
+      if (owner === MUTSUMI_OWNER_ID) people[owner].balance = MUTSUMI_BOP_INITIAL;
+      continue;
+    }
+    const rawPerson = rawPeopleObj[owner];
+    const hasBalance = owner === MUTSUMI_OWNER_ID && !!rawPerson && typeof rawPerson === 'object' && Object.hasOwn(rawPerson, 'balance');
+    const p = record(rawPerson, ['controller','includeInPrompt','active','completed','traits','spirits','decisionUsedAt', ...(hasBalance ? ['balance'] : [])], `人物 ${owner}`);
     if (p.controller !== 'manual' && p.controller !== 'auto') fail('托管模式');
     if (typeof p.includeInPrompt !== 'boolean') fail('模型开关');
     const completed = Array.isArray(p.completed) && p.completed.length <= 100
@@ -351,7 +427,9 @@ export function parseStrategyState(raw: unknown, at: number): StrategyState {
       if (typeof progress !== 'number' || !Number.isFinite(progress) || progress < 0 || progress >= definition.durationMinutes || Math.abs(Math.round(progress*100) - progress*100) > 1e-7) fail('国策进度');
       active = { id, startedAt, progress };
     }
-    people[owner] = { controller: p.controller, includeInPrompt: p.includeInPrompt, active, completed, traits, spirits, decisionUsedAt };
+    const balance = hasBalance ? boundedInt(p.balance, MUTSUMI_BOP_MIN, MUTSUMI_BOP_MAX, '心境天平') : undefined;
+    people[owner] = { controller: p.controller, includeInPrompt: p.includeInPrompt, active, completed, traits, spirits, decisionUsedAt,
+      ...(balance !== undefined ? { balance } : {}) };
   }
   if (!Array.isArray(s.receipts) || s.receipts.length > RECEIPT_LIMIT) fail('操作记录');
   const receipts = s.receipts.map(rawReceipt => {
@@ -362,7 +440,7 @@ export function parseStrategyState(raw: unknown, at: number): StrategyState {
   });
   unique(receipts.map(row => row.id), '请求回执');
   if (!Array.isArray(s.history) || s.history.length > HISTORY_LIMIT) fail('历史');
-  const kinds = new Set(['start','complete','cancel','bypass','decision','spirit_expired','narrative','major_event']);
+  const kinds = new Set(['start','complete','cancel','bypass','decision','spirit_expired','narrative','major_event','balance']);
   const history: StrategyHistory[] = s.history.map(rawHistory => {
     const hasNote = !!rawHistory && typeof rawHistory === 'object' && Object.hasOwn(rawHistory,'note');
     const row = record(rawHistory,['id','at','owner','kind','subject',...(hasNote?['note']:[])],'历史条目');
@@ -385,7 +463,12 @@ export function parseStrategyState(raw: unknown, at: number): StrategyState {
   return { version:1, cursor, flags, stats, people, receipts, history, majorQueue }; 
 }
 
-export interface ConditionContext { state: StrategyState; owner: StrategyOwner; at?: number }
+export interface ConditionContext {
+  state: StrategyState;
+  owner: StrategyOwner;
+  at?: number;
+  externalModifiers?: readonly ExternalStrategyModifierSource[];
+}
 export function checkCondition(condition: Condition, context: ConditionContext, depth=0): boolean {
   if (depth > 16) return false;
   if ('always' in condition) return condition.always;
@@ -399,7 +482,10 @@ export function checkCondition(condition: Condition, context: ConditionContext, 
   }
   if ('completed' in condition) return context.state.people[context.owner].completed.includes(condition.completed);
   if ('hasSpirit' in condition) return context.state.people[context.owner].spirits.some(x=>x.id===condition.hasSpirit && (x.expiresAt===null || x.expiresAt>(context.at??context.state.cursor)));
-  return context.state.people[context.owner].traits.includes(condition.hasTrait);
+  if ('hasTrait' in condition) return context.state.people[context.owner].traits.includes(condition.hasTrait);
+  const balance = mutsumiBalanceValue(context.state);
+  return (condition.balance.gte === undefined || balance >= condition.balance.gte)
+    && (condition.balance.lte === undefined || balance <= condition.balance.lte);
 }
 export interface ModifierBreakdown { source: string; operation: 'add'|'multiply'; amount: number }
 export function calculateModifier(context: ConditionContext, target: ModifierTarget, initial: number, focusId?: string): { value: number; breakdown: ModifierBreakdown[] } {
@@ -412,6 +498,7 @@ export function calculateModifier(context: ConditionContext, target: ModifierTar
           (spirit.activeWhen && !checkCondition(spirit.activeWhen,context))) return [];
       return spirit.modifiers.map(modifier=>({source:`spirit:${item.id}`,modifier}));
     }),
+    ...(context.externalModifiers ?? []),
   ];
   let adds=0, multiplier=1; const breakdown: ModifierBreakdown[]=[];
   for (const {source,modifier} of sources) {
@@ -422,13 +509,19 @@ export function calculateModifier(context: ConditionContext, target: ModifierTar
   }
   return { value: Math.max(0,Math.round((initial+adds)*multiplier*100)/100), breakdown };
 }
-export function focusWeight(state: StrategyState, owner: StrategyOwner, focus: FocusDefinition): { value: number; breakdown: ModifierBreakdown[] } {
-  const context={state,owner,at:state.cursor}, score=calculateModifier(context,'focus_ai_weight',focus.aiWeight,focus.id);
-  let value=score.value;
-  for (const modifier of focus.aiModifiers??[]) if (checkCondition(modifier.when,context)) {
-    value+=modifier.add; score.breakdown.push({source:`focus:${focus.id}`,operation:'add',amount:modifier.add});
+export function focusWeight(
+  state: StrategyState,
+  owner: StrategyOwner,
+  focus: FocusDefinition,
+  externalModifiers?: readonly ExternalStrategyModifierSource[],
+): { value: number; breakdown: ModifierBreakdown[] } {
+  const context = { state, owner, at: state.cursor, ...(externalModifiers?.length ? { externalModifiers } : {}) };
+  const score = calculateModifier(context, 'focus_ai_weight', focus.aiWeight, focus.id);
+  let value = score.value;
+  for (const modifier of focus.aiModifiers ?? []) if (checkCondition(modifier.when, context)) {
+    value += modifier.add; score.breakdown.push({ source: `focus:${focus.id}`, operation: 'add', amount: modifier.add });
   }
-  return {value:Math.round(value*100)/100,breakdown:score.breakdown};
+  return { value: Math.round(value * 100) / 100, breakdown: score.breakdown };
 }
 /** A completed alternative locks its sibling and the sibling's dependent route. */
 export function focusBranchLocked(state: StrategyState,owner: StrategyOwner, focus: FocusDefinition): boolean {
@@ -473,6 +566,10 @@ function applyEffects(state: StrategyState,owner:StrategyOwner,effects:readonly 
       const instance:SpiritInstance={id:effect.id,grantedAt:at,expiresAt:effect.durationMinutes?at+effect.durationMinutes:null};
       p.spirits=[...p.spirits.filter(s=>s.id!==effect.id),instance];
     } else if (effect.type==='remove_spirit') p.spirits=p.spirits.filter(s=>s.id!==effect.id);
+    else if (effect.type==='shift_balance') {
+      if (owner!==MUTSUMI_OWNER_ID || !Number.isSafeInteger(effect.delta) || Math.abs(effect.delta)>100) fail('心境天平变化无效');
+      p.balance=clampMutsumiBalance((p.balance??MUTSUMI_BOP_INITIAL)+effect.delta);
+    }
   }
 }
 function finishFocus(state:StrategyState,owner:StrategyOwner,kind:'complete'|'bypass',at:number) {
@@ -494,7 +591,7 @@ function finishFocus(state:StrategyState,owner:StrategyOwner,kind:'complete'|'by
 }
 export function applyStrategyCommand(state: StrategyState,command:StrategyCommand,requestId:string):StrategyState {
   const id=identifier(requestId,'请求 ID'), encoded=JSON.stringify(command);
-  if (encoded.length>500 || !STRATEGY_OWNERS.includes(command.owner)) fail('命令参数');
+  if (encoded.length>500 || !STRATEGY_OWNERS.includes(command.owner) || !isPlayableStrategyOwner(command.owner)) fail('命令参数');
   const schema: Record<StrategyCommand['type'], string[]> = {
     set_control: ['type','owner','controller','includeInPrompt'],
     start_focus: ['type','owner','focusId'],
@@ -534,11 +631,13 @@ export function applyStrategyCommand(state: StrategyState,command:StrategyComman
 }
 
 /** Event-boundary scheduler: all owners share one chronological clock. No model calls. */
-export function settleStrategyState(input: StrategyState, end: number): StrategyState {
+export function settleStrategyState(input: StrategyState, end: number, externalModifiers?: ExternalStrategyModifiers): StrategyState {
   boundedInt(end, input.cursor, MAX_MINUTE, '结算时间');
   const state: StrategyState = structuredClone(input);
+  const mutsumi = state.people[MUTSUMI_OWNER_ID];
+  const maxDays = Math.ceil((end - input.cursor) / 1440) + 2;
   let at = state.cursor, iterations = 0;
-  const limit = 16 + FOCUS_CATALOG.length * 4 + SPIRIT_CATALOG.length * STRATEGY_OWNERS.length;
+  const limit = 16 + FOCUS_CATALOG.length * 4 + SPIRIT_CATALOG.length * STRATEGY_OWNERS.length + maxDays;
   while (at <= end) {
     if (++iterations > limit) fail('事件结算超过安全上限');
     state.cursor = at;
@@ -549,6 +648,24 @@ export function settleStrategyState(input: StrategyState, end: number): Strategy
         p.spirits = p.spirits.filter(x => x.id !== spirit.id);
         pushHistory(state, owner, 'spirit_expired', spirit.id, at);
       }
+    }
+    // Mutsumi's Balance of Power settles deterministically at each midnight boundary.
+    if (typeof mutsumi?.balance === 'number' && at > input.cursor && at % 1440 === 0) {
+      const current = mutsumi.balance;
+      const activeId = mutsumi.active?.id;
+      let shift = 0;
+      if (state.flags.crychic_reunited && activeId !== 'mutsumi_mortis_rehearsal') {
+        shift = -2;
+      } else if (state.flags.sakiko_final_break || activeId === 'mutsumi_mortis_rehearsal') {
+        shift = 2;
+      } else if (activeId === 'mutsumi_say_one_honest_word') {
+        shift = -1;
+      } else if (current > MUTSUMI_BOP_BASELINE) {
+        shift = -1;
+      } else if (current < MUTSUMI_BOP_BASELINE) {
+        shift = 1;
+      }
+      if (shift !== 0) mutsumi.balance = clampMutsumiBalance(current + shift);
     }
     // Resolve same-minute completion/cancellation dependencies before time advances.
     for (let attempt = 0; attempt < FOCUS_CATALOG.length + 2; attempt++) {
@@ -566,7 +683,7 @@ export function settleStrategyState(input: StrategyState, end: number): Strategy
         }
         if (!p.active && p.controller === 'auto') {
           const chosen = FOCUS_CATALOG.filter(f => canStartFocus(state, owner, f))
-            .map(f => ({ f, score: focusWeight(state, owner, f).value }))
+            .map(f => ({ f, score: focusWeight(state, owner, f, externalModifiers?.[owner]).value }))
             .filter(x => x.score > 0).sort((a, b) => b.score - a.score || a.f.id.localeCompare(b.f.id))[0]?.f;
           if (chosen) {
             p.active = { id: chosen.id, startedAt: at, progress: 0 };
@@ -578,6 +695,7 @@ export function settleStrategyState(input: StrategyState, end: number): Strategy
     }
     if (at === end) break;
     let nextAt = end;
+    if (typeof mutsumi?.balance === 'number') nextAt = Math.min(nextAt, Math.floor(at / 1440) * 1440 + 1440);
     const rates = new Map<StrategyOwner, number>();
     for (const owner of STRATEGY_OWNERS) {
       const p = state.people[owner];
@@ -586,7 +704,12 @@ export function settleStrategyState(input: StrategyState, end: number): Strategy
       if (!p.active) continue;
       const def = focusById.get(p.active.id)!;
       if (def.available && !checkCondition(def.available, { state, owner, at })) continue;
-      const rate = calculateModifier({ state, owner, at }, 'focus_progress_rate', 1, def.id).value;
+      const rate = calculateModifier(
+        { state, owner, at, externalModifiers: externalModifiers?.[owner] },
+        'focus_progress_rate',
+        1,
+        def.id,
+      ).value;
       if (rate <= 0) continue;
       rates.set(owner, rate);
       nextAt = Math.min(nextAt, at + Math.max(1, Math.ceil((def.durationMinutes - p.active.progress - 1e-9) / rate)));
@@ -624,6 +747,13 @@ export function appendStrategyNarrativeAudit(state: StrategyState, id: string, o
   if (state.history.some(row => row.id===id)) return;
   state.history.push({id,at:state.cursor,owner,kind:major?'major_event':'narrative',subject,note});
   state.history=state.history.slice(-HISTORY_LIMIT);
+}
+
+/** Record a validated Mutsumi Balance of Power transition in the omniscient ledger. */
+export function appendStrategyBalanceAudit(state: StrategyState, id: string, note: string): void {
+  if (state.history.some(row => row.id === id)) return;
+  state.history.push({ id, at: state.cursor, owner: MUTSUMI_OWNER_ID, kind: 'balance', subject: 'mutsumi_balance', note });
+  state.history = state.history.slice(-HISTORY_LIMIT);
 }
 
 export function consumeStrategyMajor(state: StrategyState, id: string, owner: StrategyOwner): StrategyMajor {

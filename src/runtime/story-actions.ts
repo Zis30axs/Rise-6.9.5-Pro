@@ -14,6 +14,8 @@ import { isEquipmentSlot, canEquipItem } from './equipment';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
+import { npcGiftOpportunity } from './npc-gift-traits';
+import { validateMutsumiBalanceDelta } from './mutsumi-balance';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
 
 export const STORY_ACTION_LIMITS = {
@@ -44,14 +46,17 @@ function destination(value: unknown, path: string): string {
 }
 
 /** A narrow action language; no dynamic keys, arbitrary object patches, or executable model data. */
-export function validateStoryActions(value: unknown, state: WorldState): StoryAction[] {
+export function validateStoryActions(value: unknown, state: WorldState, replayTurnId?: string): StoryAction[] {
   if (!Array.isArray(value) || value.length > STORY_ACTION_LIMITS.actions) return invalid('每轮最多 12 项行动');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_skill').length > 1)
     return invalid('每轮最多一次社交技能练习');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'exchange_contact').length > 1)
     return invalid('每轮最多直接交换一位新联系人的号码');
+  if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'mutsumi_balance').length > 1)
+    return invalid('每轮最多一次若叶睦心境天平变动');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
+  const seenNpcTraitGifts = new Set<string>();
   const courtObservations = value.filter(item => !!item && typeof item === 'object' &&
     (item as Record<string, unknown>).type === 'service' &&
     (item as Record<string, unknown>).serviceId === COURT_OBSERVE_ID);
@@ -211,6 +216,41 @@ export function validateStoryActions(value: unknown, state: WorldState): StoryAc
           quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`),
           affinityDelta: number(item.affinityDelta, 0, STORY_ACTION_LIMITS.relationshipDelta, `${path} 送礼增益`),
           reason: text(item.reason, 240, `${path} 送礼依据`) };
+      }
+      case 'npc_trait_gift': {
+        const item = record(raw, ['type', 'npcId', 'itemId', 'quantity', 'traitId', 'reason'], path);
+        if (typeof item.npcId !== 'string' || typeof item.itemId !== 'string' || typeof item.traitId !== 'string')
+          return invalid(`${path} 特质赠礼`);
+        const key = `${item.npcId}:${item.traitId}`;
+        if (seenNpcTraitGifts.has(key)) return invalid(`${path} 重复的特质每日赠礼`);
+        seenNpcTraitGifts.add(key);
+        const opportunity = npcGiftOpportunity(state, replayTurnId);
+        const matched = opportunity.offers.find(
+          offer => offer.npcId === item.npcId && offer.itemId === item.itemId && offer.traitId === item.traitId,
+        );
+        if (!matched || item.quantity !== matched.quantity) return invalid(`${path} 本轮尚未触发该特质赠礼或参数不符`);
+        return {
+          type: 'npc_trait_gift',
+          npcId: matched.npcId,
+          itemId: matched.itemId,
+          quantity: matched.quantity,
+          traitId: matched.traitId,
+          reason: text(item.reason, 240, `${path} 赠礼依据`),
+        };
+      }
+      case 'mutsumi_balance': {
+        const item = record(raw, ['type', 'delta', 'reason'], path);
+        let delta: number;
+        try {
+          delta = validateMutsumiBalanceDelta(item.delta);
+        } catch (err) {
+          return invalid(err instanceof Error ? err.message : `${path} 心境天平偏移`);
+        }
+        return {
+          type: 'mutsumi_balance',
+          delta,
+          reason: text(item.reason, 140, `${path} 心境变化依据`),
+        };
       }
       case 'use': {
         const item = record(raw, ['type', 'itemId'], path);

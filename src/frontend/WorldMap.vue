@@ -22,8 +22,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as allLocations, mapLocations } from '../runtime/model';
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
 import { californiaPlaces, internationalConnections, isInternationalLocation, isCaliforniaLocalLocation } from '../runtime/california';
-import { worldScenePeople, worldScenePosition } from '../runtime/world-presence';
-import { activeProtagonist, personState, protagonistNames } from '../runtime/protagonist-world';
+import { worldSceneRoster, worldScenePosition } from '../runtime/world-presence';
+import { getSceneArea, sceneLocationId, scenePersonLabel } from '../runtime/scene-context';
+import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, locationDistrict, mapDistricts, type MapDistrictId } from './map-districts';
@@ -99,7 +100,8 @@ const regionId = ref(TOKYO_REGION_ID);
 const selectedId = ref(TOKYO_REGION_ID || TOKYO_COUNTRY_ID);
 const selectedKind = ref<'country' | 'division' | 'landmark'>('division');
 const search = ref('');
-const showDemoPeople = ref(false);
+const mapLayers = ref({ people: true, passersby: true, places: true, events: true });
+const hiddenLabelCount = ref(0);
 const activeEventId = ref('');
 const selectedCity = ref<MapDistrictId>(locationDistrict(props.model.state.locationId));
 const detailDistrict = ref<MapDistrictId | null>(null);
@@ -141,31 +143,20 @@ const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
 
-// Explicit prototype records only; never infer a location from a contact's status text.
-const personWorldLocationRefs = [{ contactId: 'lin', locationId: 'library', record: '演示记录：在图书馆整理笔记' }];
-const affinityThreshold = 10;
-const demoPeople = computed(() => showDemoPeople.value ? personWorldLocationRefs.flatMap(record => {
-  const contact = props.model.state.contacts.find(item => item.id === record.contactId);
-  const place = locations.find(item => item.id === record.locationId);
-  return contact && place && contact.affinity >= affinityThreshold
-    ? [{ ...record, name: contact.name, personId: contact.sourcePersonId ?? contact.id, portraitId: contact.portraitId, affinity: contact.affinity, place, source: 'demo' as const }] : [];
-}) : []);
-/** Location markers share the talk population; NPC disclosure uses this viewpoint's contacts. */
-const visiblePeople = computed(() => {
-  const state = props.model.state;
-  const position = worldScenePosition(state);
-  const people = position ? worldScenePeople(state).flatMap(person => {
-    if (person.protagonistId && !state.interior && personState(state, person.protagonistId).locationId !== state.locationId) return [];
-    const contact = state.contacts.find(item => item.id === person.contactId || item.sourcePersonId === person.id || item.id === person.id);
-    if (!person.protagonistId && (!contact || contact.affinity < affinityThreshold || Math.hypot(person.x - position.x, person.z - position.z) > 35)) return [];
-    const point = state.interior ? mapLocationPoint(state.interior.roomId) : { x: person.x, z: person.z };
-    if (!point) return [];
-    return [{ contactId: person.contactId ?? person.id, name: person.protagonistId ? protagonistNames[person.protagonistId] : person.name,
-      personId: person.id, portraitId: person.portraitId, protagonistId: person.protagonistId, position: point,
-      source: person.protagonistId ? 'protagonist' as const : 'scene' as const }];
-  }) : [];
-  return [...people, ...demoPeople.value];
-});
+/** Map browsing and layer visibility never change the narrative roster. */
+const visiblePeople = computed(() => worldSceneRoster(props.model.state).flatMap(({ person, distance, kind, canTalk }) => {
+  const point = props.model.state.interior ? mapLocationPoint(props.model.state.interior.roomId) : { x: person.x, z: person.z };
+  if (!point) return [];
+  const area = getSceneArea(person.x, person.z);
+  const districtId = locationDistrict(props.model.state.interior?.roomId ?? (area ? sceneLocationId(area.id) : props.model.state.locationId));
+  return [{ contactId: person.contactId ?? person.id, name: scenePersonLabel(person),
+    personId: person.id, portraitId: person.portraitId, protagonistId: person.protagonistId,
+    position: point, districtId, kind, distance, canTalk,
+    source: person.protagonistId ? 'protagonist' as const : 'scene' as const }];
+}));
+const districtPeople = computed(() => visiblePeople.value.filter(person => person.districtId === detailDistrict.value));
+const mapPeople = computed(() => districtPeople.value.filter(person =>
+  person.kind === 'person' ? mapLayers.value.people : mapLayers.value.passersby));
 const routeOutlooks = computed(() => new Map(locations.map(place => [place.id, getRouteOutlook(props.model.state, place.id)])));
 const travelMinutes = (locationId: string) => 15 + (routeOutlooks.value.get(locationId)?.extraMinutes ?? 0);
 const roadEvents = computed(() => locations.flatMap(place => {
@@ -645,6 +636,13 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
     <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
     <div class="wm-layout">
       <div class="wm-map-column">
+        <fieldset v-if="localLayer" class="wm-label-filters" aria-label="沙盘标签分类">
+          <legend>地图标签</legend>
+          <label><input v-model="mapLayers.people" type="checkbox"/>人物</label>
+          <label><input v-model="mapLayers.passersby" type="checkbox"/>行人</label>
+          <label><input v-model="mapLayers.places" type="checkbox"/>地点</label>
+          <label><input v-model="mapLayers.events" type="checkbox"/>路况</label>
+        </fieldset>
         <div ref="viewport" class="wm-viewport" :class="{ 'is-orbit-mode': !geographicLayer && interactionMode === 'orbit' }" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" :data-map-mode="interactionMode" @contextmenu.prevent @dblclick="doubleClick" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage">
             <div v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
@@ -662,9 +660,11 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
                 :disabled-ids="localLayer ? localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id) : []"
                 :player-name="protagonistNames[activeProtagonist(model.state)]"
                 :player-id="activeProtagonist(model.state)"
-                :people="localLayer ? visiblePeople : []" :road-events="localLayer ? roadEvents : []"
+                :people="localLayer ? mapPeople : []" :road-events="localLayer && mapLayers.events ? roadEvents : []"
+                :show-places="mapLayers.places"
                 @select="enterDistrict($event)" @travel="travelTo($event)"
                 @event="openRouteEvent($event, false)"
+                @overflow="hiddenLabelCount = $event"
                 @scale="setTokyoMapScale" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
@@ -688,9 +688,8 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <button type="button" aria-label="向右旋转地图" @click="rotateBy(30)">↷</button>
           </div>
         </div>
-        <div v-if="roadEvents.length && localLayer && !novelMode" class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="openRouteEvent(event.id, false)">{{ event.icon }} {{ event.title }}</button></div>
-        <label v-if="localLayer" class="wm-demo-toggle"><input v-model="showDemoPeople" type="checkbox" aria-label="显示演示人物定位"/><span>演示图层：人物定位<small>有明确演示记录，且关系 ≥ {{ affinityThreshold }} 才显示</small></span></label>
-        <p v-if="localLayer" class="wm-boundary-note">演示记录 · 只显示已知且关系达标的位置</p>
+        <details v-if="roadEvents.length && localLayer" class="wm-road-list"><summary>路况 · {{ roadEvents.length }}</summary><div class="wm-route-events" aria-label="路段事件"><button v-for="event in roadEvents" :key="event.id" type="button" :data-map-target="'event:' + event.id" :aria-label="'查看' + event.label" @click="openRouteEvent(event.id, false)">{{ event.icon }} {{ event.title }}</button></div></details>
+        <p v-if="!geographicLayer && hiddenLabelCount" class="wm-detail-note" data-map-label-overflow>有 {{ hiddenLabelCount }} 个标签已收起，可在列表中查看。</p>
         <div v-if="activeEvent && localLayer" class="wm-event-detail" role="status"><h3>{{ activeEvent.title }}</h3><p>{{ activeEvent.detail }}</p><button type="button" @click="activeEventId = ''">收起事件详情</button></div>
       </div>
       <aside class="wm-details">
@@ -702,7 +701,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点后按预告结算，再继续阅读；跨区使用现有公交路线。</p>
           <p v-if="!novelMode" class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p><p v-if="needsTransitReturn && !novelMode" class="wm-detail-note">当前在校园外，请在附近公交站乘车返回校园。</p>
           <p v-if="!novelMode && !roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
-          <div v-if="visiblePeople.length" class="wm-people-summary"><h3>附近人物</h3><p v-for="person in visiblePeople" :key="person.contactId">{{ person.name }}<small>{{ person.source === 'demo' ? '演示定位' : person.source === 'protagonist' ? '另一主角的实际场景位置' : '现场人物（场景存档）' }}</small></p></div>
+          <div v-if="districtPeople.length" class="wm-people-summary"><h3>附近人物</h3><p v-for="person in districtPeople" :key="person.contactId">{{ person.name }}<small>{{ person.kind === 'person' ? '人物' : '行人' }} · {{ Math.round(person.distance * 10) / 10 }} 米 · {{ person.canTalk ? '身边' : '远处' }}</small></p></div>
         </template>
         <template v-else-if="layer === 'city'">
           <small class="wm-kicker">现有城市片区</small><h3>{{ cityDetail.name }}</h3><p class="wm-detail-note">{{ cityDetail.description }}</p>

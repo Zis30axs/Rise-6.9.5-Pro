@@ -5,6 +5,9 @@ import { activeProtagonist, protagonistNames } from '../runtime/protagonist-worl
 import { musicPersonId, bandLeaderName } from '../runtime/livehouse';
 import { allResidentCast } from '../runtime/npc-cast';
 import { createSocietyState, type AdvisorSeat, type SocietyCommand } from '../runtime/society';
+import { formatNpcTraitModifiers, resolveNpcTraits, type NpcTraitDefinition } from '../runtime/npc-traits';
+import { MODIFIER_TARGET_LABELS, type ModifierTarget, type StrategyModifier } from '../runtime/strategy';
+import FactionFocusSection from './FactionFocusSection.vue';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 type SocietyTab = 'bands' | 'circles' | 'unions';
@@ -32,6 +35,52 @@ const seats: readonly { id: AdvisorSeat; icon: string; name: string; roleNote: s
   { id: 'social', icon: '✦', name: '社交顾问', roleNote: '对外联络与成员协调' },
   { id: 'operations', icon: '⚙', name: '组织顾问', roleNote: '日程规划与现场后勤' },
 ];
+function advisorTraitsFor(band: (typeof myBands.value)[number], seatId: AdvisorSeat): readonly NpcTraitDefinition[] {
+  const personId = advisorFor(band.id, seatId);
+  if (!personId) return [];
+  const member = band.members.find(m => m.personId === personId);
+  const contact = props.model.state.contacts.find(c => c.sourcePersonId === personId || c.id === personId);
+  return resolveNpcTraits({
+    id: contact?.id ?? personId,
+    personId,
+    sourcePersonId: contact?.sourcePersonId ?? personId,
+    name: contact?.name ?? member?.name ?? personId,
+    tag: contact?.tag,
+    summary: contact?.summary,
+    status: contact?.status,
+  });
+}
+function bandAdvisorSummary(band: (typeof myBands.value)[number]): readonly string[] {
+  const seen = new Set<string>();
+  const mods: StrategyModifier[] = [];
+  for (const seat of seats) {
+    const personId = advisorFor(band.id, seat.id);
+    if (!personId) continue;
+    for (const item of advisorTraitsFor(band, seat.id)) {
+      const key = `${personId}:${item.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      mods.push(...item.modifiers);
+    }
+  }
+  if (!mods.length) return [];
+  const grouped = new Map<ModifierTarget, { adds: number; mult: number }>();
+  for (const mod of mods) {
+    const entry = grouped.get(mod.target) ?? { adds: 0, mult: 1 };
+    if (mod.operation === 'add') entry.adds += mod.amount;
+    else entry.mult *= mod.amount;
+    grouped.set(mod.target, entry);
+  }
+  const lines: string[] = [];
+  for (const [target, { adds, mult }] of grouped) {
+    const label = MODIFIER_TARGET_LABELS[target];
+    const parts: string[] = [];
+    if (adds !== 0) parts.push(`${adds > 0 ? '+' : ''}${Math.round(adds * 100) / 100}`);
+    if (mult !== 1) parts.push(`× ${Math.round(mult * 100) / 100}`);
+    if (parts.length) lines.push(`${label} ${parts.join(' ')}`);
+  }
+  return lines;
+}
 const circleName = ref('');
 const circleInvites = ref<Record<string, string>>({});
 const unionName = ref('');
@@ -170,7 +219,21 @@ async function joinUnion(unionId: string) {
               <option value="">未任命</option>
               <option v-for="member in band.members" :key="member.personId" :value="member.personId">{{ member.name }}</option>
             </select>
+            <div v-if="advisorTraitsFor(band, seat.id).length" class="tno-advisor-traits">
+              <div v-for="item in advisorTraitsFor(band, seat.id)" :key="item.id" class="tno-advisor-trait">
+                <div class="tno-advisor-trait-head">
+                  <span aria-hidden="true">{{ item.icon }}</span>
+                  <strong>{{ item.title }}</strong>
+                </div>
+                <p v-if="formatNpcTraitModifiers(item).length" class="tno-advisor-trait-mods">{{ formatNpcTraitModifiers(item).join(' · ') }}</p>
+              </div>
+            </div>
+            <p v-else-if="advisorFor(band.id, seat.id)" class="tno-advisor-empty">该成员暂无额外顾问修正</p>
           </label>
+        </div>
+        <div v-if="bandAdvisorSummary(band).length" class="tno-cabinet-buffs">
+          <span class="tno-cabinet-buffs-label">内阁协同修正</span>
+          <span v-for="line in bandAdvisorSummary(band)" :key="line" class="tno-cabinet-buff-pill">{{ line }}</span>
         </div>
       </article>
       <p v-if="!myBands.length" class="society-empty">目前没有你正式加入的乐队。乐队的创建与成员邀请仍在 Live House 完成。</p>
@@ -268,5 +331,7 @@ async function joinUnion(unionId: string) {
       </article>
       <p v-if="!society.unions.length" class="society-empty">尚无广域联合体。先创建自己的社交圈，或在 Live House 拥有正式乐队。</p>
     </template>
+
+    <FactionFocusSection :model="model" :actions="actions" />
   </section>
 </template>

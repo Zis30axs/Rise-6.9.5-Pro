@@ -3,7 +3,7 @@ import { characterForPerson } from '../frontend/character-appearance';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONIST_PERSON_ID_LIST, protagonistPersonId, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames, type PersonalState } from './protagonist-world';
-import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, scenePersonAnchors, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
+import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, selectSceneRoster, scenePersonAnchors, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
@@ -204,6 +204,11 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
 }
 
 /** Rendering, talk targeting and model context share the same saved population. */
+export function worldSceneRoster(state: WorldState, population = worldScenePeople(state)) {
+  const position = worldScenePosition(state);
+  return position ? selectSceneRoster(population, position, !!state.interior, state.scene?.encounterId) : [];
+}
+
 export function worldSceneContext(state: WorldState) {
   const scene = getSceneContext(worldScenePresence(state), state.interior, state.contacts, state.clock, [], worldScenePeople(state));
   if (!scene) return null;

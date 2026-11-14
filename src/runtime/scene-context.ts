@@ -269,6 +269,39 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
 }
 
 export const SCENE_ENCOUNTER_DISTANCE = 7;
+export const SCENE_VISIBLE_DISTANCE = 35;
+export type ScenePersonKind = 'person' | 'passerby';
+
+export function scenePersonKind(person: ScenePerson): ScenePersonKind {
+  return person.id.startsWith('ped-') && !person.contactId && !person.isMain ? 'passerby' : 'person';
+}
+
+export function scenePersonLabel(person: ScenePerson): string {
+  return scenePersonKind(person) === 'person' ? person.name : `陌生${person.identity}`;
+}
+
+/** A single read-only roster for the map, location list and narrative request.
+ * Keep every visible established identity; only background pedestrians have a cap.
+ * Visibility never grants talking, contact exchange or phone access.
+ */
+export function selectSceneRoster<T extends ScenePerson>(population: readonly T[], position: { x: number; z: number }, indoors = false, encounterId?: string | null) {
+  const seen = new Set<string>();
+  const rows = population.flatMap(person => {
+    if (seen.has(person.id)) return [];
+    seen.add(person.id);
+    const distance = Math.hypot(person.x - position.x, person.z - position.z);
+    const kind = scenePersonKind(person);
+    if (!Number.isFinite(distance) || distance > (indoors || kind === 'passerby' ? 18 : SCENE_VISIBLE_DISTANCE)) return [];
+    return [{ person, distance, kind, canTalk: distance <= SCENE_ENCOUNTER_DISTANCE }];
+  }).sort((a, b) => Number(a.kind === 'passerby') - Number(b.kind === 'passerby') ||
+    Number(b.person.id === encounterId && b.canTalk) - Number(a.person.id === encounterId && a.canTalk) ||
+    a.distance - b.distance || a.person.id.localeCompare(b.person.id));
+  let passersby = 0;
+  return rows.filter(row => row.kind !== 'passerby' || ++passersby <= 8);
+}
+
+export const SCENE_POPULATION_INSTRUCTIONS = '【现场人物】scene.nearbyPeople 与沙盘、地点人物列表共用实际在场名册，按已登记人物在前、随机行人在后的次序提供。优先承接这些人物和 scene.encounter，随机路人只作补充，不得替换、重命名或重复生成已有身份。canTalk=false 表示目前只能远望，不得声称已当面交谈、旁听、交换号码或查看手机；先通过合法行动靠近后才可互动。knownToPlayer=false 时不得让主角自动知道其姓名、私人经历或秘密。其他房间、已离开、仍在路上的人不得凭地图浏览、联系人或历史正文判定在场；地图缩放、筛选、标签收起不改变实际位置或知情。';
+
 function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
   return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
@@ -278,10 +311,10 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
-    const nearbyPeople = (population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds))
-      .map(person => ({ ...person, ...relationshipOf(person, contacts), distanceMetres: Math.round(Math.hypot(person.x - interior.x, person.z - interior.z) * 10) / 10 }))
-      .filter(person => person.distanceMetres <= 18);
-    const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.distanceMetres <= SCENE_ENCOUNTER_DISTANCE) ?? null;
+    const nearbyPeople = selectSceneRoster(population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds), interior, true, scene?.encounterId)
+      .map(({ person, distance, kind, canTalk }) => ({ ...person, ...relationshipOf(person, contacts),
+        kind, canTalk, knownToPlayer: !!person.contactId, distanceMetres: Math.round(distance * 10) / 10 }));
+    const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.canTalk) ?? null;
     return {
       areaId: room.id, label: room.label, outdoors: false, skyVisible: false,
       position: { x: interior.x, z: interior.z, yaw: interior.yaw, unit: '示意米' },
@@ -295,11 +328,7 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
   const people = population ?? getScenePeople(scene, contacts, clock, hiddenPersonIds);
-  const nearby = people
-    .map(person => ({ person, distance: Math.hypot(person.x - scene.x, person.z - scene.z) }))
-    .filter(item => item.distance <= 18)
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, 8);
+  const nearby = selectSceneRoster(people, scene, false, scene.encounterId);
   const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain,
     outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null, ...relationshipOf(person, contacts) });
   const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
@@ -310,7 +339,8 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     nearbyLandmarks: sceneLandmarks
       .map(landmark => ({ id: landmark.id, label: landmark.label, distanceMetres: Math.round(Math.hypot(landmark.x - scene.x, landmark.z - scene.z)) }))
       .filter(landmark => landmark.distanceMetres <= 40).sort((a, b) => a.distanceMetres - b.distanceMetres).slice(0, 5),
-    nearbyPeople: nearby.map(({ person, distance }) => ({ ...personContext(person), distanceMetres: Math.round(distance * 10) / 10 })),
+    nearbyPeople: nearby.map(({ person, distance, kind, canTalk }) => ({ ...personContext(person),
+      kind, canTalk, knownToPlayer: !!person.contactId, distanceMetres: Math.round(distance * 10) / 10 })),
     encounter: encounter ? personContext(encounter) : null,
   };
 }

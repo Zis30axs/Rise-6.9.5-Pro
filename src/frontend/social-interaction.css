@@ -12,6 +12,9 @@
 .reading-heading .encounter-caption-inline>div{display:block;min-width:0}.encounter-caption-inline strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nearby-people{margin:18px 0;padding:12px;border:1px solid var(--line);border-radius:11px;background:#ffffff04}
 .nearby-people h2{font-size:14px;font-weight:500;color:#e6d7af}.nearby-people>p{margin-top:8px!important;font-size:12px;color:#b1bfaa}
+.nearby-people h3{margin:14px 0 0;font-size:11px;font-weight:500;color:#b8c4ad}
+.nearby-people button:disabled{opacity:.45;cursor:default}
+@media(max-width:420px){.nearby-people>div{flex-wrap:wrap}.nearby-people>div>span{flex-basis:100%}}
 .nearby-people>div{display:flex;gap:7px;align-items:center;padding-top:10px}.nearby-people>div>span{flex:1;min-width:0}.nearby-people strong{font-size:13px;font-weight:500}.nearby-people small{display:block;font-size:10px;color:#b8c4ad;overflow-wrap:anywhere}
 .uc-shell .nearby-people button{min-height:44px;min-width:44px;padding:7px 10px;border:1px solid #d8c79850;border-radius:7px;color:#e9d5ab;font-size:12px}
 @media(max-width:760px){.novel-event-text{font-size:17px;line-height:1.75;padding:5px 0}.encounter-caption{top:142px;left:12px;max-width:calc(100% - 24px);padding:4px 9px;gap:9px}.encounter-caption small{font-size:9px}.uc-shell .encounter-caption button{min-height:36px}.story-dialogue-fold p{font-size:15px}.story-dialogue-fold summary{min-height:36px}.uc-shell .novel-dialogue-controls{gap:8px}.uc-shell .novel-dialogue-controls button{font-size:10px;min-height:38px}}

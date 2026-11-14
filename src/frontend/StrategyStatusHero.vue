@@ -4,7 +4,10 @@ import crychicBranchIcon from './assets/focus/crychic-branch.webp';
 import mygoBranchIcon from './assets/focus/mygo-branch.webp';
 import type { WorldState } from './types';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
-import { FOCUS_CATALOG, SPIRIT_CATALOG, TRAIT_CATALOG, type StrategyModifier } from '../runtime/strategy';
+import {
+  FOCUS_CATALOG, MODIFIER_TARGET_LABELS, SPIRIT_CATALOG, TRAIT_CATALOG,
+  type StrategyModifier,
+} from '../runtime/strategy';
 import { resolveProtagonistPhonePose } from './protagonist-phone-art';
 import { resolveSakikoOutfit } from './sakiko-art-policy';
 import { resolveSakikoIndoorPortrait } from './sakiko-indoor-art';
@@ -52,11 +55,7 @@ const focusArtwork: Readonly<Record<string, string>> = {
 };
 const activeFocusIcon = computed(() => (focus.value ? focusArtwork[focus.value.id] ?? null : null));
 
-const modifierTitle: Readonly<Record<StrategyModifier['target'], string>> = {
-  focus_ai_weight: '国策倾向权重',
-  focus_progress_rate: '国策推进效率',
-  social_xp_rate: '社交经验获取',
-};
+const modifierTitle: Readonly<Record<StrategyModifier['target'], string>> = MODIFIER_TARGET_LABELS;
 function modifierText(item: StrategyModifier): string {
   const value = item.operation === 'multiply' ? `× ${item.amount}` : `${item.amount >= 0 ? '+' : ''}${item.amount}`;
   return `${modifierTitle[item.target]} ${value}`;

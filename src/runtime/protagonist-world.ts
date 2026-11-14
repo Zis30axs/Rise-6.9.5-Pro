@@ -17,10 +17,12 @@ import { captureNewJournalEvidence, createWeeklyMemory, parseWeeklyMemory, settl
 import { createSocialSkills, parseSocialSkills, type SocialSkillState } from './social-skills';
 import { parseSocialInvitations, type SocialInvitation } from './natural-interactions';
 import { settleSocialAgendas } from './social-agenda';
-import { createStrategyState, parseStrategyState, type StrategyState } from './strategy';
+import { createGameStrategyState, parseStrategyState, type StrategyState } from './strategy';
 import { settleStrategyWorld } from './strategy-world';
 import { settleSocietyWorld } from './society-world';
 import { createSocietyState, parseSocietyState, type SocietyState } from './society';
+import { createFactionFocusState, parseFactionFocusState, type FactionFocusWorldState } from './faction-focus';
+import { settleFactionFocusWorld } from './faction-focus-world';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
@@ -82,6 +84,8 @@ export interface ProtagonistWorld {
   strategy?: StrategyState;
   /** Optional local circles, coalitions, and formal band advisors; no duplicate band roster. */
   society?: SocietyState;
+  /** Offline HoI4-style faction focus trees and shared faction spirits. */
+  factionFocuses?: FactionFocusWorldState;
   /** Shared public graph; stable identities live in the authored network registry. */
   internet?: InternetState;
 }
@@ -178,7 +182,7 @@ export function enableProtagonists(s: WorldState): WorldState {
     p.weeklyMemory ??= createWeeklyMemory(gameMinute(next));
     p.socialSkills ??= createSocialSkills();
     for (const owner of PROTAGONISTS) ensurePersonalKeepsake(personState(next, owner), owner);
-    p.strategy ??= createStrategyState(gameMinute(next));
+    p.strategy ??= createGameStrategyState(gameMinute(next));
     p.society ??= createSocietyState();
     return next;
   }
@@ -198,8 +202,9 @@ export function enableProtagonists(s: WorldState): WorldState {
   next.protagonists!.backgroundLife = initializeBackgroundLife(next);
   next.protagonists!.weeklyMemory = createWeeklyMemory(gameMinute(next));
   for (const owner of PROTAGONISTS) ensurePersonalKeepsake(personState(next, owner), owner);
-  next.protagonists!.strategy = createStrategyState(gameMinute(next));
+  next.protagonists!.strategy = createGameStrategyState(gameMinute(next));
   next.protagonists!.society = createSocietyState();
+  next.protagonists!.factionFocuses = createFactionFocusState(gameMinute(next));
   // Other viewpoints start unassigned, even when the first protagonist has a major.
   return next;
 }
@@ -211,7 +216,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society'),...optional('internet')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society'),...optional('factionFocuses'),...optional('internet')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -334,8 +339,9 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   result.weeklyMemory = Object.hasOwn(p,'weeklyMemory') ? parseWeeklyMemory(p.weeklyMemory,base.clock) : createWeeklyMemory(gameMinute(base));
   result.socialSkills = Object.hasOwn(p,'socialSkills') ? parseSocialSkills(p.socialSkills) : createSocialSkills();
   if (Object.hasOwn(p, 'socialInvitations')) result.socialInvitations = parseSocialInvitations(p.socialInvitations, gameMinute(base));
-  result.strategy = Object.hasOwn(p, 'strategy') ? parseStrategyState(p.strategy, gameMinute(base)) : createStrategyState(gameMinute(base));
+  result.strategy = Object.hasOwn(p, 'strategy') ? parseStrategyState(p.strategy, gameMinute(base)) : createGameStrategyState(gameMinute(base));
   result.society = Object.hasOwn(p, 'society') ? parseSocietyState(p.society, gameMinute(base)) : createSocietyState();
+  result.factionFocuses = Object.hasOwn(p, 'factionFocuses') ? parseFactionFocusState(p.factionFocuses, gameMinute(base)) : createFactionFocusState(gameMinute(base));
   if (Object.hasOwn(p, 'internet')) result.internet = parseInternetState(p.internet);
   return result;
 }
@@ -370,6 +376,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   settleBackgroundLife(before,next,reservedOtherSide);
   settleStrategyWorld(before,next);
   settleSocietyWorld(before,next);
+  settleFactionFocusWorld(before,next);
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
   captureNewJournalEvidence(before,next);

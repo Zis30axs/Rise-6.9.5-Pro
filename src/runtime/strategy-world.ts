@@ -2,9 +2,10 @@ import type { WorldState } from '../frontend/types';
 import { PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { adjustEnergy } from './energy';
 import { emptyLivehouseVisit, INSTRUMENT_SKILL_CAP } from './livehouse-visit';
+import { advisorDecisionAdjustments, strategyExternalModifiersByOwner } from './npc-traits';
 import { personState } from './protagonist-world';
 import {
-  DECISION_CATALOG, applyStrategyCommand, createStrategyState, parseStrategyState,
+  DECISION_CATALOG, applyStrategyCommand, createGameStrategyState, parseStrategyState,
   settleStrategyState, type StrategyCommand,
 } from './strategy';
 
@@ -15,17 +16,21 @@ const clampStat = (value: number) => Math.max(0, Math.min(100, Math.round(value)
 export function commitStrategyCommand(world: WorldState, requestId: string, command: StrategyCommand): WorldState {
   if (!world.protagonists) throw new Error('请先初始化四主角世界');
   const next: WorldState = structuredClone(world), p = next.protagonists!;
-  const before = p.strategy ?? createStrategyState(gameMinute(world));
+  const before = p.strategy ?? createGameStrategyState(gameMinute(world));
   const isReplay = before.receipts.some(row => row.id === requestId);
   const decision = command.type === 'choose_decision'
     ? DECISION_CATALOG.find(row => row.id === command.decisionId && row.owner === command.owner)
     : undefined;
   const isPlayableOwner = (PROTAGONISTS as readonly string[]).includes(command.owner);
   const person = isPlayableOwner ? personState(next, command.owner as ProtagonistId) : null;
+  const decisionEffect = decision && isPlayableOwner
+    ? advisorDecisionAdjustments(next, command.owner as ProtagonistId, decision)
+    : null;
+  const effectiveCost = decisionEffect?.energyCost ?? decision?.energyCost ?? 0;
 
-  if (!isReplay && command.type === 'choose_decision' && decision?.energyCost && person) {
-    if (person.player.energy < decision.energyCost) {
-      throw new Error(`精力不足，执行「${decision.title}」需要 ${decision.energyCost} 点精力。`);
+  if (!isReplay && command.type === 'choose_decision' && effectiveCost > 0 && person) {
+    if (person.player.energy < effectiveCost) {
+      throw new Error(`精力不足，执行「${decision!.title}」需要 ${effectiveCost} 点精力。`);
     }
   }
 
@@ -33,25 +38,30 @@ export function commitStrategyCommand(world: WorldState, requestId: string, comm
   if (changed === before) return world; // same request, same payload
 
   if (command.type === 'choose_decision' && decision && person) {
-    if (decision.energyCost) {
-      person.player.energy = adjustEnergy(person.player.energy, -decision.energyCost);
+    const effectiveStress = decisionEffect?.stressDelta ?? decision.stressDelta ?? 0;
+    const effectiveInstrument = decisionEffect?.instrumentDelta ?? decision.instrumentDelta ?? 0;
+    if (effectiveCost > 0) {
+      person.player.energy = adjustEnergy(person.player.energy, -effectiveCost);
     }
     if (decision.moraleDelta) {
       person.player.morale = clampStat(person.player.morale + decision.moraleDelta);
     }
-    if (decision.stressDelta) {
-      person.player.stress = clampStat(person.player.stress + decision.stressDelta);
+    if (effectiveStress) {
+      person.player.stress = clampStat(person.player.stress + effectiveStress);
     }
-    if (decision.instrumentDelta && isPlayableOwner) {
+    if (effectiveInstrument && isPlayableOwner) {
       const ownerId = command.owner as ProtagonistId;
       const visit = next.livehouseVisit ?? emptyLivehouseVisit();
-      visit.skill[ownerId] = Math.min(INSTRUMENT_SKILL_CAP, (visit.skill[ownerId] ?? 0) + decision.instrumentDelta);
+      visit.skill[ownerId] = Math.min(INSTRUMENT_SKILL_CAP, (visit.skill[ownerId] ?? 0) + effectiveInstrument);
       next.livehouseVisit = visit;
     }
     const stamp = `第 ${next.clock.day} 天 ${String(next.clock.hour).padStart(2, '0')}:${String(next.clock.minute).padStart(2, '0')}`;
-    const costNote = decision.energyCost ? `消耗精力 ${decision.energyCost}` : '';
-    const instNote = decision.instrumentDelta ? `乐器熟练度 +${decision.instrumentDelta}` : '';
-    const extra = [costNote, instNote].filter(Boolean).join('，');
+    const costNote = effectiveCost > 0 ? `消耗精力 ${effectiveCost}` : '';
+    const instNote = effectiveInstrument > 0 ? `乐器熟练度 +${effectiveInstrument}` : '';
+    const advisorNote = decisionEffect?.appliedAdvisorNames.length
+      ? `顾问助益：${decisionEffect.appliedAdvisorNames.join('、')}`
+      : '';
+    const extra = [costNote, instNote, advisorNote].filter(Boolean).join('，');
     person.journal.push({
       id: `decision:${requestId}`,
       at: stamp,
@@ -70,7 +80,7 @@ export function settleStrategyWorld(before: WorldState, after: WorldState): void
   if (!after.protagonists) return;
   const start = gameMinute(before), end = gameMinute(after);
   if (end < start) throw new Error('国策时钟不能倒退');
-  const saved = after.protagonists.strategy ?? createStrategyState(start);
+  const saved = after.protagonists.strategy ?? createGameStrategyState(start);
   if (saved.cursor !== start) throw new Error('国策时钟与权威时间不同步');
-  after.protagonists.strategy = settleStrategyState(saved, end);
+  after.protagonists.strategy = settleStrategyState(saved, end, strategyExternalModifiersByOwner(after));
 }

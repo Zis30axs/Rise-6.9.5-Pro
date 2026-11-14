@@ -589,9 +589,9 @@ function composeSmsToCardHolder() {
   emit('closePanel');
 }
 
-const strategyDossier = computed(() => identityStrategyDossier(activeCard.value.id, activeCard.value.personId, props.model.state));
+const strategyDossier = computed(() => identityStrategyDossier(activeCard.value.id, activeCard.value.personId, props.model.state, activeCard.value));
 const strategyTime = (at: number) => '第 ' + (Math.floor(at / 1440) + 1) + ' 天 ' + String(Math.floor(at % 1440 / 60)).padStart(2, '0') + ':' + String(at % 60).padStart(2, '0');
-const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: '完成国策', cancel: '取消国策', bypass: '跳过国策', decision: '执行决议', narrative: '剧情进展', major_event: '重大事件', spirit_expired: '民族精神到期' } as Record<string, string>)[kind] ?? kind;
+const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: '完成国策', cancel: '取消国策', bypass: '跳过国策', decision: '执行决议', narrative: '剧情进展', major_event: '重大事件', spirit_expired: '民族精神到期', balance: '心境偏移' } as Record<string, string>)[kind] ?? kind;
 </script>
 
 <template>
@@ -1261,9 +1261,96 @@ const strategyKindLabel = (kind: string) => ({ start: '开始国策', complete: 
         <article><h6>领导者特质</h6><p v-for="x in strategyDossier.traits" :key="x">{{ x }}</p><p v-if="!strategyDossier.traits.length">暂无</p></article>
         <article><h6>民族精神</h6><p v-for="x in strategyDossier.spirits" :key="x.title">{{ x.title }} · {{ x.expiresAt===null?'持续':strategyTime(x.expiresAt)+' 到期' }}</p><p v-if="!strategyDossier.spirits.length">暂无</p></article>
       </div>
+      <div v-else-if="strategyDossier.npcTraits.length || strategyDossier.npcFocusNodes.length" class="idcard-npc-traits-block">
+        <template v-if="strategyDossier.npcTraits.length">
+          <div class="idcard-npc-traits-head">
+            <span class="idcard-npc-traits-title">人物特质 · 顾问禀赋</span>
+            <div class="idcard-npc-advisor-pills">
+              <span v-for="place in strategyDossier.advisorPlacements" :key="`${place.bandId}:${place.seat}`" class="idcard-npc-advisor-pill is-active">
+                顾问生效中 · {{ place.bandName }} · {{ place.seatLabel }}
+              </span>
+              <span v-if="!strategyDossier.advisorPlacements.length" class="idcard-npc-advisor-pill">
+                未任用 · 可于乐队内阁任命
+              </span>
+            </div>
+          </div>
+          <div class="idcard-npc-traits-grid">
+            <article v-for="item in strategyDossier.npcTraits" :key="item.id" class="idcard-npc-trait-card">
+              <div class="idcard-npc-trait-top">
+                <span class="idcard-npc-trait-icon" aria-hidden="true">{{ item.icon }}</span>
+                <div class="idcard-npc-trait-titles">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.category }}<template v-if="item.recommendedSeat"> · 推荐 {{ item.recommendedSeat }}</template></small>
+                </div>
+              </div>
+              <p class="idcard-npc-trait-summary">{{ item.summary }}</p>
+              <div v-if="item.modifiers.length" class="idcard-npc-trait-mods">
+                <span v-for="mod in item.modifiers" :key="mod" class="idcard-npc-trait-mod">{{ mod }}</span>
+              </div>
+            </article>
+          </div>
+        </template>
+        <div v-if="strategyDossier.npcFocusNodes.length" class="idcard-npc-focus-block" data-npc-focus-block>
+          <div class="idcard-npc-traits-head">
+            <span class="idcard-npc-traits-title">个人国策 · 自主轨迹</span>
+            <span class="idcard-npc-advisor-pill is-active">AI 自主推进</span>
+          </div>
+          <article v-if="strategyDossier.mutsumiBalance" class="idcard-strategy-block idcard-bop-card" data-mutsumi-bop>
+            <div class="idcard-bop-head">
+              <span class="idcard-bop-title">心境天平 · 本我与舞台防卫</span>
+              <span class="idcard-bop-badge" :class="`is-${strategyDossier.mutsumiBalance.side}`">
+                {{ strategyDossier.mutsumiBalance.tierLabel }}（{{ strategyDossier.mutsumiBalance.value > 0 ? `+${strategyDossier.mutsumiBalance.value}` : strategyDossier.mutsumiBalance.value }}）
+              </span>
+            </div>
+            <div class="idcard-bop-poles">
+              <span>{{ strategyDossier.mutsumiBalance.poleLeft }} (-100)</span>
+              <span>{{ strategyDossier.mutsumiBalance.poleRight }} (+100)</span>
+            </div>
+            <div
+              class="idcard-bop-track"
+              role="meter"
+              :aria-label="`若叶睦心境天平：${strategyDossier.mutsumiBalance.tierLabel}`"
+              :aria-valuenow="strategyDossier.mutsumiBalance.value"
+              aria-valuemin="-100"
+              aria-valuemax="100"
+            >
+              <span class="idcard-bop-center-tick" aria-hidden="true"></span>
+              <span class="idcard-bop-needle" :style="{ left: strategyDossier.mutsumiBalance.markerPercent + '%' }"></span>
+            </div>
+            <p class="idcard-bop-summary">{{ strategyDossier.mutsumiBalance.summary }}</p>
+          </article>
+          <article class="idcard-strategy-block idcard-npc-focus-current">
+            <strong>{{ strategyDossier.npcFocus?.title ?? (strategyDossier.npcCompleted.length ? '当前阶段国策已告一段落' : '待命 · 等待下一时段展开日程') }}</strong>
+            <p v-if="strategyDossier.npcFocus">
+              进度 {{ strategyDossier.npcFocus.percent }}% · {{ strategyDossier.npcFocus.progress }}/{{ strategyDossier.npcFocus.duration }} 分钟
+            </p>
+            <div v-if="strategyDossier.npcFocus" class="idcard-npc-focus-bar" role="progressbar" :aria-label="strategyDossier.npcFocus.title" :aria-valuenow="strategyDossier.npcFocus.percent" aria-valuemin="0" aria-valuemax="100">
+              <span :style="{ width: strategyDossier.npcFocus.percent + '%' }"></span>
+            </div>
+            <small>已完成：{{ strategyDossier.npcCompleted.join('、') || '无' }}</small>
+          </article>
+          <div class="idcard-npc-focus-grid">
+            <article v-for="node in strategyDossier.npcFocusNodes" :key="node.id" class="idcard-npc-focus-card" :class="`is-${node.status}`">
+              <div class="idcard-npc-focus-card-head">
+                <strong>{{ node.title }}</strong>
+                <span class="idcard-npc-focus-status">
+                  {{ node.status === 'completed' ? '已完成' : node.status === 'active' ? `推进 ${node.percent}%` : node.status === 'available' ? '待启动' : '已锁定/前置未满' }}
+                </span>
+              </div>
+              <p v-if="node.description" class="idcard-npc-focus-desc">{{ node.description }}</p>
+              <div class="idcard-npc-focus-meta">
+                <span>周期 {{ node.durationDays }} 日</span>
+                <span>倾向权重 {{ node.weight }}</span>
+                <span v-if="node.branchGroup">互斥分支</span>
+                <span v-if="node.prerequisiteTitles.length">前置：{{ node.prerequisiteTitles.join('、') }}</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
       <p v-else>该人物尚无独立国策档案。</p>
       <article class="idcard-strategy-block"><h6>组织与职位</h6><p v-for="x in strategyDossier.organizations" :key="x.id">{{ x.kind }} · {{ x.title }} · {{ x.detail }}</p><p v-if="!strategyDossier.organizations.length">暂无组织记录</p></article>
-      <details v-if="strategyDossier.owner"><summary>AI View 权重与修正来源</summary><p v-for="x in strategyDossier.weights" :key="x.title">{{ x.title }}：{{ x.value }} <small>{{ x.breakdown.map(y=>y.source+' '+y.operation+y.amount).join(' / ') }}</small></p></details>
+      <details v-if="strategyDossier.owner || strategyDossier.npcWeights.length"><summary>AI View 权重与修正来源</summary><p v-for="x in (strategyDossier.owner ? strategyDossier.weights : strategyDossier.npcWeights)" :key="x.title">{{ x.title }}：{{ x.value }} <small>{{ x.breakdown.map(y=>y.source+' '+y.operation+y.amount).join(' / ') }}</small></p></details>
       <details v-if="strategyDossier.owner"><summary>隐藏世界变量</summary><p v-for="[k,v] in strategyDossier.flags" :key="k">{{ k }} = {{ v }}</p><p v-for="[k,v] in strategyDossier.stats" :key="k">{{ k }} = {{ v }}</p></details>
       <article class="idcard-strategy-block"><h6>真实行动记录</h6><p v-for="x in strategyDossier.history" :key="x.id">{{ strategyTime(x.at) }} · {{ strategyKindLabel(x.kind) }} · {{ x.subject }} {{ x.note??'' }}</p><p v-for="x in strategyDossier.activity" :key="x.id">{{ strategyTime(x.at) }} · {{ x.title }} · {{ x.detail }}</p><p v-for="x in strategyDossier.beats" :key="x.id+'-'+x.text">Otherside · {{ x.text }}</p><p v-if="!strategyDossier.history.length&&!strategyDossier.activity.length&&!strategyDossier.beats.length">暂无行动记录</p></article>
     </section>
