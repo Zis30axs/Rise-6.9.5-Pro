@@ -1,5 +1,6 @@
 // Private card-specific apps. Loaded through the existing ST-iPhonie app registry.
 import {createView, esc, btn, heading} from 'UNREAD_CITY_PHONE_COMMON';
+import {stockPhoneView} from 'UNREAD_CITY_STOCK_PHONE';
 import {phoneArt} from 'UNREAD_CITY_PHONE_ART';
 import {renderWorldMessenger,worldMessageRows,renderBandPanel} from 'UNREAD_CITY_PHONE_CHAT';
 import {worldCardArt,worldDeviceHeading,worldAppearance} from 'UNREAD_CITY_PHONE_VISUALS';
@@ -231,7 +232,7 @@ function worldApp(ctx,id) {
         html+=`<div class="group pad">${field('收货地点',`<select data-world-field="address">${destinations()}</select>`)}${field('支付卡',`<select data-world-field="card">${cards()}</select>`)}<p class="hint">${delivery?'配送费 ¥3，预计 30 游戏分钟':'免运费，预计 60 游戏分钟'}。确认后扣款，送达后领取到背包。</p></div><div class="group">${data.catalog.filter(x=>!delivery||x.category!=='cigarette').map(x=>`<article class="world-product"><strong>${esc(x.name)}</strong><p>¥${x.price} / ${esc(x.purchaseUnit)}</p>${btn('buy','下单','secondary',`data-item="${x.id}"`)}</article>`).join('')}</div>`;
       }
       if(['worldshop','worlddelivery','orders'].includes(section)) html+=`<h3>我的订单</h3><div class="group">${[...data.orders].reverse().map(o=>`<article class="world-event"><strong>${esc(data.catalog.find(x=>x.id===o.itemId)?.name||o.itemId)}</strong><p>${money(o.totalCents)} · ${{paid:'配送中',delivered:'已送达',received:'已领取',cancelled:'已取消'}[o.status]}</p><small>${esc(data.destinations.find(x=>x.id===o.address)?.name||o.address)} · ${time(o.due)}</small><div class="world-tabs">${o.status==='paid'?btn('cancel','取消并退款','secondary',`data-id="${o.id}"`):o.status==='delivered'?btn('receive','领取到背包','primary',`data-id="${o.id}"`):''}</div></article>`).join('')||'<p class="hint">暂无订单</p>'}</div>`;
-      if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.reminded?'已提醒':'待办'}</p>${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
+      if(section==='worldcalendar'||section==='calendar') html+=`<div class="group">${data.dailyPlans.map(e=>`<article class="world-event">${esc(e.time)} · ${esc(e.title)}<small>${e.done?'已完成':'待办'}</small></article>`).join('')}${data.calendar.map(e=>`<article class="world-event"><b>${esc(e.title)}</b><p>${time(e.start)} · ${e.duration} 分钟 · ${e.stockCode&&e.reviewed?'已回顾':e.reminded?'已提醒':'待办'}</p>${e.stockCode?btn('stock-open','打开东都证券','text-button',`data-code="${e.stockCode}"`)+(e.start<=data.now&&!e.reviewed?btn('stock-review','记录回顾','text-button',`data-id="${e.id}"`):''):''}${btn('delete','删除','text-button',`data-id="${e.id}"`)}</article>`).join('')}</div><details class="group pad" open><summary>新增日程</summary><div class="world-form">${field('标题','<input data-world-field="title" maxlength="100">')}${field('选择日期',`<input data-world-field="day" type="date" min="${data.calendarDate.iso}" value="${data.calendarDate.iso}">`)}${field('开始时间','<input data-world-field="time" type="time" value="19:00">')}${field('时长（分钟）','<input data-world-field="duration" type="number" min="1" max="1440" value="30">')}${field('地点',`<select data-world-field="location">${destinations()}</select>`)}${btn('calendar','保存日程','primary')}</div></details>`;
       if(id==='twiitch') html+=twiitchView(data,twiitchChannel,twiitch3d);
       if(section==='worldmessages'||section==='messages') {
         const social=data.npcPhone||{contacts:[],requests:[],groups:[],messages:[]};
@@ -320,6 +321,8 @@ function worldApp(ctx,id) {
       case 'transfer':await act({type:'transfer',from:formValue('from'),to:formValue('to'),cents:Math.round(Number(formValue('amount'))*100)});break;
       case 'send-transfer':{const to=formValue('payee'),from=formValue('payFrom'),amount=Math.round(Number(formValue('payAmount'))*100);if(!(amount>0))throw Error('请输入大于 0 的转账金额');if(await ctx.confirm('确认转账？',`向${payeeName(to)}转 ${money(amount)}，从 ${cardNames[from]} 支付。`))await act({type:'send_transfer',to,from,cents:amount});break;}
       case 'calendar':{const [h,m]=formValue('time').split(':').map(Number);await act({type:'calendar_save',id:requestId(ctx.win),title:formValue('title'),locationId:formValue('location'),start:(gameDayForDate(formValue('day'))-1)*1440+h*60+m,duration:Number(formValue('duration'))});break;}
+      case 'stock-open':ctx.openStock(el.dataset.code);break;
+      case 'stock-review':await act({type:'stock_review',id:el.dataset.id});break;
       case 'delete':await act({type:'calendar_delete',id:el.dataset.id});break;
       case 'send':{const message=id==='worldmessages'?drafts.get(recipient):formValue('message');if(!message?.trim()){ctx.notify('请先输入消息');break;}const command=recipient.startsWith('npc:')?{type:'send_npc_message',npcId:recipient.slice(4),text:message}:recipient.startsWith('group:')?{type:'send_group_message',groupId:recipient.slice(6),text:message}:recipient.startsWith('protagonist:')?{type:'send_message',to:protagonistTarget(),text:message}:{type:'send_message',text:message};if(await act(command)){drafts.delete(recipient);render();}break;}
       case 'accept-contact':case 'decline-contact':await act({type:'resolve_contact_request',id:el.dataset.id,accept:el.dataset.action==='accept-contact'});break;
@@ -350,6 +353,7 @@ function worldApp(ctx,id) {
   const dispose=v.dispose.bind(v);v.dispose=()=>{stopUpdates();stopPhoneUpdates();dispose();};
   return v;
 }
-export const worldPhoneFactories=Object.fromEntries(Object.keys(labels).map(id=>[id,ctx=>worldApp(ctx,id)]));
+export const worldPhoneFactories={...Object.fromEntries(Object.keys(labels).map(id=>[id,ctx=>worldApp(ctx,id)])),
+  worldstock:ctx=>stockPhoneView(ctx,createView(ctx,'worldstock'))};
 
 

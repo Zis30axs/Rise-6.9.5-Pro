@@ -23,13 +23,15 @@ import { settleSocietyWorld } from './society-world';
 import { createSocietyState, parseSocietyState, type SocietyState } from './society';
 import { createFactionFocusState, parseFactionFocusState, type FactionFocusWorldState } from './faction-focus';
 import { settleFactionFocusWorld } from './faction-focus-world';
+import { applyStockCommand, parseStockAccounts, reviewStockEvent, settleStockWorld, STOCK_CALENDAR_LOCATION, STOCK_MAX_MINUTE, stockName, type StockAccounts, type StockCommand } from './stock-world';
+import { fitsMarketSession } from './stock-market/market.mjs';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
 export const SAKIKO_START_CENTS = 2_400_000;
 export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'player', 'inventory', 'academics', 'phone', 'contacts', 'schedule', 'journal', 'story'] as const;
 export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
-export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean }
+export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean; stockCode?: string; reviewed?: boolean }
 export interface PhoneNotification { id: string; text: string; at: number; read: boolean }
 export interface PhoneAppearance { wallpaper: 'signature' | 'plain'; theme: 'light' | 'dark' | 'system'; layout: 'daily' | 'focus' }
 export const defaultPhoneAppearance = (owner: ProtagonistId): PhoneAppearance => ({wallpaper:'signature',theme:owner==='soyo'||owner==='renako'?'light':'dark',layout:'daily'});
@@ -88,8 +90,9 @@ export interface ProtagonistWorld {
   factionFocuses?: FactionFocusWorldState;
   /** Shared public graph; stable identities live in the authored network registry. */
   internet?: InternetState;
+  stockAccounts?: StockAccounts;
 }
-export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
+export type PhoneCommand = NpcPhoneCommand | BandInviteCommand | StockCommand
   | { type: 'network_follow'; accountId: string; following: boolean }
   | { type: 'network_register'; nicknames: string[] }
   | { type: 'inspect'; section: 'messages' | 'calendar' | 'orders' | 'wallet' }
@@ -100,7 +103,7 @@ export type PhoneCommand = NpcPhoneCommand | BandInviteCommand
   | { type: 'order'; kind: PhoneOrder['kind']; itemId: string; quantity: number; card: FictionalCardId; address: string }
   | { type: 'cancel_order'; id: string }
   | { type: 'receive_order'; id: string }
-  | { type: 'calendar_save'; id: string; title: string; locationId: string; start: number; duration: number }
+  | { type: 'calendar_save'; id: string; title: string; locationId: string; start: number; duration: number; stockCode?: string }
   | { type: 'calendar_delete'; id: string }
   | { type: 'send_message'; to?: ProtagonistId; text: string }
   | { type: 'peek_chat_append'; npcId: string; lines: { speaker: 'protagonist' | 'npc'; text: string }[] }
@@ -216,7 +219,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const optional = (key: string) => source && typeof source === 'object' && Object.hasOwn(source, key) ? [key] : [];
   const p = exact(value, ['revision','inactive',...(hasThird?['third']:[]),...(hasFourth?['fourth']:[]),'accounts','devices','orders','operations',
     ...optional('npcWallets'),...optional('npcPhone'),...optional('backgroundLife'),...optional('weeklyMemory'),...optional('conversations'),
-    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society'),...optional('factionFocuses'),...optional('internet')]);
+    ...optional('narrativeTurn'),...optional('otherSideHistory'),...optional('otherSideNpc'),...optional('socialSkills'),...optional('socialInvitations'),...optional('strategy'),...optional('society'),...optional('factionFocuses'),...optional('internet'),...optional('stockAccounts')]);
   const a = exact(p.accounts, ['active','people','ledger','phoneAccess']);
   const who = actor(a.active), others = otherProtagonists(who);
   const accountKeys = ['soyo','sakiko',...(hasThird?['emma']:[]),...(hasFourth?['renako']:[])];
@@ -274,9 +277,17 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   const parseDevice = (x: unknown): DeviceState => {
     const d = exact(x, ['locked','share','calendar','notifications',...(x && typeof x==='object' && Object.hasOwn(x,'appearance')?['appearance']:[])]);
     return { ...(Object.hasOwn(d,'appearance')?{appearance:parsePhoneAppearance(d.appearance)}:{}), locked: boolean(d.locked), share: share(d.share), calendar: distinct(array(d.calendar,100,raw => {
-      const e = exact(raw, ['id','title','locationId','start','duration','reminded']);
-      const locationId = string(e.locationId,80); if (!isKnownLocation(locationId)) fail('日历地点无效');
-      return {id: identifier(e.id), title: string(e.title,100), locationId, start: integer(e.start,525600000), duration: integer(e.duration,1440,1), reminded: boolean(e.reminded)};
+      const isStock = !!raw && typeof raw === 'object' && Object.hasOwn(raw,'stockCode');
+      const e = exact(raw, ['id','title','locationId','start','duration','reminded',...(isStock?['stockCode','reviewed']:[])]);
+      const locationId = string(e.locationId,80);
+      const event = {id: identifier(e.id), title: string(e.title,100), locationId, start: integer(e.start,525600000), duration: integer(e.duration,1440,1), reminded: boolean(e.reminded)};
+      if (isStock) {
+        const stockCode = identifier(e.stockCode);
+        validateStockCalendar(event, stockCode);
+        return { ...event, stockCode, reviewed: boolean(e.reviewed) };
+      }
+      if (!isKnownLocation(locationId)) fail('日历地点无效');
+      return event;
     })), notifications: distinct(array(d.notifications,200,raw => {
       const n = exact(raw, ['id','text','at','read']); return {id:string(n.id,128),text:string(n.text),at:integer(n.at,525600000),read:boolean(n.read)};
     })) };
@@ -343,7 +354,13 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   result.society = Object.hasOwn(p, 'society') ? parseSocietyState(p.society, gameMinute(base)) : createSocietyState();
   result.factionFocuses = Object.hasOwn(p, 'factionFocuses') ? parseFactionFocusState(p.factionFocuses, gameMinute(base)) : createFactionFocusState(gameMinute(base));
   if (Object.hasOwn(p, 'internet')) result.internet = parseInternetState(p.internet);
+  if (Object.hasOwn(p, 'stockAccounts')) result.stockAccounts = parseStockAccounts(p.stockAccounts,gameMinute(base));
   return result;
+}
+function validateStockCalendar(event: Pick<CalendarEvent,'title'|'locationId'|'start'|'duration'>, code: string) {
+  const name = stockName(code);
+  if (!name || event.locationId !== STOCK_CALENDAR_LOCATION || event.title !== `回顾${name}行情`) fail('行情回顾日程无效');
+  if (!fitsMarketSession(event.start,event.duration)) fail('请选择交易时段内的回顾时间');
 }
 function isKnownLocation(locationId: string): boolean {
   return !!getCampusInterior(locationId) || sceneLandmarks.some(x=>x.id===locationId) || ['gate','library','cafe','dorm','teaching','sports','junction','bookshop','convenience','street-cafe','pocket-park','bus-stop'].includes(locationId);
@@ -379,6 +396,7 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   settleFactionFocusWorld(before,next);
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
+  settleStockWorld(before,next);
   captureNewJournalEvidence(before,next);
   settleWeeklyMemory(next);
   p.revision++; return next;
@@ -505,6 +523,35 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
 }
 function parseCommand(raw: unknown): PhoneCommand {
   const type=(raw as PhoneCommand)?.type;
+  if (type === 'stock_trade') {
+    const c=exact(raw,['type','trade','minute','revision']);
+    const minute=integer(c.minute,STOCK_MAX_MINUTE), revision=integer(c.revision,1e9);
+    const tradeType=(c.trade as {type?:unknown})?.type;
+    if (tradeType==='cancel') {
+      const trade=exact(c.trade,['type','orderId']);
+      return {type,minute,revision,trade:{type:'cancel',orderId:identifier(trade.orderId)}};
+    }
+    const trade=exact(c.trade,['type','code','side','kind','quantity','limit']);
+    if (trade.type!=='submit' || (trade.side!=='buy'&&trade.side!=='sell') ||
+      (trade.kind!=='limit'&&trade.kind!=='market') || (trade.kind==='market'&&trade.limit!==null)) fail('证券委托无效');
+    return {type,minute,revision,trade:{type:'submit',code:identifier(trade.code),side:trade.side,
+      kind:trade.kind,quantity:integer(trade.quantity,9999,1),limit:trade.kind==='limit'?integer(trade.limit,1000000,1):null}};
+  }
+  if (type === 'stock_funds') {
+    const c=exact(raw,['type','direction','card','yen','minute','revision']);
+    if (c.direction!=='deposit'&&c.direction!=='withdraw') fail('资金划转方向无效');
+    return {type,direction:c.direction,card:card(c.card),yen:integer(c.yen,20000000,1),minute:integer(c.minute,STOCK_MAX_MINUTE),revision:integer(c.revision,1e9)};
+  }
+  if (type === 'stock_review') {
+    const c=exact(raw,['type','id']);
+    return {type,id:identifier(c.id)};
+  }
+  if (type === 'calendar_save') {
+    const isStock = !!raw && typeof raw==='object' && Object.hasOwn(raw,'stockCode');
+    const c=exact(raw,['type','id','title','locationId','start','duration',...(isStock?['stockCode']:[])]);
+    return {type,id:identifier(c.id),title:string(c.title,100),locationId:identifier(c.locationId),
+      start:integer(c.start,525600000),duration:integer(c.duration,1440,1),...(isStock?{stockCode:identifier(c.stockCode)}:{})};
+  }
   if (type === 'network_register') {
     const c = exact(raw, ['type', 'nicknames']);
     return {type, nicknames: array(c.nicknames, 120, n => string(n, 30))};
@@ -515,7 +562,7 @@ function parseCommand(raw: unknown): PhoneCommand {
   }
   if (type === 'band_invite') return parseBandInviteCommand(raw);
   if (type === 'send_npc_message' || type === 'send_group_message' || type === 'resolve_contact_request') return parseNpcPhoneCommand(raw);
-  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | 'send_message' | 'peek_chat_append' | 'band_invite' | 'network_follow' | 'network_register'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_save:['id','title','locationId','start','duration'],calendar_delete:['id'],read_notifications:[]};
+  const fields: Record<Exclude<PhoneCommand['type'], NpcPhoneCommand['type'] | StockCommand['type'] | 'calendar_save' | 'send_message' | 'peek_chat_append' | 'band_invite' | 'network_follow' | 'network_register'>,string[]>={appearance:['appearance'],inspect:['section'],device:['locked','share'],transfer:['from','to','cents'],send_transfer:['to','from','cents'],order:['kind','itemId','quantity','card','address'],cancel_order:['id'],receive_order:['id'],calendar_delete:['id'],read_notifications:[]};
   if(type==='peek_chat_append'){
     const c=exact(raw,['type','npcId','lines']);
     const lines=array(c.lines,6,item=>{
@@ -544,7 +591,6 @@ function parseCommand(raw: unknown): PhoneCommand {
     case 'transfer': return {type,from:card(c.from),to:card(c.to),cents:integer(c.cents,2000000000,1)};
     case 'send_transfer': return {type,to:string(c.to,120),from:card(c.from),cents:integer(c.cents,2000000000,1)};
     case 'order': if(c.kind!=='shop'&&c.kind!=='delivery') return fail('订单类型无效');return {type,kind:c.kind,itemId:identifier(c.itemId),quantity:integer(c.quantity,20,1),card:card(c.card),address:identifier(c.address)};
-    case 'calendar_save': return {type,id:identifier(c.id),title:string(c.title,100),locationId:identifier(c.locationId),start:integer(c.start,525600000),duration:integer(c.duration,1440,1)};
     case 'read_notifications':return {type};
     default:return {type,id:identifier(c.id)};
   }
@@ -572,6 +618,7 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   const previous=p.operations.find(o=>o.id===requestId);
   if(previous){if(previous.actor!==who||previous.owner!==owner||previous.command!==key) fail('重复请求内容不一致');return s;}
   if(p.operations.length>=2000) fail('手机操作记录已满');
+  if (owner!==who && (command.type==='stock_review' || command.type==='calendar_save' && command.stockCode)) fail('请使用当前主角自己的手机');
   if((command.type==='device'||command.type==='appearance')&&owner!==who) fail('只有本人能设置这台手机');
   if (['send_npc_message','send_group_message','resolve_contact_request','send_transfer','band_invite','peek_chat_append','network_follow','network_register'].includes(command.type) && owner !== who) fail('请使用当前主角自己的手机');
   const access=phoneAccess(s,owner),read=command.type==='inspect';
@@ -579,6 +626,9 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
   const target=personState(s,owner),device=p.devices[owner];
   const tx=(cardId:FictionalCardId,delta:number,suffix:string,note:string)=>{p.accounts=applyCardTransaction(p.accounts,{id:`app:${requestId}:${suffix}`,actor:owner,card:cardId,deltaCents:delta,note});};
   switch(command.type){
+    case 'stock_trade':
+    case 'stock_funds': applyStockCommand(s,owner,requestId,command,tx); break;
+    case 'stock_review': reviewStockEvent(s,owner,command.id,gameMinute(s)); break;
     case 'network_follow': p.internet = changeNetworkFollow(p.internet, networkOwnerId(owner), command.accountId, command.following); break;
     case 'network_register': p.internet = registerNetworkGuests(p.internet, command.nicknames); break;
     case 'band_invite': sendBandInvitation(s, command, requestId); break;
@@ -636,13 +686,21 @@ export function reduceProtagonistAction(state: WorldState, action: Extract<World
       if (performance && (command.title !== performance.title || command.locationId !== 'livehouse' || command.start !== performance.start || command.duration !== performance.duration)) fail('已确认演出不能通过编辑日历改写');
       if (performances.some(b => command.id !== 'live:' + b.id && b.start < command.start + command.duration && command.start < b.start + b.duration)) fail('与已确认演出档期冲突');
       if(command.start<gameMinute(s)) fail('不能添加已经过去的日程');
-      if(!isKnownLocation(command.locationId)) fail('日程地点无效');
+      if (command.stockCode) validateStockCalendar(command,command.stockCode);
+      else if(!isKnownLocation(command.locationId)) fail('日程地点无效');
+      if (owner!==who && device.calendar.some(event=>event.id===command.id&&event.stockCode)) fail('请使用当前主角自己的手机');
       const events=device.calendar.filter(x=>x.id!==command.id);
       if(events.some(e=>e.start<command.start+command.duration&&command.start<e.start+e.duration)) fail('日程时间冲突');
       if(target.schedule.some(e=>!e.done&&Math.floor(command.start/1440)===s.clock.day-1&&((s.clock.day-1)*1440+Number(e.time.slice(0,2))*60+Number(e.time.slice(3)))>=command.start&&((s.clock.day-1)*1440+Number(e.time.slice(0,2))*60+Number(e.time.slice(3)))<command.start+command.duration)) fail('与现有日程时间冲突');
-      if(events.length>=100) fail('日程已满');const {type:_t,...event}=command;events.push({...event,reminded:false});device.calendar=events;break;
+      if(events.length>=100) fail('日程已满');const {type:_t,...event}=command;events.push({...event,reminded:false,...(event.stockCode?{reviewed:false}:{})});device.calendar=events;break;
     }
-    case 'calendar_delete':if(!device.calendar.some(x=>x.id===command.id)) fail('日程不存在');device.calendar=device.calendar.filter(x=>x.id!==command.id);break;
+    case 'calendar_delete': {
+      const event=device.calendar.find(x=>x.id===command.id);
+      if (!event) fail('日程不存在');
+      if (event.stockCode&&owner!==who) fail('请使用当前主角自己的手机');
+      device.calendar=device.calendar.filter(x=>x.id!==command.id);
+      break;
+    }
     case 'send_message': {
       const recipient=command.to ?? otherProtagonist(owner);
       if(recipient===owner) fail('不能给自己发短信');

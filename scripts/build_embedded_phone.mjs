@@ -52,7 +52,12 @@ const worldAppsModule = '\0virtual:unread-city-world-apps';
 const peekModule = 'virtual:unread-city-phone-peek';
 const peekFile = path.join(root, 'integration/dual-protagonists/phone-peek.js').replaceAll('\\', '/');
 const peekControllerFile = path.join(root, 'integration/dual-protagonists/phone-peek-controller.js').replaceAll('\\', '/');
-const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_CHAT',path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'));
+const stockPhoneFiles = new Set([
+  'integration/stock-trading/phone-stock.mjs', 'integration/stock-trading/terminal.mjs',
+  'integration/stock-trading/terminal.css', 'src/runtime/stock-market/market.mjs', 'src/runtime/game-calendar.ts',
+].map(file=>path.join(root,file).replaceAll('\\','/')));
+const stockPhoneFile = path.join(root,'integration/stock-trading/phone-stock.mjs').replaceAll('\\','/');
+const worldAppsSource = (await readFile(path.join(root, 'integration/dual-protagonists/phone-apps.js'), 'utf8')).replace('UNREAD_CITY_STOCK_PHONE',stockPhoneFile).replace('UNREAD_CITY_PHONE_COMMON', path.join(phoneRoot, 'ui/common.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_VISUALS',path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/')).replaceAll('UNREAD_CITY_PHONE_CHAT',path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'));
 const dataModule = '\0virtual:unread-city-phone-data';
 let phoneHtml = '';
 const sourceFiles = new Map();
@@ -72,7 +77,7 @@ function plugin(stage) {
       if (id === dataModule) return `export const portableData=${JSON.stringify({ version: manifest.version, manifest, hostCss: stage === 'runtime' ? hostCss : '', phoneHtml, tokenizers: stage === 'runtime' ? tokenizers : {}, sounds, soundManifest })};`;
     },
     async transform(code, id) {
-      if (id.startsWith('\0')) return;
+      if (id.startsWith('\0') || stockPhoneFiles.has(id.split('?')[0].replaceAll('\\','/'))) return;
       if (id.replaceAll('\\', '/') === gameClockFile || id.replaceAll('\\', '/') === deviceSettingsFile) return;
       if(id===path.join(root,'integration/dual-protagonists/phone-visuals.js').replaceAll('\\','/'))return;
        if(id===path.join(root,'integration/dual-protagonists/phone-messenger.js').replaceAll('\\','/'))return;
@@ -87,7 +92,10 @@ function plugin(stage) {
         code = replaceOnce(code, "    if (time !== lastClock) { lastClock = time; today?.paint(['clock', 'calendar']); }", "    const stamp = date + '|' + time;\n    if (stamp !== lastClock) { lastClock = stamp; today?.paint(['clock', 'calendar']); }", "refresh Today widgets on day changes");
         code = replaceOnce(code, "  const clockTimer = win.setInterval(clock, 15000);", "  const clockTimer = win.setInterval(clock, 15000);\n  const stopGameClockUpdates = win.parent.__unreadCityWorldPhone?.subscribe?.(clock) || (() => {});", "refresh immediately when game state changes");
         code = replaceOnce(code, "    win.clearInterval(clockTimer); win.clearTimeout(todayTimer);", "    stopGameClockUpdates();\n    win.clearInterval(clockTimer); win.clearTimeout(todayTimer);", "unregister world clock updates on disposal");
-        code = replaceOnce(code, 'const ctx = {api, doc, win,', "const ctx = {openWorldContact: contactId=>{open('worldmessages');views.get('worldmessages')?.openContact?.(contactId);},api, doc, win,", '剧情联系人统一短信入口');
+        code = replaceOnce(code, 'const ctx = {api, doc, win,', "const ctx = {openStock:code=>{open('worldstock');views.get('worldstock')?.selectSymbol(code);},openWorldContact: contactId=>{open('worldmessages');views.get('worldmessages')?.openContact?.(contactId);},api, doc, win,", '剧情联系人统一短信入口');
+        code = replaceOnce(code, '  return {ready, open, home: showHome,', `  const openStock=()=>{const code=win.parent.__unreadCityWorldPhone?.takeStockShortcut?.();if(code)ctx.openStock(code);};
+  void ready.then(openStock).catch(()=>{});
+  return {ready, open, openStock, home: showHome,`, '日程打开证券应用');
         code = replaceOnce(code, 'const FACTORIES = {', 'const FACTORIES = {...worldPhoneFactories,', '游戏手机应用');
         code = replaceOnce(code, '  let panelVisible = true,', '  let worldViewOwner = null;\n  let panelVisible = true,', '手机视图归属');
         code = replaceOnce(code, '  function applyThemeMode() {', '  function applyThemeMode() { if(applyWorldPhoneTheme(screen))return;', '设备主题偏好');
@@ -130,10 +138,11 @@ function plugin(stage) {
           appie: {name:'Appie Pay',eyebrow:'Game Wallet',colors:['#a3c7b8','#47645e','#ffdea5']},
           worldshop: {name:'购物',eyebrow:'Shopping',colors:['#f6d1a1','#b37644','#f9ea9b']},
           worlddelivery: {name:'外卖',eyebrow:'Delivery',colors:['#ffdd83','#e59f3e','#fff4c6']},
+          worldstock: {name:'东都证券',eyebrow:'Markets',colors:['#b9a7fd','#332752','#dcceff']},
           worldcalendar: {name:'日历',eyebrow:'Calendar',colors:['#a6c8e8','#577998','#f2d9bd']},
           worldmessages: {name:'消息',eyebrow:'World Messages',colors:['#b8dfcc','#4a9174','#f5c8dc']},
           twiitch: {name:'Twiitch',eyebrow:'Stream',colors:['#f2d8ff','#a05ce0','#ffd36a']},`, '游戏应用目录');
-        code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages','peek',SLOT,SLOT],", '游戏应用首页');
+        code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages','peek','worldstock',SLOT],", '游戏应用首页');
       }
       if (relative === 'ui/chat.js') {
         code = "import {worldPhoneState} from 'virtual:unread-city-world-apps';\n" + code;
@@ -166,6 +175,7 @@ function plugin(stage) {
         code = replaceOnce(code, "const base=new URL('.',import.meta.url),marker=globalThis.crypto?.randomUUID?.()||'unavailable';", "const base=new URL('./__unread_city_embedded_phone__/',location.href),marker=globalThis.crypto?.randomUUID?.()||'unavailable'; const previousInterceptor=globalThis.stIphonieInterceptor;", '手机内嵌根路径');
         code = replaceOnce(code, "import(new URL('../../../personas.js',import.meta.url).href)", "import('/scripts/personas.js')", '酒馆人物模块');
         code = replaceOnce(code, "frame.src=new URL('ui/index.html',base).href", 'frame.srcdoc=portableData.phoneHtml', '手机页面');
+        code = replaceOnce(code, 'globalThis.STiPhoniePanelHost=panelHost.api;', 'globalThis.STiPhoniePanelHost=Object.freeze({...panelHost.api,openStock(){if(panel?.open)frame?.contentWindow?.stTtsPhone?.openStock?.();}});', '证券应用入口');
         code = replaceOnce(code, "entry.id='sttts-extension-entry';", "entry.id='sttts-extension-entry';entry.dataset.unreadCityPhoneOwner=marker;", '设置入口所有权');
         code = replaceOnce(code, "item.id='sttts-wand-entry';", "item.id='sttts-wand-entry';item.dataset.unreadCityPhoneOwner=marker;", '菜单入口所有权');
         code = replaceOnce(code, "json(new URL('manifest.json',base))", 'Promise.resolve(portableData.manifest)', '自检版本');
@@ -187,7 +197,7 @@ function plugin(stage) {
           active=false;renderEpoch++;const clean=fn=>{try{fn();}catch{}};
           if(globalThis.STiPhonieStoryHost===storyHost?.api)delete globalThis.STiPhonieStoryHost;
           clean(()=>storyHost?.dispose());storyHost=null;
-          if(globalThis.STiPhoniePanelHost===panelHost?.api)delete globalThis.STiPhoniePanelHost;
+          if(panelHost && globalThis.STiPhoniePanelHost?.mount===panelHost.api.mount)delete globalThis.STiPhoniePanelHost;
           if(globalThis.__stIphoniePanelBridge?.connect===connect)delete globalThis.__stIphoniePanelBridge;
           clean(()=>panelHost?.dispose());panelHost=null;
           clean(()=>cancelAnimationFrame(lineRaf));clean(()=>lineMedia?.removeEventListener('change',animateLines));

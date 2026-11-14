@@ -405,6 +405,7 @@ export interface ShellActions {
   openPhone(anchor?: HTMLElement): void;
   closePhone(): void;
   openPhoneContact(npcId: string): Promise<void>;
+  openPhoneStock?(code: string): void;
   openPhoneContactEditor?(sourcePersonId?: string): Promise<void>;
   retryPhoneSync(): void;
   setDismissHandler?(handler: (() => boolean) | undefined): void;

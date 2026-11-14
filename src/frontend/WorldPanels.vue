@@ -31,7 +31,7 @@ import type { ShellActions, ShellModel } from './types';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'society' | 'focus' | 'decisions';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>();
-const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: [] }>();
+const emit = defineEmits<{ compose: [name: string]; invitations: []; transit: []; travelled: []; store: []; inventory: []; phone: []; stock: [code: string] }>();
 const labels: Record<Panel, string> = {
   phone: '演示手机消息', map: '探索地图', schedule: '今日日程', status: '个人状态与日记', abilities: '能力体系 · 星盘与专长', society: '阵营与社交圈', focus: '个人国策与决议', decisions: '日常决议终端',
 };
@@ -50,6 +50,12 @@ const upcomingOccasions = computed(() => upcomingGameCalendarOccasions(props.mod
 const unread = computed(() => props.model.state.phone.filter(item => !item.read).length);
 const activeContact = computed(() => props.model.state.contacts.find(item => item.id === selectedContactId.value) ?? props.model.state.contacts[0]);
 const contactMessages = computed(() => props.model.state.phone.filter(item => item.npcId === activeContact.value?.id));
+const stockReviews = computed(() => props.novelMode
+  ? props.model.state.protagonists?.devices[protagonist.value].calendar
+    .filter(event => event.stockCode && Math.floor(event.start / 1440) === props.model.state.clock.day - 1)
+    .sort((a,b)=>a.start-b.start) ?? []
+  : []);
+const reviewTime = (start: number) => `${String(Math.floor(start / 60) % 24).padStart(2,'0')}:${String(start % 60).padStart(2,'0')}`;
 const completedPlans = computed(() => props.model.state.schedule.filter(item => item.done).length);
 const storeAvailability = computed(() => getStoreAvailability(props.model.state));
 function condition(value: number, inverse = false) {
@@ -162,7 +168,11 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
           <div class="wp-plan-time">{{ plan.time }}<small>{{ plan.done ? '已完成' : '待办' }}</small></div>
           <div class="wp-plan-body"><h2>{{ plan.title }}</h2><p>{{ locationName(plan.locationId) }}</p><div class="wp-plan-actions"><button class="wp-text-button" :data-schedule-destination="plan.locationId" :disabled="model.busy || plan.locationId === model.state.locationId" @click="travelToPlan(plan.locationId)">{{ plan.locationId === model.state.locationId ? '已在此处' : '前往地点 ↗' }}</button><button class="wp-secondary" :disabled="model.busy || plan.done" @click="runInteraction(model, actions, { type: 'complete_schedule', id: plan.id })">{{ plan.done ? '已完成 ✓' : '完成这件事' }}</button></div></div>
         </article>
-        <p v-if="!model.state.schedule.length" class="wp-empty">今天暂时没有安排。</p>
+        <article v-for="review in stockReviews" :key="review.id" class="wp-plan" :class="{ done: review.reviewed }">
+          <div class="wp-plan-time">{{ reviewTime(review.start) }}<small>{{ review.reviewed ? '已回顾' : '待办' }}</small></div>
+          <div class="wp-plan-body"><h2>{{ review.title }}</h2><p>东都证券 · {{ review.duration }} 分钟</p><div class="wp-plan-actions"><button v-if="actions.openPhoneStock && review.stockCode" class="wp-text-button" @click="emit('stock',review.stockCode)">打开东都证券 ↗</button></div></div>
+        </article>
+        <p v-if="!model.state.schedule.length && !stockReviews.length" class="wp-empty">今天暂时没有安排。</p>
       </div>
       <p class="wp-footnote">演示安排 · 到达地点并到达约定时间后可完成。</p>
     </template>

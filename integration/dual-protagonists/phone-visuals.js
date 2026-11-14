@@ -26,14 +26,16 @@ export function worldAppearance(s) {
 }
 export function worldPhoneHome(screen, original) {
   const s=worldPhoneState(screen); if(!s)return original;
-  const p=profiles[s.active], a=worldAppearance(s), first=p[a.layout];
-  const rest=[...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>id!=='worldpeek'&&!first.includes(id)&&!p.dock.includes(id));
+  const p=profiles[s.active], a=worldAppearance(s), first=[...p[a.layout]];
+  if (screen.dataset.worldPresentation==='novel') first.splice(first.indexOf('appie')+1,0,'worldstock');
+  const rest=[...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>id!=='worldpeek'&&id!=='worldstock'&&!first.includes(id)&&!p.dock.includes(id));
   const pages=[first];for(let i=0;i<rest.length;i+=8)pages.push(rest.slice(i,i+8));
   return {pages,dock:p.dock};
 }
 export function worldPhoneIcon(screen,id,art=phoneArt) {
   const s=worldPhoneState(screen), key=id==='worldpeek'?'peek':id;
   if(!s)return null;
+  if(id==='worldstock')return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#392a62"/><path d="M13 45h38M16 39l10-10 8 5 14-15m-10 0h10v10" fill="none" stroke="#d4c5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   if(id==='forum')return networkArt.icon;
   if(id==='twiitch')return art[`${s.active}/icons/twiitch.svg`] || art[`twiitch/icon-${s.active}.svg`] || art['twiitch/icon-default.svg'] || null;
   return art[`${s.active}/icons/${key}.svg`] || null;
@@ -49,6 +51,7 @@ export function applyWorldPhoneTheme(screen,art=phoneArt) {
   doc.documentElement.dataset.theme=dark?'dark':'light';
   doc.documentElement.dataset.skin=p.skin;
   doc.documentElement.dataset.worldOwner=s.active;
+  screen.dataset.worldPresentation=s.presentation;
   screen.dataset.worldOwner=s.active;screen.dataset.worldDevice=s.deviceId;
   screen.dataset.worldLayout=a.layout;screen.dataset.worldWallpaper=a.wallpaper;
   const svg=art[`${s.active}/wallpaper.svg`];

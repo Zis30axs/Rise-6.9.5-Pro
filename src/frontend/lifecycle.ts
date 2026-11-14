@@ -353,6 +353,7 @@ export function mountShell(
     const lease = phoneLease;
     phoneLease = undefined; phoneAnchor = undefined; mountedPhoneApi = undefined;
     loadingPhoneAnchor = undefined;
+    worldPhone.clearStockShortcut();
     phoneSequence++;
     model.externalPhoneOpen = false;
     if (model.phoneStatus === 'loading') model.phoneStatus = 'idle';
@@ -363,6 +364,7 @@ export function mountShell(
   function acquirePhone(api: PhonePanelHost, anchor: HTMLElement, sequence: number) {
     if (dead || sequence !== phoneSequence || !anchor.isConnected || bridge.session() !== session) return;
     let acquired: PhoneLease | undefined;
+    phoneAnchor = anchor;
     try {
       acquired = api.mount(anchor, { onClose() {
         if (dead || sequence !== phoneSequence) return;
@@ -381,6 +383,7 @@ export function mountShell(
       model.phoneSource = phoneRuntime?.source() ?? 'extension';
       host.setAttribute('aria-owns', 'sttts-panel');
       acquired.focus();
+      api.openStock?.();
     } catch (error) {
       if (acquired && acquired !== phoneLease) {
         try { acquired.release?.(); } catch { /* Keep recovery independent. */ }
@@ -500,6 +503,7 @@ export function mountShell(
   const worldPhone = createWorldPhoneApi({
     session, current: () => !dead && bridge.session() === session,
     busy: () => model.busy || !!model.switchingProtagonist || doc.hidden, state: snapshot,
+    presentation: () => phoneAnchor?.dataset.phonePresentation==='scene'?'scene':'novel',
     requestReply: requestPhoneReply,
     openStory(id, viewpoint) { model.phoneSceneJump = { id, viewpoint, token: ++phoneSceneJumpToken }; },
     commit(action) {
@@ -645,6 +649,15 @@ export function mountShell(
       });
     },
     closePhone,
+    openPhoneStock(code) {
+      if (dead || model.switchingProtagonist || (!phoneLease && !loadingPhoneAnchor)) return;
+      if (mountedPhoneApi && !mountedPhoneApi.openStock) {
+        model.notice = '当前手机版本没有东都证券，请使用内置手机。';
+        return;
+      }
+      worldPhone.queueStockShortcut(code);
+      mountedPhoneApi?.openStock?.();
+    },
     async openPhoneContact(npcId) {
       if (!storyPhone || dead || model.switchingProtagonist) return;
       const sequence = phoneSequence;

@@ -7,6 +7,7 @@ export interface PhoneLease {
 }
 export interface PhonePanelHost {
   mount(anchor: HTMLElement, options: { onClose(): void }): PhoneLease;
+  openStock?(): void;
 }
 export type PhoneSource = 'none' | 'extension' | 'embedded';
 export interface PhoneRuntime {

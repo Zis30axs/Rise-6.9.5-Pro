@@ -176,7 +176,7 @@ function appointments(state: WorldState, owner: ProtagonistId, at: number): Appo
   const toMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
   const sharedName = (title: string) => others.some(other => ({ soyo: /素世|soyo/i, sakiko: /祥子|sakiko/i, emma: /艾玛|emma/i, renako: /玲奈子|甘织|renako/i })[other].test(title));
   const sharedCalendar = (event: { locationId: string; start: number; duration: number }) => others.some(other => p.devices[other].calendar.some(otherEvent => otherEvent.locationId === event.locationId && otherEvent.start < event.start + event.duration && event.start < otherEvent.start + otherEvent.duration));
-  const calendar: Appointment[] = p.devices[owner].calendar.map(event => ({ ...event,
+  const calendar: Appointment[] = p.devices[owner].calendar.filter(event=>!event.stockCode).map(event => ({ ...event,
     key: `calendar:${event.id}:${event.start}:${stamp(JSON.stringify([event.title, event.locationId, event.duration]))}`, source: 'calendar',
     shared: sharedName(event.title) || sharedCalendar(event),
   }));

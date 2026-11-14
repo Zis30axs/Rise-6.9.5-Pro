@@ -5,16 +5,18 @@ import { smsReadReceipt } from '../runtime/phone-sms';
 import { phoneSceneId, PHONE_SCENE_PREFIX } from '../runtime/phone-scene';
 import { activeProtagonist, defaultPhoneAppearance, enableProtagonists, gameMinute, otherProtagonist, otherProtagonists, personState, phoneAccess, protagonistNames, type PhoneCommand } from '../runtime/protagonist-world';
 import { locations } from '../runtime/model';
-import { gameCalendar, registrationNotice } from '../runtime/game-calendar';
+import { gameCalendar, gameDayFromISO, registrationNotice } from '../runtime/game-calendar';
 import { resolveWeather, weatherNarrative } from '../runtime/weather';
 import { storeCatalog } from '../runtime/convenience-store';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { allNetworkAccounts, guestAccount, networkLegacyAliases, networkOwnerId, resolveNetworkAccount } from '../runtime/network-identities';
 import { pendingWorldChronicle } from '../runtime/world-chronicle';
+import { canTradeStocks, stockAccount, STOCK_CALENDAR_LOCATION, stockName } from '../runtime/stock-world';
 
 /** Capability for the embedded phone only. Never exposes the other person's save wholesale. */
 export function createWorldPhoneApi(options: {
   session: string; current(): boolean; busy(): boolean; state(): WorldState;
+  presentation?(): 'novel' | 'scene';
   commit(action: Extract<WorldAction, {type:'phone_app'|'wait'}>): WorldState;
   requestReply?(messageId: string): Promise<void>;
   openStory?(id: string, viewpoint: string): void;
@@ -37,7 +39,7 @@ export function createWorldPhoneApi(options: {
       personState(enabled, recipient).phone.some(row => row.id === id && row.read);
     return JSON.parse(JSON.stringify({
       binding: JSON.stringify([options.session, active]), revision: p.revision,
-      active, owner, name: protagonistNames[owner], now: gameMinute(s), clock: s.clock,
+      active, owner, presentation:options.presentation?.()??'novel', name: protagonistNames[owner], now: gameMinute(s), clock: s.clock,
       calendarDate: gameCalendar(s.clock.day), weather: weatherNarrative(resolveWeather(s)), reporting: registrationNotice(s.clock.day),
       deviceId: p.accounts.people[owner].deviceId, appearance: d.appearance ?? defaultPhoneAppearance(owner),
       locationId: person.locationId, theme: p.accounts.people[owner].theme,
@@ -68,10 +70,45 @@ export function createWorldPhoneApi(options: {
     }));
   };
   const listeners=new Set<() => void>();
+  let stockShortcut: { owner: ProtagonistId; code: string } | undefined;
   // An open inspection can refresh without repeatedly writing audit/journal entries.
   // Its capability is local to this phone session; access is checked on every read.
   const inspections = new Set<string>();
   return Object.freeze({
+    stock() {
+      if (!options.current()) throw Error('剧情手机连接已结束');
+      if (options.presentation?.()==='scene') throw Error('请在纯小说模式打开东都证券');
+      const s = options.state(), owner = activeProtagonist(s);
+      return JSON.parse(JSON.stringify({
+        binding: JSON.stringify([options.session, owner]), phoneRevision: s.protagonists?.revision ?? 0,
+        owner, state: stockAccount(s,owner), canTrade: canTradeStocks(s,owner),
+        cards: s.protagonists?.accounts.people[owner].cards ?? {},
+      })) as {
+        binding: string; phoneRevision: number; owner: ProtagonistId; state: ReturnType<typeof stockAccount>;
+        canTrade: boolean; cards: Partial<Record<import('../runtime/dual-protagonists').FictionalCardId,number>>;
+      };
+    },
+    queueStockShortcut(code: string) {
+      if (!options.current() || !stockName(code)) return;
+      stockShortcut = { owner: activeProtagonist(options.state()), code };
+    },
+    clearStockShortcut() { stockShortcut = undefined; },
+    takeStockShortcut() {
+      const pending=stockShortcut; stockShortcut=undefined;
+      return options.current() && pending?.owner===activeProtagonist(options.state()) ? pending.code : null;
+    },
+    async scheduleStock(raw: {binding:string;requestId:string;code:string;date:string;time:string;duration:number}) {
+      if (!options.current() || options.busy()) throw Error('请等待当前行动结束后再操作手机');
+      const s=options.state(), owner=activeProtagonist(s), name=stockName(raw?.code);
+      if (raw?.binding!==JSON.stringify([options.session,owner]) || !name) throw Error('主角或聊天已切换');
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(raw.time)) throw Error('请选择有效时间');
+      const [hour,minute]=raw.time.split(':').map(Number);
+      options.commit({type:'phone_app',requestId:raw.requestId,owner,command:{
+        type:'calendar_save',id:raw.requestId,title:`回顾${name}行情`,locationId:STOCK_CALENDAR_LOCATION,
+        stockCode:raw.code,start:(gameDayFromISO(raw.date)-1)*1440+hour*60+minute,duration:raw.duration,
+      }});
+      return this.stock();
+    },
     networkIdentity(label: string) {
       if (!options.current()) throw Error('剧情手机连接已结束');
       const saved = allNetworkAccounts(options.state().protagonists?.internet);
