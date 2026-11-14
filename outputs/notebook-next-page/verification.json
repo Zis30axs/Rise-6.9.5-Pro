@@ -1,0 +1,60 @@
+{
+  "host": "Chromium headless with a local Tavern-Helper fixture and a production bundle",
+  "cases": [
+    {
+      "width": 1440,
+      "height": 900,
+      "overflow": {
+        "panel": 0,
+        "document": 0,
+        "styles": true
+      },
+      "font": "loaded",
+      "rawWritingRequests": 1
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "overflow": {
+        "panel": 0,
+        "document": 0,
+        "styles": true
+      },
+      "font": "loaded",
+      "rawWritingRequests": 1
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": {
+        "panel": 0,
+        "document": 0,
+        "styles": true
+      },
+      "font": "loaded",
+      "rawWritingRequests": 1
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "overflow": {
+        "panel": 0,
+        "document": 0,
+        "styles": true
+      },
+      "font": "loaded",
+      "rawWritingRequests": 4
+    }
+  ],
+  "assertions": [
+    "Tool dock opens the notebook and the request starts on click",
+    "Draft, five ink choices, underline and sticker assets render in the game shell",
+    "Typing, changing ink and replacing a sticker persist after explicitly saving and reopening",
+    "The world save stays byte-for-byte equivalent throughout the notebook workflow",
+    "A 390px viewport exports pages and imports decorated and legacy pages into a second chat",
+    "A 320px viewport preserves drafts on failure, cancellation and changing selected notebook",
+    "Visible notebook text contains no protocol or provider errors, and the page has no horizontal overflow"
+  ],
+  "liveModelCalled": false,
+  "physicalTauriTavernVerified": false
+}

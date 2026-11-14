@@ -1,0 +1,59 @@
+.uc-notebook{display:flex;flex-direction:column;gap:12px;min-height:0;color:#473b4b;font-size:14px;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;color-scheme:light}
+.uc-notebook .nb-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:#fff6fa;padding:12px 16px;border:1px solid #eed7e1;border-radius:16px}
+.uc-notebook .nb-heading strong{font-size:18px}
+.uc-notebook .nb-backup{display:flex;gap:8px;align-items:center}
+.uc-notebook .nb-backup button,.uc-notebook .nb-import,.uc-notebook .nb-editor button{border:1px solid #d4b2c2;border-radius:9px;background:#fffefa;padding:7px 10px;color:#603e54;cursor:pointer;font-size:12px}
+.uc-notebook .nb-import{position:relative;overflow:hidden}
+.uc-notebook .nb-import input{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}
+.uc-notebook .nb-import:focus-within{outline:2px solid #995a78;outline-offset:2px}
+.uc-notebook .nb-import:has(input:disabled){opacity:.48}
+.uc-notebook .nb-layout{display:grid;grid-template-columns:minmax(146px,27%) minmax(0,1fr);gap:12px}
+.uc-notebook .nb-roster{background:#f7eef5;border-radius:14px;padding:10px;min-width:0;max-height:65vh;display:flex;flex-direction:column;gap:8px}
+.uc-notebook .nb-search,.uc-notebook .nb-direction{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#6a5664}
+.uc-notebook .nb-search input,.uc-notebook .nb-draft input,.uc-notebook .nb-draft textarea,.uc-notebook .nb-paragraph select{box-sizing:border-box;min-width:0;border:1px solid #d9bfc8;border-radius:9px;background:#fffefa;color:#40313d;padding:8px;font:inherit}
+.uc-notebook .nb-search input,.uc-notebook .nb-draft input,.uc-notebook .nb-draft textarea{width:100%}
+.uc-notebook .nb-people{overflow:auto;min-height:0;display:flex;flex-direction:column;gap:4px}
+.uc-notebook .nb-people button{display:flex;align-items:center;text-align:left;gap:8px;padding:7px;background:transparent;border:1px solid transparent;border-radius:10px;color:inherit;cursor:pointer;min-width:0}
+.uc-notebook .nb-people button.selected{border-color:#dcaebd;background:#fffafd}
+.uc-notebook .nb-avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#e7d1dd;flex:none;color:#725265;font-size:12px}
+.uc-notebook .nb-person-name{display:flex;flex:1;min-width:0;flex-direction:column}
+.uc-notebook .nb-person-name b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uc-notebook .nb-person-name small,.uc-notebook .nb-count{color:#775e6e;font-size:11px}
+.uc-notebook .nb-book{min-width:0;display:flex;flex-direction:column;gap:10px}
+.uc-notebook .nb-cover{border-radius:15px;background:linear-gradient(135deg,#f9dce8,#faf3ed);border:1px solid #e3c9d0;padding:14px 18px;position:relative}
+.uc-notebook .nb-cover-mark{position:absolute;right:20px;top:12px;font-size:26px;color:#a45d80}
+.uc-notebook .nb-cover small{color:#81516a}
+.uc-notebook .nb-cover h2{font-size:21px;font-weight:600;margin:5px 0 0}
+.uc-notebook .nb-pages{display:flex;flex-direction:column;gap:9px}
+.uc-notebook .nb-page{padding:13px 17px;border:1px solid #ead3d9;border-radius:13px;background:repeating-linear-gradient(#fffefa,#fffefa 27px,#f0e3e7 28px);overflow-wrap:anywhere}
+.uc-notebook .nb-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#80596b}
+.uc-notebook .nb-handwriting,.uc-notebook textarea.nb-handwriting{font-family:"Notebook WenKai","Kaiti SC",KaiTi,STKaiti,serif;font-size:17px;line-height:1.65}
+.uc-notebook .nb-underlined{text-decoration:underline;text-underline-offset:.22em;text-decoration-thickness:.065em}
+.uc-notebook .nb-page h3{font-size:21px;margin:8px 0 4px}
+.uc-notebook .nb-page p{white-space:pre-wrap;margin:0 0 5px}
+.uc-notebook .nb-empty{padding:12px 8px;margin:0;color:#775e6e;text-align:center;font-size:13px}
+.uc-notebook .nb-editor,.uc-notebook .nb-draft{display:flex;flex-direction:column;gap:9px;min-width:0}
+.uc-notebook .nb-editor{padding:12px;background:#f9f0f5;border-radius:13px}
+.uc-notebook .nb-editor h3{margin:0;font-size:16px}
+.uc-notebook .nb-draft{border:0;padding:0;margin:0}
+.uc-notebook .nb-paragraph{display:flex;flex-direction:column;gap:5px}
+.uc-notebook .nb-paragraph textarea{display:block;min-height:78px;resize:vertical}
+.uc-notebook .nb-paragraph-actions,.uc-notebook .nb-editor-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#6a5664;font-size:12px}
+.uc-notebook .nb-paragraph-actions select{padding:5px 6px}
+.uc-notebook .nb-paragraph-actions button[aria-pressed=true]{background:#f3dbe7;border-color:#995a78}
+.uc-notebook .nb-sticker-picker summary{cursor:pointer;color:#603e54;padding:2px 0}
+.uc-notebook .nb-sticker-picker small{color:#775e6e}
+.uc-notebook .nb-stickers,.uc-notebook .nb-page-stickers{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.uc-notebook .nb-stickers button{display:grid;place-items:center;padding:3px;border-color:transparent;background:#fffefa}
+.uc-notebook .nb-stickers button[aria-pressed=true]{border-color:#995a78;background:#f3dbe7}
+.uc-notebook .nb-stickers img,.uc-notebook .nb-page-stickers img{object-fit:contain}
+.uc-notebook .nb-editor button.nb-save{margin-left:auto;padding:8px 13px;background:#995a78;color:white;border-color:#995a78}
+.uc-notebook button:disabled{opacity:.48;cursor:not-allowed}
+.uc-notebook .nb-notice,.uc-notebook .nb-overflow{margin:0;color:#6c3852;font-size:12px}
+@media(max-width:650px){
+  .uc-notebook .nb-layout{grid-template-columns:minmax(0,1fr)}
+  .uc-notebook .nb-roster{max-height:156px}
+  .uc-notebook .nb-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .uc-notebook .nb-heading{padding:10px}
+  .uc-notebook .nb-draft input,.uc-notebook .nb-search input,.uc-notebook .nb-paragraph select{font-size:16px}
+}

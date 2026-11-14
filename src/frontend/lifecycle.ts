@@ -9,8 +9,10 @@ import { appendPhoneReplyScene } from '../runtime/phone-scene';
 import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
+import notebookCss from './notebook.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
-import { notebookPageFromDraft, writeNotebook } from '../runtime/notebook';
+import { notebookPageFromDraft, readNotebook, writeNotebook } from '../runtime/notebook';
+import { notebookWritingPrompt } from '../runtime/notebook-writing';
 import { editStoryEntry as editSavedStoryEntry } from '../runtime/story-editor';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
@@ -56,7 +58,7 @@ export function mountShell(
   host.style.cssText = 'position:fixed;inset:0;height:100dvh;z-index:2147483000;isolation:isolate;';
   const shadow = host.attachShadow({ mode: 'open' });
   const style = doc.createElement('style');
-  style.textContent = css;
+  style.textContent = css + '\n' + notebookCss;
   const mount = doc.createElement('div');
   mount.id = 'unread-city-app';
   shadow.append(style, mount);
@@ -89,6 +91,7 @@ export function mountShell(
   let dismissOverlay: (() => boolean) | undefined;
   let storyPhone: StoryPhoneLink | undefined;
   let profileRequest: number | undefined;
+  let notebookRequest: number | undefined;
   const storyIdPrefix = `story-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   let storySequence = 0;
   const storyId = () => globalThis.crypto?.randomUUID?.() ?? `${storyIdPrefix}-${++storySequence}`;
@@ -326,6 +329,7 @@ export function mountShell(
     }
     protagonistSwitch.release();
     cancelInteraction();
+    cancelNotebookWriting();
     if (activePhoneReply) {
       // Phone work never keeps generating in a hidden or retired session.
       epoch++;
@@ -518,12 +522,20 @@ export function mountShell(
   const phoneGlobal = hostWindow as Window & { __unreadCityWorldPhone?: typeof worldPhone };
   phoneGlobal.__unreadCityWorldPhone = worldPhone;
 
+  function cancelNotebookWriting() {
+    if (notebookRequest === undefined) return;
+    notebookRequest = undefined;
+    epoch++;
+    try { bridge.cancel(); } catch { /* The discarded request already lost its owner. */ }
+    model.busy = false;
+  }
   const protagonistSwitch = createProtagonistSwitchController({
     state: snapshot,
     current: () => !dead && !doc.hidden && bridge.session() === session,
     blocked: () => !!pendingInteraction,
     pending(value) { model.switchingProtagonist = value; },
     cancelWork() {
+      cancelNotebookWriting();
       epoch++;
       try { bridge.cancel(); } catch { /* Late work is already invalidated. */ }
       activePhoneReply = null;
@@ -568,6 +580,27 @@ export function mountShell(
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});
       } catch (error) { model.notice = message(error); }
     },
+    ...(bridge.writeNotebookDraft ? {
+      async writeNotebookDraft(draft) {
+        if (dead || doc.hidden || model.busy || model.switchingProtagonist || bridge.session() !== session) {
+          throw new Error('等手头的事忙完再来写吧。');
+        }
+        const request = ++epoch;
+        notebookRequest = request;
+        model.busy = true;
+        try {
+          const pages = await readNotebook(session);
+          if (!stillCurrent(request)) throw new Error('这页已经合上了。');
+          const composition = await bridge.writeNotebookDraft!(notebookWritingPrompt(snapshot(), draft, pages));
+          if (!stillCurrent(request)) throw new Error('这页已经合上了。');
+          return composition;
+        } finally {
+          if (notebookRequest === request) notebookRequest = undefined;
+          if (stillCurrent(request)) model.busy = false;
+        }
+      },
+      cancelNotebookWriting,
+    } : {}),
     async send(text, mode = 'story') {
       const trimmed = text.trim();
       if (dead || model.busy || model.switchingProtagonist || !trimmed) return;
@@ -594,8 +627,8 @@ export function mountShell(
           try {
             await writeNotebook(session, reply.notebookPages.map((draft, i) =>
               notebookPageFromDraft(draft, next, ids.assistantId, i)));
-          } catch (error) {
-            if (stillCurrent(request)) model.notice = '剧情已保存，但手账归档失败：' + message(error);
+          } catch {
+            if (stillCurrent(request)) model.notice = '有一页手账没能留下来。';
           }
         }
       } catch (error) {

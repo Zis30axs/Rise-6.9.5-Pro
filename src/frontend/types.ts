@@ -1,3 +1,5 @@
+import type { NotebookComposition, NotebookWritingRequest } from '../runtime/notebook-composition';
+import type { NotebookWritingPrompt } from '../runtime/notebook-writing';
 export interface ScenePresence {
   x: number;
   z: number;
@@ -365,6 +367,7 @@ export interface Bridge {
   save(state: WorldState): void;
   onSessionChange(callback: () => void): () => void;
   generate(text: string, state: WorldState, options?: StoryGenerationOptions): Promise<GeneratedStory>;
+  writeNotebookDraft?(prompt: NotebookWritingPrompt): Promise<NotebookComposition>;
   cancel(): void;
   dispose(): void;
 }
@@ -402,6 +405,8 @@ export interface ShellActions {
   send(text: string, mode?: 'story' | 'law_narration'): Promise<void>;
   /** Only replaces the saved story body's text; no world actions are replayed. */
   editStoryEntry?(entryId: string, expectedText: string, revisedText: string): boolean;
+  writeNotebookDraft?(draft: NotebookWritingRequest): Promise<NotebookComposition>;
+  cancelNotebookWriting?(): void;
   exit(): void;
   switchChat(): void;
   openPhone(anchor?: HTMLElement): void;

@@ -17,6 +17,7 @@ import { weeklyMemoryContext } from './weekly-memory';
 import { memoryBootstrap, memoryCommitted, memoryPromptContext, reportMemoryOutboxWarning } from './long-term-memory';
 import { collectCommittedSources } from './long-term-memory/source';
 import { notebookPeople } from './notebook';
+import { parseNotebookComposition } from './notebook-composition';
 import { acknowledgeSavedMemoryOutbox, appendSavedMemoryOutbox, readSavedMemoryOutbox, outboxOverflowCount } from './long-term-memory/outbox';
 import { loadMemorySettings } from './long-term-memory/settings';
 import { MEMORY_TAG_INSTRUCTION, runNativeMemoryTools, runTaggedMemory } from './long-term-memory/protocol';
@@ -291,6 +292,14 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (ownRequest.route === 'tavern') try { api.stopGenerationById(ownRequest.id); } catch { /* teardown still proceeds */ }
     }
   };
+  function generateRaw(id: string, system: string, user: string): Promise<unknown> {
+    return api.generateRaw!({
+      generation_id: id,
+      ordered_prompts: [{ role: 'system', content: system }, { role: 'user', content: user }],
+      overrides: { chat_history: { with_depth_entries: false, author_note: '', prompts: [] } },
+      should_stream: false, should_silence: true, max_chat_history: 0,
+    });
+  }
   const chatChanged = () => {
     retired = true;
     pauseMemoryWork(ownerSession);
@@ -343,6 +352,33 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       if (disposed) return () => {};
       subscribers.add(callback);
       return () => { subscribers.delete(callback); };
+    },
+    async writeNotebookDraft(prompt) {
+      assertOwner();
+      const settings = { ...loadStoryApiSettings(), preset: '' };
+      if (settings.mode === 'tavern' && (context().mainApi !== 'openai' || typeof api.generateRaw !== 'function')) {
+        throw new Error('暂时写不了这一页。');
+      }
+      cancel();
+      const generationId = `unread-city:${instanceId}:${++requestSequence}`;
+      const controller = new AbortController();
+      const aborted = new Promise<never>((_resolve, reject) => {
+        pending = { id: generationId, route: settings.mode, reject, abort: () => controller.abort() };
+      });
+      const timeout = setTimeout(() => { if (pending?.id === generationId) cancel(); }, 120_000);
+      try {
+        const response = await Promise.race([aborted, Promise.resolve().then(() => {
+          if (controller.signal.aborted) throw cancelled();
+          return settings.mode === 'custom'
+            ? requestStoryFromCustomApi(settings, prompt.user, prompt.system, controller.signal)
+            : generateRaw(generationId, prompt.system, prompt.user);
+        })]);
+        assertOwner();
+        return parseNotebookComposition(response);
+      } finally {
+        clearTimeout(timeout);
+        if (pending?.id === generationId) pending = null;
+      }
     },
     async generate(input: string, state: WorldState, options?: StoryGenerationOptions): Promise<GeneratedStory> {
       assertOwner();
@@ -640,15 +676,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
           return storyApi.mode === 'custom'
             ? requestStoryFromCustomApi(storyApi, prompt, combinedSystemPrompt, controller!.signal)
             : options?.kind === 'autonomous_sms'
-            ? api.generateRaw!({
-              generation_id: attemptId,
-              ordered_prompts: [
-                { role: 'system', content: combinedSystemPrompt },
-                { role: 'user', content: prompt },
-              ],
-              overrides: { chat_history: { with_depth_entries: false, author_note: '', prompts: [] } },
-              should_stream: false, should_silence: true, max_chat_history: 0,
-            })
+            ? generateRaw(attemptId, combinedSystemPrompt, prompt)
             : api.generate({
               generation_id: attemptId,
               user_input: prompt,

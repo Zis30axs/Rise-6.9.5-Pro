@@ -2,6 +2,8 @@ import type { WorldState } from '../frontend/types';
 import { PROTAGONISTS, protagonistForPerson } from './dual-protagonists';
 import { activeProtagonist, personState, protagonistNames } from './protagonist-world';
 import { allResidentCast } from './npc-cast';
+import { normalizeNotebookComposition, validNotebookFormat,
+  type NotebookComposition, type NotebookPageFormat } from './notebook-composition';
 
 /**
  * A private, read-only-to-the-narrator archive. Reading these pages in the
@@ -19,6 +21,8 @@ export interface NotebookPage {
   at: number;
   turn: number;
   sourceId: string;
+  format?: NotebookPageFormat;
+  writtenAt?: number;
 }
 interface StoredPage extends NotebookPage { key: string; scope: string }
 
@@ -78,7 +82,9 @@ function validPage(value: unknown): value is NotebookPage {
     && (p.kind === 'character' || p.kind === 'observer')
     && Number.isSafeInteger(p.at) && p.at! >= 0
     && Number.isSafeInteger(p.turn) && p.turn! >= 0
-    && typeof p.sourceId === 'string' && p.sourceId.length <= 160;
+    && typeof p.sourceId === 'string' && p.sourceId.length <= 160
+    && (p.format === undefined || validNotebookFormat(p.format, p.text))
+    && (p.writtenAt === undefined || Number.isSafeInteger(p.writtenAt) && p.writtenAt >= 0);
 }
 
 export function notebookPageFromDraft(draft: NotebookDraft, state: WorldState,
@@ -104,8 +110,16 @@ export function makePersonalNotebookPage(
       ?? (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2))),
     personId, title: title.trim(), text: text.trim(),
     kind: isSelf ? 'character' : 'observer',
-    at: notebookMinute(state), turn: notebookTurn(state), sourceId: '',
+    at: notebookMinute(state), turn: notebookTurn(state), sourceId: '', writtenAt: Date.now(),
   };
+}
+
+export function makeComposedNotebookPage(
+  state: WorldState, personId: string, draft: NotebookComposition,
+): NotebookPage {
+  const { title, paragraphs, stickers } = normalizeNotebookComposition(draft);
+  const page = makePersonalNotebookPage(state, personId, title, paragraphs.map(paragraph => paragraph.text).join('\n\n'));
+  return { ...page, format: { paragraphs: paragraphs.map(({ ink, underline }) => ({ ink, underline })), stickers } };
 }
 
 const DB_NAME = 'unread-city-notebooks-v1';
@@ -151,13 +165,14 @@ export async function readNotebook(scope: string): Promise<NotebookPage[]> {
   const db = await openBook(), tx = db.transaction('pages', 'readonly');
   const finished = transactionDone(tx);
   const request = tx.objectStore('pages').index('by_scope').getAll(IDBKeyRange.only(scope));
-  const result = await new Promise<StoredPage[]>((resolve, reject) => {
+  const rows = new Promise<StoredPage[]>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result as StoredPage[]);
     request.onerror = () => reject(request.error ?? new Error('无法读取手账'));
   });
-  await finished;
+  const [result] = await Promise.all([rows, finished]);
   return result.filter(validPage).map(({ key: _key, scope: _scope, ...page }) => page)
-    .sort((a, b) => a.at - b.at || a.id.localeCompare(b.id));
+    .sort((a, b) => a.at - b.at || a.turn - b.turn
+      || (a.writtenAt ?? 0) - (b.writtenAt ?? 0) || a.id.localeCompare(b.id));
 }
 
 export async function writeNotebook(scope: string, pages: readonly NotebookPage[]): Promise<void> {
