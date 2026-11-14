@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "chibi-wave2-20261114",
+  "name": "第二批 Q 版角色表情素材",
+  "type": "sticker-pack",
+  "buildIncluded": false,
+  "description": "用户于 2026-11-14 追加上传的 8 张 162×162 透明 PNG。人物身份尚未单独校对，按用户消息里的展示顺序记录，不自动关联 NPC。",
+  "stickers": [
+    {
+      "id": "chibi-wave2-01",
+      "file": "chibi-01.png",
+      "source": "IMG_3227.png",
+      "description": "浅绿长发、鼓脸",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 44839,
+      "sha256": "6c1659cb3907ddedb21e4a5a5d50d79efca230db4ed5c316511121fd9274fa37"
+    },
+    {
+      "id": "chibi-wave2-02",
+      "file": "chibi-02.png",
+      "source": "IMG_3228.png",
+      "description": "戴黑色帽子、闭眼微笑",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 39885,
+      "sha256": "702b77ae6b2a63075a474505cf1d1277902e8504c1bb7ca0b11232d3c274bbc3"
+    },
+    {
+      "id": "chibi-wave2-03",
+      "file": "chibi-03.png",
+      "source": "IMG_3231.png",
+      "description": "浅绿长发、张嘴笑",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 51173,
+      "sha256": "f0fc2001d6b6f7592bf7c362a9b335227589fdb43e8da4789d880461420bbeb1"
+    },
+    {
+      "id": "chibi-wave2-04",
+      "file": "chibi-04.png",
+      "source": "IMG_3230.png",
+      "description": "浅蓝长发、开心表情",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 58838,
+      "sha256": "7f6abe297c7f0fc2dfbdfe9f4f9b15099c53ccfb70d7ebf14679debc9fe7d8b4"
+    },
+    {
+      "id": "chibi-wave2-05",
+      "file": "chibi-05.png",
+      "source": "IMG_3229.png",
+      "description": "浅蓝长发、挥手",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 57470,
+      "sha256": "7aebd1a2229ae3d8588924d0bb4e23a2ec897294b7132247b95e5bf6f922950b"
+    },
+    {
+      "id": "chibi-wave2-06",
+      "file": "chibi-06.png",
+      "source": "IMG_3232.png",
+      "description": "浅金发、紫色眼睛、手放胸前",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 50619,
+      "sha256": "66022c145a626ec9792622a885c5c118ccf2785445601b2b47850eeeaf3a6d7c"
+    },
+    {
+      "id": "chibi-wave2-07",
+      "file": "chibi-07.png",
+      "source": "IMG_3233.png",
+      "description": "浅紫发、闭眼笑",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 45262,
+      "sha256": "5a59d9e98efc54104b4b3fe16efbb97dcaf01a815242686725f30171d87217ef"
+    },
+    {
+      "id": "chibi-wave2-08",
+      "file": "chibi-08.png",
+      "source": "IMG_3234.png",
+      "description": "深色短发、抱臂",
+      "width": 162,
+      "height": 162,
+      "format": "png",
+      "bytes": 37992,
+      "sha256": "ea9eaa122141150de69e749e8b8342346781dbc223ba48845122b64637540975"
+    }
+  ]
+}
