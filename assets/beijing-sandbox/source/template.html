@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>北京市沙盘 · 未读之城</title>
+<style>
+:root {
+  color:#282720; background:#f0ede2; font-family:"Instrument Sans","Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --paper:#f7f4eb; --muted:#625f52; --line:#dcd6c4; --rust:#9e472f; --shadow:0 12px 38px #49412812;
+  -webkit-font-smoothing:antialiased;
+}
+*{box-sizing:border-box}
+body{margin:0}
+button,input{font:inherit}
+button{color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid #a44e32;outline-offset:3px}
+[hidden]{display:none!important}
+.shell{max-width:1600px;margin:auto;padding:0 37px 22px}
+.mast{height:63px;border-bottom:1px solid #d9d3c0;display:flex;align-items:center;justify-content:space-between}
+.project{display:flex;gap:12px;align-items:center;font-size:13px;font-weight:650;letter-spacing:.12em}
+.seal{background:#9e462f;width:25px;height:25px;color:#fff1d2;display:grid;place-items:center;border:2px solid #9e462f;box-shadow:inset 0 0 0 1px #e0ad84;font:bold 15px "Noto Serif CJK SC",serif;letter-spacing:0}
+.mast span:last-child:not(.seal){font-size:11px;letter-spacing:.19em;color:#6b6555}
+.hero{display:flex;align-items:end;justify-content:space-between;padding:27px 0 19px;gap:12px}
+h1{margin:0;font:700 clamp(36px,5.1vw,72px)/1.13 "Noto Serif CJK SC","Songti SC","SimSun",serif;letter-spacing:-.078em}
+.filter{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter button{border:1px solid #d7cebb;border-radius:3px;background:transparent;padding:7px 12px;font-size:12px;white-space:nowrap;color:#514d42}
+.filter button[aria-pressed=true]{background:#35362c;border-color:#35362c;color:#fff9e9}
+.filter button:hover:not([aria-pressed=true]){background:#e6dfcb}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 306px;gap:15px}
+.map{position:relative;height:clamp(500px,calc(100svh - 213px),840px);background:radial-gradient(ellipse at 48% 46%,#ece7d6 13%,#dfd9c4 61%,#d4cdb5);border:1px solid #d4cbb2;isolation:isolate;overflow:hidden;border-radius:4px;box-shadow:var(--shadow)}
+.map.night{background:radial-gradient(ellipse at 47% 45%,#555e70 7%,#343e52 65%,#293345)}
+.map.night .caption,.map.night .mapInfo{color:#fff0cd}
+.map.night #scale{border-color:#e1cfa9}
+.map.night .pin{box-shadow:0 1px 7px #191e2baa}
+.map::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;background-image:radial-gradient(#8f84654f .65px,transparent .7px);background-size:23px 23px;mask-image:linear-gradient(180deg,black,transparent 72%)}
+#fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#gl,#overlay{position:absolute;inset:0;width:100%;height:100%;display:block}
+#gl{z-index:1;cursor:grab;touch-action:none;outline-offset:-5px}
+#gl.dragging{cursor:grabbing}
+#overlay{z-index:2;pointer-events:none}
+#labels{position:absolute;inset:0;z-index:3;pointer-events:none}
+.pin{position:absolute;display:flex;align-items:center;gap:5px;transform:translate(-50%,-100%);white-space:nowrap;background:#f5eedc;border:1px solid #aa9a7e;border-radius:3px;padding:4px 7px;box-shadow:0 1px 5px #473c3b29;color:#312b23;font-size:11px;font-weight:660;pointer-events:auto}
+.pin::before{content:"";height:6px;width:6px;background:var(--point);border-radius:50%;flex:0 0 6px}
+.pin[aria-current=true]{color:#fff5e1;background:#813e2b;border-color:#6e3426;z-index:5;font-size:12px;padding:5px 8px}
+.pin[aria-current=true]::before{background:#f0c191}
+.pin:hover:not([aria-current=true]){background:#fff8e9;border-color:#7a694d}
+.pin:focus-visible{z-index:8}
+.dial{position:absolute;display:flex;align-items:center;justify-content:center;flex-direction:column;top:15px;right:16px;z-index:5;width:45px;height:57px;color:#443d2d;border:1px solid #9c9174;background:#f6f0dbef;border-radius:28px;font-size:10px;letter-spacing:.18em;box-shadow:0 2px 7px #4d402012}
+#needle{width:0;height:0;border-right:5px solid transparent;border-left:5px solid transparent;border-bottom:14px solid #9f4a33;transform-origin:50% 90%;margin:4px 1px}
+.mapInfo{position:absolute;top:17px;left:19px;z-index:5;color:#504a3a;font-size:11px;pointer-events:none}
+.mapInfo strong{display:block;font-family:"Noto Serif CJK SC",serif;font-size:16px;letter-spacing:.08em}
+.mapInfo span{display:block;margin-top:4px}
+.areas{position:absolute;top:17px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:4px;white-space:nowrap;max-width:calc(100% - 152px);overflow-x:auto;padding:1px 2px 4px;scrollbar-width:thin;scrollbar-color:#b7a98b transparent}
+.areas button{min-height:32px;padding:4px 10px;border:1px solid #b8ab8e;border-radius:3px;color:#433c2e;background:#f6efdbf5;font-size:11px;box-shadow:0 2px 7px #5647200c;flex:none}
+.areas button:hover,.areas button[aria-pressed=true]{color:#fff9e7;border-color:#873f2c;background:#873f2c}
+.mapToolbar{position:absolute;z-index:5;bottom:13px;right:13px;display:flex;gap:5px;background:#f4efdf;border:1px solid #c0b393;border-radius:4px;padding:4px;box-shadow:0 4px 13px #55482d20}
+.mapToolbar button{font-size:16px;min-width:37px;height:33px;border:0;background:transparent;border-radius:2px}
+.mapToolbar button:hover{background:#e8dec6}
+.mapToolbar #reset,.mapToolbar #light{font-size:11px;padding:0 7px;border-left:1px solid #d6cbb1}
+.caption{position:absolute;z-index:4;bottom:15px;left:18px;display:grid;gap:3px;color:#4e4737;font-size:10px;pointer-events:none}
+#scale{height:4px;width:60px;border:1px solid #6d634e;border-top:0}
+.message{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);padding:12px 16px;background:#fbf3dd;border:1px solid #c2a686;border-radius:3px;font-size:12px;white-space:nowrap}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:4px;min-width:0;height:clamp(500px,calc(100svh - 213px),840px);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.detail{padding:18px 19px 14px;border-bottom:1px solid var(--line)}
+.kicker{display:flex;align-items:center;gap:6px;font-size:11px;color:#6b5a48}
+.kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--category,#9e472f)}
+#placeName{font:700 29px/1.22 "Noto Serif CJK SC","Songti SC",serif;margin:7px 0 4px;letter-spacing:-.07em}
+#placeSub{margin:0;color:var(--muted);font-size:11px}
+#placeDesc{margin:9px 0 10px;font-size:12px;line-height:1.8;color:#4e4b3d}
+#current{margin:0 0 8px;color:#6a6250;font-size:11px}
+.actions{display:flex;gap:6px}
+.actions button{font-size:12px;font-weight:650;line-height:1.4;min-height:38px;padding:6px 9px;border-radius:3px;border:1px solid #cbbda1;background:transparent;flex:1}
+#travel{background:#943f2d;color:#fff7e8;border-color:#943f2d}
+#travel:disabled{background:#e9dfca;color:#595140;border-color:#e9dfca;cursor:default}
+#travel:not(:disabled):hover{background:#793320}
+#focus:hover{background:#ede6d7}
+#routeInfo{font-size:11px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+.places{display:flex;flex-direction:column;min-height:0;flex:1}
+.listHead{display:flex;justify-content:space-between;align-items:center;padding:11px 18px 7px;gap:8px}
+.listHead h2,.tours h2{font:700 14px/1.2 "Noto Serif CJK SC",serif;margin:0;white-space:nowrap}
+#count{font-size:11px;color:var(--muted);white-space:nowrap}
+#search{margin:0 18px 8px;padding:7px 9px;border:1px solid #dcd4c0;background:#fbf9f0;border-radius:3px;color:#302b23;font-size:11px;min-width:0}
+#list{overflow:auto;min-height:55px;overscroll-behavior:contain;padding:0 9px 3px;scrollbar-width:thin;scrollbar-color:#c5b797 transparent}
+.place{width:100%;border:0;border-top:1px solid #e8e1d0;background:transparent;display:flex;justify-content:space-between;align-items:center;text-align:left;gap:8px;padding:8px 9px;font-size:12px}
+.place span:first-child{display:flex;align-items:center;gap:7px;font-weight:650}
+.place span:first-child::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--point)}
+.place span:last-child{color:#736d5e;font-size:10px;white-space:nowrap}
+.place:hover,.place[aria-current=true]{background:#efe6d3}
+.empty{font-size:12px;color:#6a6250;margin:10px}
+.tours{border-top:1px solid var(--line);padding:10px 18px 12px}
+#tours{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:8px}
+#tours button{border:1px solid #d4c9b2;background:transparent;border-radius:3px;font-size:10px;padding:5px 7px}
+#tours button[aria-pressed=true],#tours button:hover{background:#e8dcc1}
+.footer{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-top:9px;color:#645e50;font-size:11px}
+.footer summary{cursor:pointer}
+.footer a{color:#70422f;display:block;margin:4px 0;text-decoration-thickness:1px;text-underline-offset:2px}
+.footer details{text-align:right}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:1040px){.shell{padding:0 22px 18px}.layout{grid-template-columns:minmax(0,1fr) 257px;gap:11px}.detail{padding-inline:13px}.listHead,.tours{padding-inline:13px}#search{margin-inline:13px}}
+@media(max-width:760px){
+ .shell{padding:0 12px 16px}.mast{height:46px}.hero{display:block;padding:15px 0 11px}h1{font-size:42px}
+ .filter{margin-top:11px;gap:4px;flex-wrap:nowrap}.filter button{font-size:11px;padding:6px 7px}
+ .layout{grid-template-columns:1fr;gap:10px}.map{height:clamp(326px,55svh,543px)}
+ .panel{height:auto}.detail{padding:13px 13px 11px}#placeName{font-size:24px}.places{max-height:260px}
+ .areas{top:43px;left:9px;right:9px;max-width:none;transform:none;overflow-x:auto;padding:1px 1px 5px;scrollbar-width:thin;scrollbar-color:#b7a98b transparent}
+ .areas button{font-size:10px;padding-inline:6px;min-height:29px;flex:none}
+ .mapInfo{top:12px;left:12px}.mapInfo strong{font-size:13px}.mapInfo span{display:none}
+ .dial{top:12px;right:11px;width:34px;height:46px}
+ .mapToolbar{bottom:8px;right:8px}.mapToolbar button{min-width:31px;height:29px}
+ .actions button{min-height:44px}.caption{bottom:10px;left:10px;font-size:9px}.pin{font-size:10px}.footer{font-size:10px;flex-wrap:wrap}.footer details{text-align:left}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="mast"><div class="project"><span class="seal" aria-hidden="true">城</span>未读之城</div><span>城市沙盘</span></header>
+  <div class="hero">
+    <h1>北京市沙盘</h1>
+    <nav class="filter" id="filters" aria-label="地点分类"></nav>
+  </div>
+  <div class="layout">
+    <section class="map" id="map" aria-label="北京立体沙盘">
+      <img id="fallback" alt="北京沙盘总览" hidden>
+      <canvas id="gl" tabindex="0" aria-label="三维视图。方向键平移，加减号缩放，Q E 旋转，Home 回到总览。"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div id="labels"></div>
+      <div class="mapInfo"><strong>北京城区</strong><span>拖动旋转 · 滚动缩放 · 右键平移</span></div>
+      <nav class="areas" id="areas" aria-label="沙盘区域"></nav>
+      <div class="dial" title="北向"><span>北</span><i id="needle"></i></div>
+      <div class="caption"><div id="scale"></div><span id="scaleLabel"></span></div>
+      <div class="mapToolbar" id="toolbar" aria-label="视图控制">
+        <button id="minus" type="button" aria-label="缩小" title="缩小">−</button>
+        <button id="plus" type="button" aria-label="放大" title="放大">+</button>
+        <button id="spin" type="button" aria-label="旋转视角" title="旋转视角">↻</button>
+        <button id="reset" type="button">总览</button>
+        <button id="light" type="button" aria-pressed="false">夜景</button>
+      </div>
+      <div class="message" id="loading" role="status">正在展开北京市沙盘…</div>
+    </section>
+    <aside class="panel" aria-label="地点与行程">
+      <section class="detail">
+        <div class="kicker" id="category"></div>
+        <h2 id="placeName"></h2>
+        <p id="placeSub"></p>
+        <p id="placeDesc"></p>
+        <p id="current"></p>
+        <div class="actions">
+          <button id="travel" type="button"></button>
+          <button id="focus" type="button">查看近景</button>
+        </div>
+        <p id="routeInfo" aria-live="polite" hidden></p>
+      </section>
+      <section class="places">
+        <div class="listHead"><h2>地点</h2><span id="count"></span></div>
+        <input id="search" type="search" placeholder="搜索地点" aria-label="搜索地点">
+        <div id="list"></div>
+      </section>
+      <section class="tours"><h2>推荐行程</h2><div id="tours"></div></section>
+    </aside>
+  </div>
+  <footer class="footer"><span>地形、道路和建筑为艺术化示意，行程时长为演示估算。</span><details><summary>地理资料</summary><div id="sources"></div></details></footer>
+</main>
+<script id="atlas" type="application/json">@@ATLAS@@</script>
+<script id="model" type="application/octet-stream">@@MODEL@@</script>
+<script id="cover" type="application/octet-stream">@@COVER@@</script>
+<script>
+@@ROUTES@@
+@@APP@@
+</script>
+</body>
+</html>

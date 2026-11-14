@@ -40,6 +40,7 @@ import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcadem
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { isCircleVenueRoom } from './circle-venue';
 import { californiaPlaces, internationalLeg, isInternationalLocation, parseCaliforniaState, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID } from './california';
+import { beijingPlaces, beijingTravelLeg, isBeijingLocation } from './beijing';
 import { FULL_RESET_ITEM_ID, PRO500_ITEM_ID, MYSTERY_GIFT_RESET_COUNT, mysteryVisitorPresent, parseMysteryVisitorState,
   secondMysteryVisitorPresent, MAX20X_ITEM_ID, KYC_ITEM_ID, LAST_DECISION_ITEM_ID } from './mystery-visitor';
 import { storyActionFingerprint, validateStoryActions } from './story-actions';
@@ -85,6 +86,7 @@ export const locations: Location[] = [
   })),
   ...campusInteriors.map(room => ({ id: room.id, name: room.label, subtitle: '校园室内', description: room.description, x: room.entrance.x, y: room.entrance.z })),
   ...californiaPlaces.map(place => ({ ...place, x: 0, y: 0 })),
+  ...beijingPlaces.map(place => ({ ...place, x: 0, y: 0 })),
 ];
 
 /** Navigation remains limited to existing, reachable landmarks and authored rooms. */
@@ -102,6 +104,7 @@ export const novelDestinations: readonly NovelDestination[] = [
   }),
   ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
   ...californiaPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
+  ...beijingPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
 ];
 
 export interface NovelTravelQuote {
@@ -145,9 +148,9 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     if (!novelDestinations.some(destination => destination.id === locationId)) throw new Error('不存在的地图目的地。');
     if (!transitVehicles.some(vehicle => vehicle.id === vehicleId)) throw new Error('请选择都营巴士或东京Metro接驳线路。');
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
-    if (isInternationalLocation(next.locationId) || isInternationalLocation(locationId)) {
-      const leg = internationalLeg(next.locationId, locationId);
-      if (!leg) throw new Error('国际旅行只能沿机场与湾区接驳线路逐站前往，不能直接跨境传送。');
+    if (isInternationalLocation(next.locationId) || isInternationalLocation(locationId) || isBeijingLocation(next.locationId) || isBeijingLocation(locationId)) {
+      const leg = beijingTravelLeg(next.locationId, locationId) ?? internationalLeg(next.locationId, locationId);
+      if (!leg) throw new Error('跨城市旅行只能沿北京、东京、加州的已开放线路逐站前往，不能直接传送。');
       if (next.interior) throw new Error('请先离开建筑，再前往机场交通站。');
       quote.minutes = leg.minutes;
       quote.fare = leg.fare;
