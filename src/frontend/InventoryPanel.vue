@@ -85,6 +85,7 @@ async function useItem(itemId: string) {
       <article v-for="{ item, quote } in entries" :key="item.id" class="inventory-item" :data-inventory-product="item.id">
         <div class="inventory-item-heading"><StoreProductImage :item-id="item.id" :name="item.name" class="inventory-product-image" /><div class="inventory-item-title"><small>{{ item.brand }}</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-inventory-quantity>{{ quote.owned }} {{ item.useUnit }}</span></div>
         <p v-if="item.equipmentKind" class="inventory-serving">常驻道具 · 装备后学习效率 +25% · 多支不叠加 · 不消耗</p>
+        <p v-else-if="item.category === 'ingredient'" class="inventory-serving">下厨用食材</p>
         <p v-else-if="item.category !== 'collectible'" class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
         <p v-else-if="item.id === 'pro200-game-voucher'" class="inventory-serving">收藏券 · 可前往湾区二手交易市场出售</p>
         <p v-else class="inventory-serving">神秘访客赠送的珍藏道具</p>
@@ -97,7 +98,7 @@ async function useItem(itemId: string) {
           <button v-if="equippedSlot(item.id)" type="button" class="inventory-use" data-unequip-item
             :disabled="model.busy || model.switchingProtagonist" @click="changeEquipment(item.id, null)">卸下</button>
         </div>
-        <div v-else class="inventory-use-row"><small v-if="quote.blockedReason" class="inventory-blocked">{{ quote.blockedReason }}</small><small v-else>使用 1 {{ item.useUnit }}</small><button type="button" class="inventory-use" :aria-label="`使用${item.name}`" :disabled="model.busy || !!quote.blockedReason" @click="useItem(item.id)">使用<span aria-hidden="true"> ↗</span></button></div>
+        <div v-else-if="item.category !== 'ingredient'" class="inventory-use-row"><small v-if="quote.blockedReason" class="inventory-blocked">{{ quote.blockedReason }}</small><small v-else>使用 1 {{ item.useUnit }}</small><button type="button" class="inventory-use" :aria-label="`使用${item.name}`" :disabled="model.busy || !!quote.blockedReason" @click="useItem(item.id)">使用<span aria-hidden="true"> ↗</span></button></div>
       </article>
     </div>
     <p v-if="!entries.length && !equipmentEntries.length" class="inventory-empty">背包还是空的。可以在便利店购买，在玛格咖啡馆买一杯带走，或把咖啡、甜点与餐食打包带走。</p>

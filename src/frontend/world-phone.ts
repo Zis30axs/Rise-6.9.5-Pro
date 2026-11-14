@@ -12,6 +12,7 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { allNetworkAccounts, guestAccount, networkLegacyAliases, networkOwnerId, resolveNetworkAccount } from '../runtime/network-identities';
 import { pendingWorldChronicle } from '../runtime/world-chronicle';
 import { canTradeStocks, stockAccount, STOCK_CALENDAR_LOCATION, stockName } from '../runtime/stock-world';
+import { TOKYO_DELIVERY_FEE } from '../runtime/tokyo-world';
 
 /** Capability for the embedded phone only. Never exposes the other person's save wholesale. */
 export function createWorldPhoneApi(options: {
@@ -63,7 +64,8 @@ export function createWorldPhoneApi(options: {
           dual.some(reply=>reply.replyTo===m.id), readByRecipient(m.id,m.to)) : 'received',
       })),
       audit: p.accounts.phoneAccess.filter(e=>e.owner===owner).slice(-30),
-      catalog: storeCatalog.map(({id,name,price,category,purchaseUnit})=>({id,name,price,category,purchaseUnit})),
+      catalog: storeCatalog.map(({ id, name, price, category, purchaseUnit, packSize, useUnit }) => ({ id, name, price, category, purchaseUnit, packSize, useUnit })),
+      deliveryFee: TOKYO_DELIVERY_FEE,
       destinations: locations.map(({id,name})=>({id,name})),
       other: {id:otherProtagonist(active),name:protagonistNames[otherProtagonist(active)],...phoneAccess(enabled,otherProtagonist(active))},
       others: otherProtagonists(active).map(id => ({id, name: protagonistNames[id], ...phoneAccess(enabled, id)})),

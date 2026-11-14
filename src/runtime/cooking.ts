@@ -30,6 +30,7 @@ export interface CookingRecipeOption {
   difficulty: CookDifficulty;
   minutes: number;
   energyCost: number;
+  ingredientCost: number;
   blurb: string;
   ingredients: { id: string; name: string; owned: number; needed: number }[];
   blockedReason: string | null;
@@ -43,9 +44,12 @@ export function cookingRecipeOptions(state: WorldState): readonly CookingRecipeO
   const kitchen = kitchenAt(state);
   const open = openCookingSession(state);
   return cookingRecipes.map(recipe => {
-    const ingredients = recipe.ingredients.map(id => ({
-      id, name: ingredientById.get(id)?.name ?? id, owned: ownedQuantity(state, id), needed: 1,
-    }));
+    let ingredientCost = 0;
+    const ingredients = recipe.ingredients.map(({ id, quantity }) => {
+      const item = ingredientById.get(id)!;
+      ingredientCost += (item.price / item.packSize) * quantity;
+      return { id, name: item.name, owned: ownedQuantity(state, id), needed: quantity };
+    });
     let blockedReason: string | null = null;
     if (!kitchen) blockedReason = '这里没有厨房。';
     else if (open) blockedReason = '面前还有一道没做完的料理。';
@@ -53,7 +57,7 @@ export function cookingRecipeOptions(state: WorldState): readonly CookingRecipeO
     else if (ingredients.some(item => item.owned < item.needed)) blockedReason = '食材不够，还不能开始。';
     return {
       id: recipe.id, name: recipe.name, difficulty: recipe.difficulty, minutes: recipe.minutes,
-      energyCost: recipe.energyCost, blurb: recipe.blurb, ingredients, blockedReason,
+      energyCost: recipe.energyCost, ingredientCost, blurb: recipe.blurb, ingredients, blockedReason,
     };
   });
 }
@@ -99,7 +103,7 @@ export function applyCookingBegin(state: WorldState, recipeId: string, owner: Pr
   if (!kitchen) fail('这里没有厨房。');
   if (openCookingSession(state, owner)) fail('面前还有一道没做完的料理。');
   if (state.player.energy < recipe.energyCost) fail('精力不够，先歇一歇。');
-  if (recipe.ingredients.some(id => ownedQuantity(state, id) < 1)) fail('食材不够，还不能开始。');
+  if (recipe.ingredients.some(({ id, quantity }) => ownedQuantity(state, id) < quantity)) fail('食材不够，还不能开始。');
   const seed = [state.scene?.seed ?? 'unread-city', owner, recipe.id, state.clock.day, state.clock.hour, state.clock.minute, state.cooking?.sessions.length ?? 0, state.journal.length].join('|');
   const zones = placeCookingZones(recipe.difficulty, seed);
   storeSession(state, {
@@ -119,10 +123,10 @@ export function applyCookingCancel(state: WorldState, sessionId: string, owner: 
 
 function takeIngredients(state: WorldState, recipe: CookingRecipe): void {
   const next = state.inventory.map(entry => ({ ...entry }));
-  for (const itemId of recipe.ingredients) {
-    const row = next.find(entry => entry.itemId === itemId);
-    if (!row || row.quantity < 1) fail('食材不够，这道料理没有做成。');
-    row.quantity -= 1;
+  for (const { id, quantity } of recipe.ingredients) {
+    const row = next.find(entry => entry.itemId === id);
+    if (!row || row.quantity < quantity) fail('食材不够，这道料理没有做成。');
+    row.quantity -= quantity;
   }
   state.inventory = next.filter(entry => entry.quantity > 0);
 }
@@ -164,7 +168,7 @@ export function applyCookingSettle(
     day: state.clock.day, hour: state.clock.hour, minute: state.clock.minute,
   };
   storeSession(state, settled);
-  const ingredients = recipe.ingredients.map(id => ingredientById.get(id)?.name ?? id).join('、');
+  const ingredients = recipe.ingredients.map(({ id, quantity }) => `${ingredientById.get(id)!.name} ${quantity} 份`).join('、');
   const clock = `第 ${settled.day} 天 ${String(settled.hour).padStart(2, '0')}:${String(settled.minute).padStart(2, '0')}`;
   note(state, `下厨：${recipe.name}，难度${recipe.difficulty}，${COOK_TIER_LABEL[judgment.tier]}。指针 ${position}（${SIDE_LABEL[judgment.side]}，偏离完美区 ${judgment.miss}；完美区 ${session.perfectLo}–${session.perfectHi}，普通区 ${session.normalLo}–${session.normalHi}）。食材 ${ingredients}。地点 ${kitchen.label}。下厨者 ${protagonistNames[owner]}。${clock}。成品 ${recipe.dishes[judgment.tier].name}。耗时 ${recipe.minutes} 分钟。`, session.id);
 }
@@ -178,7 +182,7 @@ export type CookingLlmPayload = {
   cookName: string;
   kitchenRoomId: string;
   kitchen: string;
-  ingredients: { id: string; name: string }[];
+  ingredients: { id: string; name: string; quantity: number }[];
   zones: CookingZones;
   startedAt: { day: number; hour: number; minute: number };
 } | {
@@ -193,7 +197,7 @@ export type CookingLlmPayload = {
   sideLabel: string;
   miss: number;
   zones: CookingZones;
-  ingredients: { id: string; name: string }[];
+  ingredients: { id: string; name: string; quantity: number }[];
   cookId: ProtagonistId;
   cookName: string;
   kitchenRoomId: string;
@@ -220,7 +224,7 @@ export function cookingLlmPayload(state: WorldState, owner = cookingProtagonist(
   const recipe = recipeById.get(session.recipeId);
   const kitchen = kitchenResidences().find(item => item.roomId === session.roomId);
   if (!recipe || !kitchen) return null;
-  const ingredients = recipe.ingredients.map(id => ({ id, name: ingredientById.get(id)?.name ?? id }));
+  const ingredients = recipe.ingredients.map(({ id, quantity }) => ({ id, name: ingredientById.get(id)!.name, quantity }));
   const shared = {
     recipeId: recipe.id, recipeName: recipe.name, difficulty: recipe.difficulty,
     cookId: owner, cookName: protagonistNames[owner], kitchenRoomId: kitchen.roomId, kitchen: kitchen.label,

@@ -155,6 +155,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。'
+    : item.category === 'ingredient' ? '这份食材留到下厨时使用。'
     : item.category === 'stationery' ? '这支文具需要装备在常驻道具栏才能生效。' : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '神秘访客的特殊奖励已收藏，当前无法直接使用。' : null;
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);

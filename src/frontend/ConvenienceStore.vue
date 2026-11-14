@@ -69,8 +69,10 @@ async function pack(itemId: string) {
         <StoreProductImage :item-id="item.id" :name="item.name" class="store-shelf-image" />
         <h3>{{ item.name }}</h3>
         <div class="store-product-price"><strong>¥{{ item.price.toFixed(2) }}</strong><span>/ {{ item.purchaseUnit }}<template v-if="item.packSize > 1"> · {{ item.packSize }} {{ item.useUnit }}</template></span></div>
-        <p class="store-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
-        <ul class="store-effects" :aria-label="`${item.name}每${item.useUnit}效果`"><li v-for="effect in effects(item)" :key="effect.key" :class="{ harmful: effect.harmful }">{{ effect.label }} {{ effect.value > 0 ? '+' : '−' }}{{ Math.abs(effect.value) }}</li></ul>
+        <template v-if="item.category !== 'ingredient'">
+          <p class="store-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
+          <ul class="store-effects" :aria-label="`${item.name}每${item.useUnit}效果`"><li v-for="effect in effects(item)" :key="effect.key" :class="{ harmful: effect.harmful }">{{ effect.label }} {{ effect.value > 0 ? '+' : '−' }}{{ Math.abs(effect.value) }}</li></ul>
+        </template>
         <p class="store-owned" data-product-owned>背包库存 {{ quote.owned }} {{ item.useUnit }}</p>
         <button type="button" class="store-buy" :aria-label="`购买${item.name}，${quantity}${item.purchaseUnit}`" :disabled="model.busy || !!quote.blockedReason" @click="buy(item.id)"><span>购买 {{ quantity }} {{ item.purchaseUnit }}</span><strong>¥{{ quote.totalPrice.toFixed(2) }}</strong></button>
         <button v-if="item.category !== 'cigarette' && item.category !== 'ingredient'" type="button" class="store-pack" :data-package-item="item.id" :disabled="model.busy || !!packQuote.blockedReason" :title="packQuote.blockedReason ?? `每件加 ¥${PACKAGING_FEE} 打包费，放入背包后可使用或送人`" @click="pack(item.id)"><span>加包装带走 {{ quantity }} {{ item.purchaseUnit }}<small>每件打包费 ¥{{ PACKAGING_FEE }}</small></span><strong>¥{{ packQuote.totalPrice.toFixed(2) }}</strong></button>
