@@ -2,13 +2,16 @@ import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, en
 import type { ProtagonistId } from './dual-protagonists';
 import { createInitialLivehouse, reconcileEstablishedBands, parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
 import { applyNpcPhoneCommand, commitNpcDialogue, recordNpcEncounter } from './npc-phone';
-import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
-import { PROTAGONISTS } from './dual-protagonists';
+import { activeProtagonist, enableProtagonists, applyPartyTransfer, applyStoryTransferLegs, finishPersonalChange, gameMinute, legacyView, otherProtagonists, parseProtagonists, personState, protagonistNames, reduceProtagonistAction } from './protagonist-world';
+import { applyCardTransaction, FICTIONAL_CARDS, PROTAGONISTS } from './dual-protagonists';
+import { initializeBackgroundLife } from './background-life';
+import { createWeeklyMemory } from './weekly-memory';
+import { settleStockWorld } from './stock-world';
 import { commitStrategyCommand } from './strategy-world';
 import { commitSocietyCommand } from './society-world';
 import { commitFactionFocusCommand } from './faction-focus-world';
 import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
-import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence } from './world-presence';
+import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence, worldSceneRoster } from './world-presence';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
@@ -22,7 +25,7 @@ import { CAFE_EMMA_DRINK_ID, EMMA_CAFE_SERVING_TEXT, getCafePurchaseQuote, remem
 import { MARGO_CAFE_LOCATION_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
 import { sceneAreas, sceneLandmarks } from '../frontend/scene-layout';
 import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
-import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, SCENE_ENCOUNTER_DISTANCE, sceneEnvironments, sceneLocationId } from './scene-context';
+import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, isSameScenePlace, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
 import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
@@ -371,7 +374,12 @@ function sceneCoordinates(x: unknown, z: unknown, yaw: unknown) {
   const wrappedYaw = ((yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
   return { ...point, yaw: Math.max(-3.141, Math.min(3.141, Math.round(wrappedYaw * 1000) / 1000)), areaId: area.id };
 }
-function parseScenePresence(value: unknown, interior: InteriorPresence | null, deferProtagonists = false): ScenePresence {
+function parseScenePresence(
+  value: unknown,
+  interior: InteriorPresence | null,
+  deferProtagonists = false,
+  clock?: { hour: number; minute: number; day?: number },
+): ScenePresence {
   const item = object(value, ['x', 'z', 'yaw', 'areaId', 'seed', 'encounterId'], 'scene');
   const coordinates = sceneCoordinates(item.x, item.z, item.yaw);
   // A legacy neighborhood save may be positioned inside the new worksite boundaries.
@@ -379,10 +387,10 @@ function parseScenePresence(value: unknown, interior: InteriorPresence | null, d
   const scene: ScenePresence = { ...coordinates, seed: sceneSeed(item.seed), encounterId: item.encounterId === null ? null : id(item.encounterId, 'scene.encounterId') };
   if (scene.encounterId && !(deferProtagonists && isProtagonistEncounter(scene.encounterId))) {
     const cafeInterior = interior?.roomId === MARGO_CAFE_ROOM_ID ? interior : null;
-    const position = cafeInterior ?? scene;
-    const people = cafeInterior ? getInteriorPeopleForValidation(cafeInterior.roomId) : getScenePeople(scene);
+    const targetLocationId = cafeInterior?.roomId ?? sceneLocationId(scene.areaId);
+    const people = cafeInterior ? getInteriorPeopleForValidation(cafeInterior.roomId) : getScenePeople(scene, [], clock);
     const person = people.find(person => person.id === scene.encounterId);
-    if (!person || Math.hypot(person.x - position.x, person.z - position.z) > SCENE_ENCOUNTER_DISTANCE) return invalid('scene.encounterId 当前不在附近');
+    if (!person || !isSameScenePlace(person, targetLocationId, !!cafeInterior)) return invalid('scene.encounterId 当前不在同一地点');
   }
   return scene;
 }
@@ -623,9 +631,7 @@ function protagonistViews(state: WorldState): WorldState[] {
 }
 
 function hasLiveEncounter(state: WorldState): boolean {
-  const position = worldScenePosition(state);
-  return !!position && worldScenePeople(state).some(person => person.id === state.scene?.encounterId &&
-    Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE);
+  return worldSceneRoster(state).some(({ person, canTalk }) => person.id === state.scene?.encounterId && canTalk);
 }
 
 /** Called after movement/clock settlement, never as a substitute for input validation. */
@@ -652,7 +658,7 @@ export function parseState(value: unknown, ownerOverride?: ProtagonistId): World
     if (view.protagonists && hasLiveEncounter(view)) continue;
     // Older Emma NPC encounters used authored anchors. They remain readable,
     // but the live population never reuses those anchors for a playable Emma.
-    parseScenePresence(view.scene, view.interior);
+    parseScenePresence(view.scene, view.interior, false, view.clock);
   }
   return state;
 }
@@ -750,7 +756,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     ...(hasNpcGiftDaily ? { npcGiftDaily: parseNpcGiftDailyState(state.npcGiftDaily) } : {}),
     locationId: place(state.locationId, 'locationId'),
-    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists),
+    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists, parsedClock),
     interior: parsedInterior,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
@@ -909,10 +915,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         break;
       }
       case 'exchange_contact': {
-        const point = worldScenePosition(next);
-        const people = worldScenePeople({ ...next, protagonists: worldAuthority?.protagonists });
-        const person = people.find(item => item.id === action.npcId && !item.protagonistId);
-        if (!point || !person || Math.hypot(point.x - person.x, point.z - person.z) > SCENE_ENCOUNTER_DISTANCE)
+        const person = worldSceneRoster({ ...next, protagonists: worldAuthority?.protagonists })
+          .find(({ person, canTalk }) => canTalk && person.id === action.npcId && !person.protagonistId)?.person;
+        if (!person)
           throw new Error('必须与对方实际相遇并获得同意才能交换联系方式。');
         if (next.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id))
           throw new Error('双方已经交换联系方式。');
@@ -1175,9 +1180,7 @@ function commitLegacyStoryTurn(
   next.phone.push(...messages);
   const participants = new Set<string>();
   for (const snapshot of [state, next]) {
-    const position = snapshot.interior ?? snapshot.scene;
-    const people = worldScenePeople({ ...snapshot, protagonists: worldAuthority?.protagonists })
-      .filter(person => !person.protagonistId || position && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE);
+    const people = worldSceneRoster({ ...snapshot, protagonists: worldAuthority?.protagonists }).map(row => row.person);
     const contacts = snapshot.contacts.filter(contact => {
       if (!worldAuthority?.protagonists) return true;
       const owner = PROTAGONISTS.find(owner => contact.id === `protagonist-${owner}` ||
@@ -1185,8 +1188,7 @@ function commitLegacyStoryTurn(
       return !owner || people.some(person => person.protagonistId === owner) ||
         reply.phoneMessages.some(message => message.npcId === contact.id);
     });
-    if (position && people.some(person => person.id === snapshot.scene?.encounterId &&
-      Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE)) participants.add(snapshot.scene!.encounterId!);
+    if (people.some(person => person.id === snapshot.scene?.encounterId)) participants.add(snapshot.scene!.encounterId!);
     for (const segment of parseNovelDialogue(reply.text)) {
       if (!segment.speaker) continue;
       const matches = [
@@ -1220,7 +1222,7 @@ export function acknowledgePhoneRead(state: WorldState, ids: readonly string[]):
 function clearIndoorEncounter(state: WorldState) {
   // Dynamic protagonists are checked after the personal view is reassembled.
   if (state.interior && state.scene?.encounterId && !isProtagonistEncounter(state.scene.encounterId) && !getInteriorPeople(state.interior.roomId, state.contacts, state.clock).some(person =>
-    person.id === state.scene!.encounterId && Math.hypot(person.x - state.interior!.x, person.z - state.interior!.z) <= SCENE_ENCOUNTER_DISTANCE)) state.scene.encounterId = null;
+    person.id === state.scene!.encounterId && isSameScenePlace(person, state.interior!.roomId, true))) state.scene.encounterId = null;
 }
 
 function parseWeather(value: unknown, day: number): WeatherState {
@@ -1609,20 +1611,18 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const seed = sceneSeed(action.seed);
       const coordinates = sceneCoordinates(action.x, action.z, action.yaw);
       const scene: ScenePresence = { ...coordinates, seed: next.scene?.seed ?? seed, encounterId: next.scene?.encounterId ?? null };
-      const person = scene.encounterId ? worldScenePeople({ ...next, scene, protagonists: worldAuthority?.protagonists }).find(person => person.id === scene.encounterId) : null;
-      if (scene.encounterId && (!person || Math.hypot(person.x - scene.x, person.z - scene.z) > SCENE_ENCOUNTER_DISTANCE)) scene.encounterId = null;
+      if (scene.encounterId && !worldSceneRoster({ ...next, scene, locationId: sceneLocationId(scene.areaId), protagonists: worldAuthority?.protagonists }).some(({ person, canTalk }) => person.id === scene.encounterId && canTalk)) scene.encounterId = null;
       next.scene = scene;
       next.locationId = sceneLocationId(scene.areaId);
       break;
     }
     case 'encounter': {
       if (worldAuthority?.protagonists && !next.scene) next.scene = worldScenePresence(next);
-      if (!next.scene) throw new Error('请先进入自由行走，再走到行人附近搭话。');
-      const people = worldScenePeople({ ...next, protagonists: worldAuthority?.protagonists });
-      const position = next.interior ?? next.scene;
-      const person = people.find(person => person.id === action.personId);
+      if (!next.scene) throw new Error('请先进入自由行走，再走到同地点行人身旁搭话。');
+      const authorityState: WorldState = { ...next, protagonists: worldAuthority?.protagonists };
+      const person = worldScenePeople(authorityState).find(person => person.id === action.personId);
       if (!person) throw new Error('这位行人不属于当前场景。');
-      if (Math.hypot(person.x - position.x, person.z - position.z) > SCENE_ENCOUNTER_DISTANCE) throw new Error('请走到这位行人附近再搭话。');
+      if (!worldSceneRoster(authorityState).some(({ person: row, canTalk }) => row.id === action.personId && canTalk)) throw new Error('只有在同一地点或同一房间的人才能搭话。');
       next.scene.encounterId = person.id;
       break;
     }
@@ -1858,12 +1858,247 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
   return next;
 }
 
+function syncDebugLocation(next: WorldState, locationId: string): void {
+  if (!locations.some(item => item.id === locationId)) throw new Error('未知的目标地点。');
+  const room = getCampusInterior(locationId);
+  const seed = next.scene?.seed ?? 'debug-teleport';
+  if (room) {
+    next.locationId = room.id;
+    next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
+    next.interior = { roomId: room.id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
+    return;
+  }
+  next.interior = null;
+  next.locationId = locationId;
+  if (isInternationalLocation(locationId) || isBeijingLocation(locationId)) {
+    next.scene = null;
+    return;
+  }
+  const stop = transitStops.find(item => item.locationId === locationId);
+  const landmark = sceneLandmarks.find(item => sceneLocationId(item.id) === locationId);
+  const area = sceneAreas.find(item => sceneLocationId(item.id) === locationId);
+  const candidates = [
+    stop ? { x: stop.x, z: stop.z, yaw: stop.yaw } : null,
+    landmark ? { x: landmark.x, z: landmark.z, yaw: 0 } : null,
+    area ? { x: (area.minX + area.maxX) / 2, z: (area.minZ + area.maxZ) / 2, yaw: 0 } : null,
+  ].filter((pt): pt is { x: number; z: number; yaw: number } => pt !== null);
+  next.scene = null;
+  for (const pt of candidates) {
+    try {
+      const coords = sceneCoordinates(pt.x, pt.z, pt.yaw);
+      if (sceneLocationId(coords.areaId) === locationId) {
+        next.scene = { ...coords, seed, encounterId: null };
+        break;
+      }
+    } catch {
+      // Try next anchor if box center collides with a scene prop.
+    }
+  }
+}
+
+function rewindDebugClockState(next: WorldState, targetMin: number): void {
+  if (next.interactionEventRate) {
+    next.interactionEventRate.checks = next.interactionEventRate.checks.filter(item => item.at <= targetMin);
+  }
+  if (next.autonomousSms) {
+    next.autonomousSms.history = next.autonomousSms.history.filter(row => row.at <= targetMin);
+    if (next.autonomousSms.pending && next.autonomousSms.pending.at > targetMin) next.autonomousSms.pending = null;
+    if (next.autonomousSms.nextAt > targetMin + 120) next.autonomousSms.nextAt = targetMin + 120;
+  }
+  if (next.margoCafeDaily) {
+    next.margoCafeDaily.receipts = next.margoCafeDaily.receipts.filter(row => row.day <= next.clock.day && row.at <= targetMin);
+    if (next.margoCafeDaily.pending && (next.margoCafeDaily.pending.day > next.clock.day || next.margoCafeDaily.pending.at > targetMin)) {
+      delete next.margoCafeDaily.pending;
+    }
+    if (next.margoCafeDaily.specials) {
+      next.margoCafeDaily.specials = next.margoCafeDaily.specials.filter(row => row.day <= next.clock.day);
+    }
+  }
+  if (next.transit.lastRide) {
+    const match = /^第 ([1-9]\d{0,5}) 天 ([01]\d|2[0-3]):([0-5]\d)$/.exec(next.transit.lastRide.at);
+    const rideTotal = match ? (Number(match[1]) - 1) * 1440 + Number(match[2]) * 60 + Number(match[3]) : Number.MAX_SAFE_INTEGER;
+    if (rideTotal > targetMin) next.transit = createTransitState();
+  }
+  if (next.academics?.lastGain) {
+    const match = /^第 (\d+) 天 /.exec(next.academics.lastGain.at);
+    if (match && Number(match[1]) > next.clock.day) next.academics.lastGain = null;
+  }
+  if (next.livehouse) {
+    next.livehouse.bands = next.livehouse.bands.filter(b => b.createdAt <= targetMin);
+    const validBandIds = new Set(next.livehouse.bands.map(b => b.id));
+    next.livehouse.bookings = next.livehouse.bookings.filter(b => b.createdAt <= targetMin && validBandIds.has(b.bandId));
+    next.livehouse.invitations = next.livehouse.invitations.filter(i => i.at <= targetMin && validBandIds.has(i.bandId));
+  }
+  const p = next.protagonists;
+  if (!p) return;
+  p.weeklyMemory = createWeeklyMemory(targetMin);
+  if (p.otherSideHistory) p.otherSideHistory = p.otherSideHistory.filter(row => row.at <= targetMin);
+  if (p.otherSideNpc) {
+    for (const [id, row] of Object.entries(p.otherSideNpc)) {
+      if (row.at > targetMin || row.until <= targetMin) delete p.otherSideNpc[id];
+    }
+  }
+  if (p.socialInvitations) p.socialInvitations = p.socialInvitations.filter(inv => inv.createdAt <= targetMin);
+  if (p.strategy) {
+    p.strategy.cursor = targetMin;
+    p.strategy.history = p.strategy.history.filter(row => row.at <= targetMin);
+    if (p.strategy.majorQueue) p.strategy.majorQueue = p.strategy.majorQueue.filter(row => row.at <= targetMin);
+    for (const person of Object.values(p.strategy.people)) {
+      person.spirits = person.spirits.filter(s => s.grantedAt <= targetMin);
+      for (const [k, at] of Object.entries(person.decisionUsedAt)) {
+        if (at > targetMin) delete person.decisionUsedAt[k];
+      }
+      if (person.active && person.active.startedAt > targetMin) person.active = null;
+    }
+  }
+  if (p.society) {
+    p.society.circles = p.society.circles.filter(c => c.formedAt <= targetMin);
+    const circleIds = new Set(p.society.circles.map(c => c.id));
+    p.society.unions = p.society.unions.filter(u => u.formedAt <= targetMin);
+    const unionIds = new Set(p.society.unions.map(u => u.id));
+    p.society.invitations = p.society.invitations.filter(i => i.at <= targetMin && circleIds.has(i.circleId));
+    p.society.applications = p.society.applications.filter(a => a.at <= targetMin && unionIds.has(a.unionId));
+    const validBandIds = next.livehouse ? new Set(next.livehouse.bands.map(b => b.id)) : null;
+    if (validBandIds) p.society.advisors = p.society.advisors.filter(a => validBandIds.has(a.bandId));
+    if (p.society.contests) {
+      p.society.contests = p.society.contests.filter(c => c.openedAt <= targetMin).map(c => {
+        const lastContributionAt = { ...c.lastContributionAt };
+        for (const [who, at] of Object.entries(lastContributionAt) as [keyof typeof lastContributionAt, number][]) {
+          if (typeof at === 'number' && at > targetMin) delete lastContributionAt[who];
+        }
+        const stillResolved = c.resolvedAt !== null && c.resolvedAt <= targetMin;
+        return {
+          ...c,
+          lastContributionAt,
+          status: stillResolved ? c.status : 'open',
+          winner: stillResolved ? c.winner : null,
+          resolvedAt: stillResolved ? c.resolvedAt : null,
+        };
+      });
+    }
+    p.society.history = p.society.history.filter(h => h.at <= targetMin);
+  }
+  if (p.factionFocuses) {
+    p.factionFocuses.cursor = targetMin;
+    p.factionFocuses.history = p.factionFocuses.history.filter(h => h.at <= targetMin);
+    for (const faction of Object.values(p.factionFocuses.factions)) {
+      if (faction.active && faction.active.startedAt > targetMin) faction.active = null;
+      faction.spirits = faction.spirits.filter(s => s.grantedAt <= targetMin);
+    }
+  }
+}
+
+function applyDebugUpdate(before: WorldState, action: Extract<WorldAction, { type: 'debug_update' }>): WorldState {
+  const prepared = action.calendar && !before.protagonists ? enableProtagonists(before) : before;
+  let next: WorldState = JSON.parse(JSON.stringify(prepared));
+  const owner = activeProtagonist(next);
+
+  if (action.player) {
+    const p = next.player;
+    const clampInt = (val: unknown, fallback: number, min: number, max: number) =>
+      typeof val === 'number' && Number.isFinite(val) ? Math.max(min, Math.min(max, Math.round(val))) : fallback;
+    const clampDec = (val: unknown, fallback: number, min: number, max: number) =>
+      typeof val === 'number' && Number.isFinite(val) ? Math.round(Math.max(min, Math.min(max, val)) * 100) / 100 : fallback;
+    const prevBalanceCents = Math.round(p.balance * 100);
+    p.energy = clampDec(action.player.energy, p.energy, 0, 100);
+    p.health = clampInt(action.player.health, p.health, 0, 100);
+    p.satiety = clampInt(action.player.satiety, p.satiety, 0, 100);
+    p.foodEnergy = clampInt(action.player.foodEnergy, p.foodEnergy, 0, 3000);
+    p.morale = clampInt(action.player.morale, p.morale, 0, 100);
+    p.stress = clampInt(action.player.stress, p.stress, 0, 100);
+    p.balance = clampDec(action.player.balance, p.balance, 0, 20_000_000);
+    const deltaCents = Math.round(p.balance * 100) - prevBalanceCents;
+    if (next.protagonists && deltaCents !== 0) {
+      const pw = next.protagonists;
+      const rev = pw.revision++;
+      if (deltaCents > 0) {
+        pw.accounts = applyCardTransaction(pw.accounts, {
+          id: `debug:${rev}:credit`, actor: owner, card: 'gpt', deltaCents, note: '调试调整余额',
+        });
+      } else {
+        let remaining = -deltaCents;
+        for (const card of FICTIONAL_CARDS) {
+          const debit = Math.min(remaining, pw.accounts.people[owner].cards[card]);
+          if (!debit) continue;
+          pw.accounts = applyCardTransaction(pw.accounts, {
+            id: `debug:${rev}:${card}`, actor: owner, card, deltaCents: -debit, note: '调试调整余额',
+          });
+          remaining -= debit;
+        }
+      }
+    }
+  }
+
+  if (action.locationId && action.locationId !== next.locationId) {
+    syncDebugLocation(next, action.locationId);
+  }
+
+  if (action.schedule) {
+    next.schedule = action.schedule.slice(0, 100).map(item => ({
+      id: item.id,
+      title: String(item.title ?? '').trim().slice(0, 200),
+      locationId: item.locationId,
+      time: item.time,
+      done: Boolean(item.done),
+    }));
+  }
+
+  if (action.calendar && next.protagonists) {
+    const targetOwner = action.calendar.protagonistId;
+    if (next.protagonists.devices[targetOwner]) {
+      next.protagonists.devices[targetOwner].calendar = action.calendar.events.slice(0, 100).map(ev => ({
+        ...ev,
+        title: String(ev.title ?? '').trim().slice(0, 100),
+      }));
+    }
+  }
+
+  if (action.clock) {
+    const day = typeof action.clock.day === 'number' && Number.isFinite(action.clock.day)
+      ? Math.max(1, Math.min(365_000, Math.round(action.clock.day))) : next.clock.day;
+    const hour = typeof action.clock.hour === 'number' && Number.isFinite(action.clock.hour)
+      ? Math.max(0, Math.min(23, Math.round(action.clock.hour))) : next.clock.hour;
+    const minute = typeof action.clock.minute === 'number' && Number.isFinite(action.clock.minute)
+      ? Math.max(0, Math.min(59, Math.round(action.clock.minute))) : next.clock.minute;
+    const beforeMin = (next.clock.day - 1) * 1440 + next.clock.hour * 60 + next.clock.minute;
+    const targetMin = (day - 1) * 1440 + hour * 60 + minute;
+    if (targetMin !== beforeMin) {
+      if (targetMin > beforeMin && targetMin - beforeMin <= 1440 * 7 && next.protagonists) {
+        const beforeClockSnapshot: WorldState = JSON.parse(JSON.stringify(next));
+        next.clock = { day, hour, minute };
+        next.weather = weatherForDay(day);
+        next = finishPersonalChange(beforeClockSnapshot, next, '调试调整时间');
+      } else {
+        const beforeClockSnapshot: WorldState = JSON.parse(JSON.stringify(next));
+        next.clock = { day, hour, minute };
+        next.weather = weatherForDay(day);
+        if (targetMin < beforeMin) rewindDebugClockState(next, targetMin);
+        if (next.protagonists) {
+          if (targetMin > beforeMin) settleStockWorld(beforeClockSnapshot, next);
+          else if (next.protagonists.stockAccounts) {
+            for (const acct of Object.values(next.protagonists.stockAccounts)) {
+              if (acct) acct.minute = targetMin;
+            }
+          }
+          next.protagonists.backgroundLife = initializeBackgroundLife(next);
+          if (next.protagonists.strategy) next.protagonists.strategy.cursor = targetMin;
+          if (next.protagonists.factionFocuses) next.protagonists.factionFocuses.cursor = targetMin;
+          next.protagonists.revision++;
+        }
+      }
+    }
+  }
+
+  return next;
+}
+
 /** Public reducers keep the active legacy view as a compatibility projection only. */
 export function reduceState(state: WorldState, action: WorldAction, ownerOverride?: ProtagonistId): WorldState {
   const parsed = parseState(state, ownerOverride);
   const before = action?.type === 'interior_interact' && ['livehouse-create-band', 'livehouse-booking'].includes(action.interactionId) ? enableProtagonists(parsed) : parsed;
-  if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick'].includes(action.type))
+  if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick','debug_update'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
+  if (action?.type === 'debug_update') return parseState(applyDebugUpdate(before, action), ownerOverride);
   if (action?.type === 'strategy') {
     const prepared = enableProtagonists(before);
     return parseState(commitStrategyCommand(prepared, action.requestId, action.command));

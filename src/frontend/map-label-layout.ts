@@ -14,8 +14,8 @@ export function arrangeMapLabels(candidates: readonly MapLabelCandidate[], width
   const placed = new Map<string, MapLabelBox>(), occupied = [...reserved];
   for (const candidate of [...candidates].sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))) {
     const offsets: [number, number][] = [[0, 0]];
-    for (const radius of [48, 96, 144, 192]) {
-      for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    for (const radius of [12, 22, 34, 48, 66, 88, 114, 144, 180]) {
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
         offsets.push([dx! * radius, dy! * radius]);
       }
     }
@@ -30,8 +30,8 @@ export function arrangeMapLabels(candidates: readonly MapLabelCandidate[], width
     })).find(next => occupied.every(previous => !mapLabelsOverlap(next, previous)));
     if (!box) {
       const grid: MapLabelBox[] = [];
-      for (let y = candidate.height / 2 + 4; y <= height - candidate.height / 2 - 4; y += 48) {
-        for (let x = candidate.width / 2 + 4; x <= width - candidate.width / 2 - 4; x += 48)
+      for (let y = candidate.height / 2 + 4; y <= height - candidate.height / 2 - 4; y += 24) {
+        for (let x = candidate.width / 2 + 4; x <= width - candidate.width / 2 - 4; x += 24)
           grid.push({ x, y, width: candidate.width, height: candidate.height });
       }
       box = grid.sort((a, b) => Math.hypot(a.x - candidate.x, a.y - candidate.y) - Math.hypot(b.x - candidate.x, b.y - candidate.y))

@@ -6,9 +6,18 @@ import { circleSandboxOverlay } from './circle-sandbox-pack';
 import { airportDistrict, airportLandmark } from './airport-sandbox-layout';
 import { mapLocationPoint } from './campus-map-layout';
 import { districtBounds, mapDistricts, type MapDistrictId } from './map-districts';
+import {
+  buildOutlineCornerPaths,
+  clipViewPolygonToNearPlane,
+  estimateFloatingLabelWidth,
+  type CameraPoint3,
+  type ScreenPoint2,
+} from './sandbox-zone-overlay';
 
 export type TokyoPoint = { x: number; z: number };
 export type TokyoScope = 'city' | MapDistrictId;
+export type { CameraPoint3, ScreenPoint2 };
+export { buildOutlineCornerPaths, clipViewPolygonToNearPlane, estimateFloatingLabelWidth };
 
 export const TOKYO_SANDBOX_MODEL_SHA256 = '12151a8faa994e1740abbd18f67d37a8aa315e8ce60b6b8d03aff0b22f387afb';
 function withCirclePack<T extends { id: string }>(rows: readonly T[], extra: readonly T[]): T[] {

@@ -7,7 +7,7 @@ import { sceneLocationId } from './scene-context';
 import { campusInteriors } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
-import { worldScenePeople, worldScenePosition } from './world-presence';
+import { worldScenePeople, worldScenePosition, worldSceneRoster } from './world-presence';
 import { personState } from './protagonist-world';
 import { getServiceTakeawayItem, getStoreItem, storeCatalog, stationeryCatalog } from './convenience-store';
 import { isEquipmentSlot, canEquipItem } from './equipment';
@@ -100,9 +100,8 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
       case 'exchange_contact': {
         const item = record(raw, ['type', 'npcId', 'consentQuote'], path);
         if (typeof item.npcId !== 'string') return invalid(`${path} 新联系人身份`);
-        const position = worldScenePosition(state);
-        const person = worldScenePeople(state).find(row => row.id === item.npcId && !row.protagonistId);
-        if (!position || !person || Math.hypot(position.x - person.x, position.z - person.z) > 7)
+        const person = worldSceneRoster(state).find(row => row.person.id === item.npcId && !row.person.protagonistId && row.canTalk)?.person;
+        if (!person)
           return invalid(`${path} 双方必须实际见面`);
         if (state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id))
           return invalid(`${path} 已经交换过联系方式`);
@@ -130,11 +129,9 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
         if (item.source === 'sms') {
           if ((!contact && !justExchanged) || item.outcome !== 'pending' || hasResponse) return invalid(`${path} 短信邀约先等待对方回复`);
         } else {
-          const position = worldScenePosition(state);
-          const person = worldScenePeople(state).find(row => row.id === (contact?.sourcePersonId ?? targetId) || row.contactId === targetId);
+          const person = worldSceneRoster(state).find(row => (row.person.id === (contact?.sourcePersonId ?? targetId) || row.person.contactId === targetId) && row.canTalk)?.person;
           const counterpart = person?.protagonistId ? personState(state, person.protagonistId) : null;
-          if (!position || !person || Math.hypot(position.x - person.x, position.z - person.z) > 7 ||
-            (counterpart && (counterpart.locationId !== state.locationId || counterpart.interior?.roomId !== state.interior?.roomId)))
+          if (!person || (counterpart && (counterpart.locationId !== state.locationId || counterpart.interior?.roomId !== state.interior?.roomId)))
             return invalid(`${path} 当面邀约必须双方实际在场`);
           if (item.outcome !== 'pending' && !hasResponse || item.outcome === 'pending' && hasResponse)
             return invalid(`${path} 邀约回应证据`);

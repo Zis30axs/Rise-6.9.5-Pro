@@ -168,6 +168,7 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
 }
 
 import {
+  buildOutlineCornerPaths, clipViewPolygonToNearPlane, estimateFloatingLabelWidth,
   projectOldTokyoPosition, TOKYO_PIN_ELEVATION, tokyoDistrictBounds,
   tokyoDistricts, tokyoLocationPosition, type TokyoScope,
 } from './tokyo-sandbox-map';
@@ -606,7 +607,7 @@ export const sandboxCacheKey: InjectionKey<ReturnType<typeof createSandboxCache>
 </script>
 
 <script setup lang="ts">
-import { inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { CharacterPortraitId } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -617,18 +618,30 @@ import { arrangeMapLabels, type MapLabelCandidate } from './map-label-layout';
 type MapEvent = { id: string; kind: string; label: string; icon: string; title: string; detail: string; x: number; y: number };
 type MapPerson = {
   contactId: string; name: string; personId?: string; portraitId?: CharacterPortraitId;
-  protagonistId?: ProtagonistId; place?: { id: string };
+  protagonistId?: ProtagonistId; place?: { id: string; name?: string };
   position?: { x: number; z: number }; source?: 'scene' | 'protagonist' | 'demo';
   kind?: 'person' | 'passerby';
   districtId?: MapDistrictId;
+  atCurrentPlace?: boolean;
 };
 type Pin = { id: string; name: string; x: number; y: number };
 type AnchoredPin = Pin & { anchorX: number; anchorY: number };
-type DistrictPin = AnchoredPin & { available: boolean; selected: boolean };
-type PlacePin = AnchoredPin & { disabled: boolean; current: boolean; number: number; compact: boolean };
+type DistrictPin = AnchoredPin & { available: boolean; selected: boolean; boxWidth: number };
+type PlacePin = AnchoredPin & { disabled: boolean; current: boolean; number: number; compact: boolean; boxWidth: number };
 type PersonPin = AnchoredPin & MapPerson;
 type EventPin = AnchoredPin & { icon: string; kind: string; label: string; title: string };
 type LeaderLine = { id: string; x1: number; y1: number; x2: number; y2: number };
+type OutlineZone = {
+  id: string;
+  targetId: string;
+  kind: 'district' | 'place';
+  points: string;
+  corners: string[];
+  selected: boolean;
+  current: boolean;
+  available: boolean;
+};
+type AnchorDot = { id: string; x: number; y: number; kind: 'district' | 'place' };
 const props = withDefaults(defineProps<{
   active: boolean; scope: TokyoScope; width: number; height: number;
   bearing: number; viewScale: number; selectedId: string;
@@ -674,8 +687,12 @@ const placePins = ref<PlacePin[]>([]);
 const personPins = ref<PersonPin[]>([]);
 const eventPins = ref<EventPin[]>([]);
 const leaderLines = ref<LeaderLine[]>([]);
+const outlineZones = ref<OutlineZone[]>([]);
+const anchorDots = ref<AnchorDot[]>([]);
 const playerPin = ref<AnchoredPin | null>(null);
 const selectedPerson = ref('');
+const selectedPersonPin = computed(() => personPins.value.find(person => person.contactId === selectedPerson.value));
+const hoveredTargetId = ref('');
 const cameraPosition = ref('');
 const cameraFlying = ref(false);
 type CameraFlight = {
@@ -797,7 +814,8 @@ function release(retain = false) {
   lastTick = 0; lastDraw = 0;
   canvas.value?.removeEventListener('webglcontextlost', contextLost, true);
   districtPins.value = []; placePins.value = []; personPins.value = [];
-  eventPins.value = []; leaderLines.value = []; playerPin.value = null;
+  eventPins.value = []; leaderLines.value = []; outlineZones.value = [];
+  anchorDots.value = []; playerPin.value = null; hoveredTargetId.value = '';
 
   const parked = retain && status.value === 'ready' && (props.previewOnly || variant.value === 'glb') &&
     canvas.value && renderer && scene && camera && model && hemiLight && sunLight && trafficGroup && vfxController
@@ -898,15 +916,19 @@ function render() {
   const highlightDistrict = props.scope === 'city'
     ? tokyoDistricts.find(district => district.id === props.selectedId)
     : chosenDistrict;
-  latestDistrictCenter = highlightDistrict ? { x: highlightDistrict.x, z: highlightDistrict.z } : undefined;
+  const districtCenter = (d: (typeof tokyoDistricts)[number]) => ({
+    x: (d.minX + d.maxX) / 2,
+    z: (d.minZ + d.maxZ) / 2,
+  });
+  latestDistrictCenter = highlightDistrict ? districtCenter(highlightDistrict) : undefined;
 
   const cameraCenter = props.cameraView?.center
     ? projectOldTokyoPosition(props.cameraView.center)
-    : chosenDistrict ? { x: chosenDistrict.x, z: chosenDistrict.z } : undefined;
+    : chosenDistrict ? districtCenter(chosenDistrict) : undefined;
   // WorldMap owns input, but the drag/zoom must move this 3D camera rather than
   // CSS-transforming the whole canvas and leaving its projected pins behind.
   const mapZoom = Math.max(.65, Math.min(12,
-    (props.cameraView?.zoom ?? props.viewScale) * (props.decorative ? 1 : 1.08)));
+    (props.cameraView?.zoom ?? props.viewScale) * (props.decorative ? 1 : props.scope === 'city' ? 1.18 : 1.08)));
   frameTokyoMapCamera(camera, {
     bounds, width, height, bearing: props.bearing, zoom: mapZoom,
     pan: props.pan, center: cameraCenter, overhead: props.cameraView?.overhead,
@@ -941,41 +963,146 @@ function render() {
   renderer.render(scene, camera);
   if (props.decorative) {
     districtPins.value = []; placePins.value = []; personPins.value = [];
-    eventPins.value = []; leaderLines.value = []; playerPin.value = null;
+    eventPins.value = []; leaderLines.value = []; outlineZones.value = [];
+    anchorDots.value = []; playerPin.value = null;
     return;
   }
 
+  camera.updateMatrixWorld(true);
   function project(x: number, z: number, elevation = 3) {
     const p = new THREE.Vector3(x, elevation, z).project(camera!);
     return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2,
       visible: p.z > -1 && p.z < 1 && p.x > -.94 && p.x < .94 && p.y > -.93 && p.y < .93 };
   }
+  function projectRectOutline(
+    id: string,
+    targetId: string,
+    kind: 'district' | 'place',
+    minX: number,
+    maxX: number,
+    minZ: number,
+    maxZ: number,
+    elevation: number,
+    inset = 0,
+    options: { selected?: boolean; current?: boolean; available?: boolean } = {},
+  ): OutlineZone | null {
+    const x0 = Math.min(minX, maxX) + inset;
+    const x1 = Math.max(minX, maxX) - inset;
+    const z0 = Math.min(minZ, maxZ) + inset;
+    const z1 = Math.max(minZ, maxZ) - inset;
+    if (x1 <= x0 || z1 <= z0) return null;
+    const viewCorners = [
+      new THREE.Vector3(x0, elevation, z0),
+      new THREE.Vector3(x1, elevation, z0),
+      new THREE.Vector3(x1, elevation, z1),
+      new THREE.Vector3(x0, elevation, z1),
+    ].map(pt => pt.applyMatrix4(camera!.matrixWorldInverse));
+    const clipped = clipViewPolygonToNearPlane(viewCorners, Math.max(2, camera!.near * 2));
+    if (clipped.length < 3) return null;
+    const screenPts = clipped.map(pt => {
+      const projected = new THREE.Vector3(pt.x, pt.y, pt.z).applyMatrix4(camera!.projectionMatrix);
+      return { x: (projected.x + 1) * width / 2, y: (1 - projected.y) * height / 2 };
+    });
+    if (screenPts.some(pt => !Number.isFinite(pt.x) || !Number.isFinite(pt.y) || Math.abs(pt.x) > 12000 || Math.abs(pt.y) > 12000)) {
+      return null;
+    }
+    const xs = screenPts.map(pt => pt.x);
+    const ys = screenPts.map(pt => pt.y);
+    if (Math.max(...xs) < -120 || Math.min(...xs) > width + 120 || Math.max(...ys) < -120 || Math.min(...ys) > height + 120) {
+      return null;
+    }
+    return {
+      id,
+      targetId,
+      kind,
+      points: screenPts.map(pt => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' '),
+      corners: buildOutlineCornerPaths(screenPts, kind === 'district' ? 0.18 : 0.28),
+      selected: !!options.selected,
+      current: !!options.current,
+      available: options.available ?? true,
+    };
+  }
+
+  const nextOutlines: OutlineZone[] = [];
+  const narrow = width < 520;
+  const districtLabelHeight = narrow ? 22 : 24;
   if (props.scope === 'city') {
+    const districtFontPx = narrow ? 13.5 : 15.5;
+    const districtMaxW = narrow ? 112 : 136;
     districtPins.value = tokyoDistricts.flatMap(district => {
-      const p = project(district.x, district.z, 16);
-      return p.visible ? [{
+      const outline = projectRectOutline(
+        `district:${district.id}`,
+        `city:${district.id}`,
+        'district',
+        district.minX,
+        district.maxX,
+        district.minZ,
+        district.maxZ,
+        0.6,
+        Math.min(3, Math.abs(district.maxX - district.minX) * 0.06),
+        { selected: props.selectedId === district.id, current: playerDistrict === district.id, available: isMapDistrict(district.id) },
+      );
+      if (outline) nextOutlines.push(outline);
+      const centerX = (district.minX + district.maxX) / 2;
+      const centerZ = (district.minZ + district.maxZ) / 2;
+      const p = project(centerX, centerZ, 1.2);
+      if (!p.visible) return [];
+      const boxWidth = estimateFloatingLabelWidth(district.shortName, districtFontPx, 18, 52, districtMaxW);
+      return [{
         id: district.id, name: district.shortName, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
-        available: isMapDistrict(district.id), selected: props.selectedId === district.id,
-      }] : [];
+        available: isMapDistrict(district.id), selected: props.selectedId === district.id, boxWidth,
+      }];
     });
   } else {
     districtPins.value = [];
+    if (chosenDistrict) {
+      const scopeOutline = projectRectOutline(
+        `scope:${chosenDistrict.id}`,
+        `city:${chosenDistrict.id}`,
+        'district',
+        chosenDistrict.minX,
+        chosenDistrict.maxX,
+        chosenDistrict.minZ,
+        chosenDistrict.maxZ,
+        0.5,
+        1.5,
+        { selected: true, current: playerDistrict === chosenDistrict.id, available: true },
+      );
+      if (scopeOutline) nextOutlines.push(scopeOutline);
+    }
   }
 
   const places = props.scope === 'city' || !props.showPlaces ? [] : districtMapPlaces(props.scope);
   placePins.value = places.flatMap((place, index) => {
     const point = tokyoLocationPosition(place.id, positionHint);
     if (!point) return [];
+    const current = place.id === props.locationId;
+    const siteRadius = current ? 7.2 : 5.4;
+    const placeOutline = projectRectOutline(
+      `place:${place.id}`,
+      place.id,
+      'place',
+      point.x - siteRadius,
+      point.x + siteRadius,
+      point.z - siteRadius,
+      point.z + siteRadius,
+      0.7,
+      0,
+      { selected: false, current, available: true },
+    );
+    if (placeOutline) nextOutlines.push(placeOutline);
     const p = project(point.x, point.z, TOKYO_PIN_ELEVATION);
     if (!p.visible) return [];
     const compact = index >= 6 || width < 520;
+    const boxWidth = compact ? 28 : estimateFloatingLabelWidth(place.name, narrow ? 12.5 : 14, 42, 76, narrow ? 116 : 144);
     return [{
       id: place.id, name: place.name, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
-      compact, number: index + 1,
-      current: place.id === props.locationId,
-      disabled: props.busy || place.id === props.locationId || props.disabledIds.includes(place.id),
+      compact, number: index + 1, boxWidth,
+      current,
+      disabled: props.busy || current || props.disabledIds.includes(place.id),
     }];
   });
+  outlineZones.value = nextOutlines;
   const playerScreen = player ? project(player.x, player.z, TOKYO_PIN_ELEVATION) : null;
   playerPin.value = playerScreen?.visible
     ? { id: 'player', name: props.playerName || '当前位置', x: playerScreen.x, y: playerScreen.y, anchorX: playerScreen.x, anchorY: playerScreen.y } : null;
@@ -1004,15 +1131,25 @@ function render() {
       x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
     }];
   });
+  // In city overview, keep district titles pinned cleanly at the center of each
+  // 3D district zone and let the player's avatar tuck neatly just below if overlapping.
+  const playerCandidate = playerPin.value ? [{
+    ...playerPin.value,
+    id: 'player',
+    y: props.scope === 'city' ? Math.min(height - 26, playerPin.value.y + 24) : playerPin.value.y,
+    width: props.scope === 'city' ? 32 : 36,
+    height: props.scope === 'city' ? 32 : 36,
+    priority: props.scope === 'city' ? 2.5 : 0,
+  }] : [];
   const candidates: MapLabelCandidate[] = [
-    ...(playerPin.value ? [{ ...playerPin.value, id: 'player', width: 44, height: 44, priority: 0 }] : []),
-    ...personPins.value.map(pin => ({ ...pin, id: 'person:' + pin.id, width: 44, height: 44,
-      priority: pin.protagonistId ? 1 : pin.kind === 'passerby' ? 3 : 1.5 })),
-    ...placePins.value.map(pin => ({ ...pin, id: 'place:' + pin.id, width: pin.compact ? 44 : 128,
-      height: 44, priority: pin.current ? 2 : 4 })),
-    ...eventPins.value.map(pin => ({ ...pin, id: 'event:' + pin.id, width: 44, height: 44, priority: 5 })),
-    ...districtPins.value.map(pin => ({ ...pin, id: 'district:' + pin.id, width: 128, height: 44,
-      priority: pin.available ? 2 : 6 })),
+    ...districtPins.value.map(pin => ({ ...pin, id: 'district:' + pin.id, width: pin.boxWidth, height: districtLabelHeight,
+      priority: pin.available ? 0.5 : 1.5 })),
+    ...playerCandidate,
+    ...personPins.value.map(pin => ({ ...pin, id: 'person:' + pin.id, width: 36, height: 36,
+      priority: pin.protagonistId ? 1 : pin.kind === 'passerby' ? 4.5 : 1.5 })),
+    ...placePins.value.map(pin => ({ ...pin, id: 'place:' + pin.id, width: pin.boxWidth,
+      height: pin.compact ? 28 : 26, priority: pin.current ? 1.2 : pin.compact ? 3 : 2 })),
+    ...eventPins.value.map(pin => ({ ...pin, id: 'event:' + pin.id, width: 32, height: 32, priority: 3.5 })),
   ];
   const layout = arrangeMapLabels(candidates, width, height, [
     { x: width - 24, y: 23, width: 48, height: 46 },
@@ -1038,6 +1175,14 @@ function render() {
     ...placePins.value.flatMap(pin => leaderFor('place:' + pin.id, pin)),
     ...personPins.value.flatMap(pin => leaderFor('person:' + pin.contactId, pin)),
     ...eventPins.value.flatMap(pin => leaderFor('event:' + pin.id, pin)),
+  ];
+  anchorDots.value = [
+    ...districtPins.value
+      .filter(pin => Math.hypot(pin.x - pin.anchorX, pin.y - pin.anchorY) > 2)
+      .map(pin => ({ id: 'district:' + pin.id, x: pin.anchorX, y: pin.anchorY, kind: 'district' as const })),
+    ...placePins.value
+      .filter(pin => Math.hypot(pin.x - pin.anchorX, pin.y - pin.anchorY) > 2)
+      .map(pin => ({ id: 'place:' + pin.id, x: pin.anchorX, y: pin.anchorY, kind: 'place' as const })),
   ];
   emit('scale', { metersPerPixel });
 }
@@ -1295,24 +1440,48 @@ onBeforeUnmount(() => {
     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，可以刷新重试，或从地点列表选择目的地。</p>
     <template v-if="status === 'ready'">
-      <svg v-if="leaderLines.length" class="tokyo-sandbox-leaders" aria-hidden="true">
+      <svg v-if="outlineZones.length" class="tokyo-sandbox-outlines" aria-hidden="true">
+        <g v-for="zone in outlineZones" :key="zone.id"
+          class="tokyo-sandbox-outline-zone"
+          :class="[`is-${zone.kind}`, { selected: zone.selected, current: zone.current, hovered: hoveredTargetId === zone.targetId, unavailable: !zone.available }]">
+          <polygon class="tokyo-sandbox-outline-poly" :points="zone.points" />
+          <path v-for="(corner, idx) in zone.corners" :key="idx" class="tokyo-sandbox-outline-corner" :d="corner" />
+        </g>
+      </svg>
+      <svg v-if="leaderLines.length || anchorDots.length" class="tokyo-sandbox-leaders" aria-hidden="true">
         <line v-for="line in leaderLines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" />
+        <circle v-for="dot in anchorDots" :key="dot.id" :class="['tokyo-sandbox-anchor-dot', `is-${dot.kind}`]" :cx="dot.x" :cy="dot.y" r="3" />
       </svg>
       <button v-for="district in districtPins.filter(item => item.available)" :key="district.id"
         type="button" class="tokyo-sandbox-pin tokyo-sandbox-district"
         :class="{ selected: district.selected }"
-        :style="{ left: district.x + 'px', top: district.y + 'px' }"
-        :data-map-target="'city:' + district.id" @click="selectDistrict(district.id)">{{ district.name }}</button>
+        :style="{ left: district.x + 'px', top: district.y + 'px', width: district.boxWidth + 'px' }"
+        :data-map-target="'city:' + district.id"
+        @pointerenter="hoveredTargetId = 'city:' + district.id"
+        @pointerleave="hoveredTargetId = hoveredTargetId === 'city:' + district.id ? '' : hoveredTargetId"
+        @focus="hoveredTargetId = 'city:' + district.id"
+        @blur="hoveredTargetId = hoveredTargetId === 'city:' + district.id ? '' : hoveredTargetId"
+        @click="selectDistrict(district.id)">
+        <span class="tokyo-sandbox-floating-title">{{ district.name }}</span>
+      </button>
       <span v-for="district in districtPins.filter(item => !item.available)" :key="district.id"
-        class="tokyo-sandbox-caption" :style="{ left: district.x + 'px', top: district.y + 'px' }">{{ district.name }}</span>
+        class="tokyo-sandbox-caption"
+        :style="{ left: district.x + 'px', top: district.y + 'px', width: district.boxWidth + 'px' }">
+        <span class="tokyo-sandbox-floating-title is-muted">{{ district.name }}</span>
+      </span>
       <button v-for="place in placePins" :key="place.id" type="button"
         class="tokyo-sandbox-pin tokyo-sandbox-place" :class="{ current: place.current, compact: place.compact }"
         :data-map-target="place.id" :data-map-location="place.id"
-        :style="{ left: place.x + 'px', top: place.y + 'px' }"
+        :style="{ left: place.x + 'px', top: place.y + 'px', width: place.boxWidth + 'px' }"
         :title="place.name" :aria-label="place.current ? place.name + '，当前位置' : '前往' + place.name"
-        :disabled="place.disabled" @click="emit('travel', place.id)">
+        :disabled="place.disabled"
+        @pointerenter="hoveredTargetId = place.id"
+        @pointerleave="hoveredTargetId = hoveredTargetId === place.id ? '' : hoveredTargetId"
+        @focus="hoveredTargetId = place.id"
+        @blur="hoveredTargetId = hoveredTargetId === place.id ? '' : hoveredTargetId"
+        @click="emit('travel', place.id)">
         <span class="tokyo-sandbox-place-index">{{ place.number }}</span>
-        <span v-if="!place.compact">{{ place.name }}</span>
+        <span v-if="!place.compact" class="tokyo-sandbox-place-label">{{ place.name }}</span>
       </button>
       <button v-for="event in eventPins" :key="event.id" type="button" class="tokyo-sandbox-event"
         :class="{ special: event.kind === 'special' }"
@@ -1336,9 +1505,9 @@ onBeforeUnmount(() => {
         <MapCharacterAvatar :name="person.name" :person-id="person.personId"
           :portrait-id="person.portraitId" :protagonist-id="person.protagonistId" />
       </button>
-      <div v-if="selectedPerson && personPins.some(person => person.contactId === selectedPerson)"
+      <div v-if="selectedPersonPin"
         class="tokyo-sandbox-person-detail" role="status">
-        {{ personPins.find(person => person.contactId === selectedPerson)?.name }}
+        {{ selectedPersonPin.name }}<small v-if="selectedPersonPin.place?.name"> · {{ selectedPersonPin.atCurrentPlace ? '同在此地' : `在 ${selectedPersonPin.place.name}` }}</small>
         <button type="button" aria-label="关闭人物信息" @click="selectedPerson = ''">×</button>
       </div>
     </template>

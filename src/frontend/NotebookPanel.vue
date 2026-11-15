@@ -40,6 +40,7 @@ import {
   fontStyleCssVars,
   INK_COLORS,
   isBackFacing,
+  isFlatEnough,
   MOOD_OPTIONS,
   moveItemLayer,
   PAPER_STYLES,
@@ -71,7 +72,8 @@ import {
 import ScrapbookItemView from './ScrapbookItemView.vue';
 import ScrapbookCharmView from './ScrapbookCharmView.vue';
 
-const props = defineProps<{ model: ShellModel; actions?: ShellActions }>();
+const props = defineProps<{ model: ShellModel; actions?: ShellActions; expanded?: boolean }>();
+const emit = defineEmits<{ 'toggle-expand': [] }>();
 
 const scope = computed(() => props.model.memoryScope || (props.model.mode === 'demo' ? 'demo:notebook' : ''));
 const people = computed<NotebookPerson[]>(() => notebookPeople(props.model.state));
@@ -93,6 +95,10 @@ const activeTab = ref<'write' | 'stickers' | 'world' | 'inspect'>('write');
 const deskMood = ref<'day' | 'lamp' | 'night'>('day');
 const pose = ref<BookPose>(flatEditPose());
 const viewLocked = ref(false);
+const workshopCollapsed = ref(false);
+const panX = ref(0);
+const panY = ref(0);
+const isPanning = ref(false);
 const bookGliding = ref(false);
 
 const composeHint = ref('');
@@ -119,6 +125,7 @@ let charmRaf: number | undefined;
 let charmLastTs = 0;
 let resizeObs: ResizeObserver | undefined;
 let loadSeq = 0;
+let suppressContextMenu = false;
 
 let stageDrag: {
   pointerId: number;
@@ -126,6 +133,19 @@ let stageDrag: {
   startY: number;
   basePose: BookPose;
 } | undefined;
+
+let stagePan: {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  basePanX: number;
+  basePanY: number;
+  rightButton: boolean;
+  moved: boolean;
+} | undefined;
+
+const activeStagePointers = new Map<number, { x: number; y: number }>();
+let lastPinchDist = 0;
 
 let itemDrag: {
   pointerId: number;
@@ -175,6 +195,11 @@ const worldMemories = computed(() => extractWorldMemories(liveSnapshot.value));
 const worldHeader = computed(() => derivePageHeaderFromSnapshot(liveSnapshot.value));
 
 const backFacing = computed(() => isBackFacing(pose.value.yaw));
+const stagePerspectivePx = computed(() => Math.max(2200, Math.round(bookScale.value * 900)));
+const zoomPercent = computed(() => Math.round(pose.value.zoom * 100));
+const hasViewOffset = computed(
+  () => Math.abs(panX.value) > 2 || Math.abs(panY.value) > 2 || Math.abs(pose.value.zoom - 1) > 0.08,
+);
 
 const themeCssVars = computed(() => ({
   '--book-cover': theme.value.coverColor,
@@ -337,6 +362,10 @@ function recomputeBookScale() {
 }
 
 watch(pose, () => { recomputeBookScale(); }, { deep: true });
+watch([() => props.expanded, workshopCollapsed], async () => {
+  await nextTick();
+  recomputeBookScale();
+});
 
 function nudgeCharm(strength = 18) {
   charmVel.value += strength;
@@ -371,9 +400,17 @@ function startCharmLoop() {
 function glideToPose(nextPose: BookPose) {
   clearTimeout(glideTimer);
   bookGliding.value = true;
+  panX.value = 0;
+  panY.value = 0;
   pose.value = nextPose;
   nudgeCharm(nextPose.isOpen ? -24 : 22);
   glideTimer = setTimeout(() => { bookGliding.value = false; }, 540);
+}
+
+function resetZoomAndPan() {
+  panX.value = 0;
+  panY.value = 0;
+  pose.value = { ...pose.value, zoom: isFlatEnough(pose.value) ? 1.04 : 1 };
 }
 
 async function refreshSummaries() {
@@ -739,16 +776,62 @@ function cycleHeaderOption(sideKey: 'left' | 'right', field: 'weather' | 'mood')
   markDirty();
 }
 
-/* Pointer interactions: stage 3D rotation & item dragging */
+/* Pointer interactions: stage 3D rotation, panning, pinch-zoom & item dragging */
+function pointerPairDistance(): number {
+  const pts = [...activeStagePointers.values()];
+  if (pts.length < 2) return 0;
+  return Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+}
+
 function onStagePointerDown(e: PointerEvent) {
-  if (viewLocked.value || e.button !== 0) return;
   const target = e.target as HTMLElement | null;
   if (target?.closest('input, textarea, select, button, .nb-scrap-item, .nb-charm-swing-arm')) return;
+  activeStagePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activeStagePointers.size === 2) {
+    stageDrag = undefined;
+    stagePan = undefined;
+    isPanning.value = false;
+    lastPinchDist = pointerPairDistance();
+    return;
+  }
+
+  const shouldPan =
+    e.button === 2 ||
+    e.button === 1 ||
+    (e.button === 0 && (viewLocked.value || e.shiftKey || (isFlatEnough(pose.value) && pose.value.zoom > 1.05)));
+
+  if (shouldPan) {
+    stagePan = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      basePanX: panX.value,
+      basePanY: panY.value,
+      rightButton: e.button === 2,
+      moved: false,
+    };
+    isPanning.value = true;
+    (e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId);
+    return;
+  }
+
+  if (viewLocked.value || e.button !== 0) return;
   stageDrag = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, basePose: { ...pose.value } };
   (e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId);
 }
 
 function onStagePointerMove(e: PointerEvent) {
+  if (activeStagePointers.has(e.pointerId)) {
+    activeStagePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activeStagePointers.size === 2 && lastPinchDist > 8) {
+      const nextDist = pointerPairDistance();
+      if (nextDist > 8) {
+        pose.value = zoomBookPose(pose.value, nextDist / lastPinchDist);
+        lastPinchDist = nextDist;
+      }
+      return;
+    }
+  }
   if (itemDrag && itemDrag.pointerId === e.pointerId) {
     const spreadId = activeSpread.value.id;
     if (itemDrag.side !== 'cover' && itemDrag.spreadId !== spreadId) {
@@ -766,6 +849,14 @@ function onStagePointerMove(e: PointerEvent) {
     mutateSelectedItem({ x: Math.round(nextX * 10) / 10, y: Math.round(nextY * 10) / 10 });
     return;
   }
+  if (stagePan && stagePan.pointerId === e.pointerId) {
+    const dx = e.clientX - stagePan.startX;
+    const dy = e.clientY - stagePan.startY;
+    if (!stagePan.moved && Math.hypot(dx, dy) > 3) stagePan.moved = true;
+    panX.value = Math.round(stagePan.basePanX + dx);
+    panY.value = Math.round(stagePan.basePanY + dy);
+    return;
+  }
   if (stageDrag && stageDrag.pointerId === e.pointerId) {
     const dx = e.clientX - stageDrag.startX;
     const dy = e.clientY - stageDrag.startY;
@@ -774,21 +865,37 @@ function onStagePointerMove(e: PointerEvent) {
 }
 
 function onStagePointerUp(e: PointerEvent) {
+  activeStagePointers.delete(e.pointerId);
+  if (activeStagePointers.size < 2) lastPinchDist = 0;
   if (itemDrag && itemDrag.pointerId === e.pointerId) {
     if (itemDrag.moved) markDirty(true);
     itemDrag = undefined;
+  }
+  if (stagePan && stagePan.pointerId === e.pointerId) {
+    if (stagePan.rightButton && stagePan.moved) {
+      suppressContextMenu = true;
+      setTimeout(() => { suppressContextMenu = false; }, 0);
+    }
+    stagePan = undefined;
+    isPanning.value = false;
   }
   if (stageDrag && stageDrag.pointerId === e.pointerId) {
     stageDrag = undefined;
   }
 }
 
+function onStageContextMenu(e: MouseEvent) {
+  if (!suppressContextMenu) return;
+  e.preventDefault();
+  suppressContextMenu = false;
+}
+
 function onStageWheel(e: WheelEvent) {
-  if (viewLocked.value) return;
   const target = e.target as HTMLElement | null;
   if (target?.closest('textarea')) return;
   e.preventDefault();
-  pose.value = zoomBookPose(pose.value, e.deltaY < 0 ? 1.07 : 0.93);
+  const step = Math.abs(e.deltaY) < 40 ? 1.07 : 1.14;
+  pose.value = zoomBookPose(pose.value, e.deltaY < 0 ? step : 1 / step);
 }
 
 function startItemDrag(e: PointerEvent, item: PlacedScrapItem) {
@@ -898,6 +1005,12 @@ async function uploadBackup(event: Event) {
         <button type="button" class="nb-pill-btn" :class="{ 'soft-active': viewLocked }" @click="viewLocked = !viewLocked">
           {{ viewLocked ? '解锁视角' : '锁定视角' }}
         </button>
+        <button type="button" class="nb-pill-btn" :class="{ 'soft-active': workshopCollapsed }" data-notebook-toggle-workshop @click="workshopCollapsed = !workshopCollapsed">
+          {{ workshopCollapsed ? '展开工坊' : '收起工坊' }}
+        </button>
+        <button type="button" class="nb-pill-btn" :class="{ 'soft-active': expanded }" data-notebook-expand @click="emit('toggle-expand')">
+          {{ expanded ? '还原窗口' : '全屏放大' }}
+        </button>
         <button type="button" class="nb-pill-btn" :disabled="!scope || saving" data-notebook-export @click="downloadBackup">导出</button>
         <label class="nb-pill-btn" style="display:inline-flex;align-items:center">
           导入<input type="file" accept=".json,application/json" :disabled="!scope || saving" data-notebook-import @change="uploadBackup" />
@@ -918,17 +1031,18 @@ async function uploadBackup(event: Event) {
     </div>
 
     <!-- Main 2-Column 3D Workbench -->
-    <div class="nb-studio-grid">
+    <div class="nb-studio-grid" :class="{ 'is-workshop-collapsed': workshopCollapsed }">
       <!-- 3D Book Stage -->
       <section
         class="nb-stage-card"
-        :class="{ 'is-locked': viewLocked }"
+        :class="{ 'is-locked': viewLocked, 'is-panning': isPanning }"
         :data-desk-mood="deskMood"
         data-scrapbook-stage
         @pointerdown="onStagePointerDown"
         @pointermove="onStagePointerMove"
         @pointerup="onStagePointerUp"
         @pointercancel="onStagePointerUp"
+        @contextmenu="onStageContextMenu"
         @wheel="onStageWheel"
       >
         <div class="nb-stage-hud-top">
@@ -954,14 +1068,14 @@ async function uploadBackup(event: Event) {
           </div>
         </div>
 
-        <div ref="stageViewport" class="nb-stage-viewport">
+        <div ref="stageViewport" class="nb-stage-viewport" :style="{ perspective: `${stagePerspectivePx}px` }">
           <div class="nb-book-anchor" :style="themeCssVars">
             <div
               v-if="book"
               class="nb-book-solid"
               :class="{ 'is-gliding': bookGliding }"
               :style="{
-                transform: `scale(${bookScale}) rotateX(${pose.pitch}deg) rotateY(${pose.yaw}deg)`,
+                transform: `translate3d(${panX}px, ${panY}px, 0) scale(${bookScale}) rotateX(${pose.pitch}deg) rotateY(${pose.yaw}deg)`,
               }"
             >
               <!-- Spine Side Wall & Ribbon Tail -->
@@ -1366,8 +1480,10 @@ async function uploadBackup(event: Event) {
             <button type="button" class="nb-pill-btn" :class="{ active: activeSide === 'cover' }" @click="glideToPose(closedFrontPose()); activeSide = 'cover'">编辑封面</button>
           </div>
           <div class="nb-hud-badge-row">
-            <button type="button" class="nb-pill-btn" @click="pose = zoomBookPose(pose, 0.9)">缩小</button>
-            <button type="button" class="nb-pill-btn" @click="pose = zoomBookPose(pose, 1.1)">放大</button>
+            <button type="button" class="nb-pill-btn" data-scrapbook-zoom-out @click="pose = zoomBookPose(pose, 1 / 1.25)">缩小</button>
+            <button type="button" class="nb-glass-chip nb-zoom-chip" data-scrapbook-zoom-value title="点击恢复默认大小与居中" @click="resetZoomAndPan">{{ zoomPercent }}%</button>
+            <button type="button" class="nb-pill-btn" data-scrapbook-zoom-in @click="pose = zoomBookPose(pose, 1.25)">放大</button>
+            <button v-if="hasViewOffset" type="button" class="nb-pill-btn" data-scrapbook-reset-view @click="resetZoomAndPan">居中复原</button>
             <button type="button" class="nb-pill-btn warn-btn" @click="removeCurrentSpread">删除本跨页</button>
           </div>
         </div>

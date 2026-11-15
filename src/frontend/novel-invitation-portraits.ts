@@ -4,7 +4,7 @@ import { activeProtagonist, personState, protagonistNames } from '../runtime/pro
 import { protagonistSceneId, worldScenePosition, worldScenePresence, type WorldScenePerson } from '../runtime/world-presence';
 import { agendaTargetProtagonist, agendaTargetResident, agreedMinute, socialMinute } from '../runtime/social-agenda';
 import { residentById } from '../runtime/npc-cast';
-import { SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { isSameScenePlace, sceneLocationId } from '../runtime/scene-context';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import type { NovelNpcPortraitId } from './novel-npc-portraits';
 
@@ -70,9 +70,9 @@ function guestActor(person: WorldScenePerson, state: WorldState): InvitationPort
   };
 }
 function nearPlayer(state: WorldState, person: WorldScenePerson): boolean {
-  if (state.interior) return true; // worldScenePeople is already filtered to this room.
-  const at = worldScenePosition(state);
-  return !!at && Math.hypot(person.x - at.x, person.z - at.z) <= SCENE_ENCOUNTER_DISTANCE;
+  if (state.interior) return isSameScenePlace(person, state.interior.roomId, true);
+  const locationId = state.scene ? sceneLocationId(state.scene.areaId) : state.locationId;
+  return isSameScenePlace(person, locationId, false);
 }
 /** Outdoor coordinates can match across districts. Both protagonists need the
  *  same actual room/area, not merely similar x/z values on separate maps. */

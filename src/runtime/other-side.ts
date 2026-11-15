@@ -48,11 +48,10 @@ const point = (state: WorldState, owner: ProtagonistId) => {
       : { kind: 'unknown', locationId: person.locationId, x: 0, z: 0 };
 };
 
-/** Exact room, or the same outdoor map area AND actually close, never just 'same district'. */
+/** Exact room or exact outdoor map location, never cross-area or district-wide. */
 export function sameOtherSidePlace(state: WorldState, a: ProtagonistId, b: ProtagonistId): boolean {
   const x = point(state, a), y = point(state, b);
-  if (x.kind === 'unknown' || x.kind !== y.kind || x.locationId !== y.locationId) return false;
-  return x.kind === 'room' || Math.hypot(x.x - y.x, x.z - y.z) <= 18;
+  return x.kind !== 'unknown' && x.kind === y.kind && x.locationId === y.locationId;
 }
 
 const categoryForNpc = (id: string): string =>
@@ -102,10 +101,6 @@ function groupNpcs(state: WorldState, group: readonly ProtagonistId[]) {
     if (PROTAGONIST_PERSON_ID_LIST.includes(npc.id)) return [];
     const where = npcAt(state, npc.id);
     if (!where || where.kind !== owner.kind || where.locationId !== owner.locationId) return [];
-    if (owner.kind === 'outdoor' && group.some(id => {
-      const position = point(state, id);
-      return Math.hypot(position.x - where.x, position.z - where.z) > 18;
-    })) return [];
     const category = categoryForNpc(npc.id);
     const affinity = group.some(id => OTHER_SIDE_CATEGORIES[id].includes(category)) ? 4 : 1;
     return [{ id: npc.id, name: npc.name, locationId: where.locationId, category, weight: affinity }];

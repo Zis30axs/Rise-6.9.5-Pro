@@ -382,21 +382,23 @@ export function rotateBookPose(pose, dx, dy) {
 
 export function zoomBookPose(pose, ratio) {
   if (!Number.isFinite(ratio) || ratio <= 0) return pose;
-  return { ...pose, zoom: clamp(pose.zoom * ratio, 0.52, 1.65) };
+  const nextZoom = pose.zoom * ratio;
+  if (!Number.isFinite(nextZoom)) return pose;
+  return { ...pose, zoom: Math.max(0.52, nextZoom) };
 }
 
 /**
- * Computes responsive scale so the rotated 3D book solid (either closed single slab
- * or open double-page spread) stays cleanly inside the stage viewport without clipping.
+ * Computes responsive scale for the rotated 3D book solid (either closed single slab
+ * or open double-page spread). Fits comfortably within the stage at 1x and scales
+ * proportionally without an upper limit when zoomed in.
  */
 export function fitBookScale(pose, availableWidth, availableHeight) {
-  const w = pose.isOpen ? BOOK_SPEC.width * 2 + 28 : BOOK_SPEC.width + 48;
-  const h = BOOK_SPEC.height + 168;
+  const w = pose.isOpen ? BOOK_SPEC.width * 2 + 20 : BOOK_SPEC.width + 36;
+  const h = BOOK_SPEC.height + 68;
   const d = BOOK_SPEC.closedDepth + 12;
-  const safeW = Math.max(220, availableWidth - 28);
-  const safeH = Math.max(260, availableHeight - 28);
-  const base = Math.min(safeW / w, safeH / h) * 0.9;
-  const requested = base * pose.zoom;
+  const safeW = Math.max(220, availableWidth - 20);
+  const safeH = Math.max(240, availableHeight - 20);
+  const base = Math.min(safeW / w, safeH / h) * 0.96;
 
   const yawRad = (pose.yaw * Math.PI) / 180;
   const pitchRad = (pose.pitch * Math.PI) / 180;
@@ -425,15 +427,20 @@ export function fitBookScale(pose, availableWidth, availableHeight) {
       return Math.abs(pt.x * scale * p) <= safeW / 2 && Math.abs(pt.y * scale * p) <= safeH / 2;
     });
 
-  if (fits(requested)) return requested;
-  let low = 0.1;
-  let high = requested;
-  for (let i = 0; i < 16; i += 1) {
-    const mid = (low + high) / 2;
-    if (fits(mid)) low = mid;
-    else high = mid;
+  let unitScale = base;
+  if (!fits(base)) {
+    let low = 0.1;
+    let high = base;
+    for (let i = 0; i < 16; i += 1) {
+      const mid = (low + high) / 2;
+      if (fits(mid)) low = mid;
+      else high = mid;
+    }
+    unitScale = low;
   }
-  return low;
+
+  const zoom = Number.isFinite(pose.zoom) && pose.zoom > 0 ? Math.max(0.52, pose.zoom) : 1;
+  return unitScale * zoom;
 }
 
 export function isBackFacing(yaw) {

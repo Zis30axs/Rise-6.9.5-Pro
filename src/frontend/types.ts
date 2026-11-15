@@ -240,7 +240,18 @@ export type WorldAction =
   | { type: 'encounter'; personId: string }
   | { type: 'wait'; minutes: number }
   | { type: 'read_phone'; id: string }
-  | { type: 'complete_schedule'; id: string };
+  | { type: 'complete_schedule'; id: string }
+  | {
+      type: 'debug_update';
+      player?: Partial<PlayerState>;
+      clock?: Partial<WorldState['clock']>;
+      locationId?: string;
+      schedule?: WorldState['schedule'];
+      calendar?: {
+        protagonistId: import('../runtime/dual-protagonists').ProtagonistId;
+        events: import('../runtime/protagonist-world').CalendarEvent[];
+      };
+    };
 
 export interface Location {
   id: string;

@@ -110,15 +110,19 @@ describe('3D Scrapbook Workbench Demo', () => {
     expect(wrapped.pitch).toBeLessThanOrEqual(72);
 
     const zoomedIn = zoomBookPose(angled3DPose(), 10);
+    const zoomedExtreme = zoomBookPose(zoomedIn, 5);
     const zoomedOut = zoomBookPose(angled3DPose(), 0.01);
     const zoomedBad = zoomBookPose(angled3DPose(), Number.NaN);
-    expect(zoomedIn.zoom).toBe(1.65);
+    expect(zoomedIn.zoom).toBe(10);
+    expect(zoomedExtreme.zoom).toBe(50);
     expect(zoomedOut.zoom).toBe(0.52);
     expect(zoomedBad.zoom).toBe(1);
 
     const desktopOpenScale = fitBookScale(angled3DPose(), 960, 620);
+    const desktopZoomed8xScale = fitBookScale({ ...angled3DPose(), zoom: 8 }, 960, 620);
     const mobileClosedScale = fitBookScale(closedFrontPose(), 360, 440);
     expect(desktopOpenScale).toBeGreaterThan(0.5);
+    expect(desktopZoomed8xScale).toBeCloseTo(desktopOpenScale * 8, 5);
     expect(mobileClosedScale).toBeGreaterThan(0.4);
     expect(isBackFacing(backCoverPose().yaw)).toBe(true);
     expect(isBackFacing(closedFrontPose().yaw)).toBe(false);

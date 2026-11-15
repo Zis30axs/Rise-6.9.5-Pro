@@ -60,11 +60,11 @@ for (const viewport of viewports) test(`shared scene roster and labels ${viewpor
     state: await fixture(page), bundle, installZip: `${release}/unread-city-lite-assets.zip`,
   });
   await selectDockAction(page, '地点');
-  const distant = page.locator('[data-visible-person="protagonist-sakiko"]');
-  await expect(distant).toContainText('25 米 · 远处');
-  await expect(distant.locator('[data-talk-person]')).toBeDisabled();
+  const present = page.locator('[data-visible-person="protagonist-sakiko"]');
+  await expect(present).toContainText('同在此地');
+  await expect(present.locator('[data-talk-person]')).toBeEnabled();
   const ids = await page.locator('[data-visible-person]').evaluateAll(rows => rows.map(row => (row as HTMLElement).dataset.visiblePerson));
-  await distant.scrollIntoViewIfNeeded();
+  await present.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/people-${viewport.width}.png` });
   await selectDockAction(page, '地图');
   await expect(page.locator('[data-tokyo-sandbox-status]')).toHaveAttribute('data-tokyo-sandbox-status', 'ready', { timeout: 45_000 });
@@ -116,12 +116,12 @@ for (const viewport of viewports) test(`shared scene roster and labels ${viewpor
   const summary = JSON.parse(request.user_input.split('\n').find((line: string) => line.startsWith('{')));
   expect(summary.scene.nearbyPeople.map((person: { id: string }) => person.id)).toEqual(ids);
   expect(summary.scene.nearbyPeople.find((person: { id: string }) => person.id === 'protagonist-sakiko'))
-    .toMatchObject({ distanceMetres: 25, canTalk: false });
+    .toMatchObject({ canTalk: true });
   expect(request.injects[0].content).toContain('随机路人只作补充');
   const kinds = summary.scene.nearbyPeople.map((person: { kind: string }) => person.kind);
   expect(kinds.slice(kinds.indexOf('passerby'))).not.toContain('person');
   expect(errors).toEqual([]);
   writeFileSync(`${output}/browser-${viewport.width}.json`, JSON.stringify({ viewport, ids, geometry: first,
     modelCalls: 'one controlled reply; no upstream request', zeroGenerationWhileBrowsing: true,
-    sameOrderedRosterInRequest: true, distantConversationDisabled: true, errors }, null, 2));
+    sameOrderedRosterInRequest: true, sameLocationConversationEnabled: true, errors }, null, 2));
 });

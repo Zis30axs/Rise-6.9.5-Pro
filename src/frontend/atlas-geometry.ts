@@ -21,6 +21,7 @@ export function terrainHeight(lon: number, lat: number) {
     [10, 46, 6, 2.4, -.13, .65], [38, 9, 4, 7, 0, .65],
     [119, 28, 1.6, 2.5, .4, .14], [138, 36, 1.5, 4, .4, .3],
     [148, -30, 2.7, 10, .1, .4], [59, 57, 2.5, 12, .1, .4],
+    [72, -79, 26, 7, .1, .55], [-82, -77, 12, 4, -.3, .45],
   ];
   for (const [x, y, w, h, angle, rise] of ridges) {
     const dx = lon - x; const dy = lat - y;

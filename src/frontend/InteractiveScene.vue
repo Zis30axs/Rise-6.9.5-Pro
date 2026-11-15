@@ -11,7 +11,7 @@ import { aircraftPose, createSceneAircraft, loadAircraftModel, type AircraftMode
 import aircraftAsset from '../../assets/models/ambient-aircraft.glb?inline';
 import { createSceneVehicles, createTokyoRoadVehicle, type GroundVehicleId, type GroundVehicleStatus } from './scene-vehicles';
 import { recoverScenePresencePosition } from './scene-presence';
-import { SCENE_ENCOUNTER_DISTANCE, type ScenePerson, type ScenePresence } from '../runtime/scene-context';
+import { getSceneArea, isSameScenePlace, sceneLocationId, type ScenePerson, type ScenePresence } from '../runtime/scene-context';
 import type { WorldScenePerson } from '../runtime/world-presence';
 import type { AirTrafficState } from './types';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -41,10 +41,16 @@ const guideOpen = ref(false);
 const guideTarget = ref('');
 const guideBuildings = ref<{ minX: number; maxX: number; minZ: number; maxZ: number }[]>([]);
 const walkPoint = computed(() => { const [x, , z] = position.value.split(',').map(Number); return { x, z }; });
-const nearbyPeople = computed(() => props.people.map(person => ({ ...person, distance: Math.hypot(person.x - walkPoint.value.x, person.z - walkPoint.value.z) }))
-  .filter(person => person.distance <= SCENE_ENCOUNTER_DISTANCE && canSeePerson(person))
-  .sort((a, b) => Number(!!b.protagonistId) - Number(!!a.protagonistId) || a.distance - b.distance).slice(0, 2));
-const walkArea = computed(() => sceneAreas.find(area => walkPoint.value.x >= area.minX && walkPoint.value.x <= area.maxX && walkPoint.value.z >= area.minZ && walkPoint.value.z <= area.maxZ)?.label ?? '校园与街区');
+const walkAreaObj = computed(() => sceneAreas.find(area => walkPoint.value.x >= area.minX && walkPoint.value.x <= area.maxX && walkPoint.value.z >= area.minZ && walkPoint.value.z <= area.maxZ));
+const nearbyPeople = computed(() => {
+  const currentLocationId = walkAreaObj.value ? sceneLocationId(walkAreaObj.value.id) : props.locationId;
+  return props.people
+    .filter(person => canSeePerson(person) && isSameScenePlace(person, currentLocationId, false))
+    .map(person => ({ ...person, distance: Math.hypot(person.x - walkPoint.value.x, person.z - walkPoint.value.z) }))
+    .sort((a, b) => Number(!!b.protagonistId) - Number(!!a.protagonistId) || a.distance - b.distance)
+    .slice(0, 2);
+});
+const walkArea = computed(() => walkAreaObj.value?.label ?? '校园与街区');
 const nearestLandmark = computed(() => sceneLandmarks.reduce((nearest, place) => Math.hypot(place.x - walkPoint.value.x, place.z - walkPoint.value.z) < Math.hypot(nearest.x - walkPoint.value.x, nearest.z - walkPoint.value.z) ? place : nearest));
 const destination = computed(() => sceneLandmarks.find(place => place.id === guideTarget.value) ?? nearestLandmark.value);
 const destinationDistance = computed(() => Math.round(Math.hypot(destination.value.x - walkPoint.value.x, destination.value.z - walkPoint.value.z)));
@@ -443,8 +449,10 @@ function keydown(event: KeyboardEvent) {
 function select(action: SceneAction) { if (!props.phoneActive && !props.paused && !props.busy) { stopWalking(); cancelPointer(); emit('hotspot', action); } }
 function encounter(personId: string) {
   if (props.phoneActive || props.paused || props.busy || !props.freeWalk) return;
+  const currentArea = getSceneArea(eye.x, eye.z);
+  const currentLocationId = currentArea ? sceneLocationId(currentArea.id) : props.locationId;
   const person = props.people.find(candidate => candidate.id === personId);
-  if (!person || Math.hypot(person.x - eye.x, person.z - eye.z) > SCENE_ENCOUNTER_DISTANCE || !canSeePerson(person)) return;
+  if (!person || !isSameScenePlace(person, currentLocationId, false) || !canSeePerson(person)) return;
   presenceDirty = true; stopWalking(); cancelPointer(); emit('encounter', personId);
 }
 function moveTo(index: number) {
@@ -582,8 +590,8 @@ onBeforeUnmount(() => {
           <p>{{ destination.label }} <strong>{{ destinationDistance <= 3 ? '已到附近' : `直线 ${destinationDistance} 米` }}</strong></p>
         </div>
       </div>
-      <div v-if="nearbyPeople.length && !guideOpen" class="scene-nearby-people" aria-label="附近可搭话的人物">
-        <button v-for="person in nearbyPeople" :key="person.id" type="button" :data-scene-person-id="person.id" :aria-label="`与${person.name}搭话`" @click.stop="encounter(person.id)"><span>与{{ person.name }}搭话</span><small>{{ person.identity }} · {{ person.distance < 1 ? '身旁' : `${Math.round(person.distance)}米` }}</small></button>
+      <div v-if="nearbyPeople.length && !guideOpen" class="scene-nearby-people" aria-label="同地可搭话的人物">
+        <button v-for="person in nearbyPeople" :key="person.id" type="button" :data-scene-person-id="person.id" :aria-label="`与${person.name}搭话`" @click.stop="encounter(person.id)"><span>与{{ person.name }}搭话</span><small>{{ person.identity }} · 同在此地</small></button>
       </div>
       <div ref="joystick" class="walk-joystick" role="group" tabindex="0" aria-label="移动摇杆" aria-describedby="uc-walk-help" @pointerdown.stop="stickDown" @pointermove.stop="stickMove" @pointerup.stop="stickUp" @pointercancel="stickUp" @lostpointercapture="stickUp" @keydown="keydown" @blur="keyboardBlur">
         <span class="stick-directions" aria-hidden="true">↟<br>‹　　　›<br>↓</span><span class="stick-knob" :style="{ transform: `translate(${stick.x * 34}px, ${stick.y * 34}px)` }" aria-hidden="true" />

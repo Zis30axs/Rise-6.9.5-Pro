@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { applyRouteEventGesture, applyRouteEventTap, projectOldTokyoPosition, TOKYO_PIN_ELEVATION, tokyoLocationPosition } from '../src/frontend/tokyo-sandbox-map';
+import {
+  applyRouteEventGesture,
+  applyRouteEventTap,
+  buildOutlineCornerPaths,
+  clipViewPolygonToNearPlane,
+  estimateFloatingLabelWidth,
+  projectOldTokyoPosition,
+  TOKYO_PIN_ELEVATION,
+  tokyoLocationPosition,
+} from '../src/frontend/tokyo-sandbox-map';
 import { mapLocationPoint } from '../src/frontend/campus-map-layout';
 import { mapSpriteObjectPosition } from '../src/frontend/map-character-avatar';
 
@@ -57,5 +66,39 @@ describe('sandbox avatar and compact pins', () => {
     expect(mapSpriteObjectPosition({ name: '冰上梅露露', personId: 'majo-meruru' })).toBe('center top');
     expect(mapSpriteObjectPosition({ name: '长崎夫人', personId: 'nagasaki-mother' })).toBe('center 4%');
     expect(readFileSync('assets/map-avatars/majo-meruru.svg', 'utf8')).toContain('data:image/webp;base64,');
+  });
+
+  it('projects ground selection outlines and renders borderless floating typography', () => {
+    const scene = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
+    const css = readFileSync('src/frontend/campus-map.css', 'utf8');
+
+    expect(scene).toContain('tokyo-sandbox-outlines');
+    expect(scene).toContain('tokyo-sandbox-outline-poly');
+    expect(scene).toContain('tokyo-sandbox-outline-corner');
+    expect(scene).toContain('tokyo-sandbox-floating-title');
+    expect(css).toContain('.world-map .tokyo-sandbox-pin');
+    expect(css).toContain('background:transparent');
+    expect(css).toContain('.world-map .tokyo-sandbox-district');
+
+    expect(estimateFloatingLabelWidth('CiRCLE', 16, 20, 66, 136)).toBeLessThan(128);
+    expect(estimateFloatingLabelWidth('高尾山风景区', 16, 20, 66, 136)).toBeGreaterThanOrEqual(100);
+
+    const clipped = clipViewPolygonToNearPlane([
+      { x: -10, y: 0, z: -20 },
+      { x: 10, y: 0, z: -20 },
+      { x: 10, y: 0, z: 4 },
+      { x: -10, y: 0, z: 4 },
+    ], 2);
+    expect(clipped.length).toBe(4);
+    expect(clipped.every(pt => pt.z <= -2)).toBe(true);
+
+    const corners = buildOutlineCornerPaths([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 0, y: 100 },
+    ], 0.2);
+    expect(corners).toHaveLength(4);
+    expect(corners[0]).toContain('L0.0,0.0');
   });
 });

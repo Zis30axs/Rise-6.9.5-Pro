@@ -63,39 +63,89 @@ export interface ScenePerson {
   description: string;
   x: number;
   z: number;
+  locationId?: string;
+  pinned?: boolean;
   color: number;
   portraitId: CharacterPortraitId;
   contactId: string | null;
   isMain: boolean;
 }
-export interface ScenePersonAnchor { id: string; x: number; z: number; schoolWeighted: boolean }
+export interface ScenePersonAnchor { id: string; locationId: string; x: number; z: number; schoolWeighted: boolean }
 
 /** Fixed accessible meeting points keep the same people across rendering, saving and generation. */
 export const scenePersonAnchors: readonly ScenePersonAnchor[] = [
-  { id: 'avenue-west', x: -2, z: 15, schoolWeighted: true },
-  { id: 'avenue-east', x: 2, z: 20, schoolWeighted: true },
-  { id: 'library-west', x: -2, z: -5, schoolWeighted: true },
-  { id: 'library-east', x: 2, z: 0, schoolWeighted: true },
-  { id: 'teaching-west', x: -2, z: -34, schoolWeighted: true },
-  { id: 'teaching-east', x: 2, z: -36, schoolWeighted: true },
-  { id: 'dorm-west', x: -47, z: -4, schoolWeighted: true },
-  { id: 'dorm-east', x: -43, z: -3, schoolWeighted: true },
-  { id: 'sports-west', x: 40, z: -11, schoolWeighted: true },
-  { id: 'sports-east', x: 47, z: -9, schoolWeighted: true },
-  { id: 'gate-west', x: -2, z: 29, schoolWeighted: true },
-  { id: 'gate-east', x: 2, z: 32, schoolWeighted: true },
-  { id: 'junction-west', x: -6, z: 49, schoolWeighted: true },
-  { id: 'junction-east', x: 6, z: 47, schoolWeighted: true },
-  { id: 'bookshop-west', x: -25, z: 56, schoolWeighted: false },
-  { id: 'bookshop-east', x: -19, z: 56, schoolWeighted: false },
-  { id: 'convenience-west', x: 18, z: 56, schoolWeighted: false },
-  { id: 'convenience-east', x: 24, z: 56, schoolWeighted: false },
-  { id: 'street-cafe', x: 48, z: 55.5, schoolWeighted: false },
-  { id: 'bus-west', x: 45, z: 39.5, schoolWeighted: true },
-  { id: 'bus-east', x: 50, z: 39.5, schoolWeighted: true },
-  { id: 'park-west', x: 35, z: 80, schoolWeighted: false },
-  { id: 'park-east', x: 40, z: 80, schoolWeighted: false },
+  { id: 'avenue-west', locationId: 'promenade', x: -2, z: 15, schoolWeighted: true },
+  { id: 'avenue-east', locationId: 'promenade', x: 2, z: 20, schoolWeighted: true },
+  { id: 'library-west', locationId: 'library', x: -3, z: -10, schoolWeighted: true },
+  { id: 'library-east', locationId: 'library', x: 3, z: -12, schoolWeighted: true },
+  { id: 'teaching-west', locationId: 'teaching', x: -2, z: -34, schoolWeighted: true },
+  { id: 'teaching-east', locationId: 'teaching', x: 2, z: -36, schoolWeighted: true },
+  { id: 'dorm-west', locationId: 'dorm', x: -47, z: -4, schoolWeighted: true },
+  { id: 'dorm-east', locationId: 'dorm', x: -43, z: -3, schoolWeighted: true },
+  { id: 'sports-west', locationId: 'sports', x: 40, z: -11, schoolWeighted: true },
+  { id: 'sports-east', locationId: 'sports', x: 47, z: -9, schoolWeighted: true },
+  { id: 'gate-west', locationId: 'gate', x: -2, z: 29, schoolWeighted: true },
+  { id: 'gate-east', locationId: 'gate', x: 2, z: 32, schoolWeighted: true },
+  { id: 'junction-west', locationId: 'junction', x: -6, z: 49, schoolWeighted: true },
+  { id: 'junction-east', locationId: 'junction', x: 6, z: 47, schoolWeighted: true },
+  { id: 'bookshop-west', locationId: 'bookshop', x: -25, z: 56, schoolWeighted: false },
+  { id: 'bookshop-east', locationId: 'bookshop', x: -19, z: 56, schoolWeighted: false },
+  { id: 'convenience-west', locationId: 'convenience', x: 18, z: 56, schoolWeighted: false },
+  { id: 'convenience-east', locationId: 'convenience', x: 24, z: 56, schoolWeighted: false },
+  { id: 'street-cafe', locationId: 'street-cafe', x: 48, z: 55.5, schoolWeighted: false },
+  { id: 'bus-west', locationId: 'bus-stop', x: 45, z: 39.5, schoolWeighted: true },
+  { id: 'bus-east', locationId: 'bus-stop', x: 50, z: 39.5, schoolWeighted: true },
+  { id: 'park-west', locationId: 'pocket-park', x: 35, z: 80, schoolWeighted: false },
+  { id: 'park-east', locationId: 'pocket-park', x: 40, z: 80, schoolWeighted: false },
+  // Remaining campus spots and outer Tokyo districts.
+  { id: 'cafe-terrace', locationId: 'cafe', x: 14, z: 1, schoolWeighted: true },
+  { id: 'construction-west', locationId: 'construction-site', x: -50, z: 64, schoolWeighted: false },
+  { id: 'courthouse-plaza', locationId: 'courthouse', x: -18, z: 95, schoolWeighted: false },
+  { id: 'home-plaza', locationId: 'home', x: -182, z: 152, schoolWeighted: false },
+  { id: 'home-lane', locationId: 'home', x: -176, z: 147, schoolWeighted: false },
+  { id: 'downtown-fountain', locationId: 'downtown', x: -18, z: 186, schoolWeighted: false },
+  { id: 'downtown-avenue', locationId: 'downtown', x: 12, z: 190, schoolWeighted: false },
+  { id: 'commercial-plaza', locationId: 'commercial', x: 178, z: 150, schoolWeighted: false },
+  { id: 'commercial-arcade', locationId: 'commercial', x: 188, z: 146, schoolWeighted: false },
+  { id: 'city-park-bank', locationId: 'city-park', x: 176, z: -150, schoolWeighted: false },
+  { id: 'city-park-trail', locationId: 'city-park', x: 188, z: -146, schoolWeighted: false },
+  { id: 'grand-plaza', locationId: 'grand-commercial', x: -182, z: -150, schoolWeighted: false },
+  { id: 'grand-promenade', locationId: 'grand-commercial', x: -172, z: -154, schoolWeighted: false },
+  { id: 'takao-trail', locationId: 'takao-mountain', x: 4, z: -174, schoolWeighted: false },
+  { id: 'circle-plaza', locationId: 'circle', x: -306, z: -154, schoolWeighted: false },
 ];
+
+const SCENE_WIDE_HUB_IDS = new Set([
+  'teaching', 'library', 'sports', 'commercial', 'downtown', 'grand-commercial', 'home', 'city-park', 'takao-mountain',
+]);
+
+export function sceneLocationCapacity(locationId: string): { maxResidents: number; maxPassersby: number } {
+  return SCENE_WIDE_HUB_IDS.has(locationId) ? { maxResidents: 3, maxPassersby: 1 } : { maxResidents: 2, maxPassersby: 1 };
+}
+
+export function scenePersonLocationId(person: Pick<ScenePerson, 'x' | 'z' | 'locationId'>): string | null {
+  if (person.locationId) return person.locationId;
+  const area = getSceneArea(person.x, person.z);
+  return area ? sceneLocationId(area.id) : null;
+}
+
+export function isSameScenePlace(person: Pick<ScenePerson, 'x' | 'z' | 'locationId'>, targetLocationId: string, indoors = false): boolean {
+  if (indoors) return !person.locationId || person.locationId === targetLocationId;
+  return scenePersonLocationId(person) === targetLocationId;
+}
+
+function offsetInsideAnchor(anchor: ScenePersonAnchor, personId: string): { x: number; z: number } {
+  const hash = hashString(`resident-pos|${personId}`);
+  const angle = ((hash & 0xffff) / 0x10000) * Math.PI * 2;
+  const radius = 0.8 + (((hash >>> 16) & 0xff) / 255) * 1.1;
+  const area = sceneAreas.find(item => sceneLocationId(item.id) === anchor.locationId);
+  const rawX = anchor.x + Math.cos(angle) * radius;
+  const rawZ = anchor.z + Math.sin(angle) * radius;
+  if (!area) return { x: Math.round(rawX * 100) / 100, z: Math.round(rawZ * 100) / 100 };
+  const x = Math.min(area.maxX - 0.5, Math.max(area.minX + 0.5, rawX));
+  const z = Math.min(area.maxZ - 0.5, Math.max(area.minZ + 0.5, rawZ));
+  return { x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 };
+}
 
 function hashString(value: string): number {
   let hash = 2166136261;
@@ -138,7 +188,8 @@ export function sampleScenePerson(seed: string, anchor: ScenePersonAnchor): Scen
   };
   return {
     id: `ped-${hashString(seed).toString(36)}-${anchor.id}`, name, candidateName: name, ...identity,
-    description: descriptions[identity.identity]!, x: anchor.x, z: anchor.z, color: colors[Math.floor(random() * colors.length)]!,
+    description: descriptions[identity.identity]!, x: anchor.x, z: anchor.z, locationId: anchor.locationId,
+    color: colors[Math.floor(random() * colors.length)]!,
     portraitId: characterForPerson(`ped-${hashString(seed).toString(36)}-${anchor.id}`), contactId: null, isMain: false,
   };
 }
@@ -154,10 +205,10 @@ const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-reside
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
-      description:'端坐于审判席，主持庭审与秩序。',x:0,z:-3.1,color:0x7f6a5b,
+      description:'端坐于审判席，主持庭审与秩序。',x:0,z:-3.1,locationId:roomId,color:0x7f6a5b,
       portraitId:characterForPerson('court-judge'),contactId:null,isMain:false},
     {id:'court-clerk',name:'书记员',candidateName:'书记员',identity:'法院工作人员',tags:['法庭'],
-      description:'在一侧核对卷宗并记录发言。',x:4.8,z:-1.4,color:0x7f6a5b,
+      description:'在一侧核对卷宗并记录发言。',x:4.8,z:-1.4,locationId:roomId,color:0x7f6a5b,
       portraitId:characterForPerson('court-clerk'),contactId:null,isMain:false},
   ];
   if (roomId === 'legal-office') {
@@ -166,7 +217,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       id: sherry.id, name: sherry.name, candidateName: sherry.name,
       identity: '律师事务所见习人员', tags: ['常驻人物', '法律专业', '律师职业'],
       description: '橘雪莉正整理案卷，准备陪同艾玛核对证据。',
-      x: -2, z: 1.2, color: 0x859c6d, portraitId: characterForPerson(sherry.id),
+      x: -2, z: 1.2, locationId: roomId, color: 0x859c6d, portraitId: characterForPerson(sherry.id),
       contactId: null, isMain: false,
     }] : [];
   }
@@ -178,7 +229,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
         id: person.id, name: person.name, candidateName: person.name,
         identity: id === 'bang-marina' ? 'CiRCLE 店员' : 'Live House 工作人员',
         tags: ['常驻人物', id === 'bang-marina' ? '店员' : '乐队'],
-        description: person.publicProfile, x: id === 'bang-marina' ? -2.2 : 2.2, z: 1.6, color: 0x859c6d,
+        description: person.publicProfile, x: id === 'bang-marina' ? -2.2 : 2.2, z: 1.6, locationId: roomId, color: 0x859c6d,
         portraitId: characterForPerson(person.id), contactId: null, isMain: false,
       }];
     });
@@ -188,7 +239,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
     return marina ? [{
       id: marina.id, name: marina.name, candidateName: marina.name,
       identity: 'CiRCLE 店员', tags: ['常驻人物', '店员'],
-      description: marina.publicProfile, x: 0, z: -2.2, color: 0x859c6d,
+      description: marina.publicProfile, x: 0, z: -2.2, locationId: roomId, color: 0x859c6d,
       portraitId: characterForPerson(marina.id), contactId: null, isMain: false,
     }] : [];
   }
@@ -196,7 +247,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
     return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
       identity: '住户', tags: ['常驻人物', '住户'],
-      description: resident.publicProfile, x: -1.5 + idx * 1.2, z: 0.8,
+      description: resident.publicProfile, x: -1.5 + idx * 1.2, z: 0.8, locationId: roomId,
       color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
     }));
   }
@@ -208,7 +259,7 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
     const person: ScenePerson = {
       id: resident.id, name: resident.name, candidateName: resident.name,
       identity: owner ? '咖啡馆店主' : '咖啡馆来客', tags: owner ? ['常驻人物', '店主'] : ['常驻人物', '来客'],
-      description: resident.publicProfile, x: visit?.x ?? 0, z: visit?.z ?? -2.2,
+      description: resident.publicProfile, x: visit?.x ?? 0, z: visit?.z ?? -2.2, locationId: roomId,
       color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
     };
     return [person];
@@ -224,7 +275,7 @@ export function getInteriorPeople(roomId: string, contacts: readonly CharacterCo
     const presence = residentPresence(person.id, clock);
     if (!presence?.available || presence.locationId !== roomId) return [];
     const contact = contacts.find(contact => contact.sourcePersonId === person.id || contact.id === person.id);
-    return [{ ...person, description: `${person.description}${presence.activity}。`, ...(contact ? { name: contact.name, description: contact.summary, portraitId: contact.portraitId, contactId: contact.id, isMain: contact.isMain } : {}) }];
+    return [{ ...person, locationId: roomId, description: `${person.description}${presence.activity}。`, ...(contact ? { name: contact.name, description: contact.summary, portraitId: contact.portraitId, contactId: contact.id, isMain: contact.isMain } : {}) }];
   });
 }
 
@@ -251,8 +302,9 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
     const anchorId = !clock && resident.id === MARGO_CAFE_OWNER_ID ? 'junction-west' : presence?.anchorId ?? resident.anchor;
     const anchor = scenePersonAnchors.find(a => a.id === anchorId);
     if (!anchor) continue;
+    const coords = offsetInsideAnchor(anchor, resident.id);
     people.push({id:resident.id,name:resident.name,candidateName:resident.name,identity:'常驻居民',tags:['常驻人物'],
-      description:resident.publicProfile,x:anchor.x+.6,z:anchor.z+.6,color:0x859c6d,
+      description:resident.publicProfile,x:coords.x,z:coords.z,locationId:anchor.locationId,color:0x859c6d,
       portraitId:characterForPerson(resident.id),contactId:null,isMain:false});
   }
   const occupied = new Set(contacts.map(contact => contact.name));
@@ -268,8 +320,6 @@ export function getScenePeople(scene: ScenePresence, contacts: readonly Characte
   });
 }
 
-export const SCENE_ENCOUNTER_DISTANCE = 7;
-export const SCENE_VISIBLE_DISTANCE = 35;
 export type ScenePersonKind = 'person' | 'passerby';
 
 export function scenePersonKind(person: ScenePerson): ScenePersonKind {
@@ -280,27 +330,87 @@ export function scenePersonLabel(person: ScenePerson): string {
   return scenePersonKind(person) === 'person' ? person.name : `陌生${person.identity}`;
 }
 
-/** A single read-only roster for the map, location list and narrative request.
- * Keep every visible established identity; only background pedestrians have a cap.
- * Visibility never grants talking, contact exchange or phone access.
+export interface SceneRosterOptions {
+  locationId?: string | null;
+  seed?: string;
+  clock?: { hour: number; minute: number; day?: number };
+}
+
+/** A single location-scoped roster for the map, location list and narrative request.
+ * Enforces strict same-location / same-room membership and clean sparse street caps,
+ * while retaining the active encounter, protagonists, saved contacts and pinned guests.
  */
-export function selectSceneRoster<T extends ScenePerson>(population: readonly T[], position: { x: number; z: number }, indoors = false, encounterId?: string | null) {
+export function selectSceneRoster<T extends ScenePerson>(
+  population: readonly T[],
+  position: { x: number; z: number },
+  indoors = false,
+  encounterId?: string | null,
+  options?: SceneRosterOptions,
+) {
+  const fallbackArea = !indoors ? getSceneArea(position.x, position.z) : null;
+  const targetLocationId = options?.locationId !== undefined
+    ? options.locationId
+    : (fallbackArea ? sceneLocationId(fallbackArea.id) : null);
+  if (!indoors && !targetLocationId) return [];
+
   const seen = new Set<string>();
-  const rows = population.flatMap(person => {
+  const matched = population.flatMap(person => {
     if (seen.has(person.id)) return [];
     seen.add(person.id);
     const distance = Math.hypot(person.x - position.x, person.z - position.z);
+    if (!Number.isFinite(distance)) return [];
+    if (targetLocationId && !isSameScenePlace(person, targetLocationId, indoors)) return [];
     const kind = scenePersonKind(person);
-    if (!Number.isFinite(distance) || distance > (indoors || kind === 'passerby' ? 18 : SCENE_VISIBLE_DISTANCE)) return [];
-    return [{ person, distance, kind, canTalk: distance <= SCENE_ENCOUNTER_DISTANCE }];
-  }).sort((a, b) => Number(a.kind === 'passerby') - Number(b.kind === 'passerby') ||
-    Number(b.person.id === encounterId && b.canTalk) - Number(a.person.id === encounterId && a.canTalk) ||
-    a.distance - b.distance || a.person.id.localeCompare(b.person.id));
-  let passersby = 0;
-  return rows.filter(row => row.kind !== 'passerby' || ++passersby <= 8);
+    return [{ person, distance, kind, canTalk: true as const }];
+  });
+
+  const bucket = options?.clock
+    ? `${options.clock.day ?? 1}:${Math.floor((options.clock.hour * 60 + options.clock.minute) / 120)}`
+    : 'static';
+  const slotKey = `${options?.seed ?? 'scene'}|${targetLocationId ?? 'room'}|${bucket}`;
+  const isProtagonist = (person: ScenePerson) => Boolean((person as { protagonistId?: unknown }).protagonistId);
+  const isProtectedFixed = (person: ScenePerson) =>
+    person.id === encounterId || isProtagonist(person) || !!person.pinned || !!person.contactId;
+
+  const fixed = matched.filter(row => row.kind !== 'passerby');
+  const protectedFixed = fixed.filter(row => isProtectedFixed(row.person)).sort((a, b) =>
+    Number(b.person.id === encounterId) - Number(a.person.id === encounterId) ||
+    Number(isProtagonist(b.person)) - Number(isProtagonist(a.person)) ||
+    Number(!!b.person.pinned) - Number(!!a.person.pinned) ||
+    a.distance - b.distance || a.person.id.localeCompare(b.person.id),
+  );
+  const unpinnedResidents = fixed.filter(row => !isProtectedFixed(row.person)).sort((a, b) =>
+    hashString(`${slotKey}|res|${a.person.id}`) - hashString(`${slotKey}|res|${b.person.id}`) ||
+    a.person.id.localeCompare(b.person.id),
+  );
+
+  const cap = sceneLocationCapacity(targetLocationId ?? 'gate');
+  const nonProtagonistProtected = protectedFixed.filter(row => !isProtagonist(row.person)).length;
+  const residentSlots = indoors ? unpinnedResidents.length : Math.max(0, cap.maxResidents - nonProtagonistProtected);
+  const keptFixed = [...protectedFixed, ...unpinnedResidents.slice(0, residentSlots)];
+  const fixedNpcCount = keptFixed.filter(row => !isProtagonist(row.person)).length;
+
+  const passers = matched.filter(row => row.kind === 'passerby');
+  const selectedPasser = encounterId ? passers.filter(row => row.person.id === encounterId) : [];
+  const candidatePassers = passers
+    .filter(row => row.person.id !== encounterId)
+    .sort((a, b) =>
+      hashString(`${slotKey}|ped|${a.person.id}`) - hashString(`${slotKey}|ped|${b.person.id}`) ||
+      a.distance - b.distance || a.person.id.localeCompare(b.person.id),
+    );
+  const passerSlots = indoors
+    ? candidatePassers.length
+    : Math.max(0, (fixedNpcCount < cap.maxResidents ? cap.maxPassersby : 0) - selectedPasser.length);
+  const keptPassers = [...selectedPasser, ...candidatePassers.slice(0, passerSlots)];
+
+  return [...keptFixed, ...keptPassers].sort((a, b) =>
+    Number(a.kind === 'passerby') - Number(b.kind === 'passerby') ||
+    Number(b.person.id === encounterId) - Number(a.person.id === encounterId) ||
+    a.distance - b.distance || a.person.id.localeCompare(b.person.id),
+  );
 }
 
-export const SCENE_POPULATION_INSTRUCTIONS = '【现场人物】scene.nearbyPeople 与沙盘、地点人物列表共用实际在场名册，按已登记人物在前、随机行人在后的次序提供。优先承接这些人物和 scene.encounter，随机路人只作补充，不得替换、重命名或重复生成已有身份。canTalk=false 表示目前只能远望，不得声称已当面交谈、旁听、交换号码或查看手机；先通过合法行动靠近后才可互动。knownToPlayer=false 时不得让主角自动知道其姓名、私人经历或秘密。其他房间、已离开、仍在路上的人不得凭地图浏览、联系人或历史正文判定在场；地图缩放、筛选、标签收起不改变实际位置或知情。';
+export const SCENE_POPULATION_INSTRUCTIONS = '【现场人物】scene.nearbyPeople 与当前地点的沙盘及地点人物列表共用实际在场名册，按已登记人物在前、随机行人在后的次序提供。此处列出的角色与路人均处于同一地点或同一房间（canTalk=true），可直接当面交谈与互动；优先承接这些人物和 scene.encounter，随机路人只作补充，不得替换、重命名或重复生成已有身份。knownToPlayer=false 表示主角尚不认识对方，不得凭空写出其姓名、私人经历或秘密，也不能未经当面交换就默认已加好友。跨区地图上显示的其他地点熟人或另一主角、其他房间、已离开或仍在路上的人，不得凭地图查看、联系人列表或历史正文判定此刻在场；地图浏览、筛选或标签收起不改变实际位置与知情。';
 
 function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
@@ -311,9 +421,14 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     const room = getCampusInterior(interior.roomId);
     if (!room) return null;
     const last = getInteriorActivity(room, interior.activityId, interior.lastRest, interior.lastStudy);
-    const nearbyPeople = selectSceneRoster(population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds), interior, true, scene?.encounterId)
-      .map(({ person, distance, kind, canTalk }) => ({ ...person, ...relationshipOf(person, contacts),
-        kind, canTalk, knownToPlayer: !!person.contactId, distanceMetres: Math.round(distance * 10) / 10 }));
+    const nearbyPeople = selectSceneRoster(
+      population ?? getInteriorPeople(room.id, contacts, clock, hiddenPersonIds),
+      interior, true, scene?.encounterId,
+      { locationId: room.id, seed: scene?.seed ?? 'interior', clock },
+    ).map(({ person, kind, canTalk }) => ({
+      ...person, ...relationshipOf(person, contacts),
+      kind, canTalk, knownToPlayer: !!person.contactId,
+    }));
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.canTalk) ?? null;
     return {
       areaId: room.id, label: room.label, outdoors: false, skyVisible: false,
@@ -327,20 +442,23 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
   if (!scene) return null;
   const area = getSceneArea(scene.x, scene.z);
   if (!area) return null;
+  const areaLocationId = sceneLocationId(area.id);
   const people = population ?? getScenePeople(scene, contacts, clock, hiddenPersonIds);
-  const nearby = selectSceneRoster(people, scene, false, scene.encounterId);
+  const nearby = selectSceneRoster(people, scene, false, scene.encounterId, {
+    locationId: areaLocationId, seed: scene.seed, clock,
+  });
   const personContext = (person: ScenePerson) => ({ id: person.id, name: person.name, identity: person.identity, tags: person.tags, description: person.description, portraitId: person.portraitId, contactId: person.contactId, isMain: person.isMain,
     outfit: residentOutfit(person.id), housing: housingForPerson(person.id)?.id ?? null, ...relationshipOf(person, contacts) });
-  const encounter = people.find(person => person.id === scene.encounterId && Math.hypot(person.x - scene.x, person.z - scene.z) <= SCENE_ENCOUNTER_DISTANCE);
+  const encounter = nearby.find(entry => entry.person.id === scene.encounterId)?.person ?? null;
   return {
     areaId: area.id, label: area.label, outdoors: true, skyVisible: true,
     position: { x: scene.x, z: scene.z, yaw: scene.yaw, unit: '示意米' },
     environment: sceneEnvironments[area.id],
     nearbyLandmarks: sceneLandmarks
-      .map(landmark => ({ id: landmark.id, label: landmark.label, distanceMetres: Math.round(Math.hypot(landmark.x - scene.x, landmark.z - scene.z)) }))
-      .filter(landmark => landmark.distanceMetres <= 40).sort((a, b) => a.distanceMetres - b.distanceMetres).slice(0, 5),
-    nearbyPeople: nearby.map(({ person, distance, kind, canTalk }) => ({ ...personContext(person),
-      kind, canTalk, knownToPlayer: !!person.contactId, distanceMetres: Math.round(distance * 10) / 10 })),
+      .filter(landmark => sceneLocationId(landmark.id) === areaLocationId)
+      .map(landmark => ({ id: landmark.id, label: landmark.label })),
+    nearbyPeople: nearby.map(({ person, kind, canTalk }) => ({ ...personContext(person),
+      kind, canTalk, knownToPlayer: !!person.contactId })),
     encounter: encounter ? personContext(encounter) : null,
   };
 }

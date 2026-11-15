@@ -1,15 +1,23 @@
 <script lang="ts">
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import rawAtlasData from './atlas-data.json';
+import { withAntarcticaCountry } from './atlas-globe';
 import { TOKYO_COUNTRY_ID, TOKYO_REGION_NAME } from '../runtime/tokyo-world';
 
 type Properties = { name: string; id: string; countryId?: string; parentId?: string; sourceCountryId?: string };
 type Region = Feature<Geometry, Properties>;
-const mapData = rawAtlasData as unknown as {
+const atlasRaw = rawAtlasData as unknown as {
   countries: FeatureCollection<Geometry, Properties>;
   subdivisions: FeatureCollection<Geometry, Properties>;
   chinaCities?: FeatureCollection<Geometry, Properties>;
   chinaMaritimeLines?: FeatureCollection<Geometry, Properties>;
+};
+const mapData = {
+  ...atlasRaw,
+  countries: {
+    ...atlasRaw.countries,
+    features: withAntarcticaCountry(atlasRaw.countries.features),
+  },
 };
 const TOKYO_REGION_ID = mapData.subdivisions.features.find(
   item => item.properties.countryId === TOKYO_COUNTRY_ID && TOKYO_REGION_NAME.test(item.properties.name),
@@ -23,8 +31,8 @@ import { getRouteOutlook, getNovelTravelQuote, novelDestinations, locations as a
 import { getTransitRoutes, requiresTransitReturn } from '../runtime/transit';
 import { californiaPlaces, internationalConnections, isInternationalLocation, isCaliforniaLocalLocation } from '../runtime/california';
 import { beijingPlaces, beijingConnections, isBeijingLocation } from '../runtime/beijing';
-import { worldSceneRoster, worldScenePosition } from '../runtime/world-presence';
-import { getSceneArea, sceneLocationId, scenePersonLabel } from '../runtime/scene-context';
+import { worldMapRadarPeople, worldScenePosition } from '../runtime/world-presence';
+import { scenePersonLabel } from '../runtime/scene-context';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { getLocationStatus } from '../runtime/location-services';
 import { mapLocationPoint } from './campus-map-layout';
@@ -72,10 +80,18 @@ const atlasScene = ref<{
   panBy: (dx: number, dy: number) => void;
   setZoomAnchor: (clientX: number, clientY: number, targetX?: number, targetY?: number) => void;
   focusFeature: (id: string) => { depth: number; zoom: number } | undefined;
+  focusLandmark: (id: string) => { depth: number; zoom: number; countryId: string } | undefined;
   getCameraSpan: () => number;
   getZoomView: (factor: number, initialSpan?: number) => { depth: number; zoom: number };
-  resetView: () => void; isHomeRegion: () => boolean;
+  resetView: () => void;
+  isHomeRegion: () => boolean;
+  adjustTilt: (deltaDeg: number) => void;
+  setTilt: (deg: number) => void;
+  getTilt: () => number;
+  toggleTilt: () => void;
+  getTelemetry: () => { lon: number; lat: number; altitudeKm: number; tiltDeg: number; headingDeg: number };
 }>();
+const globeTilt = ref(0);
 const size = ref({ ...cachedViewportSize });
 const scale = computed(() => 2 ** -depth.value * focusZoom.value);
 const smooth = (value: number) => { const t = Math.min(1, Math.max(0, value)); return t * t * (3 - 2 * t); };
@@ -86,6 +102,7 @@ const sandboxCameraView = computed(() => ({
   overhead: sandboxOverhead.value,
 }));
 const pitchPresetLabel = computed(() => {
+  if (geographicLayer.value) return globeTilt.value >= 20 ? '俯视' : '3D倾斜';
   if (sandboxOverhead.value <= -0.35) return '低仰角';
   if (sandboxOverhead.value >= 0.45) return '俯视';
   return '立体';
@@ -143,20 +160,23 @@ const regionCities = computed(() => mapData.chinaCities?.features.filter(item =>
 const featureName = (item: Region) => item.properties.name;
 const isUnion = (item: Region) => item.properties.id === 'SUN';
 const layerTitle = computed(() => localLayer.value ? `${cityDetail.value.name} · 详细沙盘` : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
-const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '点击城区，进入对应的详细沙盘' : '浅立体示意地形 · 红线与红点为主角所在区域');
+const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '点击城区，进入对应的详细沙盘' : '立体地球仪 · 拖拽旋转球面 · 右键/Shift拖拽倾斜视角 · 红线与红点为主角区域');
 const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
 
 /** Map browsing and layer visibility never change the narrative roster. */
-const visiblePeople = computed(() => worldSceneRoster(props.model.state).flatMap(({ person, distance, kind, canTalk }) => {
-  const point = props.model.state.interior ? mapLocationPoint(props.model.state.interior.roomId) : { x: person.x, z: person.z };
-  if (!point) return [];
-  const area = getSceneArea(person.x, person.z);
-  const districtId = locationDistrict(props.model.state.interior?.roomId ?? (area ? sceneLocationId(area.id) : props.model.state.locationId));
+const visiblePeople = computed(() => worldMapRadarPeople(props.model.state).flatMap(({ person, locationId, placeId, atCurrentPlace, kind, canTalk }) => {
+  const position = (atCurrentPlace && props.model.state.interior
+    ? mapLocationPoint(props.model.state.interior.roomId)
+    : { x: person.x, z: person.z }) ?? mapLocationPoint(locationId) ?? mapLocationPoint(placeId);
+  if (!position) return [];
+  const place = allLocations.find(item => item.id === locationId) ?? allLocations.find(item => item.id === placeId);
+  const districtId = locationDistrict(placeId);
   return [{ contactId: person.contactId ?? person.id, name: scenePersonLabel(person),
     personId: person.id, portraitId: person.portraitId, protagonistId: person.protagonistId,
-    position: point, districtId, kind, distance, canTalk,
+    position, place: place ? { id: place.id, name: place.name } : undefined,
+    districtId, kind, atCurrentPlace, canTalk,
     source: person.protagonistId ? 'protagonist' as const : 'scene' as const }];
 }));
 const districtPeople = computed(() => visiblePeople.value.filter(person => person.districtId === detailDistrict.value));
@@ -345,7 +365,10 @@ function rotateBy(degrees: number, pivotOffset?: { x: number; y: number }) {
 }
 
 function tiltBy(deltaOverhead: number) {
-  if (geographicLayer.value) return;
+  if (geographicLayer.value) {
+    atlasScene.value?.adjustTilt(deltaOverhead * 36);
+    return;
+  }
   const prevSp = pitchSinForOverhead(sandboxOverhead.value);
   const nextOverhead = Math.max(-0.85, Math.min(1, sandboxOverhead.value + deltaOverhead));
   const nextSp = pitchSinForOverhead(nextOverhead);
@@ -356,6 +379,10 @@ function tiltBy(deltaOverhead: number) {
 }
 
 function cyclePitchPreset() {
+  if (geographicLayer.value) {
+    atlasScene.value?.toggleTilt();
+    return;
+  }
   const prevSp = pitchSinForOverhead(sandboxOverhead.value);
   let nextOverhead = 0;
   if (Math.abs(sandboxOverhead.value) < 0.35) nextOverhead = 0.82;
@@ -423,7 +450,7 @@ function zoomBy(factor: number, animate = true, anchor?: { x: number; y: number 
 function wheel(event: WheelEvent) {
   event.preventDefault(); event.stopPropagation();
   if (event.shiftKey) { rotateBy(Math.max(-25, Math.min(25, event.deltaY * .15))); return; }
-  if (event.altKey && !geographicLayer.value) {
+  if (event.altKey) {
     tiltBy(Math.max(-0.18, Math.min(0.18, event.deltaY * 0.0012)));
     return;
   }
@@ -469,7 +496,7 @@ function pointerDown(event: PointerEvent) {
       : undefined;
     tapClient = event.button === 0 ? { x: event.clientX, y: event.clientY } : undefined;
     gestureMoved = false; gestureHadMultiple = false;
-    activeDragKind = (!geographicLayer.value && (isOrbitButton || event.shiftKey || event.altKey || interactionMode.value === 'orbit'))
+    activeDragKind = (isOrbitButton || event.shiftKey || event.altKey || interactionMode.value === 'orbit')
       ? 'orbit'
       : 'pan';
   } else {
@@ -520,7 +547,16 @@ function pointerMove(event: PointerEvent) {
   }
 
   if (geographicLayer.value) {
-    if (points.length === 1) atlasScene.value?.panBy(center.x - gesture.lastCenter.x, center.y - gesture.lastCenter.y);
+    if (points.length === 1) {
+      if (activeDragKind === 'orbit') {
+        const stepDx = center.x - gesture.lastCenter.x;
+        const stepDy = center.y - gesture.lastCenter.y;
+        rotateBy(-stepDx * 0.45);
+        atlasScene.value?.adjustTilt(stepDy * 0.25);
+      } else {
+        atlasScene.value?.panBy(center.x - gesture.lastCenter.x, center.y - gesture.lastCenter.y);
+      }
+    }
   } else if (activeDragKind === 'orbit') {
     const stepDx = center.x - gesture.lastCenter.x;
     const stepDy = center.y - gesture.lastCenter.y;
@@ -548,7 +584,21 @@ function selectFeature(feature: Region) { if (feature.properties.countryId) sele
 function activateTarget(target: string) {
   if (target.startsWith('country:')) selectCountry(target.slice(8));
   else if (target.startsWith('division:')) selectDivision(target.slice(9));
-  else if (target.startsWith('landmark:')) { if (ATLAS_LANDMARKS.some(item => item.id === target.slice(9))) { selectedKind.value = 'landmark'; selectedId.value = target.slice(9); } }
+  else if (target.startsWith('landmark:')) {
+    const landmarkId = target.slice(9);
+    if (ATLAS_LANDMARKS.some(item => item.id === landmarkId)) {
+      selectedKind.value = 'landmark';
+      selectedId.value = landmarkId;
+      clearCameraOffset();
+      const view = atlasScene.value?.focusLandmark(landmarkId);
+      if (view) {
+        countryId.value = view.countryId;
+        regionId.value = '';
+        focusZoom.value = view.zoom;
+        moveDepth(view.depth, 360);
+      }
+    }
+  }
   else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) openRouteEvent(id, true); }
   else if (target.startsWith('city:')) enterDistrict(target.slice(5));
   else if (localLayer.value && localDestinations.value.some(item => item.id === target)) travelTo(target);
@@ -621,10 +671,14 @@ onMounted(() => {
   if (!viewport.value) return;
   owner = viewport.value.ownerDocument.defaultView as (Window & typeof globalThis) | null;
   const resize = () => {
-    const bounds = viewport.value?.getBoundingClientRect();
-    if (bounds && bounds.width > 0 && bounds.height > 0) {
-      cachedViewportSize = { width: bounds.width, height: bounds.height };
-      size.value = { width: bounds.width, height: bounds.height };
+    const el = viewport.value;
+    if (!el) return;
+    const bounds = el.getBoundingClientRect();
+    const width = el.clientWidth || bounds.width;
+    const height = el.clientHeight || bounds.height;
+    if (width > 0 && height > 0) {
+      cachedViewportSize = { width, height };
+      size.value = { width, height };
       pan.value = clampPan(pan.value.x, pan.value.y);
     }
   };
@@ -650,7 +704,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <label><input v-model="mapLayers.places" type="checkbox"/>地点</label>
           <label><input v-model="mapLayers.events" type="checkbox"/>路况</label>
         </fieldset>
-        <div ref="viewport" class="wm-viewport" :class="{ 'is-orbit-mode': !geographicLayer && interactionMode === 'orbit' }" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" :data-map-mode="interactionMode" @contextmenu.prevent @dblclick="doubleClick" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
+        <div ref="viewport" class="wm-viewport" :class="{ 'is-orbit-mode': interactionMode === 'orbit' }" role="group" tabindex="0" aria-label="交互地图画布" aria-describedby="uc-map-help" data-world-map-viewport :data-map-layer="layer" :data-map-scale="scale.toFixed(3)" :data-map-depth="depth.toFixed(3)" :data-map-rise="rise.toFixed(3)" :data-map-bearing="bearing.toFixed(3)" :data-map-mode="interactionMode" @contextmenu.prevent @dblclick="doubleClick" @click.capture="guardClick" @wheel="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp" @keydown="keydown">
           <div class="wm-stage">
             <div v-show="depth < 3" class="wm-plane wm-local-plane wm-city-board"
               :data-map-plane="localLayer ? 'district' : 'city'"
@@ -675,7 +729,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
                 @scale="setTokyoMapScale" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
-              <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" />
+              <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" @tilt-change="globeTilt = $event" />
             </div>
           </div>
           <span class="wm-north" aria-hidden="true" :style="{ transform: `rotate(${bearing}deg)` }">N ↑</span>
@@ -683,12 +737,12 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <div v-if="!geographicLayer" class="wm-local-scale" aria-label="虚构场景示意比例尺"><span>{{ localScale.label }} · 示意</span><i :style="{width:localScale.width+'px'}" /></div>
         </div>
         <div class="wm-map-actions">
-          <p id="uc-map-help" class="wm-help">单指或左键{{ !geographicLayer && interactionMode === 'orbit' ? '环视俯仰' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键拖拽环视<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
-          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 200 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
+          <p id="uc-map-help" class="wm-help">单指或左键{{ interactionMode === 'orbit' ? '环视俯仰' : geographicLayer ? '旋转地球' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键或 Shift+拖拽{{ geographicLayer ? '倾斜俯仰' : '环视' }}<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
+          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 120 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转">
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" @click="sandboxScene?.refresh()">刷新沙盘</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : '平移' }}</button>
-            <button v-if="!geographicLayer" type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset">{{ pitchPresetLabel }}</button>
+            <button type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : geographicLayer ? '转球' : '平移' }}</button>
+            <button type="button" class="wm-mode-pill" aria-label="切换俯仰视角" @click="cyclePitchPreset">{{ pitchPresetLabel }}</button>
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-atmo-pill" :class="{ active: atmosphereMode !== 'auto' }" aria-label="切换沙盘天色与气象" @click="cycleAtmosphereMode">{{ atmosphereLabel }}</button>
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill wm-flare-pill" aria-label="释放战机热焰弹" @click="triggerJetShow">热焰弹</button>
             <button type="button" aria-label="向左旋转地图" @click="rotateBy(-30)">↶</button>
@@ -708,7 +762,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点后按预告结算，再继续阅读；跨区使用现有公交路线。</p>
           <p v-if="!novelMode" class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p><p v-if="needsTransitReturn && !novelMode" class="wm-detail-note">当前在校园外，请在附近公交站乘车返回校园。</p>
           <p v-if="!novelMode && !roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
-          <div v-if="districtPeople.length" class="wm-people-summary"><h3>附近人物</h3><p v-for="person in districtPeople" :key="person.contactId">{{ person.name }}<small>{{ person.kind === 'person' ? '人物' : '行人' }} · {{ Math.round(person.distance * 10) / 10 }} 米 · {{ person.canTalk ? '身边' : '远处' }}</small></p></div>
+          <div v-if="districtPeople.length" class="wm-people-summary"><h3>{{ detailDistrict === locationDistrict(model.state.locationId) ? '此处与熟人' : '熟人动向' }}</h3><p v-for="person in districtPeople" :key="person.contactId">{{ person.name }}<small>{{ person.kind === 'person' ? '人物' : '行人' }} · {{ person.atCurrentPlace ? '同在此地' : (person.place?.name ? `在 ${person.place.name}` : '其他地点') }}</small></p></div>
         </template>
         <template v-else-if="layer === 'city'">
           <small class="wm-kicker">现有城市片区</small><h3>{{ cityDetail.name }}</h3><p class="wm-detail-note">{{ cityDetail.description }}</p>

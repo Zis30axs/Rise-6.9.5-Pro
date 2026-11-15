@@ -5,6 +5,7 @@ import { commitStoryTurn, createInitialState, getNovelTravelQuote, parseState, r
 import { activeProtagonist, enableProtagonists, gameMinute, personState } from '../src/runtime/protagonist-world';
 import { narrativeContext } from '../src/runtime/protagonist-narrative';
 import { getScenePeople } from '../src/runtime/scene-context';
+import { worldSceneRoster } from '../src/runtime/world-presence';
 import { contactProposalContext } from '../src/runtime/npc-phone';
 
 const personIds: Record<ProtagonistId, string> = {
@@ -125,16 +126,19 @@ describe('saved protagonist encounters', () => {
     expect(() => reduceState(state, { type: 'encounter', personId: personIds.sakiko })).toThrow();
   });
 
-  it('checks physical distance within the same location and clears a departed walking encounter', () => {
+  it('keeps an encounter inside the same location and clears it after walking to another district', () => {
     const before = reduceState(meetAt(), { type: 'encounter', personId: personIds.soyo });
     const position = before.scene!;
-    const walked = reduceState(before, { type: 'walk', x: position.x, z: position.z + 8, yaw: position.yaw, seed: position.seed });
-    expect(walked.locationId).toBe('sports');
-    expect(walked.scene?.encounterId).toBeNull();
-    expect(() => reduceState(walked, { type: 'encounter', personId: personIds.soyo })).toThrow();
-    const forged = structuredClone(walked);
+    const stayed = reduceState(before, { type: 'walk', x: position.x, z: position.z + 8, yaw: position.yaw, seed: position.seed });
+    expect(stayed.locationId).toBe('sports');
+    expect(stayed.scene?.encounterId).toBe(personIds.soyo);
+    const walkedOut = reduceState(before, { type: 'walk', x: -2, z: 15, yaw: 0, seed: position.seed });
+    expect(walkedOut.locationId).toBe('promenade');
+    expect(walkedOut.scene?.encounterId).toBeNull();
+    expect(() => reduceState(walkedOut, { type: 'encounter', personId: personIds.soyo })).toThrow();
+    const forged = structuredClone(walkedOut);
     forged.scene!.encounterId = personIds.soyo;
-    expect(() => parseState(forged)).toThrow(/encounter|相遇|附近/);
+    expect(() => parseState(forged)).toThrow(/encounter|相遇|同一地点|附近/);
   });
 
   it.each<ProtagonistId>(['soyo', 'sakiko', 'emma'])('validates forged %s encounter references even in an inactive personal state', observer => {
@@ -198,9 +202,7 @@ describe('saved protagonist encounters', () => {
 
   it('still records a real pedestrian encounter and its quoted contact proposal', () => {
     const arrived = meetAt();
-    const point = arrived.scene!;
-    const npc = getScenePeople(point, arrived.contacts, arrived.clock).find(person =>
-      person.id.startsWith('ped-') && Math.hypot(person.x - point.x, person.z - point.z) <= 7)!;
+    const npc = worldSceneRoster(arrived).find(row => row.kind === 'passerby')?.person!;
     expect(npc).toBeDefined();
     const met = reduceState(arrived, { type: 'encounter', personId: npc.id });
     const quote = '我们加个好友吧。';

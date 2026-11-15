@@ -1,7 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, GeneratedStory, WorldState } from '../frontend/types';
 import { isProtagonistPerson, PROTAGONIST_PERSON_IDS, PROTAGONISTS, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
-import { getInteriorPeople, getSceneArea, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, scenePersonAnchors } from './scene-context';
+import { getInteriorPeople, getSceneArea, getScenePeople, hiddenProtagonistPersons, isSameScenePlace, sceneLocationId, scenePersonAnchors } from './scene-context';
 import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { agendaTargetResident, residentSocialAgendaPresence } from './social-agenda';
 import { isCharacterPortraitId } from './characters';
@@ -231,11 +231,11 @@ function nearbyEncounterPerson(state: WorldState, npcId: string) {
   // an older save still carries their former NPC meeting receipt.
   if (state.protagonists && isProtagonistPerson(npcId)) return null;
   if (!state.scene || state.scene.encounterId !== npcId) return null;
-  const point = state.interior ?? state.scene;
+  const targetLocationId = state.interior?.roomId ?? sceneLocationId(state.scene.areaId);
   const people = state.interior
     ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hiddenProtagonistPersons(state))
     : getScenePeople(state.scene, state.contacts, state.clock, hiddenProtagonistPersons(state));
-  return people.find(person => person.id === npcId && Math.hypot(person.x - point.x, person.z - point.z) <= SCENE_ENCOUNTER_DISTANCE) ?? null;
+  return people.find(person => person.id === npcId && isSameScenePlace(person, targetLocationId, !!state.interior)) ?? null;
 }
 
 /** Called only after the controlled, distance-checked encounter action. */
@@ -390,9 +390,9 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   const residentArea = residentAnchor ? getSceneArea(residentAnchor.x, residentAnchor.z) : null;
   let promptBudget = 24000;
   const thread = social.messages.filter(m => m.channel === source.channel && m.targetId === source.targetId && (source.channel === 'group' || m.owner === source.owner)).slice(-60).reverse().filter(m => { promptBudget -= m.text.length + 150; return promptBudget >= 0; }).reverse();
-  const anchor = meeting ? scenePersonAnchors.find(a => {
+  const anchor = meeting ? residentAnchor ?? scenePersonAnchors.find(a => {
     const person = s.scene && getScenePeople(s.scene, s.contacts, s.clock, hiddenProtagonistPersons(s)).find(p => p.id === actorId);
-    return person && person.x === a.x && person.z === a.z;
+    return person && a.locationId === person.locationId;
   }) : undefined;
   const groupDef = source.channel === 'group' ? residentGroupById(source.targetId) : undefined;
   const baseGroupMembers = source.channel === 'group'

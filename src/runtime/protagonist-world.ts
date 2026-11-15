@@ -533,8 +533,8 @@ export function settlePhoneTime(s: WorldState) {
 export function protagonistNearby(s: WorldState, owner: ProtagonistId): boolean {
   if (!s.protagonists || owner === activeProtagonist(s)) return false;
   const other = personState(s, owner);
-  if (s.locationId !== other.locationId) return false;
-  return !!(s.interior&&other.interior ? s.interior.roomId===other.interior.roomId&&Math.hypot(s.interior.x-other.interior.x,s.interior.z-other.interior.z)<=3 : !s.interior&&!other.interior&&s.scene&&other.scene&&Math.hypot(s.scene.x-other.scene.x,s.scene.z-other.scene.z)<=3);
+  if (s.interior || other.interior) return !!(s.interior && other.interior && s.interior.roomId === other.interior.roomId);
+  return s.locationId === other.locationId;
 }
 export function protagonistsNearby(s: WorldState): boolean {
   if (!s.protagonists) return false;
@@ -545,7 +545,7 @@ export function phoneAccess(s: WorldState, owner: ProtagonistId) {
   if(!s.protagonists) return {read:false,write:false,authorized:false,reason:'尚未启用主角世界'};
   const device=s.protagonists.devices[owner];
   const near=protagonistNearby(s, owner);
-  if(!near) return {read:false,write:false,authorized:false,reason:'需要走到对方身边才能接触这台手机'};
+  if(!near) return {read:false,write:false,authorized:false,reason:'需要和对方在同一地点才能接触这台手机'};
   const read=!device.locked || device.share!=='none', write=!device.locked || device.share==='write';
   return {read,write,authorized:device.share!=='none',reason:!read?'手机已锁定，尚未获得许可':!write?'只获得了查看许可':''};
 }

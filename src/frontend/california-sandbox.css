@@ -13,8 +13,9 @@
 .ca-sandbox .pin.current::before{background:#f6d393;border-color:#fff3cd;box-shadow:0 0 0 4px #f9d38f3f,0 0 15px #ffc47585}
 .ca-sandbox .pin.selected::before,.ca-sandbox .pin:hover::before,.ca-sandbox .pin:focus-visible::before{box-shadow:0 0 0 4px #ffe6a87a;background:#fff0b5}
 .ca-sandbox .pin.current,.ca-sandbox .pin.selected,.ca-sandbox .pin:hover{z-index:3}
-.ca-sandbox .pin-label{position:absolute;white-space:nowrap;color:#fff6e4;text-shadow:0 1px 4px #0d2222;font-size:12px;font-weight:650;padding:3px 7px;line-height:1.35;border-radius:4px;background:#112b2ae3;box-shadow:0 2px 8px #06191a44;pointer-events:none}
-.ca-sandbox .pin-label.emphasis{background:#f7d7a1;color:#213733;text-shadow:none}
+.ca-sandbox .pin-label{z-index:3;pointer-events:auto;cursor:pointer}
+.ca-sandbox .pin-label.emphasis{color:var(--sb-active-ink);font-weight:800}
+.ca-sandbox .pin-label.selected{z-index:5}
 .ca-sandbox .map-note{position:absolute;color:#c6d1bc;font:600 10px var(--mono);letter-spacing:.22em;opacity:.9;white-space:nowrap;text-shadow:0 1px 6px #06191a;pointer-events:none}
 .ca-sandbox .map-note.ocean{color:#a6c7c8;font-size:12px;letter-spacing:.35em}
 .ca-sandbox .map-note.landmark{font:600 10px system-ui,sans-serif;color:#f3dfbc;letter-spacing:.07em;padding:2px 4px;background:#123334a0;border-radius:3px}
@@ -43,7 +44,7 @@
 .ca-sandbox .legend{font-size:9px;padding:5px;gap:7px}
 .ca-sandbox .legend i{width:6px;height:6px}
 .ca-sandbox .legend .leg{width:9px}
-.ca-sandbox .pin-label{font-size:10px;padding:3px 5px}
+.ca-sandbox .pin-label{font-size:11px;padding:1px 3px}
 .ca-sandbox .map-note.ocean{font-size:9px}}
 @media(max-width:350px){.ca-sandbox .legend{gap:4px}
 .ca-sandbox .map-tools button{width:28px}}
@@ -53,15 +54,15 @@
 .ca-sandbox .pin.core::before{width:12px;height:12px;background:#438a76}
 .ca-sandbox .pin.core.selected::before{background:#ffe3a5}
 .ca-sandbox .pin-label.core{font-weight:800}
-.ca-sandbox .pin-label.bay-lead{font-size:13px;padding:5px 8px}
+.ca-sandbox .pin-label.bay-lead{font-size:13.5px;font-weight:800}
 .ca-sandbox .map-note.water{font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:.25em;color:#c0d6cb}
-@media(max-width:760px){.ca-sandbox .pin-label.bay-lead{font-size:11px;padding:4px 6px}
+@media(max-width:760px){.ca-sandbox .pin-label.bay-lead{font-size:12px}
 .ca-sandbox .map-note.water{font-size:11px}}
-.ca-sandbox .sight-pin{position:absolute;pointer-events:auto;border:1px solid #d9c39895;border-radius:4px;background:#203e3deb;color:#fff0cf;padding:3px 6px;font-size:11px;font-weight:700;white-space:nowrap;line-height:1.35}
-.ca-sandbox .sight-pin:hover,.ca-sandbox .sight-pin[aria-pressed=true]{background:#efd6a1;color:#1a3330}
+.ca-sandbox .sight-pin{font-size:11.5px;color:#fff0cf}
+.ca-sandbox .sight-pin:hover,.ca-sandbox .sight-pin[aria-pressed=true]{color:#ffe0a2}
 .ca-sandbox .map-switch button{padding-inline:8px}
 @media(max-width:760px){.ca-sandbox .map-switch button{padding-inline:5px;font-size:10px}
-.ca-sandbox .sight-pin{font-size:9px}}
+.ca-sandbox .sight-pin{font-size:10.5px}}
 .ca-sandbox{--mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;--serif:'Noto Serif CJK SC','Songti SC','STSong',serif;display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);gap:14px;color:#e8e6dc;background:#172e30;border:1px solid #52666a;border-radius:14px;padding:16px;min-width:0;font:14px/1.55 system-ui,'PingFang SC',sans-serif}
 .ca-sandbox *{box-sizing:border-box}.ca-sandbox [hidden]{display:none!important}.ca-sandbox button,.ca-sandbox input{font:inherit}.ca-sandbox button{cursor:pointer}.ca-sandbox button:focus-visible,.ca-sandbox input:focus-visible{outline:2px solid #f3d09a;outline-offset:3px}.ca-sandbox button:disabled{cursor:default;opacity:.45}
 .ca-heading{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:center}.ca-heading small,.ca-place-panel>small{font-size:10px;letter-spacing:2px;color:#b7c7b5}.ca-heading h2{font-size:25px;margin:4px 0;font-family:'Songti SC',serif}.ca-heading p{font-size:12px;color:#c2cec5;margin:4px 0}.ca-current{font-size:11px;color:#c4d5c5}

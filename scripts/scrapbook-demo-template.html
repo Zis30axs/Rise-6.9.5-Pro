@@ -2769,7 +2769,8 @@ __CORE_JS__
 
       const shiftX = state.pose.isOpen ? 0 : -BOOK_SPEC.width / 2;
       const isFlat = state.pose.isOpen && isFlatEnough(state.pose);
-      const transform = `perspective(1800px) scale(${scale.toFixed(4)}) rotateX(${state.pose.pitch.toFixed(2)}deg) rotateY(${state.pose.yaw.toFixed(2)}deg) translateX(${shiftX}px)`;
+      const perspectivePx = Math.max(2200, Math.round(scale * 900));
+      const transform = `perspective(${perspectivePx}px) scale(${scale.toFixed(4)}) rotateX(${state.pose.pitch.toFixed(2)}deg) rotateY(${state.pose.yaw.toFixed(2)}deg) translateX(${shiftX}px)`;
       dom.bookSolid.style.transform = transform;
 
       const openDeg = state.pose.isOpen ? (isFlat ? -180 : -174) : 0;

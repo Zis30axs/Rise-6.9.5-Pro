@@ -535,5 +535,36 @@ describe('Hand-journal live integration & 3D scrapbook storage', () => {
     expect(host!.querySelector('[data-spread-side="right"]')?.getAttribute('data-date-circled')).toBe('1');
     expect(host!.querySelectorAll('[data-placed-item]').length).toBeGreaterThanOrEqual(4);
     expect(host!.querySelectorAll('.nb-pen-mark').length).toBeGreaterThanOrEqual(1);
+
+    // Verify unlimited zoom-in, wheel zoom even when view is locked, workshop collapse, and zoom reset
+    const lockBtn = Array.from(host!.querySelectorAll<HTMLButtonElement>('button')).find(b => b.textContent?.includes('锁定视角'));
+    lockBtn!.click();
+    await nextTick();
+
+    const zoomInBtn = host!.querySelector<HTMLButtonElement>('[data-scrapbook-zoom-in]')!;
+    for (let i = 0; i < 8; i += 1) {
+      zoomInBtn.click();
+    }
+    await nextTick();
+    const zoomText = host!.querySelector('[data-scrapbook-zoom-value]')?.textContent?.trim() ?? '';
+    const zoomPct = Number.parseInt(zoomText, 10);
+    expect(zoomPct).toBeGreaterThan(300);
+
+    const stageEl = host!.querySelector<HTMLElement>('[data-scrapbook-stage]')!;
+    stageEl.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+    await nextTick();
+    const wheelZoomPct = Number.parseInt(host!.querySelector('[data-scrapbook-zoom-value]')?.textContent?.trim() ?? '', 10);
+    expect(wheelZoomPct).toBeGreaterThan(zoomPct);
+
+    const workshopBtn = host!.querySelector<HTMLButtonElement>('[data-notebook-toggle-workshop]')!;
+    workshopBtn.click();
+    await nextTick();
+    expect(host!.querySelector('.nb-studio-grid')?.classList.contains('is-workshop-collapsed')).toBe(true);
+    workshopBtn.click();
+    await nextTick();
+
+    host!.querySelector<HTMLButtonElement>('[data-scrapbook-reset-view]')!.click();
+    await nextTick();
+    expect(host!.querySelector('[data-scrapbook-zoom-value]')?.textContent?.trim()).toBe('104%');
   });
 });

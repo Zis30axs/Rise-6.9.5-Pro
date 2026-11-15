@@ -1,4 +1,6 @@
 // Map-only adaptation of the user-provided California sandbox. Runtime state stays with the host.
+import { arrangeMapLabels } from './map-label-layout';
+import { computeRectOutlineFromScreenCorners, estimateFloatingLabelWidth } from './sandbox-zone-overlay';
 const regions = {
   state: { center:[0,2], limit:[-204,200,-232,235], fit:[445,420], min:.88, max:3.4 },
   bay: { center:[-128,-25.25], limit:[-143,-113,-36,-15], fit:[21,19], min:.82, max:4 },
@@ -57,6 +59,12 @@ overlay.style.touchAction = 'none';
 const ctx = overlay.getContext('2d');
 if (!ctx) { ownedNodes.forEach(node => node.remove()); throw new Error('Canvas 2D is unavailable'); }
 const pinsLayer = own(element('div', 'pins'));
+pinsLayer.dataset.sandboxTheme = 'dark';
+const outlinesSvg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+outlinesSvg.setAttribute('class', 'ca-outlines sandbox-outlines');
+outlinesSvg.setAttribute('aria-hidden', 'true');
+pinsLayer.append(outlinesSvg);
+let hoveredZone = '';
 const top = own(element('div', 'map-top'));
 const switcher = element('div', 'map-switch');
 switcher.setAttribute('aria-label', '地图范围');
@@ -120,15 +128,57 @@ let selectedSight = null;
 const scopeButtons = {bay:'bay-view',silicon:'silicon-view',la:'la-view',state:'state-view',close:'close-view'};
 const pins = data.landmarks.map(place => {
   const button = doc.createElement('button');
-  const text = doc.createElement('span');
+  const text = doc.createElement('button');
+  button.type = 'button';
+  text.type = 'button';
   button.className = `pin${core.has(place.id) ? ' core' : ''}${/国家公园/.test(place.name) ? ' park' : ''}`;
   button.dataset.location = place.id;
   button.setAttribute('aria-label', place.name);
-  text.className = `pin-label${core.has(place.id) ? ' core' : ''}`;
+  text.className = `pin-label sandbox-pin sandbox-place-pin${core.has(place.id) ? ' core' : ''}`;
   text.textContent = labels[place.id] ?? place.name;
-  listen(button, 'click', () => choose(place.id));
+  for (const node of [button, text]) {
+    listen(node, 'click', () => choose(place.id));
+    listen(node, 'pointerenter', () => { hoveredZone = `place:${place.id}`; requestDraw(); });
+    listen(node, 'pointerleave', () => { if (hoveredZone === `place:${place.id}`) { hoveredZone = ''; requestDraw(); } });
+  }
   pinsLayer.append(button, text);
   return {place, button, text};
+});
+function focusDistrict(district) {
+  if (destroyed || !district) return;
+  hoveredZone = '';
+  if (district.id === 'bay-area') { setScope('bay'); return; }
+  const member = data.landmarks.find(place => place.district === district.id);
+  if (member) {
+    selectedSight = null;
+    selected = member.id;
+    options.onSelect?.(member.id);
+  }
+  if (district.id === 'southern-california') { setScope('la'); return; }
+  setScope('state');
+  view.scale = 1.65;
+  const f = frame();
+  const dx = district.x - f.cx;
+  const dz = district.z - f.cz;
+  view.x = -(dx * f.cos - dz * f.sin) * f.zoom;
+  view.y = -(dx * f.sin + dz * f.cos) * f.zoom * f.pitch;
+  constrainCamera(view, f);
+  requestDraw();
+}
+const districtPins = (data.districts ?? []).map(district => {
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.className = 'ca-district sandbox-pin sandbox-district-pin';
+  button.dataset.caDistrict = district.id;
+  const title = doc.createElement('span');
+  title.className = 'sandbox-floating-title';
+  title.textContent = district.name;
+  button.append(title);
+  listen(button, 'click', () => focusDistrict(district));
+  listen(button, 'pointerenter', () => { hoveredZone = `district:${district.id}`; requestDraw(); });
+  listen(button, 'pointerleave', () => { if (hoveredZone === `district:${district.id}`) { hoveredZone = ''; requestDraw(); } });
+  pinsLayer.append(button);
+  return { district, button };
 });
 function mapPoint(lat, lon, y = 0) {
   return { x:(lon + 119.25) * (480 / 9.5) * .7984, z:(37.25 - lat) * (480 / 9.5), y };
@@ -348,62 +398,195 @@ function drawRoutes(f, trip) {
 const bayCallouts = {
   'california-anthropic':[-1,-1], 'california-openai':[1,-1], 'california-market':[-1,1], 'sfo-airport':[1,1]
 };
+function renderOutlinesSvg(zones) {
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const nodes = [];
+  for (const zone of zones) {
+    const g = doc.createElementNS(SVG_NS, 'g');
+    const classes = ['sandbox-outline-zone'];
+    if (zone.kind === 'place') classes.push('is-place');
+    if (zone.selected) classes.push('selected');
+    if (zone.current) classes.push('current');
+    if (hoveredZone === zone.targetId) classes.push('hovered');
+    g.setAttribute('class', classes.join(' '));
+    const poly = doc.createElementNS(SVG_NS, 'polygon');
+    poly.setAttribute('class', 'sandbox-outline-poly');
+    poly.setAttribute('points', zone.points);
+    g.append(poly);
+    for (const d of zone.corners) {
+      const path = doc.createElementNS(SVG_NS, 'path');
+      path.setAttribute('class', 'sandbox-outline-corner');
+      path.setAttribute('d', d);
+      g.append(path);
+    }
+    nodes.push(g);
+  }
+  outlinesSvg.replaceChildren(...nodes);
+}
 function drawPins(f) {
   const bay = view.scope==='bay'||(view.scope==='close'&&!selectedSight&&locations.get(selected)?.district==='bay-area');
-  const rectangles = [];
+  const currentPlace = locations.get(locationId);
+  const selectedPlace = locations.get(selected);
+  const zones = [];
+  const projectZoneBox = (id, targetId, kind, minX, maxX, minZ, maxZ, elev, options) => {
+    const corners = [
+      project({ x: minX, z: minZ, y: elev }, f),
+      project({ x: maxX, z: minZ, y: elev }, f),
+      project({ x: maxX, z: maxZ, y: elev }, f),
+      project({ x: minX, z: maxZ, y: elev }, f),
+    ];
+    const zone = computeRectOutlineFromScreenCorners(id, targetId, kind, corners, f.w, f.h, options);
+    if (zone) zones.push(zone);
+  };
+
+  if (view.scope === 'state') {
+    for (const district of data.districts ?? []) {
+      projectZoneBox(
+        `district:${district.id}`,
+        `district:${district.id}`,
+        'district',
+        district.minX,
+        district.maxX,
+        district.minZ,
+        district.maxZ,
+        f.baseY + 0.4,
+        {
+          selected: selectedPlace?.district === district.id,
+          current: currentPlace?.district === district.id,
+          available: true,
+        },
+      );
+    }
+  } else {
+    const activeDistrictId = bay ? 'bay-area' : view.scope === 'la' ? 'southern-california' : selectedPlace?.district;
+    const activeDistrict = (data.districts ?? []).find(d => d.id === activeDistrictId);
+    if (activeDistrict) {
+      projectZoneBox(
+        `district:${activeDistrict.id}`,
+        `district:${activeDistrict.id}`,
+        'district',
+        activeDistrict.minX,
+        activeDistrict.maxX,
+        activeDistrict.minZ,
+        activeDistrict.maxZ,
+        f.baseY + 0.3,
+        { selected: true, current: currentPlace?.district === activeDistrict.id, available: true },
+      );
+    }
+  }
+
+  const narrow = f.w < 520;
+  const labelCandidates = [];
+  const pinAnchors = new Map();
+
+  for (const { district, button } of districtPins) {
+    const visible = view.scope === 'state';
+    const p = project({ x: district.x, z: district.z, y: f.baseY + 0.8 }, f);
+    const inView = visible && p.x >= 16 && p.x <= f.w - 16 && p.y >= 54 && p.y <= f.h - 50;
+    button.hidden = !inView;
+    if (!inView) continue;
+    const isSel = selectedPlace?.district === district.id;
+    const isCur = currentPlace?.district === district.id;
+    button.classList.toggle('selected', isSel);
+    button.classList.toggle('current', isCur);
+    const w = estimateFloatingLabelWidth(district.name, narrow ? 13 : 14.5, 16, 56, 138);
+    labelCandidates.push({ id: `district:${district.id}`, x: p.x, y: p.y, width: w, height: narrow ? 22 : 24, priority: 0.6 });
+    pinAnchors.set(`district:${district.id}`, { x: p.x, y: p.y, picked: isSel, kind: 'district', button });
+  }
+
   const byPriority = [...pins].sort((a,b) => priority(b.place.id)-priority(a.place.id));
   function priority(id) {return id === selected ? 4 : id === locationId ? 3 : core.has(id) ? 2 : 1;}
   for (const {place,button,text} of byPriority) {
     const p = project({...place,y:place.y+(bay?.18:1.25)},f);
     const grouped = place.district === 'bay-area' && place.id !== start;
     const eligible = view.scope==='state'?!grouped:bay?place.district==='bay-area':!selectedSight&&(view.scope==='close'?place.id===selected: view.scope==='la'&&place.id==='california-los-angeles');
-    const visible = p.x >= 11 && p.x <= f.w-11 && p.y >= 50 && p.y <= f.h-48
-      && eligible;
+    const visible = p.x >= 11 && p.x <= f.w-11 && p.y >= 50 && p.y <= f.h-48 && eligible;
     button.hidden = !visible;
     text.hidden = !visible;
     if (!visible) {
       button.classList.remove('current', 'selected');
       button.setAttribute('aria-pressed', 'false');
-      text.classList.remove('emphasis');
+      text.classList.remove('emphasis', 'selected', 'current');
       continue;
     }
     const current = place.id === locationId || (!bay && place.id === start && locations.get(locationId)?.district === 'bay-area');
     const picked = place.id === selected || (!bay && place.id === start && locations.get(selected)?.district === 'bay-area');
+    if (view.scope !== 'state' && (picked || current)) {
+      const r = view.scope === 'close' ? 1.8 : bay ? 2.6 : 6;
+      projectZoneBox(
+        `place:${place.id}`,
+        `place:${place.id}`,
+        'place',
+        place.x - r,
+        place.x + r,
+        place.z - r,
+        place.z + r,
+        place.y + 0.1,
+        { selected: picked, current },
+      );
+    }
     button.classList.toggle('current',current);
     button.classList.toggle('selected',picked);
     button.setAttribute('aria-pressed',String(picked));
     text.classList.toggle('emphasis',picked);
+    text.classList.toggle('selected',picked);
+    text.classList.toggle('current',current);
     text.classList.toggle('bay-lead',bay);
-    text.textContent = !bay && place.id === start ? '旧金山湾区' : labels[place.id] ?? place.name;
-    const width = text.offsetWidth, height = text.offsetHeight;
-    let x,y,px=p.x,py=p.y;
-    if (bay) {
-      const [dx,dy] = bayCallouts[place.id] ?? [1,-1];
-      const distance = f.w < 500 ? 26 : 55;
-      const offsetY = place.id === start ? 46 : 35;
-      x = p.x + dx*distance - (dx < 0 ? width : 0);
-      y = p.y + dy*offsetY - (dy < 0 ? height : 0);
-      x = Math.max(8,Math.min(f.w-width-8,x));y=Math.max(57,Math.min(f.h-height-57,y));
-      const end = dx < 0 ? x+width : x;
-      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(end+dx*-10,y+height/2);ctx.lineTo(end,y+height/2);
-      ctx.strokeStyle=picked ? '#ffe0a2' : '#d3e1c49e';ctx.lineWidth=picked ? 1.4 : 1;ctx.stroke();
-      px=x+width/2;py=y+height/2;
-    } else {
-      x=p.x+10;y=p.y-height/2;
-      if(x+width>f.w-6) x=p.x-width-10;
-      if (rectangles.some(box=>x<box.x+box.w+4&&x+width>box.x-4&&y<box.y+box.h+4&&y+height>box.y-4)) text.hidden = true;
-      if (!text.hidden) rectangles.push({x,y,w:width,h:height});
-    }
-    if (bay) {
-      ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=picked?'#ffe0a2':'#d3e1c4';ctx.fill();
-    }
-    button.classList.toggle('callout',bay);
-    button.style.width=bay ? `${width}px` : '';
-    button.style.height=bay ? `${Math.max(height,28)}px` : '';
-    button.style.left=`${px}px`;button.style.top=`${py}px`;
-    text.style.left=`${x}px`;text.style.top=`${y}px`;
+    const labelText = !bay && place.id === start ? '旧金山湾区' : labels[place.id] ?? place.name;
+    text.textContent = labelText;
+    button.style.left = `${p.x}px`;
+    button.style.top = `${p.y}px`;
+    const [dx, dy] = bay ? (bayCallouts[place.id] ?? [1, -1]) : [0.85, -0.55];
+    const dist = bay ? (f.w < 500 ? 28 : 44) : 22;
+    const width = Math.max(48, text.offsetWidth || estimateFloatingLabelWidth(labelText, bay ? 13 : 12, 16, 48, 144));
+    const height = Math.max(22, text.offsetHeight || 22);
+    const prio = picked ? 1.0 : current ? 1.2 : core.has(place.id) ? 1.8 : 2.6;
+    labelCandidates.push({ id: `place:${place.id}`, x: p.x + dx * dist, y: p.y + dy * (bay ? 28 : 14), width, height, priority: prio });
+    pinAnchors.set(`place:${place.id}`, { x: p.x, y: p.y, picked, kind: 'place', text });
   }
-  drawSights(f,rectangles);
+
+  for (const {sight,button} of sightPins) {
+    const point = project({...sight,y:sight.pinY},f);
+    const active = selectedSight?.id===sight.id;
+    const visible = view.scope==='close'?active:view.scope==='state'?sight.region==='state':view.scope===sight.region;
+    button.hidden = !visible||point.x<9||point.x>f.w-9||point.y<55||point.y>f.h-57;
+    button.setAttribute('aria-pressed',String(active));
+    button.classList.toggle('selected', active);
+    if (button.hidden) continue;
+    const w = Math.max(52, button.offsetWidth || estimateFloatingLabelWidth(button.textContent ?? '', 11, 16, 52, 130));
+    const h = Math.max(22, button.offsetHeight || 22);
+    labelCandidates.push({ id: `sight:${sight.id}`, x: point.x + 12, y: point.y + 18, width: w, height: h, priority: active ? 1.4 : 3.2 });
+    pinAnchors.set(`sight:${sight.id}`, { x: point.x, y: point.y, picked: active, kind: 'sight', button });
+  }
+
+  renderOutlinesSvg(zones);
+  const reserved = [
+    { x: f.w / 2, y: 27, width: f.w, height: 58 },
+    { x: f.w / 2, y: f.h - 25, width: f.w, height: 54 },
+  ];
+  const arranged = arrangeMapLabels(labelCandidates, f.w, f.h, reserved);
+  for (const [id, info] of pinAnchors) {
+    const box = arranged.get(id);
+    if (info.kind === 'district') {
+      if (!box) { info.button.hidden = true; continue; }
+      info.button.style.left = `${box.x}px`;
+      info.button.style.top = `${box.y}px`;
+    } else if (info.kind === 'place') {
+      if (!box) { info.text.hidden = true; continue; }
+      info.text.style.left = `${box.x}px`;
+      info.text.style.top = `${box.y}px`;
+      if (Math.hypot(box.x - info.x, box.y - info.y) > 8) {
+        ctx.beginPath(); ctx.moveTo(info.x, info.y); ctx.lineTo(box.x, box.y);
+        ctx.strokeStyle = info.picked ? '#ffe0a2c8' : '#d3e1c47d'; ctx.lineWidth = info.picked ? 1.3 : 1; ctx.stroke();
+      }
+    } else if (info.kind === 'sight') {
+      if (!box) { info.button.hidden = true; continue; }
+      info.button.style.left = `${box.x}px`;
+      info.button.style.top = `${box.y}px`;
+      ctx.beginPath(); ctx.moveTo(info.x, info.y); ctx.lineTo(box.x, box.y);
+      ctx.strokeStyle = info.picked ? '#ffe0a2' : '#d4c99d99'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
   for (const note of notes) {
     const p = project(note.pos,f);
     const skipLandmark = note.style === 'landmark' && f.w < 500;
@@ -413,37 +596,24 @@ function drawPins(f) {
 }
 const sightPins = [...sights.values()].map(sight=>{
   const button=doc.createElement('button');
-  button.className='sight-pin';
+  button.type='button';
+  button.className='sight-pin sandbox-pin sandbox-place-pin';
   button.dataset.sight=sight.id;
-  button.textContent=sight.name.split(' · ')[0];
+  button.textContent=`◆ ${sight.name.split(' · ')[0]}`;
   button.setAttribute('aria-label',sight.name);
   listen(button, 'click',()=>chooseSight(sight.id));
   pinsLayer.append(button);
   return {sight,button};
 });
-function drawSights(f,rectangles) {
-  for(const {sight,button} of sightPins) {
-    const point=project({...sight,y:sight.pinY},f);
-    const active=selectedSight?.id===sight.id;
-    const visible=view.scope==='close'?active:view.scope==='state'?sight.region==='state':view.scope===sight.region;
-    button.hidden=!visible||point.x<9||point.x>f.w-9||point.y<55||point.y>f.h-57;
-    button.setAttribute('aria-pressed',String(active));
-    if(button.hidden) continue;
-    const w=button.offsetWidth,h=button.offsetHeight;
-    const x=clamp(point.x+7,5,Math.max(5,f.w-w-5));
-    const desired=point.y+8;
-    const candidates=[desired,desired-h-17,desired+h+3,desired-2*h-20];
-    const y=candidates.find(v=>v>49&&v+h<f.h-48&&!rectangles.some(r=>x<r.x+r.w+4&&x+w>r.x-4&&v<r.y+r.h+4&&v+h>r.y-4));
-    if(y===undefined){button.hidden=true;continue;}
-    rectangles.push({x,y,w,h});
-    button.style.left=`${x}px`;
-    button.style.top=`${y}px`;
-    ctx.beginPath();ctx.moveTo(point.x,point.y);ctx.lineTo(x,y+h/2);ctx.strokeStyle='#d4c99dc4';ctx.lineWidth=1;ctx.stroke();
-  }
-}
 let pendingFrame = 0;
 function requestDraw() {
-  if (!destroyed && !pendingFrame) pendingFrame = win.requestAnimationFrame(draw);
+  if (destroyed || pendingFrame) return;
+  let completed = false;
+  const frameId = win.requestAnimationFrame(() => {
+    completed = true;
+    draw();
+  });
+  if (!completed) pendingFrame = frameId;
 }
 function draw() {
   pendingFrame=0;

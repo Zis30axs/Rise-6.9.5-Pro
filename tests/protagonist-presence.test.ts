@@ -65,31 +65,38 @@ describe('saved protagonist presence', () => {
     expect(worldSceneContext(state)!.nearbyPeople.map(person => person.id)).toContain('protagonist-sakiko');
   });
 
-  it('includes a protagonist at talking distance without granting access to her phone', () => {
+  it('includes a protagonist in the same location without granting access to her locked phone, and excludes other locations', () => {
     const state = sportsMeeting();
-    personState(state, 'soyo').scene!.x = state.scene!.x - 7;
+    state.protagonists!.devices.soyo.locked = true;
+    personState(state, 'soyo').scene!.x = state.scene!.x - 20;
     expect(narrativeContext(state).counterpartsInScene.map(person => person.id)).toContain('soyo');
     expect(phoneAccess(state, 'soyo').read).toBe(false);
-    personState(state, 'soyo').scene!.x -= 0.01;
+    const other = personState(state, 'soyo');
+    other.locationId = 'library';
+    other.scene = { x: -2, z: -12, yaw: 0, areaId: 'library', seed: state.scene!.seed, encounterId: null };
+    state.protagonists!.devices.soyo.locked = false;
     expect(narrativeContext(state).counterpartsInScene.map(person => person.id)).not.toContain('soyo');
+    expect(phoneAccess(state, 'soyo').read).toBe(false);
   });
 
-  it('records witnessed dialogue at seven metres but not outside talking range', () => {
+  it('records witnessed dialogue in the same location but not at another location', () => {
     const state = sportsMeeting();
-    personState(state, 'soyo').scene!.x = state.scene!.x - 7;
+    personState(state, 'soyo').scene!.x = state.scene!.x - 20;
     const reply = { text: '|丰川祥子|平静|一起在这里坐一会儿吧。|', phoneMessages: [] };
     const after = structuredClone(state);
     after.story.push({ id: 'presence-dialogue', role: 'assistant', text: reply.text });
     const shared = recordProtagonistNarrative(state, after, reply, 'presence-dialogue');
     expect(personState(shared, 'soyo').journal.some(entry => entry.id === 'shared:presence-dialogue')).toBe(true);
-    personState(after, 'soyo').scene!.x -= 0.01;
-    const remote = recordProtagonistNarrative(state, after, reply, 'presence-dialogue');
-    expect(personState(remote, 'soyo').journal.some(entry => entry.id === 'shared:presence-dialogue')).toBe(false);
+    const remote = personState(after, 'soyo');
+    remote.locationId = 'library';
+    remote.scene = { x: -2, z: -12, yaw: 0, areaId: 'library', seed: state.scene!.seed, encounterId: null };
+    const remoteResult = recordProtagonistNarrative(state, after, reply, 'presence-dialogue');
+    expect(personState(remoteResult, 'soyo').journal.some(entry => entry.id === 'shared:presence-dialogue')).toBe(false);
   });
 
-  it('pauses selected conversation partners at seven metres while game time advances', () => {
+  it('pauses selected conversation partners in the same location while game time advances', () => {
     const before = sportsMeeting();
-    personState(before, 'soyo').scene!.x = before.scene!.x - 7;
+    personState(before, 'soyo').scene!.x = before.scene!.x - 12;
     before.scene!.encounterId = 'protagonist-soyo';
     const after = structuredClone(before);
     const minutes = after.clock.hour * 60 + after.clock.minute + 15;

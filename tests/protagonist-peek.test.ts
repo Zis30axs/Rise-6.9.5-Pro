@@ -61,8 +61,10 @@ describe('ordinary phone peek for playable characters', () => {
     expect(()=>f.api.readInspected(request)).toThrow('锁定');
     await expect(f.api.act(request)).rejects.toThrow('锁定');
     f.state().protagonists!.devices.sakiko.share='read';
-    personState(f.state(),'sakiko').scene!.x+=8;
-    expect(()=>f.api.readInspected(request)).toThrow('走到对方身边');
+    const remote=personState(f.state(),'sakiko');
+    remote.locationId='library';
+    remote.scene={x:-2,z:-12,yaw:0,areaId:'library',seed:'peek',encounterId:null};
+    expect(()=>f.api.readInspected(request)).toThrow('同一地点');
     f.end();
     expect(()=>f.api.readInspected(request)).toThrow('连接已结束');
   });

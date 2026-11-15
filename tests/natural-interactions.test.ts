@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
-import { worldScenePeople } from '../src/runtime/world-presence';
+import { worldScenePeople, worldSceneRoster } from '../src/runtime/world-presence';
 import { applySocialInvitationReply, parseSocialInvitations, protagonistHomeRooms } from '../src/runtime/natural-interactions';
 import { parsePhoneReplyWithScene } from '../src/runtime/phone-reply';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
@@ -25,8 +25,7 @@ const makeMeet = () => {
   state.locationId = 'promenade';
   state.scene = { x: -2, z: 15, yaw: 0, areaId: 'promenade', seed: 'natural-actions-test', encounterId: null };
   const parsed = parseState(state);
-  const person = worldScenePeople(parsed).find(row => !row.protagonistId &&
-    Math.hypot(row.x - parsed.scene!.x, row.z - parsed.scene!.z) <= 7)!;
+  const person = worldSceneRoster(parsed).find(row => !row.person.protagonistId)?.person!;
   expect(person).toBeDefined();
   return { state: parsed, person };
 };

@@ -10,6 +10,14 @@ import atlas from '../../assets/beijing-sandbox/sandbox.json';
 import terrainUrl from '../../assets/beijing-sandbox/sandbox.glb?inline';
 import type { InternationalLeg } from '../runtime/california';
 import { beijingLocalTime, isBeijingLocation } from '../runtime/beijing';
+import { arrangeMapLabels, type MapLabelCandidate } from './map-label-layout';
+import {
+  clipViewPolygonToNearPlane,
+  computePointsBoundingRect,
+  computeRectOutlineFromScreenCorners,
+  estimateFloatingLabelWidth,
+  type OutlineZoneOverlay,
+} from './sandbox-zone-overlay';
 
 const props = defineProps<{
   locationId: string;
@@ -32,7 +40,25 @@ const stage = ref<HTMLDivElement>();
 const canvas = ref<HTMLCanvasElement>();
 const webglError = ref('');
 const viewport = ref({ width: 800, height: 480 });
-const pins = ref<{ id: string; left: number; top: number; visible: boolean }[]>([]);
+const hoveredTargetId = ref('');
+const outlineZones = ref<OutlineZoneOverlay[]>([]);
+const districtPins = ref<{
+  id: string; name: string; x: number; y: number; anchorX: number; anchorY: number;
+  area: (typeof atlas.focusAreas)[number]; selected: boolean; current: boolean;
+}[]>([]);
+const pins = ref<{
+  id: string; name: string; index: number; left: number; top: number;
+  anchorX: number; anchorY: number; visible: boolean; compact: boolean;
+}[]>([]);
+const areaZones = atlas.focusAreas.flatMap(area => {
+  const points = atlas.places.filter(place => area.places.includes(place.id));
+  const rect = computePointsBoundingRect(points, 12, 6);
+  return rect ? [{ id: area.name, name: area.name, places: area.places, area, ...rect }] : [];
+});
+const overlayLeaders = computed(() => [
+  ...districtPins.value.map(d => ({ id: `d:${d.id}`, x1: d.anchorX, y1: d.anchorY, x2: d.x, y2: d.y })),
+  ...pins.value.filter(p => p.visible).map(p => ({ id: `p:${p.id}`, x1: p.anchorX, y1: p.anchorY, x2: p.left, y2: p.top })),
+].filter(line => Math.hypot(line.x2 - line.x1, line.y2 - line.y1) > 8));
 const selected = computed(() => atlas.places.find(place => place.id === selectedId.value));
 const destinationLeg = computed(() => props.routes.find(leg => leg.to === selectedId.value));
 const selectedQuote = computed(() => props.quote(selectedId.value));
@@ -162,20 +188,133 @@ function updateCamera() {
   camera.lookAt(center.value.x, 0, center.value.z);
   camera.updateMatrixWorld();
 }
+function projectWorldPoint(x: number, y: number, z: number) {
+  const { width, height } = viewport.value;
+  if (!camera || webglError.value) {
+    const sx = ((x - bounds.minX) / (bounds.maxX - bounds.minX)) * width;
+    const sy = ((z - bounds.minZ) / (bounds.maxZ - bounds.minZ)) * height;
+    return { x: sx, y: sy, visible: sx >= 8 && sx <= width - 8 && sy >= 8 && sy <= height - 8 };
+  }
+  const point = new Vector3(x, y, z).project(camera);
+  const sx = (point.x + 1) * width / 2;
+  const sy = (1 - point.y) * height / 2;
+  return { x: sx, y: sy, visible: point.z >= -1 && point.z <= 1 && sx >= 8 && sx <= width - 8 && sy >= 8 && sy <= height - 8 };
+}
+function projectRectOutline(
+  id: string,
+  targetId: string,
+  kind: 'district' | 'place',
+  minX: number,
+  maxX: number,
+  minZ: number,
+  maxZ: number,
+  elevation: number,
+  options: { selected?: boolean; current?: boolean } = {},
+): OutlineZoneOverlay | null {
+  const { width, height } = viewport.value;
+  const x0 = Math.min(minX, maxX);
+  const x1 = Math.max(minX, maxX);
+  const z0 = Math.min(minZ, maxZ);
+  const z1 = Math.max(minZ, maxZ);
+  if (x1 <= x0 || z1 <= z0) return null;
+  if (!camera || webglError.value) {
+    const screenPts = [
+      projectWorldPoint(x0, elevation, z0),
+      projectWorldPoint(x1, elevation, z0),
+      projectWorldPoint(x1, elevation, z1),
+      projectWorldPoint(x0, elevation, z1),
+    ];
+    return computeRectOutlineFromScreenCorners(id, targetId, kind, screenPts, width, height, options);
+  }
+  const viewCorners = [
+    new Vector3(x0, elevation, z0),
+    new Vector3(x1, elevation, z0),
+    new Vector3(x1, elevation, z1),
+    new Vector3(x0, elevation, z1),
+  ].map(pt => pt.applyMatrix4(camera!.matrixWorldInverse));
+  const clipped = clipViewPolygonToNearPlane(viewCorners, 1);
+  if (clipped.length < 3) return null;
+  const screenPts = clipped.map(pt => {
+    const projected = new Vector3(pt.x, pt.y, pt.z).applyMatrix4(camera!.projectionMatrix);
+    return { x: (projected.x + 1) * width / 2, y: (1 - projected.y) * height / 2 };
+  });
+  return computeRectOutlineFromScreenCorners(id, targetId, kind, screenPts, width, height, options);
+}
 function updatePins() {
   const { width, height } = viewport.value;
-  pins.value = atlas.places.map(place => {
-    if (!camera || webglError.value) {
-      return { id: place.id,
-        left: ((place.x - bounds.minX) / (bounds.maxX - bounds.minX)) * width,
-        top: ((place.z - bounds.minZ) / (bounds.maxZ - bounds.minZ)) * height,
-        visible: true };
+  const narrow = width < 520;
+  const nextOutlines: OutlineZoneOverlay[] = [];
+  const rawDistricts = areaZones.flatMap(zone => {
+    const selectedArea = focus.value === zone.name || (!focus.value && zone.places.includes(selectedId.value));
+    const currentArea = zone.places.includes(props.locationId);
+    const outline = projectRectOutline(
+      `area:${zone.name}`,
+      `area:${zone.name}`,
+      'district',
+      zone.minX,
+      zone.maxX,
+      zone.minZ,
+      zone.maxZ,
+      0.8,
+      { selected: selectedArea, current: currentArea },
+    );
+    if (outline) nextOutlines.push(outline);
+    const p = projectWorldPoint(zone.cx, 2.2, zone.cz);
+    if (!p.visible) return [];
+    const widthEstimate = estimateFloatingLabelWidth(zone.name, narrow ? 13 : 14.5, 16, 58, narrow ? 114 : 138);
+    return [{
+      id: zone.name, name: zone.name, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
+      area: zone.area, selected: selectedArea, current: currentArea, widthEstimate,
+    }];
+  });
+
+  const routeIds = new Set(props.routes.map(route => route.to));
+  const rawPlaces = atlas.places.flatMap((place, index) => {
+    const isSelected = place.id === selectedId.value;
+    const isCurrent = place.id === props.locationId;
+    if (isSelected || isCurrent) {
+      const radius = isCurrent ? 5.8 : 4.6;
+      const placeOutline = projectRectOutline(
+        `place:${place.id}`,
+        `place:${place.id}`,
+        'place',
+        place.x - radius,
+        place.x + radius,
+        place.z - radius,
+        place.z + radius,
+        0.9,
+        { selected: isSelected, current: isCurrent },
+      );
+      if (placeOutline) nextOutlines.push(placeOutline);
     }
-    const point = new Vector3(place.x, place.y, place.z).project(camera);
-    const x = (point.x + 1) * width / 2;
-    const y = (1 - point.y) * height / 2;
-    return { id: place.id, left: x, top: y,
-      visible: point.z >= -1 && point.z <= 1 && x >= 0 && x <= width && y >= 0 && y <= height };
+    const p = projectWorldPoint(place.x, place.y, place.z);
+    if (!p.visible) return [];
+    const compact = !isSelected && !isCurrent && zoom.value < 1.55 && (narrow || index >= 6);
+    const widthEstimate = compact
+      ? 28
+      : estimateFloatingLabelWidth(place.name, narrow ? 11.5 : 12.5, 34, 68, narrow ? 118 : 144);
+    const priority = isCurrent ? 1.1 : isSelected ? 1.3 : routeIds.has(place.id) ? 2.1 : compact ? 3.5 : 2.7;
+    return [{
+      id: place.id, name: place.name, index: index + 1, left: p.x, top: p.y,
+      anchorX: p.x, anchorY: p.y, compact, widthEstimate, priority,
+    }];
+  });
+
+  outlineZones.value = nextOutlines;
+  const candidates: MapLabelCandidate[] = [
+    ...rawDistricts.map(d => ({ id: `d:${d.id}`, x: d.x, y: d.y, width: d.widthEstimate, height: narrow ? 22 : 24, priority: 0.6 })),
+    ...rawPlaces.map(p => ({ id: `p:${p.id}`, x: p.left, y: p.top, width: p.widthEstimate, height: p.compact ? 26 : 24, priority: p.priority })),
+  ];
+  const layout = arrangeMapLabels(candidates, width, Math.max(80, height - 26));
+  districtPins.value = rawDistricts.flatMap(d => {
+    const box = layout.get(`d:${d.id}`);
+    return box ? [{ ...d, x: box.x, y: box.y }] : [];
+  });
+  pins.value = rawPlaces.map(p => {
+    const box = layout.get(`p:${p.id}`);
+    return box
+      ? { id: p.id, name: p.name, index: p.index, left: box.x, top: box.y, anchorX: p.anchorX, anchorY: p.anchorY, visible: true, compact: p.compact }
+      : { id: p.id, name: p.name, index: p.index, left: p.anchorX, top: p.anchorY, anchorX: p.anchorX, anchorY: p.anchorY, visible: false, compact: p.compact };
   });
 }
 function render() {
@@ -322,13 +461,65 @@ onBeforeUnmount(() => {
         <div class="bj-control-row">
           <button v-for="area in atlas.focusAreas" :key="area.name" type="button" :class="{ active: focus === area.name }" @click="chooseArea(area)">{{ area.name }}</button>
         </div>
-        <div ref="stage" class="bj-stage" :class="{ 'bj-fallback': !!webglError }">
+        <div ref="stage" class="bj-stage" :class="{ 'bj-fallback': !!webglError }" :data-sandbox-theme="night ? 'dark' : 'light'">
           <canvas ref="canvas" class="bj-canvas" aria-label="北京三维城市模型" @contextmenu.prevent @wheel.prevent="onWheel" @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up" @lostpointercapture="up" />
           <div class="bj-pin-layer">
-            <button v-for="pin in pins.filter(p => p.visible)" :key="pin.id" type="button" class="bj-pin" :class="{ selected: pin.id === selectedId, here: pin.id === locationId }"
-              :style="{ left: pin.left + 'px', top: pin.top + 'px' }" :title="atlas.places.find(p => p.id === pin.id)?.name" :aria-label="'选择' + atlas.places.find(p => p.id === pin.id)?.name" @click="select(pin.id)">
-              <span aria-hidden="true">{{ pin.id === locationId ? '●' : '•' }}</span>
-              <b v-if="pin.id === selectedId || zoom >= 2.5">{{ atlas.places.find(p => p.id === pin.id)?.name }}</b>
+            <svg v-if="outlineZones.length" class="bj-outlines sandbox-outlines" aria-hidden="true">
+              <g
+                v-for="zone in outlineZones"
+                :key="zone.id"
+                class="sandbox-outline-zone"
+                :class="{
+                  'is-place': zone.kind === 'place',
+                  selected: zone.selected,
+                  current: zone.current,
+                  hovered: hoveredTargetId === zone.targetId,
+                }"
+              >
+                <polygon class="sandbox-outline-poly" :points="zone.points" />
+                <path v-for="(corner, idx) in zone.corners" :key="idx" class="sandbox-outline-corner" :d="corner" />
+              </g>
+            </svg>
+            <svg v-if="overlayLeaders.length" class="bj-leaders sandbox-leaders" aria-hidden="true">
+              <line
+                v-for="line in overlayLeaders"
+                :key="line.id"
+                class="sandbox-leader-line"
+                :x1="line.x1"
+                :y1="line.y1"
+                :x2="line.x2"
+                :y2="line.y2"
+              />
+            </svg>
+            <button
+              v-for="district in districtPins"
+              :key="district.id"
+              type="button"
+              class="bj-district sandbox-pin sandbox-district-pin"
+              :class="{ selected: district.selected, current: district.current }"
+              :data-bj-district="district.name"
+              :style="{ left: district.x + 'px', top: district.y + 'px' }"
+              @pointerenter="hoveredTargetId = 'area:' + district.name"
+              @pointerleave="hoveredTargetId = ''"
+              @click="chooseArea(district.area)"
+            >
+              <span class="sandbox-floating-title">{{ district.name }}</span>
+            </button>
+            <button
+              v-for="pin in pins.filter(p => p.visible)"
+              :key="pin.id"
+              type="button"
+              class="bj-pin sandbox-pin sandbox-place-pin"
+              :class="{ selected: pin.id === selectedId, here: pin.id === locationId, current: pin.id === locationId, compact: pin.compact }"
+              :style="{ left: pin.left + 'px', top: pin.top + 'px' }"
+              :title="pin.name"
+              :aria-label="'选择' + pin.name"
+              @pointerenter="hoveredTargetId = 'place:' + pin.id"
+              @pointerleave="hoveredTargetId = ''"
+              @click="select(pin.id)"
+            >
+              <span class="sandbox-place-index" aria-hidden="true">{{ pin.index }}</span>
+              <span v-if="!pin.compact" class="sandbox-floating-title">{{ pin.name }}</span>
             </button>
           </div>
           <p v-if="webglError" class="bj-fallback-hint">三维模型暂不可用。地点选择和路线功能仍可通过右侧列表操作。</p>
@@ -375,47 +566,3 @@ onBeforeUnmount(() => {
     </div>
   </section>
 </template>
-
-<style scoped>
-.bj-sandbox { color:#e8e9e9; background:linear-gradient(150deg,#0e1727,#222c38); padding:clamp(10px,2vw,22px); border-radius:16px; width:100%; box-sizing:border-box; }
-.bj-heading { display:flex; gap:18px; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
-.bj-heading h2 { font-size:clamp(20px,2vw,29px); margin:2px 0 5px; }
-.bj-heading p,.bj-muted,.bj-disclaimer { color:#b5c1c7; font-size:12px; }
-.bj-heading small,.bj-eyebrow { color:#91bdd4; letter-spacing:.1em; }
-.bj-heading-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-.bj-sandbox button { font:inherit; cursor:pointer; background:#27394a; border:1px solid #456078; color:inherit; border-radius:8px; padding:7px 10px; }
-.bj-sandbox button:disabled { opacity:.48; cursor:not-allowed; }
-.bj-sandbox button:hover:not(:disabled),.bj-sandbox button.active { background:#34536b; }
-.bj-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,300px); gap:14px; }
-.bj-visual { min-width:0; }
-.bj-control-row,.bj-tools { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
-.bj-tools { margin:8px 0 0; }
-.bj-control-row button,.bj-tools button { padding:6px 9px; font-size:11px; }
-.bj-stage { position:relative; width:100%; height:clamp(330px,54vh,680px); background:#b6cbd3; border:1px solid #4b697a; border-radius:11px; overflow:hidden; }
-.bj-stage.bj-fallback { background:linear-gradient(130deg,#e2d9bd,#9eb4b1); }
-.bj-canvas { display:block; width:100%; height:100%; touch-action:none; }
-.bj-pin-layer { position:absolute; inset:0; pointer-events:none; }
-.bj-pin { position:absolute; display:flex; align-items:center; gap:3px; transform:translate(-50%,-50%); font-size:10px!important; border:1px solid #fff9!important; padding:2px 5px!important; white-space:nowrap; background:#243549d9!important; pointer-events:auto; box-shadow:0 1px 4px #0009; }
-.bj-pin span { color:#b6efff; }
-.bj-pin.here { background:#a93845!important; }
-.bj-pin.selected { z-index:8; background:#1b6681!important; border-color:#fff!important; }
-.bj-pin b { font-size:10px; font-weight:500; }
-.bj-stage-note { position:absolute; bottom:6px; left:8px; pointer-events:none; color:#fff; background:#17212acc; padding:4px 7px; border-radius:5px; font-size:10px; }
-.bj-fallback-hint { position:absolute; top:8px; left:8px; right:8px; background:#422c2ade; color:white; padding:6px; font-size:12px; }
-.bj-panel { padding:10px; border:1px solid #465867; border-radius:11px; min-width:0; background:#1b2937; }
-.bj-panel h3 { font-size:20px; margin:3px 0; }
-.bj-panel p { font-size:13px; line-height:1.55; }
-.bj-route-note { padding:8px 10px; border-left:3px solid #739fb3; background:#273847; }
-.bj-sandbox button.bj-go { width:100%; background:#206276; font-weight:700; }
-.bj-search { display:flex; flex-direction:column; gap:5px; font-size:12px; margin:12px 0; }
-.bj-search input { background:#0f1e2c; border:1px solid #526979; color:#e8e9e9; border-radius:6px; padding:8px; width:100%; box-sizing:border-box; }
-.bj-place-list { display:flex; flex-direction:column; gap:4px; max-height:260px; overflow:auto; }
-.bj-place-list button { display:flex; justify-content:space-between; text-align:left; font-size:12px; }
-.bj-place-list button[aria-pressed="true"] { border-color:#a4c6d4; background:#31576f; }
-.bj-place-list small { font-size:10px; color:#c4d3d9; }
-.bj-route-list { margin-top:13px; display:flex; gap:4px; flex-direction:column; }
-.bj-route-list h4 { margin:0 0 4px; font-size:12px; }
-.bj-route-list button { text-align:left; font-size:11px; }
-.bj-disclaimer { margin-top:15px; }
-@media(max-width:750px){ .bj-heading {flex-direction:column;} .bj-layout {grid-template-columns:minmax(0,1fr);} .bj-stage {height:min(65vh,530px); min-height:320px;} .bj-place-list {max-height:210px;} }
-</style>

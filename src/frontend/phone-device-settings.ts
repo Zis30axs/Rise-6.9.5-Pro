@@ -68,7 +68,7 @@ export function worldDeviceSettingsMarkup(win: Window): string {
     <div class="field"><span>共享许可</span><span class="select"><select data-field="world-device-share" aria-label="共享许可">
       ${option('none', '未授权', device.share)}${option('read', '允许查看', device.share)}${option('write', '允许查看与代操作', device.share)}
     </select></span></div>
-    <p class="hint">对方仍须来到你身边才能接触手机。锁定后按照共享许可控制查看或代操作；未锁定时，附近的人可能直接访问，即使没有许可也会留下操作记录。</p>
+    <p class="hint">对方仍须来到你所在地点或同一房间才能接触手机。锁定后按照共享许可控制查看或代操作；未锁定时，同在当地的人可能直接访问，即使没有许可也会留下操作记录。</p>
     <div class="actions"><button type="button" class="secondary" data-action="world-device-save">保存锁屏与共享</button></div>
   </div>`;
 }

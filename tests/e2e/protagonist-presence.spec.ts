@@ -89,7 +89,7 @@ for (const viewport of viewports) {
     await page.getByRole('button', { name: '收起正文', exact: true }).click();
     const shortcut = page.getByRole('button', { name: '与丰川祥子搭话', exact: true });
     await expect(shortcut).toBeVisible();
-    await expect(shortcut).toContainText('7米');
+    await expect(shortcut).toContainText('同在此地');
     await page.screenshot({ path: `${out}/${size}-sports-3d.png` });
     await shortcut.click();
     await expect(page.locator('textarea')).toHaveValue(/向丰川祥子打招呼/);

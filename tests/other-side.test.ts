@@ -178,7 +178,8 @@ describe('otherside sampled cross-view narrative', () => {
     function emmaAt1720WithSoyoOtherSide() {
       return eligible(state => {
         const switched = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
-        Object.assign(state, switched);
+        const indoors = reduceState(switched, { type: 'novel_travel', locationId: 'emma-yuki-home' });
+        Object.assign(state, indoors);
         state.clock = { day: 1, hour: 17, minute: 20 };
         const bg = state.protagonists!.backgroundLife!;
         bg.cursor = 17 * 60 + 20;

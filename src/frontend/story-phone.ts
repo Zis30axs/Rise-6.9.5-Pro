@@ -1,7 +1,7 @@
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import type { CharacterPortraitId, ContactProfileDraft, WorldState } from './types';
 import { validateContactProfileDraft } from '../runtime/characters';
-import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, SCENE_ENCOUNTER_DISTANCE } from '../runtime/scene-context';
+import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, isSameScenePlace, sceneLocationId } from '../runtime/scene-context';
 import { characterForPerson } from './character-appearance';
 import { affinityContactLine } from '../runtime/affinity-tiers';
 import { novelNpcAtlases } from './novel-npc-atlases';
@@ -43,12 +43,12 @@ const contactsOf = (state: WorldState): StoryPhoneContact[] => state.contacts.ma
 function candidatesOf(state: WorldState): StoryPhoneContact[] {
   if (!state.scene) return [];
   const scene = state.scene;
-  const point = state.interior ?? scene;
+  const targetLocationId = state.interior?.roomId ?? sceneLocationId(scene.areaId);
   const people = state.interior ? getInteriorPeople(state.interior.roomId, state.contacts, state.clock, hiddenProtagonistPersons(state))
     : getScenePeople(scene, state.contacts, state.clock, hiddenProtagonistPersons(state));
   const met = new Set(state.story.flatMap(entry => entry.participantIds ?? []));
   return people.filter(person => !state.contacts.some(contact => contact.id === person.id || contact.sourcePersonId === person.id)
-    && (person.id === scene.encounterId || met.has(person.id) || Math.hypot(person.x - point.x, person.z - point.z) <= SCENE_ENCOUNTER_DISTANCE))
+    && (person.id === scene.encounterId || met.has(person.id) || isSameScenePlace(person, targetLocationId, !!state.interior)))
     .map(person => ({ id: person.id, sourcePersonId: person.id, name: person.name, description: person.description,
       summary: '', portraitId: characterForPerson(person.id), isMain: false }));
 }

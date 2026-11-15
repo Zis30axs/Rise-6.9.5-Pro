@@ -1,13 +1,25 @@
 /* 3D Tactile Scrapbook inside Unread City floating window (ShadowRoot stylesheet). */
 .floating-window[data-window="notebook"] {
-  width: min(1160px, calc(100% - 144px));
-  height: min(860px, calc(var(--uc-viewport-height, 100dvh) - 96px));
-  max-height: calc(var(--uc-viewport-height, 100dvh) - 96px);
-  top: 56px;
+  width: min(1480px, calc(100% - 128px));
+  height: calc(var(--uc-viewport-height, 100dvh) - 48px);
+  max-height: calc(var(--uc-viewport-height, 100dvh) - 48px);
+  top: 24px;
+  left: 20px;
+  transform: none;
   background: #f3ede1;
   color: #2e2924;
   border: 1px solid rgba(118, 102, 80, 0.34);
   box-shadow: 0 22px 80px rgba(10, 22, 17, 0.56);
+}
+.floating-window[data-window="notebook"].notebook-expanded {
+  inset: 8px !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  z-index: 95;
+  border-radius: 12px;
 }
 .floating-window[data-window="notebook"] .window-heading {
   background: #1d362b;
@@ -240,8 +252,14 @@
   flex: 1;
   min-height: 460px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 338px;
+  grid-template-columns: minmax(0, 1fr) 304px;
   gap: 10px;
+}
+.nb-studio-grid.is-workshop-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+.nb-studio-grid.is-workshop-collapsed .nb-workshop-pane {
+  display: none;
 }
 
 /* 3D Stage Card */
@@ -264,7 +282,10 @@
   transition: background 0.3s ease;
 }
 .nb-stage-card.is-locked {
-  touch-action: pan-y;
+  cursor: grab;
+}
+.nb-stage-card.is-panning {
+  cursor: grabbing;
 }
 .nb-stage-card[data-desk-mood="lamp"] {
   background:
@@ -310,6 +331,12 @@
   font-size: 11px;
   font-weight: 600;
   color: #3f372e;
+}
+.nb-zoom-chip {
+  cursor: pointer;
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .nb-stage-viewport {
@@ -1456,6 +1483,9 @@
   .nb-studio-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
+  }
+  .nb-studio-grid.is-workshop-collapsed {
+    grid-template-rows: minmax(0, 1fr);
   }
   .nb-stage-card {
     min-height: 360px;

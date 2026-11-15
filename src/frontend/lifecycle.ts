@@ -561,8 +561,14 @@ export function mountShell(
       }
       if (model.busy) return;
       try {
-        const next = reduceState(snapshot(), action);
-        saveWithSms(next);
+        const current = snapshot();
+        const next = reduceState(current, action);
+        if (action.type === 'debug_update' && gameMinute(next) < gameMinute(current)) {
+          bridge.save(next);
+          model.state = next;
+        } else {
+          saveWithSms(next);
+        }
         worldPhone.notify();
         model.notice = '';
         if (storyPhone && action.type !== 'walk' && action.type !== 'interior_walk' && action.type !== 'encounter') void storyPhone.sync().catch(() => {});

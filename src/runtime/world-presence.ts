@@ -3,7 +3,7 @@ import { characterForPerson } from '../frontend/character-appearance';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { PROTAGONIST_PERSON_ID_LIST, protagonistPersonId, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, otherProtagonists, personState, protagonistNames, type PersonalState } from './protagonist-world';
-import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, selectSceneRoster, scenePersonAnchors, SCENE_ENCOUNTER_DISTANCE, sceneLocationId, type ScenePerson } from './scene-context';
+import { getInteriorPeople, getInteriorPeopleForValidation, getSceneArea, getSceneContext, getScenePeople, selectSceneRoster, scenePersonAnchors, sceneLocationId, type ScenePerson } from './scene-context';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { getCampusInterior } from './campus-interiors';
 import { activeOtherSideNpcLocation } from './other-side';
@@ -131,6 +131,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
         identity: '常驻居民', tags: ['常驻人物'],
         description: `${contact?.summary ? contact.summary.slice(0, 160) + '；' : ''}${override.status}`,
         x: roomAnchor?.x ?? outdoorAnchor?.x ?? 0, z: roomAnchor?.z ?? outdoorAnchor?.z ?? 0,
+        locationId: override.locationId, pinned: true,
         color: 0x859c6d, portraitId: contact?.portraitId ?? characterForPerson(resident.id),
         contactId: contact?.id ?? null, isMain: contact?.isMain ?? false,
       });
@@ -151,16 +152,15 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
       !!room || !scene || sceneLocationId(scene.areaId)!==agenda.locationId) continue;
     const roomAnchor=room ? getInteriorPeopleForValidation(room.id).find(person=>person.id===resident.id)
       ??{x:room.spawn.x,z:room.spawn.z}:null;
-    const outdoorAnchor=!room?scenePersonAnchors.find(anchor=>{
-      const area=getSceneArea(anchor.x,anchor.z);
-      return area && sceneLocationId(area.id)===agenda.locationId && anchor.id===resident.id;
-    })??sceneLandmarks.find(row=>sceneLocationId(row.id)===agenda.locationId):null;
+    const outdoorAnchor=!room?scenePersonAnchors.find(anchor=>anchor.locationId===agenda.locationId&&anchor.id===resident.id)
+      ??scenePersonAnchors.find(anchor=>anchor.locationId===agenda.locationId)
+      ??sceneLandmarks.find(row=>sceneLocationId(row.id)===agenda.locationId):null;
     const anchor=roomAnchor??outdoorAnchor;
     if(!anchor)continue;
     const contact=state.contacts.find(row=>row.id===resident.id||row.sourcePersonId===resident.id);
     people.push({id:resident.id,name:contact?.name??resident.name,candidateName:resident.name,
       identity:'常驻居民',tags:['常驻人物'],description:agenda.detail,
-      x:anchor.x,z:anchor.z,color:0x859c6d,portraitId:contact?.portraitId??characterForPerson(resident.id),
+      x:anchor.x,z:anchor.z,locationId:agenda.locationId,pinned:true,color:0x859c6d,portraitId:contact?.portraitId??characterForPerson(resident.id),
       contactId:contact?.id??null,isMain:contact?.isMain??false});
   }
   if (!state.protagonists) return people.filter(person => !isNpcUnderCourtRestriction(state,person.id,state.clock.day,state.clock.hour));
@@ -180,7 +180,7 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
         candidateName:protagonistNames[owner],identity:summoned?'被告当事人':'法律协助人员',
         tags:['法庭','主角',summoned?'被告':'协助'],
         description:summoned?'应诉并保留独立知情范围与人格立场。':'协助整理案卷与出庭论证。',
-        x:summoned?2.4:-2.4,z:0.8,color:0x859c6d,
+        x:summoned?2.4:-2.4,z:0.8,locationId:'court-hearing',pinned:true,color:0x859c6d,
         portraitId:contact?.portraitId ?? characterForPerson(id),
         contactId:contact?.id ?? null,isMain:true,
       });
@@ -192,11 +192,12 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
     if (state.interior ? personal.interior?.roomId !== state.interior.roomId : !!personal.interior) continue;
     const position = worldScenePosition(personal);
     if (!position) continue;
+    const otherLocationId = personal.interior?.roomId ?? (personal.scene ? sceneLocationId(personal.scene.areaId) : personal.locationId);
     const id = protagonistSceneId(owner), contact = protagonistContact(state.contacts, owner);
     people.push({
       id, protagonistId: owner, name: contact?.name ?? protagonistNames[owner], candidateName: protagonistNames[owner],
       identity: '主角', tags: ['主角'], description: contact?.summary ?? '她正在这里。',
-      x: position.x, z: position.z, color: 0x859c6d,
+      x: position.x, z: position.z, locationId: otherLocationId, color: 0x859c6d,
       portraitId: contact?.portraitId ?? characterForPerson(id), contactId: contact?.id ?? null, isMain: true,
     });
   }
@@ -206,7 +207,12 @@ export function worldScenePeople(state: WorldState): WorldScenePerson[] {
 /** Rendering, talk targeting and model context share the same saved population. */
 export function worldSceneRoster(state: WorldState, population = worldScenePeople(state)) {
   const position = worldScenePosition(state);
-  return position ? selectSceneRoster(population, position, !!state.interior, state.scene?.encounterId) : [];
+  if (!position) return [];
+  const locationId = state.interior?.roomId ?? (state.scene ? sceneLocationId(state.scene.areaId) : state.locationId);
+  const seed = state.scene?.seed ?? 'novel-world-v1';
+  return selectSceneRoster(population, position, !!state.interior, state.scene?.encounterId, {
+    locationId, seed, clock: state.clock,
+  });
 }
 
 export function worldSceneContext(state: WorldState) {
@@ -215,10 +221,163 @@ export function worldSceneContext(state: WorldState) {
   return { ...scene, weather: weatherNarrative(resolveWeather(state)) };
 }
 
-/** Hearing a nearby conversation does not confer physical access to another phone. */
+/** Co-located protagonists share a location or room; still does not confer phone access without permission. */
 export function protagonistsInTalkingRange(state: WorldState): (WorldScenePerson & { protagonistId: ProtagonistId })[] {
-  const position = worldScenePosition(state);
-  if (!position) return [];
-  return worldScenePeople(state).filter((person): person is WorldScenePerson & { protagonistId: ProtagonistId } =>
-    !!person.protagonistId && Math.hypot(person.x - position.x, person.z - position.z) <= SCENE_ENCOUNTER_DISTANCE);
+  return worldSceneRoster(state)
+    .map(row => row.person)
+    .filter((person): person is WorldScenePerson & { protagonistId: ProtagonistId } => !!person.protagonistId);
+}
+
+export interface WorldMapRadarPerson {
+  person: WorldScenePerson;
+  locationId: string;
+  placeId: string;
+  atCurrentPlace: boolean;
+  kind: 'person' | 'passerby';
+  canTalk: boolean;
+  distance: number;
+}
+
+/** Map radar: full active-location roster plus known contacts & protagonists elsewhere.
+ * Never exposes unacquainted strangers in remote districts or unarrived private itineraries.
+ */
+export function worldMapRadarPeople(state: WorldState): WorldMapRadarPerson[] {
+  const currentLocationId = state.interior?.roomId ?? (state.scene ? sceneLocationId(state.scene.areaId) : state.locationId);
+  const currentRoster = worldSceneRoster(state);
+  const currentIds = new Set(currentRoster.map(row => row.person.id));
+  const result: WorldMapRadarPerson[] = currentRoster.map(({ person, distance, kind, canTalk }) => ({
+    person,
+    locationId: currentLocationId,
+    placeId: state.interior ? getCampusInterior(state.interior.roomId)?.parentLocationId ?? currentLocationId : currentLocationId,
+    atCurrentPlace: true,
+    kind,
+    canTalk,
+    distance,
+  }));
+
+  const seenRemote = new Set<string>();
+  const resolveAnchorPoint = (anchorId?: string | null, locationId?: string | null) => {
+    if (anchorId) {
+      const anchor = scenePersonAnchors.find(a => a.id === anchorId);
+      if (anchor) return { x: anchor.x, z: anchor.z, locationId: anchor.locationId };
+    }
+    if (locationId) {
+      const room = getCampusInterior(locationId);
+      if (room) return { x: room.entrance.x, z: room.entrance.z, locationId: room.id };
+      const anchor = scenePersonAnchors.find(a => a.locationId === locationId);
+      if (anchor) return { x: anchor.x, z: anchor.z, locationId: anchor.locationId };
+      const landmark = sceneLandmarks.find(l => sceneLocationId(l.id) === locationId);
+      if (landmark) return { x: landmark.x, z: landmark.z, locationId: sceneLocationId(landmark.id) };
+    }
+    return null;
+  };
+
+  if (state.protagonists) {
+    const active = activeProtagonist(state);
+    for (const owner of otherProtagonists(active)) {
+      const id = protagonistSceneId(owner);
+      seenRemote.add(id);
+      if (currentIds.has(id)) continue;
+      const personal = personState(state, owner);
+      const room = personal.interior ? getCampusInterior(personal.interior.roomId) : null;
+      const outdoorLoc = personal.scene ? sceneLocationId(personal.scene.areaId) : personal.locationId;
+      const locationId = room ? room.id : outdoorLoc;
+      const placeId = room ? room.parentLocationId : locationId;
+      const pos = room ? room.entrance : worldScenePosition(personal) ?? resolveAnchorPoint(null, locationId);
+      if (!pos) continue;
+      const contact = protagonistContact(state.contacts, owner);
+      result.push({
+        person: {
+          id, protagonistId: owner,
+          name: contact?.name ?? protagonistNames[owner],
+          candidateName: protagonistNames[owner],
+          identity: '主角', tags: ['主角'],
+          description: contact?.summary ?? '她正在这里。',
+          x: pos.x, z: pos.z, locationId,
+          color: 0x859c6d, portraitId: contact?.portraitId ?? characterForPerson(id),
+          contactId: contact?.id ?? null, isMain: true,
+        },
+        locationId, placeId, atCurrentPlace: false, kind: 'person', canTalk: false, distance: 0,
+      });
+    }
+  }
+
+  const activeOwner = state.protagonists ? activeProtagonist(state) : 'soyo';
+  const acceptedInviteTargets = new Set(
+    (state.protagonists?.socialInvitations ?? [])
+      .filter(inv => inv.status === 'accepted' && inv.owner === activeOwner)
+      .map(inv => state.contacts.find(c => c.id === inv.targetId || c.sourcePersonId === inv.targetId)?.sourcePersonId ?? inv.targetId),
+  );
+  const trackedIds = new Set<string>();
+  for (const contact of state.contacts) {
+    const pid = contact.sourcePersonId ?? contact.id;
+    if (pid) trackedIds.add(pid);
+  }
+  for (const pid of acceptedInviteTargets) trackedIds.add(pid);
+
+  for (const targetId of trackedIds) {
+    if (seenRemote.has(targetId) || currentIds.has(targetId)) continue;
+    if (state.protagonists && (PROTAGONIST_PERSON_ID_LIST.includes(targetId) || targetId.startsWith('protagonist-'))) continue;
+    if (isNpcUnderCourtRestriction(state, targetId, state.clock.day, state.clock.hour)) continue;
+    seenRemote.add(targetId);
+
+    const contact = state.contacts.find(c => c.sourcePersonId === targetId || c.id === targetId);
+    const resident = allResidentCast.find(r => r.id === targetId);
+    if (resident) {
+      const agenda = state.protagonists ? residentSocialAgendaPresence(state, resident.id) : null;
+      if (agenda && agenda.phase !== 'present') continue;
+      let locationId: string | null = null;
+      let pt: { x: number; z: number } | null = null;
+      let description = contact?.summary ?? resident.publicProfile;
+      if (agenda?.phase === 'present') {
+        if (!contact && !acceptedInviteTargets.has(resident.id)) continue;
+        locationId = agenda.locationId;
+        pt = resolveAnchorPoint(null, locationId);
+        description = agenda.detail;
+      } else if (contact) {
+        const override = activeOtherSideNpcLocation(state, resident.id);
+        const scheduled = residentPresence(resident.id, state.clock);
+        if (override) {
+          locationId = override.locationId;
+          pt = resolveAnchorPoint(scheduled?.anchorId, override.locationId);
+          description = override.status;
+        } else if (scheduled?.available) {
+          locationId = scheduled.locationId;
+          pt = resolveAnchorPoint(scheduled.anchorId, scheduled.locationId);
+        }
+      }
+      if (!locationId || !pt) continue;
+      if (state.interior ? locationId === state.interior.roomId : locationId === currentLocationId) continue;
+      const room = getCampusInterior(locationId);
+      const placeId = room ? room.parentLocationId : locationId;
+      result.push({
+        person: {
+          id: resident.id, name: contact?.name ?? resident.name, candidateName: resident.name,
+          identity: '常驻居民', tags: ['常驻人物'], description,
+          x: pt.x, z: pt.z, locationId, color: 0x859c6d,
+          portraitId: contact?.portraitId ?? characterForPerson(resident.id),
+          contactId: contact?.id ?? null, isMain: contact?.isMain ?? true,
+        },
+        locationId, placeId, atCurrentPlace: false, kind: 'person', canTalk: false, distance: 0,
+      });
+      continue;
+    }
+
+    if (contact?.sourcePersonId?.startsWith('ped-')) {
+      const anchor = scenePersonAnchors.find(a => contact.sourcePersonId!.endsWith('-' + a.id));
+      if (!anchor || (!state.interior && anchor.locationId === currentLocationId)) continue;
+      result.push({
+        person: {
+          id: contact.sourcePersonId, name: contact.name, candidateName: contact.name,
+          identity: contact.tag || '认识的路人', tags: ['联系人'], description: contact.summary,
+          x: anchor.x, z: anchor.z, locationId: anchor.locationId, color: 0x859c6d,
+          portraitId: contact.portraitId, contactId: contact.id, isMain: contact.isMain,
+        },
+        locationId: anchor.locationId, placeId: anchor.locationId,
+        atCurrentPlace: false, kind: 'person', canTalk: false, distance: 0,
+      });
+    }
+  }
+
+  return result;
 }
