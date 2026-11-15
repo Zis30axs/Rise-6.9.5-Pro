@@ -25,6 +25,7 @@ import { createSocietyState, parseSocietyState, type SocietyState } from './soci
 import { createFactionFocusState, parseFactionFocusState, type FactionFocusWorldState } from './faction-focus';
 import { settleFactionFocusWorld } from './faction-focus-world';
 import { applyStockCommand, parseStockAccounts, reviewStockEvent, settleStockWorld, STOCK_CALENDAR_LOCATION, STOCK_MAX_MINUTE, stockName, type StockAccounts, type StockCommand } from './stock-world';
+import { settleStockDividends } from './stock-market/intelligence';
 import { fitsMarketSession } from './stock-market/market.mjs';
 
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
@@ -409,6 +410,21 @@ export function finishPersonalChange(before: WorldState, after: WorldState, note
   settleSocialAgendas(before,next);
   settlePhoneTime(next);
   settleStockWorld(before,next);
+  settleStockDividends({
+    minuteBefore: gameMinute(before),
+    minuteAfter: gameMinute(next),
+    stockAccounts: p.stockAccounts,
+    hasJournalId: (owner, id) => personState(next, owner).journal.some(entry => entry.id === id),
+    pushJournal: (owner, entry) => {
+      const target = personState(next, owner);
+      target.journal.push(entry);
+      target.journal = target.journal.slice(-100);
+    },
+    notify: (owner, id, text) => {
+      const d = next.protagonists!.devices[owner];
+      if (d.notifications.length < 200 || d.notifications.some(n => n.read)) notify(next, owner, id, text);
+    },
+  });
   captureNewJournalEvidence(before,next);
   settleWeeklyMemory(next);
   p.revision++; return next;

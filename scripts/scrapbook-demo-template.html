@@ -1,0 +1,4456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>未读之城 · 3D 桌面手账工作台</title>
+  <style>
+    :root {
+      --desk-bg-top: #f2ece0;
+      --desk-bg-bottom: #dfd5c2;
+      --panel-bg: rgba(252, 249, 243, 0.92);
+      --panel-border: rgba(118, 102, 80, 0.18);
+      --ink-main: #2e2924;
+      --ink-muted: #6e655b;
+      --accent: #4e6b58;
+      --accent-soft: #e3ece5;
+      --warn: #b24c3d;
+      --shadow-soft: 0 18px 46px rgba(42, 33, 21, 0.14);
+      --book-cover: #cfd8c1;
+      --book-accent: #8e9e82;
+      --book-spine: #6d7f63;
+      --book-metal: #d2b47c;
+      --book-ink: #35483c;
+      --book-ribbon: #76917c;
+      --book-liner: #ece9dc;
+      --sheen-x: 32%;
+      --sheen-y: 26%;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      color: var(--ink-main);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 28% 22%, rgba(255, 252, 244, 0.85) 0%, transparent 55%),
+        linear-gradient(160deg, var(--desk-bg-top) 0%, var(--desk-bg-bottom) 100%);
+    }
+
+    .workbench {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 14px 16px;
+      gap: 10px;
+    }
+
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 14px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 8px 24px rgba(45, 36, 22, 0.07);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--book-cover);
+      border: 1.5px solid var(--book-metal);
+      color: var(--book-ink);
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .owner-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pill-btn {
+      appearance: none;
+      border: 1px solid rgba(90, 78, 60, 0.22);
+      background: #fffdf9;
+      color: var(--ink-main);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .pill-btn:hover {
+      background: #f5efe3;
+      transform: translateY(-1px);
+    }
+    .pill-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(53, 82, 63, 0.24);
+    }
+    .pill-btn.soft-active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(78, 107, 88, 0.45);
+    }
+
+    .camera-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .sep {
+      width: 1px;
+      height: 18px;
+      background: rgba(90, 78, 60, 0.18);
+      margin: 0 2px;
+    }
+
+    /* Main 2-column Workspace */
+    .studio-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 356px;
+      gap: 12px;
+      min-height: 620px;
+    }
+
+    /* 3D Desk Mat Stage */
+    .stage-card {
+      position: relative;
+      border-radius: 20px;
+      border: 1px solid rgba(95, 82, 62, 0.22);
+      overflow: hidden;
+      min-height: 540px;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(255, 250, 241, 0.46) 0%, rgba(193, 181, 158, 0.28) 100%),
+        linear-gradient(90deg, rgba(84, 102, 87, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(0deg, rgba(84, 102, 87, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
+        #dcd5c5;
+      box-shadow: inset 0 0 60px rgba(62, 48, 28, 0.12), var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: background 0.35s ease, box-shadow 0.35s ease;
+      touch-action: none;
+    }
+    .stage-card.is-locked {
+      touch-action: pan-y;
+    }
+    .stage-card[data-desk-mood="lamp"] {
+      background:
+        radial-gradient(ellipse at 68% 36%, rgba(255, 224, 152, 0.38) 0%, rgba(214, 158, 92, 0.14) 40%, rgba(28, 20, 12, 0.62) 84%),
+        linear-gradient(90deg, rgba(255, 226, 178, 0.06) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(0deg, rgba(255, 226, 178, 0.06) 1px, transparent 1px) 0 0 / 28px 28px,
+        #3a2d21;
+      box-shadow: inset 0 0 84px rgba(18, 12, 7, 0.56), var(--shadow-soft);
+    }
+    .stage-card[data-desk-mood="night"] {
+      background:
+        radial-gradient(circle at 50% 48%, rgba(255, 232, 184, 0.24) 0%, rgba(74, 102, 152, 0.12) 44%, rgba(12, 16, 28, 0.88) 86%),
+        radial-gradient(rgba(255, 250, 228, 0.35) 1px, transparent 1px) 12px 18px / 96px 84px,
+        radial-gradient(rgba(195, 220, 255, 0.3) 1px, transparent 1px) 48px 52px / 132px 110px,
+        #182032;
+      box-shadow: inset 0 0 96px rgba(8, 10, 18, 0.72), var(--shadow-soft);
+    }
+
+    .stage-hud-top {
+      position: relative;
+      z-index: 6;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 14px 0;
+      pointer-events: none;
+    }
+    .hud-actions-row {
+      pointer-events: auto;
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud-btn {
+      appearance: none;
+      border: 1px solid rgba(92, 79, 59, 0.2);
+      background: rgba(255, 252, 245, 0.88);
+      color: var(--ink-main);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: transform 0.12s ease, background 0.14s ease, border-color 0.14s ease;
+    }
+    .hud-btn:hover {
+      background: #fffdf8;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .hud-btn.active,
+    .hud-btn.active:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .hud-chip {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(255, 252, 245, 0.84);
+      border: 1px solid rgba(92, 79, 59, 0.18);
+      font-size: 12px;
+      color: var(--ink-muted);
+      backdrop-filter: blur(8px);
+    }
+    .hud-chip strong {
+      color: var(--ink-main);
+    }
+
+    .stage-viewport {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      min-height: 440px;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .stage-viewport.is-rotating {
+      cursor: grabbing;
+    }
+    .stage-viewport.is-locked {
+      cursor: default;
+    }
+
+    .desk-shadow {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 440px;
+      height: 510px;
+      border-radius: 36px;
+      background: radial-gradient(ellipse at center, rgba(46, 34, 18, 0.34) 0%, rgba(46, 34, 18, 0.12) 55%, transparent 76%);
+      pointer-events: none;
+      transition: width 0.52s ease, opacity 0.35s ease;
+    }
+
+    /* 3D Spatial Solid Anchor */
+    #book-anchor {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .book-solid {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0;
+      height: 0;
+      transform-style: preserve-3d;
+      pointer-events: none;
+      will-change: transform;
+    }
+    .book-solid.is-gliding {
+      transition: transform 0.52s cubic-bezier(0.22, 0.86, 0.3, 1);
+    }
+
+    /* Right Wing Base (x: 0..356, y: -246..+246) */
+    .book-right-wing {
+      position: absolute;
+      left: 0;
+      top: -246px;
+      width: 356px;
+      height: 492px;
+      transform-style: preserve-3d;
+      pointer-events: none;
+    }
+
+    /* Left Hinged Flap Wing (pivots at x=0, z=hingeZ=3.5px) */
+    .book-hinge {
+      position: absolute;
+      left: 0;
+      top: -246px;
+      width: 356px;
+      height: 492px;
+      transform-style: preserve-3d;
+      transform-origin: 0% 50%;
+      pointer-events: none;
+      transition: transform 0.68s cubic-bezier(0.22, 0.86, 0.3, 1);
+    }
+
+    /* Hardcover Exterior Faces */
+    .cover-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 4px 14px 14px 4px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background:
+        radial-gradient(circle at var(--sheen-x) var(--sheen-y), rgba(255, 255, 255, 0.24) 0%, transparent 56%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 2px, rgba(0, 0, 0, 0.025) 2px 4px),
+        linear-gradient(145deg, var(--book-cover), var(--book-accent));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26), inset 0 0 28px rgba(0, 0, 0, 0.14);
+      padding: 26px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--book-ink);
+    }
+
+    .cover-front {
+      transform: translateZ(14.5px);
+      overflow: hidden;
+      background:
+        radial-gradient(circle at var(--sheen-x) var(--sheen-y), rgba(255, 255, 255, 0.3) 0%, transparent 52%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0 2px, rgba(0, 0, 0, 0.03) 2px 4px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 6px),
+        linear-gradient(148deg, var(--book-cover), var(--book-accent));
+    }
+    .cover-front.cover-active-ring {
+      box-shadow: inset 0 0 0 2px var(--book-metal), inset 0 0 28px rgba(0, 0, 0, 0.16);
+    }
+    .cover-front::before {
+      content: "";
+      position: absolute;
+      inset: 12px 14px 12px 20px;
+      border: 1.5px solid color-mix(in srgb, var(--book-metal) 82%, transparent);
+      border-radius: 3px 11px 11px 3px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cover-front::after {
+      content: "";
+      position: absolute;
+      inset: 18px 20px 18px 26px;
+      border: 1px dashed color-mix(in srgb, var(--book-metal) 68%, rgba(255,255,255,0.4));
+      border-radius: 2px 8px 8px 2px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cover-deco-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cover-ribbon-sash {
+      position: absolute;
+      right: 54px;
+      top: 0;
+      bottom: 0;
+      width: 22px;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.12),
+        var(--book-ribbon) 22%,
+        color-mix(in srgb, var(--book-ribbon) 78%, #fff) 50%,
+        var(--book-ribbon) 78%,
+        rgba(0, 0, 0, 0.14)
+      );
+      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.16), 2px 0 8px rgba(0, 0, 0, 0.14);
+      opacity: 0.92;
+    }
+    .cover-ribbon-sash::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      top: 0;
+      bottom: 0;
+      border-left: 1px dashed rgba(255, 255, 255, 0.35);
+      border-right: 1px dashed rgba(255, 255, 255, 0.35);
+    }
+    .cover-ribbon-bow {
+      position: absolute;
+      right: 43px;
+      bottom: 72px;
+      width: 44px;
+      height: 30px;
+      pointer-events: none;
+      z-index: 3;
+      filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
+    }
+    .cover-front[data-cover-style="classic"] .cover-deco-classic {
+      display: block;
+    }
+    .cover-deco-classic {
+      display: none;
+      position: absolute;
+      inset: 24px 26px 24px 32px;
+      border-radius: 6px;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 18px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 18px);
+      border: 1.5px double color-mix(in srgb, var(--book-metal) 78%, transparent);
+    }
+    .cover-front[data-cover-style="plaid"] .cover-deco-plaid {
+      display: block;
+    }
+    .cover-deco-plaid {
+      display: none;
+      position: absolute;
+      left: 16px;
+      right: 0;
+      top: 126px;
+      bottom: 126px;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 14px, transparent 14px 28px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 14px, transparent 14px 28px),
+        radial-gradient(circle at 8px 0, rgba(255, 252, 244, 0.72) 4px, transparent 4.5px);
+      background-size: auto, auto, 16px 12px;
+      background-repeat: repeat, repeat, repeat-x;
+      background-position: 0 0, 0 0, 0 0;
+      border-top: 2px solid color-mix(in srgb, var(--book-metal) 78%, transparent);
+      border-bottom: 2px solid color-mix(in srgb, var(--book-metal) 78%, transparent);
+      box-shadow: inset 0 12px 18px rgba(0, 0, 0, 0.08), 0 6px 14px rgba(0, 0, 0, 0.1);
+    }
+    .cover-deco-botanical {
+      display: none;
+      position: absolute;
+      inset: 18px 20px 18px 26px;
+      color: var(--book-metal);
+      opacity: 0.88;
+    }
+    .cover-front[data-cover-style="botanical"] .cover-deco-botanical {
+      display: block;
+    }
+    .cover-deco-postage {
+      display: none;
+      position: absolute;
+      inset: 26px 26px 26px 32px;
+      border-radius: 6px;
+      background-image: radial-gradient(circle at 0 8px, rgba(255, 248, 232, 0.55) 3px, transparent 3.6px);
+      background-size: 14px 16px;
+      background-position: left top;
+      border: 1.5px dotted rgba(255, 250, 240, 0.58);
+    }
+    .cover-postmark-badge {
+      position: absolute;
+      left: 34px;
+      bottom: 84px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 1.5px dashed color-mix(in srgb, var(--book-metal) 88%, rgba(255, 255, 255, 0.7));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      transform: rotate(-14deg);
+      opacity: 0.72;
+    }
+    .cover-front[data-cover-style="postage"] .cover-deco-postage {
+      display: block;
+    }
+    .cover-plaque, .cover-header-row, .cover-footer {
+      position: relative;
+      z-index: 4;
+    }
+    .cover-items-layer {
+      z-index: 6;
+    }
+    .cover-front-crease {
+      position: absolute;
+      left: 14px;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.26), rgba(255,255,255,0.2), rgba(0,0,0,0.08));
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .cover-plaque {
+      margin: auto 10px;
+      padding: 20px 18px 18px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.94), rgba(250, 245, 234, 0.88));
+      border: 2px solid var(--book-metal);
+      color: #2f2a24;
+      box-shadow:
+        0 0 0 4px rgba(255, 252, 244, 0.28),
+        0 0 0 5px color-mix(in srgb, var(--book-metal) 52%, transparent),
+        0 10px 22px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      text-align: center;
+      position: relative;
+    }
+    .cover-plaque::before,
+    .cover-plaque::after {
+      content: "✦";
+      position: absolute;
+      top: 7px;
+      font-size: 9px;
+      color: var(--book-metal);
+      opacity: 0.9;
+    }
+    .cover-plaque::before { left: 10px; }
+    .cover-plaque::after { right: 10px; }
+    .cover-plaque-tag {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      font-weight: 700;
+      color: #6b5d4d;
+      margin-bottom: 6px;
+    }
+    .cover-plaque-title-input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: center;
+      font: inherit;
+      font-size: 20px;
+      font-weight: 800;
+      color: #26221d;
+      outline: none;
+      padding: 2px 4px;
+      border-radius: 6px;
+    }
+    .cover-plaque-title-input:focus {
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: inset 0 0 0 1px rgba(90, 74, 54, 0.35);
+    }
+    .cover-plaque-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #5b5145;
+    }
+
+    .cover-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      opacity: 0.96;
+      padding-left: 10px;
+      gap: 8px;
+    }
+    .cover-unlock-btn {
+      appearance: none;
+      border: 1px solid var(--book-metal);
+      background: rgba(255, 250, 238, 0.9);
+      color: #3b3123;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .cover-unlock-btn:hover {
+      background: #fffdf7;
+      transform: translateY(-1px);
+    }
+
+    /* Corner Metal Guards */
+    .corner-guard {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-color: var(--book-metal);
+      pointer-events: none;
+      z-index: 5;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+    }
+    .cg-tr { top: 4px; right: 4px; border-top: 5px solid var(--book-metal); border-right: 5px solid var(--book-metal); border-top-right-radius: 11px; }
+    .cg-br { bottom: 4px; right: 4px; border-bottom: 5px solid var(--book-metal); border-right: 5px solid var(--book-metal); border-bottom-right-radius: 11px; }
+    .cg-tl, .cg-bl {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff6dd, var(--book-metal));
+      box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+    }
+    .cg-tl { top: 22px; left: 22px; }
+    .cg-bl { bottom: 22px; left: 22px; }
+
+    /* Clasp Strap (Protrudes on closed front edge) */
+    .book-clasp {
+      appearance: none;
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      width: 50px;
+      height: 62px;
+      margin-top: -31px;
+      padding: 0;
+      border-radius: 8px 14px 14px 8px;
+      background: linear-gradient(135deg, var(--book-spine), var(--book-accent));
+      border: 1.5px solid var(--book-metal);
+      color: #fff8e6;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      transform: translateZ(16.5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.34), 0 0 0 2px rgba(255, 248, 224, 0.22);
+      backface-visibility: hidden;
+      cursor: pointer;
+      transition: transform 0.24s ease, opacity 0.25s ease, filter 0.2s ease;
+      z-index: 8;
+    }
+    .book-clasp:hover {
+      transform: translateZ(18px) translateX(2px);
+      filter: brightness(1.08);
+    }
+    .book-clasp::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff9e5, var(--book-metal));
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.7), 0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    /* Back Cover Exterior (on Right Wing back at -11px, rotated 180deg) */
+    .cover-back {
+      transform: translateZ(-11px) rotateY(180deg);
+      border-radius: 14px 4px 4px 14px;
+      align-items: stretch;
+    }
+    .cover-back::before {
+      content: "";
+      position: absolute;
+      inset: 14px 22px 14px 16px;
+      border: 1px dashed color-mix(in srgb, var(--book-metal) 55%, transparent);
+      border-radius: 10px 3px 3px 10px;
+      pointer-events: none;
+    }
+    .back-pocket {
+      margin-top: auto;
+      height: 148px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.14));
+      border-top: 2px dashed rgba(255, 255, 255, 0.3);
+      border-left: 1px solid rgba(255, 255, 255, 0.14);
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      position: relative;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .back-pocket-ticket {
+      position: absolute;
+      top: -18px;
+      right: 26px;
+      width: 112px;
+      height: 46px;
+      background: #f6eed9;
+      color: #463a2c;
+      border-radius: 4px;
+      border: 1px dashed #b9a481;
+      transform: rotate(5deg);
+      padding: 6px 8px;
+      font-size: 10px;
+      line-height: 1.3;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Extruded Spine Wall & Ribbon */
+    .spine-side-wall {
+      position: absolute;
+      left: -14.5px;
+      top: -246px;
+      width: 29px;
+      height: 492px;
+      transform: translateZ(3.5px) rotateY(-90deg);
+      background: linear-gradient(90deg, rgba(0,0,0,0.22), var(--book-spine) 25%, var(--book-accent) 52%, var(--book-spine) 80%, rgba(0,0,0,0.28));
+      border-top: 4px solid var(--book-metal);
+      border-bottom: 4px solid var(--book-metal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--book-ink);
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .spine-title {
+      writing-mode: vertical-rl;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      opacity: 0.9;
+    }
+    .spine-open-back {
+      position: absolute;
+      left: -14px;
+      top: -246px;
+      width: 28px;
+      height: 492px;
+      transform: translateZ(-11.2px) rotateY(180deg);
+      background: linear-gradient(90deg, var(--book-spine), var(--book-accent), var(--book-spine));
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.35);
+      pointer-events: none;
+    }
+
+    /* Extruded Paper Stack Edges (gives genuine thick book look) */
+    .block-edge {
+      position: absolute;
+      backface-visibility: hidden;
+      pointer-events: none;
+    }
+    .paper-top {
+      left: 2px;
+      top: -7.25px;
+      width: 348px;
+      height: 14.5px;
+      transform: translate3d(0, 2px, -3.75px) rotateX(90deg);
+      background: repeating-linear-gradient(180deg, #f7f1e3 0px, #f7f1e3 1.6px, #ddd1b8 2.6px);
+      border-left: 2px solid var(--book-spine);
+    }
+    .paper-bottom {
+      left: 2px;
+      bottom: -7.25px;
+      width: 348px;
+      height: 14.5px;
+      transform: translate3d(0, -2px, -3.75px) rotateX(-90deg);
+      background: repeating-linear-gradient(180deg, #f3ecdc 0px, #f3ecdc 1.6px, #d7cab0 2.6px);
+    }
+    .paper-fore {
+      right: -3.25px;
+      top: 4px;
+      width: 14.5px;
+      height: 484px;
+      transform: translate3d(0, 0, -3.75px) rotateY(90deg);
+      background: repeating-linear-gradient(90deg, #f7f0e0 0px, #f7f0e0 1.6px, #d8ccb3 2.6px);
+      box-shadow: inset 0 0 8px rgba(72, 54, 28, 0.14);
+    }
+
+    .hinge-top {
+      left: 2px;
+      top: -7.25px;
+      width: 348px;
+      height: 14.5px;
+      transform: translate3d(0, 2px, 7.25px) rotateX(90deg);
+      background: repeating-linear-gradient(180deg, #f7f1e3 0px, #f7f1e3 1.6px, #ddd1b8 2.6px);
+    }
+    .hinge-bottom {
+      left: 2px;
+      bottom: -7.25px;
+      width: 348px;
+      height: 14.5px;
+      transform: translate3d(0, -2px, 7.25px) rotateX(-90deg);
+      background: repeating-linear-gradient(180deg, #f3ecdc 0px, #f3ecdc 1.6px, #d7cab0 2.6px);
+    }
+    .hinge-fore {
+      right: -3.25px;
+      top: 4px;
+      width: 14.5px;
+      height: 484px;
+      transform: translate3d(0, 0, 7.25px) rotateY(90deg);
+      background: repeating-linear-gradient(90deg, #f7f0e0 0px, #f7f0e0 1.6px, #d8ccb3 2.6px);
+    }
+
+    .ribbon-tail {
+      position: absolute;
+      left: 56px;
+      bottom: -34px;
+      width: 16px;
+      height: 40px;
+      background: var(--book-ribbon);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+      transform: translateZ(-2px) rotate(-3deg);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      pointer-events: none;
+    }
+
+    /* 3D Hanging Charm Assembly (grommet, chain, spring-pendulum charm) */
+    .book-charm-mount {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      transform-style: preserve-3d;
+      z-index: 15;
+    }
+    .charm-grommet {
+      position: absolute;
+      left: -8px;
+      top: -8px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3.5px solid var(--charm-metal, #d2b47c);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.7);
+      transform: translateZ(2px);
+      pointer-events: none;
+    }
+    .charm-swing-arm {
+      position: absolute;
+      left: 0;
+      top: 2px;
+      width: 0;
+      height: 0;
+      transform-origin: 0 0;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+    .charm-chain {
+      position: absolute;
+      left: -3px;
+      top: 2px;
+      width: 6px;
+      height: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      transform: translateZ(2px);
+    }
+    .charm-bead {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 30%, #fffdf8, var(--charm-metal, #d2b47c) 68%, rgba(45, 34, 18, 0.55));
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+    .charm-clasp {
+      position: absolute;
+      left: -5px;
+      top: 30px;
+      width: 10px;
+      height: 13px;
+      border-radius: 5px;
+      border: 2.5px solid var(--charm-metal, #d2b47c);
+      transform: translateZ(2.5px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+    .charm-body {
+      position: absolute;
+      left: -32px;
+      top: 40px;
+      width: 64px;
+      height: 68px;
+      transform-style: preserve-3d;
+      transition: filter 0.16s ease;
+    }
+    .charm-swing-arm:hover .charm-body {
+      filter: drop-shadow(0 6px 12px rgba(34, 24, 12, 0.35)) brightness(1.06);
+    }
+    .charm-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .charm-face-front {
+      transform: translateZ(2.5px);
+    }
+    .charm-face-back {
+      transform: translateZ(-2.5px) rotateY(180deg);
+    }
+    .acrylic-shell {
+      width: 58px;
+      height: 62px;
+      border-radius: 16px;
+      padding: 5px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(235, 246, 255, 0.48) 55%, rgba(255, 255, 255, 0.65) 100%);
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      box-shadow:
+        inset 0 0 0 1px rgba(130, 155, 185, 0.35),
+        0 6px 14px rgba(25, 20, 14, 0.28);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .acrylic-shell::before {
+      content: "";
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid var(--charm-metal, #b9c8dc);
+    }
+    .acrylic-shell img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .acrylic-back-plate {
+      width: 58px;
+      height: 62px;
+      border-radius: 16px;
+      background: linear-gradient(155deg, rgba(242, 246, 252, 0.94), rgba(214, 222, 234, 0.9));
+      border: 2px solid rgba(255, 255, 255, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: #556173;
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      box-shadow: 0 6px 14px rgba(25, 20, 14, 0.24);
+    }
+    .acrylic-back-plate img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      opacity: 0.28;
+      transform: scaleX(-1);
+    }
+
+    /* Top Edge 3D Binder Clip */
+    .top-book-clip {
+      position: absolute;
+      right: 46px;
+      top: -15px;
+      width: 44px;
+      height: 28px;
+      transform: translateZ(8px);
+      transform-style: preserve-3d;
+      pointer-events: none;
+    }
+    .clip-wire-arch {
+      position: absolute;
+      left: 8px;
+      top: -13px;
+      width: 28px;
+      height: 18px;
+      border: 2.5px solid var(--clip-wire, #e4c991);
+      border-bottom: 0;
+      border-radius: 14px 14px 0 0;
+      transform: rotateX(-24deg);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .clip-jaw {
+      position: absolute;
+      inset: 4px 0 0;
+      border-radius: 5px 5px 3px 3px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.34), transparent 45%), var(--clip-color, #cca668);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.55);
+      display: grid;
+      place-items: center;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 800;
+    }
+
+    /* Inner Two-Page Spread Surfaces */
+    .spread-page {
+      position: absolute;
+      inset: 4px 6px 4px 2px;
+      border-radius: 3px 8px 8px 3px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 18px 14px;
+      color: #2f2a25;
+      border: 1px solid rgba(110, 92, 66, 0.22);
+      box-shadow: inset 0 0 18px rgba(105, 86, 56, 0.08);
+    }
+    .left-spread-page {
+      transform: translateZ(-0.4px) rotateY(180deg);
+      border-radius: 8px 3px 3px 8px;
+      inset: 4px 2px 4px 6px;
+    }
+    .right-spread-page {
+      transform: translateZ(3.7px);
+    }
+
+    /* 3D Page-Flip Sheet (hinged on book spine between left & right spreads) */
+    .page-flipper {
+      position: absolute;
+      left: 0;
+      top: -246px;
+      width: 356px;
+      height: 492px;
+      transform-origin: 0% 50%;
+      transform-style: preserve-3d;
+      pointer-events: none;
+      z-index: 12;
+      display: none;
+      transform: translateZ(5.5px) rotateY(0deg);
+    }
+    .page-flipper.is-flipping {
+      display: block;
+    }
+    .page-flipper .spread-page {
+      inset: 4px 6px 4px 2px;
+      pointer-events: none;
+      overflow: hidden;
+      box-shadow: inset 0 0 18px rgba(105, 86, 56, 0.1), 0 10px 26px rgba(34, 24, 14, 0.22);
+    }
+    .page-flipper .page-body-input {
+      white-space: pre-wrap;
+      overflow: hidden;
+    }
+    .flip-face-front {
+      transform: translateZ(0.45px);
+      border-radius: 3px 8px 8px 3px;
+    }
+    .flip-face-front::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 28px;
+      background: linear-gradient(270deg, transparent, rgba(72, 54, 30, 0.15));
+      pointer-events: none;
+      z-index: 20;
+    }
+    .flip-face-back {
+      transform: translateZ(-0.45px) rotateY(180deg);
+      border-radius: 8px 3px 3px 8px;
+      inset: 4px 2px 4px 6px !important;
+    }
+    .flip-face-back::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 28px;
+      background: linear-gradient(90deg, transparent, rgba(72, 54, 30, 0.14));
+      pointer-events: none;
+      z-index: 20;
+    }
+    .flip-sheen {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+    }
+    .flip-face-front .flip-sheen {
+      background: linear-gradient(90deg, rgba(64, 48, 30, 0.28) 0%, rgba(255, 252, 244, 0.26) 24%, rgba(56, 42, 26, 0.06) 56%, transparent 82%);
+    }
+    .flip-face-back .flip-sheen {
+      background: linear-gradient(270deg, rgba(64, 48, 30, 0.28) 0%, rgba(255, 252, 244, 0.26) 24%, rgba(56, 42, 26, 0.06) 56%, transparent 82%);
+    }
+
+    /* Spine Gutter Shadow on both inner pages */
+    .left-spread-page::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 28px;
+      background: linear-gradient(90deg, transparent, rgba(72, 54, 30, 0.14));
+      pointer-events: none;
+      z-index: 20;
+    }
+    .right-spread-page::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 28px;
+      background: linear-gradient(270deg, transparent, rgba(72, 54, 30, 0.15));
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Paper Textures */
+    .paper-lined {
+      background-color: #fbf7ed;
+      background-image:
+        linear-gradient(90deg, transparent 34px, rgba(208, 128, 118, 0.22) 35px, transparent 36px),
+        repeating-linear-gradient(180deg, transparent 0, transparent 25px, rgba(124, 146, 160, 0.22) 26px);
+    }
+    .paper-dot {
+      background-color: #fcf9f2;
+      background-image: radial-gradient(rgba(118, 106, 89, 0.28) 1px, transparent 1px);
+      background-size: 14px 14px;
+    }
+    .paper-grid {
+      background-color: #f9f6ee;
+      background-image:
+        linear-gradient(rgba(116, 142, 124, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(116, 142, 124, 0.16) 1px, transparent 1px);
+      background-size: 18px 18px;
+    }
+    .paper-kraft {
+      background-color: #dfc59e;
+      background-image:
+        radial-gradient(rgba(112, 80, 42, 0.08) 1px, transparent 0),
+        repeating-linear-gradient(180deg, transparent 0 26px, rgba(96, 68, 36, 0.12) 27px);
+      background-size: 9px 9px, 100% 27px;
+      color: #362717;
+    }
+    .paper-music {
+      background-color: #faf5e8;
+      background-image: repeating-linear-gradient(
+        180deg,
+        transparent 0 18px,
+        rgba(75, 86, 104, 0.28) 19px, transparent 20px 24px,
+        rgba(75, 86, 104, 0.28) 25px, transparent 26px 30px,
+        rgba(75, 86, 104, 0.28) 31px, transparent 32px 36px,
+        rgba(75, 86, 104, 0.28) 37px, transparent 38px 42px,
+        rgba(75, 86, 104, 0.28) 43px, transparent 44px 58px
+      );
+    }
+
+    .page-active-ring {
+      box-shadow: inset 0 0 0 2px rgba(78, 107, 88, 0.34), inset 0 0 18px rgba(105, 86, 56, 0.08);
+    }
+
+    .page-header {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid rgba(112, 92, 68, 0.18);
+      margin-bottom: 8px;
+    }
+    .page-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .page-date-input {
+      border: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #6b5c49;
+      width: 126px;
+      outline: none;
+    }
+    .page-date-input:focus {
+      background: rgba(255,255,255,0.65);
+      border-radius: 4px;
+    }
+    .badge-row {
+      display: flex;
+      gap: 4px;
+    }
+    .mini-chip-btn {
+      appearance: none;
+      border: 1px solid rgba(106, 89, 66, 0.25);
+      background: rgba(255, 255, 255, 0.62);
+      color: #4f4438;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font: inherit;
+      font-size: 10.5px;
+      cursor: pointer;
+    }
+    .mini-chip-btn:hover { background: #fff; }
+    .page-title-input {
+      border: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 15.5px;
+      font-weight: 700;
+      color: inherit;
+      width: 100%;
+      outline: none;
+    }
+    .page-title-input:focus {
+      background: rgba(255,255,255,0.58);
+      border-radius: 5px;
+    }
+
+    .page-body-input {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      height: 185px;
+      resize: none;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      line-height: 26px;
+      color: inherit;
+      outline: none;
+      padding: 0;
+    }
+    .page-body-input:focus {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 6px;
+    }
+
+    /* Interactive Collage Layer on Page */
+    .page-items-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+    }
+    .scrap-item {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: center center;
+      pointer-events: auto;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+      transition: filter 0.15s ease;
+    }
+    .scrap-item.is-selected {
+      outline: 2px dashed #4e6b58;
+      outline-offset: 4px;
+      border-radius: 8px;
+      filter: drop-shadow(0 6px 12px rgba(32, 46, 36, 0.26));
+    }
+    .scrap-item img.sticker-img {
+      display: block;
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 5px rgba(45, 36, 20, 0.24));
+      pointer-events: none;
+    }
+
+    /* Washi Tape Strip */
+    .washi-tape {
+      width: 132px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      clip-path: polygon(4% 0%, 96% 2%, 100% 34%, 97% 68%, 100% 98%, 3% 97%, 0% 62%, 4% 30%);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+    }
+
+    /* Ink Stamp */
+    .ink-stamp {
+      width: 92px;
+      height: 54px;
+      border: 2.5px solid currentColor;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 0 0 1px currentColor;
+      text-align: center;
+    }
+    .ink-stamp strong { font-size: 12px; letter-spacing: 0.08em; }
+    .ink-stamp span { font-size: 8.5px; letter-spacing: 0.14em; margin-top: 2px; opacity: 0.85; }
+
+    /* Paper Ephemera / Ticket / Polaroid */
+    .clipping-card {
+      width: 158px;
+      border-radius: 5px;
+      padding: 8px 10px;
+      background: #fffdf7;
+      border: 1px solid rgba(90, 74, 52, 0.26);
+      box-shadow: 0 4px 10px rgba(46, 36, 20, 0.18);
+      color: #2f2a24;
+      text-align: left;
+    }
+    .clipping-card.kind-ticket {
+      background: linear-gradient(135deg, #f4efe3, #ebe2cf);
+      border-left: 5px solid var(--clip-accent, #274060);
+    }
+    .clipping-card.kind-receipt {
+      background: #faf9f4;
+      border-style: dashed;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .clipping-card.kind-transit {
+      background: linear-gradient(180deg, #eff5ef, #e4ede6);
+      border-top: 4px solid var(--clip-accent, #4b7359);
+    }
+    .clipping-card.kind-polaroid {
+      width: 132px;
+      padding: 7px 7px 14px;
+      background: #fff;
+      text-align: center;
+    }
+    .polaroid-photo {
+      height: 76px;
+      border-radius: 2px;
+      margin-bottom: 6px;
+      background: linear-gradient(155deg, #f1b684 0%, #c98ba2 45%, #5f759a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .polaroid-photo::after {
+      content: "";
+      position: absolute;
+      inset: 38px -10px -10px;
+      background: rgba(34, 38, 52, 0.42);
+      clip-path: polygon(0 55%, 28% 28%, 54% 48%, 78% 18%, 100% 42%, 100% 100%, 0 100%);
+    }
+    .clip-head {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--clip-accent, #274060);
+    }
+    .clip-sub {
+      font-size: 9.5px;
+      color: #554c41;
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+    .clip-foot {
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(90, 74, 52, 0.24);
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #6b5f50;
+    }
+
+    /* Folded Sticky Note & Glossy Wax Seal */
+    .sticky-note {
+      width: 118px;
+      min-height: 102px;
+      padding: 16px 10px 10px;
+      border-radius: 3px 3px 16px 3px;
+      background:
+        linear-gradient(135deg, transparent 84%, rgba(0, 0, 0, 0.13) 85%, rgba(255, 255, 255, 0.45) 100%),
+        repeating-linear-gradient(180deg, transparent 0 18px, var(--note-line, #e4d383) 19px),
+        var(--note-bg, #fbf0b8);
+      color: var(--note-ink, #4a3d18);
+      box-shadow: 0 6px 14px rgba(56, 44, 24, 0.2);
+      position: relative;
+      font-size: 11px;
+      line-height: 19px;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+    .sticky-note::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      width: 42px;
+      height: 13px;
+      margin-left: -21px;
+      border-radius: 2px;
+      background: color-mix(in srgb, var(--note-pin, #d48d53) 55%, rgba(255,255,255,0.65));
+      box-shadow: 0 1px 3px rgba(0,0,0,0.16);
+    }
+
+    .wax-seal {
+      width: 62px;
+      height: 62px;
+      border-radius: 47% 53% 49% 51% / 52% 46% 54% 48%;
+      background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--wax-outer) 78%, #fff), var(--wax-outer) 58%, var(--wax-inner));
+      box-shadow:
+        0 5px 12px rgba(34, 20, 14, 0.34),
+        inset 0 2px 4px rgba(255, 255, 255, 0.36),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.38);
+      display: grid;
+      place-items: center;
+      color: rgba(255, 244, 232, 0.88);
+    }
+    .wax-seal-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 244, 232, 0.42);
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.32), 0 1px 1px rgba(255, 255, 255, 0.28);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .wax-seal-ring strong { font-size: 18px; line-height: 1; }
+    .wax-seal-ring span { font-size: 6.5px; letter-spacing: 0.1em; margin-top: 2px; }
+
+    /* Pressed Botanical Specimen Card */
+    .pressed-specimen {
+      position: relative;
+      width: 82px;
+      height: 84px;
+      padding: 6px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--pressed-tint, rgba(235, 210, 140, 0.22)) 68%, rgba(255, 253, 248, 0.56));
+      border: 1px dashed rgba(110, 92, 66, 0.28);
+      box-shadow: 0 3px 8px rgba(48, 38, 22, 0.12);
+      display: grid;
+      place-items: center;
+      backdrop-filter: blur(1px);
+    }
+    .pressed-specimen::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      width: 34px;
+      height: 11px;
+      margin-left: -17px;
+      background: rgba(255, 250, 232, 0.72);
+      border: 1px solid rgba(130, 112, 82, 0.2);
+      transform: rotate(-3deg);
+    }
+    .pressed-svg-wrap {
+      width: 62px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 2px 3px rgba(42, 32, 18, 0.18));
+    }
+
+    /* Handwritten Doodles, Speech Bubbles & Coffee Stain */
+    .doodle-bubble {
+      position: relative;
+      min-width: 96px;
+      max-width: 142px;
+      padding: 7px 11px;
+      border-radius: 14px;
+      background: rgba(255, 253, 247, 0.94);
+      border: 2px solid var(--doodle-accent, #4b6856);
+      color: #2f2a24;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: center;
+      box-shadow: 2px 3px 0 rgba(75, 104, 86, 0.16);
+    }
+    .doodle-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      left: 16px;
+      width: 10px;
+      height: 10px;
+      background: rgba(255, 253, 247, 0.96);
+      border-right: 2px solid var(--doodle-accent, #4b6856);
+      border-bottom: 2px solid var(--doodle-accent, #4b6856);
+      transform: rotate(45deg);
+    }
+    .doodle-bubble.is-mirrored::after {
+      left: auto;
+      right: 16px;
+    }
+    .doodle-banner {
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: rgba(255, 251, 238, 0.92);
+      border: 1.5px dashed var(--doodle-accent, #3d567a);
+      color: var(--doodle-accent, #3d567a);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      box-shadow: 0 2px 6px rgba(34, 42, 60, 0.12);
+    }
+    .doodle-gfx-wrap {
+      display: inline-grid;
+      place-items: center;
+    }
+    .is-mirrored-gfx {
+      transform: scaleX(-1);
+    }
+
+    /* Data-Linked Thermal Receipt & Chat Snippet Cards */
+    .paper-receipt {
+      width: 148px;
+      padding: 10px 10px 9px;
+      background: linear-gradient(180deg, #fffdf9 0%, #f7f2e6 100%);
+      color: #2f2a24;
+      border-left: 1px solid rgba(90, 74, 52, 0.22);
+      border-right: 1px solid rgba(90, 74, 52, 0.22);
+      box-shadow: 0 5px 12px rgba(42, 33, 18, 0.18);
+      font-size: 10px;
+      position: relative;
+      text-align: left;
+    }
+    .paper-receipt::before,
+    .paper-receipt::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background:
+        linear-gradient(135deg, transparent 50%, #f7f2e6 50%) 0 0 / 8px 5px repeat-x,
+        linear-gradient(225deg, transparent 50%, #fffdf9 50%) 0 0 / 8px 5px repeat-x;
+    }
+    .paper-receipt::before {
+      top: -5px;
+    }
+    .paper-receipt::after {
+      bottom: -5px;
+      transform: rotate(180deg);
+    }
+    .scrap-item.is-mirrored-item .paper-receipt {
+      box-shadow: -4px 6px 12px rgba(42, 33, 18, 0.18);
+      background: linear-gradient(180deg, #f9f6ee 0%, #f3ecdc 100%);
+    }
+    .receipt-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 10.5px;
+      color: var(--rc-accent, #4b6856);
+      padding-bottom: 4px;
+      border-bottom: 1px dashed rgba(90, 74, 52, 0.3);
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-top: 5px;
+      font-size: 10px;
+      color: #3a332b;
+    }
+    .receipt-price {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .receipt-meta {
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px dotted rgba(90, 74, 52, 0.24);
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 8.5px;
+      color: #6b5f50;
+    }
+
+    .chat-snippet-card {
+      width: 158px;
+      padding: 8px 10px;
+      border-radius: 12px 12px 12px 3px;
+      background: rgba(255, 253, 248, 0.96);
+      border: 1.5px solid color-mix(in srgb, var(--chat-accent, #4b6856) 52%, transparent);
+      border-left: 4px solid var(--chat-accent, #4b6856);
+      box-shadow: 0 4px 11px rgba(36, 31, 22, 0.16);
+      color: #2f2a24;
+      text-align: left;
+    }
+    .scrap-item.is-mirrored-item .chat-snippet-card {
+      border-radius: 12px 12px 3px 12px;
+      border-left: 1.5px solid color-mix(in srgb, var(--chat-accent, #4b6856) 52%, transparent);
+      border-right: 4px solid var(--chat-accent, #4b6856);
+    }
+    .chat-snippet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .chat-snippet-sender {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--chat-accent, #4b6856);
+    }
+    .chat-snippet-sender img {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    .chat-snippet-time {
+      font-size: 8.5px;
+      color: #726758;
+    }
+    .chat-snippet-text {
+      font-size: 10px;
+      line-height: 1.4;
+      color: #363029;
+      word-break: break-word;
+    }
+
+    /* World Data Material Pane */
+    .world-status-card {
+      border: 1px solid rgba(108, 92, 68, 0.2);
+      border-radius: 14px;
+      padding: 10px 11px;
+      background: linear-gradient(180deg, #fffdf8 0%, #f5efe2 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .world-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 8px;
+      align-items: center;
+      font-size: 11.5px;
+    }
+    .world-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(78, 107, 88, 0.12);
+      color: #34503e;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .world-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-top: 2px;
+    }
+    .world-quick-actions .pill-btn {
+      font-size: 10.5px;
+      padding: 5px 4px;
+      justify-content: center;
+    }
+    .world-memory-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(110, 92, 68, 0.12);
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+    .world-memory-badge.is-used {
+      background: rgba(78, 107, 88, 0.18);
+      color: #33553e;
+    }
+    .world-backup-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .import-file-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Stage Bottom Flip Bar */
+    .stage-hud-bottom {
+      position: relative;
+      z-index: 6;
+      padding: 0 14px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .pager-group {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(255, 252, 245, 0.88);
+      border: 1px solid rgba(92, 79, 59, 0.2);
+      backdrop-filter: blur(8px);
+    }
+    .pager-label {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 6px;
+    }
+
+    /* Craft Material Sidebar Dock */
+    .dock-panel {
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      max-height: calc(100vh - 96px);
+    }
+    .dock-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 7px 6px;
+      gap: 3px;
+      background: rgba(235, 228, 214, 0.56);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .dock-tab {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 7px 2px;
+      background: transparent;
+      color: var(--ink-muted);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .dock-tab.active {
+      background: #fffdf8;
+      color: var(--ink-main);
+      box-shadow: 0 2px 8px rgba(48, 38, 22, 0.08);
+    }
+
+    .dock-target-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(118, 102, 80, 0.12);
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    .dock-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sticker-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .asset-btn {
+      appearance: none;
+      border: 1px solid rgba(110, 92, 68, 0.18);
+      background: #fffdf8;
+      border-radius: 12px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: var(--ink-main);
+      font: inherit;
+      font-size: 10.5px;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .asset-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 6px 14px rgba(45, 36, 22, 0.08);
+    }
+    .asset-btn img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+    .asset-btn span {
+      line-height: 1.2;
+      text-align: center;
+      word-break: keep-all;
+    }
+
+    .tape-list, .clipping-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tape-btn, .clip-btn {
+      appearance: none;
+      border: 1px solid rgba(110, 92, 68, 0.2);
+      background: #fffdf9;
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      color: var(--ink-main);
+      font: inherit;
+      font-size: 12px;
+      text-align: left;
+    }
+    .tape-btn:hover, .clip-btn:hover {
+      border-color: var(--accent);
+      background: #f9f6ee;
+    }
+    .tape-swatch {
+      width: 82px;
+      height: 18px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .paper-grid-picker {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .paper-swatch-btn {
+      appearance: none;
+      border: 1.5px solid rgba(110, 92, 68, 0.22);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      color: #362e26;
+    }
+    .paper-swatch-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(78, 107, 88, 0.24);
+    }
+
+    /* Selected Item Inspector Drawer */
+    .inspector-box {
+      border-top: 1px solid var(--panel-border);
+      background: rgba(246, 241, 232, 0.94);
+      padding: 11px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .inspector-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .slider-row {
+      display: grid;
+      grid-template-columns: 44px 1fr 40px;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+    .slider-row input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .inspector-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .btn-danger {
+      color: var(--warn);
+      border-color: rgba(178, 76, 61, 0.34);
+    }
+
+    .toast-pill {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(14px);
+      background: rgba(34, 31, 27, 0.9);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 40;
+    }
+    .toast-pill.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 1024px) {
+      .studio-grid {
+        grid-template-columns: 1fr;
+      }
+      .dock-panel {
+        max-height: none;
+      }
+      .stage-card {
+        min-height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="workbench">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" id="brand-mark">手账</div>
+        <div>
+          <div class="brand-title">未读之城 · 3D 桌面手账工作台</div>
+          <div class="brand-sub" id="brand-sub">拖拽空白桌面可自由旋转手账，点开内页即可写字与拼贴装饰</div>
+        </div>
+      </div>
+
+      <div class="owner-tabs" id="owner-tabs" aria-label="切换手账款式"></div>
+
+      <div class="camera-bar">
+        <button class="pill-btn" id="btn-toggle-open" type="button">翻开手账</button>
+        <div class="sep"></div>
+        <button class="pill-btn" data-cam="angled" type="button">斜侧 3D</button>
+        <button class="pill-btn" data-cam="flat" type="button">平铺编辑</button>
+        <button class="pill-btn soft-active" data-cam="front" type="button">看封面</button>
+        <button class="pill-btn" data-cam="back" type="button">看封底</button>
+        <div class="sep"></div>
+        <button class="pill-btn" id="btn-zoom-out" type="button" title="缩小">－</button>
+        <button class="pill-btn" id="btn-zoom-in" type="button" title="放大">＋</button>
+        <button class="pill-btn" id="btn-lock-view" type="button">锁定视角</button>
+      </div>
+    </header>
+
+    <div class="studio-grid">
+      <!-- Centerpiece 3D Spatial Book Stage -->
+      <section class="stage-card" id="stage-card">
+        <div class="stage-hud-top">
+          <div class="hud-chip">
+            <span id="hud-book-name">森苔手作手账本</span>
+            <span>·</span>
+            <strong id="hud-angle">朝向 -14° · 俯仰 12° · 108%</strong>
+          </div>
+          <div class="hud-actions-row">
+            <button class="hud-btn" id="btn-desk-mood" type="button" title="切换桌面光线氛围">☀ 日光书桌</button>
+            <button class="hud-btn" id="btn-lucky-layout" type="button" title="随机拼入一张贴纸与搭配小物">✦ 灵感一贴</button>
+            <button class="hud-btn" id="btn-sound-toggle" type="button" aria-pressed="false" title="开启或关闭轻柔翻页与盖章纸声">♪ 纸声：关</button>
+            <div class="hud-chip" id="hud-hint">拖动旋转 · 滚轮缩放</div>
+          </div>
+        </div>
+
+        <div class="stage-viewport" id="stage-viewport">
+          <div class="desk-shadow" id="desk-shadow"></div>
+          <div id="book-anchor">
+            <div class="book-solid" id="book-solid">
+              <!-- Spine & Rear Connector -->
+              <div class="spine-side-wall" id="spine-side-wall">
+                <div class="spine-title" id="spine-title">森苔手作手账本</div>
+              </div>
+              <div class="spine-open-back" id="spine-open-back"></div>
+
+              <!-- Right Wing: Back Cover + Right Paper Stack + Right Editable Spread Page -->
+              <div class="book-right-wing" id="book-right-wing">
+                <div class="ribbon-tail"></div>
+                <div class="top-book-clip" id="top-book-clip" aria-hidden="true">
+                  <div class="clip-wire-arch"></div>
+                  <div class="clip-jaw" id="clip-jaw"></div>
+                </div>
+                <div class="block-edge paper-top"></div>
+                <div class="block-edge paper-bottom"></div>
+                <div class="block-edge paper-fore"></div>
+
+                <!-- Right Active Inner Page (facing +Z) -->
+                <div class="spread-page right-spread-page paper-lined" id="page-right" data-side="right">
+                  <div class="page-header">
+                    <div class="page-meta-row">
+                      <input class="page-date-input" id="right-date" type="text" aria-label="右页日期" />
+                      <div class="badge-row">
+                        <button class="mini-chip-btn" id="right-weather" type="button"></button>
+                        <button class="mini-chip-btn" id="right-mood" type="button"></button>
+                      </div>
+                    </div>
+                    <input class="page-title-input" id="right-title" type="text" aria-label="右页标题" />
+                  </div>
+                  <textarea class="page-body-input" id="right-body" aria-label="右页正文"></textarea>
+                  <div class="page-items-layer" id="right-items"></div>
+                </div>
+
+                <!-- Back Cover (visible when rotated past 90deg) -->
+                <div class="cover-face cover-back" id="cover-back">
+                  <div style="display:flex;justify-content:space-between;font-size:11px;opacity:.82;">
+                    <span id="back-mark">苔绿亚麻精装系列</span>
+                    <span>PAPER ATELIER</span>
+                  </div>
+                  <div class="back-pocket">
+                    <div class="back-pocket-ticket">
+                      <strong>本日灵感小票</strong><br />
+                      记下一句喜欢的句子<br />
+                      夹进沿途收集的票根
+                    </div>
+                    <div style="font-size:11px;opacity:.85;">封底收纳插袋 · 可随时翻看封面与内页</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hinged Left Wing: Front Cover Exterior (closed) + Left Editable Page (open) -->
+              <div class="book-hinge" id="book-hinge">
+                <div class="block-edge hinge-top"></div>
+                <div class="block-edge hinge-bottom"></div>
+                <div class="block-edge hinge-fore"></div>
+
+                <!-- Front Cover -->
+                <div class="cover-face cover-front" id="cover-front" data-cover-style="botanical">
+                  <div class="cover-front-crease"></div>
+                  <div class="cover-deco-layer">
+                    <div class="cover-ribbon-sash"></div>
+                    <svg class="cover-ribbon-bow" viewBox="0 0 48 32" aria-hidden="true">
+                      <path d="M24 16 C15 6, 4 5, 5 15 C6 22, 16 20, 24 16Z" fill="var(--book-ribbon)" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+                      <path d="M24 16 C33 6, 44 5, 43 15 C42 22, 32 20, 24 16Z" fill="var(--book-ribbon)" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+                      <path d="M21 17 L13 30 L20 27 Z" fill="var(--book-ribbon)" opacity="0.92"/>
+                      <path d="M27 17 L35 30 L28 27 Z" fill="var(--book-ribbon)" opacity="0.92"/>
+                      <circle cx="24" cy="16" r="4" fill="var(--book-metal)" stroke="#fff8e8" stroke-width="0.9"/>
+                    </svg>
+                    <div class="cover-deco-classic"></div>
+                    <div class="cover-deco-plaid"></div>
+                    <svg class="cover-deco-botanical" viewBox="0 0 310 456" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                      <path d="M12 48 C12 18, 22 12, 52 12 M18 28 C28 28, 32 20, 32 14 M22 44 C28 32, 38 28, 48 28" stroke-linecap="round"/>
+                      <path d="M298 48 C298 18, 288 12, 258 12 M292 28 C282 28, 278 20, 278 14 M288 44 C282 32, 272 28, 262 28" stroke-linecap="round"/>
+                      <path d="M12 408 C12 438, 22 444, 52 444 M18 428 C28 428, 32 436, 32 442 M22 412 C28 424, 38 428, 48 428" stroke-linecap="round"/>
+                      <path d="M298 408 C298 438, 288 444, 258 444 M292 428 C282 428, 278 436, 278 442 M288 412 C282 424, 272 428, 262 428" stroke-linecap="round"/>
+                      <ellipse cx="155" cy="228" rx="116" ry="94" stroke-dasharray="3 4" opacity="0.68"/>
+                      <path d="M90 120 Q155 96 220 120" stroke-linecap="round" opacity="0.72"/>
+                      <path d="M90 336 Q155 360 220 336" stroke-linecap="round" opacity="0.72"/>
+                    </svg>
+                    <div class="cover-deco-postage">
+                      <div class="cover-postmark-badge">
+                        <span>ARCHIVE</span>
+                        <span>★</span>
+                        <span>STUDIO</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="corner-guard cg-tl"></div>
+                  <div class="corner-guard cg-bl"></div>
+                  <div class="corner-guard cg-tr"></div>
+                  <div class="corner-guard cg-br"></div>
+
+                  <div class="cover-header-row" style="display:flex;justify-content:space-between;align-items:center;padding-left:14px;font-size:10.5px;letter-spacing:.14em;opacity:.88;">
+                    <span>✦ ATELIER PRESS</span>
+                    <span>HANDCRAFTED</span>
+                  </div>
+
+                  <div class="cover-plaque">
+                    <div class="cover-plaque-tag" id="cover-tag">BOTANICAL ARCHIVE</div>
+                    <input class="cover-plaque-title-input" id="cover-title-input" type="text" aria-label="封面标题" />
+                    <div class="cover-plaque-sub" id="cover-sub">日常剪贴 · 植物压纹封面</div>
+                  </div>
+
+                  <div class="cover-footer">
+                    <span>PAPER &amp; INK EDITION</span>
+                    <button class="cover-unlock-btn" id="btn-cover-unlock" type="button">解扣翻开 ▸</button>
+                  </div>
+
+                  <div class="page-items-layer cover-items-layer" id="cover-items"></div>
+                </div>
+
+                <button class="book-clasp" id="book-clasp" type="button" title="点击解扣并翻开手账">翻开</button>
+
+                <!-- Left Active Inner Page (rotated 180deg inside hinge so upright when opened!) -->
+                <div class="spread-page left-spread-page paper-lined" id="page-left" data-side="left">
+                  <div class="page-header">
+                    <div class="page-meta-row">
+                      <input class="page-date-input" id="left-date" type="text" aria-label="左页日期" />
+                      <div class="badge-row">
+                        <button class="mini-chip-btn" id="left-weather" type="button"></button>
+                        <button class="mini-chip-btn" id="left-mood" type="button"></button>
+                      </div>
+                    </div>
+                    <input class="page-title-input" id="left-title" type="text" aria-label="左页标题" />
+                  </div>
+                  <textarea class="page-body-input" id="left-body" aria-label="左页正文"></textarea>
+                  <div class="page-items-layer" id="left-items"></div>
+                </div>
+              </div>
+
+              <!-- 3D Double-Sided Page-Turn Sheet -->
+              <div class="page-flipper" id="page-flipper" aria-hidden="true">
+                <div class="spread-page flip-face-front" id="flip-face-front"></div>
+                <div class="spread-page flip-face-back" id="flip-face-back"></div>
+              </div>
+
+              <!-- 3D Hanging Charm Assembly (follows spine/ribbon/corner mount with spring swing physics) -->
+              <div class="book-charm-mount" id="book-charm-mount">
+                <div class="charm-grommet"></div>
+                <div class="charm-swing-arm" id="charm-swing-arm" title="点击轻拨挂坠晃一晃">
+                  <div class="charm-chain">
+                    <span class="charm-bead"></span>
+                    <span class="charm-bead"></span>
+                    <span class="charm-bead"></span>
+                    <span class="charm-bead"></span>
+                  </div>
+                  <div class="charm-clasp"></div>
+                  <div class="charm-body" id="charm-body">
+                    <div class="charm-face charm-face-front" id="charm-face-front"></div>
+                    <div class="charm-face charm-face-back" id="charm-face-back"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-hud-bottom">
+          <div class="pager-group">
+            <button class="pill-btn" id="btn-prev-spread" type="button">上一跨页</button>
+            <span class="pager-label" id="spread-indicator">第 1 / 2 页</span>
+            <button class="pill-btn" id="btn-next-spread" type="button">下一页</button>
+            <button class="pill-btn" id="btn-add-spread" type="button">＋ 新建页</button>
+          </div>
+          <div class="pager-group">
+            <button class="pill-btn" id="btn-clear-items" type="button">清空本页拼贴</button>
+            <button class="pill-btn" id="btn-reset-demo" type="button">恢复初始手账</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Material Dock & Selected Item Inspector -->
+      <aside class="dock-panel">
+        <div class="dock-tabs">
+          <button class="dock-tab active" data-dock="stickers" type="button">贴纸印章</button>
+          <button class="dock-tab" data-dock="ephemera" type="button">胶带票根</button>
+          <button class="dock-tab" data-dock="charms" type="button">挂坠配饰</button>
+          <button class="dock-tab" data-dock="paper" type="button">纸张装帧</button>
+          <button class="dock-tab" data-dock="world" type="button">世界取材</button>
+        </div>
+
+        <div class="dock-target-bar">
+          <span>拼贴位置：</span>
+          <div style="display:flex;gap:6px;">
+            <button class="pill-btn active" id="target-cover" type="button">封面</button>
+            <button class="pill-btn" id="target-left" type="button">左内页</button>
+            <button class="pill-btn" id="target-right" type="button">右内页</button>
+          </div>
+        </div>
+
+        <div class="dock-scroll" id="dock-content">
+          <!-- Tab 1: Stickers, Stamps & Wax Seals -->
+          <div id="pane-stickers">
+            <div class="section-title">
+              <span>乐队字母贴纸</span>
+              <span>点击贴上</span>
+            </div>
+            <div class="sticker-grid" id="band-sticker-grid"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>Q 版人物表情贴</span>
+              <span>8 款</span>
+            </div>
+            <div class="sticker-grid" id="chibi-sticker-grid"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>手绘涂鸦与对话气泡</span>
+              <span>气泡可改字</span>
+            </div>
+            <div class="paper-grid-picker" id="doodle-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>手账印章与火漆封蜡</span>
+              <span>点击加印</span>
+            </div>
+            <div class="tape-list" id="stamp-list"></div>
+            <div class="sticker-grid" id="wax-grid" style="margin-top:8px;"></div>
+          </div>
+
+          <!-- Tab 2: Washi Tape, Pressed Flowers & Ephemera -->
+          <div id="pane-ephemera" style="display:none;">
+            <div class="section-title">
+              <span>植物干花压花标本</span>
+              <span>透光夹片</span>
+            </div>
+            <div class="sticker-grid" id="pressed-grid"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>折角便利贴</span>
+              <span>可写字</span>
+            </div>
+            <div class="paper-grid-picker" id="note-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>和纸胶带</span>
+              <span>点击粘贴条带</span>
+            </div>
+            <div class="tape-list" id="tape-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>城市生活票根与拍立得</span>
+              <span>点击剪贴</span>
+            </div>
+            <div class="clipping-list" id="clipping-list"></div>
+          </div>
+
+          <!-- Tab 3: Hanging Charms & Binder Clips -->
+          <div id="pane-charms" style="display:none;">
+            <div class="section-title">
+              <span>金属 / 珐琅手账挂坠</span>
+              <button class="mini-chip-btn" id="btn-poke-charm" type="button">拨动晃一晃</button>
+            </div>
+            <div class="tape-list" id="charm-preset-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>DIY 贴纸亚克力挂坠</span>
+              <span>选一款透明立牌</span>
+            </div>
+            <div class="sticker-grid" id="acrylic-charm-grid"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>悬挂位置</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="charm-mount-picker"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>顶部手账长尾书夹</span>
+            </div>
+            <div class="tape-list" id="book-clip-picker"></div>
+          </div>
+
+          <!-- Tab 4: Paper & Cover Craft Style -->
+          <div id="pane-paper" style="display:none;">
+            <div class="section-title">
+              <span>当前跨页内页纸型</span>
+            </div>
+            <div class="paper-grid-picker" id="paper-picker"></div>
+
+            <div class="section-title" style="margin-top:16px;">
+              <span>封面装饰风格</span>
+            </div>
+            <div class="paper-grid-picker" id="cover-style-picker"></div>
+
+            <div class="section-title" style="margin-top:16px;">
+              <span>封面书签丝带配色</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ribbon-picker"></div>
+
+            <div class="section-title" style="margin-top:16px;">
+              <span>便捷文本摘录</span>
+            </div>
+            <button class="pill-btn" id="btn-copy-text" type="button" style="width:100%;">复制当前跨页文字笔记</button>
+          </div>
+
+          <!-- Tab 5: Connected World Memories, Calendar Sync & Portable Backup -->
+          <div id="pane-world" style="display:none;">
+            <div class="section-title">
+              <span>切换今日取材时刻</span>
+              <span>贴合时辰日程</span>
+            </div>
+            <div class="paper-grid-picker" id="world-snapshot-tabs"></div>
+
+            <div class="world-status-card" id="world-status-card" style="margin-top:10px;">
+              <div class="world-meta-grid">
+                <strong id="world-date-label">2025年8月28日 周四</strong>
+                <span class="world-stat-pill" id="world-weather-label">☀️ 晴</span>
+                <span id="world-location-label" style="color:var(--ink-muted);">📍 校园南门</span>
+                <span id="world-mood-summary" style="color:var(--ink-muted);text-align:right;">精力 86 · ¥14,200</span>
+              </div>
+              <div class="world-quick-actions">
+                <button class="pill-btn" id="btn-sync-page-header" type="button">⟳ 同步页头</button>
+                <button class="pill-btn" id="btn-new-world-spread" type="button">＋ 建今日页</button>
+                <button class="pill-btn" id="btn-sync-desk-mood" type="button">🕯 时辰调光</button>
+              </div>
+            </div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>消费小票与乘车凭条</span>
+              <span>点击贴入</span>
+            </div>
+            <div class="clipping-list" id="world-receipt-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>短讯与邀约摘录卡</span>
+              <span>可编辑摘录</span>
+            </div>
+            <div class="clipping-list" id="world-message-list"></div>
+
+            <div class="section-title" style="margin-top:14px;">
+              <span>今日足迹印章与手记</span>
+              <span>点击加印</span>
+            </div>
+            <div class="tape-list" id="world-stamp-list"></div>
+            <div class="tape-list" id="world-note-list" style="margin-top:6px;"></div>
+
+            <div class="section-title" style="margin-top:16px;">
+              <span>手账册备份与互通</span>
+            </div>
+            <div class="world-backup-row">
+              <button class="pill-btn" id="btn-export-scrapbook" type="button">导出手账备份</button>
+              <label class="pill-btn import-file-label">导入手账备份<input id="input-import-scrapbook" type="file" accept=".json,application/json" style="display:none;" /></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspector for selected sticker/tape/clipping -->
+        <div class="inspector-box" id="inspector-box">
+          <div class="inspector-head">
+            <span id="inspector-title">点击手账上的贴纸或票根即可微调</span>
+            <button class="pill-btn btn-danger" id="btn-remove-item" type="button" style="display:none;">撕下</button>
+          </div>
+          <div id="inspector-controls" style="display:none;flex-direction:column;gap:7px;">
+            <div class="slider-row">
+              <span>旋转</span>
+              <input id="range-rotate" type="range" min="-65" max="65" step="1" value="0" />
+              <span id="val-rotate">0°</span>
+            </div>
+            <div class="slider-row">
+              <span>大小</span>
+              <input id="range-scale" type="range" min="55" max="170" step="2" value="100" />
+              <span id="val-scale">100%</span>
+            </div>
+            <div class="slider-row">
+              <span>透明</span>
+              <input id="range-opacity" type="range" min="35" max="100" step="5" value="100" />
+              <span id="val-opacity">100%</span>
+            </div>
+            <div id="caption-row" style="display:none;gap:6px;align-items:center;">
+              <span style="font-size:11.5px;color:var(--ink-muted);white-space:nowrap;">配文</span>
+              <input id="input-caption" type="text" style="flex:1;padding:5px 8px;border:1px solid rgba(90,78,60,.25);border-radius:8px;font:inherit;font-size:12px;" placeholder="写下相片小字..." />
+            </div>
+            <div class="inspector-actions">
+              <button class="pill-btn" id="btn-flip-item" type="button">↔ 镜像</button>
+              <button class="pill-btn" id="btn-clone-item" type="button">再贴一张</button>
+              <button class="pill-btn" id="btn-layer-up" type="button">置顶一层</button>
+              <button class="pill-btn" id="btn-layer-down" type="button">下移一层</button>
+              <button class="pill-btn" id="btn-move-side" type="button">换到对页</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast-pill" id="toast-pill" role="status"></div>
+
+  <script id="sticker-data-json" type="application/json">__STICKERS_JSON__</script>
+  <script>
+  (function () {
+    'use strict';
+__CORE_JS__
+
+    const STICKER_IMAGES = JSON.parse(document.getElementById('sticker-data-json').textContent);
+
+    const RIBBON_SWATCHES = [
+      { label: '豆沙青', color: '#76917c' },
+      { label: '深夜蓝', color: '#5373a8' },
+      { label: '山茶粉', color: '#dc8da8' },
+      { label: '焦糖琥珀', color: '#b77f45' },
+      { label: '紫藤雾紫', color: '#a584be' },
+    ];
+
+    const state = {
+      themeId: 'sage',
+      coverItemsByTheme: buildDefaultCoverItemsByTheme(),
+      spreadsByTheme: buildDefaultSpreadsByTheme(),
+      spreadIndexByTheme: { sage: 0, indigo: 0, dusk: 0, blossom: 0 },
+      pose: closedFrontPose(),
+      targetSide: 'cover',
+      selectedItemId: null,
+      lockedView: false,
+      scale: 1,
+      ribbonOverrides: {},
+      coverTitleOverrides: {},
+      charmOverrides: {},
+      charmMountOverrides: {},
+      clipOverrides: {},
+      coverStyleOverrides: {},
+      deskMood: 'day',
+      soundEnabled: false,
+      worldSnapshot: normalizeWorldSnapshot(WORLD_SNAPSHOT_PRESETS[0]),
+    };
+
+    let audioCtx = null;
+    function playPaperSound(kind) {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        if (!audioCtx) audioCtx = new AudioCtor();
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        const now = audioCtx.currentTime;
+
+        if (kind === 'flip') {
+          const len = Math.floor(audioCtx.sampleRate * 0.14);
+          const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < len; i += 1) {
+            data[i] = (Math.random() * 2 - 1) * Math.sin((i / len) * Math.PI);
+          }
+          const src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1150, now);
+          filter.frequency.exponentialRampToValueAtTime(2400, now + 0.12);
+          filter.Q.value = 1.4;
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+          src.connect(filter).connect(gain).connect(audioCtx.destination);
+          src.start(now);
+          return;
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = kind === 'clasp' ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(kind === 'clasp' ? 540 : 280, now);
+        osc.frequency.exponentialRampToValueAtTime(kind === 'clasp' ? 880 : 110, now + 0.065);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } catch {}
+    }
+
+    const charmPhysics = {
+      angle: 0,
+      vel: 0,
+      tilt: 0,
+      raf: 0,
+      lastTs: 0,
+    };
+
+    const dom = {
+      stageCard: document.getElementById('stage-card'),
+      stageViewport: document.getElementById('stage-viewport'),
+      bookAnchor: document.getElementById('book-anchor'),
+      bookSolid: document.getElementById('book-solid'),
+      bookHinge: document.getElementById('book-hinge'),
+      bookClasp: document.getElementById('book-clasp'),
+      deskShadow: document.getElementById('desk-shadow'),
+      spineSideWall: document.getElementById('spine-side-wall'),
+      spineTitle: document.getElementById('spine-title'),
+      coverFront: document.getElementById('cover-front'),
+      coverBack: document.getElementById('cover-back'),
+      coverItems: document.getElementById('cover-items'),
+      coverTag: document.getElementById('cover-tag'),
+      coverTitleInput: document.getElementById('cover-title-input'),
+      coverSub: document.getElementById('cover-sub'),
+      backMark: document.getElementById('back-mark'),
+      hudBookName: document.getElementById('hud-book-name'),
+      hudAngle: document.getElementById('hud-angle'),
+      hudHint: document.getElementById('hud-hint'),
+      ownerTabs: document.getElementById('owner-tabs'),
+      btnToggleOpen: document.getElementById('btn-toggle-open'),
+      btnLockView: document.getElementById('btn-lock-view'),
+      bookCharmMount: document.getElementById('book-charm-mount'),
+      charmSwingArm: document.getElementById('charm-swing-arm'),
+      charmFaceFront: document.getElementById('charm-face-front'),
+      charmFaceBack: document.getElementById('charm-face-back'),
+      topBookClip: document.getElementById('top-book-clip'),
+      clipJaw: document.getElementById('clip-jaw'),
+      pageLeft: document.getElementById('page-left'),
+      pageRight: document.getElementById('page-right'),
+      pageFlipper: document.getElementById('page-flipper'),
+      flipFaceFront: document.getElementById('flip-face-front'),
+      flipFaceBack: document.getElementById('flip-face-back'),
+      leftDate: document.getElementById('left-date'),
+      leftTitle: document.getElementById('left-title'),
+      leftWeather: document.getElementById('left-weather'),
+      leftMood: document.getElementById('left-mood'),
+      leftBody: document.getElementById('left-body'),
+      leftItems: document.getElementById('left-items'),
+      rightDate: document.getElementById('right-date'),
+      rightTitle: document.getElementById('right-title'),
+      rightWeather: document.getElementById('right-weather'),
+      rightMood: document.getElementById('right-mood'),
+      rightBody: document.getElementById('right-body'),
+      rightItems: document.getElementById('right-items'),
+      spreadIndicator: document.getElementById('spread-indicator'),
+      inspectorTitle: document.getElementById('inspector-title'),
+      inspectorControls: document.getElementById('inspector-controls'),
+      btnRemoveItem: document.getElementById('btn-remove-item'),
+      btnMoveSide: document.getElementById('btn-move-side'),
+      rangeRotate: document.getElementById('range-rotate'),
+      rangeScale: document.getElementById('range-scale'),
+      rangeOpacity: document.getElementById('range-opacity'),
+      valRotate: document.getElementById('val-rotate'),
+      valScale: document.getElementById('val-scale'),
+      valOpacity: document.getElementById('val-opacity'),
+      captionRow: document.getElementById('caption-row'),
+      inputCaption: document.getElementById('input-caption'),
+      toastPill: document.getElementById('toast-pill'),
+    };
+
+    let toastTimer = 0;
+    function showToast(text) {
+      dom.toastPill.textContent = text;
+      dom.toastPill.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => dom.toastPill.classList.remove('show'), 2100);
+    }
+
+    function currentTheme() {
+      return BOOK_THEMES[state.themeId];
+    }
+
+    function currentCoverItems() {
+      return state.coverItemsByTheme[state.themeId];
+    }
+
+    function setCurrentCoverItems(nextItems) {
+      state.coverItemsByTheme[state.themeId] = nextItems;
+    }
+
+    function currentSpreads() {
+      return state.spreadsByTheme[state.themeId];
+    }
+
+    function currentSpreadIndex() {
+      const list = currentSpreads();
+      const idx = state.spreadIndexByTheme[state.themeId] || 0;
+      return clamp(idx, 0, list.length - 1);
+    }
+
+    function currentSpread() {
+      return currentSpreads()[currentSpreadIndex()];
+    }
+
+    function activeCharmId() {
+      return state.charmOverrides[state.themeId] ?? currentTheme().defaultCharmId;
+    }
+
+    function activeCharmMount() {
+      return state.charmMountOverrides[state.themeId] || 'spine-bottom';
+    }
+
+    function activeBookClipId() {
+      return state.clipOverrides[state.themeId] ?? currentTheme().defaultClipId;
+    }
+
+    function activeCoverStyle() {
+      return state.coverStyleOverrides[state.themeId] ?? currentTheme().defaultCoverStyle;
+    }
+
+    function findSelectedContext() {
+      if (!state.selectedItemId) return null;
+      const coverItem = currentCoverItems().find((i) => i.id === state.selectedItemId);
+      if (coverItem) {
+        return {
+          item: coverItem,
+          getList: currentCoverItems,
+          setList: setCurrentCoverItems,
+        };
+      }
+      const spreadItem = currentSpread().items.find((i) => i.id === state.selectedItemId);
+      if (spreadItem) {
+        return {
+          item: spreadItem,
+          getList: () => currentSpread().items,
+          setList: (next) => { currentSpread().items = next; },
+        };
+      }
+      return null;
+    }
+
+    function syncTargetHighlights() {
+      dom.coverFront.classList.toggle('cover-active-ring', state.targetSide === 'cover');
+      dom.pageLeft.classList.toggle('page-active-ring', state.targetSide === 'left');
+      dom.pageRight.classList.toggle('page-active-ring', state.targetSide === 'right');
+    }
+
+    function renderCharmSvg(charmId) {
+      if (charmId === 'charm-bass') {
+        return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+          <path d="M12 20 C12 9, 44 9, 44 20 C44 35, 31 54, 28 56 C25 54, 12 35, 12 20Z" fill="#6f8e77" stroke="#d2b47c" stroke-width="2.5"/>
+          <path d="M23 22 C28 19, 34 22, 34 28 C34 34, 25 36, 22 31 Z" fill="#f7eed7" opacity=".88"/>
+          <circle cx="43" cy="40" r="8.5" fill="#d2b47c" stroke="#8b6935" stroke-width="1.6"/>
+          <text x="43" y="43.5" text-anchor="middle" font-size="11" font-weight="800" fill="#463315">♪</text>
+        </svg>`;
+      }
+      if (charmId === 'charm-moon') {
+        return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+          <circle cx="30" cy="34" r="21" fill="#1e3150" stroke="#b9c8dc" stroke-width="2.6"/>
+          <circle cx="30" cy="34" r="16" fill="none" stroke="#dbe6f6" stroke-width="1" stroke-dasharray="2 2"/>
+          <path d="M32 20 A12 12 0 1 0 42 41 A9.5 9.5 0 1 1 32 20Z" fill="#f2dc98"/>
+          <path d="M38 22 L39.6 26 L43.5 27.5 L39.6 29 L38 33 L36.4 29 L32.5 27.5 L36.4 26Z" fill="#fff5d0"/>
+        </svg>`;
+      }
+      if (charmId === 'charm-sakura') {
+        return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+          <circle cx="30" cy="24" r="10" fill="#f4bfd0" stroke="#e2aebf" stroke-width="2"/>
+          <circle cx="20" cy="33" r="9.5" fill="#f7cddb" stroke="#e2aebf" stroke-width="2"/>
+          <circle cx="40" cy="33" r="9.5" fill="#f7cddb" stroke="#e2aebf" stroke-width="2"/>
+          <circle cx="24" cy="43" r="9" fill="#f4bfd0" stroke="#e2aebf" stroke-width="2"/>
+          <circle cx="36" cy="43" r="9" fill="#f4bfd0" stroke="#e2aebf" stroke-width="2"/>
+          <circle cx="30" cy="34" r="5" fill="#fff2b5" stroke="#c88e5b" stroke-width="1.4"/>
+          <circle cx="30" cy="54" r="5" fill="#e2aebf" stroke="#9e6d7e" stroke-width="1.4"/>
+        </svg>`;
+      }
+      if (charmId === 'charm-star') {
+        return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+          <path d="M30 8 L35 23 L51 23 L38 33 L43 49 L30 39 L17 49 L22 33 L9 23 L25 23Z" fill="#f5b8d4" stroke="#b9c8dc" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M30 16 L32.8 25 L41 25 L34.5 30 L37 39 L30 33.5 L23 39 L25.5 30 L19 25 L27.2 25Z" fill="#fff3fb" opacity=".72"/>
+          <path d="M22 50 Q30 43 38 50 L35 58 L30 53 L25 58Z" fill="#cbb6e2"/>
+        </svg>`;
+      }
+      if (charmId === 'charm-cat') {
+        return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+          <path d="M18 26 L16 14 L25 21 Q30 19 35 21 L44 14 L42 26 Z" fill="#322e33" stroke="#caa974" stroke-width="1.8"/>
+          <ellipse cx="30" cy="37" rx="17" ry="15" fill="#f5efe2" stroke="#caa974" stroke-width="2.4"/>
+          <circle cx="24" cy="29" r="2.2" fill="#ffd97d"/>
+          <circle cx="36" cy="29" r="2.2" fill="#ffd97d"/>
+          <path d="M16 36 C16 49, 44 49, 44 36 Z" fill="#6f4e37"/>
+          <circle cx="30" cy="40" r="3.5" fill="#fff7e8"/>
+        </svg>`;
+      }
+      return `<svg viewBox="0 0 60 64" width="58" height="62" aria-hidden="true">
+        <rect x="13" y="13" width="34" height="42" rx="9" fill="#d2b47c" stroke="#8f6b32" stroke-width="2.2"/>
+        <rect x="17" y="17" width="26" height="34" rx="6" fill="none" stroke="#fff2cf" stroke-width="1" stroke-dasharray="2 2"/>
+        <circle cx="26" cy="30" r="5.5" fill="#5b8761"/>
+        <circle cx="34" cy="30" r="5.5" fill="#5b8761"/>
+        <circle cx="26" cy="38" r="5.5" fill="#5b8761"/>
+        <circle cx="34" cy="38" r="5.5" fill="#5b8761"/>
+      </svg>`;
+    }
+
+    function renderCharmMesh() {
+      const charmId = activeCharmId();
+      if (charmId === 'none') {
+        dom.bookCharmMount.style.display = 'none';
+        return;
+      }
+      dom.bookCharmMount.style.display = 'block';
+      const anchor = resolveCharmAnchor(activeCharmMount());
+      dom.bookCharmMount.style.transform = `translate3d(${anchor.x}px, ${anchor.y}px, ${anchor.z}px)`;
+
+      if (charmId.startsWith('acrylic-')) {
+        const fileKey = charmId.slice('acrylic-'.length);
+        const def = STICKER_DEFS.find((d) => d.fileKey === fileKey) || STICKER_DEFS[0];
+        const src = STICKER_IMAGES[def.fileKey] || '';
+        dom.bookCharmMount.style.setProperty('--charm-metal', '#b9c8dc');
+        dom.charmFaceFront.innerHTML = `<div class="acrylic-shell"><img src="${src}" alt="${escapeHtml(def.label)}" /></div>`;
+        dom.charmFaceBack.innerHTML = `<div class="acrylic-back-plate"><img src="${src}" alt="${escapeHtml(def.label)}" /><span>UNREAD CITY</span></div>`;
+      } else {
+        const preset = CHARM_PRESETS.find((c) => c.id === charmId) || CHARM_PRESETS[1];
+        dom.bookCharmMount.style.setProperty('--charm-metal', preset.metal);
+        const svgMarkup = renderCharmSvg(preset.id);
+        dom.charmFaceFront.innerHTML = svgMarkup;
+        dom.charmFaceBack.innerHTML = `<div class="acrylic-back-plate" style="background:linear-gradient(155deg,${preset.metal},#7e6943);color:#fff8e8;border-color:${preset.metal};"><span>${escapeHtml(preset.label.slice(0, 4))}</span><span style="opacity:.75;">DAILY CHARM</span></div>`;
+      }
+      applyCharmSwingTransform();
+    }
+
+    function applyCharmSwingTransform() {
+      const yawTilt = clamp(-state.pose.yaw * 0.08, -12, 12);
+      const pitchComp = clamp(-state.pose.pitch * 0.55 + charmPhysics.tilt, -34, 34);
+      dom.charmSwingArm.style.transform = `rotateZ(${(yawTilt + charmPhysics.angle).toFixed(2)}deg) rotateX(${pitchComp.toFixed(2)}deg)`;
+    }
+
+    function pokeCharm(impulseVel = 22, tiltImpulse = 4) {
+      if (activeCharmId() === 'none') return;
+      charmPhysics.vel = clamp(charmPhysics.vel + impulseVel, -58, 58);
+      charmPhysics.tilt = clamp(charmPhysics.tilt + tiltImpulse, -18, 18);
+      if (charmPhysics.raf) return;
+      charmPhysics.lastTs = performance.now();
+      const tick = (now) => {
+        const dt = (now - charmPhysics.lastTs) / 1000;
+        charmPhysics.lastTs = now;
+        const next = stepCharmPendulum(charmPhysics, dt, 0);
+        charmPhysics.angle = next.angle;
+        charmPhysics.vel = next.vel;
+        charmPhysics.tilt = next.tilt;
+        applyCharmSwingTransform();
+        if (next.settled) {
+          charmPhysics.raf = 0;
+        } else {
+          charmPhysics.raf = requestAnimationFrame(tick);
+        }
+      };
+      charmPhysics.raf = requestAnimationFrame(tick);
+    }
+
+    function renderBookHardwareAccents() {
+      const clipSpec = BOOK_CLIPS.find((c) => c.id === activeBookClipId()) || BOOK_CLIPS[0];
+      if (clipSpec.id === 'none') {
+        dom.topBookClip.style.display = 'none';
+      } else {
+        dom.topBookClip.style.display = 'block';
+        dom.topBookClip.style.setProperty('--clip-color', clipSpec.color);
+        dom.topBookClip.style.setProperty('--clip-wire', clipSpec.wire);
+        dom.clipJaw.textContent = clipSpec.id === 'clip-peach-cat' ? '••' : '';
+      }
+      dom.coverFront.dataset.coverStyle = activeCoverStyle();
+    }
+
+    function applyThemeVariables() {
+      const theme = currentTheme();
+      const root = document.documentElement;
+      const ribbon = state.ribbonOverrides[state.themeId] || theme.ribbonColor;
+      const title = state.coverTitleOverrides[state.themeId] ?? theme.bookTitle;
+      root.style.setProperty('--book-cover', theme.coverColor);
+      root.style.setProperty('--book-accent', theme.coverAccent);
+      root.style.setProperty('--book-spine', theme.spineColor);
+      root.style.setProperty('--book-metal', theme.metalColor);
+      root.style.setProperty('--book-ink', theme.inkColor);
+      root.style.setProperty('--book-ribbon', ribbon);
+      root.style.setProperty('--book-liner', theme.linerColor);
+      dom.coverTag.textContent = theme.coverTag;
+      dom.coverTitleInput.value = title;
+      dom.coverSub.textContent = theme.coverSub;
+      dom.backMark.textContent = theme.backMark;
+      dom.spineTitle.textContent = title;
+      dom.hudBookName.textContent = `${theme.themeLabel} · ${title}`;
+      renderBookHardwareAccents();
+      renderCharmMesh();
+    }
+
+    function render3DTransform() {
+      const rect = dom.stageViewport.getBoundingClientRect();
+      const vw = rect.width || 960;
+      const vh = rect.height || 620;
+      const scale = fitBookScale(state.pose, vw, vh);
+      state.scale = scale;
+
+      const shiftX = state.pose.isOpen ? 0 : -BOOK_SPEC.width / 2;
+      const isFlat = state.pose.isOpen && isFlatEnough(state.pose);
+      const transform = `perspective(1800px) scale(${scale.toFixed(4)}) rotateX(${state.pose.pitch.toFixed(2)}deg) rotateY(${state.pose.yaw.toFixed(2)}deg) translateX(${shiftX}px)`;
+      dom.bookSolid.style.transform = transform;
+
+      const openDeg = state.pose.isOpen ? (isFlat ? -180 : -174) : 0;
+      dom.bookHinge.style.transform = `translateZ(${BOOK_SPEC.hingeZ}px) rotateY(${openDeg}deg)`;
+      dom.bookClasp.style.opacity = state.pose.isOpen ? '0' : '1';
+      dom.bookClasp.style.pointerEvents = state.pose.isOpen ? 'none' : 'auto';
+      dom.spineSideWall.style.opacity = state.pose.isOpen ? '0.2' : '1';
+
+      const back = isBackFacing(state.pose.yaw);
+      dom.coverFront.style.pointerEvents = !state.pose.isOpen && !back ? 'auto' : 'none';
+      dom.coverBack.style.pointerEvents = back ? 'auto' : 'none';
+      dom.pageLeft.style.pointerEvents = state.pose.isOpen && !back ? 'auto' : 'none';
+      dom.pageRight.style.pointerEvents = state.pose.isOpen && !back ? 'auto' : 'none';
+
+      // Dynamic cover gloss sheen and desk shadow tracking pose
+      const sheenX = clamp(50 - state.pose.yaw * 0.9, 10, 90);
+      const sheenY = clamp(50 - state.pose.pitch * 0.8, 10, 90);
+      document.documentElement.style.setProperty('--sheen-x', `${sheenX.toFixed(1)}%`);
+      document.documentElement.style.setProperty('--sheen-y', `${sheenY.toFixed(1)}%`);
+
+      const shadowW = (state.pose.isOpen ? BOOK_SPEC.width * 2 : BOOK_SPEC.width) * scale * 1.04;
+      const shadowH = BOOK_SPEC.height * scale * 1.03;
+      const shadowShiftX = Math.sin((state.pose.yaw * Math.PI) / 180) * 18;
+      const shadowShiftY = 14 - Math.sin((state.pose.pitch * Math.PI) / 180) * 16;
+      dom.deskShadow.style.width = `${shadowW.toFixed(1)}px`;
+      dom.deskShadow.style.height = `${shadowH.toFixed(1)}px`;
+      dom.deskShadow.style.transform = `translate(calc(-50% + ${shadowShiftX.toFixed(1)}px), calc(-50% + ${shadowShiftY.toFixed(1)}px))`;
+
+      const pct = Math.round(state.pose.zoom * 100);
+      dom.hudAngle.textContent = `朝向 ${Math.round(state.pose.yaw)}° · 俯仰 ${Math.round(state.pose.pitch)}° · ${pct}%`;
+      dom.btnToggleOpen.textContent = state.pose.isOpen ? '合上封面' : '翻开手账';
+      syncSpreadHud();
+      applyCharmSwingTransform();
+    }
+
+    function renderPressedSvg(kind, accent) {
+      if (kind === 'ginkgo') {
+        return `<svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
+          <path d="M32 56 L32 34 M32 35 C16 32, 10 18, 17 11 C23 16, 28 19, 31 24 C32 16, 36 12, 46 11 C53 18, 47 32, 32 35Z" fill="#e5b952" stroke="${accent}" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M32 34 L21 17 M32 34 L31 15 M32 34 L42 17" stroke="#b57d24" stroke-width="1.1" opacity=".7"/>
+        </svg>`;
+      }
+      if (kind === 'sakura') {
+        return `<svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
+          <g fill="#f6c4d4" stroke="${accent}" stroke-width="1.4">
+            <path d="M32 31 C26 17, 29 10, 32 14 C35 10, 38 17, 32 31Z"/>
+            <path d="M32 31 C18 23, 12 28, 17 31 C12 34, 18 39, 32 31Z"/>
+            <path d="M32 31 C46 23, 52 28, 47 31 C52 34, 46 39, 32 31Z"/>
+            <path d="M32 31 C22 43, 21 51, 25 48 C28 53, 31 44, 32 31Z"/>
+            <path d="M32 31 C42 43, 43 51, 39 48 C36 53, 33 44, 32 31Z"/>
+          </g>
+          <circle cx="32" cy="31" r="3.4" fill="#f7e199" stroke="${accent}" stroke-width="1"/>
+        </svg>`;
+      }
+      if (kind === 'lavender') {
+        return `<svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
+          <path d="M26 55 L34 15 M36 55 L42 22 M30 55 L22 25" stroke="#62805b" stroke-width="1.6" stroke-linecap="round"/>
+          <g fill="#9e84ca" stroke="#685094" stroke-width="1">
+            <ellipse cx="34" cy="14" rx="3" ry="4"/><ellipse cx="30" cy="20" rx="3" ry="3.6"/><ellipse cx="37" cy="21" rx="3" ry="3.6"/>
+            <ellipse cx="29" cy="28" rx="3" ry="3.6"/><ellipse cx="36" cy="29" rx="3" ry="3.6"/><ellipse cx="42" cy="22" rx="2.6" ry="3.4"/>
+            <ellipse cx="22" cy="24" rx="2.6" ry="3.4"/><ellipse cx="24" cy="31" rx="2.6" ry="3.4"/>
+          </g>
+          <path d="M27 42 Q32 45 38 41" fill="none" stroke="#c99c62" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return `<svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
+        <path d="M32 33 Q33 48 28 56" fill="none" stroke="#4d7c58" stroke-width="2" stroke-linecap="round"/>
+        <g fill="#73a97e" stroke="#3c6847" stroke-width="1.4">
+          <circle cx="25" cy="24" r="7.5"/><circle cx="39" cy="24" r="7.5"/>
+          <circle cx="25" cy="37" r="7.5"/><circle cx="39" cy="37" r="7.5"/>
+        </g>
+        <path d="M25 24 L32 30.5 L39 24 M25 37 L32 30.5 L39 37" stroke="#d5eccd" stroke-width="1" fill="none" opacity=".8"/>
+      </svg>`;
+    }
+
+    function renderDoodleSvg(kind, accent) {
+      if (kind === 'coffee') {
+        return `<svg viewBox="0 0 88 84" width="76" height="72" aria-hidden="true">
+          <circle cx="42" cy="40" r="24" fill="none" stroke="${accent}" stroke-width="4" opacity=".42"/>
+          <circle cx="44" cy="41" r="22" fill="none" stroke="${accent}" stroke-width="2" stroke-dasharray="18 5 9 4" opacity=".56"/>
+          <path d="M59 54 C63 49, 69 51, 66 57 C63 61, 58 58, 59 54Z" fill="${accent}" opacity=".52"/>
+          <text x="42" y="43" text-anchor="middle" font-size="8.5" font-weight="700" fill="${accent}" letter-spacing="1.2">CAFÉ TIME</text>
+        </svg>`;
+      }
+      return `<svg viewBox="0 0 96 64" width="84" height="56" aria-hidden="true">
+        <g fill="${accent}" opacity=".82">
+          <ellipse cx="22" cy="40" rx="6" ry="5"/><circle cx="15" cy="32" r="2.2"/><circle cx="21" cy="29" r="2.3"/><circle cx="28" cy="31" r="2.2"/>
+          <ellipse cx="50" cy="24" rx="6" ry="5" transform="rotate(-18 50 24)"/>
+          <circle cx="43" cy="16" r="2.2"/><circle cx="49" cy="13" r="2.3"/><circle cx="56" cy="15" r="2.2"/>
+          <ellipse cx="76" cy="42" rx="6" ry="5" transform="rotate(14 76 42)"/>
+          <circle cx="70" cy="34" r="2.2"/><circle cx="76" cy="31" r="2.3"/><circle cx="82" cy="33" r="2.2"/>
+        </g>
+      </svg>`;
+    }
+
+    function createItemElement(item, interactive = true) {
+      const wrapper = document.createElement('div');
+      wrapper.className =
+        'scrap-item' +
+        (interactive && state.selectedItemId === item.id ? ' is-selected' : '') +
+        (item.flipX ? ' is-mirrored-item' : '');
+      if (interactive) wrapper.dataset.itemId = item.id;
+      wrapper.style.left = `${item.x}%`;
+      wrapper.style.top = `${item.y}%`;
+      wrapper.style.zIndex = String(item.zIndex);
+      wrapper.style.opacity = String(item.opacity);
+      wrapper.style.transform = `translate(-50%, -50%) rotate(${item.rotate}deg) scale(${item.scale})`;
+      const mirClass = item.flipX ? ' is-mirrored-gfx' : '';
+
+      if (item.type === 'sticker') {
+        const img = document.createElement('img');
+        img.className = `sticker-img${mirClass}`;
+        img.alt = describeItem(item);
+        img.src = STICKER_IMAGES[item.presetId] || '';
+        img.draggable = false;
+        wrapper.appendChild(img);
+      } else if (item.type === 'tape') {
+        const tape = WASHI_TAPES.find((t) => t.id === item.presetId) || WASHI_TAPES[0];
+        const el = document.createElement('div');
+        el.className = 'washi-tape';
+        el.style.color = tape.ink;
+        const stripeAngle = item.flipX ? '45deg' : '-45deg';
+        el.style.background = `repeating-linear-gradient(${stripeAngle}, ${tape.bg} 0 8px, ${tape.stripe} 8px 11px)`;
+        el.textContent = tape.label.slice(0, 4);
+        wrapper.appendChild(el);
+      } else if (item.type === 'stamp') {
+        const custom = item.dataPayload && item.dataPayload.customTitle ? item.dataPayload : null;
+        const stamp = STAMP_PRESETS.find((s) => s.id === item.presetId) || STAMP_PRESETS[0];
+        const label = custom ? String(custom.customTitle) : stamp.label;
+        const sub = custom ? String(custom.customSub || '') : stamp.sub;
+        const color = custom ? String(custom.customColor || stamp.color) : stamp.color;
+        const el = document.createElement('div');
+        el.className = 'ink-stamp';
+        el.style.color = color;
+        el.innerHTML = `<strong>${escapeHtml(label)}</strong><span>${escapeHtml(sub)}</span>`;
+        wrapper.appendChild(el);
+      } else if (item.type === 'clipping') {
+        const clip = CLIPPING_PRESETS.find((c) => c.id === item.presetId) || CLIPPING_PRESETS[0];
+        const card = document.createElement('div');
+        card.className = `clipping-card kind-${clip.kind}`;
+        card.style.setProperty('--clip-accent', clip.accent);
+        if (clip.kind === 'polaroid') {
+          const cap = item.caption || clip.title;
+          card.innerHTML = `<div class="polaroid-photo"></div><div class="clip-head" style="color:#363029;">${escapeHtml(cap)}</div><div class="clip-sub">${escapeHtml(clip.meta)}</div>`;
+        } else {
+          card.innerHTML = `<div class="clip-head">${escapeHtml(clip.title)}</div><div class="clip-sub">${escapeHtml(clip.subtitle)}</div><div class="clip-foot"><span>${escapeHtml(clip.meta)}</span><strong>${escapeHtml(clip.price)}</strong></div>`;
+        }
+        wrapper.appendChild(card);
+      } else if (item.type === 'note') {
+        const note = STICKY_NOTE_PRESETS.find((n) => n.id === item.presetId) || STICKY_NOTE_PRESETS[0];
+        const el = document.createElement('div');
+        el.className = 'sticky-note';
+        el.style.setProperty('--note-bg', note.bg);
+        el.style.setProperty('--note-line', note.line);
+        el.style.setProperty('--note-ink', note.ink);
+        el.style.setProperty('--note-pin', note.pin);
+        el.textContent = item.caption || '今日待办便签';
+        wrapper.appendChild(el);
+      } else if (item.type === 'wax') {
+        const wax = WAX_SEAL_PRESETS.find((w) => w.id === item.presetId) || WAX_SEAL_PRESETS[0];
+        const el = document.createElement('div');
+        el.className = 'wax-seal';
+        el.style.setProperty('--wax-outer', wax.outer);
+        el.style.setProperty('--wax-inner', wax.inner);
+        el.innerHTML = `<div class="wax-seal-ring"><strong>${wax.glyph}</strong><span>${wax.text}</span></div>`;
+        wrapper.appendChild(el);
+      } else if (item.type === 'pressed') {
+        const pressed = PRESSED_PRESETS.find((p) => p.id === item.presetId) || PRESSED_PRESETS[0];
+        const el = document.createElement('div');
+        el.className = 'pressed-specimen';
+        el.style.setProperty('--pressed-tint', pressed.tint);
+        el.innerHTML = `<div class="pressed-svg-wrap${mirClass}">${renderPressedSvg(pressed.kind, pressed.accent)}</div>`;
+        wrapper.appendChild(el);
+      } else if (item.type === 'doodle') {
+        const doodle = DOODLE_PRESETS.find((d) => d.id === item.presetId) || DOODLE_PRESETS[0];
+        if (doodle.kind === 'bubble') {
+          const el = document.createElement('div');
+          el.className = 'doodle-bubble' + (item.flipX ? ' is-mirrored' : '');
+          el.style.setProperty('--doodle-accent', doodle.accent);
+          el.textContent = item.caption || doodle.defaultText;
+          wrapper.appendChild(el);
+        } else if (doodle.kind === 'banner') {
+          const el = document.createElement('div');
+          el.className = 'doodle-banner';
+          el.style.setProperty('--doodle-accent', doodle.accent);
+          el.textContent = item.caption || doodle.defaultText;
+          wrapper.appendChild(el);
+        } else {
+          const el = document.createElement('div');
+          el.className = `doodle-gfx-wrap${mirClass}`;
+          el.innerHTML = renderDoodleSvg(doodle.kind, doodle.accent);
+          wrapper.appendChild(el);
+        }
+      } else if (item.type === 'receipt') {
+        const dp = item.dataPayload || {};
+        const el = document.createElement('div');
+        el.className = 'paper-receipt';
+        el.style.setProperty('--rc-accent', String(dp.accent || '#4b6856'));
+        const noteText = item.caption || dp.meta || '';
+        el.innerHTML = `
+          <div class="receipt-head"><span>${escapeHtml(dp.shop || '生活消费小票')}</span><span>★</span></div>
+          <div class="receipt-row"><span>${escapeHtml(dp.itemLabel || '手账采购')}</span><strong class="receipt-price">¥${escapeHtml(dp.amountYen ?? 0)}</strong></div>
+          <div class="receipt-meta"><span>${escapeHtml(dp.timeText || '')}</span><span>${escapeHtml(noteText)}</span></div>
+        `;
+        wrapper.appendChild(el);
+      } else if (item.type === 'chat-snippet') {
+        const dp = item.dataPayload || {};
+        const el = document.createElement('div');
+        el.className = 'chat-snippet-card';
+        el.style.setProperty('--chat-accent', String(dp.accent || '#4b6856'));
+        const avatarImg = dp.stickerId && STICKER_IMAGES[dp.stickerId]
+          ? `<img src="${STICKER_IMAGES[dp.stickerId]}" alt="${escapeHtml(dp.sender || '')}" />`
+          : '';
+        el.innerHTML = `
+          <div class="chat-snippet-head">
+            <span class="chat-snippet-sender">${avatarImg}${escapeHtml(dp.sender || '好友短讯')}</span>
+            <span class="chat-snippet-time">${escapeHtml(dp.timeText || '')}${dp.location ? ` · ${escapeHtml(dp.location)}` : ''}</span>
+          </div>
+          <div class="chat-snippet-text">${escapeHtml(item.caption || '记录下这一句')}</div>
+        `;
+        wrapper.appendChild(el);
+      }
+
+      if (interactive) {
+        wrapper.addEventListener('pointerdown', (e) => onItemPointerDown(e, item));
+      }
+      return wrapper;
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function syncSpreadHud() {
+      const idx = currentSpreadIndex();
+      const total = currentSpreads().length;
+      const prevBtn = document.getElementById('btn-prev-spread');
+      const nextBtn = document.getElementById('btn-next-spread');
+      const clearBtn = document.getElementById('btn-clear-items');
+      const back = isBackFacing(state.pose.yaw);
+
+      if (!state.pose.isOpen) {
+        dom.spreadIndicator.textContent = back ? '封底外观' : `封面（内含 ${total} 跨页）`;
+        prevBtn.textContent = '上一跨页';
+        prevBtn.disabled = true;
+        prevBtn.style.opacity = '0.48';
+        nextBtn.textContent = '翻开内页 ▸';
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
+        clearBtn.textContent = '清空封面拼贴';
+        return;
+      }
+
+      dom.spreadIndicator.textContent = `内页 第 ${idx + 1} / ${total} 页`;
+      prevBtn.textContent = '上一跨页';
+      prevBtn.disabled = idx <= 0;
+      prevBtn.style.opacity = idx <= 0 ? '0.48' : '1';
+      nextBtn.textContent = '下一页';
+      nextBtn.disabled = idx >= total - 1;
+      nextBtn.style.opacity = idx >= total - 1 ? '0.48' : '1';
+      clearBtn.textContent = '清空本页拼贴';
+    }
+
+    let activePageFlip = null;
+
+    function finishPageFlip(syncLive = true) {
+      if (!activePageFlip) return;
+      const prevFlip = activePageFlip;
+      activePageFlip = null;
+      if (prevFlip.sheetAnim && typeof prevFlip.sheetAnim.cancel === 'function') prevFlip.sheetAnim.cancel();
+      if (prevFlip.sheenAnim && typeof prevFlip.sheenAnim.cancel === 'function') prevFlip.sheenAnim.cancel();
+      dom.pageFlipper.classList.remove('is-flipping');
+      delete dom.pageFlipper.dataset.flipDir;
+      dom.flipFaceFront.replaceChildren();
+      dom.flipFaceBack.replaceChildren();
+      if (syncLive) renderSpread();
+    }
+
+    function renderLiveSide(side, spread) {
+      const paperClass = `paper-${spread.paperStyle}`;
+      const isLeft = side === 'left';
+      const pageEl = isLeft ? dom.pageLeft : dom.pageRight;
+      pageEl.className = `spread-page ${isLeft ? 'left-spread-page' : 'right-spread-page'} ${paperClass}`;
+
+      const dateEl = isLeft ? dom.leftDate : dom.rightDate;
+      const titleEl = isLeft ? dom.leftTitle : dom.rightTitle;
+      const bodyEl = isLeft ? dom.leftBody : dom.rightBody;
+      const weatherEl = isLeft ? dom.leftWeather : dom.rightWeather;
+      const moodEl = isLeft ? dom.leftMood : dom.rightMood;
+      const itemsEl = isLeft ? dom.leftItems : dom.rightItems;
+      const sideData = isLeft ? spread.left : spread.right;
+
+      if (document.activeElement !== dateEl) dateEl.value = sideData.date;
+      if (document.activeElement !== titleEl) titleEl.value = sideData.title;
+      if (document.activeElement !== bodyEl) bodyEl.value = sideData.body;
+      weatherEl.textContent = `天气：${sideData.weather}`;
+      moodEl.textContent = `心情：${sideData.mood}`;
+
+      itemsEl.replaceChildren();
+      const sorted = spread.items
+        .filter((item) => item.side === side)
+        .sort((a, b) => a.zIndex - b.zIndex);
+      for (const item of sorted) {
+        itemsEl.appendChild(createItemElement(item, true));
+      }
+    }
+
+    function renderFlipFaceSnapshot(faceEl, spread, side, faceClass) {
+      const sideData = side === 'left' ? spread.left : spread.right;
+      faceEl.className = `spread-page ${faceClass} paper-${spread.paperStyle}`;
+      faceEl.innerHTML = `
+        <div class="page-header">
+          <div class="page-meta-row">
+            <div class="page-date-input">${escapeHtml(sideData.date)}</div>
+            <div class="badge-row">
+              <span class="mini-chip-btn">天气：${escapeHtml(sideData.weather)}</span>
+              <span class="mini-chip-btn">心情：${escapeHtml(sideData.mood)}</span>
+            </div>
+          </div>
+          <div class="page-title-input">${escapeHtml(sideData.title)}</div>
+        </div>
+        <div class="page-body-input">${escapeHtml(sideData.body)}</div>
+        <div class="page-items-layer"></div>
+        <div class="flip-sheen"></div>
+      `;
+      const layer = faceEl.querySelector('.page-items-layer');
+      const sorted = spread.items
+        .filter((item) => item.side === side)
+        .sort((a, b) => a.zIndex - b.zIndex);
+      for (const item of sorted) {
+        layer.appendChild(createItemElement(item, false));
+      }
+      return faceEl.querySelector('.flip-sheen');
+    }
+
+    function turnSpreadWithAnimation(direction, targetIdx) {
+      finishPageFlip(false);
+      const list = currentSpreads();
+      const fromIdx = currentSpreadIndex();
+      const toIdx = clamp(targetIdx, 0, list.length - 1);
+      if (!state.pose.isOpen || toIdx === fromIdx) {
+        state.spreadIndexByTheme[state.themeId] = toIdx;
+        state.selectedItemId = null;
+        renderSpread();
+        return;
+      }
+
+      const fromSpread = list[fromIdx];
+      const toSpread = list[toIdx];
+      state.spreadIndexByTheme[state.themeId] = toIdx;
+      state.selectedItemId = null;
+
+      const reducedMotion = typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canAnimate = !reducedMotion && typeof dom.pageFlipper.animate === 'function';
+
+      if (!canAnimate) {
+        renderSpread();
+        pokeCharm(direction === 'forward' ? -14 : 14, 3);
+        return;
+      }
+
+      const isForward = direction === 'forward';
+      const openDeg = isFlatEnough(state.pose) ? -180 : -174;
+      const startDeg = isForward ? 0 : openDeg;
+      const endDeg = isForward ? openDeg : 0;
+      const midDeg = openDeg * 0.5;
+
+      let activeSheen = null;
+      if (isForward) {
+        renderLiveSide('left', fromSpread);
+        renderLiveSide('right', toSpread);
+        activeSheen = renderFlipFaceSnapshot(dom.flipFaceFront, fromSpread, 'right', 'flip-face-front');
+        renderFlipFaceSnapshot(dom.flipFaceBack, toSpread, 'left', 'flip-face-back');
+      } else {
+        renderLiveSide('left', toSpread);
+        renderLiveSide('right', fromSpread);
+        renderFlipFaceSnapshot(dom.flipFaceFront, toSpread, 'right', 'flip-face-front');
+        activeSheen = renderFlipFaceSnapshot(dom.flipFaceBack, fromSpread, 'left', 'flip-face-back');
+      }
+
+      syncTargetHighlights();
+      syncSpreadHud();
+      renderPaperPicker();
+      renderInspector();
+
+      dom.pageFlipper.classList.add('is-flipping');
+      dom.pageFlipper.dataset.flipDir = direction;
+      playPaperSound('flip');
+      pokeCharm(isForward ? -16 : 16, 3.2);
+
+      const sheetAnim = dom.pageFlipper.animate(
+        [
+          { transform: `translateZ(${isForward ? 9 : 5.5}px) rotateY(${startDeg}deg)` },
+          { transform: `translateZ(18px) rotateY(${isForward ? -42 : openDeg + 42}deg)`, offset: 0.25 },
+          { transform: `translateZ(26px) rotateY(${midDeg}deg) scaleY(1.014)`, offset: 0.5 },
+          { transform: `translateZ(17px) rotateY(${isForward ? openDeg + 38 : -38}deg)`, offset: 0.75 },
+          { transform: `translateZ(${isForward ? 5.5 : 9}px) rotateY(${endDeg}deg)` },
+        ],
+        {
+          duration: 680,
+          easing: 'cubic-bezier(0.38, 0.12, 0.22, 1)',
+          fill: 'forwards',
+        },
+      );
+      const sheenAnim = activeSheen && typeof activeSheen.animate === 'function'
+        ? activeSheen.animate(
+          [
+            { opacity: 0.06 },
+            { opacity: 0.9, offset: 0.45 },
+            { opacity: 0.94, offset: 0.6 },
+            { opacity: 0.08 },
+          ],
+          { duration: 680, easing: 'ease-in-out', fill: 'forwards' },
+        )
+        : null;
+
+      activePageFlip = { sheetAnim, sheenAnim };
+      const done = () => {
+        if (!activePageFlip || activePageFlip.sheetAnim !== sheetAnim) return;
+        finishPageFlip(true);
+      };
+      if (typeof sheetAnim.finished?.then === 'function') {
+        sheetAnim.finished.then(done).catch(done);
+      } else {
+        sheetAnim.onfinish = done;
+      }
+    }
+
+    function renderSpread() {
+      const spread = currentSpread();
+      renderLiveSide('left', spread);
+      renderLiveSide('right', spread);
+      syncTargetHighlights();
+      syncSpreadHud();
+
+      dom.coverItems.replaceChildren();
+      const sortedCover = [...currentCoverItems()].sort((a, b) => a.zIndex - b.zIndex);
+      for (const item of sortedCover) {
+        dom.coverItems.appendChild(createItemElement(item, true));
+      }
+
+      renderPaperPicker();
+      renderInspector();
+      renderWorldPane();
+    }
+
+    function renderOwnerTabs() {
+      dom.ownerTabs.replaceChildren();
+      for (const theme of Object.values(BOOK_THEMES)) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill-btn' + (theme.id === state.themeId ? ' active' : '');
+        btn.textContent = theme.themeLabel;
+        btn.addEventListener('click', () => {
+          finishPageFlip(false);
+          state.themeId = theme.id;
+          state.selectedItemId = null;
+          applyThemeVariables();
+          renderOwnerTabs();
+          renderRibbonPicker();
+          renderCharmPickers();
+          renderCoverStylePicker();
+          renderSpread();
+          render3DTransform();
+          pokeCharm(16, 3);
+          showToast(`已切换至「${theme.themeLabel}」款式`);
+        });
+        dom.ownerTabs.appendChild(btn);
+      }
+    }
+
+    function renderPaperPicker() {
+      const container = document.getElementById('paper-picker');
+      const currentStyle = currentSpread().paperStyle;
+      container.replaceChildren();
+      for (const paper of PAPER_STYLES) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `paper-swatch-btn paper-${paper.id}` + (currentStyle === paper.id ? ' active' : '');
+        btn.textContent = paper.label;
+        btn.addEventListener('click', () => {
+          finishPageFlip(false);
+          currentSpread().paperStyle = paper.id;
+          renderSpread();
+          showToast(`内页纸张已切换为「${paper.label}」`);
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    function renderRibbonPicker() {
+      const container = document.getElementById('ribbon-picker');
+      const activeRibbon = state.ribbonOverrides[state.themeId] || currentTheme().ribbonColor;
+      container.replaceChildren();
+      for (const sw of RIBBON_SWATCHES) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill-btn' + (activeRibbon === sw.color ? ' active' : '');
+        btn.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${sw.color};margin-right:6px;"></span>${sw.label}`;
+        btn.addEventListener('click', () => {
+          state.ribbonOverrides[state.themeId] = sw.color;
+          applyThemeVariables();
+          renderRibbonPicker();
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    function renderCoverStylePicker() {
+      const container = document.getElementById('cover-style-picker');
+      const activeStyle = activeCoverStyle();
+      container.replaceChildren();
+      for (const cs of COVER_STYLES) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill-btn' + (activeStyle === cs.id ? ' active' : '');
+        btn.textContent = cs.label;
+        btn.addEventListener('click', () => {
+          state.coverStyleOverrides[state.themeId] = cs.id;
+          renderBookHardwareAccents();
+          renderCoverStylePicker();
+          showToast(`封面装帧已换为「${cs.label}」`);
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    function renderCharmPickers() {
+      const charmId = activeCharmId();
+      const mountId = activeCharmMount();
+      const clipId = activeBookClipId();
+
+      const presetList = document.getElementById('charm-preset-list');
+      presetList.replaceChildren();
+      for (const ch of CHARM_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tape-btn' + (charmId === ch.id ? ' active' : '');
+        if (charmId === ch.id) {
+          btn.style.borderColor = 'var(--accent)';
+          btn.style.background = 'var(--accent-soft)';
+        }
+        const dot = ch.kind === 'none'
+          ? '<span style="font-size:11px;color:var(--ink-muted);">清空</span>'
+          : `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${ch.accent};border:2px solid ${ch.metal};"></span>`;
+        btn.innerHTML = `<span style="font-weight:${charmId === ch.id ? '700' : '500'};">${ch.label}</span>${dot}`;
+        btn.addEventListener('click', () => {
+          state.charmOverrides[state.themeId] = ch.id;
+          renderCharmMesh();
+          renderCharmPickers();
+          if (ch.id !== 'none') pokeCharm(24, 5);
+          showToast(ch.id === 'none' ? '已取下手账挂坠' : `已挂上「${ch.label}」`);
+        });
+        presetList.appendChild(btn);
+      }
+
+      const acrylicGrid = document.getElementById('acrylic-charm-grid');
+      acrylicGrid.replaceChildren();
+      for (const def of STICKER_DEFS) {
+        const id = `acrylic-${def.fileKey}`;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'asset-btn';
+        if (charmId === id) {
+          btn.style.borderColor = 'var(--accent)';
+          btn.style.background = 'var(--accent-soft)';
+        }
+        btn.innerHTML = `<img src="${STICKER_IMAGES[def.fileKey]}" alt="${def.label}" /><span>${def.label}</span>`;
+        btn.addEventListener('click', () => {
+          state.charmOverrides[state.themeId] = id;
+          renderCharmMesh();
+          renderCharmPickers();
+          pokeCharm(-24, 5);
+          showToast(`已制作「${def.label}」透明亚克力挂坠`);
+        });
+        acrylicGrid.appendChild(btn);
+      }
+
+      const mountPicker = document.getElementById('charm-mount-picker');
+      mountPicker.replaceChildren();
+      for (const m of CHARM_MOUNTS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill-btn' + (mountId === m.id ? ' active' : '');
+        btn.textContent = m.label;
+        btn.addEventListener('click', () => {
+          state.charmMountOverrides[state.themeId] = m.id;
+          renderCharmMesh();
+          renderCharmPickers();
+          pokeCharm(16, 4);
+        });
+        mountPicker.appendChild(btn);
+      }
+
+      const clipPicker = document.getElementById('book-clip-picker');
+      clipPicker.replaceChildren();
+      for (const cl of BOOK_CLIPS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tape-btn';
+        if (clipId === cl.id) {
+          btn.style.borderColor = 'var(--accent)';
+          btn.style.background = 'var(--accent-soft)';
+        }
+        const badge = cl.id === 'none'
+          ? '<span style="font-size:11px;color:var(--ink-muted);">不夹</span>'
+          : `<span style="width:26px;height:14px;border-radius:4px;background:${cl.color};border:1.5px solid ${cl.wire};display:inline-block;"></span>`;
+        btn.innerHTML = `<span style="font-weight:${clipId === cl.id ? '700' : '500'};">${cl.label}</span>${badge}`;
+        btn.addEventListener('click', () => {
+          state.clipOverrides[state.themeId] = cl.id;
+          renderBookHardwareAccents();
+          renderCharmPickers();
+          showToast(cl.id === 'none' ? '已取下顶部书夹' : `已别上「${cl.label}」`);
+        });
+        clipPicker.appendChild(btn);
+      }
+    }
+
+    function populateCatalog() {
+      const bandGrid = document.getElementById('band-sticker-grid');
+      const chibiGrid = document.getElementById('chibi-sticker-grid');
+      for (const def of STICKER_DEFS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'asset-btn';
+        btn.innerHTML = `<img src="${STICKER_IMAGES[def.fileKey]}" alt="${def.label}" /><span>${def.label}</span>`;
+        btn.addEventListener('click', () => addDecoration('sticker', def.id));
+        (def.group === 'band' ? bandGrid : chibiGrid).appendChild(btn);
+      }
+
+      const doodleList = document.getElementById('doodle-list');
+      for (const d of DOODLE_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tape-btn';
+        btn.innerHTML = `<span style="font-weight:600;">${d.label}</span><span style="font-size:10.5px;color:${d.accent};">${d.editable ? '改字' : '图案'}</span>`;
+        btn.addEventListener('click', () => addDecoration('doodle', d.id));
+        doodleList.appendChild(btn);
+      }
+
+      const pressedGrid = document.getElementById('pressed-grid');
+      for (const pr of PRESSED_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'asset-btn';
+        btn.innerHTML = `<span style="width:42px;height:42px;display:grid;place-items:center;">${renderPressedSvg(pr.kind, pr.accent)}</span><span>${pr.label}</span>`;
+        btn.addEventListener('click', () => addDecoration('pressed', pr.id));
+        pressedGrid.appendChild(btn);
+      }
+
+      const stampList = document.getElementById('stamp-list');
+      for (const stamp of STAMP_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tape-btn';
+        btn.innerHTML = `<span>${stamp.label}</span><span style="color:${stamp.color};font-weight:700;font-size:11px;border:1.5px solid ${stamp.color};padding:1px 6px;border-radius:6px;">${stamp.sub}</span>`;
+        btn.addEventListener('click', () => addDecoration('stamp', stamp.id));
+        stampList.appendChild(btn);
+      }
+
+      const waxGrid = document.getElementById('wax-grid');
+      for (const wax of WAX_SEAL_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'asset-btn';
+        btn.innerHTML = `<span style="width:32px;height:32px;border-radius:50%;background:${wax.outer};border:2px solid ${wax.inner};color:#fff2e6;display:grid;place-items:center;font-size:15px;">${wax.glyph}</span><span>${wax.label.slice(0, 4)}</span>`;
+        btn.addEventListener('click', () => addDecoration('wax', wax.id));
+        waxGrid.appendChild(btn);
+      }
+
+      const noteList = document.getElementById('note-list');
+      for (const note of STICKY_NOTE_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'paper-swatch-btn';
+        btn.style.background = note.bg;
+        btn.style.color = note.ink;
+        btn.style.borderColor = note.line;
+        btn.textContent = note.label;
+        btn.addEventListener('click', () => addDecoration('note', note.id));
+        noteList.appendChild(btn);
+      }
+
+      const tapeList = document.getElementById('tape-list');
+      for (const tape of WASHI_TAPES) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tape-btn';
+        btn.innerHTML = `<span>${tape.label}</span><span class="tape-swatch" style="background:repeating-linear-gradient(-45deg,${tape.bg} 0 8px,${tape.stripe} 8px 11px);"></span>`;
+        btn.addEventListener('click', () => addDecoration('tape', tape.id));
+        tapeList.appendChild(btn);
+      }
+
+      const clipList = document.getElementById('clipping-list');
+      for (const clip of CLIPPING_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'clip-btn';
+        btn.innerHTML = `<div><div style="font-weight:700;">${clip.label}</div><div style="font-size:11px;color:var(--ink-muted);">${clip.subtitle}</div></div><span style="font-size:11px;font-weight:700;color:${clip.accent};white-space:nowrap;">${clip.price}</span>`;
+        btn.addEventListener('click', () => addDecoration('clipping', clip.id));
+        clipList.appendChild(btn);
+      }
+    }
+
+    function sideLabel(side) {
+      if (side === 'cover') return '封面';
+      return side === 'left' ? '左页' : '右页';
+    }
+
+    function addDecoration(type, presetId) {
+      finishPageFlip(false);
+      playPaperSound('stamp');
+      if (state.targetSide === 'cover') {
+        if (state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+          clearCamActive();
+          glideToPose(closedFrontPose());
+        }
+        const coverItems = currentCoverItems();
+        const next = createItemFromPreset(type, presetId, 'cover', coverItems);
+        setCurrentCoverItems([...coverItems, next]);
+        state.selectedItemId = next.id;
+        renderSpread();
+        showToast('已贴到封面，可直接拖动调整位置');
+        return;
+      }
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose({ ...state.pose, isOpen: true, yaw: isBackFacing(state.pose.yaw) ? -16 : state.pose.yaw });
+      }
+      const spread = currentSpread();
+      const next = createItemFromPreset(type, presetId, state.targetSide, spread.items);
+      spread.items.push(next);
+      state.selectedItemId = next.id;
+      renderSpread();
+      showToast(`已贴到${sideLabel(state.targetSide)}，可直接拖动位置`);
+    }
+
+    function renderInspector() {
+      const ctx = findSelectedContext();
+      if (!ctx) {
+        dom.inspectorTitle.textContent = '点击手账上的贴纸或票根即可微调';
+        dom.inspectorControls.style.display = 'none';
+        dom.btnRemoveItem.style.display = 'none';
+        return;
+      }
+      const { item } = ctx;
+      dom.inspectorTitle.textContent = `正在调整：${describeItem(item)}（${sideLabel(item.side)}）`;
+      dom.inspectorControls.style.display = 'flex';
+      dom.btnRemoveItem.style.display = 'inline-flex';
+      dom.btnMoveSide.textContent = item.side === 'cover' ? '移入内页' : '换到对页';
+      dom.rangeRotate.value = String(Math.round(item.rotate));
+      dom.rangeScale.value = String(Math.round(item.scale * 100));
+      dom.rangeOpacity.value = String(Math.round(item.opacity * 100));
+      dom.valRotate.textContent = `${Math.round(item.rotate)}°`;
+      dom.valScale.textContent = `${Math.round(item.scale * 100)}%`;
+      dom.valOpacity.textContent = `${Math.round(item.opacity * 100)}%`;
+
+      const isPolaroid = item.type === 'clipping' && item.presetId === 'clip-polaroid';
+      const isEditableDoodle = item.type === 'doodle' && Boolean((DOODLE_PRESETS.find((d) => d.id === item.presetId) || {}).editable);
+      const hasCaption = isPolaroid || item.type === 'note' || isEditableDoodle || item.type === 'receipt' || item.type === 'chat-snippet';
+      dom.captionRow.style.display = hasCaption ? 'flex' : 'none';
+      if (hasCaption && document.activeElement !== dom.inputCaption) {
+        dom.inputCaption.value = item.caption || (item.type === 'note' ? '今日待办便签' : isEditableDoodle ? '今天也在发光♪' : item.type === 'receipt' ? (item.dataPayload?.meta || '') : '河畔傍晚散步');
+      }
+      const flipBtn = document.getElementById('btn-flip-item');
+      if (flipBtn) flipBtn.classList.toggle('active', Boolean(item.flipX));
+    }
+
+    function describeItem(item) {
+      if (item.type === 'sticker') return (STICKER_DEFS.find((d) => d.id === item.presetId) || {}).label || '贴纸';
+      if (item.type === 'tape') return (WASHI_TAPES.find((t) => t.id === item.presetId) || {}).label || '胶带';
+      if (item.type === 'stamp') {
+        if (item.dataPayload?.customTitle) return `${item.dataPayload.customTitle}印章`;
+        return (STAMP_PRESETS.find((s) => s.id === item.presetId) || {}).label || '印章';
+      }
+      if (item.type === 'note') return (STICKY_NOTE_PRESETS.find((n) => n.id === item.presetId) || {}).label || '便利贴';
+      if (item.type === 'wax') return (WAX_SEAL_PRESETS.find((w) => w.id === item.presetId) || {}).label || '火漆章';
+      if (item.type === 'pressed') return (PRESSED_PRESETS.find((p) => p.id === item.presetId) || {}).label || '干花标本';
+      if (item.type === 'doodle') return (DOODLE_PRESETS.find((d) => d.id === item.presetId) || {}).label || '手绘涂鸦';
+      if (item.type === 'receipt') return `${item.dataPayload?.shop || '消费'}小票`;
+      if (item.type === 'chat-snippet') return `${item.dataPayload?.sender || '短讯'}摘录卡`;
+      return (CLIPPING_PRESETS.find((c) => c.id === item.presetId) || {}).label || '票根剪贴';
+    }
+
+    function countSourceUsageMap() {
+      const counts = new Map();
+      const tally = (it) => {
+        const sid = it?.sourceRef?.id;
+        if (!sid) return;
+        counts.set(sid, (counts.get(sid) || 0) + 1);
+      };
+      currentCoverItems().forEach(tally);
+      currentSpreads().forEach((sp) => (sp.items || []).forEach(tally));
+      return counts;
+    }
+
+    function addWorldArtifact(artifact) {
+      finishPageFlip(false);
+      playPaperSound('stamp');
+      const target = state.targetSide;
+      if (target === 'cover') {
+        if (state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+          clearCamActive();
+          glideToPose(closedFrontPose());
+        }
+        const coverItems = currentCoverItems();
+        const next = createItemFromPreset(artifact.itemType, artifact.presetId, 'cover', coverItems, {
+          caption: artifact.caption,
+          sourceRef: artifact.sourceRef,
+          dataPayload: artifact.dataPayload,
+        });
+        setCurrentCoverItems([...coverItems, next]);
+        state.selectedItemId = next.id;
+        renderSpread();
+        showToast(`已将「${artifact.label}」贴上封面`);
+        return next;
+      }
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose({ ...state.pose, isOpen: true, yaw: isBackFacing(state.pose.yaw) ? -16 : state.pose.yaw });
+      }
+      const spread = currentSpread();
+      const next = createItemFromPreset(artifact.itemType, artifact.presetId, target, spread.items, {
+        caption: artifact.caption,
+        sourceRef: artifact.sourceRef,
+        dataPayload: artifact.dataPayload,
+      });
+      spread.items.push(next);
+      state.selectedItemId = next.id;
+      renderSpread();
+      showToast(`已剪贴到${sideLabel(target)}，可拖动或改字`);
+      return next;
+    }
+
+    function renderWorldPane() {
+      const snapTabs = document.getElementById('world-snapshot-tabs');
+      if (!snapTabs) return;
+      const snap = normalizeWorldSnapshot(state.worldSnapshot);
+      const header = derivePageHeaderFromSnapshot(snap);
+      const cal = formatWorldCalendarDay(snap.clock.day);
+      const wx = WORLD_WEATHER_META[snap.weatherId] || WORLD_WEATHER_META.sunny;
+
+      snapTabs.replaceChildren();
+      for (const preset of WORLD_SNAPSHOT_PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill-btn' + (preset.snapshotId === snap.snapshotId ? ' active' : '');
+        btn.textContent = preset.label.split(' · ')[0];
+        btn.title = preset.label;
+        btn.addEventListener('click', () => {
+          state.worldSnapshot = normalizeWorldSnapshot(preset);
+          renderWorldPane();
+          showToast(`已载入「${preset.label}」手账取材`);
+        });
+        snapTabs.appendChild(btn);
+      }
+
+      const dateEl = document.getElementById('world-date-label');
+      const wxEl = document.getElementById('world-weather-label');
+      const locEl = document.getElementById('world-location-label');
+      const moodEl = document.getElementById('world-mood-summary');
+      if (dateEl) dateEl.textContent = cal.display;
+      if (wxEl) wxEl.textContent = `${wx.icon} ${wx.label}`;
+      if (locEl) locEl.textContent = `📍 ${snap.locationName}`;
+      if (moodEl) moodEl.textContent = `心情 ${header.moodText} · ¥${snap.player.balance.toLocaleString('en-US')}`;
+
+      const usage = countSourceUsageMap();
+      const memories = extractWorldMemories(snap);
+
+      const renderArtifactList = (containerId, rows) => {
+        const box = document.getElementById(containerId);
+        if (!box) return;
+        box.replaceChildren();
+        if (!rows.length) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'font-size:11px;color:var(--ink-muted);padding:4px 2px;';
+          empty.textContent = '暂无对应生活取材';
+          box.appendChild(empty);
+          return;
+        }
+        for (const art of rows) {
+          const usedCount = usage.get(art.sourceRef.id) || 0;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'clip-btn';
+          const badgeCls = usedCount > 0 ? 'world-memory-badge is-used' : 'world-memory-badge';
+          const rightText = usedCount > 0 ? `已入册 ×${usedCount}` : art.badge;
+          btn.innerHTML = `<div style="min-width:0;flex:1;"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(art.label)}</div></div><span class="${badgeCls}">${escapeHtml(rightText)}</span>`;
+          btn.addEventListener('click', () => addWorldArtifact(art));
+          box.appendChild(btn);
+        }
+      };
+
+      renderArtifactList('world-receipt-list', memories.receipts);
+      renderArtifactList('world-message-list', memories.messages);
+      renderArtifactList('world-stamp-list', memories.stamps);
+      renderArtifactList('world-note-list', memories.notes);
+    }
+
+    function syncHeaderFromWorldSnapshot() {
+      finishPageFlip(false);
+      const snap = normalizeWorldSnapshot(state.worldSnapshot);
+      const header = derivePageHeaderFromSnapshot(snap);
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose(angled3DPose());
+      }
+      const side = state.targetSide === 'right' ? 'right' : 'left';
+      state.targetSide = side;
+      updateTargetButtons();
+      const spread = currentSpread();
+      spread[side].date = header.dateText;
+      spread[side].weather = header.weatherText;
+      spread[side].mood = header.moodText;
+      renderSpread();
+      playPaperSound('stamp');
+      showToast(`已将「${header.statusSummary}」填入${sideLabel(side)}抬头`);
+      return header;
+    }
+
+    function createSpreadFromWorldSnapshot() {
+      const snap = normalizeWorldSnapshot(state.worldSnapshot);
+      const header = derivePageHeaderFromSnapshot(snap);
+      const list = currentSpreads();
+      const fresh = createBlankSpread(list.length + 1);
+      fresh.label = `第 ${list.length + 1} 跨页 · ${snap.locationName}`;
+      fresh.left.date = header.dateText;
+      fresh.left.weather = header.weatherText;
+      fresh.left.mood = header.moodText;
+      fresh.left.title = header.suggestedTitle;
+      fresh.right.date = header.dateText;
+      fresh.right.weather = header.weatherText;
+      fresh.right.mood = header.moodText;
+      const wasOpen = state.pose.isOpen;
+      list.push(fresh);
+      const newIdx = list.length - 1;
+      if (state.targetSide === 'cover') state.targetSide = 'left';
+      updateTargetButtons();
+      if (wasOpen) {
+        turnSpreadWithAnimation('forward', newIdx);
+      } else {
+        state.spreadIndexByTheme[state.themeId] = newIdx;
+        state.selectedItemId = null;
+        clearCamActive();
+        glideToPose(angled3DPose());
+        renderSpread();
+        pokeCharm(18, 4);
+      }
+      showToast(`已按「${header.dateText} · ${snap.locationName}」新建手账页`);
+      return fresh;
+    }
+
+    function applyImportedScrapbookBackup(rawInput) {
+      finishPageFlip(false);
+      const result = importScrapbookBackup(rawInput, state.themeId);
+      if (result.kind === 'scrapbook') {
+        state.themeId = result.themeId;
+        state.coverItemsByTheme = result.coverItemsByTheme;
+        state.spreadsByTheme = result.spreadsByTheme;
+        state.spreadIndexByTheme = result.spreadIndexByTheme;
+        state.charmOverrides = result.charmOverrides;
+        state.charmMountOverrides = result.charmMountOverrides;
+        state.clipOverrides = result.clipOverrides;
+        state.coverStyleOverrides = result.coverStyleOverrides;
+        state.ribbonOverrides = result.ribbonOverrides;
+        state.deskMood = result.deskMood || 'day';
+        const matchedSnap = WORLD_SNAPSHOT_PRESETS.find((s) => s.snapshotId === result.snapshotId);
+        if (matchedSnap) state.worldSnapshot = normalizeWorldSnapshot(matchedSnap);
+        state.selectedItemId = null;
+        applyThemeVariables();
+        syncDeskMoodUi();
+        renderOwnerTabs();
+        renderRibbonPicker();
+        renderCharmPickers();
+        renderCoverStylePicker();
+        renderSpread();
+        render3DTransform();
+        showToast(`已还原手账备份（当前含 ${result.importedCount} 跨页）`);
+        return result;
+      }
+
+      // Imported game NotebookPage[] backup: load into active book's inner spreads & open to Spread 1
+      state.spreadsByTheme[state.themeId] = result.spreads;
+      state.spreadIndexByTheme[state.themeId] = 0;
+      state.selectedItemId = null;
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose(angled3DPose());
+      }
+      if (state.targetSide === 'cover') state.targetSide = 'left';
+      updateTargetButtons();
+      renderSpread();
+      render3DTransform();
+      showToast(`已将 ${result.importedCount} 条游戏手账导入本册内页`);
+      return result;
+    }
+
+    // Dragging placed items smoothly inside 3D projected page coordinates
+    let draggingItem = null;
+    function onItemPointerDown(e, item) {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      e.stopPropagation();
+      state.selectedItemId = item.id;
+      state.targetSide = item.side;
+      updateTargetButtons();
+      syncTargetHighlights();
+      document.querySelectorAll('.scrap-item').forEach((node) => {
+        node.classList.toggle('is-selected', node.dataset.itemId === item.id);
+      });
+      renderInspector();
+      draggingItem = {
+        id: item.id,
+        startX: e.clientX,
+        startY: e.clientY,
+        origX: item.x,
+        origY: item.y,
+      };
+    }
+
+    // Orbit 3D stage pointer & touch handler (inspired by phone-spatial.ts)
+    let gesture = { mode: 'idle', lastX: 0, lastY: 0, pinchDist: 0 };
+    const activePointers = new Map();
+
+    function isEditableTarget(target) {
+      return Boolean(target?.closest?.('input,textarea,button,select,[contenteditable=true]'));
+    }
+
+    dom.stageViewport.addEventListener('pointerdown', (e) => {
+      if (draggingItem) return;
+      if (e.button === 0 && isEditableTarget(e.target)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 2) {
+        const pts = [...activePointers.values()];
+        gesture.mode = 'pinch';
+        gesture.pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        return;
+      }
+
+      if (state.lockedView && e.button !== 2) return;
+      clearBookGlide();
+      gesture.mode = 'rotate';
+      gesture.lastX = e.clientX;
+      gesture.lastY = e.clientY;
+      dom.stageViewport.classList.add('is-rotating');
+      try { dom.stageViewport.setPointerCapture(e.pointerId); } catch {}
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (draggingItem) {
+        const ctx = findSelectedContext();
+        if (!ctx) return;
+        const yawCos = Math.max(0.32, Math.abs(Math.cos((state.pose.yaw * Math.PI) / 180)));
+        const pitchCos = Math.max(0.32, Math.abs(Math.cos((state.pose.pitch * Math.PI) / 180)));
+        const dxPct = ((e.clientX - draggingItem.startX) / (BOOK_SPEC.width * state.scale * yawCos)) * 100;
+        const dyPct = ((e.clientY - draggingItem.startY) / (BOOK_SPEC.height * state.scale * pitchCos)) * 100;
+        const nextList = updatePlacedItem(ctx.getList(), draggingItem.id, {
+          x: draggingItem.origX + dxPct,
+          y: draggingItem.origY + dyPct,
+        });
+        ctx.setList(nextList);
+        const el = document.querySelector(`[data-item-id="${draggingItem.id}"]`);
+        const updated = nextList.find((i) => i.id === draggingItem.id);
+        if (el && updated) {
+          el.style.left = `${updated.x}%`;
+          el.style.top = `${updated.y}%`;
+        }
+        return;
+      }
+
+      if (activePointers.has(e.pointerId)) {
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+      if (gesture.mode === 'pinch' && activePointers.size >= 2) {
+        const pts = [...activePointers.values()];
+        const nextDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (gesture.pinchDist > 0) {
+          state.pose = zoomBookPose(state.pose, nextDist / gesture.pinchDist);
+          render3DTransform();
+        }
+        gesture.pinchDist = nextDist;
+        return;
+      }
+
+      if (gesture.mode === 'rotate') {
+        const dx = e.clientX - gesture.lastX;
+        const dy = e.clientY - gesture.lastY;
+        gesture.lastX = e.clientX;
+        gesture.lastY = e.clientY;
+        state.pose = rotateBookPose(state.pose, dx, dy);
+        clearCamActive();
+        render3DTransform();
+        pokeCharm(-dx * 0.72, dy * 0.16);
+      }
+    });
+
+    function endAllGestures(e) {
+      if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
+      draggingItem = null;
+      if (activePointers.size < 2 && gesture.mode === 'pinch') gesture.mode = 'idle';
+      if (activePointers.size === 0) {
+        gesture.mode = 'idle';
+        dom.stageViewport.classList.remove('is-rotating');
+      }
+    }
+    window.addEventListener('pointerup', endAllGestures);
+    window.addEventListener('pointercancel', endAllGestures);
+
+    dom.stageViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const ratio = e.deltaY < 0 ? 1.07 : 1 / 1.07;
+      state.pose = zoomBookPose(state.pose, ratio);
+      render3DTransform();
+    }, { passive: false });
+
+    dom.stageViewport.addEventListener('contextmenu', (e) => {
+      if (gesture.mode === 'rotate') e.preventDefault();
+    });
+
+    // Camera Presets & Open/Close Book Hinges
+    let glideTimer = 0;
+    function clearBookGlide() {
+      clearTimeout(glideTimer);
+      dom.bookSolid.classList.remove('is-gliding');
+    }
+    function glideToPose(nextPose) {
+      finishPageFlip(true);
+      clearBookGlide();
+      dom.bookSolid.classList.add('is-gliding');
+      state.pose = nextPose;
+      render3DTransform();
+      glideTimer = setTimeout(() => dom.bookSolid.classList.remove('is-gliding'), 540);
+    }
+
+    function clearCamActive() {
+      document.querySelectorAll('[data-cam]').forEach((b) => b.classList.remove('soft-active'));
+    }
+
+    document.querySelectorAll('[data-cam]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        clearCamActive();
+        btn.classList.add('soft-active');
+        const kind = btn.dataset.cam;
+        if (kind === 'angled') {
+          if (state.targetSide === 'cover') state.targetSide = 'right';
+          glideToPose(angled3DPose());
+        } else if (kind === 'flat') {
+          if (state.targetSide === 'cover') state.targetSide = 'right';
+          glideToPose(flatEditPose());
+        } else if (kind === 'front') {
+          state.targetSide = 'cover';
+          glideToPose(closedFrontPose());
+        } else if (kind === 'back') {
+          glideToPose(backCoverPose());
+        }
+        updateTargetButtons();
+        syncTargetHighlights();
+      });
+    });
+
+    function toggleBookOpen() {
+      clearCamActive();
+      const opening = !state.pose.isOpen;
+      const next = { ...state.pose, isOpen: opening };
+      if (opening && isBackFacing(next.yaw)) {
+        next.yaw = -16;
+        next.pitch = 12;
+      }
+      if (opening && state.targetSide === 'cover') state.targetSide = 'right';
+      if (!opening) state.targetSide = 'cover';
+      updateTargetButtons();
+      syncTargetHighlights();
+      glideToPose(next);
+      playPaperSound('clasp');
+      pokeCharm(opening ? 18 : -18, 4);
+    }
+    dom.charmSwingArm.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+    dom.charmSwingArm.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sign = charmPhysics.angle >= 0 ? -1 : 1;
+      pokeCharm(sign * 34, 6);
+    });
+    document.getElementById('btn-poke-charm').addEventListener('click', () => {
+      const sign = charmPhysics.angle >= 0 ? -1 : 1;
+      pokeCharm(sign * 36, 7);
+    });
+    dom.btnToggleOpen.addEventListener('click', toggleBookOpen);
+    dom.bookClasp.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+    dom.bookClasp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleBookOpen();
+    });
+    const coverUnlockBtn = document.getElementById('btn-cover-unlock');
+    if (coverUnlockBtn) {
+      coverUnlockBtn.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+      });
+      coverUnlockBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleBookOpen();
+      });
+    }
+
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      clearBookGlide();
+      state.pose = zoomBookPose(state.pose, 1.12);
+      render3DTransform();
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      clearBookGlide();
+      state.pose = zoomBookPose(state.pose, 1 / 1.12);
+      render3DTransform();
+    });
+
+    dom.btnLockView.addEventListener('click', () => {
+      state.lockedView = !state.lockedView;
+      dom.btnLockView.classList.toggle('active', state.lockedView);
+      dom.btnLockView.textContent = state.lockedView ? '视角已锁定' : '锁定视角';
+      dom.stageViewport.classList.toggle('is-locked', state.lockedView);
+      dom.stageCard.classList.toggle('is-locked', state.lockedView);
+      dom.hudHint.textContent = state.lockedView
+        ? '已锁定 3D 旋转'
+        : '拖动旋转 · 滚轮缩放';
+      if (state.lockedView && state.pose.isOpen) {
+        glideToPose(flatEditPose());
+      }
+    });
+
+    const deskMoodBtn = document.getElementById('btn-desk-mood');
+    function syncDeskMoodUi() {
+      dom.stageCard.dataset.deskMood = state.deskMood;
+      const spec = DESK_MOODS.find((m) => m.id === state.deskMood) || DESK_MOODS[0];
+      const icon = spec.id === 'night' ? '🌙' : spec.id === 'lamp' ? '🕯' : '☀';
+      deskMoodBtn.textContent = `${icon} ${spec.label}`;
+      deskMoodBtn.classList.toggle('active', spec.id !== 'day');
+    }
+    deskMoodBtn.addEventListener('click', () => {
+      const idx = DESK_MOODS.findIndex((m) => m.id === state.deskMood);
+      const next = DESK_MOODS[(idx + 1) % DESK_MOODS.length];
+      state.deskMood = next.id;
+      syncDeskMoodUi();
+      showToast(`已切换为「${next.label}」氛围`);
+    });
+
+    const soundToggleBtn = document.getElementById('btn-sound-toggle');
+    soundToggleBtn.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      soundToggleBtn.setAttribute('aria-pressed', String(state.soundEnabled));
+      soundToggleBtn.classList.toggle('active', state.soundEnabled);
+      soundToggleBtn.textContent = state.soundEnabled ? '♪ 纸声：开' : '♪ 纸声：关';
+      if (state.soundEnabled) playPaperSound('flip');
+    });
+
+    document.getElementById('btn-lucky-layout').addEventListener('click', () => {
+      finishPageFlip(false);
+      const side = state.pose.isOpen ? (state.targetSide === 'cover' ? 'right' : state.targetSide) : state.targetSide;
+      if (side !== 'cover' && !state.pose.isOpen) {
+        clearCamActive();
+        glideToPose(angled3DPose());
+      }
+      const existing = side === 'cover' ? currentCoverItems() : currentSpread().items;
+      const pickSticker = STICKER_DEFS[Math.floor(Math.random() * STICKER_DEFS.length)];
+      const pickTape = WASHI_TAPES[Math.floor(Math.random() * WASHI_TAPES.length)];
+      const pickPressed = PRESSED_PRESETS[Math.floor(Math.random() * PRESSED_PRESETS.length)];
+
+      const anchorX = 24 + Math.random() * 52;
+      const anchorY = side === 'cover' ? 22 + Math.random() * 52 : 52 + Math.random() * 28;
+      const baseItem = createItemFromPreset('sticker', pickSticker.id, side, existing);
+      baseItem.x = clamp(anchorX, 16, 84);
+      baseItem.y = clamp(anchorY, 18, 84);
+      const accentTape = createItemFromPreset('tape', pickTape.id, side, [...existing, baseItem]);
+      accentTape.x = clamp(baseItem.x - 10, 18, 82);
+      accentTape.y = clamp(baseItem.y - 12, 16, 80);
+      accentTape.rotate = -18 + Math.round(Math.random() * 28);
+      accentTape.scale = 0.78;
+      const leafItem = createItemFromPreset('pressed', pickPressed.id, side, [...existing, baseItem, accentTape]);
+      leafItem.x = clamp(baseItem.x + 12, 18, 84);
+      leafItem.y = clamp(baseItem.y + 4, 20, 86);
+      leafItem.rotate = -12 + Math.round(Math.random() * 24);
+      leafItem.scale = 0.88;
+
+      if (side === 'cover') {
+        setCurrentCoverItems([...existing, accentTape, leafItem, baseItem]);
+      } else {
+        currentSpread().items = [...existing, accentTape, leafItem, baseItem];
+      }
+      state.selectedItemId = baseItem.id;
+      playPaperSound('stamp');
+      renderSpread();
+      pokeCharm(-12, 3);
+      showToast(`已随机拼入「${pickSticker.label}」与搭配小物`);
+    });
+
+    // Editable Page & Cover Fields
+    dom.coverTitleInput.addEventListener('input', () => {
+      state.coverTitleOverrides[state.themeId] = dom.coverTitleInput.value;
+      const nextTitle = dom.coverTitleInput.value || currentTheme().bookTitle;
+      dom.spineTitle.textContent = nextTitle;
+      dom.hudBookName.textContent = `${currentTheme().themeLabel} · ${nextTitle}`;
+    });
+
+    dom.coverFront.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest?.('.scrap-item') && e.target !== dom.coverTitleInput) {
+        state.targetSide = 'cover';
+        updateTargetButtons();
+        syncTargetHighlights();
+      }
+    });
+
+    function bindSideEditor(side, dateEl, titleEl, bodyEl, weatherBtn, moodBtn) {
+      dateEl.addEventListener('input', () => { currentSpread()[side].date = dateEl.value; });
+      titleEl.addEventListener('input', () => { currentSpread()[side].title = titleEl.value; });
+      bodyEl.addEventListener('input', () => { currentSpread()[side].body = bodyEl.value; });
+      weatherBtn.addEventListener('click', () => {
+        const idx = WEATHER_OPTIONS.indexOf(currentSpread()[side].weather);
+        currentSpread()[side].weather = WEATHER_OPTIONS[(idx + 1) % WEATHER_OPTIONS.length];
+        renderSpread();
+      });
+      moodBtn.addEventListener('click', () => {
+        const idx = MOOD_OPTIONS.indexOf(currentSpread()[side].mood);
+        currentSpread()[side].mood = MOOD_OPTIONS[(idx + 1) % MOOD_OPTIONS.length];
+        renderSpread();
+      });
+      const pageEl = side === 'left' ? dom.pageLeft : dom.pageRight;
+      pageEl.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest?.('.scrap-item')) {
+          state.targetSide = side;
+          updateTargetButtons();
+          syncTargetHighlights();
+        }
+      });
+    }
+
+    bindSideEditor('left', dom.leftDate, dom.leftTitle, dom.leftBody, dom.leftWeather, dom.leftMood);
+    bindSideEditor('right', dom.rightDate, dom.rightTitle, dom.rightBody, dom.rightWeather, dom.rightMood);
+
+    // Target Side & Spread Switching
+    function updateTargetButtons() {
+      document.getElementById('target-cover').classList.toggle('active', state.targetSide === 'cover');
+      document.getElementById('target-left').classList.toggle('active', state.targetSide === 'left');
+      document.getElementById('target-right').classList.toggle('active', state.targetSide === 'right');
+    }
+    document.getElementById('target-cover').addEventListener('click', () => {
+      state.targetSide = 'cover';
+      updateTargetButtons();
+      if (state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose(closedFrontPose());
+      }
+      renderSpread();
+    });
+    document.getElementById('target-left').addEventListener('click', () => {
+      state.targetSide = 'left';
+      updateTargetButtons();
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose(angled3DPose());
+      }
+      renderSpread();
+    });
+    document.getElementById('target-right').addEventListener('click', () => {
+      state.targetSide = 'right';
+      updateTargetButtons();
+      if (!state.pose.isOpen || isBackFacing(state.pose.yaw)) {
+        clearCamActive();
+        glideToPose(angled3DPose());
+      }
+      renderSpread();
+    });
+
+    document.getElementById('btn-prev-spread').addEventListener('click', () => {
+      if (!state.pose.isOpen) return;
+      const idx = currentSpreadIndex();
+      if (idx > 0) {
+        turnSpreadWithAnimation('backward', idx - 1);
+      }
+    });
+    document.getElementById('btn-next-spread').addEventListener('click', () => {
+      if (!state.pose.isOpen) {
+        clearCamActive();
+        state.targetSide = 'right';
+        updateTargetButtons();
+        glideToPose(angled3DPose());
+        renderSpread();
+        pokeCharm(18, 4);
+        return;
+      }
+      const list = currentSpreads();
+      const idx = currentSpreadIndex();
+      if (idx < list.length - 1) {
+        turnSpreadWithAnimation('forward', idx + 1);
+      }
+    });
+    document.getElementById('btn-add-spread').addEventListener('click', () => {
+      const wasOpen = state.pose.isOpen;
+      const list = currentSpreads();
+      list.push(createBlankSpread(list.length + 1));
+      const newIdx = list.length - 1;
+      if (state.targetSide === 'cover') state.targetSide = 'right';
+      updateTargetButtons();
+      if (wasOpen) {
+        turnSpreadWithAnimation('forward', newIdx);
+      } else {
+        state.spreadIndexByTheme[state.themeId] = newIdx;
+        state.selectedItemId = null;
+        clearCamActive();
+        glideToPose(angled3DPose());
+        renderSpread();
+        pokeCharm(18, 4);
+      }
+      showToast('已添一页新的空白跨页');
+    });
+
+    document.getElementById('btn-clear-items').addEventListener('click', () => {
+      finishPageFlip(false);
+      if (state.targetSide === 'cover' || !state.pose.isOpen) {
+        setCurrentCoverItems([]);
+        state.selectedItemId = null;
+        renderSpread();
+        showToast('已清空封面装饰拼贴');
+        return;
+      }
+      currentSpread().items = [];
+      state.selectedItemId = null;
+      renderSpread();
+      showToast('已清空本页装饰拼贴');
+    });
+
+    document.getElementById('btn-reset-demo').addEventListener('click', () => {
+      finishPageFlip(false);
+      state.coverItemsByTheme = buildDefaultCoverItemsByTheme();
+      state.spreadsByTheme = buildDefaultSpreadsByTheme();
+      state.spreadIndexByTheme = { sage: 0, indigo: 0, dusk: 0, blossom: 0 };
+      state.selectedItemId = null;
+      state.ribbonOverrides = {};
+      state.coverTitleOverrides = {};
+      state.charmOverrides = {};
+      state.charmMountOverrides = {};
+      state.clipOverrides = {};
+      state.coverStyleOverrides = {};
+      state.worldSnapshot = normalizeWorldSnapshot(WORLD_SNAPSHOT_PRESETS[0]);
+      state.pose = closedFrontPose();
+      state.targetSide = 'cover';
+      updateTargetButtons();
+      applyThemeVariables();
+      renderRibbonPicker();
+      renderCharmPickers();
+      renderCoverStylePicker();
+      renderSpread();
+      render3DTransform();
+      pokeCharm(16, 4);
+      showToast('已恢复初始手账示例');
+    });
+
+    document.getElementById('btn-copy-text').addEventListener('click', async () => {
+      const s = currentSpread();
+      const txt = `【${s.left.date}】\n${s.left.title}\n${s.left.body}\n\n【${s.right.date}】\n${s.right.title}\n${s.right.body}`;
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast('已复制当前跨页文字笔记');
+      } catch {
+        showToast('已整理本页文字笔记');
+      }
+    });
+
+    // Dock Tab Switching
+    document.querySelectorAll('.dock-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.dock-tab').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        const key = tab.dataset.dock;
+        document.getElementById('pane-stickers').style.display = key === 'stickers' ? 'block' : 'none';
+        document.getElementById('pane-ephemera').style.display = key === 'ephemera' ? 'block' : 'none';
+        document.getElementById('pane-charms').style.display = key === 'charms' ? 'block' : 'none';
+        document.getElementById('pane-paper').style.display = key === 'paper' ? 'block' : 'none';
+        document.getElementById('pane-world').style.display = key === 'world' ? 'block' : 'none';
+      });
+    });
+
+    // Connected World Material & Portable Backup Actions
+    document.getElementById('btn-sync-page-header').addEventListener('click', syncHeaderFromWorldSnapshot);
+    document.getElementById('btn-new-world-spread').addEventListener('click', createSpreadFromWorldSnapshot);
+    document.getElementById('btn-sync-desk-mood').addEventListener('click', () => {
+      const header = derivePageHeaderFromSnapshot(state.worldSnapshot);
+      state.deskMood = header.suggestedDeskMood;
+      syncDeskMoodUi();
+      const spec = DESK_MOODS.find((m) => m.id === state.deskMood) || DESK_MOODS[0];
+      showToast(`已按当前时刻调至「${spec.label}」`);
+    });
+    document.getElementById('btn-export-scrapbook').addEventListener('click', () => {
+      const bundle = exportScrapbookBackup({
+        themeId: state.themeId,
+        snapshot: state.worldSnapshot,
+        coverItemsByTheme: state.coverItemsByTheme,
+        spreadsByTheme: state.spreadsByTheme,
+        spreadIndexByTheme: state.spreadIndexByTheme,
+        charmOverrides: state.charmOverrides,
+        charmMountOverrides: state.charmMountOverrides,
+        clipOverrides: state.clipOverrides,
+        coverStyleOverrides: state.coverStyleOverrides,
+        ribbonOverrides: state.ribbonOverrides,
+        deskMood: state.deskMood,
+      });
+      const jsonText = JSON.stringify(bundle, null, 2);
+      try {
+        const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = '未读之城-手账备份.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 15_000);
+        showToast('已导出手账备份文件');
+      } catch {
+        showToast('已生成手账备份数据');
+      }
+    });
+    document.getElementById('input-import-scrapbook').addEventListener('change', async (e) => {
+      const input = e.target;
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        applyImportedScrapbookBackup(text);
+      } catch (err) {
+        showToast(err && err.message ? err.message : '手账备份无法读取');
+      } finally {
+        input.value = '';
+      }
+    });
+
+    // Selected Item Inspector Listeners
+    function applyInspectorPatch(patch) {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      ctx.setList(updatePlacedItem(ctx.getList(), state.selectedItemId, patch));
+      renderSpread();
+    }
+
+    dom.rangeRotate.addEventListener('input', () => {
+      applyInspectorPatch({ rotate: Number(dom.rangeRotate.value) });
+    });
+    dom.rangeScale.addEventListener('input', () => {
+      applyInspectorPatch({ scale: Number(dom.rangeScale.value) / 100 });
+    });
+    dom.rangeOpacity.addEventListener('input', () => {
+      applyInspectorPatch({ opacity: Number(dom.rangeOpacity.value) / 100 });
+    });
+    dom.inputCaption.addEventListener('input', () => {
+      applyInspectorPatch({ caption: dom.inputCaption.value });
+    });
+    document.getElementById('btn-flip-item').addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      ctx.setList(updatePlacedItem(ctx.getList(), state.selectedItemId, { flipX: !ctx.item.flipX }));
+      playPaperSound('stamp');
+      renderSpread();
+    });
+    document.getElementById('btn-clone-item').addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      const list = ctx.getList();
+      const maxZ = list.reduce((m, i) => Math.max(m, i.zIndex || 1), 1);
+      const clone = {
+        ...ctx.item,
+        id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        x: clamp(ctx.item.x + 7, 10, 90),
+        y: clamp(ctx.item.y + 7, 10, 90),
+        zIndex: maxZ + 1,
+      };
+      ctx.setList([...list, clone]);
+      state.selectedItemId = clone.id;
+      playPaperSound('stamp');
+      renderSpread();
+      showToast(`已再贴一张「${describeItem(clone)}」`);
+    });
+    document.getElementById('btn-layer-up').addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      ctx.setList(moveItemLayer(ctx.getList(), state.selectedItemId, 'front'));
+      renderSpread();
+    });
+    document.getElementById('btn-layer-down').addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      ctx.setList(moveItemLayer(ctx.getList(), state.selectedItemId, 'back'));
+      renderSpread();
+    });
+    dom.btnMoveSide.addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      if (ctx.item.side === 'cover') {
+        setCurrentCoverItems(currentCoverItems().filter((i) => i.id !== ctx.item.id));
+        const moved = { ...ctx.item, side: 'right' };
+        currentSpread().items = [...currentSpread().items, moved];
+        state.targetSide = 'right';
+        if (!state.pose.isOpen) {
+          clearCamActive();
+          glideToPose(angled3DPose());
+        }
+        updateTargetButtons();
+        renderSpread();
+        return;
+      }
+      const nextSide = ctx.item.side === 'left' ? 'right' : 'left';
+      ctx.setList(updatePlacedItem(ctx.getList(), state.selectedItemId, { side: nextSide }));
+      state.targetSide = nextSide;
+      updateTargetButtons();
+      renderSpread();
+    });
+    dom.btnRemoveItem.addEventListener('click', () => {
+      const ctx = findSelectedContext();
+      if (!ctx) return;
+      ctx.setList(ctx.getList().filter((i) => i.id !== state.selectedItemId));
+      state.selectedItemId = null;
+      renderSpread();
+      showToast('已撕下选中装饰');
+    });
+
+    // Resize Observer for continuous responsive 3D fit
+    const ro = new ResizeObserver(() => render3DTransform());
+    ro.observe(dom.stageViewport);
+
+    // Boot Workbench
+    applyThemeVariables();
+    syncDeskMoodUi();
+    renderOwnerTabs();
+    renderRibbonPicker();
+    renderCharmPickers();
+    renderCoverStylePicker();
+    populateCatalog();
+    renderSpread();
+    render3DTransform();
+
+    window.__unreadCityScrapbook = {
+      getState: () => structuredClone({
+        themeId: state.themeId,
+        deskMood: state.deskMood,
+        worldSnapshot: state.worldSnapshot,
+        spreadCount: currentSpreads().length,
+        spreadIndex: currentSpreadIndex(),
+      }),
+      setWorldSnapshot: (rawSnapshot) => {
+        state.worldSnapshot = normalizeWorldSnapshot(rawSnapshot);
+        renderWorldPane();
+        return structuredClone(state.worldSnapshot);
+      },
+      loadWorldState: (hostWorldState, options) => {
+        state.worldSnapshot = adaptWorldStateToSnapshot(hostWorldState, options);
+        renderWorldPane();
+        return structuredClone(state.worldSnapshot);
+      },
+      syncHeaderToCurrentSpread: syncHeaderFromWorldSnapshot,
+      createWorldSpread: createSpreadFromWorldSnapshot,
+      exportBackup: () => exportScrapbookBackup({
+        themeId: state.themeId,
+        snapshot: state.worldSnapshot,
+        coverItemsByTheme: state.coverItemsByTheme,
+        spreadsByTheme: state.spreadsByTheme,
+        spreadIndexByTheme: state.spreadIndexByTheme,
+        charmOverrides: state.charmOverrides,
+        charmMountOverrides: state.charmMountOverrides,
+        clipOverrides: state.clipOverrides,
+        coverStyleOverrides: state.coverStyleOverrides,
+        ribbonOverrides: state.ribbonOverrides,
+        deskMood: state.deskMood,
+      }),
+      importBackup: applyImportedScrapbookBackup,
+    };
+  })();
+  </script>
+</body>
+</html>

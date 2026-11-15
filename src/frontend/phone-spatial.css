@@ -13,8 +13,6 @@
 /* Native app swipes must hit the iframe, not either 3D face. Only the visible rear case accepts rotation drags. */
 #sttts-panel[data-uc-spatial-phone][data-phone-back-facing=true] .uc-phone-back {pointer-events:auto;touch-action:none}
 .uc-phone-edge {left:50%;top:50%;transform-origin:center;pointer-events:none}
-.uc-phone-brand {position:absolute;left:0;right:0;top:45%;text-align:center;font:500 23px/1.4 system-ui,sans-serif;letter-spacing:5px;color:var(--case-ink);opacity:.8}
-.uc-phone-case-name {position:absolute;left:0;right:0;bottom:70px;text-align:center;font:12px/1.5 system-ui,sans-serif;letter-spacing:3px;color:var(--case-ink);opacity:.7}
 .uc-phone-camera {position:absolute;top:33px;left:29px;border-radius:27px;background:linear-gradient(135deg,#ffffff25,#0009),var(--case);border:2px solid var(--metal);box-shadow:6px 7px 0 #0005,0 4px 12px #0005;transform-style:preserve-3d}
 .uc-phone-lens {position:absolute;width:46px;height:46px;margin:-23px;border-radius:50%;border:5px solid #232834;background:radial-gradient(circle at 34% 28%,#b5dafa 0 4%,#31465f 7%,#080e19 17%,#102d49 23%,#030711 38%,#172233 55%,#03050b 64%);box-shadow:0 0 0 2px #8091a580,3px 3px 4px #0008;transform:translateZ(4px)}
 .uc-phone-flash {position:absolute;top:56px;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle,#fffce0,#c1bdb0);box-shadow:0 0 0 3px #0003}

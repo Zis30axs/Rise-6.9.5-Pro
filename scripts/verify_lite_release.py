@@ -81,6 +81,7 @@ def verify() -> dict:
     expected_packs = [
         {'id': 'lite-assets', 'archive': 'unread-city-lite-assets.zip', 'required': True,
          'tokyoSandboxIncluded': True},
+        {'id': 'live2d-ensemble', 'archive': 'unread-city-live2d.zip', 'required': False},
     ]
     if packs != expected_packs:
         raise ValueError('Lite 角色卡素材包登记不正确')

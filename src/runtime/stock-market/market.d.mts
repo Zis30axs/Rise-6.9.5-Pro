@@ -30,11 +30,35 @@ export function restoreTradingState(raw: unknown): TradingState;
 export function advanceTradingState(previous: TradingState, target: number, allowMatching?: boolean): TradingState;
 export function applyTradeAction(previous: TradingState, action: StockTrade & { requestId: string }): TradingState;
 export function marketSession(minute: number): 'open' | 'preopen' | 'break' | 'closed' | 'weekend';
-export function quote(code: string, minute: number): {
-  at: number; code: string; open: number; high: number; low: number; close: number;
-  volume: number; previous: number; change: number; pct: number;
-} | null;
+export interface ChartBar {
+  at: number; open: number; high: number; low: number; close: number; volume: number;
+}
+export interface Quote extends ChartBar {
+  code: string; previous: number; change: number; pct: number;
+}
+export interface BookLevel {
+  key: string; price: number; quantity: number;
+}
+export interface OrderEstimate {
+  quantity: number; gross: number; fee: number; total: number;
+}
+export interface PositionSummary {
+  code: string; quantity: number; available: number; costPerShare: number;
+  last: number; value: number; profit: number;
+}
+export function quote(code: string, minute: number): Quote | null;
 export function accountSummary(state: TradingState): {
   cash: number; availableCash: number; frozenCash: number; marketValue: number;
-  equity: number; unrealized: number; realized: number;
+  equity: number; unrealized: number; realized: number; positions: PositionSummary[];
 };
+export function nextOpenMinute(minute: number): number;
+export function chartBars(code: string, minute: number, interval?: number, limit?: number): ChartBar[];
+export function bookLevels(state: TradingState, code: string, side: StockSide): BookLevel[];
+export function estimateOrder(
+  state: TradingState,
+  order: { code: string; side: StockSide; kind: 'market' | 'limit'; quantity: number; limit: number | null },
+): OrderEstimate | null;
+export function maxOrderQuantity(
+  state: TradingState,
+  order: { code: string; side: StockSide; kind: 'market' | 'limit'; limit: number | null },
+): number;

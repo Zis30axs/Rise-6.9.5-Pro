@@ -4,6 +4,38 @@
 }
 .tool-dock-shortcuts { display:flex; flex-direction:column; align-items:center; gap:8px; }
 .uc-shell .tool-dock .tool-dock-shortcuts > button { flex:none; min-width:76px; min-height:48px; }
+.uc-shell .tool-dock .notebook-launcher {
+  min-height:56px; gap:6px;
+  border:1px solid #d9c38d8f;
+  color:#f5ebd0;
+  background:linear-gradient(155deg,#2e4a3b,#1b3127);
+  box-shadow:0 0 0 2px #d8be851f,0 4px 18px #081e1848;
+}
+.uc-shell .tool-dock .notebook-launcher:hover,
+.uc-shell .tool-dock .notebook-launcher[aria-pressed=true] {
+  background:linear-gradient(145deg,#f6ecd2,#dfca9a);
+  border-color:#fff3d1;
+  color:#273b2b;
+}
+.notebook-launcher .tool-label,
+.stock-launcher .tool-label { display:flex; flex-direction:column; align-items:center; line-height:1.35; }
+.notebook-launcher .tool-label small,
+.stock-launcher .tool-label small { font-size:9px; font-weight:400; letter-spacing:.03em; opacity:.82; }
+.notebook-launcher .notebook-bespoke-svg,
+.stock-launcher .stock-bespoke-svg { width:21px; height:21px; }
+.uc-shell .tool-dock .stock-launcher {
+  min-height:56px; gap:6px;
+  border:1px solid #9bd1b778;
+  color:#e4f2e9;
+  background:linear-gradient(155deg,#1d3d33,#132822);
+  box-shadow:0 0 0 2px #7bd0aa1c,0 4px 18px #081e1848;
+}
+.uc-shell .tool-dock .stock-launcher:hover,
+.uc-shell .tool-dock .stock-launcher[aria-pressed=true] {
+  background:linear-gradient(145deg,#dff4e9,#a7dec4);
+  border-color:#e9fff4;
+  color:#173226;
+}
 .uc-shell .tool-dock .tool-dock-toggle[aria-expanded=true] { background:#ebe5ce; color:#263c2b; }
 .tool-dock-menu {
   position:absolute; z-index:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
@@ -21,7 +53,16 @@
 .uc-shell .tool-dock .tool-dock-menu > button[aria-pressed=true] { background:#ebe5ce; color:#263c2b; }
 .tool-dock-menu .tool-icon svg { width:21px; height:21px; }
 @media(max-width:760px) {
-  .tool-dock-shortcuts { flex-direction:row; gap:6px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:52px; min-width:52px; min-height:54px; flex:none; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:68px; min-width:68px; }
+  .tool-dock-shortcuts { flex-direction:row; gap:5px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:48px; min-width:48px; min-height:50px; flex:none; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > .notebook-launcher,
+  .uc-shell .tool-dock .tool-dock-shortcuts > .stock-launcher { width:52px; min-width:52px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:62px; min-width:62px; }
+}
+@media(max-width:360px) {
+  .tool-dock-shortcuts { gap:4px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:42px; min-width:42px; min-height:46px; padding:4px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > .notebook-launcher,
+  .uc-shell .tool-dock .tool-dock-shortcuts > .stock-launcher { width:48px; min-width:48px; }
+  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:54px; min-width:54px; }
 }

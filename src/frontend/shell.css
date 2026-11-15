@@ -28,6 +28,8 @@
 @import './decisions-panel.css';
 @import './society-panel.css';
 @import './strategy-status-hero.css';
+@import './notebook-scrapbook.css';
+@import './stock-terminal.css';
 @import './tool-dock.css';
 :host { all:initial; color-scheme:dark; }
 .uc-shell { --ink:#ede9da; --muted:#b0b8a6; --paper:#172b24; --line:rgba(216,219,192,.2); --gold:#e2c48d; --reading:#f0ecdc; position:relative; width:100%; height:100dvh; isolation:isolate; overflow:hidden; color:var(--ink); background:#4b6251; font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif; -webkit-font-smoothing:antialiased; }
@@ -323,4 +325,30 @@
   .tool-dock { width:min(370px,calc(100% - 16px)); gap:0; justify-content:space-between; }
   .uc-shell .tool-dock button { flex:1; width:auto; min-width:0; padding:5px 2px; }
   .uc-shell .tool-dock .phone-launcher { flex:1.4; width:auto; }
+}
+
+/* Styles moved into inline ShadowRoot sheet so ShadowDOM actually applies them. */
+.mystery-visitor-mask{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:#070911c9;padding:16px}
+.mystery-visitor-panel{display:flex;align-items:stretch;gap:22px;max-width:min(680px,95vw);max-height:88vh;overflow:auto;padding:20px;background:linear-gradient(140deg,#1c2439,#131823);border:1px solid #79839a75;border-radius:18px;color:#f2f4fc;box-shadow:0 12px 70px #000a}
+.mystery-visitor-panel img{height:clamp(200px,48vh,480px);width:auto;max-width:45%;object-fit:contain;align-self:center}
+.mystery-visitor-copy{flex:1;min-width:170px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.mystery-visitor-copy h2{font-size:23px;margin:0}
+.mystery-visitor-copy p{font-size:14px;line-height:1.65;margin:0}
+.mystery-visitor-copy small{letter-spacing:.12em;color:#becbe9}
+.mystery-visitor-actions{display:flex;flex-wrap:wrap;gap:8px}
+.uc-shell .mystery-visitor-actions button{min-height:40px;padding:9px 14px;border-radius:9px;border:1px solid #a7b6d7;color:#fff;background:#455578;cursor:pointer}
+.uc-shell .mystery-visitor-actions button:last-child{background:#ffffff10}
+@media(max-width:450px){.mystery-visitor-panel{gap:8px;padding:12px}.mystery-visitor-panel img{max-width:42%;max-height:40vh}.mystery-visitor-copy{min-width:0}.mystery-visitor-copy h2{font-size:18px}}
+
+.novel-appointment-prompt{margin:8px 0 6px;padding:10px 13px;background:#1c382df0;color:#f2ead6;border:1px solid #d7be846e;border-radius:11px;box-shadow:0 4px 16px #07191355;position:relative;z-index:1;flex-shrink:0}
+.novel-appointment-prompt p{margin:0 0 8px;font-size:13px;line-height:1.5;color:#eee7d3;overflow-wrap:anywhere}
+.novel-appointment-prompt div{display:flex;flex-wrap:wrap;gap:8px}
+.uc-shell .novel-appointment-prompt button{min-height:36px;padding:6px 13px;border:1px solid #dfc58e7a;border-radius:8px;background:#d6bc8229;color:#f8ebcb;font-size:12px;font-weight:500;transition:background .15s,border-color .15s}
+.uc-shell .novel-appointment-prompt button:first-child{background:#dec388;border-color:#eed7a4;color:#1d3529;font-weight:600}
+.uc-shell .novel-appointment-prompt button:not(:disabled):hover{filter:brightness(1.08)}
+.uc-shell .novel-appointment-prompt button:disabled{opacity:.48;cursor:default}
+@media(max-width:760px){
+  .novel-appointment-prompt{margin:6px 0 4px;padding:8px 11px}
+  .novel-appointment-prompt p{margin-bottom:7px;font-size:12px}
+  .uc-shell .novel-appointment-prompt button{min-height:38px;padding:6px 11px;font-size:12px}
 }

@@ -4,12 +4,12 @@ import sakikoCase from '../../assets/phone-visuals/sakiko/wallpaper.svg?raw';
 import emmaCase from '../../assets/phone-visuals/emma/wallpaper.svg?raw';
 import renakoCase from '../../assets/phone-visuals/renako/wallpaper.svg?raw';
 
-/** Authored game devices, not claims about the characters' canonical hardware. */
+/** Authored game devices, visually distinguished only by chassis shape and artwork. */
 export const phoneModels = {
-  soyo: { name: 'Petal 6', caseName: '花叶软壳', width: 418, height: 880, depth: 24, radius: 52, color: '#d7ddc7', metal: '#c4c8ba', ink: '#40584a', art: soyoCase, cameras: [[38, 38], [91, 96]], cameraWidth: 132, cameraHeight: 140 },
-  sakiko: { name: 'Nocturne Pro', caseName: '深蓝银纹壳', width: 432, height: 896, depth: 27, radius: 30, color: '#18283e', metal: '#8191a9', ink: '#d1ddf0', art: sakikoCase, cameras: [[36, 36], [96, 70], [36, 104]], cameraWidth: 136, cameraHeight: 144 },
-  emma: { name: 'Sakura Mini', caseName: '黑樱蓝纹壳', width: 408, height: 866, depth: 23, radius: 42, color: '#16151c', metal: '#738aa5', ink: '#f3b7ce', art: emmaCase, cameras: [[38, 38], [99, 38]], cameraWidth: 138, cameraHeight: 78 },
-  renako: { name: 'Peach Flip', caseName: '甘织粉紫壳', width: 398, height: 856, depth: 22, radius: 48, color: '#f7d8e6', metal: '#c9aedb', ink: '#6d466b', art: renakoCase, cameras: [[36, 36], [36, 94]], cameraWidth: 82, cameraHeight: 138 },
+  soyo: { width: 418, height: 880, depth: 24, radius: 52, color: '#d7ddc7', metal: '#c4c8ba', ink: '#40584a', art: soyoCase, cameras: [[38, 38], [91, 96]], cameraWidth: 132, cameraHeight: 140 },
+  sakiko: { width: 432, height: 896, depth: 27, radius: 30, color: '#18283e', metal: '#8191a9', ink: '#d1ddf0', art: sakikoCase, cameras: [[36, 36], [96, 70], [36, 104]], cameraWidth: 136, cameraHeight: 144 },
+  emma: { width: 408, height: 866, depth: 23, radius: 42, color: '#16151c', metal: '#738aa5', ink: '#f3b7ce', art: emmaCase, cameras: [[38, 38], [99, 38]], cameraWidth: 138, cameraHeight: 78 },
+  renako: { width: 398, height: 856, depth: 22, radius: 48, color: '#f7d8e6', metal: '#c9aedb', ink: '#6d466b', art: renakoCase, cameras: [[36, 36], [36, 94]], cameraWidth: 82, cameraHeight: 138 },
 } as const;
 
 export interface PhonePose { yaw: number; pitch: number; zoom: number }
@@ -58,7 +58,7 @@ export function phoneContour(width: number, height: number, radius: number) {
 export function createPhoneSolid(doc: Document, owner: ProtagonistId): HTMLElement {
   const spec = phoneModels[owner];
   const solid = doc.createElement('div');
-  solid.className = 'uc-phone-solid'; solid.dataset.phoneOwner = owner; solid.dataset.phoneModel = spec.name;
+  solid.className = 'uc-phone-solid';
   solid.style.cssText = `width:${spec.width}px;height:${spec.height}px;--case:${spec.color};--metal:${spec.metal};--case-ink:${spec.ink};--radius:${spec.radius}px;--depth:${spec.depth}px`;
   const part = (className: string, parent = solid) => { const el = doc.createElement('div'); el.className = className; parent.append(el); return el; };
   const front = part('uc-phone-front'); front.style.transform = `translateZ(${spec.depth / 2}px)`;
@@ -69,8 +69,6 @@ export function createPhoneSolid(doc: Document, owner: ProtagonistId): HTMLEleme
   const back = part('uc-phone-back');
   back.style.transform = `rotateY(180deg) translateZ(${spec.depth / 2}px)`;
   back.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(spec.art)}")`;
-  const mark = part('uc-phone-brand', back); mark.textContent = spec.name;
-  const caption = part('uc-phone-case-name', back); caption.textContent = spec.caseName;
   const camera = part('uc-phone-camera', back);
   camera.style.cssText = `width:${spec.cameraWidth}px;height:${spec.cameraHeight}px;transform:translateZ(5px)`;
   spec.cameras.forEach(([x, y]) => { const lens = part('uc-phone-lens', camera); lens.style.left = `${x}px`; lens.style.top = `${y}px`; });

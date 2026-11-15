@@ -12,6 +12,7 @@ import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { allNetworkAccounts, guestAccount, networkLegacyAliases, networkOwnerId, resolveNetworkAccount } from '../runtime/network-identities';
 import { pendingWorldChronicle } from '../runtime/world-chronicle';
 import { canTradeStocks, stockAccount, STOCK_CALENDAR_LOCATION, stockName } from '../runtime/stock-world';
+import { buildXitterMarketPublicFacts } from '../runtime/stock-market/intelligence';
 import { TOKYO_DELIVERY_FEE } from '../runtime/tokyo-world';
 
 /** Capability for the embedded phone only. Never exposes the other person's save wholesale. */
@@ -131,6 +132,7 @@ export function createWorldPhoneApi(options: {
         legacyAliases: networkLegacyAliases(),
         follows: (s.protagonists?.internet?.follows ?? []).map(pair => [...pair]),
         publicFacts: [
+          ...buildXitterMarketPublicFacts(s.clock.day, (s.clock.day - 1) * 1440 + s.clock.hour * 60 + s.clock.minute),
           {id: 'calendar', text: gameCalendar(s.clock.day).iso},
           {id: 'weather', text: weatherNarrative(resolveWeather(s))},
           // Reuse the existing publication gates without consuming the story's receipt.

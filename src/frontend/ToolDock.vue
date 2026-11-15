@@ -8,8 +8,8 @@ const props = defineProps<{
   editing: boolean;
 }>();
 const emit = defineEmits<{ select: [panel: Panel] }>();
-const primary = computed(() => props.items.filter(item => item.id === 'phone' || item.id === 'map'));
-const secondary = computed(() => props.items.filter(item => item.id !== 'phone' && item.id !== 'map'));
+const primary = computed(() => props.items.filter(item => item.id === 'phone' || item.id === 'map' || item.id === 'notebook' || item.id === 'stock'));
+const secondary = computed(() => props.items.filter(item => item.id !== 'phone' && item.id !== 'map' && item.id !== 'notebook' && item.id !== 'stock'));
 const expanded = ref(false);
 const dock = ref<HTMLElement>();
 const menu = ref<HTMLElement>();
@@ -96,14 +96,35 @@ defineExpose({ close });
 <template>
   <nav ref="dock" class="tool-dock tool-dock-collapsible" aria-label="世界面板" :data-dock-expanded="expanded">
     <div class="tool-dock-shortcuts">
-      <button v-for="item in primary" :key="item.id" type="button" :class="{ 'phone-launcher': item.id === 'phone' }"
+      <button v-for="item in primary" :key="item.id" type="button"
+        :class="{ 'phone-launcher': item.id === 'phone', 'notebook-launcher': item.id === 'notebook', 'stock-launcher': item.id === 'stock' }"
+        :data-notebook-entry="item.id === 'notebook' ? '' : undefined"
+        :data-stock-entry="item.id === 'stock' ? '' : undefined"
         :aria-label="item.title" :aria-pressed="active === item.id"
-        :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息` : active === 'phone' ? '收起手机' : '打开手机') : undefined"
+        :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息` : active === 'phone' ? '收起手机' : '打开手机') : item.id === 'notebook' ? (active === 'notebook' ? '收起手账本' : '打开手账本') : item.id === 'stock' ? (active === 'stock' ? '收起东都证券' : '打开东都证券看盘') : undefined"
         @click="select(item.id)">
-        <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg>
+        <span class="tool-icon">
+          <svg v-if="item.id === 'notebook'" viewBox="0 0 24 24" aria-hidden="true" class="notebook-bespoke-svg">
+            <path d="M13.2 19v3.6l1.7-1.15 1.7 1.15V19" fill="currentColor" fill-opacity="0.3" />
+            <path d="M14.2 2.1 20.6 5.4l-1.1 2-6.4-3.3Z" fill="currentColor" fill-opacity="0.24" stroke="none" />
+            <rect x="4.5" y="3" width="14.5" height="17.5" rx="2.4" />
+            <path d="M8 3v17.5" />
+            <circle cx="13.5" cy="11.5" r="2.5" />
+            <path d="M13.5 9.6v3.8M11.6 11.5h3.8" />
+          </svg>
+          <svg v-else-if="item.id === 'stock'" viewBox="0 0 24 24" aria-hidden="true" class="stock-bespoke-svg">
+            <path d="M3.5 19.5h17" />
+            <path d="M7 5v3m0 5v3" />
+            <rect x="5.4" y="8" width="3.2" height="5" rx="0.8" fill="currentColor" fill-opacity="0.28" />
+            <path d="M12 3.5v2.5m0 6v4" />
+            <rect x="10.4" y="6" width="3.2" height="6" rx="0.8" fill="currentColor" fill-opacity="0.12" />
+            <path d="M17 7v2.5m0 5.5v2" />
+            <rect x="15.4" y="9.5" width="3.2" height="5.5" rx="0.8" fill="currentColor" fill-opacity="0.36" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg>
           <span v-if="item.id === 'phone' && unread" class="phone-unread-badge" :data-phone-unread="unread">{{ unread > 99 ? '99+' : unread }}</span>
         </span>
-        <span class="tool-label">{{ item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : active === 'phone' ? '已打开' : '常驻' }}</small></span>
+        <span class="tool-label">{{ item.id === 'stock' ? '证券' : item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : active === 'phone' ? '已打开' : '常驻' }}</small><small v-else-if="item.id === 'notebook'">{{ active === 'notebook' ? '翻阅中' : '手账' }}</small><small v-else-if="item.id === 'stock'">{{ active === 'stock' ? '看盘中' : '东证' }}</small></span>
       </button>
       <button ref="toggle" type="button" class="tool-dock-toggle" :aria-expanded="expanded" :aria-controls="expanded ? menuId : undefined"
         :aria-label="expanded ? '收起菜单' : '展开菜单'" @click="toggleMenu">

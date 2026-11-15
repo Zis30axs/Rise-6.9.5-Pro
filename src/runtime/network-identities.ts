@@ -69,6 +69,8 @@ export const networkAccounts: readonly NetworkAccount[] = Object.freeze([
   account('institution:transit', 'institution', '东京交通', 'tokyo_transit', '公开交通消息与出行资讯。'),
   account('chatter:midnight', 'chatter', '凌晨还没睡', 'midnight_notes', '深夜碎碎念，天亮就去睡。'),
   account('chatter:campus', 'chatter', '窗边观察员', 'campus_window', '校园公共生活的零碎见闻。'),
+  account('chatter:kabuto', 'chatter', '兜町茶水间', 'kabuto_tea', '普通东证散户日常看盘随感，只聊市场行情不涉及剧中个人生活。'),
+  account('chatter:finwatch', 'chatter', '东都财经观察', 'tokyo_finwatch', '汇整东京股票板块轮动、除息动向与汇市公开快讯。'),
   account('chatter:livehouse', 'chatter', '最后一排', 'livehouse_backrow', '记录公开演出和散场后的街灯。'),
   account('chatter:plants', 'chatter', '阳台有点绿', 'balcony_green', '植物、浇水和慢慢生长的日子。'),
   account('band:mygo', 'band', 'MyGO!!!!!', 'mygo', 'MyGO!!!!! 官方账号。'),

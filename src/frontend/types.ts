@@ -347,6 +347,12 @@ export type StoryGenerationOptions = {
 } | {
   kind: 'contact_introduction';
   contact: { id?: string; name: string; portraitId: CharacterPortraitId; sourcePersonId: string | null; summary: string };
+} | {
+  kind: 'notebook_compose';
+  personId: string;
+  spreadIndex: number;
+  targetSide: 'left' | 'right';
+  instruction?: string;
 };
 
 export interface InteractionPresentation {
@@ -388,6 +394,8 @@ export interface ShellModel {
   phoneLinkError: string;
   phoneUnread: number;
   phoneContactUnread: { npcId: string; unread: number }[];
+  /** Incremented whenever a story turn commits new notebook pages so open panels refresh. */
+  notebookRevision?: number;
   /** On-demand SMS viewpoint, never a main-story reading cursor jump. */
   phoneSceneJump?: { id: string; token: number; viewpoint: string };
 }
@@ -409,7 +417,24 @@ export interface ShellActions {
   openPhoneContact(npcId: string): Promise<void>;
   openPhoneStock?(code: string): void;
   openPhoneContactEditor?(sourcePersonId?: string): Promise<void>;
+  performPhoneCommand?(
+    owner: import('../runtime/dual-protagonists').ProtagonistId,
+    command: import('../runtime/protagonist-world').PhoneCommand,
+  ): { ok: true } | { ok: false; error: string };
+  clipNotebookItem?(artifact: {
+    itemType: 'receipt';
+    presetId: string;
+    caption: string;
+    sourceRef: { kind: 'ledger'; id: string; day: number };
+    dataPayload: Record<string, unknown>;
+  }): Promise<boolean>;
   retryPhoneSync(): void;
+  composeNotebookPage?(options: {
+    personId: string;
+    spreadIndex: number;
+    targetSide: 'left' | 'right';
+    instruction?: string;
+  }): Promise<import('../runtime/notebook').NotebookDraft | null>;
   setDismissHandler?(handler: (() => boolean) | undefined): void;
 }
 

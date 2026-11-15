@@ -170,7 +170,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
         </article>
         <article v-for="review in stockReviews" :key="review.id" class="wp-plan" :class="{ done: review.reviewed }">
           <div class="wp-plan-time">{{ reviewTime(review.start) }}<small>{{ review.reviewed ? '已回顾' : '待办' }}</small></div>
-          <div class="wp-plan-body"><h2>{{ review.title }}</h2><p>东都证券 · {{ review.duration }} 分钟</p><div class="wp-plan-actions"><button v-if="actions.openPhoneStock && review.stockCode" class="wp-text-button" @click="emit('stock',review.stockCode)">打开东都证券 ↗</button></div></div>
+          <div class="wp-plan-body"><h2>{{ review.title }}</h2><p>东都证券 · {{ review.duration }} 分钟</p><div class="wp-plan-actions"><button v-if="review.stockCode" class="wp-text-button" @click="emit('stock',review.stockCode)">打开东都证券 ↗</button></div></div>
         </article>
         <p v-if="!model.state.schedule.length && !stockReviews.length" class="wp-empty">今天暂时没有安排。</p>
       </div>

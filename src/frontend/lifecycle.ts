@@ -10,7 +10,7 @@ import { createApp, reactive, toRaw, type App as VueApp } from 'vue';
 import App from './App.vue';
 import css from './shell.css?inline';
 import { acknowledgePhoneRead, commitStoryTurn, parseState, reduceState } from '../runtime/model';
-import { notebookPageFromDraft, writeNotebook } from '../runtime/notebook';
+import { notebookPageFromDraft, writeNotebook, clipScrapArtifactToNotebook } from '../runtime/notebook';
 import { editStoryEntry as editSavedStoryEntry } from '../runtime/story-editor';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
@@ -67,7 +67,7 @@ export function mountShell(
     const api = (hostWindow as PhoneWindow).STiPhoniePanelHost;
     return typeof api?.mount === 'function' ? api : null;
   };
-  const model = reactive<ShellModel>({ mode: bridge.kind, memoryScope: session, state, busy: false, interaction: null, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [] });
+  const model = reactive<ShellModel>({ mode: bridge.kind, memoryScope: session, state, busy: false, interaction: null, notice: '', connection: bridge.label, externalPhoneAvailable: !!phoneApi(), externalPhoneOpen: false, phoneStatus: phoneApi() ? 'ready' : 'idle', phoneError: '', phoneSource: phoneRuntime?.source() ?? (phoneApi() ? 'extension' : 'none'), phoneLinkStatus: 'idle', phoneLinkError: '', phoneUnread: 0, phoneContactUnread: [], notebookRevision: 0 });
   let app: VueApp | undefined;
   let dead = false;
   let epoch = 0;
@@ -594,6 +594,7 @@ export function mountShell(
           try {
             await writeNotebook(session, reply.notebookPages.map((draft, i) =>
               notebookPageFromDraft(draft, next, ids.assistantId, i)));
+            model.notebookRevision = (model.notebookRevision ?? 0) + 1;
           } catch (error) {
             if (stillCurrent(request)) model.notice = '剧情已保存，但手账归档失败：' + message(error);
           }
@@ -683,12 +684,69 @@ export function mountShell(
           () => !dead && sequence === phoneSequence && model.externalPhoneOpen);
       } catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
     },
+    performPhoneCommand(owner, command) {
+      if (dead || doc.hidden || model.busy || model.switchingProtagonist) {
+        return { ok: false, error: '当前有其他操作正在进行，请稍候再试。' };
+      }
+      try {
+        const requestId = `st-${Date.now().toString(36)}-${(++phoneSequence).toString(36)}`;
+        const next = reduceState(snapshot(), { type: 'phone_app', requestId, owner, command });
+        saveWithSms(next);
+        worldPhone.notify();
+        model.notice = '';
+        if (storyPhone) void storyPhone.sync().catch(() => {});
+        return { ok: true };
+      } catch (error) {
+        const err = message(error);
+        model.notice = err;
+        return { ok: false, error: err };
+      }
+    },
+    async clipNotebookItem(artifact) {
+      if (dead || doc.hidden || model.switchingProtagonist) return false;
+      try {
+        const current = snapshot();
+        const owner = activeProtagonist(current);
+        await clipScrapArtifactToNotebook(session, current, owner, protagonistNames[owner], artifact);
+        model.notebookRevision = (model.notebookRevision ?? 0) + 1;
+        return true;
+      } catch (error) {
+        model.notice = '手账收录失败：' + message(error);
+        return false;
+      }
+    },
     retryPhoneSync() {
       if (dead || !storyPhone || model.switchingProtagonist) return;
       try {
         bridge.save(snapshot());
         void storyPhone.sync().catch(() => {});
       } catch (error) { model.phoneLinkStatus = 'error'; model.phoneLinkError = message(error); }
+    },
+    async composeNotebookPage(options) {
+      if (dead || doc.hidden || model.busy || model.switchingProtagonist || pendingInteraction || smsWorking || activePhoneReply || bridge.session() !== session) {
+        model.notice = '当前正在处理其他剧情或操作，请稍后再代写这一页。';
+        return null;
+      }
+      const request = ++epoch;
+      model.busy = true; model.notice = '';
+      try {
+        const reply = await bridge.generate(
+          options.instruction?.trim()
+            ? `请结合当下情境为该人物手账写一页并搭配贴纸装饰：${options.instruction.trim().slice(0, 200)}`
+            : '请结合当前人物性格与近期经历，为该人物手账写一页并搭配贴纸装饰。',
+          snapshot(),
+          { kind: 'notebook_compose', ...options },
+        );
+        if (!stillCurrent(request)) return null;
+        const draft = reply.notebookPages?.[0] ?? null;
+        if (!draft) throw new Error('未能生成有效的手账页内容，请重试。');
+        return draft;
+      } catch (error) {
+        if (stillCurrent(request)) model.notice = message(error);
+        return null;
+      } finally {
+        if (stillCurrent(request)) model.busy = false;
+      }
     },
     setDismissHandler(handler) { dismissOverlay = handler; },
   };
