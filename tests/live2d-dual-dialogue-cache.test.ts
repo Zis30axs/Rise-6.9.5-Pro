@@ -122,6 +122,13 @@ async function flushUi(rounds = 4) {
   await nextTick();
 }
 
+async function flushPortraitStartup() {
+  await nextTick();
+  expect(runtimeMocks.createSoyoPortrait).not.toHaveBeenCalled();
+  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  await flushUi();
+}
+
 const apps: VueApp[] = [];
 function mountRoot(app: VueApp): HTMLElement {
   const root = document.createElement('div');
@@ -208,7 +215,7 @@ describe('live2d dual dialogue standby cache', () => {
     };
 
     const root = mountRoot(createApp(RootApp, { model, actions }));
-    await flushUi();
+    await flushPortraitStartup();
 
     expect(runtimeMocks.createSoyoPortrait).toHaveBeenCalledTimes(1);
     expect(root.querySelector('[data-live2d-person="soyo"][data-live2d-status="ready"]')).not.toBeNull();
@@ -291,7 +298,7 @@ describe('live2d dual dialogue standby cache', () => {
     };
 
     const root = mountRoot(createApp(RootApp, { model, actions }));
-    await flushUi();
+    await flushPortraitStartup();
     expect(runtimeMocks.createSoyoPortrait).toHaveBeenCalledTimes(1);
 
     const advanceBtn = () => root.querySelector<HTMLButtonElement>('button[aria-label="点击推进剧情"]')!;

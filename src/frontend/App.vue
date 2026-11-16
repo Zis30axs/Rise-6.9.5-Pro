@@ -163,6 +163,8 @@ const presentationMode = ref<PresentationMode>(readPresentationMode());
 const graphicsRevision = ref(0);
 const novelMode = computed(() => presentationMode.value === 'novel' || isInternationalLocation(props.model.state.locationId));
 const novelHistory = ref(false);
+const live2dReady = ref(false);
+let cancelLive2dStartup: (() => void) | undefined;
 provide(live2dContext,()=>({session:props.model.memoryScope,state:props.model.state,enabled:novelMode.value&&!novelHistory.value}));
 const live2dCache = createLive2dPortraitCache();
 provide(live2dPortraitCacheKey, live2dCache);
@@ -1035,9 +1037,23 @@ onMounted(async () => {
       });
     }
   });
-  await nextTick(); jumpToLatest();
+  await nextTick();
+  if (unmounting) return;
+  jumpToLatest();
+  const host = shell.value?.ownerDocument.defaultView;
+  if (!host) return;
+  // Let the host paint the interactive novel shell before starting Live2D.
+  let frame = host.requestAnimationFrame(() => {
+    frame = host.requestAnimationFrame(() => {
+      cancelLive2dStartup = undefined;
+      void live2dPack()?.restore?.().catch(error => console.warn('[UnreadCity Live2D]', error));
+      live2dReady.value = true;
+    });
+  });
+  cancelLive2dStartup = () => host.cancelAnimationFrame(frame);
 });
 onBeforeUnmount(() => {
+  cancelLive2dStartup?.();
   sandboxCache.close();
   stopLive2dPackCacheSync?.();
   document.removeEventListener('visibilitychange', clearLive2dCacheOnHide);
@@ -1065,23 +1081,25 @@ onBeforeUnmount(() => {
     </div>
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || debugOpen" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || debugOpen || undefined" style="display: contents">
     <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
-    <NovelInvitationPortraits v-if="visibleInvitationStage"
+    <NovelInvitationPortraits v-if="live2dReady && visibleInvitationStage"
       :refresh-token="graphicsRevision"
       :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"
       :location-id="model.state.locationId" :active="portraitActive && readingMode !== 'expanded'" />
-    <NovelNpcPortrait v-if="(novelMode || encounterPerson) && !visibleInvitationStage && live2dIdentity(portraitLabel) !== 'soyo'"
+    <NovelNpcPortrait v-if="(novelMode ? live2dReady : encounterPerson) && !visibleInvitationStage && live2dIdentity(portraitLabel) !== 'soyo'"
       :refresh-token="graphicsRevision"
       :portrait-id="npcPortraitId" :speaker="portraitLabel" :emotion="portraitEmotion"
       :dimmed="portraitDimmed" :active="portraitActive" :location-id="model.state.locationId" />
     <!-- Preserve the original v-if/v-else-if scene switch. An inactive
          single-person Live2D remains mounted while the paired stage is shown. -->
-    <NovelLive2DPortrait v-if="novelMode" :speaker="live2dIdentity(portraitLabel) === 'soyo' ? portraitLabel : ''" :emotion="portraitEmotion"
-      :refresh-token="graphicsRevision" :dimmed="portraitDimmed" :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'">
-    <SoyoLive2D
-      :refresh-token="graphicsRevision"
-      :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
-      :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
-    </NovelLive2DPortrait>
+    <template v-if="novelMode">
+      <NovelLive2DPortrait v-if="live2dReady" :speaker="live2dIdentity(portraitLabel) === 'soyo' ? portraitLabel : ''" :emotion="portraitEmotion"
+        :refresh-token="graphicsRevision" :dimmed="portraitDimmed" :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'">
+        <SoyoLive2D
+          :refresh-token="graphicsRevision"
+          :emotion="portraitEmotion" :speaker="portraitLabel" :dimmed="portraitDimmed"
+          :active="!visibleInvitationStage && !activeWindow && readingMode !== 'expanded'" />
+      </NovelLive2DPortrait>
+    </template>
     <InteriorScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else-if="model.state.interior" ref="scene" :interior="model.state.interior" :stress="model.state.player.stress" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused || bedRestPicker || !!studyInteractionId || cookOpen" @presence="scenePresence" @interact="roomInteract" @leave="leaveInterior" />
     <InteractiveScene :key="currentProtagonist" :protagonist="currentProtagonist" v-else ref="scene" :location-id="model.state.locationId" :presence="model.state.scene" :air-traffic="model.state.airTraffic" :people="scenePeople" :busy="model.busy || !!switchingLease" :hour="model.state.clock.hour" :phone-active="activeWindow === 'phone'" :free-walk="readingMode === 'hidden' && !activeWindow" :paused="scenePaused" @hotspot="sceneHotspot" @presence="scenePresence" @encounter="sceneEncounter" />
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />

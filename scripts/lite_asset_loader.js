@@ -152,16 +152,25 @@ async function __ucPackHydrate(pack) {
   let db;
   try {
     db = await __ucLiteDb(pack.db);
-    if (await __ucLiteRead(db, 'meta', 'ready') !== pack.sha) return false;
+    // A release-only script change also changes the manifest digest. A previous
+    // completed install can supply the same already-verified content hashes.
+    const ready = await __ucLiteRead(db, 'meta', 'ready');
+    if (typeof ready !== 'string' || !/^[0-9a-f]{64}$/.test(ready)) return false;
     const tx = db.transaction('assets', 'readonly');
-    await Promise.all(pack.entries.map(row => new Promise((resolve, reject) => {
-      const request = tx.objectStore('assets').get(row.sha256);
-      request.onsuccess = () => {
-        if (request.result instanceof Blob) pack.urls.set(row.sha256, URL.createObjectURL(request.result));
-        resolve();
-      };
-      request.onerror = () => reject(request.error || Error('读取外置素材失败'));
-    })));
+    const store = tx.objectStore('assets');
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onabort = () => reject(tx.error || Error('读取外置素材失败'));
+      for (const row of pack.entries) {
+        const request = store.get(row.sha256);
+        request.onsuccess = () => {
+          const blob = request.result;
+          if (blob instanceof Blob && blob.size === row.bytes && blob.type === row.mime) {
+            pack.urls.set(row.sha256, URL.createObjectURL(blob));
+          }
+        };
+      }
+    });
     return pack.urls.size === pack.entries.length;
   } catch (error) {
     console.warn('[UnreadCity Lite] 无法读取素材，使用缺省外观：', error);
@@ -202,11 +211,20 @@ function __ucPackButton(pack, installed) {
   window.addEventListener('pagehide', () => { button.remove(); input.remove(); }, {once: true});
 }
 async function __uc_lite_init__() {
-  const installed = await __ucPackHydrate(__UC_CORE_PACK__);
-  __ucPackButton(__UC_CORE_PACK__, installed);
-  window.addEventListener('pagehide', () => {
+  let closed = false;
+  const release = () => {
     for (const url of __UC_LITE_URLS__.values()) URL.revokeObjectURL(url);
     __UC_LITE_URLS__.clear();
+  };
+  window.addEventListener('pagehide', () => {
+    closed = true;
+    release();
   }, {once: true});
+  const installed = await __ucPackHydrate(__UC_CORE_PACK__);
+  if (closed || !installed) release();
+  if (closed) return false;
+  __ucPackButton(__UC_CORE_PACK__, installed);
+  // The native installer is still usable if the required Lite pack is missing.
+  if (!installed) void globalThis.__UC_LIVE2D__?.restore().catch(error => console.warn('[UnreadCity Live2D]', error));
   return installed;
 }
