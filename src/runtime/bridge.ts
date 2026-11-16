@@ -4,7 +4,7 @@ import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
-import { bandStoryMemoryPrompt } from './band-story-memory';
+import { storyMemoryPrompt } from './story-memory';
 import { otherSidePromptContext } from './other-side';
 import { strategyPromptContext } from './strategy-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
@@ -457,7 +457,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const recentNarrativeText = snapshot.story.filter(row => !row.id.startsWith(PHONE_SCENE_PREFIX))
         .slice(-6).map(row => row.text).join('\n');
       const narrative = narrativeContext(snapshot);
-      const bandMemory = bandStoryMemoryPrompt(narrative.owner, narrative.counterpartsInScene, input, options?.kind);
+      const storyMemory = storyMemoryPrompt(narrative.owner, narrative.counterpartsInScene, input, options?.kind);
       const sideOpportunity = otherSidePromptContext(snapshot);
       const weekly = weeklyMemoryContext(snapshot);
       const focusedOtherProtagonists = new Set(otherProtagonists(activeProtagonist(snapshot)).filter(id => {
@@ -669,7 +669,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       // the same non-negotiable format at the end of the actual user turn.
       // The latest narrative text remains data and never becomes an output template.
       const taggedPrompts = applyMandatoryStoryTagContract(
-        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${bandMemory}\n${systemPrompt}`,
+        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${storyMemory}\n${systemPrompt}`,
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;
