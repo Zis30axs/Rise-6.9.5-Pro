@@ -93,7 +93,8 @@ export function selectOutfit(models:readonly Live2dOutfit[], person:Live2dPerson
 }
 function outfitTrigger(state: WorldState, person: Live2dPerson): string {
   const current = state.wardrobe?.[person];
-  if (current?.outfitId || current?.category) return 'saved:' + JSON.stringify([current.outfitId ?? null, current.category ?? null]);
+  if (current?.outfitId || current?.category || Object.keys(current?.details ?? {}).length)
+    return 'saved:' + JSON.stringify([current.outfitId ?? null, current.category ?? null]);
   return JSON.stringify(outfitEnvironment(state, person));
 }
 export function chooseLive2dOutfit(session:string|undefined,state:WorldState,person:Live2dPerson,status=live2dPack()?.status()):{outfit:Live2dOutfit;choice:OutfitChoice}|null {
