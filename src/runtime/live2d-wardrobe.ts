@@ -7,7 +7,7 @@ import { gameCalendar } from './game-calendar';
 import { resolveWeather, type WeatherId } from './weather';
 import { performanceMemberIds } from './livehouse';
 import { isStudyInteraction } from './campus-interiors';
-import { wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
+import { WARDROBE_CATEGORIES, wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
 
 export interface OutfitEnvironment {
   day: number; period: number; month: number; location: string; room: string | null;
@@ -148,7 +148,13 @@ export function live2dAppearancePrompt(session:string|null,state:WorldState):str
     else if(outfit)lines.push(`${name}：${outfit.label}。${outfit.description}`);
     else if(entry?.category)lines.push(`${name}：当前服装类别为${wardrobeCategoryLabel(entry.category)}。`);
   }
-  return lines.length?'\n【当前衣着记录】\n'+lines.join('\n')+'\n衣着档案优先于旧立绘说明。人物可以在剧情中合理换装；更新时输出 wardrobe_updates，不要把资源模型当成服装白名单。未记载的衣物细节不代表已知，未知姓名仍不可凭衣着认出。\n':'';
+  const categories: string[] = [];
+  for (const [person] of visibleLive2dPeople(state)) {
+    const available=WARDROBE_CATEGORIES.filter(row=>status.models.some(model=>model.person===person&&model.tags.includes(row.id)));
+    if (available.length) categories.push(person+':'+available.map(row=>row.id).join('/'));
+  }
+  return (lines.length?'\n【当前衣着记录】\n'+lines.join('\n')+'\n衣着档案优先于旧立绘说明；只在自然相关时描写。未记载的贴身衣物不代表已知。\n':'')
+    +(categories.length?'【可切换 Live2D 衣装大类】'+categories.join('；')+'。剧情中的衣着文字可超出这些资源类别。\n':'');
 }
 
 /** Replace request-local legacy outfit facts only for a confirmed portrait. */
