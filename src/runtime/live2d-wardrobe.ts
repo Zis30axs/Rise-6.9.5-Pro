@@ -7,6 +7,7 @@ import { gameCalendar } from './game-calendar';
 import { resolveWeather, type WeatherId } from './weather';
 import { performanceMemberIds } from './livehouse';
 import { isStudyInteraction } from './campus-interiors';
+import { wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
 
 export interface OutfitEnvironment {
   day: number; period: number; month: number; location: string; room: string | null;
@@ -90,12 +91,31 @@ export function selectOutfit(models:readonly Live2dOutfit[], person:Live2dPerson
   for(let i=0;i<candidates.length;i++){sample-=weights[i];if(sample<0)return candidates[i];}
   return candidates[candidates.length-1];
 }
+function outfitTrigger(state: WorldState, person: Live2dPerson): string {
+  const current = state.wardrobe?.[person];
+  if (current?.outfitId || current?.category) return 'saved:' + JSON.stringify([current.outfitId ?? null, current.category ?? null]);
+  return JSON.stringify(outfitEnvironment(state, person));
+}
 export function chooseLive2dOutfit(session:string|undefined,state:WorldState,person:Live2dPerson,status=live2dPack()?.status()):{outfit:Live2dOutfit;choice:OutfitChoice}|null {
   if(!session||!status?.enabled||!visibleLive2dPeople(state).has(person))return null;
-  const env=outfitEnvironment(state,person), trigger=JSON.stringify(env);
+  const env=outfitEnvironment(state,person), trigger=outfitTrigger(state,person);
+  const current=state.wardrobe?.[person];
   const previous=choices(session)[person];
-  let outfit=previous?.pack===status.pack&&previous.trigger===trigger?status.models.find(row=>row.id===previous.id&&row.person===person):undefined;
-  outfit??=selectOutfit(status.models,person,env,session)??undefined;
+  let outfit=current?.outfitId?status.models.find(row=>row.id===current.outfitId&&row.person===person):undefined;
+  if (!outfit && current?.category) {
+    const candidates=status.models.filter(row=>row.person===person&&row.tags.includes(current.category!))
+      .sort((a,b)=>a.id.localeCompare(b.id));
+    if (candidates.length) {
+      outfit=previous?.pack===status.pack&&previous.trigger===trigger
+        ?candidates.find(row=>row.id===previous.id):undefined;
+      outfit??=candidates[hash(session+':'+person+':'+current.category)%candidates.length];
+    }
+  }
+  if (!outfit) {
+    outfit=previous?.pack===status.pack&&previous.trigger===trigger
+      ?status.models.find(row=>row.id===previous.id&&row.person===person):undefined;
+    outfit??=selectOutfit(status.models,person,env,session)??undefined;
+  }
   if(!outfit)return null;
   const choice={id:outfit.id,trigger,pack:status.pack};
   if(previous?.id!==choice.id||previous.trigger!==trigger||previous.pack!==status.pack){
@@ -115,7 +135,7 @@ export function confirmLive2dOutfit(session:string,person:Live2dPerson,choice:Ou
 }
 function confirmedOutfit(session:string,state:WorldState,person:Live2dPerson,status:Live2dPackStatus):Live2dOutfit|undefined {
   const row=confirmed.get(session)?.get(person);
-  if(!row?.leases.size||row.generation!==status.generation||row.choice.pack!==status.pack||row.choice.trigger!==JSON.stringify(outfitEnvironment(state,person)))return undefined;
+  if(!row?.leases.size||row.generation!==status.generation||row.choice.pack!==status.pack||row.choice.trigger!==outfitTrigger(state,person))return undefined;
   return status.models.find(model=>model.person===person&&model.id===row.choice.id);
 }
 export function live2dAppearancePrompt(session:string|null,state:WorldState):string {
@@ -123,9 +143,12 @@ export function live2dAppearancePrompt(session:string|null,state:WorldState):str
   const lines:string[]=[];
   for(const [person,name] of visibleLive2dPeople(state)){
     const outfit=confirmedOutfit(session,state,person,status);
-    if(outfit)lines.push(`${name}：${outfit.label}。${outfit.description}`);
+    const entry=state.wardrobe?.[person], details=wardrobeText(entry);
+    if(details) lines.push(`${name}：${details}。`);
+    else if(outfit)lines.push(`${name}：${outfit.label}。${outfit.description}`);
+    else if(entry?.category)lines.push(`${name}：当前服装类别为${wardrobeCategoryLabel(entry.category)}。`);
   }
-  return lines.length?'\n【当前可见衣着】\n'+lines.join('\n')+'\n以上是此刻已确认的衣着；只在自然相关时适度描写。衣着名称不代表入学、参加演出或其他事件已发生，也不改变身份、性格、关系与行动结算。未知姓名仍不可凭衣着认出。\n':'';
+  return lines.length?'\n【当前衣着记录】\n'+lines.join('\n')+'\n衣着档案优先于旧立绘说明。人物可以在剧情中合理换装；更新时输出 wardrobe_updates，不要把资源模型当成服装白名单。未记载的衣物细节不代表已知，未知姓名仍不可凭衣着认出。\n':'';
 }
 
 /** Replace request-local legacy outfit facts only for a confirmed portrait. */
@@ -135,7 +158,9 @@ export function live2dAppearanceScene<T extends {nearbyPeople: {id:string;outfit
   const project=<P extends {id:string;outfit?:unknown}>(person:P):P=>{
     const id=live2dIdentity(person.id);
     const outfit=id&&visible.has(id)?confirmedOutfit(session,state,id,status):undefined;
-    return outfit?{...person,outfit:`${outfit.label}。${outfit.description}`}:person;
+    const entry=id?state.wardrobe?.[id]:undefined, details=wardrobeText(entry);
+    return details?{...person,outfit:details}
+      :outfit?{...person,outfit:`${outfit.label}。${outfit.description}`}:person;
   };
   return {...scene,nearbyPeople:scene.nearbyPeople.map(project),
     ...('encounter' in scene?{encounter:scene.encounter?project(scene.encounter):scene.encounter}:{})} as T;
