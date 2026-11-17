@@ -4,16 +4,25 @@ import {networkAccounts, networkOwnerId, parseInternetState, guestAccount, regis
 import {createInitialState, reduceState, parseState} from '../src/runtime/model';
 import {enableProtagonists} from '../src/runtime/protagonist-world';
 import {createWorldPhoneApi} from '../src/frontend/world-phone';
+import background from '../src/worldbook/background-characters.json';
 
 describe('permanent network identities', () => {
-  it('covers every worldbook personId exactly once, with unique permanent handles and mail', () => {
+  it('covers eligible worldbook person IDs exactly once, with unique permanent handles and mail', () => {
     for (const file of readdirSync('src/worldbook').filter(f => f.endsWith('.json'))) {
       const book = JSON.parse(readFileSync('src/worldbook/' + file, 'utf8'));
-      for (const e of book.entries ?? []) if (e.extensions?.personId)
-        expect(networkAccounts.filter(a => a.personId === e.extensions.personId)).toHaveLength(1);
+      for (const e of book.entries ?? []) {
+        const {personId, networkAccount} = e.extensions ?? {};
+        if (personId) expect(networkAccounts.filter(a => a.personId === personId)).toHaveLength(networkAccount === false ? 0 : 1);
+      }
     }
     for (const field of ['id', 'username', 'email'] as const) expect(new Set(networkAccounts.map(a => a[field])).size).toBe(networkAccounts.length);
     expect(networkAccounts.every(a => a.email.endsWith('@post.sov'))).toBe(true);
+  });
+  it.each(['toyokawa-kiyoaki', 'toyokawa-sadaharu', 'toyokawa-mizuho'])('keeps %s out of the fixed Xitter roster', personId => {
+    const person = background.entries.find(entry => entry.extensions.personId === personId)!;
+    expect(person.extensions.networkAccount).toBe(false);
+    expect(resolveNetworkAccount(personId)).toBeNull();
+    expect(resolveNetworkAccount(person.name)).toBeNull();
   });
   it('preserves guest randomness while storing each new name once and protecting fixed NPCs', () => {
     const first = registerNetworkGuests(undefined, ['路过的纸飞机', '路过的纸飞机', '若叶睦', '睦', '素世', '@MUTSUMI']);

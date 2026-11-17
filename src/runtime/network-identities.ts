@@ -1,6 +1,7 @@
 import majo from '../worldbook/majo-residents.json';
 import watanare from '../worldbook/watanare-residents.json';
 import bang from '../worldbook/bang-dream-canon.json';
+import background from '../worldbook/background-characters.json';
 import circle from '../worldbook/circle-livehouse.json';
 import clinic from '../worldbook/fengjin-clinic.json';
 import type { ProtagonistId } from './dual-protagonists';
@@ -41,13 +42,16 @@ const authored: Record<string, [string, string, string]> = {
   'watanare-kaho': ['小小快门', 'kaho', '发现日常里的有趣瞬间。'],
   fengjin: ['风中的花信', 'fengjin', '愿每个人都能照顾好自己。'],
 };
-type Entry = { name: string; keys?: string[]; extensions?: { personId?: string } };
+type Entry = { name: string; keys?: string[]; extensions?: { personId?: string; networkAccount?: boolean } };
 const entries: Entry[] = [
   {name: '长崎素世', keys: ['素世'], extensions: {personId: 'soyo'}},
   {name: '丰川祥子', keys: ['祥子'], extensions: {personId: 'sakiko'}},
-  ...majo.entries, ...watanare.entries, ...bang.entries, ...circle.entries, ...clinic.entries,
+  ...majo.entries, ...watanare.entries, ...bang.entries, ...circle.entries, ...clinic.entries, ...background.entries,
 ];
-const people = [...new Map(entries.filter(e => e.extensions?.personId).map(e => [e.extensions!.personId!, e])).entries()];
+const people = [...new Map(entries.flatMap(entry => {
+  const {personId, networkAccount} = entry.extensions ?? {};
+  return personId && networkAccount !== false ? [[personId, entry] as const] : [];
+})).entries()];
 const neutralNames = ['微风信笺', '路灯下', '晴窗一角', '晚风来信', '雨后散步', '薄荷书签', '街角手记', '留白日记'];
 function code(id: string) {
   let n = 2166136261;
