@@ -1,6 +1,6 @@
 import type { CharacterContact } from '../frontend/types';
 import { characterForPerson } from '../frontend/character-appearance';
-import { bangFamilyCast, bangResidentCast, residentCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
+import { bangFamilyCast, bangResidentCast, residentCast, toyokawaMizuhoCast, watanareResidentCast, WATANARE_QUINTET_IDS } from './npc-cast';
 
 /**
  * Opening affinity for people who already know each other. New meetings stay at 0.
@@ -31,6 +31,7 @@ export const STARTING_RELATION: Record<StartingOwner, Record<string, StartingAff
     'bang-taki': 'complicated',
   },
   sakiko: {
+    'toyokawa-mizuho': 'complicated',
     'protagonist-soyo': 'complicated',
     'bang-mutsumi': 'dearest',
     'bang-uika': 'dearest',
@@ -89,6 +90,7 @@ const STARTING_RELATION_NOTE: Partial<Record<StartingOwner, Readonly<Record<stri
     'bang-mutsumi': '暗藏内疚与复杂牵挂（深知睦对自己的依恋，经历过退还黄瓜的刺痛，心怀愧意又不知如何面对）',
   },
   sakiko: {
+    'toyokawa-mizuho': '母女牵挂与旧怨并存（当年母亲受定治施压没有同行；至今主动联系，祥子依然别扭疏远，不等于已经和解）',
     'protagonist-soyo': '微尴尬的和解（深知昔日伤害无法轻易抹去，在温情重拾的同时恪守体面分寸）',
     'bang-uika': '命运支柱（自幼仰望的星光，低谷时无条件接纳与守护自己的避风港）',
     'bang-nyamu': '商业妥协与舞台默契（虽有揭面旧怨与理念碰撞，但重组后已形成成熟的职业合作协作）',
@@ -192,6 +194,18 @@ export function sakikoInitialBandContacts(): CharacterContact[] {
     bandContact('bang-umiri', 'Ave Mujica · 乐队'),
     bandContact('bang-nyamu', 'Ave Mujica · 乐队'),
   ].map(contact => seed('sakiko', contact));
+}
+
+/** The family has long known each other's numbers. Existing saves retain their saved contact choices. */
+export function sakikoInitialFamilyContacts(): CharacterContact[] {
+  const mother = toyokawaMizuhoCast.find(person => person.id === 'toyokawa-mizuho');
+  if (!mother) throw new Error('丰川瑞穗未登记为常驻家人');
+  return [seed('sakiko', {
+    id: mother.id, name: mother.name, tag: '母亲 · 关系疏远',
+    summary: mother.publicProfile,
+    affinity: 0, status: '已互留联系方式',
+    portraitId: characterForPerson(mother.id), sourcePersonId: mother.id, isMain: true,
+  })];
 }
 
 /** Everyone already on Soyo's phone when a new game begins. */

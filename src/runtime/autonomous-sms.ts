@@ -154,7 +154,12 @@ export function stageAutonomousSms(before: WorldState, after: WorldState, random
   const roll = random();
   if (!Number.isFinite(roll) || roll < 0 || roll >= AUTONOMOUS_SMS_CHANCE) return next;
   const choice = random();
-  const picked = eligible[Math.min(eligible.length - 1, Math.floor((Number.isFinite(choice) && choice >= 0 ? choice : 0) * eligible.length))]!;
+  // Sakiko's mother initiates contact more often than a random acquaintance,
+  // but the existing global chance, cooldown, daily cap and LLM silence still apply.
+  const mother = owner === 'sakiko' ? eligible.find(row => row.kind === 'npc' && row.peerId === 'toyokawa-mizuho') : undefined;
+  const picked = mother && choice < 0.45
+    ? mother
+    : eligible[Math.min(eligible.length - 1, Math.floor((Number.isFinite(choice) && choice >= 0 ? choice : 0) * eligible.length))]!;
   state.pending = { id: 'auto:' + owner + ':' + now, owner, at: now, ...picked };
   return next;
 }
