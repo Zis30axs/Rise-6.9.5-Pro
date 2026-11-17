@@ -28,6 +28,7 @@ import { resolveWeather, WEATHER_EFFECTS } from '../runtime/weather';
 import { lawCases, lawOwner } from '../runtime/law-career';
 import { instrumentSkill, INSTRUMENT_SKILL_CAP } from '../runtime/livehouse-visit';
 import type { ShellActions, ShellModel } from './types';
+import WardrobePanel from './WardrobePanel.vue';
 
 type Panel = 'phone' | 'map' | 'schedule' | 'status' | 'abilities' | 'society' | 'focus' | 'decisions';
 const props = defineProps<{ panel: Panel; model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>();
@@ -192,6 +193,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
     <template v-else-if="panel === 'status'">
       <StrategyStatusHero :state="model.state" />
       <StoryEngineSettings :memory-scope="model.memoryScope || ''" />
+      <WardrobePanel :model="model" :actions="actions" />
       <details v-if="model.state.protagonists" class="wp-status-section" data-testid="protagonist-recap" :data-owner="protagonist" open>
         <summary>{{ protagonistNames[protagonist] }} · 各自的日常</summary>
         <p class="wp-footnote">这是你亲历或已留下记录的事情。继续故事时，会从这些经历接着写。</p>
