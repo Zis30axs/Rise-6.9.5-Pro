@@ -152,6 +152,24 @@ export function commitWardrobeUpdates(state: WorldState, updates: readonly Wardr
   }
   return { ...state, wardrobe };
 }
+/** Visible non-Live2D protagonists also keep their saved look across viewpoints. */
+export function unmodeledWardrobePrompt(state: WorldState): string {
+  const visible = new Map<'emma' | 'renako', string>();
+  const owner = activeProtagonist(state);
+  if (owner === 'emma') visible.set(owner, '樱羽艾玛');
+  if (owner === 'renako') visible.set(owner, '甘织玲奈子');
+  for (const row of worldSceneContext(state)?.nearbyPeople ?? []) {
+    const id = wardrobeIdentity(row.id);
+    if (id === 'emma' || id === 'renako') visible.set(id, row.name);
+  }
+  const lines:string[]=[];
+  for (const [id, name] of visible) {
+    const entry=state.wardrobe?.[id];
+    const outfit=wardrobeText(entry) || (entry?.category ? wardrobeCategoryLabel(entry.category) : '');
+    if (outfit) lines.push(name+'：'+outfit);
+  }
+  return lines.length ? '\n【其他在场主角的衣着记录】\n'+lines.join('\n')+'\n衣着记录优先于过时的立绘描述。\n' : '';
+}
 export function wardrobeText(entry?: WardrobeEntry): string {
   if (!entry?.details) return '';
   return (Object.keys(WARDROBE_DETAIL_LABELS) as WardrobeDetailKey[])
