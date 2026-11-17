@@ -59,7 +59,7 @@ import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chr
 import { acknowledgeNpcGiftDaily, parseNpcGiftDailyState } from './npc-gift-traits';
 import { applyMutsumiBalanceTurn, hasMutsumiBalanceReceipt, mutsumiBalanceOpportunity } from './mutsumi-balance';
 import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
-import { parseWardrobeState, wardrobeCategory, commitWardrobeUpdates } from './wardrobe-state';
+import { parseWardrobeState, wardrobeCategory, commitWardrobeUpdates, seedWardrobe } from './wardrobe-state';
 import { live2dPack } from './live2d-pack';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
@@ -2241,7 +2241,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   // than re-rolling the probability gate against a state that already advanced.
   // The chronicle receipt is supplied by the bridge, not the LLM output
   // protocol: keep it out of the strict story parser on BOTH commit paths.
-  const { worldChronicleReceipt, ...modelResult } = result;
+  const { worldChronicleReceipt, wardrobeBootstrap, ...modelResult } = result;
   // Saved turns cannot re-roll an exhausted opportunity, but their exact
   // structured effects must still match the original narrative receipt.
   const { otherSide: requestedSide, returnStory: requestedReturn,
@@ -2296,7 +2296,8 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const withChronicle = acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt);
   const withGiftDaily = acknowledgeNpcGiftDaily(before, withChronicle, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
   const withBalance = applyMutsumiBalanceTurn(before, withGiftDaily, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
-  return parseState(commitWardrobeUpdates(withBalance, alreadyCommitted ? [] : wardrobeUpdates ?? [], ids.assistantId));
+  return parseState(commitWardrobeUpdates(seedWardrobe(withBalance, alreadyCommitted ? undefined : wardrobeBootstrap),
+    alreadyCommitted ? [] : wardrobeUpdates ?? [], ids.assistantId));
 }
 
 
