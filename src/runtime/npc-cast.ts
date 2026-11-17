@@ -1,6 +1,7 @@
 import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
 import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
+import toyokawaBackgroundLore from '../worldbook/background-characters.json' with { type: 'json' };
 import circleLore from '../worldbook/circle-livehouse.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
@@ -33,7 +34,17 @@ export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries a
 export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId?.startsWith('bang-')) as typeof lore.entries);
 export const bangFamilyCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId && !entry.extensions.personId.startsWith('bang-')) as typeof lore.entries);
 export const circleStaffCast = mapWorldbookResidents(circleLore.entries.filter(entry => entry.extensions?.personId) as typeof lore.entries);
-export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast, ...circleStaffCast]);
+/** Only Mizuho is an active background-family NPC; the other two stay lore-only.
+ * Her home is deliberately unknown rather than misidentifying the Toyokawa mansion. */
+const mizuhoProfile = toyokawaBackgroundLore.entries.find(entry => entry.extensions.personId === 'toyokawa-mizuho');
+export const toyokawaMizuhoCast = mizuhoProfile ? [{
+  id: mizuhoProfile.extensions.personId,
+  name: mizuhoProfile.name, aliases: mizuhoProfile.keys,
+  profile: mizuhoProfile.content, publicProfile: mizuhoProfile.extensions.publicProfile,
+  anchor: 'downtown-fountain', home: '',
+  majorId: null, careerId: null, qualification: null,
+}] : [];
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast, ...toyokawaMizuhoCast, ...circleStaffCast]);
 
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
@@ -213,6 +224,21 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   // Sherry's legal track is fixed. During office hours she is available to
   // investigate cases with Emma, rather than disappearing into a generic NPC shift.
   // Canon places Taki's job at the live house. The existing interior is that workplace.
+  if (id === 'toyokawa-mizuho') {
+    // Low-frequency visits in public; no invented residence or guaranteed encounter.
+    const visitDay = (clock.day ?? 1) % 7 === 2 || (clock.day ?? 1) % 7 === 5;
+    const visiting = visitDay && minute >= 14 * 60 && minute < 17 * 60;
+    return {
+      anchorId: visiting ? 'downtown-fountain' : null,
+      locationId: visiting ? 'downtown' : '',
+      activity: visiting
+        ? '在目白台公共街区散步、办事；若祥子愿意，她想当面问候'
+        : '私人行程未公开；可能通过短信关心祥子',
+      available: visiting,
+      housing: null, district: visiting ? 'traditional-downtown' : null,
+      outfit: residentOutfit(id),
+    };
+  }
   if (id === 'nagasaki-mother') {
     const morningHome = minute >= 7 * 60 && minute < 9 * 60 + 30;
     const eveningHome = minute >= 17 * 60 + 30 && minute < 23 * 60 + 30;
