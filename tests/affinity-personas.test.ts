@@ -2,11 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { affinityPersonaPrompt } from '../src/runtime/affinity-personas';
 import { AFFINITY_TIERS } from '../src/runtime/affinity-tiers';
 import { createTavernBridge } from '../src/runtime/bridge';
+import { PROTAGONISTS } from '../src/runtime/dual-protagonists';
 import { createInitialState, reduceState } from '../src/runtime/model';
-import { residentPresence } from '../src/runtime/npc-cast';
+import { allResidentCast, residentPresence } from '../src/runtime/npc-cast';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { getSceneArea, sceneLocationId, scenePersonAnchors } from '../src/runtime/scene-context';
-import { worldSceneContext } from '../src/runtime/world-presence';
+import { protagonistSceneId, worldSceneContext } from '../src/runtime/world-presence';
+import backgroundCharacters from '../src/worldbook/background-characters.json';
+import fengjinClinic from '../src/worldbook/fengjin-clinic.json';
 import type templateBook from '../src/worldbook/affinity-personas.json';
 
 type BookModule = { default: typeof templateBook };
@@ -27,12 +30,26 @@ vi.mock('../src/worldbook/affinity-personas.json', async importOriginal => {
 });
 
 describe('affinity persona worldbook', () => {
-  it('keeps stage entries out of native lore scanning and uses valid tier IDs', async () => {
+  it('covers each registered character with one filled default entry per tier and disables native lore scanning', async () => {
     const { default: book } = await vi.importActual<BookModule>('../src/worldbook/affinity-personas.json');
-    const tiers = new Set(AFFINITY_TIERS.map(tier => tier.id));
-    expect(book.entries.length).toBeGreaterThan(0);
-    expect(book.entries.every(entry => tiers.has(entry.extensions.affinityPersona.tier))).toBe(true);
-    expect(book.entries.every(entry => !entry.enabled && !entry.constant && !entry.keys.length)).toBe(true);
+    const characterIds = new Set([
+      ...PROTAGONISTS.map(protagonistSceneId),
+      ...allResidentCast.map(resident => resident.id),
+      ...backgroundCharacters.entries.map(entry => entry.extensions.personId),
+      ...fengjinClinic.entries.map(entry => entry.extensions.personId),
+    ].filter((id): id is string => typeof id === 'string'));
+    const tierIds = AFFINITY_TIERS.map(tier => tier.id);
+    const defaultEntries: string[] = [];
+    for (const entry of book.entries) {
+      const { characterId, tier } = entry.extensions.affinityPersona;
+      expect(characterIds.has(characterId), entry.name).toBe(true);
+      expect(tierIds, entry.name).toContain(tier);
+      expect(entry.content.trim(), entry.name).not.toBe('');
+      expect(entry.content, entry.name).not.toContain('【待补】');
+      expect([entry.enabled, entry.constant, entry.keys], entry.name).toEqual([false, false, []]);
+      if (!('viewpoint' in entry.extensions.affinityPersona)) defaultEntries.push(`${characterId}:${tier}`);
+    }
+    expect(defaultEntries.sort()).toEqual([...characterIds].flatMap(id => tierIds.map(tier => `${id}:${tier}`)).sort());
   });
 
   it('switches in both directions at the existing boundary and sends only the current entry', () => {
@@ -93,6 +110,7 @@ describe('affinity persona worldbook', () => {
       await bridge.generate('和爱音打招呼。', state);
       const content = generate.mock.calls[0]![0].injects[0]!.content;
       expect(content.split('sample-anon-soyo-friend')).toHaveLength(2);
+      expect(content).toContain('只在世界书或存档已有相应前提、本轮场景与双方意愿也允许时采用');
       expect(content).not.toContain('【待补】');
     } finally {
       bridge.dispose();
