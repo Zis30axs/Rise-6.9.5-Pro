@@ -126,6 +126,15 @@ export function validateWardrobeUpdates(value: unknown, state: WorldState): Ward
     return entry;
   });
 }
+/** The bridge supplies this internal receipt; model text cannot create it. */
+export function seedWardrobe(state: WorldState, bootstrap: WardrobeState | undefined): WorldState {
+  if (!bootstrap || !Object.keys(bootstrap).length) return state;
+  const checked=parseWardrobeState(bootstrap), merged:WardrobeState={...state.wardrobe};
+  for (const name of Object.keys(checked) as WardrobePerson[]) {
+    if (!merged[name]) merged[name]=checked[name];
+  }
+  return {...state, wardrobe:merged};
+}
 export function commitWardrobeUpdates(state: WorldState, updates: readonly WardrobeUpdate[], turnId: string): WorldState {
   if (!updates.length) return state;
   const wardrobe: WardrobeState = { ...state.wardrobe };
