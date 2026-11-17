@@ -348,17 +348,21 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
     onGeometryChange?.();
     event.stopPropagation();
   }
-  const observer = new (win as Window & typeof globalThis).MutationObserver(mutations => {
+  const runtime = win as Window & typeof globalThis;
+  const observer = new runtime.MutationObserver(mutations => {
     // Canvas and phone content changes are not HUD layout changes.
     if (mutations.some(m => m.target === shell ||
-      (m.type === 'childList' && (m.target === shell || (m.target instanceof (win as Window & typeof globalThis).HTMLElement && m.target.hasAttribute('data-layout-part')))) ||
-      (m.type === 'attributes' && m.target instanceof (win as Window & typeof globalThis).HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
+      (m.type === 'childList' && (m.target === shell || (m.target instanceof runtime.HTMLElement && m.target.hasAttribute('data-layout-part')))) ||
+      (m.type === 'attributes' && m.target instanceof runtime.HTMLElement && m.target.hasAttribute('data-layout-part')))) schedule();
   });
   shell.addEventListener('pointerdown', pointerDown, true);
   shell.addEventListener('pointermove', pointerMove, true);
   shell.addEventListener('pointerup', pointerUp, true);
   shell.addEventListener('pointercancel', pointerUp, true);
   win.addEventListener('resize', schedule);
+  // Keyboard dismissal can resize the shell via VisualViewport without a window resize.
+  const resizeObserver = typeof runtime.ResizeObserver === 'function' ? new runtime.ResizeObserver(schedule) : undefined;
+  resizeObserver?.observe(shell);
   observer.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'data-presentation-mode', 'data-phone-expanded'] });
   discover();
   return {
@@ -395,6 +399,7 @@ export function bindShellLayout(shell: HTMLElement, onGeometryChange?: () => voi
       disposed = true;
       if (scheduled) win!.cancelAnimationFrame(scheduled);
       observer.disconnect();
+      resizeObserver?.disconnect();
       win!.removeEventListener('resize', schedule);
       shell.removeEventListener('pointerdown', pointerDown, true);
       shell.removeEventListener('pointermove', pointerMove, true);
