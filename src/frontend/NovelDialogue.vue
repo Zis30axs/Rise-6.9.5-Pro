@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { parseNovelDialogue, type NovelSegment } from './novel-dialogue';
+import MapCharacterAvatar from './MapCharacterAvatar.vue';
+import type { MapAvatarIdentity } from './map-character-avatar';
+import { parseNovelDialogue, type NovelSegment, type NovelSpeakerDetails } from './novel-dialogue';
 import { storyDisplayText } from './story-text';
-import { novelPortraitFocus } from './novel-portrait-focus';
+import { isUnidentifiedNovelSpeaker, novelPortraitFocus } from './novel-portrait-focus';
 import { novelInvitationPortraitFocus, type NovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
 import { protagonistNames } from '../runtime/protagonist-world';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
@@ -20,6 +22,8 @@ const props = defineProps<{
   protagonistId?: ProtagonistId | string;
   memoryScope?: string;
   recognizesSpeaker: (speaker: string) => boolean;
+  speakerAvatar?: (speaker: string, viewpoint: string) => MapAvatarIdentity;
+  readSpeakerDetails?: (speaker: MapAvatarIdentity, entryId: string, viewpoint: string) => NovelSpeakerDetails;
   invitationPair?: NovelInvitationPortraitPair | null;
   focusTarget?: { id: string; token: number };
 }>();
@@ -61,6 +65,35 @@ const rows = computed<ViewingRow[]>(() => props.entries.flatMap(entry => {
 }));
 
 const current = computed(() => rows.value[cursor.value]);
+const speakerAvatar = computed(() => {
+  const row = current.value;
+  const speaker = row?.speaker.trim();
+  if (!row || !speaker || /^(旁白|叙述|narrator|你的行动)$/i.test(speaker) || isUnidentifiedNovelSpeaker(speaker)) return null;
+  return props.speakerAvatar?.(speaker, row.viewpoint) ?? { name: speaker };
+});
+const speakerDialog = ref<HTMLDialogElement>();
+const speakerDetails = ref<NovelSpeakerDetails>({});
+
+function openSpeakerDetails(event: MouseEvent) {
+  const row = current.value;
+  const speaker = speakerAvatar.value;
+  const dialog = speakerDialog.value;
+  if (!row || !speaker || !props.active || !dialog || dialog.open) return;
+  speakerDetails.value = props.readSpeakerDetails?.(speaker, row.entryId, row.viewpoint) ?? {};
+  (event.currentTarget as HTMLButtonElement).focus({ preventScroll: true });
+  dialog.showModal();
+}
+
+function closeSpeakerDetails(): boolean {
+  if (!speakerDialog.value?.open) return false;
+  speakerDialog.value.close();
+  speakerDetails.value = {};
+  return true;
+}
+
+defineExpose({ closeSpeakerDetails });
+watch([current, () => props.active, () => props.memoryScope, () => props.protagonist], closeSpeakerDetails);
+
 // A text edit can reduce the number of dialogue segments without changing entry IDs.
 watch(() => rows.value.length, count => {
   if (count && cursor.value >= count) cursor.value = count - 1;
@@ -182,8 +215,15 @@ function onDialogueWheel(event: WheelEvent) {
 <template>
   <div class="novel-dialogue" data-novel-dialogue :data-segment="cursor" :data-segment-count="rows.length"
     :data-speaker="current?.speaker ?? ''" :data-emotion="current?.emotion ?? ''" @wheel="onDialogueWheel">
-    <button class="novel-dialogue-text" aria-label="点击推进剧情" :disabled="!canAdvance || !!sideChoice" @click="advance">
-      <span class="novel-speaker">{{ current?.speaker || '旁白' }}</span>
+    <div v-if="speakerAvatar" class="novel-speaker-line">
+      <button type="button" class="novel-speaker-avatar" :aria-label="`查看${current?.speaker}的衣着与内心戏`"
+        aria-haspopup="dialog" @click.stop="openSpeakerDetails">
+        <MapCharacterAvatar v-bind="speakerAvatar" />
+      </button>
+      <span class="novel-speaker">{{ current?.speaker }}</span>
+    </div>
+    <button type="button" class="novel-dialogue-text" aria-label="点击推进剧情" :disabled="!canAdvance || !!sideChoice" @click="advance">
+      <span v-if="!speakerAvatar" class="novel-speaker">{{ current?.speaker || '旁白' }}</span>
       <span class="novel-speech" aria-live="polite">{{ current?.text || '故事即将开始。' }}</span>
     </button>
     <div v-if="sideChoice" class="other-side-choices" data-other-side-choices aria-label="旁线视角选择">
@@ -197,5 +237,31 @@ function onDialogueWheel(event: WheelEvent) {
       <button @click="emit('history')">全文回看</button>
       <button v-if="!sideChoice" :disabled="!canAdvance" aria-label="下一句剧情" @click="advance">{{ canAdvance ? '点击继续 ▸' : busy ? '等待下一段…' : '本段已读完' }}</button>
     </div>
+    <dialog ref="speakerDialog" class="novel-speaker-dialog" :aria-label="`${current?.speaker}的人物详情`"
+      @cancel.prevent="closeSpeakerDetails" @click.self="closeSpeakerDetails" @wheel.stop>
+      <section class="novel-speaker-card">
+        <header>
+          <MapCharacterAvatar v-if="speakerAvatar" v-bind="speakerAvatar" />
+          <h2>{{ current?.speaker }}</h2>
+          <button type="button" autofocus aria-label="关闭人物详情" @click="closeSpeakerDetails">×</button>
+        </header>
+        <div class="novel-speaker-card-body">
+          <section v-if="speakerDetails.outfit?.length">
+            <h3>衣着</h3>
+            <dl>
+              <template v-for="detail in speakerDetails.outfit" :key="detail.label">
+                <dt>{{ detail.label }}</dt>
+                <dd>{{ detail.text }}</dd>
+              </template>
+            </dl>
+          </section>
+          <section v-if="speakerDetails.innerThought">
+            <h3>内心戏</h3>
+            <p>{{ speakerDetails.innerThought }}</p>
+          </section>
+          <p v-if="!speakerDetails.outfit?.length && !speakerDetails.innerThought">暂无衣着或内心戏记录。</p>
+        </div>
+      </section>
+    </dialog>
   </div>
 </template>

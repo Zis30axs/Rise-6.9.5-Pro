@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { live2dIdentity, live2dNames } from '../src/runtime/live2d-identity';
-import { chooseLive2dOutfit, confirmLive2dOutfit, live2dAppearancePrompt, live2dAppearanceScene, outfitEnvironment, outfitWeight, selectOutfit, visibleLive2dPeople } from '../src/runtime/live2d-wardrobe';
+import { chooseLive2dOutfit, confirmLive2dOutfit, confirmedWardrobeBootstrap, live2dAppearancePrompt, outfitEnvironment, outfitWeight, selectOutfit, visibleLive2dOutfit, visibleLive2dPeople } from '../src/runtime/live2d-wardrobe';
 import { ensembleEmotion } from '../src/frontend/live2d-ensemble-assets';
-import { createInitialState, reduceState } from '../src/runtime/model';
+import { createInitialState, commitStoryTurn, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { seedWardrobe } from '../src/runtime/wardrobe-state';
 import { createTavernBridge } from '../src/runtime/bridge';
 import manifest from '../assets/live2d-ensemble/manifest.json';
 import type { Live2dOutfit, Live2dPackStatus } from '../src/runtime/live2d-pack';
@@ -27,8 +28,11 @@ describe('optional ensemble wardrobe',()=>{
     const state=enableProtagonists(createInitialState()),session='stable';
     const first=chooseLive2dOutfit(session,state,'soyo')!;expect(first).toBeTruthy();
     expect(live2dAppearancePrompt(session,state)).toBe('');
+    expect(visibleLive2dOutfit(session,state,'素世')).toBeUndefined();
     const release=confirmLive2dOutfit(session,'soyo',first.choice,status);
     expect(live2dAppearancePrompt(session,state)).toContain(first.outfit.description);
+    expect(visibleLive2dOutfit(session,state,'素世')).toBe(first.outfit);
+    expect(visibleLive2dOutfit('other-chat',state,'素世')).toBeUndefined();
     const originalMinute=state.clock.minute;state.clock.minute=(originalMinute+1)%60;
     expect(chooseLive2dOutfit(session,state,'soyo')?.choice).toEqual(first.choice);state.clock.minute=originalMinute;
     const switched=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
@@ -36,6 +40,7 @@ describe('optional ensemble wardrobe',()=>{
     expect(chooseLive2dOutfit(session,returned,'soyo')?.choice).toEqual(first.choice);
     const stored=JSON.parse(localStorage.getItem('unread-city-live2d-wardrobe-v1:stable')!);expect(stored.soyo).toEqual(first.choice);
     release();expect(live2dAppearancePrompt(session,state)).toBe('');
+    expect(visibleLive2dOutfit(session,state,'素世')).toBeUndefined();
   });
   it('rejects stale confirmation and never selects unseen people',()=>{
     const state=createInitialState(),session='offscene';
@@ -69,25 +74,22 @@ describe('optional ensemble wardrobe',()=>{
     expect(outfitEnvironment(state,'soyo').activity).toBe('work');
     state.interior.activityId='mlm-observe-board';expect(outfitEnvironment(state,'soyo').activity).toBe('ordinary');
   });
-  it('keeps encounter and roster outfit facts consistent with confirmed rendering and preserves fallback facts',()=>{
-    const state=createInitialState(),session='scene-projection';
-    const chosen=chooseLive2dOutfit(session,state,'soyo')!;
-    const original={id:'soyo',outfit:'旧衣着',name:'长崎素世'};
-    const unrelated={id:'unknown',outfit:'原有衣着'};
-    const scene={nearbyPeople:[original,unrelated],encounter:{...original}};
-    expect(live2dAppearanceScene(session,state,scene)).toEqual(scene);
-    const release=confirmLive2dOutfit(session,'soyo',chosen.choice,status);
-    const projected=live2dAppearanceScene(session,state,scene);
-    expect(projected.encounter.outfit).toBe(`${chosen.outfit.label}。${chosen.outfit.description}`);
-    expect(projected.nearbyPeople[0].outfit).toBe(projected.encounter.outfit);
-    expect(projected.nearbyPeople[1]).toBe(unrelated);expect(scene.encounter.outfit).toBe('旧衣着');
-    expect(live2dAppearancePrompt(session,state)).toContain(projected.encounter.outfit);
-    status.pack='different-pack';expect(live2dAppearanceScene(session,state,scene)).toEqual(scene);status.pack='test-pack';
-    state.clock.hour=(state.clock.hour+6)%24;expect(live2dAppearanceScene(session,state,scene)).toEqual(scene);
-    state.clock.hour=(state.clock.hour+18)%24;
-    release();expect(live2dAppearanceScene(session,state,scene)).toEqual(scene);
-    status.enabled=false;expect(live2dAppearanceScene(session,state,scene)).toBe(scene);
-    vi.stubGlobal('__UC_LIVE2D__',undefined);expect(live2dAppearanceScene(session,state,scene)).toBe(scene);
+  it('seeds only a rendered Live2D outfit and sends its description only before saving', () => {
+    const state = createInitialState(), session = 'confirm-before-bootstrap';
+    const chosen = chooseLive2dOutfit(session, state, 'soyo')!;
+    expect(confirmedWardrobeBootstrap(session, state)).toEqual({});
+    expect(live2dAppearancePrompt(session, state)).toBe('');
+
+    const release = confirmLive2dOutfit(session, 'soyo', chosen.choice, status);
+    const bootstrap = confirmedWardrobeBootstrap(session, state);
+    expect(bootstrap.soyo?.outfitId).toBe(chosen.outfit.id);
+    expect(live2dAppearancePrompt(session, state, bootstrap)).toContain(chosen.outfit.description);
+
+    const saved = seedWardrobe(state, bootstrap);
+    expect(confirmedWardrobeBootstrap(session, saved)).toEqual({});
+    expect(live2dAppearancePrompt(session, saved)).not.toContain(chosen.outfit.description);
+    release();
+    expect(confirmedWardrobeBootstrap(session, state)).toEqual({});
   });
   it('weights genuine environment facts and produces deterministic varied choices',()=>{
     const env=outfitEnvironment(createInitialState(),'soyo');
@@ -121,9 +123,41 @@ it.each(['tavern','chat','responses'])('injects the confirmed costume through th
   if(mode!=='tavern'){localStorage.setItem('unread-city:story-api:v1',JSON.stringify({mode:'custom',format:mode,endpoint:'https://model.example/v1',model:'test'}));vi.stubGlobal('fetch',fetchMock);}
   await bridge.generate('看看窗外',state);
   const payload=JSON.stringify(mode==='tavern'?generate.mock.calls:fetchMock.mock.calls);
-  expect(payload).toContain('当前可见衣着');expect(payload).toContain(selected.outfit.description);
+  expect(payload).toContain('【初始 Live2D 衣着】');expect(payload).toContain(selected.outfit.description);
   status.enabled=false;
   generate.mockClear();fetchMock.mockClear();await bridge.generate('看看窗外',state);
-  expect(JSON.stringify(mode==='tavern'?generate.mock.calls:fetchMock.mock.calls)).not.toContain('当前可见衣着');
+  expect(JSON.stringify(mode==='tavern'?generate.mock.calls:fetchMock.mock.calls)).not.toContain('【初始 Live2D 衣着】');
   release();bridge.dispose();
+});
+
+it('writes clothing for a static protagonist, then sends only the saved clothing as narrative data', async () => {
+  const answer = '<story>艾玛整理了一下自己的浅蓝色针织衫。</story><phone_messages>[]</phone_messages>' +
+    '<wardrobe_updates>[{"person":"emma","details":{"top":"浅蓝色针织衫"}}]</wardrobe_updates>';
+  const generate = vi.fn(async (_request: { user_input: string; injects: { content: string }[] }) => answer);
+  const script = {
+    parent: { SillyTavern: { getContext: () => ({
+      characterId: 0, characters: { 0: { avatar: 'unread-city.png' } }, chatId: 'static-clothing', mainApi: 'openai',
+    }) } },
+    getVariables: () => ({}), replaceVariables: vi.fn(), eventOn: vi.fn(), eventRemoveListener: vi.fn(),
+    tavern_events: { CHAT_CHANGED: 'chat_changed' }, generate, stopGenerationById: vi.fn(),
+  } as unknown as Window;
+  const bridge = createTavernBridge(script)!;
+  try {
+    const state = reduceState(enableProtagonists(createInitialState()), { type: 'switch_protagonist', target: 'emma' });
+    const reply = await bridge.generate('看看现在穿了什么', state);
+    const first = generate.mock.calls[0][0];
+    expect(first.user_input).toContain('"person":"emma","name":"樱羽艾玛"');
+    expect(first.user_input).not.toContain('浅蓝色针织衫');
+    expect(first.injects[0].content).not.toContain('初始 Live2D 衣着】');
+    expect(reply.wardrobeBootstrap).toBeUndefined();
+    const saved = commitStoryTurn(state, '看看现在穿了什么', reply, { userId: 'static-user:1', assistantId: 'static-reply:1' });
+    expect(saved.wardrobe?.emma?.details?.top).toBe('浅蓝色针织衫');
+
+    await bridge.generate('再往前走', saved);
+    const next = generate.mock.calls[1][0];
+    expect(next.user_input).toContain('"person":"emma","name":"樱羽艾玛","clothing":"上身：浅蓝色针织衫"');
+    expect(next.injects[0].content).not.toContain('浅蓝色针织衫');
+  } finally {
+    bridge.dispose();
+  }
 });

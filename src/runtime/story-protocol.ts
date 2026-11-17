@@ -8,6 +8,7 @@ import { otherSideOpportunity } from './other-side';
 import { validateContactProposals } from './npc-phone';
 import { validateStoryActions } from './story-actions';
 import { validateStrategyNarrativeUpdates, validateStrategyMajorUpdate } from './strategy-narrative';
+import { validateWardrobeUpdates } from './wardrobe-state';
 export { STORY_ACTION_LIMITS } from './story-actions';
 
 export const STORY_OUTPUT_LIMITS = {
@@ -131,7 +132,7 @@ export function validateOtherSideEvents(value: unknown, state: WorldState): Othe
 
 /** Rebuild the only allowed data fields; never apply arbitrary model patches. */
 export function validateGeneratedStory(value: unknown, state: WorldState, replayTurnId?: string): GeneratedStory {
-  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide', 'returnStory', 'strategyUpdates', 'strategyMajor', 'notebookPages']);
+  const result = record(value, ['text', 'phoneMessages'], '回复', ['worldEvents', 'worldActions', 'weeklySummary', 'contactRequests', 'otherSide', 'returnStory', 'strategyUpdates', 'strategyMajor', 'notebookPages', 'wardrobeUpdates']);
   const story = text(result.text, STORY_OUTPUT_LIMITS.storyText, '正文');
   if (!Array.isArray(result.phoneMessages) || result.phoneMessages.length > STORY_OUTPUT_LIMITS.phoneEvents) return invalid('手机消息数量');
   const knownNpcs = new Set(state.contacts.map(contact => contact.id));
@@ -142,6 +143,7 @@ export function validateGeneratedStory(value: unknown, state: WorldState, replay
   });
   const parsed: GeneratedStory = { text: story, phoneMessages };
   if (Object.hasOwn(result, 'notebookPages')) parsed.notebookPages = validateNotebookDrafts(result.notebookPages, state);
+  if (Object.hasOwn(result, 'wardrobeUpdates')) parsed.wardrobeUpdates = validateWardrobeUpdates(result.wardrobeUpdates, state);
   if (Object.hasOwn(result, 'otherSide')) parsed.otherSide = validateOtherSideEvents(result.otherSide, state);
   if (Object.hasOwn(result, 'strategyUpdates'))
     parsed.strategyUpdates = validateStrategyNarrativeUpdates(result.strategyUpdates, state.protagonists?.strategy);
@@ -213,7 +215,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     let end = close?.index ?? cleaned.length;
     if (!close) {
       // Even an unclosed story can be recovered when data tags follow it.
-      const next = /<(?:phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue|strategy_updates|strategy_major|notebook_pages)>/i.exec(cleaned.slice(start));
+      const next = /<(?:phone_messages|world_actions|world_events|weekly_summary|contact_requests|otherside|story_continue|strategy_updates|strategy_major|notebook_pages|wardrobe_updates)>/i.exec(cleaned.slice(start));
       if (next) end = start + next.index;
     }
     const candidate = cleaned.slice(start, end).trim();
@@ -252,6 +254,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
   const strategyUpdates = readJson('strategy_updates', 'array');
   const strategyMajor = readJson('strategy_major', 'array');
   const notebookPages = readJson('notebook_pages', 'array');
+  const wardrobeUpdates = readJson('wardrobe_updates', 'array');
   const continued = Array.isArray(otherSide) && otherSide.length ? readText('story_continue') : undefined;
   return {
     story,
@@ -265,6 +268,7 @@ function parseTaggedStory(source: string): Record<string, unknown> | null {
     ...(strategyUpdates !== undefined ? { strategy_updates: strategyUpdates } : {}),
     ...(strategyMajor !== undefined ? { strategy_major: strategyMajor } : {}),
     ...(notebookPages !== undefined ? { notebook_pages: notebookPages } : {}),
+    ...(wardrobeUpdates !== undefined ? { wardrobe_updates: wardrobeUpdates } : {}),
   };
 }
 
@@ -280,7 +284,7 @@ export function parseGeneratedStory(value: unknown, state: WorldState, replayTur
   try { valueObject = JSON.parse(source); }
   catch { valueObject = parseTaggedStory(source); }
   if (!valueObject) return invalid('请返回完整 JSON 或包含 <story> 的标签块');
-  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests', 'other_side', 'story_continue', 'strategy_updates', 'strategy_major', 'notebook_pages']);
+  const envelope = record(valueObject, ['story', 'phone_messages'], '回复', ['world_events', 'world_actions', 'weekly_summary', 'contact_requests', 'other_side', 'story_continue', 'strategy_updates', 'strategy_major', 'notebook_pages', 'wardrobe_updates']);
   return validateGeneratedStory({ text: envelope.story, phoneMessages: envelope.phone_messages,
     ...(Object.prototype.hasOwnProperty.call(envelope, 'contact_requests') ? { contactRequests: envelope.contact_requests } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'other_side') ? { otherSide: envelope.other_side } : {}),
@@ -291,6 +295,7 @@ export function parseGeneratedStory(value: unknown, state: WorldState, replayTur
     ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_updates') ? { strategyUpdates: envelope.strategy_updates } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'strategy_major') ? { strategyMajor: envelope.strategy_major } : {}),
     ...(Object.prototype.hasOwnProperty.call(envelope, 'notebook_pages') ? { notebookPages: envelope.notebook_pages } : {}),
+    ...(Object.prototype.hasOwnProperty.call(envelope, 'wardrobe_updates') ? { wardrobeUpdates: envelope.wardrobe_updates } : {}),
   }, state, replayTurnId);
 }
 

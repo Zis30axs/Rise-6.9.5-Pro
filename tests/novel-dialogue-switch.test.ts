@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick, reactive, type App } from 'vue';
 import NovelDialogue from '../src/frontend/NovelDialogue.vue';
 import { clearNovelReadingProgressCache } from '../src/frontend/novel-reading-progress';
@@ -47,6 +47,40 @@ describe('小说模式逐句阅读（切换角色与切换聊天重进）', () =
     app.mount(host);
     return { state, host };
   }
+
+  it('头像只读取当前说话人的衣着和内心戏，换句后关闭旧详情', async () => {
+    const readSpeakerDetails = vi.fn(() => ({
+      outfit: [{ label: '上衣', text: '米色开衫' }],
+      innerThought: '还是等她先说吧。',
+    }));
+    const { host } = mountNovel({
+      entries: makeStory(),
+      busy: false,
+      active: true,
+      protagonist: '长崎素世',
+      recognizesSpeaker: () => true,
+      readSpeakerDetails,
+    });
+    const reader = host.querySelector<HTMLElement>('[data-novel-dialogue]')!;
+    const dialog = host.querySelector('dialog')!;
+    // jsdom lacks the browser's modal dialog methods.
+    dialog.showModal = () => { dialog.open = true; };
+    dialog.close = () => { dialog.open = false; };
+    const cursor = reader.dataset.segment;
+
+    host.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')!.click();
+    await nextTick();
+    expect(dialog.open).toBe(true);
+    expect(dialog.textContent).toContain('米色开衫');
+    expect(dialog.textContent).toContain('还是等她先说吧。');
+    expect(readSpeakerDetails).toHaveBeenCalledWith({ name: '素世' }, 'entry-2', '长崎素世');
+    expect(reader.dataset.segment).toBe(cursor);
+
+    host.querySelector<HTMLButtonElement>('button[aria-label="上一句剧情"]')!.click();
+    await nextTick();
+    expect(dialog.open).toBe(false);
+    expect(dialog.textContent).not.toContain('还是等她先说吧。');
+  });
 
   it('载入现有的对话时，默认停留在本段最后一句，不重新从头读', async () => {
     const { host } = mountNovel({
@@ -125,7 +159,7 @@ describe('小说模式逐句阅读（切换角色与切换聊天重进）', () =
     await nextTick();
 
     // 用户主动点击“上一句”回到第三句
-    const prevBtn = host.querySelector<HTMLButtonElement>('.novel-dialogue-controls button:first-child');
+    const prevBtn = host.querySelector<HTMLButtonElement>('button[aria-label="上一句剧情"]');
     prevBtn?.click();
     await nextTick();
     expect(host.querySelector('.novel-speech')?.textContent).toContain('第三句对话');

@@ -21,6 +21,7 @@ for (const viewport of viewports) {
     await expect(page.locator('.novel-speech')).toHaveText('游戏音效从耳机里传来。');
     await expect(reader).not.toContainText('战争雷霆');
     await expect(reader).toHaveAttribute('data-emotion', '平静');
+    await expect(reader.locator('.novel-speaker-avatar')).toHaveCount(0);
 
     await page.getByRole('button', { name: '下一句剧情', exact: true }).click();
     await expect(reader).toHaveAttribute('data-speaker', '甘織玲奈子');
@@ -30,6 +31,19 @@ for (const viewport of viewports) {
     const portrait = page.locator('[data-majo-portrait="watanare-renako"]');
     await expect(portrait).toHaveAttribute('data-npc-emotion', 'angry');
     await expect(portrait).toHaveAttribute('data-majo-exact', 'true');
+
+    const avatar = page.getByRole('button', { name: '查看甘織玲奈子的衣着与内心戏', exact: true });
+    await expect(avatar.locator('img')).toBeVisible();
+    await expect(reader.locator('.novel-speaker')).toHaveText('甘織玲奈子');
+    const line = await reader.getAttribute('data-segment');
+    await avatar.click();
+    const profile = page.getByRole('dialog', { name: '甘織玲奈子的人物详情' });
+    await expect(profile).toHaveText(/暂无衣着或内心戏记录。/);
+    await expect(reader).toHaveAttribute('data-segment', line!);
+    await page.keyboard.press('Escape');
+    await expect(profile).toBeHidden();
+    await expect(avatar).toBeFocused();
+    await expect(reader).toHaveAttribute('data-segment', line!);
 
     await page.getByRole('button', { name: '点击推进剧情', exact: true }).click();
     await expect(reader).toHaveAttribute('data-speaker', '甘织玲奈子');
@@ -47,6 +61,8 @@ for (const viewport of viewports) {
     await expect(portrait).toHaveAttribute('data-npc-emotion', 'happy');
 
     await expect(page.getByRole('button', { name: '下一句剧情', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: '查看甘织玲奈子的衣着与内心戏', exact: true }).click();
+    await page.getByRole('button', { name: '关闭人物详情', exact: true }).click();
     await noOverflow(page);
     const after = await readState(helper);
     expect(after).toEqual(initial);
