@@ -349,6 +349,8 @@ export interface GeneratedStory {
   weeklySummary?: { week: number; text: string };
   /** Internal runtime delivery receipt; never produced by, or sent to, the LLM. */
   worldChronicleReceipt?: import('../runtime/world-chronicle').WorldChronicleReceipt;
+  /** First confirmed visual outfit, captured by the bridge and never produced by the model. */
+  wardrobeBootstrap?: import('../runtime/wardrobe-state').WardrobeState;
 }
 
 export type StoryGenerationOptions = {
