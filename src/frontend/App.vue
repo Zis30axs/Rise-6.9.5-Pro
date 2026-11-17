@@ -6,6 +6,7 @@ import { createLive2dPortraitCache, live2dPortraitCacheKey } from './live2d-port
 import { live2dIdentity, live2dNames } from '../runtime/live2d-identity';
 import { live2dPack } from '../runtime/live2d-pack';
 import { visibleLive2dOutfit } from '../runtime/live2d-wardrobe';
+import { WARDROBE_DETAIL_LABELS, wardrobeCategoryLabel, wardrobeIdentity, type WardrobeDetailKey } from '../runtime/wardrobe-state';
 import { createSandboxCache, sandboxCacheKey } from './CitySandboxScene.vue';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
@@ -280,8 +281,18 @@ function novelSpeakerAvatar(speaker: string, viewpoint: string): MapAvatarIdenti
 
 function readNovelSpeakerDetails(speaker: MapAvatarIdentity, entryId: string, viewpoint: string): NovelSpeakerDetails {
   const { state, memoryScope } = props.model;
-  // A rendered outfit is a current-scene fact. Earlier entries and parallel viewpoints need their own records.
+  // The wardrobe stores the current look. Earlier entries and parallel viewpoints need their own records.
   if (state.story.at(-1)?.id !== entryId || viewpoint !== protagonistNames[currentProtagonist.value]) return {};
+  const person = wardrobeIdentity(speaker.protagonistId ?? speaker.personId ?? speaker.name);
+  const saved = person ? state.wardrobe?.[person] : undefined;
+  if (saved?.details) {
+    const outfit = (Object.keys(WARDROBE_DETAIL_LABELS) as WardrobeDetailKey[]).flatMap(key => {
+      const text = saved.details?.[key];
+      return text ? [{ label: WARDROBE_DETAIL_LABELS[key], text }] : [];
+    });
+    if (outfit.length) return { outfit };
+  }
+  if (saved?.category) return { outfit: [{ label: '衣装', text: wardrobeCategoryLabel(saved.category) }] };
   const outfit = visibleLive2dOutfit(memoryScope, state, speaker.name);
   return outfit ? { outfit: [{ label: outfit.label, text: outfit.description }] } : {};
 }

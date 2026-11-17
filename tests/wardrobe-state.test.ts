@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState, parseState, commitStoryTurn } from '../src/runtime/model';
 import { parseGeneratedStory } from '../src/runtime/story-protocol';
 import { chooseLive2dOutfit } from '../src/runtime/live2d-wardrobe';
-import { commitWardrobeUpdates, parseWardrobeState, seedWardrobe, validateWardrobeUpdates } from '../src/runtime/wardrobe-state';
+import { commitWardrobeUpdates, parseWardrobeState, seedWardrobe, validateWardrobeUpdates, wardrobeStoryContext } from '../src/runtime/wardrobe-state';
 import type { Live2dPackStatus } from '../src/runtime/live2d-pack';
+import { worldSceneContext } from '../src/runtime/world-presence';
 
 const modelStatus: Live2dPackStatus = {
   installed: true, enabled: true, generation: 1, pack: 'wardrobe-test',
@@ -58,5 +59,25 @@ describe('wardrobe world state and narrative integration', () => {
     const saved = commitStoryTurn(state, '换上便服', reply, { userId:'wardrobe-user:1', assistantId:'wardrobe-assistant:1' });
     expect(saved.wardrobe?.soyo?.details?.top).toBe('米白色针织衫');
     expect(saved.story.at(-1)?.role).toBe('assistant');
+  });
+  it('lets the model establish an in-scene static NPC outfit and reloads it by person ID', () => {
+    const state = parseState({
+      ...createInitialState(),
+      locationId: 'margo-cafe-room',
+      scene: { x: 48, z: 55.5, yaw: 0, areaId: 'street-cafe', seed: 'wardrobe-margo', encounterId: null },
+      interior: { roomId: 'margo-cafe-room', x: 0, z: 3.8, yaw: 0, activityId: null, lastRest: null, lastStudy: null },
+    });
+    const nearby = worldSceneContext(state)!.nearbyPeople;
+    expect(wardrobeStoryContext(state, nearby)).toContainEqual({ person: 'majo-margo', name: '宝生玛格' });
+    const reply = parseGeneratedStory(
+      '<story>玛格卷了卷墨绿色衬衫的袖子。</story><phone_messages>[]</phone_messages>' +
+      '<wardrobe_updates>[{"person":"majo-margo","details":{"top":"墨绿色衬衫"}}]</wardrobe_updates>',
+      state,
+    );
+    const saved = commitStoryTurn(state, '跟玛格打招呼', reply, { userId: 'margo-user:1', assistantId: 'margo-reply:1' });
+    expect(parseState(saved).wardrobe?.['majo-margo']?.details?.top).toBe('墨绿色衬衫');
+    expect(wardrobeStoryContext(saved, nearby)).toContainEqual({
+      person: 'majo-margo', name: '宝生玛格', clothing: '上身：墨绿色衬衫',
+    });
   });
 });

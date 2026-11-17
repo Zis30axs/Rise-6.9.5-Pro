@@ -1,7 +1,8 @@
 import type { WorldState } from '../frontend/types';
-import { live2dPeople, type Live2dOutfit, type Live2dPerson } from './live2d-pack';
+import { live2dPeople, type Live2dOutfit } from './live2d-pack';
 import { live2dIdentity } from './live2d-identity';
-import { activeProtagonist } from './protagonist-world';
+import { activeProtagonist, protagonistNames } from './protagonist-world';
+import { allResidentCast } from './npc-cast';
 import { worldSceneContext } from './world-presence';
 
 /** Appearance is narrative state. A Live2D model is only one possible picture of it. */
@@ -20,7 +21,6 @@ export const WARDROBE_DETAIL_LABELS = {
   bra: '内衣', underwear: '内裤', accessories: '配饰', appearance: '外观',
 } as const;
 export type WardrobeDetailKey = keyof typeof WARDROBE_DETAIL_LABELS;
-export type WardrobePerson = Live2dPerson | 'emma' | 'renako';
 export type WardrobeDetails = Partial<Record<WardrobeDetailKey, string>>;
 export interface WardrobeEntry {
   category?: WardrobeCategory;
@@ -30,19 +30,24 @@ export interface WardrobeEntry {
   /** Stable narrative turn that last wrote this entry, for replay protection. */
   changedTurnId?: string;
 }
-export type WardrobeState = Partial<Record<WardrobePerson, WardrobeEntry>>;
+export type WardrobeState = Partial<Record<string, WardrobeEntry>>;
 export interface WardrobeUpdate {
-  person: WardrobePerson;
+  person: string;
   category?: WardrobeCategory;
   details?: WardrobeDetails;
 }
 const categories = new Set<string>(WARDROBE_CATEGORIES.map(item => item.id));
-const people = new Set<string>([...live2dPeople, 'emma', 'renako']);
-function wardrobeIdentity(value: string): WardrobePerson | null {
-  if (value === 'emma' || value === 'protagonist-emma') return 'emma';
-  if (value === 'renako' || value === 'protagonist-renako') return 'renako';
-  return live2dIdentity(value);
+export function wardrobeIdentity(value: string): string | null {
+  if (['emma', 'protagonist-emma', 'majo-emma'].includes(value)) return 'emma';
+  if (['renako', 'protagonist-renako', 'watanare-renako'].includes(value)) return 'renako';
+  return live2dIdentity(value)
+    ?? allResidentCast.find(person => person.id === value || person.name === value)?.id
+    ?? null;
 }
+const people = new Set<string>([
+  ...live2dPeople, 'emma', 'renako',
+  ...allResidentCast.map(({ id }) => wardrobeIdentity(id)).filter(id => id !== null),
+]);
 const detailKeys = new Set<string>(Object.keys(WARDROBE_DETAIL_LABELS));
 
 export function wardrobeCategory(outfit: Live2dOutfit): WardrobeCategory {
@@ -91,28 +96,22 @@ export function parseWardrobeState(value: unknown): WardrobeState {
         throw new Error('存档衣柜回执无效');
       entry.changedTurnId = row.changedTurnId;
     }
-    result[name as WardrobePerson] = entry;
+    result[name] = entry;
   }
   return result;
 }
 /** LLM can choose a broad category and edit any textual layer, but not asset IDs. */
 export function validateWardrobeUpdates(value: unknown, state: WorldState): WardrobeUpdate[] {
   if (!Array.isArray(value) || value.length > 4) throw new Error('衣着更新最多四人，本轮未保存');
-  const inScene = new Set<WardrobePerson>();
-  const protagonist = wardrobeIdentity(activeProtagonist(state));
-  if (protagonist) inScene.add(protagonist);
-  for (const row of worldSceneContext(state)?.nearbyPeople ?? []) {
-    const id = wardrobeIdentity(row.id);
-    if (id) inScene.add(id);
-  }
-  const seen = new Set<WardrobePerson>();
+  const inScene = wardrobeParticipants(state, worldSceneContext(state)?.nearbyPeople ?? []);
+  const seen = new Set<string>();
   return value.map(raw => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('衣着更新格式无效');
     const row = raw as Record<string, unknown>;
     if (Object.keys(row).some(key => !['person', 'category', 'details'].includes(key)) ||
       typeof row.person !== 'string' || !people.has(row.person))
       throw new Error('衣着更新人物或字段无效');
-    const person = row.person as WardrobePerson;
+    const person = row.person;
     if (!inScene.has(person) || seen.has(person)) throw new Error('衣着更新只能针对本轮在场的人物，每人一次');
     seen.add(person);
     const entry: WardrobeUpdate = { person };
@@ -131,7 +130,7 @@ export function validateWardrobeUpdates(value: unknown, state: WorldState): Ward
 export function seedWardrobe(state: WorldState, bootstrap: WardrobeState | undefined): WorldState {
   if (!bootstrap || !Object.keys(bootstrap).length) return state;
   const checked=parseWardrobeState(bootstrap), merged:WardrobeState={...state.wardrobe};
-  for (const name of Object.keys(checked) as WardrobePerson[]) {
+  for (const name of Object.keys(checked)) {
     if (!merged[name]) merged[name]=checked[name];
   }
   return {...state, wardrobe:merged};
@@ -152,23 +151,23 @@ export function commitWardrobeUpdates(state: WorldState, updates: readonly Wardr
   }
   return { ...state, wardrobe };
 }
-/** Visible non-Live2D protagonists also keep their saved look across viewpoints. */
-export function unmodeledWardrobePrompt(state: WorldState): string {
-  const visible = new Map<'emma' | 'renako', string>();
+function wardrobeParticipants(state: WorldState, nearbyPeople: readonly { id: string; name: string }[]): Map<string, string> {
   const owner = activeProtagonist(state);
-  if (owner === 'emma') visible.set(owner, '樱羽艾玛');
-  if (owner === 'renako') visible.set(owner, '甘织玲奈子');
-  for (const row of worldSceneContext(state)?.nearbyPeople ?? []) {
+  const visible = new Map<string, string>([[owner, protagonistNames[owner]]]);
+  for (const row of nearbyPeople) {
     const id = wardrobeIdentity(row.id);
-    if (id === 'emma' || id === 'renako') visible.set(id, row.name);
+    if (id) visible.set(id, row.name);
   }
-  const lines:string[]=[];
-  for (const [id, name] of visible) {
-    const entry=state.wardrobe?.[id];
-    const outfit=wardrobeText(entry) || (entry?.category ? wardrobeCategoryLabel(entry.category) : '');
-    if (outfit) lines.push(name+'：'+outfit);
-  }
-  return lines.length ? '\n【其他在场主角的衣着记录】\n'+lines.join('\n')+'\n衣着记录优先于过时的立绘描述。\n' : '';
+  return visible;
+}
+
+/** Send authorable IDs and existing continuity as request data, including for static portraits. */
+export function wardrobeStoryContext(state: WorldState, nearbyPeople: readonly { id: string; name: string }[]) {
+  return Array.from(wardrobeParticipants(state, nearbyPeople), ([person, name]) => {
+    const entry = state.wardrobe?.[person];
+    const clothing = wardrobeText(entry) || (entry?.category ? wardrobeCategoryLabel(entry.category) : '');
+    return { person, name, ...(clothing ? { clothing } : {}) };
+  });
 }
 export function wardrobeText(entry?: WardrobeEntry): string {
   if (!entry?.details) return '';

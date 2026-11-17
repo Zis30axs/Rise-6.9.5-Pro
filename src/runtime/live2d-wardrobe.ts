@@ -7,7 +7,7 @@ import { gameCalendar } from './game-calendar';
 import { resolveWeather, type WeatherId } from './weather';
 import { performanceMemberIds } from './livehouse';
 import { isStudyInteraction } from './campus-interiors';
-import { WARDROBE_CATEGORIES, wardrobeText, wardrobeCategoryLabel, wardrobeCategory, type WardrobeState } from './wardrobe-state';
+import { WARDROBE_CATEGORIES, wardrobeCategory, type WardrobeState } from './wardrobe-state';
 
 export interface OutfitEnvironment {
   day: number; period: number; month: number; location: string; room: string | null;
@@ -93,7 +93,7 @@ export function selectOutfit(models:readonly Live2dOutfit[], person:Live2dPerson
 }
 function outfitTrigger(state: WorldState, person: Live2dPerson): string {
   const current = state.wardrobe?.[person];
-  if (current?.outfitId || current?.category || Object.keys(current?.details ?? {}).length)
+  if (current && (current.outfitId || current.category || Object.keys(current.details ?? {}).length))
     return 'saved:' + JSON.stringify([current.outfitId ?? null, current.category ?? null]);
   return JSON.stringify(outfitEnvironment(state, person));
 }
@@ -146,8 +146,7 @@ export function confirmedWardrobeBootstrap(session: string|null, state: WorldSta
   if (!session || !status?.enabled) return result;
   for (const [person] of visibleLive2dPeople(state)) {
     if (state.wardrobe?.[person]) continue;
-    const outfit=confirmedOutfit(session, state, person, status)
-      ?? chooseLive2dOutfit(session,state,person,status)?.outfit;
+    const outfit=confirmedOutfit(session, state, person, status);
     if (outfit) result[person]={ outfitId:outfit.id, category:wardrobeCategory(outfit) };
   }
   return result;
@@ -159,39 +158,22 @@ export function visibleLive2dOutfit(session: string | undefined, state: WorldSta
   return confirmedOutfit(session, state, person, status);
 }
 
-export function live2dAppearancePrompt(session:string|null,state:WorldState):string {
-  const status=live2dPack()?.status();if(!session||!status?.enabled)return '';
-  const lines:string[]=[];
-  for(const [person,name] of visibleLive2dPeople(state)){
-    const outfit=confirmedOutfit(session,state,person,status)
-      ?? chooseLive2dOutfit(session,state,person,status)?.outfit;
-    const entry=state.wardrobe?.[person], details=wardrobeText(entry);
-    if(details) lines.push(`${name}：${details}。`);
-    else if(outfit)lines.push(`${name}：${outfit.label}。${outfit.description}`);
-    else if(entry?.category)lines.push(`${name}：当前服装类别为${wardrobeCategoryLabel(entry.category)}。`);
+export function live2dAppearancePrompt(
+  session: string | null, state: WorldState, bootstrap = confirmedWardrobeBootstrap(session, state),
+): string {
+  const status = live2dPack()?.status();
+  if (!session || !status?.enabled) return '';
+  const initial: string[] = [], categories: string[] = [];
+  for (const [person, name] of visibleLive2dPeople(state)) {
+    const confirmed = confirmedOutfit(session, state, person, status);
+    if (!confirmed) continue;
+    if (bootstrap[person]?.outfitId === confirmed.id) {
+      initial.push(`${name}：${confirmed.label}。${confirmed.description}`);
+    }
+    const available = WARDROBE_CATEGORIES.filter(row =>
+      status.models.some(model => model.person === person && model.tags.includes(row.id)));
+    if (available.length) categories.push(person + ':' + available.map(row => row.id).join('/'));
   }
-  const categories: string[] = [];
-  for (const [person] of visibleLive2dPeople(state)) {
-    const available=WARDROBE_CATEGORIES.filter(row=>status.models.some(model=>model.person===person&&model.tags.includes(row.id)));
-    if (available.length) categories.push(person+':'+available.map(row=>row.id).join('/'));
-  }
-  return (lines.length?'\n【当前衣着记录】\n'+lines.join('\n')+'\n衣着档案优先于旧立绘说明；只在自然相关时描写。未记载的贴身衣物不代表已知。\n':'')
-    +(categories.length?'【可切换 Live2D 衣装大类】'+categories.join('；')+'。剧情中的衣着文字可超出这些资源类别。\n':'');
-}
-
-/** Replace request-local legacy outfit facts only for a confirmed portrait. */
-export function live2dAppearanceScene<T extends {nearbyPeople: {id:string;outfit?:unknown}[];encounter?:{id:string;outfit?:unknown}|null}|null>(session:string|null,state:WorldState,scene:T):T {
-  const status=live2dPack()?.status();if(!session||!scene||!status?.enabled)return scene;
-  const visible=visibleLive2dPeople(state);
-  const project=<P extends {id:string;outfit?:unknown}>(person:P):P=>{
-    const id=live2dIdentity(person.id);
-    const outfit=id&&visible.has(id)
-      ?confirmedOutfit(session,state,id,status) ?? chooseLive2dOutfit(session,state,id,status)?.outfit
-      :undefined;
-    const entry=id?state.wardrobe?.[id]:undefined, details=wardrobeText(entry);
-    return details?{...person,outfit:details}
-      :outfit?{...person,outfit:`${outfit.label}。${outfit.description}`}:person;
-  };
-  return {...scene,nearbyPeople:scene.nearbyPeople.map(project),
-    ...('encounter' in scene?{encounter:scene.encounter?project(scene.encounter):scene.encounter}:{})} as T;
+  return (initial.length ? '\n【初始 Live2D 衣着】\n' + initial.join('\n') + '\n' : '') +
+    (categories.length ? '【可切换 Live2D 衣装大类】' + categories.join('；') + '。剧情衣着文字可超出资源类别。\n' : '');
 }
