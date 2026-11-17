@@ -145,7 +145,8 @@ export function confirmedWardrobeBootstrap(session: string|null, state: WorldSta
   if (!session || !status?.enabled) return result;
   for (const [person] of visibleLive2dPeople(state)) {
     if (state.wardrobe?.[person]) continue;
-    const outfit=confirmedOutfit(session, state, person, status);
+    const outfit=confirmedOutfit(session, state, person, status)
+      ?? chooseLive2dOutfit(session,state,person,status)?.outfit;
     if (outfit) result[person]={ outfitId:outfit.id, category:wardrobeCategory(outfit) };
   }
   return result;
@@ -154,7 +155,8 @@ export function live2dAppearancePrompt(session:string|null,state:WorldState):str
   const status=live2dPack()?.status();if(!session||!status?.enabled)return '';
   const lines:string[]=[];
   for(const [person,name] of visibleLive2dPeople(state)){
-    const outfit=confirmedOutfit(session,state,person,status);
+    const outfit=confirmedOutfit(session,state,person,status)
+      ?? chooseLive2dOutfit(session,state,person,status)?.outfit;
     const entry=state.wardrobe?.[person], details=wardrobeText(entry);
     if(details) lines.push(`${name}：${details}。`);
     else if(outfit)lines.push(`${name}：${outfit.label}。${outfit.description}`);
