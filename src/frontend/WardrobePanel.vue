@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { live2dPack, type Live2dOutfit } from '../runtime/live2d-pack';
 import { chooseLive2dOutfit } from '../runtime/live2d-wardrobe';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
-import { WARDROBE_CATEGORIES, WARDROBE_DETAIL_LABELS, type WardrobeCategory } from '../runtime/wardrobe-state';
+import { WARDROBE_CATEGORIES, WARDROBE_DETAIL_LABELS, type WardrobeCategory, type WardrobeDetailKey } from '../runtime/wardrobe-state';
 import type { ShellActions, ShellModel } from './types';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
@@ -33,6 +33,8 @@ const details = computed(() => {
   const id = person.value;
   return id === 'soyo' || id === 'sakiko' ? props.model.state.wardrobe?.[id]?.details : undefined;
 });
+const detailRows = computed(() => Object.entries(WARDROBE_DETAIL_LABELS)
+  .map(([key,label]) => ({ key, label, value: details.value?.[key as WardrobeDetailKey] ?? '未记录' })));
 function wear(outfit: Live2dOutfit) {
   if (props.model.busy || outfit.id === selected.value) return;
   props.actions.dispatch({ type: 'wardrobe_choose', outfitId: outfit.id });
@@ -63,8 +65,8 @@ function wear(outfit: Live2dOutfit) {
     <details class="uc-wardrobe-details">
       <summary>衣着细节</summary>
       <dl>
-        <div v-for="(label,key) in WARDROBE_DETAIL_LABELS" :key="key">
-          <dt>{{ label }}</dt><dd>{{ details?.[key] ?? '未记录' }}</dd>
+        <div v-for="row in detailRows" :key="row.key">
+          <dt>{{ row.label }}</dt><dd>{{ row.value }}</dd>
         </div>
       </dl>
     </details>
