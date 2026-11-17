@@ -103,13 +103,14 @@ export function chooseLive2dOutfit(session:string|undefined,state:WorldState,per
   const current=state.wardrobe?.[person];
   const previous=choices(session)[person];
   let outfit=current?.outfitId?status.models.find(row=>row.id===current.outfitId&&row.person===person):undefined;
-  if (!outfit && current?.category) {
-    const candidates=status.models.filter(row=>row.person===person&&row.tags.includes(current.category!))
+  const desiredCategory=current?.category;
+  if (!outfit && desiredCategory) {
+    const candidates=status.models.filter(row=>row.person===person&&row.tags.includes(desiredCategory))
       .sort((a,b)=>a.id.localeCompare(b.id));
     if (candidates.length) {
       outfit=previous?.pack===status.pack&&previous.trigger===trigger
         ?candidates.find(row=>row.id===previous.id):undefined;
-      outfit??=candidates[hash(session+':'+person+':'+current.category)%candidates.length];
+      outfit??=candidates[hash(session+':'+person+':'+desiredCategory)%candidates.length];
     }
   }
   if (!outfit) {
@@ -177,7 +178,9 @@ export function live2dAppearanceScene<T extends {nearbyPeople: {id:string;outfit
   const visible=visibleLive2dPeople(state);
   const project=<P extends {id:string;outfit?:unknown}>(person:P):P=>{
     const id=live2dIdentity(person.id);
-    const outfit=id&&visible.has(id)?confirmedOutfit(session,state,id,status):undefined;
+    const outfit=id&&visible.has(id)
+      ?confirmedOutfit(session,state,id,status) ?? chooseLive2dOutfit(session,state,id,status)?.outfit
+      :undefined;
     const entry=id?state.wardrobe?.[id]:undefined, details=wardrobeText(entry);
     return details?{...person,outfit:details}
       :outfit?{...person,outfit:`${outfit.label}。${outfit.description}`}:person;
