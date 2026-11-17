@@ -46,7 +46,8 @@ function wardrobeIdentity(value: string): WardrobePerson | null {
 const detailKeys = new Set<string>(Object.keys(WARDROBE_DETAIL_LABELS));
 
 export function wardrobeCategory(outfit: Live2dOutfit): WardrobeCategory {
-  return WARDROBE_CATEGORIES.find(item => outfit.tags.includes(item.id))?.id ?? 'casual';
+  return (['performance','school','work','formal','casual','warm','summer'] as const)
+    .find(category => outfit.tags.includes(category)) ?? 'casual';
 }
 export function wardrobeCategoryLabel(category?: WardrobeCategory): string {
   return WARDROBE_CATEGORIES.find(item => item.id === category)?.label ?? '日常';
