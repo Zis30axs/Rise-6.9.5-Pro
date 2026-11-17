@@ -29,10 +29,7 @@ const selected = computed(() => {
   if (id !== 'soyo' && id !== 'sakiko') return null;
   return chooseLive2dOutfit(props.model.memoryScope, props.model.state, id)?.outfit.id ?? null;
 });
-const details = computed(() => {
-  const id = person.value;
-  return id === 'soyo' || id === 'sakiko' ? props.model.state.wardrobe?.[id]?.details : undefined;
-});
+const details = computed(() => props.model.state.wardrobe?.[person.value]?.details);
 const detailRows = computed(() => Object.entries(WARDROBE_DETAIL_LABELS)
   .map(([key,label]) => ({ key, label, value: details.value?.[key as WardrobeDetailKey] ?? '未记录' })));
 function wear(outfit: Live2dOutfit) {
