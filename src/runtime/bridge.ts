@@ -1,5 +1,5 @@
 import { equipmentContext, getEquipmentItem } from './equipment';
-import { live2dAppearancePrompt, live2dAppearanceScene } from './live2d-wardrobe';
+import { live2dAppearancePrompt, live2dAppearanceScene, confirmedWardrobeBootstrap } from './live2d-wardrobe';
 import { wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
@@ -776,6 +776,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         // Receipt is bridge-owned metadata. The model cannot authorize it and
         // it never becomes part of the output tag protocol or player-facing UI.
         if (chronicle) reply.worldChronicleReceipt = chronicle.receipt;
+        if (!options || options.kind === 'interaction_event') reply.wardrobeBootstrap = confirmedWardrobeBootstrap(ownerSession, snapshot);
         return reply;
       } finally {
         if (smsTimeout !== undefined) clearTimeout(smsTimeout);
