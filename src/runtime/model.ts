@@ -59,6 +59,8 @@ import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chr
 import { acknowledgeNpcGiftDaily, parseNpcGiftDailyState } from './npc-gift-traits';
 import { applyMutsumiBalanceTurn, hasMutsumiBalanceReceipt, mutsumiBalanceOpportunity } from './mutsumi-balance';
 import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
+import { parseWardrobeState, wardrobeCategory, commitWardrobeUpdates } from './wardrobe-state';
+import { live2dPack } from './live2d-pack';
 
 /** Bounded P0/P1 save format. All names and places below are prototype examples. */
 export const STATE_LIMITS = { journal: 100, story: STORY_RECORD_LIMIT, phone: 200, ...STORY_OUTPUT_LIMITS } as const;
@@ -713,6 +715,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasWeather = version === '1.11.0' && Object.hasOwn(value, 'weather');
   const hasWorldChronicle = version === '1.11.0' && Object.hasOwn(value, 'worldChronicle');
   const hasNpcGiftDaily = version === '1.11.0' && Object.hasOwn(value, 'npcGiftDaily');
+  const hasWardrobe = version === '1.11.0' && Object.hasOwn(value, 'wardrobe');
   const hasCooking = version === '1.11.0' && Object.hasOwn(value, 'cooking');
   const hasLivehouseVisit = version === '1.11.0' && Object.hasOwn(value, 'livehouseVisit');
   const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
@@ -724,7 +727,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasNpcGiftDaily ? ['npcGiftDaily'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasNpcGiftDaily ? ['npcGiftDaily'] : []), ...(hasWardrobe ? ['wardrobe'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
@@ -755,6 +758,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     weather,
     ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     ...(hasNpcGiftDaily ? { npcGiftDaily: parseNpcGiftDailyState(state.npcGiftDaily) } : {}),
+    ...(hasWardrobe ? { wardrobe: parseWardrobeState(state.wardrobe) } : {}),
     locationId: place(state.locationId, 'locationId'),
     scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists, parsedClock),
     interior: parsedInterior,
@@ -2099,6 +2103,15 @@ export function reduceState(state: WorldState, action: WorldAction, ownerOverrid
   if (isCourtInSession(before) && !['switch_protagonist','phone_app','courtroom','read_phone','air_traffic_tick','debug_update'].includes(action.type))
     throw new Error('当前正在庭审，结案前不能离开法庭或进行其他活动。');
   if (action?.type === 'debug_update') return parseState(applyDebugUpdate(before, action), ownerOverride);
+  if (action?.type === 'wardrobe_choose') {
+    const person = activeProtagonist(before);
+    if (person !== 'soyo' && person !== 'sakiko') throw new Error('当前主角没有可用的 Live2D 衣柜。');
+    const pack = live2dPack()?.status();
+    const outfit = pack?.enabled && pack.models.find(row => row.id === action.outfitId && row.person === person);
+    if (!outfit) throw new Error('这件服装暂时无法穿上。');
+    return parseState({ ...before, wardrobe: { ...before.wardrobe,
+      [person]: { ...before.wardrobe?.[person], outfitId: outfit.id, category: wardrobeCategory(outfit) } } });
+  }
   if (action?.type === 'strategy') {
     const prepared = enableProtagonists(before);
     return parseState(commitStrategyCommand(prepared, action.requestId, action.command));
@@ -2247,7 +2260,9 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
       ...(requestedMajor !== undefined ? { strategyMajor: requestedMajor } : {}) }
     : validateGeneratedStory(modelResult, before);
   const { weeklySummary, contactRequests, phoneDecision, otherSide, returnStory,
-    strategyUpdates, strategyMajor, notebookPages: _notebookPages, ...legacyResult } = validated;
+    strategyUpdates, strategyMajor, wardrobeUpdates, notebookPages: _notebookPages, ...legacyResult } = validated;
+  if (alreadyCommitted && wardrobeUpdates?.some(update => before.wardrobe?.[update.person]?.changedTurnId !== ids.assistantId))
+    throw new Error('重复剧情 ID 不得补写新的衣着变化');
   const narrativeActions = legacyResult.worldActions ?? [];
   if (!alreadyCommitted && narrativeActions.some(action => action.type === 'mutsumi_balance')
     && !mutsumiBalanceOpportunity(before, input, { worldActions: narrativeActions }).allowed) {
@@ -2281,7 +2296,7 @@ export function commitStoryTurn(state: WorldState, input: string, result: Genera
   const withChronicle = acknowledgeWorldChronicle(before, next, alreadyCommitted ? undefined : worldChronicleReceipt);
   const withGiftDaily = acknowledgeNpcGiftDaily(before, withChronicle, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
   const withBalance = applyMutsumiBalanceTurn(before, withGiftDaily, narrativeActions, ids.assistantId, alreadyCommitted ? ids.assistantId : undefined);
-  return parseState(withBalance);
+  return parseState(commitWardrobeUpdates(withBalance, alreadyCommitted ? [] : wardrobeUpdates ?? [], ids.assistantId));
 }
 
 
