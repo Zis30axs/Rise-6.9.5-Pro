@@ -152,6 +152,13 @@ export function confirmedWardrobeBootstrap(session: string|null, state: WorldSta
   }
   return result;
 }
+export function visibleLive2dOutfit(session: string | undefined, state: WorldState, speaker: string): Live2dOutfit | undefined {
+  const status = live2dPack()?.status();
+  const person = live2dIdentity(speaker);
+  if (!session || !status?.enabled || !person || !visibleLive2dPeople(state).has(person)) return;
+  return confirmedOutfit(session, state, person, status);
+}
+
 export function live2dAppearancePrompt(session:string|null,state:WorldState):string {
   const status=live2dPack()?.status();if(!session||!status?.enabled)return '';
   const lines:string[]=[];

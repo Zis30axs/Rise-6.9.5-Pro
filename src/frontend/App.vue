@@ -3,13 +3,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRe
 import NovelLive2DPortrait from './NovelLive2DPortrait.vue';
 import { live2dContext } from './live2d-context';
 import { createLive2dPortraitCache, live2dPortraitCacheKey } from './live2d-portrait-cache';
-import { live2dIdentity } from '../runtime/live2d-identity';
+import { live2dIdentity, live2dNames } from '../runtime/live2d-identity';
 import { live2dPack } from '../runtime/live2d-pack';
+import { visibleLive2dOutfit } from '../runtime/live2d-wardrobe';
 import { createSandboxCache, sandboxCacheKey } from './CitySandboxScene.vue';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';
 import NovelDialogue from './NovelDialogue.vue';
+import type { MapAvatarIdentity } from './map-character-avatar';
 import StoryEntryContent from './StoryEntryContent.vue';
 import PhonePerspectiveReader from './PhonePerspectiveReader.vue';
 import NovelNpcPortrait from './NovelNpcPortrait.vue';
@@ -37,7 +39,7 @@ import { isUikaSpeaker } from './uika-art';
 import { isUmiriSpeaker } from './umiri-art';
 import { isNyamuSpeaker } from './nyamu-art';
 import { hasProtagonistPhonePose } from './protagonist-phone-art';
-import { type NovelSegment } from './novel-dialogue';
+import type { NovelSegment, NovelSpeakerDetails } from './novel-dialogue';
 import { resolveNovelInvitationPortraitPair, type NovelInvitationPortraitFocus } from './novel-invitation-portraits';
 import { readPresentationMode, savePresentationMode, type PresentationMode } from './presentation-mode';
 import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
@@ -184,6 +186,7 @@ watch(graphicsRevision, () => live2dCache.clear());
 watch(novelMode, active => { if (!active) live2dCache.clear(); });
 const novelSegment = ref<NovelSegment>({ speaker: '', emotion: '平静', text: '' });
 const segmentSpeaker = computed(() => standingSpeaker(novelSegment.value.speaker, protagonistNames[currentProtagonist.value]));
+const novelDialogue = ref<InstanceType<typeof NovelDialogue>>();
 const historyPortrait = ref(false);
 const heldPortrait = ref<{ speaker: string; emotion: string; dimmed: boolean } | null>(null);
 let sceneReadingMode: ReadingMode = 'compact';
@@ -243,23 +246,46 @@ const portraitSpeaker = computed(() => novelMode.value && heldPortrait.value ? h
 // Protagonists without an authored phone pose keep their standing portrait while the phone is open.
 const portraitActive = computed(() => !activeWindow.value
   || (activeWindow.value === 'phone' && !hasProtagonistPhonePose(currentProtagonist.value)));
-const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, {
+const novelNpcContext = computed(() => ({
   contacts: props.model.state.contacts,
   scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
   encounterId: props.model.state.scene?.encounterId,
 }));
+const npcPortraitId = computed(() => resolveNovelNpcPortrait(portraitSpeaker.value, novelNpcContext.value));
 function personLabel(person: WorldScenePerson) { return person.id === MYSTERY_VISITOR_ID ? MYSTERY_VISITOR_NAME : person.id === SECOND_MYSTERY_VISITOR_ID ? SECOND_MYSTERY_VISITOR_NAME : person.protagonistId ? protagonistNames[person.protagonistId] : scenePersonLabel(person); }
 const portraitLabel = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.speaker : useEncounterPortrait.value && encounterPerson.value ? personLabel(encounterPerson.value) : segmentSpeaker.value);
 const portraitEmotion = computed(() => novelMode.value && heldPortrait.value ? heldPortrait.value.emotion : novelSegment.value.emotion);
 const portraitDimmed = computed(() => novelMode.value && !!heldPortrait.value?.dimmed);
 function recognizesNovelSpeaker(speaker: string): boolean {
   return isSoyoSpeaker(speaker) || isSakikoSpeaker(speaker) || isMutsumiSpeaker(speaker) || isAnonSpeaker(speaker) || isRaanaSpeaker(speaker) || isTakiSpeaker(speaker) || isTomoriSpeaker(speaker) || isNagasakiMotherSpeaker(speaker) || !!resolveMajoSpeaker(speaker)
-    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isUikaSpeaker(speaker) || isUmiriSpeaker(speaker) || isNyamuSpeaker(speaker) || isMarinaSpeaker(speaker) || resolveNovelNpcPortrait(speaker, {
-      contacts: props.model.state.contacts,
-      scenePeople: [...new Map([...portraitPeople.value, ...scenePeople.value].map(person => [person.id, person])).values()],
-      encounterId: props.model.state.scene?.encounterId,
-    }) !== null;
+    || !!resolveWatanareSpeaker(speaker) || !!resolveFengjinSpeaker(speaker) || isUikaSpeaker(speaker) || isUmiriSpeaker(speaker) || isNyamuSpeaker(speaker) || isMarinaSpeaker(speaker)
+    || resolveNovelNpcPortrait(speaker, novelNpcContext.value) !== null;
 }
+
+function novelSpeakerAvatar(speaker: string, viewpoint: string): MapAvatarIdentity {
+  const label = speaker === '我' ? viewpoint : speaker;
+  const live2d = live2dIdentity(label);
+  const majo = resolveMajoSpeaker(label);
+  const watanare = resolveWatanareSpeaker(label);
+  const name = live2d ? live2dNames[live2d] : label;
+  const protagonistId = PROTAGONISTS.find(id => protagonistNames[id] === name
+    || label === id || label === `protagonist-${id}`)
+    ?? (majo === 'majo-emma' ? 'emma' : watanare === 'watanare-renako' ? 'renako' : null);
+  if (protagonistId) return { name: protagonistNames[protagonistId], protagonistId };
+
+  const personId = majo ?? watanare;
+  if (personId || live2d) return { name, personId };
+  return { name, portraitId: resolveNovelNpcPortrait(label, novelNpcContext.value) };
+}
+
+function readNovelSpeakerDetails(speaker: MapAvatarIdentity, entryId: string, viewpoint: string): NovelSpeakerDetails {
+  const { state, memoryScope } = props.model;
+  // A rendered outfit is a current-scene fact. Earlier entries and parallel viewpoints need their own records.
+  if (state.story.at(-1)?.id !== entryId || viewpoint !== protagonistNames[currentProtagonist.value]) return {};
+  const outfit = visibleLive2dOutfit(memoryScope, state, speaker.name);
+  return outfit ? { outfit: [{ label: outfit.label, text: outfit.description }] } : {};
+}
+
 function readDialogueSegment(segment: NovelSegment) { historyPortrait.value = true; novelSegment.value = segment; }
 const followsLatest = ref(true);
 const hasNewContent = ref(false);
@@ -967,6 +993,7 @@ function claimMysteryGift() {
   }
 }
 function dismissOverlay() {
+  if (novelDialogue.value?.closeSpeakerDetails()) return true;
   if (debugOpen.value) { debugOpen.value = false; return true; }
   if (editingStoryId.value) { cancelStoryEdit(); return true; }
   if (toolDock.value?.close(true)) return true;
@@ -1154,8 +1181,8 @@ onBeforeUnmount(() => {
         <div><button type="button" :disabled="model.busy" @click="travelToMeeting(meetingPrompt)">前往约定地点</button>
         <button type="button" :disabled="model.busy" @click="hideMeetingPrompt(meetingPrompt.id)">稍后再说</button></div>
       </section>
-      <NovelDialogue v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :protagonist-id="currentProtagonist" :memory-scope="model.memoryScope"
-        :recognizes-speaker="recognizesNovelSpeaker" :invitation-pair="invitationPortraitPair"
+      <NovelDialogue ref="novelDialogue" v-show="novelMode && !novelHistory" :protagonist="protagonistNames[currentProtagonist]" :protagonist-id="currentProtagonist" :memory-scope="model.memoryScope"
+        :recognizes-speaker="recognizesNovelSpeaker" :speaker-avatar="novelSpeakerAvatar" :read-speaker-details="readNovelSpeakerDetails" :invitation-pair="invitationPortraitPair"
         @focus="heldPortrait = $event"
         @invitation-focus="invitationPortraitFocus = $event"
         :active="novelMode && !novelHistory" :entries="storyEntries"

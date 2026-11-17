@@ -4,6 +4,11 @@ export interface NovelSegment {
   text: string;
 }
 
+export interface NovelSpeakerDetails {
+  outfit?: readonly { label: string; text: string }[];
+  innerThought?: string;
+}
+
 const wrappedRow = /\|([^|\r\n]{1,40})\|([^|\r\n]{1,30})\|([^|\r\n]+)\|/g;
 const unwrappedLine = /^\|?([^|\r\n]{1,40})\|([^|\r\n]{1,30})\|([^|\r\n]+?)\|?$/;
 const knownEmotions = new Set(['平静', '开心', '难过', '生气', '惊讶', '害羞', '思考', '严肃', '安心']);

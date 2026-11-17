@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { live2dIdentity, live2dNames } from '../src/runtime/live2d-identity';
-import { chooseLive2dOutfit, confirmLive2dOutfit, live2dAppearancePrompt, live2dAppearanceScene, outfitEnvironment, outfitWeight, selectOutfit, visibleLive2dPeople } from '../src/runtime/live2d-wardrobe';
+import { chooseLive2dOutfit, confirmLive2dOutfit, live2dAppearancePrompt, live2dAppearanceScene, outfitEnvironment, outfitWeight, selectOutfit, visibleLive2dOutfit, visibleLive2dPeople } from '../src/runtime/live2d-wardrobe';
 import { ensembleEmotion } from '../src/frontend/live2d-ensemble-assets';
 import { createInitialState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
@@ -27,8 +27,11 @@ describe('optional ensemble wardrobe',()=>{
     const state=enableProtagonists(createInitialState()),session='stable';
     const first=chooseLive2dOutfit(session,state,'soyo')!;expect(first).toBeTruthy();
     expect(live2dAppearancePrompt(session,state)).toBe('');
+    expect(visibleLive2dOutfit(session,state,'素世')).toBeUndefined();
     const release=confirmLive2dOutfit(session,'soyo',first.choice,status);
     expect(live2dAppearancePrompt(session,state)).toContain(first.outfit.description);
+    expect(visibleLive2dOutfit(session,state,'素世')).toBe(first.outfit);
+    expect(visibleLive2dOutfit('other-chat',state,'素世')).toBeUndefined();
     const originalMinute=state.clock.minute;state.clock.minute=(originalMinute+1)%60;
     expect(chooseLive2dOutfit(session,state,'soyo')?.choice).toEqual(first.choice);state.clock.minute=originalMinute;
     const switched=reduceState(state,{type:'switch_protagonist',target:'sakiko'});
@@ -36,6 +39,7 @@ describe('optional ensemble wardrobe',()=>{
     expect(chooseLive2dOutfit(session,returned,'soyo')?.choice).toEqual(first.choice);
     const stored=JSON.parse(localStorage.getItem('unread-city-live2d-wardrobe-v1:stable')!);expect(stored.soyo).toEqual(first.choice);
     release();expect(live2dAppearancePrompt(session,state)).toBe('');
+    expect(visibleLive2dOutfit(session,state,'素世')).toBeUndefined();
   });
   it('rejects stale confirmation and never selects unseen people',()=>{
     const state=createInitialState(),session='offscene';
