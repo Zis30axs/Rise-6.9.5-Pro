@@ -184,6 +184,8 @@ export interface WorldState {
   anthropicVisitor?: import('../runtime/mystery-visitor').MysteryVisitorState;
   /** Per-protagonist daily meeting & trait gift receipts; absent in older saves. */
   npcGiftDaily?: import('../runtime/npc-gift-traits').NpcGiftDailyState;
+  /** Canonical clothing details and selected Live2D look, shared across viewpoints. */
+  wardrobe?: import('../runtime/wardrobe-state').WardrobeState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
   inventory: { itemId: string; quantity: number; equipped?: boolean | import('../runtime/equipment').EquipmentSlot }[];
@@ -204,6 +206,7 @@ export type WorldAction =
   | { type: 'receive_cafe_gift'; offerId: string }
   | { type: 'claim_mystery_gift' }
   | { type: 'claim_second_mystery_gift' }
+  | { type: 'wardrobe_choose'; outfitId: string }
   | { type: 'switch_protagonist'; target: import('../runtime/dual-protagonists').ProtagonistId }
   | { type: 'phone_app'; requestId: string; owner: import('../runtime/dual-protagonists').ProtagonistId; command: import('../runtime/protagonist-world').PhoneCommand }
   | { type: 'strategy'; requestId: string; command: import('../runtime/strategy').StrategyCommand }
@@ -319,6 +322,8 @@ export interface OtherSideEvent {
 }
 
 export interface GeneratedStory {
+  /** Structured in-scene clothing changes. These are committed atomically with the story. */
+  wardrobeUpdates?: import('../runtime/wardrobe-state').WardrobeUpdate[];
   /** Optional character-authored pages; not world actions or character knowledge grants. */
   notebookPages?: import('../runtime/notebook').NotebookDraft[];
   /** Validated optional focus changes from the same existing narrative request. */
