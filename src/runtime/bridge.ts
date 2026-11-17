@@ -1,6 +1,6 @@
 import { equipmentContext, getEquipmentItem } from './equipment';
 import { live2dAppearancePrompt, live2dAppearanceScene, confirmedWardrobeBootstrap } from './live2d-wardrobe';
-import { wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
+import { unmodeledWardrobePrompt } from './wardrobe-state';
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
@@ -678,14 +678,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const combinedSystemPrompt = taggedPrompts.systemPrompt;
       const appearancePrompt = options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask
         ? ''
-        : live2dAppearancePrompt(ownerSession, snapshot)
-          + (['emma', 'renako'].includes(activeProtagonist(snapshot)) && snapshot.wardrobe?.[activeProtagonist(snapshot)]
-            ? '\n【当前主角衣着记录】'
-              + protagonistNames[activeProtagonist(snapshot)] + '：'
-              + (wardrobeText(snapshot.wardrobe[activeProtagonist(snapshot)]) ||
-                wardrobeCategoryLabel(snapshot.wardrobe[activeProtagonist(snapshot)]?.category))
-              + '。\n'
-            : '');
+        : live2dAppearancePrompt(ownerSession, snapshot) + unmodeledWardrobePrompt(snapshot);
       // Give the model a small, grounded set of stable author IDs without
       // exposing every resident or sending private notebooks into prompts.
       const notebookAuthors = options ? '' : notebookPeople(snapshot)
