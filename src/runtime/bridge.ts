@@ -1,5 +1,6 @@
 import { equipmentContext, getEquipmentItem } from './equipment';
 import { live2dAppearancePrompt, live2dAppearanceScene } from './live2d-wardrobe';
+import { wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
 import { COURT_PROMPT_RULES, COURT_RULE_TEXTS, selectCourtPromptRules } from './court-prompt';
 import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneView } from './livehouse';
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
@@ -138,7 +139,7 @@ const STORY_PROTOCOL_PARTS = [
   COURT_PROMPT_RULES.resolution,
 
   MANDATORY_CHARACTER_SPEECH_RULE,
-  '【衣着变化】当前角色衣着可在剧情中自由变更，不受 Live2D 素材型号限制。仅在本轮确实发生换装、整理、损坏或可确认的外观变化时，可附加一次 <wardrobe_updates>JSON数组</wardrobe_updates>，最多四人，每人一次。格式如 [{"person":"soyo","category":"casual","details":{"top":"米白针织衫","bottom":"深色半裙"}}]。person 必须是当前在场 Live2D 人物 ID（soyo、sakiko、anon、tomori、raana、taki、mutsumi、uika、umiri、nyamu），category 可选且只能是当前资源可提供的大类 casual/school/work/performance/formal/warm/summer；details 可选且仅更新明确变化字段：hair/top/bottom/layer/bra/underwear/accessories/appearance。内衣、内裤只是普通服装档案字段，不推测未观察到的隐私。人物的其他衣着字段保留，不要无缘无故重新生成。NPC 只能由真实剧情中的自主行动触发换装，玩家衣柜只控制当前主角。模型不能填资源 ID、文件路径，也不能借服装更新改变身份、关系或活动结算。没有变化时省略标签。',
+  '【衣着变化】当前角色衣着可在剧情中自由变更，不受 Live2D 素材型号限制。仅在本轮确实发生换装、整理、损坏或可确认的外观变化时，可附加一次 <wardrobe_updates>JSON数组</wardrobe_updates>，最多四人，每人一次。格式如 [{"person":"soyo","category":"casual","details":{"top":"米白针织衫","bottom":"深色半裙"}}]。person 必须是当前在场的角色 ID（soyo、sakiko、emma、renako、anon、tomori、raana、taki、mutsumi、uika、umiri、nyamu）；其中只有具备 Live2D 资源者能切换立绘，category 可选且只能是当前资源可提供的大类 casual/school/work/performance/formal/warm/summer；details 可选且仅更新明确变化字段：hair/top/bottom/layer/bra/underwear/accessories/appearance。内衣、内裤只是普通服装档案字段，不推测未观察到的隐私。人物的其他衣着字段保留，不要无缘无故重新生成。NPC 只能由真实剧情中的自主行动触发换装，玩家衣柜只控制当前主角。模型不能填资源 ID、文件路径，也不能借服装更新改变身份、关系或活动结算。没有变化时省略标签。',
   '人物手账是少量真实事件驱动的个人记录。若本轮明确出现本人有必要记下的经历且知道人物稳定 ID，可在 phone_messages 后追加一次 <notebook_pages>[{"personId":"已知稳定人物ID","title":"中文短标题","text":"本人独立的中文手账正文"}]</notebook_pages>，最多两页，每位人物一页；日常无事不要凑数。手账属于人物主观想法，可有偏见但不得虚构未发生的行动，不能写入其他主角的未知事实。没有准确 ID 就省略。不要把该标签正文写进小说文本。',
   '长崎素世、丰川祥子、樱羽艾玛、甘织玲奈子等现有主角与全部固定世界书人物、乐队成员均对股票、炒股和证券行情毫无兴趣；切勿在日常剧情或角色台词中主动安排她们看盘、推荐股票或讨论 K 线走势。',
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。衣着变化可额外附加 <wardrobe_updates>受限 JSON 数组</wardrobe_updates>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
@@ -677,7 +678,14 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const combinedSystemPrompt = taggedPrompts.systemPrompt;
       const appearancePrompt = options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask
         ? ''
-        : live2dAppearancePrompt(ownerSession, snapshot);
+        : live2dAppearancePrompt(ownerSession, snapshot)
+          + (['emma', 'renako'].includes(activeProtagonist(snapshot)) && snapshot.wardrobe?.[activeProtagonist(snapshot)]
+            ? '\n【当前主角衣着记录】'
+              + protagonistNames[activeProtagonist(snapshot)] + '：'
+              + (wardrobeText(snapshot.wardrobe[activeProtagonist(snapshot)]) ||
+                wardrobeCategoryLabel(snapshot.wardrobe[activeProtagonist(snapshot)]?.category))
+              + '。\n'
+            : '');
       // Give the model a small, grounded set of stable author IDs without
       // exposing every resident or sending private notebooks into prompts.
       const notebookAuthors = options ? '' : notebookPeople(snapshot)
