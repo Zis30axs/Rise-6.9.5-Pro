@@ -16,6 +16,7 @@
       "comment": "丰川清告（丰川祥子的父亲）",
       "extensions": {
         "personId": "toyokawa-kiyoaki",
+        "networkAccount": false,
         "publicProfile": "丰川清告，祥子的父亲，前丰川地所经营者，现独居于目白台附近的清告家小公寓。"
       }
     },
@@ -36,6 +37,7 @@
       "comment": "丰川定治（丰川祥子的外祖父、丰川集团董事长）",
       "extensions": {
         "personId": "toyokawa-sadaharu",
+        "networkAccount": false,
         "publicProfile": "丰川定治，祥子的外祖父，丰川集团董事长。"
       }
     },
@@ -53,6 +55,7 @@
       "comment": "丰川瑞穗（丰川祥子的母亲，已故）",
       "extensions": {
         "personId": "toyokawa-mizuho",
+        "networkAccount": false,
         "publicProfile": "丰川瑞穗，祥子已故的母亲。"
       }
     }

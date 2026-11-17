@@ -6,6 +6,7 @@ import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneVi
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
 import { storyMemoryPrompt } from './story-memory';
+import { affinityPersonaPrompt } from './affinity-personas';
 import { otherSidePromptContext } from './other-side';
 import { strategyPromptContext } from './strategy-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
@@ -499,6 +500,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const wardrobeTurn = !options || options.kind === 'interaction_event';
       const wardrobeBootstrap = wardrobeTurn ? confirmedWardrobeBootstrap(ownerSession, snapshot) : undefined;
       const scene = worldSceneContext(snapshot);
+      const affinityPersonas = affinityPersonaPrompt(snapshot, scene, input, options?.kind);
       const summary = {
         ...(strategyFocus ? { strategyFocus } : {}),
         ...(factionFocus ? { factionFocus } : {}),
@@ -679,7 +681,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       // the same non-negotiable format at the end of the actual user turn.
       // The latest narrative text remains data and never becomes an output template.
       const taggedPrompts = applyMandatoryStoryTagContract(
-        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${storyMemory}\n${systemPrompt}`,
+        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${storyMemory}${affinityPersonas}\n${systemPrompt}`,
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;

@@ -4,7 +4,7 @@
 
 ## 身份与存档
 
-`src/runtime/network-identities.ts` 是固定账号的唯一来源，覆盖当前全部世界书 `extensions.personId` 和两位原有主角，并登记新闻/机构、固定杂谈和三支乐队。昵称、用户名、邮箱、头像键均由程序决定；切主角和切聊天不会重造世界书人物身份。
+`src/runtime/network-identities.ts` 是固定账号的唯一来源，覆盖符合条件的世界书 `extensions.personId` 和两位原有主角，并登记新闻/机构、固定杂谈和三支乐队。丰川清告、丰川定治与丰川瑞穗通过 `extensions.networkAccount: false` 排除在固定账号名册之外。昵称、用户名、邮箱、头像键均由程序决定。切主角和切聊天时继续使用已有身份。
 
 随机网友与随机发帖继续保留。模型可写一个新路人网名，程序以该网名生成稳定账号 ID、用户名、虚构邮箱与默认头像，通过既有 `phone_app` 事务保存到共享 `protagonists.internet.guests`。重复昵称复用同一身份。关注图保存于同一字段的 `follows`，不会改写联系人关系、私人经历或游戏时钟。
 
