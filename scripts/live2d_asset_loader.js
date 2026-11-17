@@ -6,6 +6,8 @@ function __ucLive2dCreateApi() {
   const descriptor = __UC_LIVE2D_PACK__;
   const dbName = 'unread-city-live2d-v1';
   let manifest = null, enabled = false, hydrating = true, generation = 0, queue = Promise.resolve();
+  let restoration;
+  let assets = new Map();
   const listeners = new Set();
   const emit = () => { generation++; for (const fn of listeners) { try { fn(); } catch (error) { console.error(error); } } };
   const serial = fn => { const result = queue.then(fn); queue = result.catch(() => {}); return result; };
@@ -20,6 +22,13 @@ function __ucLive2dCreateApi() {
   async function verify(blob, row) {
     if (!(blob instanceof Blob) || blob.size !== row.bytes || await __ucLiteSha256(await blob.arrayBuffer()) !== row.sha256) throw Error('Live2D 素材缺失或损坏');
     return blob;
+  }
+  function activate(candidate, active) {
+    manifest = candidate;
+    enabled = active;
+    assets = new Map(candidate?.assets.map(row => [row.sha256, row]));
+    hydrating = false;
+    emit();
   }
   const api = {
     status,
@@ -45,21 +54,25 @@ function __ucLive2dCreateApi() {
           report(`正在安装 ${++completed}/${candidate.assets.length}`);
         }
         await __ucLitePut(db, 'meta', 'ready', {sha:descriptor.sha, bytes, enabled:true});
-        manifest = candidate; enabled = true; emit();
+        activate(candidate, true);
       } finally { db.close(); }
     }); },
-    hydrate() { return serial(async () => {
+    restore() { return restoration ??= serial(async () => {
+      if (!hydrating) return;
       let db;
+      let candidate = null;
+      let active = false;
       try {
         db = await __ucLiteDb(dbName);
         const ready = await __ucLiteRead(db, 'meta', 'ready');
-        if (!ready || ready.sha !== descriptor.sha) return;
-        const candidate = await readManifest(ready.bytes);
-        // Bounded sequential verification; never creates model/texture URLs.
-        for (const row of candidate.assets) await verify(await __ucLiteRead(db, 'assets', row.sha256), row);
-        manifest = candidate; enabled = ready.enabled === true;
-      } catch (error) { manifest = null; enabled = false; console.warn('[UnreadCity Live2D]', error); }
-      finally { db?.close(); hydrating = false; emit(); }
+        if (ready?.sha === descriptor.sha) {
+          // Install verified every entry before committing this manifest. Reads
+          // still verify each Blob before handing it to the current portrait.
+          candidate = await readManifest(ready.bytes);
+          active = ready.enabled === true;
+        }
+      } catch (error) { console.warn('[UnreadCity Live2D]', error); }
+      finally { db?.close(); activate(candidate, active); }
     }); },
     setEnabled(value) { return serial(async () => {
       if (!manifest) return;
@@ -79,12 +92,12 @@ function __ucLive2dCreateApi() {
           tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error || Error('移除失败'));
           tx.objectStore('assets').clear(); tx.objectStore('meta').clear();
         });
-        manifest = null; enabled = false; emit();
+        activate(null, false);
       } finally { db.close(); }
     }); },
     async getAsset(sha) {
       const revision = generation;
-      const row = manifest && enabled && manifest.assets.find(item => item.sha256 === sha);
+      const row = enabled && assets.get(sha);
       if (!row) throw Error('Live2D 素材未启用');
       const db = await __ucLiteDb(dbName);
       try {
@@ -128,5 +141,3 @@ function __ucLive2dButton(api) {
 const __ucLive2dApi = __ucLive2dCreateApi();
 globalThis.__UC_LIVE2D__ = __ucLive2dApi;
 __ucLive2dButton(__ucLive2dApi);
-// Optional hydration must never gate the existing Lite startup.
-void __ucLive2dApi.hydrate().catch(error => console.warn('[UnreadCity Live2D]', error));

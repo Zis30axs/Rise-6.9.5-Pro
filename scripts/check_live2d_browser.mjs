@@ -12,7 +12,8 @@ const shared=core.slice(core.indexOf('function __ucLiteRequest'),core.indexOf('a
 const hostScript=`(function(){${shared}\n${optional}\n})();`;
 const loader=`(function(){let host=window;try{if(window.parent.document.body)host=window.parent;}catch{}
   if(host.__UC_LIVE2D__?.status().pack!==${JSON.stringify(descriptor.sha)}){const script=host.document.createElement('script');script.textContent=${JSON.stringify(hostScript)};(host.document.head||host.document.body).append(script);script.remove();}
-  globalThis.__UC_LIVE2D__=host.__UC_LIVE2D__;})();`;
+  globalThis.__UC_LIVE2D__=host.__UC_LIVE2D__;
+  void globalThis.__UC_LIVE2D__.restore();})();`;
 const server=await createServer({root,server:{host:'127.0.0.1',port:5186,strictPort:true}});await server.listen();
 let browser;const report={models:[],checks:[],externalRequests:[],errors:[]};
 function assert(condition,message){if(!condition)throw Error(message);report.checks.push(message);}

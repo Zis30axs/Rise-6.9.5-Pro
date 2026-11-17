@@ -8,6 +8,7 @@ export interface Live2dOutfit {
 export interface Live2dPackStatus { installed: boolean; enabled: boolean; hydrating?: boolean; generation: number; pack: string; models: Live2dOutfit[] }
 export interface Live2dPackApi {
   status(): Live2dPackStatus;
+  restore?(): Promise<void>;
   subscribe(listener: () => void): () => void;
   getAsset(sha: string): Promise<Blob>;
 }
