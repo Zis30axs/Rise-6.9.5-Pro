@@ -20,6 +20,7 @@ export const WARDROBE_DETAIL_LABELS = {
   bra: '内衣', underwear: '内裤', accessories: '配饰', appearance: '外观',
 } as const;
 export type WardrobeDetailKey = keyof typeof WARDROBE_DETAIL_LABELS;
+export type WardrobePerson = Live2dPerson | 'emma' | 'renako';
 export type WardrobeDetails = Partial<Record<WardrobeDetailKey, string>>;
 export interface WardrobeEntry {
   category?: WardrobeCategory;
@@ -29,14 +30,19 @@ export interface WardrobeEntry {
   /** Stable narrative turn that last wrote this entry, for replay protection. */
   changedTurnId?: string;
 }
-export type WardrobeState = Partial<Record<Live2dPerson, WardrobeEntry>>;
+export type WardrobeState = Partial<Record<WardrobePerson, WardrobeEntry>>;
 export interface WardrobeUpdate {
-  person: Live2dPerson;
+  person: WardrobePerson;
   category?: WardrobeCategory;
   details?: WardrobeDetails;
 }
 const categories = new Set<string>(WARDROBE_CATEGORIES.map(item => item.id));
-const people = new Set<string>(live2dPeople);
+const people = new Set<string>([...live2dPeople, 'emma', 'renako']);
+function wardrobeIdentity(value: string): WardrobePerson | null {
+  if (value === 'emma' || value === 'protagonist-emma') return 'emma';
+  if (value === 'renako' || value === 'protagonist-renako') return 'renako';
+  return live2dIdentity(value);
+}
 const detailKeys = new Set<string>(Object.keys(WARDROBE_DETAIL_LABELS));
 
 export function wardrobeCategory(outfit: Live2dOutfit): WardrobeCategory {
@@ -61,7 +67,7 @@ function validDetails(value: unknown, source: string): WardrobeDetails {
 export function parseWardrobeState(value: unknown): WardrobeState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('存档衣柜格式无效');
   const rows = value as Record<string, unknown>, result: WardrobeState = {};
-  if (Object.keys(rows).length > live2dPeople.length) throw new Error('存档衣柜人数无效');
+  if (Object.keys(rows).length > people.size) throw new Error('存档衣柜人数无效');
   for (const [name, raw] of Object.entries(rows)) {
     if (!people.has(name) || !raw || typeof raw !== 'object' || Array.isArray(raw))
       throw new Error('存档衣柜人物无效');
@@ -84,28 +90,28 @@ export function parseWardrobeState(value: unknown): WardrobeState {
         throw new Error('存档衣柜回执无效');
       entry.changedTurnId = row.changedTurnId;
     }
-    result[name as Live2dPerson] = entry;
+    result[name as WardrobePerson] = entry;
   }
   return result;
 }
 /** LLM can choose a broad category and edit any textual layer, but not asset IDs. */
 export function validateWardrobeUpdates(value: unknown, state: WorldState): WardrobeUpdate[] {
   if (!Array.isArray(value) || value.length > 4) throw new Error('衣着更新最多四人，本轮未保存');
-  const inScene = new Set<Live2dPerson>();
-  const protagonist = live2dIdentity(activeProtagonist(state));
+  const inScene = new Set<WardrobePerson>();
+  const protagonist = wardrobeIdentity(activeProtagonist(state));
   if (protagonist) inScene.add(protagonist);
   for (const row of worldSceneContext(state)?.nearbyPeople ?? []) {
-    const id = live2dIdentity(row.id);
+    const id = wardrobeIdentity(row.id);
     if (id) inScene.add(id);
   }
-  const seen = new Set<Live2dPerson>();
+  const seen = new Set<WardrobePerson>();
   return value.map(raw => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('衣着更新格式无效');
     const row = raw as Record<string, unknown>;
     if (Object.keys(row).some(key => !['person', 'category', 'details'].includes(key)) ||
       typeof row.person !== 'string' || !people.has(row.person))
       throw new Error('衣着更新人物或字段无效');
-    const person = row.person as Live2dPerson;
+    const person = row.person as WardrobePerson;
     if (!inScene.has(person) || seen.has(person)) throw new Error('衣着更新只能针对本轮在场的人物，每人一次');
     seen.add(person);
     const entry: WardrobeUpdate = { person };
