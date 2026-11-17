@@ -7,7 +7,7 @@ import { gameCalendar } from './game-calendar';
 import { resolveWeather, type WeatherId } from './weather';
 import { performanceMemberIds } from './livehouse';
 import { isStudyInteraction } from './campus-interiors';
-import { WARDROBE_CATEGORIES, wardrobeText, wardrobeCategoryLabel } from './wardrobe-state';
+import { WARDROBE_CATEGORIES, wardrobeText, wardrobeCategoryLabel, wardrobeCategory, type WardrobeState } from './wardrobe-state';
 
 export interface OutfitEnvironment {
   day: number; period: number; month: number; location: string; room: string | null;
@@ -138,6 +138,17 @@ function confirmedOutfit(session:string,state:WorldState,person:Live2dPerson,sta
   const row=confirmed.get(session)?.get(person);
   if(!row?.leases.size||row.generation!==status.generation||row.choice.pack!==status.pack||row.choice.trigger!==outfitTrigger(state,person))return undefined;
   return status.models.find(model=>model.person===person&&model.id===row.choice.id);
+}
+/** Snapshot only confirmed initial looks; never reinitialize someone who has an entry. */
+export function confirmedWardrobeBootstrap(session: string|null, state: WorldState): WardrobeState {
+  const status=live2dPack()?.status(), result: WardrobeState = {};
+  if (!session || !status?.enabled) return result;
+  for (const [person] of visibleLive2dPeople(state)) {
+    if (state.wardrobe?.[person]) continue;
+    const outfit=confirmedOutfit(session, state, person, status);
+    if (outfit) result[person]={ outfitId:outfit.id, category:wardrobeCategory(outfit) };
+  }
+  return result;
 }
 export function live2dAppearancePrompt(session:string|null,state:WorldState):string {
   const status=live2dPack()?.status();if(!session||!status?.enabled)return '';
