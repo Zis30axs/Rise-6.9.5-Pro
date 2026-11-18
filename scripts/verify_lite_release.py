@@ -63,6 +63,12 @@ def verify() -> dict:
             raise ValueError('东京沙盘 Lite 打包报告不完整')
         if report.get('tokyoSandboxSeparatePack') is not False or report.get('tokyoSandboxInCoreZip') is not True:
             raise ValueError('东京沙盘必须包含在主素材包内')
+        paris_models = [ROOT / 'assets/paris-sandbox' / (name + '.glb.gz.bin') for name in ('sandbox', 'airport')]
+        for model in paris_models:
+            raw = model.read_bytes()
+            candidates = [asset for asset in assets if asset['bytes'] == len(raw) and asset['mime'] == 'application/octet-stream']
+            if not any(zip_file.read(asset['path']) == raw for asset in candidates):
+                raise ValueError('主素材包缺少巴黎模型：' + model.name)
         zip_sizes = Counter(asset['bytes'] for asset in assets)
         missing_sizes = Counter(path.stat().st_size for path in art_files) - zip_sizes
         if missing_sizes:
@@ -91,7 +97,7 @@ def verify() -> dict:
             'liteBundleBytes': lite.stat().st_size, 'zipBytes': archive.stat().st_size,
             'externalAssets': report['assets'],
             'approvedNewArtExternalized': approved_count, 'offline': True,
-            'physicalDeviceTested': False,
+            'physicalDeviceTested': False, 'parisModelsInCoreZip': len(paris_models),
             'tokyoSandboxBytes': TOKYO_SANDBOX_BYTES,
             'tokyoSandboxArchive': 'unread-city-lite-assets.zip',
             'tokyoSandboxSeparatePack': False,

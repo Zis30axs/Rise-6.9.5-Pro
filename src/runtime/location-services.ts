@@ -63,7 +63,7 @@ export const venues: readonly Venue[] = [
   { locationId: 'court-hearing', label: '魔女审判最高法庭', hoursLabel: '09:00–17:00', opens: 9 * 60, closes: 17 * 60, outdoor: false, description: '公开旁听席与正式审理共用的法庭。不得干预正在进行的案件。' },
   { locationId: 'legal-office', label: '枫庭律师事务所', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '律所接待区摆着案件卷宗、证物清单和通往模拟质证室的走廊；实务案件由持证律师负责，见习人员在指导下调查和研究证据。' },
   { locationId: 'clinic', label: '街区全科诊所', hoursLabel: '08:00–22:00', opens: 8 * 60, closes: 22 * 60, outdoor: false, description: '环境明亮整洁的街区全科门诊，由风堇医生常驻坐诊，提供体征检查、用药调理与每周谈心疏导。' },
-  { locationId: 'haneda-airport', label: '东京羽田国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际航班值机与出发大厅。前往旧金山须先到达机场。' },
+  { locationId: 'haneda-airport', label: '东京羽田国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际航班值机与出发大厅。可在机场办理前往旧金山、北京和巴黎的航班。' },
   { locationId: 'sfo-airport', label: '旧金山国际机场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: false, description: '国际到达大厅与机场联运站，可前往旧金山或返回羽田。' },
   { locationId: 'california-openai', label: 'OpenAI 办公地点', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '访客大厅内设有领取柜台，每位访客每七日可领取一次 Pro200 收藏券。' },
   { locationId: 'california-anthropic', label: 'Anthropic 访客中心', hoursLabel: '09:00–18:00', opens: 9 * 60, closes: 18 * 60, outdoor: false, description: '展示区陈列研究展板，休息区欢迎旅客参观。偶尔会有人递来奇怪的邀请。' },

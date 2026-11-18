@@ -1,0 +1,60 @@
+.paris-exhibit{--ink:#283a36;--muted:#64716a;--rule:#cecfc4;--paper:#f5f3ec;--accent:#9d503a;color-scheme:light;color:var(--ink);background:var(--paper);font-family:"Source Sans 3","PingFang SC","Microsoft YaHei",Arial,sans-serif;font-weight:400;letter-spacing:0;text-align:left}
+dialog.paris-exhibit{position:fixed;inset:0;padding:0;width:min(1250px,96vw);height:min(810px,92dvh);max-width:96vw;max-height:92dvh;border:1px solid #aaa99a;border-radius:8px;margin:auto;box-shadow:0 25px 94px #101b184d}
+dialog.paris-exhibit::backdrop{background:#16221ccd}
+.paris-exhibit.pa-standalone{width:100%;min-height:100dvh}
+.paris-exhibit *{box-sizing:border-box}
+.pa-shell{height:100%;display:flex;flex-direction:column;container-type:inline-size}
+.pa-standalone .pa-shell{height:100dvh;min-height:610px}
+.pa-header,.pa-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;flex:none;padding:0 clamp(17px,2.7vw,46px)}
+.pa-header{height:61px;border-bottom:1px solid var(--rule)}
+.pa-brand,.pa-region,.pa-footer span,.pa-tools,.pa-note-title,.pa-city>div{display:flex;align-items:center}
+.pa-brand{gap:11px;font-weight:650;font-size:14px;letter-spacing:.08em}.pa-brand i,.pa-tools i{width:1px;height:13px;background:var(--rule)}.pa-subbrand{font-weight:400;color:var(--muted);font-size:12px;letter-spacing:.12em}
+.pa-region,.pa-footer span{font:10px/1.5 "Courier New",monospace;letter-spacing:.12em;color:var(--muted)}.pa-region b,.pa-footer b{font-weight:400;padding:0 8px;color:#a7a696}
+.paris-exhibit button{font:inherit;color:inherit;cursor:pointer;text-shadow:none;box-shadow:none;min-width:0;min-height:0;outline-offset:3px;line-height:1.35;touch-action:manipulation}
+.paris-exhibit button:focus-visible,.pa-stage canvas:focus-visible{outline:2px solid var(--accent)}
+.pa-back{font-size:13px!important;background:transparent;border:0;padding:8px}
+.pa-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) clamp(242px,22%,326px)}
+.pa-stage{position:relative;min-width:0;min-height:0;isolation:isolate;overflow:hidden;background:#eae6dc}
+.pa-paper,.pa-stage canvas,.pa-poster,.pa-pins{position:absolute;inset:0;width:100%;height:100%}
+.pa-poster{object-fit:contain;background:#bbb8ac}
+.pa-stage canvas{touch-action:none;display:block;cursor:grab}.pa-stage canvas:active{cursor:grabbing}
+.pa-city{position:absolute;top:clamp(15px,3.1vh,38px);left:clamp(17px,3vw,47px);pointer-events:none;color:#293d36;text-shadow:0 1px 9px #f5f1df80}
+.pa-country{font-size:10px;letter-spacing:.19em}.pa-city>div{gap:13px;align-items:baseline}
+.pa-city h1{margin:0!important;font:normal clamp(46px,5.8vw,90px)/1.02 'Baskervville','Times New Roman',serif!important;letter-spacing:-.065em}
+.pa-zh{font-size:16px;letter-spacing:.18em;font-family:'Songti SC','Noto Serif CJK SC',serif}
+.pa-compass{position:absolute;top:19px;right:clamp(15px,1.9vw,28px);width:36px;text-align:center;color:#4b5b50;pointer-events:none}.pa-compass span{font:10px/1 monospace}.pa-compass svg{display:block;width:100%}
+.pa-tools{position:absolute;bottom:21px;left:50%;transform:translateX(-50%);border:1px solid #b6b5a5;border-radius:25px;background:#f7f6eeed;padding:4px;gap:1px;box-shadow:0 3px 12px #433f3312;white-space:nowrap}
+.pa-tools button,.pa-tools span{display:grid;place-items:center;background:transparent;border:0;border-radius:22px;padding:7px 10px;font-size:12px!important;min-height:32px}
+.pa-tools button:hover,.pa-tools button[aria-pressed=true]{background:#dbe1d3}.pa-tools i{margin:0 2px}
+.pa-pins{pointer-events:none}.pa-pins button{pointer-events:auto;position:absolute;transform:translate(-50%,-92%);border-radius:50%;width:27px;height:27px;border:1px solid #f7f3e4;background:#354c44;color:#fff8e5;font:11px/1 monospace;box-shadow:0 1px 5px #1d271b44}.pa-pins button.chosen{background:var(--accent)}
+.pa-aside{min-width:0;overflow:auto;display:flex;flex-direction:column;padding:clamp(19px,2.7vw,39px) clamp(17px,2.05vw,32px) 22px;border-left:1px solid var(--rule);background:var(--paper)}
+.pa-index-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 16px}
+.pa-index-heading h2,.pa-note h3{margin:0!important;color:var(--ink);font:600 17px/1.4 'Songti SC','Noto Serif CJK SC',serif!important;letter-spacing:.06em}
+.pa-index-heading>span{font:italic 14px Georgia,serif;color:#778074}.pa-list{border-top:1px solid #7f8c7c}
+.pa-list button{border:0;border-radius:0;border-bottom:1px solid var(--rule);width:100%;min-height:59px;display:flex;align-items:center;text-align:left;background:none;gap:12px;padding:9px 2px}
+.pa-list button:hover,.pa-list button[aria-pressed=true]{background:#e9eadf}.pa-list button[aria-pressed=true] .pa-placename strong,.pa-list button[aria-pressed=true] .pa-no{color:var(--accent)}
+.pa-no{font:11px/1.2 monospace;color:var(--accent);letter-spacing:.04em}.pa-placename{display:block;flex:1;min-width:0}
+.pa-placename strong{font:550 14px/1.45 "PingFang SC","Microsoft YaHei",sans-serif;display:block;color:var(--ink)}
+.pa-placename em{font:italic 13px/1.3 Georgia,'Times New Roman',serif;display:block;color:var(--muted);margin-top:2px}
+.pa-arrow{font-size:13px;color:#889282}.pa-note{margin-top:auto;padding-top:24px}.pa-note-title{gap:8px}.pa-note-title i{width:6px;height:6px;transform:rotate(45deg);background:var(--accent)}
+.pa-note h3{font-size:14px!important}.pa-note p{font-size:12px;line-height:1.85;color:#697267;margin:7px 0 0!important}
+.pa-footer{height:35px;border-top:1px solid var(--rule)}.pa-footer span{font-family:inherit;font-size:10px;letter-spacing:.05em}.pa-footer i{width:6px;height:6px;background:#67806c;border-radius:50%;margin-right:8px}
+@container(max-width:700px){
+ .pa-layout{display:flex;flex-direction:column;min-height:auto;flex:1}.pa-stage{flex:none;height:clamp(345px,55dvh,520px)}
+ .pa-aside{border-left:0;border-top:1px solid var(--rule);overflow:visible;padding:16px 18px}.pa-index-heading{margin-bottom:10px}
+ .pa-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}.pa-list button{min-height:51px;gap:8px;padding:6px 0}
+ .pa-placename strong{font-size:13px}.pa-placename em{font-size:11px}.pa-note{padding-top:15px}.pa-note p{line-height:1.6;margin:4px 0 0!important}
+ .pa-header{height:47px;padding:0 16px}.pa-brand{font-size:12px;gap:7px}.pa-region{font-size:8px;letter-spacing:.05em}.pa-region b{padding:0 4px}
+ .pa-country{font-size:9px}.pa-city{top:13px;left:17px}.pa-city h1{font-size:45px!important}.pa-zh{font-size:13px}
+ .pa-tools{bottom:10px}.pa-footer{padding:0 16px;height:31px}.pa-footer span{font-size:9px}
+}
+@media(max-width:730px){.pa-standalone .pa-shell{min-height:100dvh;height:auto}dialog.paris-exhibit{width:97vw;max-width:97vw}dialog .pa-shell{height:auto;min-height:100%}}
+@media(prefers-reduced-motion:reduce){.paris-exhibit *{scroll-behavior:auto}}
+
+.pa-areas{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pa-areas button,.pa-departures button{background:transparent;border:1px solid var(--rule);border-radius:4px;padding:6px 11px;font-size:12px}
+.pa-areas button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.pa-areas span{margin-left:auto;color:var(--muted);font-size:11px}
+.pa-departures{margin-top:17px;border-top:1px solid var(--rule);padding-top:12px}
+.pa-departures h3{font-size:13px;margin:0 0 8px}.pa-departures button{display:block;text-align:left;width:100%;margin:5px 0}
+.pa-departures small,.pa-departures strong{display:block}.pa-departures small{margin-top:3px;color:var(--muted)}.pa-departures button:disabled{opacity:.65;cursor:default}

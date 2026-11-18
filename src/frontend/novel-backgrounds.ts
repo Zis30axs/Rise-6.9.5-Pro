@@ -1,3 +1,11 @@
+import parisEiffelBg from '../../assets/paris-sandbox/backdrops/eiffel.webp?inline';
+import parisArcBg from '../../assets/paris-sandbox/backdrops/arc.webp?inline';
+import parisLouvreBg from '../../assets/paris-sandbox/backdrops/louvre.webp?inline';
+import parisNotreDameBg from '../../assets/paris-sandbox/backdrops/notre-dame.webp?inline';
+import parisInvalidesBg from '../../assets/paris-sandbox/backdrops/invalides.webp?inline';
+import parisAlexandreBg from '../../assets/paris-sandbox/backdrops/alexandre.webp?inline';
+import parisCdgAirportBg from '../../assets/paris-sandbox/backdrops/cdg-airport.webp?inline';
+import parisParisRoissypoleBg from '../../assets/paris-sandbox/backdrops/paris-roissypole.webp?inline';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
@@ -37,7 +45,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
-  source: 'legacy' | 'majo-art' | 'user-art';
+  source: 'legacy' | 'majo-art' | 'user-art' | 'paris-model';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -46,6 +54,17 @@ const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase,
   commercial: { day: commercialDay, dusk: commercialDusk, night: commercialNight },
   classroom: { day: classroomDay, dusk: classroomDusk, night: classroomNight },
   bedroom: { day: bedroomDay },
+};
+
+const parisBackgrounds: Readonly<Record<string, string>> = {
+  'paris-eiffel': parisEiffelBg,
+  'paris-arc': parisArcBg,
+  'paris-louvre': parisLouvreBg,
+  'paris-notre-dame': parisNotreDameBg,
+  'paris-invalides': parisInvalidesBg,
+  'paris-alexandre': parisAlexandreBg,
+  'cdg-airport': parisCdgAirportBg,
+  'paris-roissypole': parisParisRoissypoleBg,
 };
 
 const hanedaAirportBackgrounds: Readonly<Record<NovelBackgroundPhase, string>> = {
@@ -110,6 +129,9 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (Object.hasOwn(parisBackgrounds, locationId)) {
+    return { id: locationId + '-day', src: parisBackgrounds[locationId], phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'paris-model' };
+  }
   if (locationId === 'haneda-airport') {
     const phase = novelBackgroundPhase(hour);
     return {

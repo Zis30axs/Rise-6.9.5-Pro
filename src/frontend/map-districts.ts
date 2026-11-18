@@ -1,6 +1,7 @@
 import { campusInteriors } from '../runtime/campus-interiors';
 import { mapLocations, novelDestinations } from '../runtime/model';
 import { sceneAreas, sceneBounds } from './scene-layout';
+import { isParisLocation } from '../runtime/paris';
 import { isCaliforniaLocalLocation } from '../runtime/california';
 import { airportDistrict, airportLegacyBounds, airportLegacyCenter } from './airport-sandbox-layout';
 
@@ -46,10 +47,10 @@ export function districtBounds(scope: LocalMapScope) {
 }
 
 export function districtDestinations(scope: MapDistrictId, novelMode = false) {
-  return (novelMode ? novelDestinations : mapLocations).filter(place => !isCaliforniaLocalLocation(place.id) && locationDistrict(place.id) === scope);
+  return (novelMode ? novelDestinations : mapLocations).filter(place => !isCaliforniaLocalLocation(place.id) && !isParisLocation(place.id) && locationDistrict(place.id) === scope);
 }
 
 /** Map pins include entrances even when this play mode requires walking there. */
 export function districtMapPlaces(scope: MapDistrictId) {
-  return novelDestinations.filter(place => !isCaliforniaLocalLocation(place.id) && locationDistrict(place.id) === scope);
+  return novelDestinations.filter(place => !isCaliforniaLocalLocation(place.id) && !isParisLocation(place.id) && locationDistrict(place.id) === scope);
 }
