@@ -77,6 +77,18 @@ describe('live house tickets and practice rooms', () => {
     expect(saved.livehouseVisit?.skill.sakiko).toBe(0);
   });
 
+  it('quotes and books each partner’s actual capped gain', () => {
+    const state = inside(17, 20);
+    state.contacts.find(row => row.id === 'bang-anon')!.affinity = 69;
+    state.contacts.find(row => row.id === 'bang-tomori')!.affinity = 68;
+    const quote = getLocationServiceQuote(state, 'livehouse-practice-1h-band');
+    expect(quote.livehouse?.partners.find(row => row.id === 'bang-anon')).toMatchObject({ eligible: true, affinityDelta: 0 });
+    expect(quote.livehouse?.receipt).toContain('高松灯 +1');
+    const result = reduceState(state, { type: 'location_service', serviceId: 'livehouse-practice-1h-band' });
+    expect(result.contacts.find(row => row.id === 'bang-anon')?.affinity).toBe(69);
+    expect(result.contacts.find(row => row.id === 'bang-tomori')?.affinity).toBe(69);
+  });
+
   it('practices with MyGO contacts at or above the familiar line and leaves Taki out', () => {
     const state = inside(17, 20);
     state.contacts.find(contact => contact.id === 'bang-taki')!.affinity = 28;

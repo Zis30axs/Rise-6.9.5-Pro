@@ -6,7 +6,7 @@ import { bandReplyContext, BAND_REPLY_PROTOCOL, parseBandReply, livehousePhoneVi
 import { activeProtagonist, otherProtagonists, protagonistNames } from './protagonist-world';
 import { narrativeContext, omniscientContinuityContext, omniscientNarratorInstructions } from './protagonist-narrative';
 import { storyMemoryPrompt } from './story-memory';
-import { affinityPersonaPrompt } from './affinity-personas';
+import { affinityPersonaPrompt, CONFESSION_INSTRUCTION } from './affinity-personas';
 import { otherSidePromptContext } from './other-side';
 import { strategyPromptContext } from './strategy-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
@@ -501,6 +501,8 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const wardrobeBootstrap = wardrobeTurn ? confirmedWardrobeBootstrap(ownerSession, snapshot) : undefined;
       const scene = worldSceneContext(snapshot);
       const affinityPersonas = affinityPersonaPrompt(snapshot, scene, input, options?.kind);
+      const confessionInstruction = snapshot.contacts.some(contact => contact.affinity >= 69 || contact.confession === 'pending')
+        ? CONFESSION_INSTRUCTION : '';
       const summary = {
         ...(strategyFocus ? { strategyFocus } : {}),
         ...(factionFocus ? { factionFocus } : {}),
@@ -624,7 +626,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ...(wardrobeTurn ? { characterWardrobe: wardrobeStoryContext(snapshot, scene?.nearbyPeople ?? []) } : {}),
         airTraffic,
         transit: getTransitContext(snapshot.transit, snapshot.scene, snapshot.interior),
-        contacts: snapshot.contacts.map(({ id, name, status, affinity, portraitId, isMain }) => ({ id, name, status: status.slice(0, 120), affinity, portraitId, isMain })),
+        contacts: snapshot.contacts.map(({ id, name, status, affinity, portraitId, isMain, confession }) => ({ id, name, status: status.slice(0, 120), affinity, portraitId, isMain, ...(confession ? { confession } : {}) })),
         mainCharacters: snapshot.contacts.filter(contact => contact.isMain).slice(-PROMPT_CONTEXT_LIMITS.mainCharacters)
           .map(({ id, name, tag, summary, portraitId, affinity, sourcePersonId }) => ({
             id, name, tag, summary: summary.slice(0, PROMPT_CONTEXT_LIMITS.mainCharacterSummary), portraitId, affinity, sourcePersonId,
@@ -681,7 +683,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       // the same non-negotiable format at the end of the actual user turn.
       // The latest narrative text remains data and never becomes an output template.
       const taggedPrompts = applyMandatoryStoryTagContract(
-        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${storyMemory}${affinityPersonas}\n${systemPrompt}`,
+        options?.kind === 'contact_introduction' || options?.kind === 'notebook_compose' || phoneTask ? systemPrompt : `${calendarInstruction}\n${calendarEventInstruction}\n${chronicleInstruction}\n${storyMemory}${affinityPersonas}\n${confessionInstruction}\n${systemPrompt}`,
         rawPrompt, options?.kind,
       );
       const prompt = taggedPrompts.userPrompt;

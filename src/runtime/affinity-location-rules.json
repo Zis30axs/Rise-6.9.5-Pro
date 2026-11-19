@@ -1,0 +1,289 @@
+[
+  {
+    "characterId": "protagonist-soyo",
+    "places": ["asukayama"],
+    "occasion": "带素世前往飞鸟山公园（尤其是喷泉广场）",
+    "reactions": [
+      {"through":"guarded","text":"低好感（敌视～戒备）直接视为故意揭伤疤羞辱，冷脸翻脸并大幅扣好感"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人会神色发僵、礼貌找借口迅速离开并提高防备"},
+      {"from":"in_sync","through":"friend","text":"合拍～朋友会略显不耐烦地嫌弃选址，但若不追问旧事而是自然换去散步喝茶，情绪会很快缓和"},
+      {"from":"confidant","text":"知心以上则会难得自嘲过去的狼狈"},
+      {"from":"bond","text":"羁绊以上更是愿意用与你共度的平静新回忆覆盖掉昔日阴影"}
+    ]
+  },
+  {
+    "characterId": "protagonist-soyo",
+    "places": ["arakawa-tram"],
+    "occasion": "陪素世搭乘都电荒川线（学习院下～飞鸟山沿线）",
+    "reactions": [
+      {"from":"distant","through":"familiar","text":"陌生～熟人会礼貌提醒你抓好扶手并保持距离"},
+      {"from":"friend","text":"朋友以上会靠在窗边轻声聊起沿途风景"},
+      {"from":"confidant","condition":"dusk","text":"知心以上若正好赶上黄昏，她会难得放松地轻轻叹气，愿意让你陪她多坐两站"}
+    ]
+  },
+  {
+    "characterId": "protagonist-sakiko",
+    "places": ["asukayama"],
+    "occasion": "带祥子前往飞鸟山公园（喷泉广场）",
+    "reactions": [
+      {"through":"guarded","text":"低好感～戒备会瞬间冷脸转身离开并扣好感，认为你在窥探她的过往"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人会神色微沉、言简意赅要求换地方"},
+      {"from":"confidant","text":"知心以上会在喷泉旁短暂沉默，低声承认自己当时话说得太重却别无选择"}
+    ]
+  },
+  {
+    "characterId": "protagonist-sakiko",
+    "places": ["ikebukuro-call-center"],
+    "occasion": "在池袋打工大楼外或客服中心附近偶遇祥子",
+    "reactions": [
+      {"through":"familiar","text":"低好感～熟人若流露半点怜悯目光会立刻触发强烈自尊反击"},
+      {"from":"friend","text":"朋友以上会嘴硬说“只是兼职罢了”"},
+      {"from":"bond","condition":"night","text":"羁绊以上若你不问不怜悯、只自然递杯热饮陪走一段夜路，她会默默收下并显著加好感"}
+    ]
+  },
+  {
+    "characterId": "protagonist-sakiko",
+    "places": ["haneoka-music"],
+    "occasion": "在羽丘旧音乐室或琴房陪祥子练琴",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位均不会排斥"},
+      {"from":"in_sync","text":"合拍以上会默许你安静旁听"},
+      {"from":"confidant","text":"知心以上会在弹完一曲后难得卸下防备和你聊起旋律"}
+    ]
+  },
+  {
+    "characterId": "bang-tomori",
+    "places": ["aquarium"],
+    "occasion": "带灯前往池袋阳光水族馆",
+    "reactions": [
+      {"from":"dislike","text":"除敌视外全档位大幅促进好感"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人阶段在企鹅与水母展缸前会瞬间卸下紧张、眼里亮起微光"},
+      {"from":"friend","text":"朋友以上会小声和你分享每一只企鹅的样子"},
+      {"from":"bond","text":"羁绊以上会轻轻牵住你衣角说想一直看下去"}
+    ]
+  },
+  {
+    "characterId": "bang-tomori",
+    "places": ["chitose-bridge","minami-ikebukuro-park"],
+    "occasion": "陪灯走过千登世桥或南池袋公园",
+    "reactions": [
+      {"from":"distant","through":"familiar","text":"陌生～熟人会低头默默捡起路边平整的小石子或枯叶，若你蹲下来一起找会迅速拉近距离"},
+      {"from":"confidant","text":"知心以上会轻声说起自己以前总是一个人走过这里，而现在终于不再孤单"}
+    ]
+  },
+  {
+    "characterId": "bang-tomori",
+    "places": ["manten-planetarium"],
+    "occasion": "带灯去池袋满天星象仪（天文馆）",
+    "reactions": [
+      {"from":"dislike","text":"天文部少女的绝对治愈主场，全非敌视档位稳定加好感"},
+      {"from":"confidant","text":"高好感时会在漆黑星空下小声把新写的歌词念给你听"}
+    ]
+  },
+  {
+    "characterId": "bang-anon",
+    "places": ["sunshine-shopping","aquarium"],
+    "occasion": "带爱音逛池袋Sunshine City商业街或阳光水族馆",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位大加好感"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人阶段就会兴冲冲拉你拍打卡合照、挑衣服"},
+      {"from":"confidant","text":"知心以上会自然挽住你胳膊开启高浓度女友力约会模式，还爱吃飞醋让你只拍她"}
+    ]
+  },
+  {
+    "characterId": "bang-anon",
+    "places": ["chitose-bridge","haneoka-route"],
+    "occasion": "和爱音一起走千登世桥或羽丘放学路",
+    "reactions": [
+      {"from":"in_sync","text":"合拍以上会叽叽喳喳聊起乐队趣事和自己以前追着大家跑的糗事"},
+      {"from":"bond","text":"羁绊以上会故意放慢脚步拉你的手晃来晃去，撒娇让你多夸夸她"}
+    ]
+  },
+  {
+    "characterId": "bang-taki",
+    "places": ["ring-desk"],
+    "occasion": "去Livehouse RiNG前台探班找立希",
+    "reactions": [
+      {"through":"guarded","text":"低好感会被直接冷脸轰走"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人只公事公办点单"},
+      {"from":"casual_friend","text":"普通朋友以上嘴上嫌弃“闲得慌别来添乱”，手里却早把你常点的饮品和留好的甜点推过来"},
+      {"from":"confidant","condition":"night","text":"知心以上打完晚班会默许你等她一起走夜路"}
+    ]
+  },
+  {
+    "characterId": "bang-taki",
+    "places": ["otsuka-diner"],
+    "occasion": "和立希去大塚站附近的家庭餐厅坐坐",
+    "reactions": [
+      {"from":"in_sync","text":"合拍以上聊起鼓点、编曲或吐槽日常时极其放松，嘴硬心软地帮你把点的餐推近，偶尔还会流露平时藏得很深的温柔"}
+    ]
+  },
+  {
+    "characterId": "bang-mutsumi",
+    "places": ["cucumber-garden"],
+    "occasion": "陪睦去家庭菜园或花坛照料黄瓜架",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位都会让她神情明显柔和下来"},
+      {"from":"distant","through":"distant","text":"陌生阶段也会停下来听你说话"},
+      {"from":"friend","text":"朋友以上会仔细挑一根长得最好的黄瓜擦干净递给你"}
+    ]
+  },
+  {
+    "characterId": "bang-mutsumi",
+    "places": ["stage-backstage","stage-entrance"],
+    "occasion": "在演艺后台或正式表演场馆外陪睦候场",
+    "reactions": [
+      {"through":"friend","text":"低～中好感会陷入极度沉默压抑，几乎不回应搭话"},
+      {"from":"confidant","text":"知心以上则会不安地轻轻扯住你的袖口，只要你安静握住她的手就能帮她迅速稳住情绪"}
+    ]
+  },
+  {
+    "characterId": "bang-rana",
+    "places": ["matcha-shop","ring-entrance"],
+    "occasion": "带乐奈去抹茶甜品专门店或Livehouse RiNG门口",
+    "reactions": [
+      {"text":"只要闻到抹茶芭菲或吉他声就会立刻靠近"},
+      {"from":"distant","through":"distant","text":"陌生阶段也能迅速促进好感"},
+      {"from":"friend","text":"朋友以上会自然霸占你旁边的座位，把最顶上的抹茶冰淇淋分你一口"}
+    ]
+  },
+  {
+    "characterId": "bang-rana",
+    "places": ["quiet-rooftop","park-bench"],
+    "occasion": "带乐奈去安静无人的天台或公园长椅晒太阳",
+    "reactions": [
+      {"from":"in_sync","condition":"sunlight","text":"合拍以上会像流浪猫找到窝一样舒服地抱琴拨弦"},
+      {"from":"confidant","condition":"sunlight","text":"知心以上甚至会直接枕着你胳膊打盹"}
+    ]
+  },
+  {
+    "characterId": "bang-uika",
+    "places": ["manten-planetarium","observation-roof"],
+    "occasion": "带初华去池袋天文馆或高楼观景天台看夜空",
+    "reactions": [
+      {"from":"dislike","text":"绝对主场，除敌视外全档位大幅加好感"},
+      {"from":"familiar","text":"熟人以上会褪去偶像营业微笑，眼里映着星光和你聊起写词灵感"},
+      {"from":"confidant","text":"知心以上会轻声流露深沉依恋，希望这片夜空永远只有你们两人"}
+    ],
+    "placeConditions": {"observation-roof":"starry-night"}
+  },
+  {
+    "characterId": "bang-umiri",
+    "places": ["ochanomizu-music","rehearsal-hallway"],
+    "occasion": "陪海铃逛御茶水乐器街或Livehouse排练室走廊",
+    "reactions": [
+      {"from":"in_sync","text":"合拍以上聊起贝斯音色、效果器与乐队排期时极其投机，大幅促进好感"},
+      {"from":"confidant","text":"知心以上会在挑完弦后难得放慢脚步，主动问你要不要顺路一起喝杯黑咖啡"}
+    ]
+  },
+  {
+    "characterId": "bang-nyamu",
+    "places": ["harajuku-pop-up","photo-cafe"],
+    "occasion": "陪喵梦去原宿/表参道美妆快闪店或网红打卡咖啡馆",
+    "reactions": [
+      {"from":"distant","through":"familiar","text":"陌生～熟人阶段若你审美在线、帮她找好角度拍素材会迅速加好感"},
+      {"from":"confidant","text":"高好感会嘴硬嫌弃你拍照笨拙，却把合照悄悄设成私密收藏，并顺手给你挑一身超衬气质的穿搭"}
+    ]
+  },
+  {
+    "characterId": "fengjin",
+    "places": ["herb-garden"],
+    "occasion": "陪风堇在昏光庭院阳光草药圃晒太阳、喂小伊卡",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位稳步治愈加好感"},
+      {"from":"confidant","condition":"afternoon","text":"高好感时会让你枕着午后微风歇息，笑着递上刚泡好的安神花茶唤你“～宝”"}
+    ]
+  },
+  {
+    "characterId": "majo-emma",
+    "places": ["old-school-corridor","quiet-courtyard"],
+    "occasion": "陪艾玛路过中学旧校舍走廊或安静庭院",
+    "reactions": [
+      {"through":"friend","text":"低～中好感容易勾起对往事的紧张与不安，强颜欢笑催促离开"},
+      {"from":"confidant","text":"知心以上会轻轻呼出一口气，感激你陪她重新走过曾让她害怕的地方"}
+    ]
+  },
+  {
+    "characterId": "majo-hiro",
+    "places": ["study-room","quiet-teahouse"],
+    "occasion": "和希罗一起在安静图书馆自习室或茶馆整理资料",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位稳定加好感"},
+      {"from":"in_sync","text":"合拍以上效率极高"},
+      {"from":"confidant","text":"知心以上会在合上书本后为你细心斟茶，流露难得的柔和"}
+    ]
+  },
+  {
+    "characterId": "majo-yuki",
+    "places": ["park-bench"],
+    "occasion": "在飘雪或黄昏安静的公园长椅陪月代雪坐着",
+    "reactions": [
+      {"from":"distant","through":"familiar","condition":"snow-or-dusk","text":"陌生～熟人会保持清冷疏离但不赶人"},
+      {"from":"confidant","condition":"snow-or-dusk","text":"知心以上会被你安静不喧闹的陪伴触动，轻声说这里的空气似乎没那么冷了"}
+    ]
+  },
+  {
+    "characterId": "watanare-renako",
+    "places": ["ashigaya-rooftop"],
+    "occasion": "陪玲奈子溜去芦谷高校天台吹风回血",
+    "reactions": [
+      {"from":"dislike","text":"绝对安全区，除敌视外全档位大幅促进好感"},
+      {"from":"distant","through":"familiar","text":"陌生～熟人也能瞬间放下现充紧绷感"},
+      {"from":"close","text":"挚友以上更是两人专属的吐槽圣地"}
+    ]
+  },
+  {
+    "characterId": "watanare-renako",
+    "places": ["akihabara-games"],
+    "occasion": "带玲奈子逛秋叶原电玩主机店",
+    "reactions": [
+      {"from":"dislike","text":"瞬间点燃阴角本命热爱，全非敌视档位好感飙升，话匣子一开彻底停不下来"}
+    ]
+  },
+  {
+    "characterId": "watanare-mai",
+    "places": ["queen-rose-street","ouzuka-residence"],
+    "occasion": "陪真唯参观Queen Rose(QR)精品街或去她家厨房做料理",
+    "reactions": [
+      {"onlyPlace":"queen-rose-street","text":"在品牌街若只夸头衔她会略显客套"},
+      {"from":"dislike","onlyPlace":"ouzuka-residence","text":"但若一起在厨房系上围裙做菜并真诚品尝，全非敌视档位都会让她眼里闪光、大幅促进好感"}
+    ]
+  },
+  {
+    "characterId": "watanare-satsuki",
+    "places": ["jinbocho-books","book-cafe"],
+    "occasion": "带纱月逛神保町旧书店街或安静咖啡书吧",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位稳步加好感"},
+      {"from":"in_sync","text":"合拍以上会兴致勃勃和你交换冷门书单"},
+      {"from":"confidant","text":"知心以上会在书架阴影间流露罕见的温柔傲娇"}
+    ]
+  },
+  {
+    "characterId": "watanare-kaho",
+    "places": ["otome-road","cosplay-convention"],
+    "occasion": "陪香穗去池袋乙女路或漫展Cosplay会场",
+    "reactions": [
+      {"from":"distant","through":"familiar","text":"陌生～熟人阶段瞬间激活她隐蔽的二次元热血，大幅加好感"},
+      {"from":"confidant","onlyPlace":"cosplay-convention","text":"知心以上更是敢在会场散场后的角落向你摘下隐形眼镜歇口气"}
+    ]
+  },
+  {
+    "characterId": "watanare-ajisai",
+    "places": ["residential-supermarket"],
+    "occasion": "陪紫阳花去住宅区商店街超市买晚饭食材",
+    "reactions": [
+      {"from":"dislike","text":"充满居家烟火气的治愈主场，全非敌视档位稳步加好感"},
+      {"from":"confidant","text":"高好感时会红着脸问你今晚想吃什么菜，女友力拉满"}
+    ]
+  },
+  {
+    "characterId": "watanare-seira",
+    "places": ["onigawara-laundry","cosplay-outdoor"],
+    "occasion": "去鬼瓦洗衣店串门或陪星来去漫展外景地拍片",
+    "reactions": [
+      {"from":"dislike","text":"全非敌视档位迅速混熟大幅加好感"},
+      {"from":"familiar","onlyPlace":"onigawara-laundry","text":"熟人以上还会免费用专业蒸汽熨斗帮你把外套打理得笔挺如新"}
+    ]
+  }
+]

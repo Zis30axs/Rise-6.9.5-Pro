@@ -12,6 +12,8 @@ import { commitSocietyCommand } from './society-world';
 import { commitFactionFocusCommand } from './faction-focus-world';
 import { commitStrategyNarrative, hasStrategyNarrativeReceipt } from './strategy-narrative';
 import { protagonistSceneId, worldScenePeople, worldScenePosition, worldScenePresence, worldSceneRoster } from './world-presence';
+import { adjustedAffinity, availablePromotion, isConfessionStatus } from './affinity-tiers';
+import { applyConfession } from './confession';
 import { soyoInitialContacts } from './initial-contacts';
 import { protagonistOpening, protagonistOpeningJournal } from './viewpoint-openings';
 import { applyWeeklySummary, captureNewJournalEvidence, recordWeeklyStory, settleWeeklyMemory } from './weekly-memory';
@@ -28,7 +30,7 @@ import { historicalToYen, TOKYO_MONEY_FACTOR } from './tokyo-world';
 import { getSceneArea, getScenePeople, getInteriorPeople, getInteriorPeopleForValidation, isSameScenePlace, sceneEnvironments, sceneLocationId } from './scene-context';
 import { STORY_OUTPUT_LIMITS, validateGeneratedStory } from './story-protocol';
 import { advanceAirTraffic, createAirTrafficState, parseAirTrafficState, triggerAirliner } from './air-traffic';
-import { bedRestOptions, campusInteriors, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
+import { bedRestOptions, novelScenePlaces, canManageLivehouseAndBand, getCampusInterior, getInteriorActivity, getInteriorMovementWorld, getMlmWorkBlockedReason, getStudyEnergyCost, isStudyInteraction, studyDurationOptions, INTERIOR_ENTRANCE_RANGE, INTERIOR_INTERACTION_RANGE } from './campus-interiors';
 import { isScenePositionWalkable } from '../frontend/scene-movement';
 import { createTransitState, getNearbyTransitStop, getTransitRoutes, isFarTransitLocation, requiresTransitReturn, selectTravelVehicle, transitStops, transitVehicles, TRANSIT_SEQUENCE_LIMIT } from './transit';
 import { advancePlayerNutrition, getInventoryCatalog, getPackItemQuote, getPurchaseQuote, getStoreItem, getUseItemQuote, initialPlayerNeeds, INVENTORY_ITEM_LIMIT, R27ET1_ITEM_ID } from './convenience-store';
@@ -89,7 +91,7 @@ export const locations: Location[] = [
     id: area.id, name: area.label, subtitle: '户外步行区域', description: `【示例场景】${sceneEnvironments[area.id]}`,
     x: (area.minX + area.maxX) / 2, y: (area.minZ + area.maxZ) / 2,
   })),
-  ...campusInteriors.map(room => ({ id: room.id, name: room.label, subtitle: '校园室内', description: room.description, x: room.entrance.x, y: room.entrance.z })),
+  ...novelScenePlaces.map(room => ({ id: room.id, name: room.label, subtitle: room.outdoors ? '户外地点' : '室内地点', description: room.description, x: room.entrance.x, y: room.entrance.z })),
   ...californiaPlaces.map(place => ({ ...place, x: 0, y: 0 })),
   ...beijingPlaces.map(place => ({ ...place, x: 0, y: 0 })),
 ];
@@ -107,7 +109,7 @@ export const novelDestinations: readonly NovelDestination[] = [
     const location = locations.find(item => item.id === sceneLocationId(landmark.id))!;
     return { id: location.id, name: location.name, description: location.description, kind: 'outdoor' as const };
   }),
-  ...campusInteriors.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: 'interior' as const, parentLocationId: room.parentLocationId })),
+  ...novelScenePlaces.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: room.outdoors ? 'outdoor' as const : 'interior' as const, parentLocationId: room.parentLocationId })),
   ...californiaPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
   ...beijingPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
 ];
@@ -787,8 +789,9 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
       return { id: id(item.id, `${path}.id`), npcId: id(item.npcId, `${path}.npcId`), text: text(item.text, `${path}.text`, 4000), read: boolean(item.read, `${path}.read`), at: text(item.at, `${path}.at`, 40) };
     }),
     contacts: list(state.contacts, 'contacts', CONTACT_PROFILE_LIMITS.contacts, (value, path) => {
+      const hasConfession = !!value && typeof value === 'object' && Object.hasOwn(value, 'confession');
       const hasRelationNote = !!value && typeof value === 'object' && Object.hasOwn(value, 'relationNote');
-      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status', ...(version === '1.11.0' ? ['portraitId', 'sourcePersonId', 'isMain'] : []), ...(hasRelationNote ? ['relationNote'] : [])], path);
+      const item = object(value, ['id', 'name', 'tag', 'summary', 'affinity', 'status', ...(version === '1.11.0' ? ['portraitId', 'sourcePersonId', 'isMain'] : []), ...(hasRelationNote ? ['relationNote'] : []), ...(hasConfession ? ['confession'] : [])], path);
       const contactId = id(item.id, `${path}.id`);
       const profile = version === '1.11.0' ? {
         portraitId: isCharacterPortraitId(item.portraitId) ? item.portraitId : invalid(`${path}.portraitId`),
@@ -796,7 +799,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
         isMain: boolean(item.isMain, `${path}.isMain`),
       } : legacyCharacterProfile(contactId);
       const relationNote = hasRelationNote ? text(item.relationNote, `${path}.relationNote`, 240) : undefined;
-      return { id: contactId, name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200), ...profile, ...(relationNote ? { relationNote } : {}) };
+      return { id: contactId, name: text(item.name, `${path}.name`, 80), tag: text(item.tag, `${path}.tag`, 80), summary: text(item.summary, `${path}.summary`, 2000), affinity: number(item.affinity, `${path}.affinity`, -100, 100), status: text(item.status, `${path}.status`, 200), ...profile, ...(relationNote ? { relationNote } : {}), ...(hasConfession ? { confession: isConfessionStatus(item.confession) ? item.confession : invalid(`${path}.confession`) } : {}) };
     }),
     schedule: list(state.schedule, 'schedule', 100, (value, path) => {
       const item = object(value, ['id', 'title', 'locationId', 'time', 'done'], path);
@@ -881,15 +884,15 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
 }
 
 /** Apply a validated sequence on a private clone; the caller alone persists it. */
-function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState, ownerOverride?: ProtagonistId): WorldState {
-  const equipmentOwner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
+function applyLegacyStoryActions(state: WorldState, actions: readonly StoryAction[], turnId = 'preview', worldAuthority?: WorldState, ownerOverride?: ProtagonistId, evidence?: { input: string; reply: GeneratedStory }): WorldState {
+  const owner = worldAuthority?.protagonists?.accounts.active ?? ownerOverride ?? activeProtagonist(state);
   let next = parseStateCore(state, true);
   // The legacy view omits the four-protagonist account owner. The court's
   // active speaker and filing payer must still be the selected protagonist.
   const courtView = (legacy: WorldState): WorldState =>
     worldAuthority?.protagonists ? { ...legacy, protagonists: worldAuthority.protagonists } : legacy;
   const validated = validateStoryActions(actions, courtView(next));
-  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_settlement','court_finish','transfer','relationship'].includes(action.type)))
+  if (isCourtInSession(courtView(next)) && validated.some(action => !['court_step','court_assist','court_settlement','court_finish','transfer','relationship','promote_relationship','confession'].includes(action.type)))
     throw new Error('庭审正在进行，不能离开法庭或进行其他活动；请先结案。');
   if (!isCourtInSession(courtView(next)) && validated.some(action => action.type === 'court_step' || action.type === 'court_assist' || action.type === 'court_finish'))
     throw new Error('当前没有进行中的庭审。');
@@ -903,7 +906,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'unequip': {
         if (getEquipmentItem(action.itemId)) {
           if (action.slot && action.slot !== 'special') throw new Error('珍藏只能放进特殊道具栏。');
-          if (setEquipment(next, equipmentOwner, action.itemId, action.type === 'equip' && action.slot !== null))
+          if (setEquipment(next, owner, action.itemId, action.type === 'equip' && action.slot !== null))
             note(next, `${action.type === 'equip' && action.slot !== null ? '开始随身使用' : '收起'}${getEquipmentItem(action.itemId)!.name}。`);
         } else if (getStoreItem(action.itemId)?.equipmentKind) {
           const slot = action.type === 'unequip' || action.slot === null ? null : action.slot ?? 'permanent-1';
@@ -1042,7 +1045,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const outcome = !crossMajor || draw >= 50 ? 'normal' : draw < 25 ? 'inspiration' : 'confusion';
         const energyConsumed = getStudyEnergyCost(action.minutes) + (outcome === 'confusion' ? 3 : 0);
         if (next.player.energy < energyConsumed) throw new Error(`精力不足，此次学习需要 ${energyConsumed} 点精力，请先休息。`);
-        const equipment = academicEquipment(next, equipmentOwner, action.subjectId, !crossMajor);
+        const equipment = academicEquipment(next, owner, action.subjectId, !crossMajor);
         const equipmentId = r27et1Equipped(next) ? R27ET1_ITEM_ID : null;
         const points = studyPointsWithEquipment(next, action.minutes * (outcome === 'inspiration' ? 1.5 : outcome === 'confusion' ? .5 : 1) * equipment.multiplier);
         let progress = next.academics.subjects.find(entry => entry.subjectId === action.subjectId);
@@ -1075,6 +1078,9 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       // Transfer legs are booked by applyStoryTransferLegs on the authoritative
       // ledger after finishPersonalChange; mirroring them here would double-count.
       case 'transfer': break;
+      // Resolve stage and confession facts after ordinary effects; a breakthrough can precede a confession.
+      case 'promote_relationship':
+      case 'confession': break;
       case 'relationship': {
         const contact = next.contacts.find(contact => contact.id === action.npcId)!;
         const before = contact.affinity;
@@ -1084,7 +1090,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         const multiplier = effort && effort.type === 'social_skill'
           ? socialSkillQuote(worldAuthority ?? state, activeProtagonist(worldAuthority ?? state), effort.skillId, effort.deviation).positiveMultiplier : 1;
         const change = action.delta > 0 ? Math.round(action.delta * multiplier) : action.delta;
-        contact.affinity = Math.max(-100, Math.min(100, contact.affinity + change));
+        contact.affinity = adjustedAffinity(before, change);
         note(next, `${contact.name}的关系变化 ${contact.affinity - before >= 0 ? '+' : ''}${contact.affinity - before}：${action.reason}`);
         break;
       }
@@ -1106,6 +1112,22 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         break;
       }
     }
+  }
+  for (const action of validated) {
+    if (action.type !== 'promote_relationship') continue;
+    const contact = next.contacts.find(row => row.id === action.npcId)!;
+    const opening = state.contacts.find(row => row.id === action.npcId)!;
+    const promotion = availablePromotion(opening.affinity);
+    const self = contact.id === `protagonist-${owner}` || (contact.sourcePersonId ?? contact.id) === protagonistSceneId(owner);
+    if (self || !promotion || contact.affinity !== opening.affinity)
+      throw new Error('该联系人尚未达到可晋升的档位上限，或本轮关系已经变化。');
+    contact.affinity = promotion.min;
+    note(next, `${contact.name}与你的关系更近了一步。${action.reason}`);
+  }
+  for (const action of validated) {
+    if (action.type !== 'confession') continue;
+    const contact = next.contacts.find(row => row.id === action.npcId)!;
+    applyConfession(contact, owner, action, evidence);
   }
   return parseStateCore(next, true);
 }
@@ -1160,7 +1182,7 @@ function commitLegacyStoryTurn(
   }
   if (recordedFlight) throw new Error('空中事件 ID 冲突；本轮未写入。');
   if (recordedActions.length) throw new Error('剧情行动 ID 冲突；本轮未写入。');
-  next = applyLegacyStoryActions(next, worldActions, ids.assistantId, worldAuthority);
+  next = applyLegacyStoryActions(next, worldActions, ids.assistantId, worldAuthority, undefined, { input: inputText, reply });
   // Reject the entire turn on cooldown. Accepting prose while dropping its
   // requested pass would leave the narrated scene different from saved facts.
   if (hasFlight) {
@@ -1457,7 +1479,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (!owned || owned.quantity < action.quantity) throw new Error('背包中的礼物数量不足，无法赠送。');
       next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > action.quantity ? [{ ...entry, quantity: entry.quantity - action.quantity }] : []);
       const before = contact.affinity;
-      contact.affinity = Math.min(100, contact.affinity + action.affinityDelta);
+      contact.affinity = adjustedAffinity(before, action.affinityDelta);
       note(next, `将${item.name} ${action.quantity} ${item.useUnit}送给${contact.name}，关系 +${contact.affinity - before}。${action.reason.trim()}`);
       break;
     }

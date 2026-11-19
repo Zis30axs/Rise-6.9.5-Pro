@@ -1,3 +1,5 @@
+import venues from './affinity-venues.json' with { type: 'json' };
+import { sceneLandmarks } from '../frontend/scene-layout';
 import type { SceneMovementWorld } from '../frontend/scene-movement';
 import type { InteriorRestRecord, InteriorStudyRecord, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
@@ -31,6 +33,8 @@ export interface StudyDurationOption {
   maxMinutes: number;
 }
 export interface CampusInterior {
+  /** A contained novel scene can be open to the sky. */
+  outdoors?: boolean;
   id: string; label: string; description: string; parentLocationId: string;
   entrance: { x: number; z: number; yaw: number };
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -621,8 +625,23 @@ const campusInteriorRooms: readonly CampusInterior[] = [
 
 export const campusInteriors: readonly CampusInterior[] = attachCircleBorrowedInteractions(campusInteriorRooms);
 
+// Novel destinations share the save, travel and appointment machinery. Their access
+// landmarks are transfer points in the schematic city, not coordinates of the actual venues.
+const outingVenues: CampusInterior[] = venues.map(venue => {
+  const access = sceneLandmarks.find(landmark => landmark.id === venue.accessLandmark);
+  if (!access) throw new Error('未知的小说地点接驳点：' + venue.accessLandmark);
+  return {
+    id: venue.id, label: venue.label, description: venue.description, outdoors: venue.outdoors,
+    parentLocationId: access.id, entrance: { x: access.x, z: access.z, yaw: 0 },
+    bounds, spawn, obstacles: [], interactions: [],
+  };
+});
+
+export const novelScenePlaces = [...campusInteriors, ...outingVenues];
+const placesById = new Map(novelScenePlaces.map(place => [place.id, place]));
+
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
-  return campusInteriors.find(room => room.id === id);
+  return id ? placesById.get(id) : undefined;
 }
 
 /** Restore historical metadata or the exact, already-settled duration from a saved choice. */

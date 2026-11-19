@@ -1,6 +1,6 @@
 import type { StoryAction, WorldState } from '../frontend/types';
 import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, type ProtagonistId } from './dual-protagonists';
-import { campusInteriors } from './campus-interiors';
+import { novelScenePlaces } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { sceneLocationId } from './scene-context';
 import { residentById } from './npc-cast';
@@ -37,7 +37,7 @@ const invitationLimit = 120;
 const ID_RE = /^[A-Za-z0-9][\w.:-]{0,127}$/;
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const PLACE_IDS = new Set([
-  ...campusInteriors.map(room => room.id),
+  ...novelScenePlaces.map(room => room.id),
   ...sceneLandmarks.map(landmark => sceneLocationId(landmark.id)),
 ]);
 

@@ -1,3 +1,4 @@
+import { adjustedAffinity } from './affinity-tiers';
 import type { WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
 import { PROTAGONISTS } from './dual-protagonists';
@@ -193,7 +194,7 @@ export function practicePartners(state: WorldState): PracticePartnerFact[] {
       affinity,
       eligible,
       here,
-      affinityDelta: eligible ? PRACTICE_AFFINITY_DELTA : 0,
+      affinityDelta: eligible ? adjustedAffinity(affinity, PRACTICE_AFFINITY_DELTA) - affinity : 0,
     };
   });
 }
@@ -291,7 +292,8 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   const names = joined.map(person => person.name).join('、');
   const rent = priced(plan.price);
   const summary = `${plan.label}，${rent} 日元。乐器熟练度 ${skillBefore}，这场预计增加 ${gain}，上限 ${INSTRUMENT_SKILL_CAP}。${together ? (names ? `${names}可以一起来。` : '现在没有能一起来的熟人。') : '一个人练。'}${tune?.omitDutyNote ? '' : (duty ? '椎名立希正在店里当班。' : '')}`;
-  const receipt = `${plan.label}。乐器熟练度 ${Math.min(INSTRUMENT_SKILL_CAP, skillBefore + gain)}。${names ? `${names}一起来，好感各 +${PRACTICE_AFFINITY_DELTA}。` : ''}`;
+  const rapport = joined.map(person => `${person.name} +${person.affinityDelta}`).join('、');
+  const receipt = `${plan.label}。乐器熟练度 ${Math.min(INSTRUMENT_SKILL_CAP, skillBefore + gain)}。${rapport ? `合练好感：${rapport}。` : ''}`;
   const service: LocationService = {
     id: tune?.serviceId ?? serviceId, locationIds: tune?.locationIds ?? ['livehouse'], label: together ? `和熟人一起${plan.label}` : plan.label,
     description: together ? '按小时租练习室，并和愿意来的 MyGO 成员一起练。' : '按小时租练习室，一个人练。',
@@ -369,7 +371,7 @@ export function applyLivehouseVisit(state: WorldState, commit: LivehouseCommit):
     for (const partner of commit.partners) {
       const contact = state.contacts.find(row => row.id === partner.contactId);
       if (!contact || contact.affinity !== partner.affinityBefore) throw new Error('一起练习的好感已变化，请重新确认。');
-      contact.affinity = Math.min(100, contact.affinity + partner.delta);
+      contact.affinity = adjustedAffinity(contact.affinity, partner.delta);
     }
   }
   state.livehouseVisit = visit;

@@ -1,3 +1,4 @@
+import { adjustedAffinity } from './affinity-tiers';
 import type { WorldState, OtherSideEvent } from '../frontend/types';
 import { PROTAGONISTS, PROTAGONIST_PERSON_ID_LIST, type ProtagonistId } from './dual-protagonists';
 import { activeProtagonist, gameMinute, personState, protagonistNames } from './protagonist-world';
@@ -392,7 +393,7 @@ export function commitOtherSideEvents(before: WorldState, after: WorldState, eve
         const contact = personal.contacts.find(row => row.id === npc.id || row.sourcePersonId === npc.id);
         if (!contact) continue;
         if (npc.status) contact.status = npc.status;
-        if (npc.affinityDelta) contact.affinity = Math.max(-100, Math.min(100, contact.affinity + npc.affinityDelta));
+        if (npc.affinityDelta) contact.affinity = adjustedAffinity(contact.affinity, npc.affinityDelta);
       }
     }
     for (const [msgIndex, message] of (event.messages ?? []).entries()) {

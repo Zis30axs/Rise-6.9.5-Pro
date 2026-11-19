@@ -1,5 +1,5 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
-import { affinityRelation } from './affinity-tiers';
+import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import { allResidentCast, residentPresence } from './npc-cast';
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
@@ -414,7 +414,7 @@ export const SCENE_POPULATION_INSTRUCTIONS = '【现场人物】scene.nearbyPeop
 
 function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
-  return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
+  return contact ? { relationship: affinityRelation(contact.affinity, contactRelationNote(contact)) } : {};
 }
 export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
@@ -431,11 +431,11 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     }));
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.canTalk) ?? null;
     return {
-      areaId: room.id, label: room.label, outdoors: false, skyVisible: false,
+      areaId: room.id, label: room.label, outdoors: room.outdoors === true, skyVisible: room.outdoors === true,
       position: { x: interior.x, z: interior.z, yaw: interior.yaw, unit: '示意米' },
       environment: room.description,
       nearbyLandmarks: [], nearbyPeople, encounter,
-      exit: { parentLocationId: room.parentLocationId, description: '南侧房门返回进入前的室外位置；尚未执行离开。' },
+      exit: { parentLocationId: room.parentLocationId, description: room.outdoors !== undefined ? '沿来路返回接驳地点。' : '南侧房门返回进入前的室外位置；尚未执行离开。' },
       lastInteraction: last ? { id: last.id, label: last.label, result: last.result, alreadyCommitted: true, minutes: last.minutes, energyDelta: last.energyDelta } : null,
     };
   }

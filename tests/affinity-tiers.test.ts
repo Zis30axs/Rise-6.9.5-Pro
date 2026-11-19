@@ -21,18 +21,21 @@ describe('affinity tiers', () => {
       cursor = tier.max + 1;
     }
     expect(cursor).toBe(101);
-    const edges = [-100, -50, -49, -10, -9, 9, 10, 29, 30, 49, 50, 69, 70, 89, 90, 100];
+    const edges = [-100, -49, -24, -9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 96];
     const seen = edges.map(value => affinityTier(value).id);
     expect(new Set(seen).size).toBe(AFFINITY_TIERS.length);
     expect(affinityTier(-50).id).toBe('hostile');
     expect(affinityTier(-49).id).toBe('dislike');
     expect(affinityTier(9).id).toBe('distant');
     expect(affinityTier(10).id).toBe('acquainted');
-    expect(affinityTier(29).id).toBe('acquainted');
+    expect(affinityTier(29).id).toBe('regular');
     expect(affinityTier(30).id).toBe('familiar');
-    expect(affinityTier(50).label).toBe('朋友');
-    expect(affinityTier(70).label).toBe('挚友');
+    expect(affinityTier(50).label).toBe('普通朋友');
+    expect(affinityTier(60).label).toBe('朋友');
+    expect(affinityTier(70).label).toBe('知心');
+    expect(affinityTier(80).label).toBe('挚友');
     expect(affinityTier(90).label).toBe('羁绊');
+    expect(affinityTier(96).label).toBe('长久羁绊');
     expect(affinityRelation(80)).toMatchObject({ affinity: 80, tier: 'close', label: '挚友' });
     expect(affinityRelation(80).hint).not.toContain('认真交往');
     const noted = affinityRelation(80, '恋人（三人知情同意的认真交往）');
@@ -64,7 +67,7 @@ describe('affinity tiers', () => {
     const bridge = readFileSync('src/runtime/bridge.ts', 'utf8');
     expect(bridge).toContain('relationship 只发给已经是联系人的在场者');
     const sms = readFileSync('src/runtime/autonomous-sms.ts', 'utf8');
-    expect(sms).toContain('bond: affinityRelation(contact.affinity, contact.relationNote)');
+    expect(sms).toContain('bond: affinityRelation(contact.affinity, contactRelationNote(contact))');
     expect(sms).toContain('高档位不等于恋爱');
   });
 

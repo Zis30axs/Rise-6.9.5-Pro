@@ -1,3 +1,4 @@
+import { affinityTier } from '../runtime/affinity-tiers';
 import type { ProtagonistId } from '../runtime/dual-protagonists';
 import { locations } from '../runtime/model';
 import type { CharacterContact, WorldState } from './types';
@@ -1458,13 +1459,9 @@ export function getProtagonistBondForCard(
   const hasEstablishedBond = Boolean(presetBond || existingContact);
   const affinity = existingContact?.affinity ?? presetBond?.affinity ?? (hasEstablishedBond ? 50 : 0);
 
-  let statusTag = presetBond?.statusTag ?? (existingContact ? `好感 · ${affinity}` : '未结识 · 0');
-  if (existingContact) {
-    if (affinity >= 80) statusTag = `挚重 · ${affinity}`;
-    else if (affinity >= 60) statusTag = `亲近 · ${affinity}`;
-    else if (affinity >= 40) statusTag = `熟识 · ${affinity}`;
-    else statusTag = `疏离 · ${affinity}`;
-  }
+  const statusTag = existingContact
+    ? `${affinityTier(affinity).label} · ${affinity}`
+    : presetBond?.statusTag ?? '未结识 · 0';
 
   const note =
     existingContact?.summary ||
@@ -1557,17 +1554,20 @@ export function buildIdentityRelationshipMesh(
   const seenNames = new Set<string>([card.name, ...rawBonds.map((b) => b.name)]);
 
   // Ensure current protagonist is always represented in the mesh if not the center
-  if (card.id !== activeProtagonist && !seenIds.has(activeProtagonist)) {
+  if (card.id !== activeProtagonist) {
     const pBond = getProtagonistBondForCard(card, activeProtagonist, state.contacts);
-    rawBonds.unshift({
+    const existingIndex = rawBonds.findIndex(bond => bond.personId === activeProtagonist);
+    const viewpointBond: IdentityBondEntry = {
       personId: activeProtagonist,
       name: pBond.protagonistName,
       roleLabel: pBond.roleLabel,
       affinity: pBond.affinity,
       statusTag: pBond.statusTag,
       note: pBond.note,
-      group: activeProtagonist === 'sakiko' ? 'mujica' : activeProtagonist === 'soyo' ? 'crychic' : 'campus'
-    });
+      group: rawBonds[existingIndex]?.group ?? (activeProtagonist === 'sakiko' ? 'mujica' : activeProtagonist === 'soyo' ? 'crychic' : 'campus')
+    };
+    if (existingIndex < 0) rawBonds.unshift(viewpointBond);
+    else if (pBond.isRegisteredContact) rawBonds[existingIndex] = viewpointBond;
     seenIds.add(activeProtagonist);
     seenNames.add(pBond.protagonistName);
   }
@@ -1598,7 +1598,8 @@ export function buildIdentityRelationshipMesh(
       (c) => c.id === bond.personId || c.sourcePersonId === bond.personId || c.name === bond.name
     );
     const affinity = liveContact?.affinity ?? bond.affinity;
-    const statusTag = liveContact ? `好感 · ${affinity}` : bond.statusTag;
+    const liveLabel = card.id === activeProtagonist ? affinityTier(affinity).label : '好感';
+    const statusTag = liveContact ? `${liveLabel} · ${affinity}` : bond.statusTag;
     const grp = bond.group ?? 'campus';
 
     // Elliptical layout with alternating inner/outer rings for clean legibility

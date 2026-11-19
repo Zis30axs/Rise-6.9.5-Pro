@@ -1,10 +1,11 @@
+import { isConfessionStatus } from './affinity-tiers';
 import { getEquipmentItem } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { californiaPlaces } from './california';
 import { PROTAGONISTS } from './dual-protagonists';
 import { sceneLocationId } from './scene-context';
-import { campusInteriors } from './campus-interiors';
+import { campusInteriors, novelScenePlaces } from './campus-interiors';
 import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition, worldSceneRoster } from './world-presence';
@@ -39,7 +40,7 @@ function number(value: unknown, min: number, max: number, path: string): number 
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) return invalid(path);
   return value;
 }
-const destinationIds = new Set([...sceneLandmarks.map(item => sceneLocationId(item.id)), ...campusInteriors.map(item => item.id), ...californiaPlaces.map(place => place.id)]);
+const destinationIds = new Set([...sceneLandmarks.map(item => sceneLocationId(item.id)), ...novelScenePlaces.map(item => item.id), ...californiaPlaces.map(place => place.id)]);
 function destination(value: unknown, path: string): string {
   if (typeof value !== 'string' || !destinationIds.has(value)) return invalid(path);
   return value;
@@ -274,6 +275,17 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
         const item = record(raw, ['type', 'id'], path);
         if (typeof item.id !== 'string' || !state.schedule.some(entry => entry.id === item.id)) return invalid(`${path} 日程`);
         return { type: 'complete_schedule', id: item.id };
+      }
+      case 'promote_relationship': {
+        const item = record(raw, ['type', 'npcId', 'reason'], path);
+        if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
+        return { type: 'promote_relationship', npcId: item.npcId, reason: text(item.reason, 240, `${path} 晋升依据`) };
+      }
+      case 'confession': {
+        const item = record(raw, ['type', 'npcId', 'outcome', 'quote'], path);
+        if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 联系人`);
+        if (!isConfessionStatus(item.outcome)) return invalid(`${path} 告白进展`);
+        return { type: 'confession', npcId: item.npcId, outcome: item.outcome, quote: text(item.quote, 2000, `${path} 当事人原话`) };
       }
       case 'relationship': {
         const item = record(raw, ['type', 'npcId', 'delta', 'reason'], path);

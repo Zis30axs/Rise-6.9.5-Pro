@@ -18,7 +18,7 @@ vi.mock('../src/worldbook/affinity-personas.json', async importOriginal => {
   const { default: book } = await importOriginal<BookModule>();
   const entries = book.entries.filter(entry => !('viewpoint' in entry.extensions.affinityPersona)).map(entry => {
     const { characterId, tier } = entry.extensions.affinityPersona;
-    const hasFixture = characterId === 'bang-anon' && ['familiar', 'friend', 'bond'].includes(tier)
+    const hasFixture = characterId === 'bang-anon' && ['casual_friend', 'friend', 'bond'].includes(tier)
       || characterId === 'watanare-ajisai' && tier === 'close';
     return { ...entry, content: hasFixture ? `sample-${characterId}-${tier}` : '【待补】' };
   });
@@ -55,17 +55,17 @@ describe('affinity persona worldbook', () => {
   it('switches in both directions at the existing boundary and sends only the current entry', () => {
     const state = createInitialState();
     const anon = state.contacts.find(contact => contact.id === 'bang-anon')!;
-    anon.affinity = 49;
+    anon.affinity = 59;
     const prompt = () => affinityPersonaPrompt(state, null, '给爱音打电话。');
-    expect(prompt()).toContain('sample-bang-anon-familiar');
+    expect(prompt()).toContain('sample-bang-anon-casual_friend');
 
-    anon.affinity = 50;
+    anon.affinity = 60;
     const higher = prompt();
     expect(higher).toContain('sample-anon-soyo-friend');
-    expect(higher).not.toMatch(/sample-bang-anon-(?:familiar|friend|bond)/);
+    expect(higher).not.toMatch(/sample-bang-anon-(?:casual_friend|friend|bond)/);
 
-    anon.affinity = 49;
-    expect(prompt()).toContain('sample-bang-anon-familiar');
+    anon.affinity = 59;
+    expect(prompt()).toContain('sample-bang-anon-casual_friend');
     anon.affinity = 70;
     expect(prompt()).toBe('');
   });
@@ -74,12 +74,12 @@ describe('affinity persona worldbook', () => {
     const state = enableProtagonists(createInitialState());
     const anon = state.contacts.find(contact => contact.id === 'bang-anon')!;
     const emma = reduceState(state, { type: 'switch_protagonist', target: 'emma' });
-    expect(affinityPersonaPrompt(emma, null, '找爱音聊天。')).toBe('');
+    expect(affinityPersonaPrompt(emma, null, '找爱音聊天。')).not.toMatch(/bang-anon|本轮好感分阶段人设/);
 
-    emma.contacts.push({ ...anon, id: 'saved-anon', affinity: 50 });
+    emma.contacts.push({ ...anon, id: 'saved-anon', affinity: 60 });
     expect(affinityPersonaPrompt(emma, null, '找 Ａｎｏｎ 聊天。')).toContain('sample-bang-anon-friend');
     expect(affinityPersonaPrompt(emma, null, '找 Ａｎｏｎ 聊天。')).not.toContain('sample-anon-soyo-friend');
-    expect(affinityPersonaPrompt(emma, null, '找 Anonymous 聊天。')).toBe('');
+    expect(affinityPersonaPrompt(emma, null, '找 Anonymous 聊天。')).not.toContain('本轮好感分阶段人设');
 
     const renako = reduceState(emma, { type: 'switch_protagonist', target: 'renako' });
     expect(affinityPersonaPrompt(renako, null, '和紫阳花聊。')).toContain('sample-watanare-ajisai-close');
@@ -98,6 +98,7 @@ describe('affinity persona worldbook', () => {
     expect(affinityPersonaPrompt(state, scene, '继续。', 'phone_reply')).toBe('');
     expect(affinityPersonaPrompt(state, null, '继续。')).toBe('');
 
+    state.contacts.find(row => row.id === 'bang-anon')!.affinity = 69;
     const generate = vi.fn(async (_config: { injects: { content: string }[] }) => '<story>窗外很安静。</story>');
     const bridge = createTavernBridge({
       parent: { SillyTavern: { getContext: () => ({
@@ -109,6 +110,7 @@ describe('affinity persona worldbook', () => {
     try {
       await bridge.generate('和爱音打招呼。', state);
       const content = generate.mock.calls[0]![0].injects[0]!.content;
+      expect(content).toContain('千早爱音（bang-anon） 朋友 → 知心');
       expect(content.split('sample-anon-soyo-friend')).toHaveLength(2);
       expect(content).toContain('只在世界书或存档已有相应前提、本轮场景与双方意愿也允许时采用');
       expect(content).not.toContain('【待补】');

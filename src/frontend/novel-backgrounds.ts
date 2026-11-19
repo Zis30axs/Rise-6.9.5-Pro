@@ -1,3 +1,4 @@
+import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
@@ -69,10 +70,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   clinic: 'commercial', 'clinic-room': 'commercial', aquarium: 'commercial',
 });
 
-export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
-  const safeHour = Number.isFinite(hour) && hour >= 0 && hour < 24 ? hour : 12;
-  return safeHour < 6 || safeHour >= 19 ? 'night' : safeHour >= 17 ? 'dusk' : 'day';
-}
+export { novelBackgroundPhase };
 
 /**
  * Recovered PR #16 art. Interior pictures are fixed-time derivatives, so they
