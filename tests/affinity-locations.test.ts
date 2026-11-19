@@ -4,6 +4,10 @@ import { affinityPersonaPrompt } from '../src/runtime/affinity-personas';
 import { AFFINITY_TIERS } from '../src/runtime/affinity-tiers';
 import { createInitialState, novelDestinations, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
+import { getInteriorPeople } from '../src/runtime/scene-context';
+import { liveBill, practicePartners } from '../src/runtime/livehouse-visit';
+import { gameDayFromISO } from '../src/runtime/game-calendar';
+import { getCampusInterior } from '../src/runtime/campus-interiors';
 import { createAgenda, socialMinute } from '../src/runtime/social-agenda';
 import type { SocialInvitation } from '../src/runtime/natural-interactions';
 import { validateStoryActions } from '../src/runtime/story-actions';
@@ -22,6 +26,9 @@ describe('location-specific affinity personas', () => {
     for (const rule of rules) {
       expect(characters.has(rule.characterId)).toBe(true);
       for (const place of rule.places) expect(destinations.has(place)).toBe(true);
+      for (const map of [rule.placeOccasions, rule.placeConditions, rule.placeEvents]) {
+        for (const place of Object.keys(map ?? {})) expect(rule.places).toContain(place);
+      }
       for (const reaction of rule.reactions) {
         const first = reaction.from ?? tiers[0]!;
         const last = reaction.through ?? tiers[tiers.length - 1]!;
@@ -50,6 +57,9 @@ describe('location-specific affinity personas', () => {
   it('selects just the matching tier, time, weather and branch of an outing', () => {
     const soyo = (tier: string) => affinityLocationNotes('protagonist-soyo', tier, 'asukayama', 12, 'sunny').join('');
     expect(soyo('guarded')).toContain('大幅扣好感');
+    expect(affinityLocationNotes('protagonist-soyo', 'confidant', 'asukayama-park', 17, 'sunny').join('')).toContain('自嘲');
+    expect(affinityLocationNotes('protagonist-sakiko', 'confidant', 'asukayama-park', 17, 'sunny')).toEqual([]);
+    expect(affinityLocationNotes('protagonist-sakiko', 'confidant', 'asukayama', 17, 'sunny').join('')).toContain('喷泉旁');
     expect(soyo('distant')).not.toContain('大幅扣好感');
     expect(soyo('confidant')).toContain('自嘲');
     expect(soyo('confidant')).not.toContain('平静新回忆');
@@ -69,7 +79,7 @@ describe('location-specific affinity personas', () => {
   it('keeps high-school memories and temporary events out of the permanent destination list', () => {
     const ids = novelDestinations.map(place => place.id);
     for (const id of ['haneoka-route', 'haneoka-music', 'ashigaya-rooftop', 'old-school-corridor',
-      'queen-rose-street', 'herb-garden', 'cosplay-convention', 'arakawa-tram']) {
+      'queen-rose-street', 'herb-garden', 'arakawa-tram']) {
       expect(ids).not.toContain(id);
       expect(() => validateStoryActions([{ type: 'travel', locationId: id }], createInitialState())).toThrow();
     }
@@ -78,7 +88,93 @@ describe('location-specific affinity personas', () => {
     expect(bridge).not.toContain('放学路');
     expect(affinityLocationNotes('bang-anon', 'friend', 'teaching', 17, 'sunny')).toEqual([]);
     expect(affinityLocationNotes('watanare-kaho', 'confidant', 'commercial', 12, 'sunny')).toEqual([]);
-    expect(affinityLocationNotes('watanare-kaho', 'confidant', 'commercial', 12, 'sunny', ['池袋漫展']).join('')).toContain('散场');
+    expect(affinityLocationNotes('watanare-kaho', 'confidant', 'commercial', 12, 'sunny', ['池袋漫展'])).toEqual([]);
+    expect(affinityLocationNotes('watanare-kaho', 'confidant', 'cosplay-convention', 12, 'sunny')).toEqual([]);
+    const show = (date: string, hour: number, minute: number, tier: string) =>
+      affinityLocationNotes('watanare-kaho', tier, 'cosplay-convention', hour, 'sunny', ['我想去漫展'], { day: gameDayFromISO(date), minute }).join('');
+    expect(show('2025-11-07', 12, 0, 'familiar')).toBe('');
+    expect(show('2025-11-08', 8, 59, 'familiar')).toBe('');
+    expect(show('2025-11-09', 9, 0, 'familiar')).toContain('AGF');
+    expect(show('2025-11-08', 16, 59, 'confidant')).not.toContain('摘下隐形眼镜');
+    expect(show('2025-11-08', 17, 0, 'confidant')).toContain('摘下隐形眼镜');
+    expect(show('2025-11-08', 17, 30, 'confidant')).toBe('');
+  });
+
+  it('keeps a venue’s reactions tied to what the companion can do there', () => {
+    const note = (id: string, place: string, tier = 'confidant') =>
+      affinityLocationNotes(id, tier, place, 14, 'sunny').join('');
+    expect(note('bang-anon', 'aquarium', 'familiar')).toContain('企鹅');
+    expect(note('bang-anon', 'aquarium', 'familiar')).not.toContain('挑衣服');
+    expect(note('bang-anon', 'sunshine-shopping', 'familiar')).toContain('挑衣服');
+    expect(note('bang-rana', 'ring-entrance')).not.toContain('冰淇淋');
+    expect(note('bang-rana', 'matcha-shop')).toContain('冰淇淋');
+    expect(note('watanare-ajisai', 'home')).toBe('');
+    expect(note('watanare-ajisai', 'residential-supermarket')).toContain('晚饭');
+    expect(getCampusInterior('otsuka-diner')?.outdoors).toBe(false);
+    expect(affinityLocationNotes('bang-uika', 'friend', 'observation-roof', 19, 'sunny').join('')).toContain('窗边');
+    for (const hour of [2, 14, 21]) expect(affinityLocationNotes('bang-uika', 'friend', 'observation-roof', hour, 'sunny')).toEqual([]);
+    expect(affinityLocationNotes('bang-uika', 'friend', 'observation-roof', 19, 'rain')).toEqual([]);
+    expect(affinityLocationNotes('fengjin', 'bond', 'pocket-park', 14, 'rain')).toEqual([]);
+  });
+
+  it('lets the player find RiNG staff on their shifts in Ikebukuro', () => {
+    const onShift = { day: 4, hour: 17, minute: 0 };
+    const people = (room: string, clock = onShift) => getInteriorPeople(room, [], clock).map(person => person.id);
+    expect(people('ring-desk')).toEqual(expect.arrayContaining(['bang-taki', 'bang-marina']));
+    expect(people('livehouse')).not.toContain('bang-taki');
+    expect(people('circle-cafe')).not.toContain('bang-marina');
+    expect(people('ring-desk', { ...onShift, hour: 22 })).not.toContain('bang-taki');
+    const state = createInitialState();
+    state.clock = onShift;
+    state.locationId = 'livehouse';
+    const partner = state.contacts.find(person => person.id === 'bang-taki')!;
+    partner.affinity = 90;
+    expect(practicePartners(state).find(person => person.id === partner.id)).toMatchObject({ here: false, eligible: false });
+    const prompt = (hour: number) => affinityLocationNotes('bang-taki', 'confidant', 'ring-desk', hour, 'sunny', [], onShift).join('');
+    expect(prompt(15)).toBe('');
+    expect(prompt(17)).toContain('前台');
+    expect(prompt(19)).not.toContain('下班');
+    expect(prompt(21)).toContain('下班');
+    expect(prompt(22)).toBe('');
+    const start = createInitialState();
+    start.clock = { ...onShift, hour: 16 };
+    const desk = parseState(reduceState(enableProtagonists(start), { type: 'novel_travel', locationId: 'ring-desk' }));
+    const scene = worldSceneContext(desk);
+    expect(scene?.nearbyPeople.some(person => person.contactId === 'bang-taki' && person.canTalk)).toBe(true);
+    expect(affinityPersonaPrompt(desk, scene, '我走到柜台前跟立希打招呼。')).toContain('前台探班');
+    expect(affinityPersonaPrompt(desk, scene, '给立希发消息', 'phone_reply')).toBe('');
+  });
+
+  it('requires the performer’s own upcoming set before suggesting a wait in the foyer', () => {
+    const day = Array.from({ length: 100 }, (_, i) => i + 1).find(d =>
+      liveBill(d).some(row => row.key === '1800' && row.act.id === 'ave-mujica'))!;
+    const note = (hour: number, minute: number, place = 'livehouse') =>
+      affinityLocationNotes('bang-mutsumi', 'confidant', place, hour, 'sunny', [], { day, minute });
+    expect(note(17, 29)).toEqual([]);
+    expect(note(17, 30).join('')).toContain('开演');
+    expect(note(18, 0)).toEqual([]);
+    expect(note(17, 45, 'ring-desk')).toEqual([]);
+  });
+
+  it('keeps the original return point and appointments for reinstated venues', () => {
+    const former = {
+      'matcha-shop': 'commercial', 'residential-supermarket': 'home', 'book-cafe': 'street-cafe',
+      'observation-roof': 'commercial', 'cosplay-convention': 'commercial',
+    };
+    for (const [id, entrance] of Object.entries(former)) {
+      // The first version stored the schematic entrance, room ID and schedule location.
+      const state = reduceState(createInitialState(), { type: 'novel_travel', locationId: entrance });
+      const room = getCampusInterior(id)!;
+      const exterior = room.entrance;
+      state.scene = { ...exterior, seed: 'old-visit', areaId: entrance, encounterId: null };
+      state.locationId = id;
+      state.interior = { roomId: id, ...room.spawn, activityId: null, lastRest: null, lastStudy: null };
+      state.schedule.push({ id: 'again', title: '下次见', time: '12:00', locationId: id, done: false });
+      const loaded = parseState(state);
+      expect(loaded.interior?.roomId).toBe(id);
+      expect(loaded.schedule.at(-1)?.locationId).toBe(id);
+      expect(reduceState(loaded, { type: 'leave_interior' }).locationId).toBe(entrance);
+    }
   });
 
   it('restores an old outing at its saved entrance and preserves existing arrangements', () => {

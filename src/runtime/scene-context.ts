@@ -222,7 +222,9 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       contactId: null, isMain: false,
     }] : [];
   }
-  if (roomId === 'livehouse') {
+  // Keep the former workplace as a valid historical encounter when reading old saves.
+  // Current visibility is filtered by residentPresence below.
+  if (roomId === 'ring-desk' || roomId === 'livehouse') {
     return ['bang-taki', 'bang-marina'].flatMap(id => {
       const person = allResidentCast.find(row => row.id === id);
       if (!person) return [];

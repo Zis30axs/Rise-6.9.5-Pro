@@ -145,11 +145,20 @@ function minuteOf(clock: WorldState['clock']): number {
 
 export function takiOnDuty(clock: WorldState['clock']): boolean {
   const presence = residentPresence('bang-taki', clock);
-  return !!presence?.available && presence.locationId === 'livehouse';
+  return !!presence?.available && presence.locationId === 'ring-desk';
 }
 
 function showId(day: number, key: LiveShowKey): string {
   return `d${day}-${key}`;
+}
+
+/** A scheduled performer can wait in the public foyer during the half hour before their set. */
+export function awaitingLivehouseSet(characterId: string, clock: WorldState['clock']): boolean {
+  const minute = minuteOf(clock);
+  return liveBill(clock.day).some(({ key, act }) => {
+    const start = SHOW_SLOTS.find(slot => slot.key === key)!.start;
+    return minute >= start - 30 && minute < start && act.members.some(member => member.id === characterId);
+  });
 }
 
 /** Same game day always books the same two acts, and the two slots differ. */
@@ -184,9 +193,11 @@ export interface PracticePartnerFact {
 export function practicePartners(state: WorldState): PracticePartnerFact[] {
   return MYGO_PARTNERS.map(person => {
     const contact = state.contacts.find(row => row.id === person.id || row.sourcePersonId === person.id);
-    const here = takiLikeHere(person.id, state.clock);
+    const presence = residentPresence(person.id, state.clock);
+    const here = !!presence?.available && presence.locationId === state.locationId;
     const affinity = contact?.affinity ?? null;
-    const eligible = affinity !== null && affinity >= PRACTICE_AFFINITY_MIN;
+    const workingAtRing = person.id === 'bang-taki' && takiOnDuty(state.clock);
+    const eligible = !workingAtRing && affinity !== null && affinity >= PRACTICE_AFFINITY_MIN;
     return {
       id: person.id,
       name: contact?.name ?? person.name,
@@ -197,11 +208,6 @@ export function practicePartners(state: WorldState): PracticePartnerFact[] {
       affinityDelta: eligible ? adjustedAffinity(affinity, PRACTICE_AFFINITY_DELTA) - affinity : 0,
     };
   });
-}
-
-function takiLikeHere(id: string, clock: WorldState['clock']): boolean {
-  const presence = residentPresence(id, clock);
-  return !!presence?.available && presence.locationId === 'livehouse';
 }
 
 function viewerId(owner: ProtagonistId): string {
@@ -241,7 +247,7 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   const duty = takiOnDuty(state.clock);
   const here = tune?.here ? tune.here(state) : state.locationId === 'livehouse';
   const priced = (amount: number) => tune?.priceFor ? tune.priceFor(amount) : amount;
-  const dutyNote = tune?.omitDutyNote ? '' : (duty ? '椎名立希正在店里当班。' : '椎名立希此刻不在店里当班。');
+  const dutyNote = tune?.omitDutyNote ? '' : (duty ? '椎名立希正在池袋 RiNG 当班。' : '椎名立希此刻没有 RiNG 的班次。');
   const watch = SHOW_SLOTS.find(slot => serviceId === `livehouse-watch-${slot.key}`);
   if (watch) {
     const billDay = tune?.billDay ?? state.clock.day;
@@ -291,7 +297,7 @@ export function prepareLivehouseService(state: WorldState, serviceId: string, au
   let blockedCode: LivehouseBlockedCode | null = together && joined.length === 0 ? 'no_partner' : null;
   const names = joined.map(person => person.name).join('、');
   const rent = priced(plan.price);
-  const summary = `${plan.label}，${rent} 日元。乐器熟练度 ${skillBefore}，这场预计增加 ${gain}，上限 ${INSTRUMENT_SKILL_CAP}。${together ? (names ? `${names}可以一起来。` : '现在没有能一起来的熟人。') : '一个人练。'}${tune?.omitDutyNote ? '' : (duty ? '椎名立希正在店里当班。' : '')}`;
+  const summary = `${plan.label}，${rent} 日元。乐器熟练度 ${skillBefore}，这场预计增加 ${gain}，上限 ${INSTRUMENT_SKILL_CAP}。${together ? (names ? `${names}可以一起来。` : '现在没有能一起来的熟人。') : '一个人练。'}${tune?.omitDutyNote ? '' : (duty ? '椎名立希正在池袋 RiNG 当班。' : '')}`;
   const rapport = joined.map(person => `${person.name} +${person.affinityDelta}`).join('、');
   const receipt = `${plan.label}。乐器熟练度 ${Math.min(INSTRUMENT_SKILL_CAP, skillBefore + gain)}。${rapport ? `合练好感：${rapport}。` : ''}`;
   const service: LocationService = {
@@ -354,7 +360,7 @@ export function livehouseBill(state: WorldState, authority?: WorldState) {
       id: person.id, name: person.name, affinity: person.affinity, eligible: person.eligible, here: person.here,
     })),
     practiceServices: ['livehouse-practice-1h', 'livehouse-practice-2h', 'livehouse-practice-1h-band', 'livehouse-practice-2h-band'],
-    rule: '买票、租房、熟练度和好感只有在对应 service 保存成功后才成立。阵容、当班、好感是否够格都以上面的字段为准。',
+    rule: '买票、租房、熟练度和好感只有在对应 service 保存成功后才成立。阵容与合练资格见上列。立希的班次在池袋 RiNG。',
   };
 }
 

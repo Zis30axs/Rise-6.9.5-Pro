@@ -274,9 +274,9 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
     const assistRing = !rest && day % 7 === 4 && minute >= 15 * 60 && minute < 18 * 60;
     const atCircle = !rest && !assistRing && minute >= CIRCLE_OPENS && minute < CIRCLE_CLOSES;
     if (assistRing) return {
-      anchorId: null, locationId: 'livehouse',
+      anchorId: null, locationId: 'ring-desk',
       activity: '到 RiNG 协助处理预约和店务', available: true,
-      housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+      housing: housing?.id ?? null, district: 'commercial', outfit: residentOutfit(id),
     };
     if (atCircle) return {
       anchorId: null, locationId: CIRCLE_CAFE_ROOM_ID,
@@ -290,9 +290,9 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
     };
   }
   if (id === 'bang-taki' && minute >= 16 * 60 && minute < 22 * 60) return {
-    anchorId: null, locationId: 'livehouse',
-    activity: '在 Live House 打工并整理鼓组', available: true,
-    housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+    anchorId: null, locationId: 'ring-desk',
+    activity: '在池袋 RiNG 打工并整理鼓组', available: true,
+    housing: housing?.id ?? null, district: 'commercial', outfit: residentOutfit(id),
   };
   if (id === 'majo-sherry' && minute >= 9 * 60 && minute < 18 * 60) return {
     anchorId: null, locationId: 'legal-office',

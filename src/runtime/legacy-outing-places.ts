@@ -7,10 +7,8 @@ const oldAccessPoints = new Map<string, string>([
   ['cucumber-garden', 'home'],
   ['stage-backstage', 'grand-commercial'],
   ['stage-entrance', 'grand-commercial'],
-  ['matcha-shop', 'commercial'],
   ['quiet-rooftop', 'teaching'],
   ['park-bench', 'city-park'],
-  ['observation-roof', 'commercial'],
   ['rehearsal-hallway', 'grand-commercial'],
   ['photo-cafe', 'commercial'],
   ['herb-garden', 'home'],
@@ -19,9 +17,6 @@ const oldAccessPoints = new Map<string, string>([
   ['quiet-teahouse', 'street-cafe'],
   ['ashigaya-rooftop', 'teaching'],
   ['queen-rose-street', 'downtown'],
-  ['book-cafe', 'street-cafe'],
-  ['cosplay-convention', 'commercial'],
-  ['residential-supermarket', 'home'],
   ['cosplay-outdoor', 'commercial'],
 ]);
 
