@@ -16,6 +16,8 @@ interface LocationRule {
   places: readonly string[];
   occasion: string;
   reactions: readonly Reaction[];
+  inactiveReason?: string;
+  placeEvents?: Partial<Record<string, readonly string[]>>;
   placeConditions?: Partial<Record<string, string>>;
 }
 
@@ -37,13 +39,15 @@ function matchesCondition(condition: string | undefined, hour: number, weather: 
 }
 
 /** Called only for a contact in talking range in the authoritative scene. */
-export function affinityLocationNotes(characterId: string, tier: string, place: string, hour: number, weather: WeatherId): string[] {
+export function affinityLocationNotes(characterId: string, tier: string, place: string, hour: number, weather: WeatherId, currentEvents: readonly string[] = []): string[] {
   const current = rank.get(tier);
   if (current === undefined) return [];
   const notes: string[] = [];
   for (const rule of affinityLocationRules) {
     if (rule.characterId !== characterId || !rule.places.includes(place)
       || !matchesCondition(rule.placeConditions?.[place], hour, weather)) continue;
+    const terms = rule.placeEvents?.[place];
+    if (terms && !currentEvents.some(title => terms.some(term => title.toLowerCase().includes(term.toLowerCase())))) continue;
     const lines = rule.reactions.filter(row =>
       (!row.onlyPlace || row.onlyPlace === place)
       && (!row.from || current >= rank.get(row.from)!)

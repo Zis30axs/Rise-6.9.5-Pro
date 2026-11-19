@@ -1,3 +1,4 @@
+import { savedOutingLocation } from './legacy-outing-places';
 import { ensurePersonalKeepsake } from './equipment';
 import { parseBandInviteCommand, sendBandInvitation, musicPersonId, performanceMemberIds, type BandInviteCommand } from './livehouse';
 import { appendPeekChat, applyNpcPhoneCommand, parseNpcPhone, parseNpcPhoneCommand, retireControlledNpcThreads, type NpcPhoneCommand, type NpcPhoneState } from './npc-phone';
@@ -291,7 +292,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     return { ...(Object.hasOwn(d,'appearance')?{appearance:parsePhoneAppearance(d.appearance)}:{}), locked: boolean(d.locked), share: share(d.share), calendar: distinct(array(d.calendar,100,raw => {
       const isStock = !!raw && typeof raw === 'object' && Object.hasOwn(raw,'stockCode');
       const e = exact(raw, ['id','title','locationId','start','duration','reminded',...(isStock?['stockCode','reviewed']:[])]);
-      const locationId = string(e.locationId,80);
+      const locationId = savedOutingLocation(string(e.locationId,80));
       const event = {id: identifier(e.id), title: string(e.title,100), locationId, start: integer(e.start,525600000), duration: integer(e.duration,1440,1), reminded: boolean(e.reminded)};
       if (isStock) {
         const stockCode = identifier(e.stockCode);
@@ -312,7 +313,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     const quantity = integer(o.quantity,20,1), totalCents = integer(o.totalCents);
     const kind = o.kind as PhoneOrder['kind'];
     orderPackSize(item, { kind, quantity, totalCents }, legacyMoney);
-    return {id:identifier(o.id),owner:actor(o.owner),actor:actor(o.actor),kind,itemId:item.id,quantity,card:card(o.card),totalCents,address:string(o.address,80),due:integer(o.due,525600000),status:o.status as PhoneOrder['status']};
+    return {id:identifier(o.id),owner:actor(o.owner),actor:actor(o.actor),kind,itemId:item.id,quantity,card:card(o.card),totalCents,address:savedOutingLocation(string(o.address,80)),due:integer(o.due,525600000),status:o.status as PhoneOrder['status']};
   }));
   const operations = distinct(array(p.operations,2000,raw => {
     const r=exact(raw,['id','actor','owner','command']); return {id:identifier(r.id),actor:actor(r.actor),owner:actor(r.owner),command:string(r.command,2000)};
@@ -349,7 +350,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
       if (!id.startsWith('majo-') && !id.startsWith('watanare-') && !id.startsWith('bang-')) fail('NPC旁线身份无效');
       if (PROTAGONIST_PERSON_ID_LIST.includes(id) || !residentById(id)) fail('NPC旁线身份无效');
       const row = exact(raw, ['locationId', 'at', 'until', 'status']);
-      const locationId = string(row.locationId, 80), at = integer(row.at, now), until = integer(row.until, 525599999);
+      const locationId = savedOutingLocation(string(row.locationId, 80)), at = integer(row.at, now), until = integer(row.until, 525599999);
       if (!(isKnownLocation(locationId) || sceneAreas.some(area => sceneLocationId(area.id) === locationId))
         || until <= at || until > at + 1440) fail('NPC旁线地点或有效期无效');
       otherSideNpc[id] = { locationId, at, until, status: string(row.status, 120) };

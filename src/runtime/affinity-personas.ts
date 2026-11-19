@@ -4,7 +4,7 @@ import { affinityTier, availablePromotion, contactRelationNote } from './affinit
 import { affinityLocationNotes } from './affinity-locations';
 import { PROTAGONISTS } from './dual-protagonists';
 import { residentById } from './npc-cast';
-import { activeProtagonist, protagonistNames } from './protagonist-world';
+import { activeProtagonist, gameMinute, protagonistNames } from './protagonist-world';
 import { protagonistSceneId, type worldSceneContext } from './world-presence';
 
 interface PersonaEntry {
@@ -41,6 +41,10 @@ export function affinityPersonaPrompt(
   if (kind && kind !== 'interaction_event') return '';
 
   const viewpoint = activeProtagonist(state);
+  const now = gameMinute(state);
+  const currentEvents = state.protagonists?.devices[viewpoint].calendar
+    .filter(event => event.locationId === state.locationId && event.start <= now && now < event.start + event.duration)
+    .map(event => event.title) ?? [];
   const presentContacts = new Set(scene?.nearbyPeople.filter(person => person.canTalk).map(person => person.contactId));
   const action = input.normalize('NFKC').toLowerCase();
   const selected = new Map<string, string>();
@@ -66,7 +70,7 @@ export function affinityPersonaPrompt(
 
     const tier = affinityTier(contact.affinity).id;
     if (inScene && scene) {
-      const notes = affinityLocationNotes(characterId, tier, scene.areaId, state.clock.hour, scene.weather.id);
+      const notes = affinityLocationNotes(characterId, tier, scene.areaId, state.clock.hour, scene.weather.id, currentEvents);
       if (notes.length) locationNotes.set(characterId, [contact.name + '（' + contact.id + '）', ...notes].join('\n'));
     }
     const matching = entries.filter(entry => entry.extensions.affinityPersona.tier === tier);
@@ -80,12 +84,12 @@ export function affinityPersonaPrompt(
   const sections = [];
   if (selected.size) sections.push(
     '\n【本轮好感分阶段人设】',
-    `以下条目用于面对${protagonistNames[viewpoint]}时的称呼、语气和相处。人物身份、家庭关系、已存关系与真实经历优先。恋人称呼、亲密行为和共同经历只在世界书或存档已有相应前提、本轮场景与双方意愿也允许时采用。从知心档起可以主动追求、告白，无需玩家先开口；告白例句只供角色确实动心并选择开口时参考，平日仍按原有关系相处。告白后留给玩家接受、拒绝或暂缓，等候期间不催问，遭拒后依其性格相处。已交往者延续既有约定。举例不代表已经发生、在场或知情。正文省略分数与机制。`,
+    `以下条目用于面对${protagonistNames[viewpoint]}时的称呼、语气和相处。人物身份、家庭关系、已存关系与真实经历优先。恋人称呼、亲密行为和共同经历只在世界书或存档已有相应前提、本轮场景与双方意愿也允许时采用。从知心档起可以主动追求、告白，无需玩家先开口；告白例句只供角色确实动心并选择开口时参考，平日仍按原有关系相处。告白后留给玩家接受、拒绝或暂缓，等候期间不催问，遭拒后依其性格相处。已交往者延续既有约定。高中学籍、旧工作和原作故乡只在相应往事中成立。地点举例不能替代当前存档位置或确定现职，风堇在东京任职于街区全科诊所。举例不代表已经发生、在场或知情。正文省略分数与机制。`,
     ...selected.values(),
   );
   if (locationNotes.size) sections.push(
     '\n【当前地点的互动】',
-    '以下只供本轮在场人物参考。按实际进行的活动、当下意愿和已发生的细节选择反应。提到、回忆、拒绝出游或仅到场时不结算好感。真实互动发生后，按文字所示方向和幅度使用既有 relationship 行动，同一件事只结算一次，赠礼走已有 gift。天色、物品、班次、家人或恋人身份仍以当前场景和存档为准。',
+    '以下只供本轮在场人物参考。按实际进行的活动、当下意愿和已发生的细节选择反应。日历中的活动仍须本轮实际参加。原作高中、旧工作与故乡只可作为有依据的回忆，不据此安排当下放学、值班或开放场所。提到、回忆、拒绝出游或仅到场时不结算好感。真实互动发生后，按文字所示方向和幅度使用既有 relationship 行动，同一件事只结算一次，赠礼走已有 gift。天色、物品、班次、家人或恋人身份仍以当前场景和存档为准。',
     ...locationNotes.values(),
   );
   if (offers.length) sections.push(

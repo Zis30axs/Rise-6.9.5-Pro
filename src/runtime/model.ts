@@ -1,3 +1,4 @@
+import { savedOutingLocation } from './legacy-outing-places';
 import { academicEquipment, canEquipItem, equipmentCatalog, equipmentProfile, ensurePersonalKeepsake, getEquipmentItem, historicalAcademicMultiplier, isEquipmentSlot, r27et1Equipped, setEquipment, setEquipmentSlot, studyPointsWithEquipment, R27ET1_STUDY_BONUS, validatePersonalEquipment } from './equipment';
 import type { ProtagonistId } from './dual-protagonists';
 import { createInitialLivehouse, reconcileEstablishedBands, parseLivehouseState, validateLivehouseLinks, prepareLivehouseInteraction, syncPerformanceCalendars, livehouseReceipt } from './livehouse';
@@ -354,7 +355,7 @@ function list<T extends { id: string }>(value: unknown, path: string, max: numbe
   return result;
 }
 function place(value: unknown, path: string): string {
-  const result = id(value, path);
+  const result = savedOutingLocation(id(value, path));
   if (!locations.some(location => location.id === result)) return invalid(path);
   return result;
 }
@@ -753,7 +754,18 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   }
   const parsedClock = { day: number(clock.day, 'clock.day', 1, 365000), hour: number(clock.hour, 'clock.hour', 0, 23), minute: number(clock.minute, 'clock.minute', 0, 59) };
   const weather = hasWeather ? parseWeather(state.weather, parsedClock.day) : weatherForDay(parsedClock.day);
-  const parsedInterior = hasInterior && state.interior !== null ? parseInteriorPresence(state.interior, version) : null;
+  const locationId = place(state.locationId, 'locationId');
+  const retiredOuting = locationId !== state.locationId;
+  let savedScene = state.scene;
+  if (retiredOuting) {
+    const room = state.interior as Partial<InteriorPresence> | null;
+    const exterior = state.scene as Partial<ScenePresence> | null;
+    if (room?.roomId !== state.locationId || !exterior || typeof exterior.areaId !== 'string'
+      || sceneLocationId(exterior.areaId) !== locationId) return invalid('旧地点与返回位置不一致');
+    // Returning to the saved entrance costs no time or resources and drops the indoor encounter.
+    savedScene = { ...exterior, encounterId: null };
+  }
+  const parsedInterior = hasInterior && !retiredOuting && state.interior !== null ? parseInteriorPresence(state.interior, version) : null;
   const result: WorldState = {
     schema_version: '1.11.0', currency: 'JPY',
     clock: parsedClock,
@@ -761,8 +773,8 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     ...(hasWorldChronicle ? { worldChronicle: parseWorldChronicleState(state.worldChronicle) } : {}),
     ...(hasNpcGiftDaily ? { npcGiftDaily: parseNpcGiftDailyState(state.npcGiftDaily) } : {}),
     ...(hasWardrobe ? { wardrobe: parseWardrobeState(state.wardrobe) } : {}),
-    locationId: place(state.locationId, 'locationId'),
-    scene: version === '1.0.0' || state.scene === null ? null : parseScenePresence(state.scene, parsedInterior, deferProtagonists, parsedClock),
+    locationId,
+    scene: version === '1.0.0' || savedScene === null ? null : parseScenePresence(savedScene, parsedInterior, deferProtagonists, parsedClock),
     interior: parsedInterior,
     airTraffic: hasAirTraffic ? parseAirTrafficState(state.airTraffic) : createAirTrafficState(),
     transit: hasTransit ? parseTransitState(state.transit, parsedClock) : createTransitState(),
