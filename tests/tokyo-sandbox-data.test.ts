@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import sandbox from '../assets/models/unread-city-tokyo-sandbox-data.json';
+import { tokyoDistricts } from '../src/frontend/tokyo-sandbox-map';
 import { MAP_DISTRICT_IDS } from '../src/frontend/map-districts';
 
 describe('offline Tokyo sandbox metadata', () => {
@@ -11,7 +12,8 @@ describe('offline Tokyo sandbox metadata', () => {
     expect(districtIds.size).toBe(9);
     expect(districtIds.has('market-district')).toBe(true);
     expect(districtIds.has('circle')).toBe(true);
-    for (const id of MAP_DISTRICT_IDS) expect(districtIds.has(id)).toBe(true);
+    const mappedDistrictIds = new Set(tokyoDistricts.map(row => row.id));
+    for (const id of MAP_DISTRICT_IDS) expect(mappedDistrictIds.has(id)).toBe(true);
   });
 
   it('has valid landmarks, building IDs and roads', () => {

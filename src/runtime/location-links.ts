@@ -1,5 +1,5 @@
 import type { WorldState } from '../frontend/types';
-import { campusInteriors, getCampusInterior } from './campus-interiors';
+import { novelScenePlaces, getCampusInterior } from './campus-interiors';
 import { novelDestinations } from './model';
 import { internationalConnections } from './california';
 
@@ -20,12 +20,12 @@ const outdoorLinks: readonly (readonly [string, string])[] = [
   ['pocket-park', 'courthouse'], ['construction-site', 'courthouse'],
   ['grand-commercial', 'circle'],
 ];
-const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain']);
+const distantLocations = new Set(['home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain', 'asukayama-park']);
 const areaExits: Readonly<Record<string, readonly string[]>> = {
   promenade: ['gate', 'library', 'cafe', 'dorm', 'sports'],
   campus: ['library', 'teaching', 'dorm', 'sports', 'gate'],
   neighborhood: ['junction', 'bookshop', 'convenience', 'street-cafe', 'bus-stop', 'pocket-park'],
-  'city-roads': ['bus-stop', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain'],
+  'city-roads': ['bus-stop', 'home', 'commercial', 'city-park', 'downtown', 'grand-commercial', 'takao-mountain', 'asukayama-park'],
 };
 
 /** Only offer destinations supported by the existing travel engine; rooms expose their door first. */
@@ -42,7 +42,7 @@ export function getAdjacentLocations(state: Pick<WorldState, 'locationId' | 'int
     add(room.parentLocationId, 'exit');
     return result;
   }
-  campusInteriors.filter(item => item.parentLocationId === origin).forEach(item => add(item.id, 'enter'));
+  novelScenePlaces.filter(item => item.parentLocationId === origin).forEach(item => add(item.id, 'enter'));
   for (const [from, to] of outdoorLinks) {
     if (from === origin) add(to, 'nearby');
     if (to === origin) add(from, 'nearby');

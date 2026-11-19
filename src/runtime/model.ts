@@ -386,9 +386,17 @@ function parseScenePresence(
   clock?: { hour: number; minute: number; day?: number },
 ): ScenePresence {
   const item = object(value, ['x', 'z', 'yaw', 'areaId', 'seed', 'encounterId'], 'scene');
-  const coordinates = sceneCoordinates(item.x, item.z, item.yaw);
+  let coordinates = sceneCoordinates(item.x, item.z, item.yaw);
   // A legacy neighborhood save may be positioned inside the new worksite boundaries.
   if (item.areaId !== coordinates.areaId && !(item.areaId === 'neighborhood' && coordinates.areaId === 'construction-site')) return invalid('scene.areaId 与坐标不一致');
+  // Only relocate the old fountain exit. Ordinary Ikebukuro visits keep their return pose.
+  if (interior?.roomId === 'asukayama' && coordinates.areaId === 'commercial') {
+    const oldEntrance = sceneLandmarks.find(point => point.id === 'commercial')!;
+    if (Math.hypot(coordinates.x - oldEntrance.x, coordinates.z - oldEntrance.z) <= INTERIOR_ENTRANCE_RANGE) {
+      const entrance = getCampusInterior('asukayama')!.entrance;
+      coordinates = sceneCoordinates(entrance.x, entrance.z, coordinates.yaw);
+    }
+  }
   const scene: ScenePresence = { ...coordinates, seed: sceneSeed(item.seed), encounterId: item.encounterId === null ? null : id(item.encounterId, 'scene.encounterId') };
   if (scene.encounterId && !(deferProtagonists && isProtagonistEncounter(scene.encounterId))) {
     const cafeInterior = interior?.roomId === MARGO_CAFE_ROOM_ID ? interior : null;

@@ -2,6 +2,9 @@ import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
+import asukayamaDay from '../../assets/backgrounds/asukayama-day.webp?inline';
+import asukayamaDusk from '../../assets/backgrounds/asukayama-dusk.webp?inline';
+import asukayamaNight from '../../assets/backgrounds/asukayama-night.webp?inline';
 import parkDay from '../../assets/backgrounds/park-day.webp?inline';
 import parkDusk from '../../assets/backgrounds/park-dusk.webp?inline';
 import parkNight from '../../assets/backgrounds/park-night.webp?inline';
@@ -48,6 +51,8 @@ const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase,
   classroom: { day: classroomDay, dusk: classroomDusk, night: classroomNight },
   bedroom: { day: bedroomDay },
 };
+
+const asukayamaBackgrounds = { day: asukayamaDay, dusk: asukayamaDusk, night: asukayamaNight };
 
 const hanedaAirportBackgrounds: Readonly<Record<NovelBackgroundPhase, string>> = {
   day: hanedaAirportDay, dusk: hanedaAirportDusk, night: hanedaAirportNight,
@@ -108,6 +113,10 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (locationId === 'asukayama' || locationId === 'asukayama-park') {
+    const phase = novelBackgroundPhase(hour);
+    return { id: `asukayama-${phase}`, src: asukayamaBackgrounds[phase], phase, imagePhase: phase, source: 'user-art' };
+  }
   if (locationId === 'haneda-airport') {
     const phase = novelBackgroundPhase(hour);
     return {

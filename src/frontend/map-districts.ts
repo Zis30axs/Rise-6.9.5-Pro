@@ -1,10 +1,11 @@
-import { campusInteriors } from '../runtime/campus-interiors';
+import { asukayamaPark } from '../runtime/asukayama';
+import { campusInteriors, getCampusInterior } from '../runtime/campus-interiors';
 import { mapLocations, novelDestinations } from '../runtime/model';
 import { sceneAreas, sceneBounds } from './scene-layout';
 import { isCaliforniaLocalLocation } from '../runtime/california';
 import { airportDistrict, airportLegacyBounds, airportLegacyCenter } from './airport-sandbox-layout';
 
-export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial', 'takao-mountain', 'circle', 'haneda-airport'] as const;
+export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial', 'takao-mountain', 'circle', 'haneda-airport', 'asukayama-park'] as const;
 export type MapDistrictId = typeof MAP_DISTRICT_IDS[number];
 export type LocalMapScope = 'city' | MapDistrictId;
 export const campusDetailBounds = { minX: -74, maxX: 74, minZ: -64, maxZ: 94 };
@@ -19,6 +20,7 @@ export const mapDistricts = [
   { id: 'takao-mountain', name: '高尾山自然风景区', shortName: '高尾山风景区', description: '青翠秀美的近郊名山沙盘，包含登山步道、观景展望台、山麓温泉与观光索道。', x: 0, z: -175 },
   { id: 'circle', name: 'CiRCLE 现场屋', shortName: 'CiRCLE', description: '与新宿大型商业区步行相连的现场演出屋，一楼咖啡厅，侧翼练团室。', x: -310, z: -155 },
   { ...airportDistrict, ...airportLegacyCenter },
+  asukayamaPark,
 ] as const;
 
 export function isMapDistrict(value: string): value is MapDistrictId {
@@ -27,7 +29,7 @@ export function isMapDistrict(value: string): value is MapDistrictId {
 
 /** Indoor poses are room-local. District ownership always follows the parent. */
 export function locationDistrict(locationId: string): MapDistrictId {
-  const outdoor = campusInteriors.find(room => room.id === locationId)?.parentLocationId ?? locationId;
+  const outdoor = getCampusInterior(locationId)?.parentLocationId ?? locationId;
   return isMapDistrict(outdoor) ? outdoor : 'campus';
 }
 

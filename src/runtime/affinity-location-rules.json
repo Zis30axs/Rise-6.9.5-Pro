@@ -1,7 +1,7 @@
 [
   {
     "characterId": "protagonist-soyo",
-    "places": ["asukayama"],
+    "places": ["asukayama", "asukayama-park"],
     "occasion": "带素世前往飞鸟山公园（尤其是喷泉广场）",
     "reactions": [
       {"through":"guarded","text":"低好感（敌视～戒备）直接视为故意揭伤疤羞辱，冷脸翻脸并大幅扣好感"},

@@ -632,7 +632,7 @@ const outingVenues: CampusInterior[] = venues.map(venue => {
   if (!access) throw new Error('未知的小说地点接驳点：' + venue.accessLandmark);
   return {
     id: venue.id, label: venue.label, description: venue.description, outdoors: venue.outdoors,
-    parentLocationId: access.id, entrance: { x: access.x, z: access.z, yaw: 0 },
+    parentLocationId: access.id, entrance: { x: venue.entrance?.x ?? access.x, z: venue.entrance?.z ?? access.z, yaw: 0 },
     bounds, spawn, obstacles: [], interactions: [],
   };
 });

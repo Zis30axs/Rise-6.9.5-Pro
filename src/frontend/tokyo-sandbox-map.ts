@@ -1,6 +1,7 @@
 /** Display-only bridge between existing saved world positions and the new Tokyo GLB.
  * Do not write these scenic coordinates into MVU, transit, schedules or save data.
  */
+import { asukayamaPark } from '../runtime/asukayama';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { circleSandboxOverlay } from './circle-sandbox-pack';
 import { airportDistrict, airportLandmark } from './airport-sandbox-layout';
@@ -24,7 +25,7 @@ function withCirclePack<T extends { id: string }>(rows: readonly T[], extra: rea
   const ids = new Set(extra.map(row => row.id));
   return [...rows.filter(row => !ids.has(row.id)), ...extra];
 }
-export const tokyoDistricts = withCirclePack(sandboxData.districts, [...circleSandboxOverlay.districts, airportDistrict]);
+export const tokyoDistricts = withCirclePack(sandboxData.districts, [...circleSandboxOverlay.districts, airportDistrict, asukayamaPark]);
 export const tokyoLandmarks = withCirclePack(sandboxData.landmarks, [...circleSandboxOverlay.landmarks, airportLandmark]);
 export const tokyoCityBounds = {
   minX: Math.min(...tokyoDistricts.map(d => d.minX)),

@@ -1,5 +1,5 @@
 [
-  {"id":"asukayama","label":"飞鸟山公园·喷泉广场","accessLandmark":"commercial","outdoors":true,"description":"公园步道通往喷泉广场，水声沿石阶传来。"},
+  {"id":"asukayama","label":"飞鸟山公园·喷泉广场","accessLandmark":"asukayama-park","entrance":{"x":295,"z":-62},"outdoors":true,"description":"低矮的石砌喷泉围在广场中央，几块景石散在池边。右手的石阶向树丛深处延伸，回望步道可以看见王子站侧的公园入口。"},
   {"id":"chitose-bridge","label":"千登世桥","accessLandmark":"junction","outdoors":true,"description":"车流从桥上经过，人行道沿着栏杆伸向街角。"},
   {"id":"minami-ikebukuro-park","label":"南池袋公园","accessLandmark":"commercial","outdoors":true,"description":"草坪边的步道绕向街口，落叶停在路沿。"},
   {"id":"manten-planetarium","label":"池袋满天星象仪·天文馆","accessLandmark":"commercial","outdoors":false,"description":"放映厅里一排排座椅朝向圆顶星幕。"},
