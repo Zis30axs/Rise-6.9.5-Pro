@@ -104,6 +104,8 @@ export interface AcademicState {
 
 export type CharacterPortraitId = 'deepseek' | 'xiaoyang' | 'claude';
 
+export type ConfessionStatus = 'pending' | 'declined' | 'dating';
+
 export interface CharacterContact {
   id: string;
   name: string;
@@ -117,6 +119,7 @@ export interface CharacterContact {
   isMain: boolean;
   /** Established relationship fact, such as an agreed romance. Absent for strangers and old saves. */
   relationNote?: string;
+  confession?: ConfessionStatus;
 }
 
 export interface ContactProfileInput {
@@ -291,6 +294,8 @@ export type StoryAction =
   | { type: 'study'; subjectId: string; minutes: number }
   | { type: 'schedule'; title: string; locationId: string; time: string }
   | { type: 'complete_schedule'; id: string }
+  | { type: 'promote_relationship'; npcId: string; reason: string }
+  | { type: 'confession'; npcId: string; outcome: ConfessionStatus; quote: string }
   | { type: 'relationship'; npcId: string; delta: number; reason: string }
   | { type: 'social_skill'; skillId: import('../runtime/social-skills').SocialSkillId; deviation: import('../runtime/social-skills').SocialDeviation; reason: string; npcId?: string }
   | { type: 'transfer'; from: string; to: string; cents: number; reason: string }

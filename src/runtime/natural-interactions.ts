@@ -1,6 +1,7 @@
+import { savedOutingLocation } from './legacy-outing-places';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, type ProtagonistId } from './dual-protagonists';
-import { campusInteriors } from './campus-interiors';
+import { novelScenePlaces } from './campus-interiors';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { sceneLocationId } from './scene-context';
 import { residentById } from './npc-cast';
@@ -37,7 +38,7 @@ const invitationLimit = 120;
 const ID_RE = /^[A-Za-z0-9][\w.:-]{0,127}$/;
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const PLACE_IDS = new Set([
-  ...campusInteriors.map(room => room.id),
+  ...novelScenePlaces.map(room => room.id),
   ...sceneLandmarks.map(landmark => sceneLocationId(landmark.id)),
 ]);
 
@@ -79,7 +80,7 @@ export function parseSocialInvitations(raw: unknown, now: number): SocialInvitat
     if (r.status !== 'pending' && r.status !== 'accepted' && r.status !== 'declined') return invalid(path + '状态');
     const targetId = str(r.targetId, 128, path + '对象');
     if (!ID_RE.test(targetId)) return invalid(path + '对象 ID');
-    const locationId = str(r.locationId, 80, path + '地点');
+    const locationId = savedOutingLocation(str(r.locationId, 80, path + '地点'));
     if (!PLACE_IDS.has(locationId)) return invalid(path + '地点不存在');
     const time = str(r.time, 5, path + '时间');
     if (!TIME_RE.test(time)) return invalid(path + '时间格式');

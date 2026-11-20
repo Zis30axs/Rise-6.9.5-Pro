@@ -1,5 +1,5 @@
 import { sceneAreas, sceneLandmarks, scenePaths } from './scene-layout';
-import { campusInteriors } from '../runtime/campus-interiors';
+import { getCampusInterior } from '../runtime/campus-interiors';
 import { districtBounds, campusDetailBounds, type LocalMapScope } from './map-districts';
 import { airportLegacyArrival } from './airport-sandbox-layout';
 
@@ -58,7 +58,7 @@ export const mapBuildings: readonly MapBuilding[] = [
 const aliases: Record<string, string> = { gate: 'south-gate', cafe: 'campus-cafe', dorm: 'residences' };
 export function mapLocationPoint(locationId: string): { x: number; z: number } | undefined {
   if (locationId === 'haneda-airport') return airportLegacyArrival;
-  const room = campusInteriors.find(item => item.id === locationId);
+  const room = getCampusInterior(locationId);
   if (room) return room.entrance;
   return sceneLandmarks.find(item => item.id === (aliases[locationId] ?? locationId));
 }

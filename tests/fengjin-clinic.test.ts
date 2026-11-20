@@ -13,6 +13,7 @@ function setTestClock(state: any, day: number, hour: number, minute: number) {
   if (state.protagonists?.backgroundLife) {
     const cursor = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
     state.protagonists.backgroundLife.cursor = cursor;
+    if (state.protagonists.strategy) state.protagonists.strategy.cursor = cursor;
     for (const person of Object.values(state.protagonists.backgroundLife.people as Record<string, any>)) {
       person.nextDecisionAt = Math.max(person.nextDecisionAt, cursor);
     }
@@ -93,7 +94,7 @@ describe('风堇与街区全科诊所', () => {
     const worldbookPath = resolve(process.cwd(), 'src/worldbook/fengjin-clinic.json');
     const content = JSON.parse(readFileSync(worldbookPath, 'utf8'));
 
-    expect(content.name).toBe('未读之城：风堇与街区全科诊所');
+    expect(content.name).toBe('风堇与街区全科诊所');
     expect(Array.isArray(content.entries)).toBe(true);
     expect(content.entries.length).toBe(2);
 

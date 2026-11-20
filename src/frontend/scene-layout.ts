@@ -1,7 +1,9 @@
+import { highland, highlandStop } from '../runtime/highland';
+import { asukayamaPark } from '../runtime/asukayama';
 import type { SceneBounds } from './scene-movement';
 
 /** Illustrative local coordinates, shared by the walkable scene and its small navigation map. */
-export const sceneBounds: SceneBounds = { minX: -360, maxX: 260, minZ: -220, maxZ: 260 };
+export const sceneBounds: SceneBounds = { minX: -360, maxX: highland.maxX + 1, minZ: -220, maxZ: 260 };
 export interface SceneArea extends SceneBounds { id: string; label: string }
 export interface SceneLandmark { id: string; label: string; x: number; z: number }
 export interface ScenePath { x: number; z: number; width: number; depth: number; kind: 'road' | 'walk' }
@@ -31,6 +33,8 @@ export const sceneAreas: SceneArea[] = [
   { id: 'grand-commercial', label: '新宿·大型商业娱乐区', minX: -250, maxX: -120, minZ: -210, maxZ: -100 },
   { id: 'takao-mountain', label: '高尾山自然风景区', minX: -95, maxX: 95, minZ: -245, maxZ: -125 },
   { id: 'circle', label: 'CiRCLE 现场屋', minX: -350, maxX: -268, minZ: -200, maxZ: -110 },
+  { ...highland, label: highland.name },
+  { ...asukayamaPark, label: '飞鸟山公园·王子站侧入口' },
   { id: 'campus', label: '高田·西早稻田校园', minX: -70, maxX: 70, minZ: -60, maxZ: 27 },
   { id: 'neighborhood', label: '高田校园南门街区', minX: -70, maxX: 70, minZ: 27, maxZ: 90 },
   { id: 'city-roads', label: '城市连接道路', ...sceneBounds },
@@ -58,6 +62,8 @@ export const sceneLandmarks: SceneLandmark[] = [
   { id: 'city-park', label: '神田川绿道站', x: 180, z: -150 },
   { id: 'grand-commercial', label: '新宿大型商业区接驳站', x: -180, z: -150 },
   { id: 'takao-mountain', label: '高尾山接驳站', x: 0, z: -175 },
+  { ...highland, ...highlandStop, label: highland.name },
+  { ...asukayamaPark, label: '飞鸟山公园·王子站侧入口' },
   { id: 'circle', label: 'CiRCLE', x: -310, z: -155 },
 ];
 

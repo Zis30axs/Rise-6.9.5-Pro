@@ -1,7 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
-import { affinityRelation } from './affinity-tiers';
+import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import { allResidentCast, residentPresence } from './npc-cast';
-import { housingForPerson, residentOutfit } from './majo-housing';
+import { housingForInterior, housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
 import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
@@ -48,6 +48,8 @@ export const sceneEnvironments: Readonly<Record<string, string>> = {
   downtown: '目白／目白台的豪华住宅大道与高密度高层公寓街区；可见目白台接驳站、喷泉广场、林立的豪华高层住宅塔楼、长崎家高层公寓，以及丰川家、王冢家与二阶堂家的外部宅邸。',
   'city-park': '神田川沿岸的室外绿地与步道；可见树木、休憩区域和神田川绿道站。',
   'grand-commercial': '新宿大型商业娱乐区的室外步行广场；可见大型商厦、霓虹招牌、写字楼商务中心、Live House 入口与 KTV 娱乐城，尚未进入店内。',
+  highland: '坡脚巴士站对着一排树篱，石阶从低层民宅之间穿过，通往若叶家的院门。',
+  'asukayama-park': '王子站一侧的飞鸟山公园入口。沿树荫下的步道向前，石阶下方是喷泉广场，路灯沿着石板路排列。',
   'takao-mountain': '高尾山风景区的室外山麓山道与接驳广场；可见参天杉木、登山步道起点、观光缆车站、极乐汤温泉入口与远处重叠的苍翠山峰。',
   circle: 'CiRCLE 现场屋门前的步行广场；可见一楼咖啡厅的落地窗、侧翼练团室入口，以及通往新宿大型商业区的人行道。店员月岛麻里奈在咖啡厅里接待，尚未进入店内。',
   'city-roads': '连接校园与远处住宅区、商业区、公园的室外道路；可见路面、人行道与过往车辆。',
@@ -201,7 +203,6 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
-const RESIDENTIAL_INTERIOR_HOMES = new Set(['amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home', 'soyo-house']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
@@ -221,7 +222,9 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       contactId: null, isMain: false,
     }] : [];
   }
-  if (roomId === 'livehouse') {
+  // Keep the former workplace as a valid historical encounter when reading old saves.
+  // Current visibility is filtered by residentPresence below.
+  if (roomId === 'ring-desk' || roomId === 'livehouse') {
     return ['bang-taki', 'bang-marina'].flatMap(id => {
       const person = allResidentCast.find(row => row.id === id);
       if (!person) return [];
@@ -243,10 +246,14 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       portraitId: characterForPerson(marina.id), contactId: null, isMain: false,
     }] : [];
   }
-  if (RESIDENTIAL_INTERIOR_HOMES.has(roomId)) {
-    return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
+  const housing = housingForInterior(roomId);
+  if (housing || roomId === 'clinic') {
+    const occupants = allResidentCast.filter(resident => roomId === 'clinic'
+      ? resident.id === 'fengjin' : housingForPerson(resident.id)?.interiorId === roomId);
+    const identity = roomId === 'clinic' ? '医师' : roomId === 'toyokawa-executive-tower' ? '董事长' : '住户';
+    return occupants.map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
-      identity: '住户', tags: ['常驻人物', '住户'],
+      identity, tags: ['常驻人物', identity],
       description: resident.publicProfile, x: -1.5 + idx * 1.2, z: 0.8, locationId: roomId,
       color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
     }));
@@ -414,7 +421,7 @@ export const SCENE_POPULATION_INSTRUCTIONS = '【现场人物】scene.nearbyPeop
 
 function relationshipOf(person: { id: string; contactId: string | null }, contacts: readonly CharacterContact[]) {
   const contact = contacts.find(row => row.id === person.contactId || row.id === person.id || row.sourcePersonId === person.id);
-  return contact ? { relationship: affinityRelation(contact.affinity, contact.relationNote) } : {};
+  return contact ? { relationship: affinityRelation(contact.affinity, contactRelationNote(contact)) } : {};
 }
 export function getSceneContext(scene: ScenePresence | null, interior: InteriorPresence | null = null, contacts: readonly CharacterContact[] = [], clock?: {hour: number; minute: number; day?: number}, hiddenPersonIds: readonly string[] = [], population?: readonly ScenePerson[]) {
   if (interior) {
@@ -431,11 +438,11 @@ export function getSceneContext(scene: ScenePresence | null, interior: InteriorP
     }));
     const encounter = nearbyPeople.find(person => person.id === scene?.encounterId && person.canTalk) ?? null;
     return {
-      areaId: room.id, label: room.label, outdoors: false, skyVisible: false,
+      areaId: room.id, label: room.label, outdoors: room.outdoors === true, skyVisible: room.outdoors === true,
       position: { x: interior.x, z: interior.z, yaw: interior.yaw, unit: '示意米' },
       environment: room.description,
       nearbyLandmarks: [], nearbyPeople, encounter,
-      exit: { parentLocationId: room.parentLocationId, description: '南侧房门返回进入前的室外位置；尚未执行离开。' },
+      exit: { parentLocationId: room.parentLocationId, description: room.outdoors !== undefined ? '沿来路返回接驳地点。' : '南侧房门返回进入前的室外位置；尚未执行离开。' },
       lastInteraction: last ? { id: last.id, label: last.label, result: last.result, alreadyCommitted: true, minutes: last.minutes, energyDelta: last.energyDelta } : null,
     };
   }

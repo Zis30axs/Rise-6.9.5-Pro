@@ -6,7 +6,7 @@ import { parseNovelDialogue } from '../frontend/novel-dialogue';
 import { agendaTargetResident, residentSocialAgendaPresence } from './social-agenda';
 import { isCharacterPortraitId } from './characters';
 import { MAJO_GROUP_ID, MAJO_GROUP_NAME, residentById, residentCast, residentGroupById, residentGroupForNpc, residentPresence, WATANARE_GROUP_ID, WATANARE_GROUP_NAME, WATANARE_QUINTET_IDS } from './npc-cast';
-import { affinityRelation } from './affinity-tiers';
+import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import { mutsumiBalanceStatus, mutsumiBalanceValue } from './mutsumi-balance';
 import { MUTSUMI_OWNER_ID } from './strategy';
 
@@ -407,7 +407,7 @@ export function npcPhoneReplyContext(s: WorldState, messageId: string) {
   return {
     task: 'reply_to_npc_sms', actor: { id: actorId, name: resident?.name ?? contact?.name ?? meeting?.name,
       worldbook: resident?.profile ?? contact?.summary ?? meeting?.summary, publicProfile: resident?.publicProfile ?? null,
-      bond: contact ? affinityRelation(contact.affinity, contact.relationNote) : null,
+      bond: contact ? affinityRelation(contact.affinity, contactRelationNote(contact)) : null,
       ...(mutsumiBalance ? {
         mutsumiBalance: {
           value: mutsumiBalance.value,

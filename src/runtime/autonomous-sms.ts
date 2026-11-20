@@ -3,7 +3,7 @@ import { PROTAGONISTS, PROTAGONIST_PERSON_IDS, protagonistForPerson, isProtagoni
 import { activeProtagonist, enableProtagonists, gameMinute, personState, protagonistNames } from './protagonist-world';
 import { npcIdForContact } from './npc-phone';
 import { residentById, residentPresence } from './npc-cast';
-import { affinityRelation } from './affinity-tiers';
+import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import { backgroundLifeSummary } from './background-life';
 import { gameCalendar } from './game-calendar';
 import bandoriProfiles from '../worldbook/bang-dream-canon.json';
@@ -206,7 +206,7 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       actor: { id: senderId, name: protagonistNames[senderId], kind: 'protagonist',
         personality: profile?.profile ?? bandoriProfiles.entries.find(row => row.name === protagonistNames[senderId])?.content ?? null,
         relationship: towardRecipient?.affinity ?? null,
-        bond: towardRecipient ? affinityRelation(towardRecipient.affinity, towardRecipient.relationNote) : null,
+        bond: towardRecipient ? affinityRelation(towardRecipient.affinity, contactRelationNote(towardRecipient)) : null,
         ownLocation: person.locationId, ownCalendar: p.devices[senderId].calendar.slice(-8),
         ownSchedule: person.schedule.filter(row => !row.done).slice(-8),
         pendingActivity: p.backgroundLife?.people[senderId].pending ?? null,
@@ -228,7 +228,7 @@ export function autonomousSmsContext(state: WorldState, id: string) {
       personality: (resident?.profile ?? contact.summary).slice(0, 8000),
       publicProfile: resident?.publicProfile ?? null,
       relationshipAffinity: contact.affinity,
-      bond: affinityRelation(contact.affinity, contact.relationNote),
+      bond: affinityRelation(contact.affinity, contactRelationNote(contact)),
       activity: presence?.activity ?? '当前行程未公开',
       available: presence?.available ?? null,
       locationId: presence?.locationId ?? null },

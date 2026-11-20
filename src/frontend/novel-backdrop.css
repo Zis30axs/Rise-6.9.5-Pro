@@ -34,3 +34,10 @@
 .novel-backdrop[data-background-source='paris-model'][data-background-phase='night'] .novel-backdrop__image {
   filter: saturate(.55) brightness(.54);
 }
+
+@media (orientation: portrait) {
+  /* Keep the stone fountain in frame when the landscape artwork fills a phone. */
+  .novel-backdrop:is([data-novel-background='asukayama'], [data-novel-background='asukayama-park']) .novel-backdrop__image {
+    object-position: 35% center;
+  }
+}

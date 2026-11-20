@@ -91,7 +91,15 @@ describe('identity-card module', () => {
     const updatedBond = getProtagonistBondForCard(WAKABA_MUTSUMI_CARD, 'soyo', withMutsumiContact);
     expect(updatedBond.isRegisteredContact).toBe(true);
     expect(updatedBond.affinity).toBe(82);
-    expect(updatedBond.statusTag).toBe('挚重 · 82');
+    expect(updatedBond.statusTag).toBe('挚友 · 82');
+    state.contacts = withMutsumiContact;
+    for (const [affinity, label] of [[59, '普通朋友'], [60, '朋友'], [79, '知心'], [96, '长久羁绊']] as const) {
+      withMutsumiContact[withMutsumiContact.length - 1]!.affinity = affinity;
+      const bond = getProtagonistBondForCard(WAKABA_MUTSUMI_CARD, 'soyo', state.contacts);
+      const node = buildIdentityRelationshipMesh(WAKABA_MUTSUMI_CARD, state, 'soyo').nodes.find(node => node.isCurrentProtagonist);
+      expect(bond.statusTag).toBe(`${label} · ${affinity}`);
+      expect(node).toMatchObject({ affinity, statusTag: bond.statusTag });
+    }
   });
 
   it('builds a visual relationship mesh with center node, faction satellites, and inter-character cross-links', () => {

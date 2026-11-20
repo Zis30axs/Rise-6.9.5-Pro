@@ -1,3 +1,4 @@
+import { asukayamaPark } from './asukayama';
 import type { PlayerState, WorldState } from '../frontend/types';
 import { advancePlayerNutrition, getServiceTakeawayItem, INVENTORY_ITEM_LIMIT, MAX_PURCHASE_QUANTITY, PACKAGING_FEE } from './convenience-store';
 import { adjustEnergy, energyDifference, energyUnits } from './energy';
@@ -70,6 +71,8 @@ export const venues: readonly Venue[] = [
   { locationId: 'california-market', label: '湾区二手交易市场', hoursLabel: '10:00–20:00', opens: 10 * 60, closes: 20 * 60, outdoor: false, description: '本地收藏品市场，欢迎携带 Pro200 收藏券前来交易。' },
   { locationId: 'construction-site', label: '建设工地', hoursLabel: '07:00–18:00', opens: 7 * 60, closes: 18 * 60, outdoor: true, description: '围挡内的建设工地正在招临时工。现场备有安全帽与工作手套，可以接短班清理场地，也可以接长班搬运建材。收工后结算工资。' },
   { locationId: 'sports', label: '运动场', hoursLabel: '06:00–22:00', opens: 6 * 60, closes: 22 * 60, outdoor: true, description: '在室外跑道慢跑，或在场边做拉伸；运动会消耗精力并改善游戏中的身心状态。' },
+  { locationId: asukayamaPark.id, label: '飞鸟山公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: asukayamaPark.description },
+  { locationId: 'asukayama', label: '飞鸟山公园·喷泉广场', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '广场边有长椅，石阶与园内的步道相连。' },
   { locationId: 'pocket-park', label: '口袋公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在长椅上小憩，或沿着公园步道散步。' },
   { locationId: 'city-park', label: '城市公园', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '可以在树荫下的长椅小憩，也可以沿公园步道散步。' },
   { locationId: 'promenade', label: '林荫步道', hoursLabel: '全天开放', opens: null, closes: null, outdoor: true, description: '沿现有林荫步道散步，花一点时间放松心情。' },
@@ -176,8 +179,8 @@ const authoredLocationServices: readonly LocationService[] = Object.freeze([
   },
   { id: 'jog', locationIds: ['sports'], label: '慢跑', description: '在室外跑道慢跑一段时间，结束后在场边调整呼吸。', minutes: 20, price: 0, effects: effects({ energy: -10, morale: 8, health: 2, stress: -8 }) },
   { id: 'stretch', locationIds: ['sports'], label: '拉伸', description: '在运动场边做一组轻量拉伸。', minutes: 10, price: 0, effects: effects({ energy: -2, morale: 4, health: 1, stress: -4 }) },
-  { id: 'park-rest', locationIds: ['pocket-park', 'city-park'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
-  { id: 'take-stroll', locationIds: ['pocket-park', 'city-park', 'promenade'], label: '沿步道散步', description: '沿所在区域的步道慢慢走一段，活动结束后仍留在当前地点。', minutes: 20, price: 0, effects: effects({ energy: -3, morale: 7, health: 1, stress: -6 }) },
+  { id: 'park-rest', locationIds: ['pocket-park', 'city-park', 'asukayama'], label: '长椅小憩', description: '在公园长椅坐下休息，活动结束后仍留在公园。', minutes: 20, price: 0, effects: effects({ energy: 6, morale: 8, stress: -8 }) },
+  { id: 'take-stroll', locationIds: ['pocket-park', 'city-park', 'promenade', asukayamaPark.id, 'asukayama'], label: '沿步道散步', description: '沿所在区域的步道慢慢走一段，活动结束后仍留在当前地点。', minutes: 20, price: 0, effects: effects({ energy: -3, morale: 7, health: 1, stress: -6 }) },
   { id: 'clinic-treatment', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '诊所全科问诊', description: '到街区全科诊所向风堇医生挂号问诊，进行听诊体检与用药调理。', minutes: 30, price: 1800, effects: effects({ energy: 15, health: 35, stress: -15, satiety: 5, foodEnergy: 100 }) },
   { id: 'clinic-counseling', locationIds: ['commercial', 'grand-commercial', 'pocket-park', 'clinic'], label: '风堇的谈心调理', description: '在诊所安静温馨的茶歇角与风堇医生轻声交谈。感受她如母亲般温暖包容的关切与开导，清空一切心理重压并重新充盈充沛精力。（每周限一次）', minutes: 40, price: 0, effects: effects({ energy: 100, morale: 25, health: 15, stress: -100, satiety: 5, foodEnergy: 100 }) },
   { id: 'campus-infirmary', locationIds: ['sports', 'promenade'], label: '校医室问诊检查', description: '到校园保健室测量体温与血压，领取基础常用药品并安静休息。', minutes: 20, price: 450, effects: effects({ energy: 10, health: 25, stress: -10 }) },
@@ -231,7 +234,7 @@ export function courtObservationServiceForMinutes(minutes: number): LocationServ
 
 export function getLocationServices(state: Pick<WorldState, 'locationId' | 'interior'> & Partial<Pick<WorldState, 'academics'>>): readonly LocationService[] {
   const roomId = state.interior?.roomId;
-  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && roomId !== 'aquarium' && !isCircleVenueRoom(roomId)) return [];
+  if (roomId && roomId !== MARGO_CAFE_ROOM_ID && roomId !== 'court-hearing' && roomId !== 'livehouse' && roomId !== 'aquarium' && roomId !== 'asukayama' && !isCircleVenueRoom(roomId)) return [];
   return locationServiceCatalog.filter(service => service.locationIds.includes(cafeServiceLocation(state.locationId))
     && (service.id !== CONSTRUCTION_BACKEND_JOB_ID || state.academics?.majorId === 'computer-science'));
 }

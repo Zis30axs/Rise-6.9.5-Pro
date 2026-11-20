@@ -1,11 +1,13 @@
-import { campusInteriors } from '../runtime/campus-interiors';
+import { highland } from '../runtime/highland';
+import { asukayamaPark } from '../runtime/asukayama';
+import { campusInteriors, getCampusInterior } from '../runtime/campus-interiors';
 import { mapLocations, novelDestinations } from '../runtime/model';
 import { sceneAreas, sceneBounds } from './scene-layout';
 import { isParisLocation } from '../runtime/paris';
 import { isCaliforniaLocalLocation } from '../runtime/california';
 import { airportDistrict, airportLegacyBounds, airportLegacyCenter } from './airport-sandbox-layout';
 
-export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial', 'takao-mountain', 'circle', 'haneda-airport'] as const;
+export const MAP_DISTRICT_IDS = ['campus', 'home', 'commercial', 'downtown', 'city-park', 'grand-commercial', 'takao-mountain', 'circle', 'haneda-airport', 'asukayama-park', 'highland'] as const;
 export type MapDistrictId = typeof MAP_DISTRICT_IDS[number];
 export type LocalMapScope = 'city' | MapDistrictId;
 export const campusDetailBounds = { minX: -74, maxX: 74, minZ: -64, maxZ: 94 };
@@ -16,10 +18,11 @@ export const mapDistricts = [
   { id: 'commercial', name: '池袋／东池袋', shortName: '池袋商业区', description: '商业街、居民住处与池袋接驳站。', x: 180, z: 150 },
   { id: 'downtown', name: '目白／目白台', shortName: '目白台豪华住宅区', description: '高密度豪华住宅塔楼群、长崎家高层公寓、丰川家、王冢家、二阶堂家与目白台接驳站。', x: -20, z: 185 },
   { id: 'city-park', name: '神田川沿岸绿道', shortName: '神田川沿岸', description: '河岸绿道、公园、住处与接驳站。', x: 180, z: -150 },
-  { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House、KTV 娱乐中心与商务写字楼的繁华都会沙盘。', x: -180, z: -150 },
+  { id: 'grand-commercial', name: '新宿／大型商业区', shortName: '大型商业区', description: '汇集大型商场、Live House、KTV 娱乐中心与丰川集团总裁楼的新宿街区。', x: -180, z: -150 },
   { id: 'takao-mountain', name: '高尾山自然风景区', shortName: '高尾山风景区', description: '青翠秀美的近郊名山沙盘，包含登山步道、观景展望台、山麓温泉与观光索道。', x: 0, z: -175 },
   { id: 'circle', name: 'CiRCLE 现场屋', shortName: 'CiRCLE', description: '与新宿大型商业区步行相连的现场演出屋，一楼咖啡厅，侧翼练团室。', x: -310, z: -155 },
   { ...airportDistrict, ...airportLegacyCenter },
+  asukayamaPark, highland,
 ] as const;
 
 export function isMapDistrict(value: string): value is MapDistrictId {
@@ -28,7 +31,7 @@ export function isMapDistrict(value: string): value is MapDistrictId {
 
 /** Indoor poses are room-local. District ownership always follows the parent. */
 export function locationDistrict(locationId: string): MapDistrictId {
-  const outdoor = campusInteriors.find(room => room.id === locationId)?.parentLocationId ?? locationId;
+  const outdoor = getCampusInterior(locationId)?.parentLocationId ?? locationId;
   return isMapDistrict(outdoor) ? outdoor : 'campus';
 }
 

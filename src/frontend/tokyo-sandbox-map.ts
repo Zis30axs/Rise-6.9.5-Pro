@@ -1,6 +1,8 @@
 /** Display-only bridge between existing saved world positions and the new Tokyo GLB.
  * Do not write these scenic coordinates into MVU, transit, schedules or save data.
  */
+import { highland, highlandStop, wakabaEntrance } from '../runtime/highland';
+import { asukayamaPark } from '../runtime/asukayama';
 import sandboxData from '../../assets/models/unread-city-tokyo-sandbox-data.json';
 import { circleSandboxOverlay } from './circle-sandbox-pack';
 import { airportDistrict, airportLandmark } from './airport-sandbox-layout';
@@ -24,7 +26,7 @@ function withCirclePack<T extends { id: string }>(rows: readonly T[], extra: rea
   const ids = new Set(extra.map(row => row.id));
   return [...rows.filter(row => !ids.has(row.id)), ...extra];
 }
-export const tokyoDistricts = withCirclePack(sandboxData.districts, [...circleSandboxOverlay.districts, airportDistrict]);
+export const tokyoDistricts = withCirclePack(sandboxData.districts, [...circleSandboxOverlay.districts, airportDistrict, asukayamaPark, highland]);
 export const tokyoLandmarks = withCirclePack(sandboxData.landmarks, [...circleSandboxOverlay.landmarks, airportLandmark]);
 export const tokyoCityBounds = {
   minX: Math.min(...tokyoDistricts.map(d => d.minX)),
@@ -83,6 +85,8 @@ function sameScenicPoint(a: TokyoPoint, b: TokyoPoint) {
  */
 export function tokyoLocationPosition(locationId: string, hint?: MapDistrictId): TokyoPoint | undefined {
   // The court's indoor and outdoor map pins both refer to the new building.
+  if (locationId === highland.id) return highlandStop;
+  if (locationId === 'residential-mutsumi') return { x: wakabaEntrance.x, z: wakabaEntrance.z };
   if (locationId === 'court-hearing') locationId = 'courthouse';
   const old = mapLocationPoint(locationId);
   const landmark = landmarkById.get(locationId);

@@ -6,7 +6,7 @@ import { activeProtagonist, gameMinute, otherProtagonist, personState, protagoni
 import { gameCalendar } from './game-calendar';
 import { selectPromptJournal, selectPromptStory } from './prompt-pruning';
 import { backgroundLifeSummary } from './background-life';
-import { affinityRelation } from './affinity-tiers';
+import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import coreWorldbook from '../worldbook/core.json';
 import sakikoWorldbook from '../worldbook/sakiko-downtown.json';
 
@@ -54,7 +54,7 @@ export function phoneReplyContext(state: WorldState, messageId: string) {
       profile: actorProfile?.summary ?? null },
     sender: { id: sender, name: protagonistNames[sender],
       profile: peer?.summary ?? null,
-      bond: peer ? affinityRelation(peer.affinity, peer.relationNote) : null },
+      bond: peer ? affinityRelation(peer.affinity, contactRelationNote(peer)) : null },
     message: source,
     invitation: p!.socialInvitations?.find(row => row.messageId === messageId && row.status === 'pending') ?? null,
     inboxIsVisibleToRecipient: true,

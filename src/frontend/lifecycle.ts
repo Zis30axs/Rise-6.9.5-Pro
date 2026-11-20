@@ -20,7 +20,7 @@ import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
 import { canCheckInteractionEvent, recordInteractionEventCheck } from '../runtime/interaction-event-rate';
 import { stageAutonomousSms, applyAutonomousSms } from '../runtime/autonomous-sms';
-import { affinityContactLine } from '../runtime/affinity-tiers';
+import { contactRelationNote, affinityContactLine } from '../runtime/affinity-tiers';
 import { dismissMargoCafeOffer, getMargoCafeOffer, stageMargoCafeOffer, type MargoCafeOffer } from '../runtime/margo-cafe';
 
 export interface ShellHandle {
@@ -408,7 +408,7 @@ export function mountShell(
           const next = reduceState(snapshot(), { ...draft, id, type: 'save_contact' });
           bridge.save(next); model.state = next; model.notice = '';
           const contact = next.contacts.find(contact => contact.id === id)!;
-          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contact.relationNote)}`,
+          return { id: contact.id, name: contact.name, description: `${contact.tag}\n${contact.summary}\n${contact.status}\n${affinityContactLine(contact.affinity, contactRelationNote(contact))}`,
             summary: contact.summary, portraitId: contact.portraitId, sourcePersonId: contact.sourcePersonId, isMain: contact.isMain };
         },
         async generateIntroduction(raw) {

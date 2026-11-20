@@ -8,6 +8,13 @@ import { protagonistSceneId } from '../src/runtime/world-presence';
 import book from '../src/worldbook/affinity-personas.json';
 
 describe('filled affinity personas', () => {
+  it('ships all 714 detailed profiles, each with four authored sections', () => {
+    expect(book.entries).toHaveLength(714);
+    for (const entry of book.entries) {
+      expect(entry.content.match(/【[^】]+】/g), entry.name).toEqual(['【态度】', '【口癖】', '【互动】', '【边界】']);
+    }
+  });
+
   it('selects the authored entry at every tier boundary for all four viewpoints', () => {
     for (const viewpoint of PROTAGONISTS) {
       const initial = enableProtagonists(createInitialState());
@@ -27,7 +34,7 @@ describe('filled affinity personas', () => {
             expect(prompt, entry.name).toBe('');
           } else {
             expect(prompt, entry.name).toContain(`${entry.name}（${characterId}）\n${entry.content}`);
-            expect(prompt.match(/（[^（）]+）\n【称呼】/g), entry.name).toHaveLength(1);
+            expect(prompt.match(/（[^（）]+）\n【态度】/g), entry.name).toHaveLength(1);
           }
         }
       }
@@ -37,7 +44,7 @@ describe('filled affinity personas', () => {
   it('uses real text when affinity rises and falls and leaves other people out', () => {
     const state = createInitialState();
     const anon = state.contacts.find(contact => contact.id === 'bang-anon')!;
-    for (const affinity of [49, 50, 69, 70, 89, 90, 89, 69, 49]) {
+    for (const affinity of [49, 50, 59, 60, 69, 70, 79, 80, 89, 90, 95, 96, 100, 59, 49]) {
       anon.affinity = affinity;
       const tier = AFFINITY_TIERS.find(candidate => affinity >= candidate.min && affinity <= candidate.max)!;
       const selected = book.entries.find(entry => entry.extensions.affinityPersona.characterId === 'bang-anon'
@@ -48,7 +55,9 @@ describe('filled affinity personas', () => {
         expect(prompt, other.name).not.toContain(other.content);
       }
     }
-    expect(affinityPersonaPrompt(state, null, '继续。')).toBe('');
+    const onlyOffer = affinityPersonaPrompt(state, null, '继续。');
+    expect(onlyOffer).toContain('千早爱音（bang-anon） 合拍 → 普通朋友');
+    expect(onlyOffer).not.toContain('本轮好感分阶段人设');
     expect(affinityPersonaPrompt(state, null, '给爱音打电话。', 'phone_reply')).toBe('');
   });
 });

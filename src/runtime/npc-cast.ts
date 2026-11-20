@@ -2,6 +2,7 @@ import lore from '../worldbook/majo-residents.json' with { type: 'json' };
 import watanareLore from '../worldbook/watanare-residents.json' with { type: 'json' };
 import bandLore from '../worldbook/bang-dream-canon.json' with { type: 'json' };
 import toyokawaBackgroundLore from '../worldbook/background-characters.json' with { type: 'json' };
+import clinicLore from '../worldbook/fengjin-clinic.json' with { type: 'json' };
 import circleLore from '../worldbook/circle-livehouse.json' with { type: 'json' };
 import { housingForPerson, residentOutfit } from './majo-housing';
 import { cafeVisitForPerson, isMargoCafeOpen, MARGO_CAFE_OWNER_ID, MARGO_CAFE_ROOM_ID } from './margo-cafe-venue';
@@ -34,17 +35,10 @@ export const watanareResidentCast = mapWorldbookResidents(watanareLore.entries a
 export const bangResidentCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId?.startsWith('bang-')) as typeof lore.entries);
 export const bangFamilyCast = mapWorldbookResidents(bandLore.entries.filter(entry => entry.extensions?.personId && !entry.extensions.personId.startsWith('bang-')) as typeof lore.entries);
 export const circleStaffCast = mapWorldbookResidents(circleLore.entries.filter(entry => entry.extensions?.personId) as typeof lore.entries);
-/** Only Mizuho is an active background-family NPC; the other two stay lore-only.
- * Her home is deliberately unknown rather than misidentifying the Toyokawa mansion. */
-const mizuhoProfile = toyokawaBackgroundLore.entries.find(entry => entry.extensions.personId === 'toyokawa-mizuho');
-export const toyokawaMizuhoCast = mizuhoProfile ? [{
-  id: mizuhoProfile.extensions.personId,
-  name: mizuhoProfile.name, aliases: mizuhoProfile.keys,
-  profile: mizuhoProfile.content, publicProfile: mizuhoProfile.extensions.publicProfile,
-  anchor: 'downtown-fountain', home: '',
-  majorId: null, careerId: null, qualification: null,
-}] : [];
-export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast, ...toyokawaMizuhoCast, ...circleStaffCast]);
+const toyokawaResidents = mapWorldbookResidents(toyokawaBackgroundLore.entries.filter(entry => entry.extensions.home) as typeof lore.entries);
+export const toyokawaMizuhoCast = toyokawaResidents.filter(person => person.id === 'toyokawa-mizuho');
+const clinicResidents = mapWorldbookResidents(clinicLore.entries as typeof lore.entries);
+export const allResidentCast = Object.freeze([...residentCast, ...watanareResidentCast, ...bangResidentCast, ...bangFamilyCast, ...toyokawaResidents, ...circleStaffCast, ...clinicResidents]);
 
 export const MAJO_GROUP_ID = 'majo-circle';
 export const MAJO_GROUP_NAME = '大家的日常';
@@ -224,18 +218,28 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
   // Sherry's legal track is fixed. During office hours she is available to
   // investigate cases with Emma, rather than disappearing into a generic NPC shift.
   // Canon places Taki's job at the live house. The existing interior is that workplace.
+  if (id === 'fengjin' || id === 'toyokawa-sadaharu') {
+    const doctor = id === 'fengjin';
+    const onDuty = doctor ? minute >= 8 * 60 && minute < 22 * 60 : minute >= 9 * 60 && minute < 18 * 60;
+    return {
+      anchorId: null, locationId: doctor && onDuty ? 'clinic' : person.home,
+      activity: onDuty ? (doctor ? '在门诊坐诊' : '在总裁楼办公、接待来访者') : (doctor ? '在诊所后间休息' : '在顶层的私人套间休息'),
+      available: onDuty || (doctor && minute >= 22 * 60 && minute < 23 * 60),
+      housing: housing?.id ?? null, district: housing?.district ?? null, outfit: residentOutfit(id),
+    };
+  }
   if (id === 'toyokawa-mizuho') {
-    // Low-frequency visits in public; no invented residence or guaranteed encounter.
+    // Keep her existing public visits; her private time is available by appointment.
     const visitDay = (clock.day ?? 1) % 7 === 2 || (clock.day ?? 1) % 7 === 5;
     const visiting = visitDay && minute >= 14 * 60 && minute < 17 * 60;
     return {
       anchorId: visiting ? 'downtown-fountain' : null,
-      locationId: visiting ? 'downtown' : '',
+      locationId: visiting ? 'downtown' : person.home,
       activity: visiting
         ? '在目白台公共街区散步、办事；若祥子愿意，她想当面问候'
         : '私人行程未公开；可能通过短信关心祥子',
       available: visiting,
-      housing: null, district: visiting ? 'traditional-downtown' : null,
+      housing: housing?.id ?? null, district: housing?.district ?? null,
       outfit: residentOutfit(id),
     };
   }
@@ -274,9 +278,9 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
     const assistRing = !rest && day % 7 === 4 && minute >= 15 * 60 && minute < 18 * 60;
     const atCircle = !rest && !assistRing && minute >= CIRCLE_OPENS && minute < CIRCLE_CLOSES;
     if (assistRing) return {
-      anchorId: null, locationId: 'livehouse',
+      anchorId: null, locationId: 'ring-desk',
       activity: '到 RiNG 协助处理预约和店务', available: true,
-      housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+      housing: housing?.id ?? null, district: 'commercial', outfit: residentOutfit(id),
     };
     if (atCircle) return {
       anchorId: null, locationId: CIRCLE_CAFE_ROOM_ID,
@@ -290,9 +294,9 @@ export function residentPresence(id: string, clock: { hour: number; minute: numb
     };
   }
   if (id === 'bang-taki' && minute >= 16 * 60 && minute < 22 * 60) return {
-    anchorId: null, locationId: 'livehouse',
-    activity: '在 Live House 打工并整理鼓组', available: true,
-    housing: housing?.id ?? null, district: 'grand-commercial', outfit: residentOutfit(id),
+    anchorId: null, locationId: 'ring-desk',
+    activity: '在池袋 RiNG 打工并整理鼓组', available: true,
+    housing: housing?.id ?? null, district: 'commercial', outfit: residentOutfit(id),
   };
   if (id === 'majo-sherry' && minute >= 9 * 60 && minute < 18 * 60) return {
     anchorId: null, locationId: 'legal-office',

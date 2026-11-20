@@ -22,15 +22,15 @@ describe('丰川瑞穗存活世界线', () => {
     expect(arcs.entries.find(e => e.name.includes('CRYCHIC 的盛夏'))!.content).toContain('没有跟随');
   });
 
-  it('registers a real NPC without inventing home or automatically visiting a private residence', () => {
+  it('registers a real NPC at her own apartment and preserves her public visits', () => {
     const mother = residentById('toyokawa-mizuho')!;
     expect(mother).toBeTruthy();
-    expect(mother.home).toBe('');
+    expect(mother.home).toBe('mizuho-apartment');
     const atPublicVisit = residentPresence(mother.id, { day: 2, hour: 15, minute: 0 })!;
     expect(atPublicVisit).toMatchObject({ anchorId: 'downtown-fountain', locationId: 'downtown', available: true });
-    expect(atPublicVisit.housing).toBeNull();
+    expect(atPublicVisit.housing).toBe(mother.home);
     const away = residentPresence(mother.id, { day: 2, hour: 20, minute: 0 })!;
-    expect(away).toMatchObject({ anchorId: null, available: false, locationId: '' });
+    expect(away).toMatchObject({ anchorId: null, available: false, locationId: mother.home });
   });
 
   it('provides the already-known family contact only in new Sakiko saves', () => {

@@ -4,9 +4,11 @@ import type { InjectionKey } from 'vue';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TOKYO_SANDBOX_MODEL_SHA256 } from './tokyo-sandbox-map';
 import { readLocalAssetBytes } from './local-asset-buffer';
+import toyokawaTower from '../../assets/models/toyokawa-executive-tower.glb?inline';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 import { disposeThreeTree } from './dispose-three-tree';
+import { createHighlandModel } from './highland-geometry';
 import { attachAirportGeometry } from './airport-sandbox-geometry';
 import { createCircleSandboxGeometry } from './circle-sandbox-geometry';
 
@@ -163,6 +165,7 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   optimizeGlbScene(parsed);
   // The hash-pinned Tokyo GLB's base slab ends at y = -0.05.
   parsed.add(createCircleSandboxGeometry(circleSandboxOverlay, -.05));
+  parsed.add(createHighlandModel());
   attachAirportGeometry(parsed);
   return parsed;
 }
@@ -903,6 +906,7 @@ function createGeometricPreview(): THREE.Group {
   plumeR.position.set(0.95, -0.1, -10.3);
   jet.add(fuselage, wings, plumeL, plumeR);
   root.add(jet);
+  root.add(createHighlandModel());
   attachAirportGeometry(root);
   return root;
 }
@@ -1337,8 +1341,20 @@ async function load() {
       variant.value = 'procedural';
     }
     if (request !== epoch || !props.active) { disposeModel(pending); return; }
-
-    if (!canvas.value) { disposeModel(pending); return; }
+    // The Lite map still opens before the player imports the optional art pack.
+    let tower: THREE.Object3D;
+    try {
+      const bytes = await readLocalAssetBytes(toyokawaTower, 1_000_000, 'Invalid Toyokawa tower');
+      tower = (await new GLTFLoader().parseAsync(bytes.buffer, '')).scene;
+    } catch {
+      const shell = new THREE.BoxGeometry(15, 29, 11);
+      shell.translate(0, 14.5, 0);
+      tower = new THREE.Mesh(shell, new THREE.MeshStandardMaterial({ color: 0x617d85 }));
+    }
+    const door = tokyoLocationPosition('toyokawa-executive-tower', 'grand-commercial')!;
+    tower.position.set(door.x, 0, door.z - 8);
+    pending.add(tower);
+    if (request !== epoch || !props.active || !canvas.value) { disposeModel(pending); return; }
     model = pending; pending = undefined;
     scene = new THREE.Scene();
     scene.add(model);

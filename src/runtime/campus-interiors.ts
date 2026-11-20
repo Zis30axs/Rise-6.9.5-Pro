@@ -1,3 +1,7 @@
+import { allHousings } from './majo-housing';
+import { wakabaEntrance } from './highland';
+import venues from './affinity-venues.json' with { type: 'json' };
+import { sceneLandmarks } from '../frontend/scene-layout';
 import type { SceneMovementWorld } from '../frontend/scene-movement';
 import type { InteriorRestRecord, InteriorStudyRecord, WorldState } from '../frontend/types';
 import type { ProtagonistId } from './dual-protagonists';
@@ -31,6 +35,8 @@ export interface StudyDurationOption {
   maxMinutes: number;
 }
 export interface CampusInterior {
+  /** A contained novel scene can be open to the sky. */
+  outdoors?: boolean;
   id: string; label: string; description: string; parentLocationId: string;
   entrance: { x: number; z: number; yaw: number };
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -70,8 +76,39 @@ export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, '
   return stress >= MLM_WORK_STRESS_LIMIT ? `压力过高（${stress}/100），先休息到 ${MLM_WORK_STRESS_LIMIT} 以下再工作。` : null;
 }
 
+const residentialRooms: CampusInterior[] = allHousings.flatMap(home => {
+  if (!home.visit) return [];
+  const { x, z, feature, detail = home.description } = home.visit;
+  return [{
+    id: home.interiorId, label: home.label, description: home.description,
+    parentLocationId: home.parentLocationId, entrance: { x, z, yaw: 0 }, bounds, spawn,
+    obstacles: [{ id: home.id + '-table', kind: 'desk', minX: -3.5, maxX: -1.8, minZ: -2, maxZ: -.9 }],
+    interactions: [{
+      id: home.id + '-observe', label: '看看' + feature, description: detail,
+      x: -2.5, z: .4, minutes: 0, energyDelta: 0, result: detail, prompt: detail,
+    }],
+  }];
+});
+
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
 const campusInteriorRooms: readonly CampusInterior[] = [
+  ...residentialRooms,
+  {
+    id: 'clinic', label: '街区全科诊所', parentLocationId: 'commercial',
+    description: '风堇的门诊里设有候诊区、问诊桌和茶歇角。侧廊尽头的一扇门通往她的起居室。',
+    entrance: { x: 173, z: 135, yaw: 0 }, bounds, spawn, obstacles: [], interactions: [],
+  },
+  {
+    id: 'residential-mutsumi', label: '若叶家·起居室与阳台', parentLocationId: 'highland',
+    description: '沿玄关进入起居室，推拉窗外是朝南的阳台。木栏杆下的花箱搭着黄瓜架，几朵小黄花藏在叶子里。',
+    entrance: wakabaEntrance, bounds, spawn,
+    obstacles: [{ id: 'wakaba-planters', kind: 'shelf', minX: -2.8, maxX: 2.8, minZ: -4.6, maxZ: -3.7 }],
+    interactions: [{
+      id: 'wakaba-tend-vines', label: '照料阳台的黄瓜架', description: '沿着竹架扶好藤蔓，给花箱浇水。',
+      x: 0, z: -2.6, minutes: 10, energyDelta: -1, result: '给若叶家阳台的黄瓜浇了水，扶正垂下的藤蔓。',
+      prompt: '照料花箱已经花去十分钟。睦是否正在身旁、是否愿意递来黄瓜，以本轮在场与赠礼记录为准。',
+    }],
+  },
   {
     id: MARGO_CAFE_ROOM_ID, label: '玛格咖啡馆', parentLocationId: MARGO_CAFE_LOCATION_ID,
     description: '宝生玛格经营的街边咖啡馆。柜台旁摆着咖啡器具与当日甜点，窗边有可坐下喝茶、阅读或画画的小桌；南侧店门通向露台。',
@@ -621,8 +658,23 @@ const campusInteriorRooms: readonly CampusInterior[] = [
 
 export const campusInteriors: readonly CampusInterior[] = attachCircleBorrowedInteractions(campusInteriorRooms);
 
+// Novel destinations share the save, travel and appointment machinery. Their access
+// landmarks are transfer points in the schematic city, not coordinates of the actual venues.
+const outingVenues: CampusInterior[] = venues.map(venue => {
+  const access = sceneLandmarks.find(landmark => landmark.id === venue.accessLandmark);
+  if (!access) throw new Error('未知的小说地点接驳点：' + venue.accessLandmark);
+  return {
+    id: venue.id, label: venue.label, description: venue.description, outdoors: venue.outdoors,
+    parentLocationId: access.id, entrance: { x: venue.entrance?.x ?? access.x, z: venue.entrance?.z ?? access.z, yaw: 0 },
+    bounds, spawn, obstacles: [], interactions: [],
+  };
+});
+
+export const novelScenePlaces = [...campusInteriors, ...outingVenues];
+const placesById = new Map(novelScenePlaces.map(place => [place.id, place]));
+
 export function getCampusInterior(id: string | null | undefined): CampusInterior | undefined {
-  return campusInteriors.find(room => room.id === id);
+  return id ? placesById.get(id) : undefined;
 }
 
 /** Restore historical metadata or the exact, already-settled duration from a saved choice. */

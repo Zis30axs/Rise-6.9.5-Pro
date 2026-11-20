@@ -1,3 +1,7 @@
+import { housingForInterior, type MajoHousingType } from '../runtime/majo-housing';
+import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
+import towerDay from '../../assets/backgrounds/toyokawa-executive-day.webp?inline';
+import towerNight from '../../assets/backgrounds/toyokawa-executive-night.webp?inline';
 import parisEiffelBg from '../../assets/paris-sandbox/backdrops/eiffel.webp?inline';
 import parisArcBg from '../../assets/paris-sandbox/backdrops/arc.webp?inline';
 import parisLouvreBg from '../../assets/paris-sandbox/backdrops/louvre.webp?inline';
@@ -9,6 +13,15 @@ import parisParisRoissypoleBg from '../../assets/paris-sandbox/backdrops/paris-r
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
+import highlandDistrictDay from '../../assets/backgrounds/highland-district-day.webp?inline';
+import highlandDistrictDusk from '../../assets/backgrounds/highland-district-dusk.webp?inline';
+import highlandDistrictNight from '../../assets/backgrounds/highland-district-night.webp?inline';
+import highlandHouseDay from '../../assets/backgrounds/highland-house-day.webp?inline';
+import highlandHouseDusk from '../../assets/backgrounds/highland-house-dusk.webp?inline';
+import highlandHouseNight from '../../assets/backgrounds/highland-house-night.webp?inline';
+import asukayamaDay from '../../assets/backgrounds/asukayama-day.webp?inline';
+import asukayamaDusk from '../../assets/backgrounds/asukayama-dusk.webp?inline';
+import asukayamaNight from '../../assets/backgrounds/asukayama-night.webp?inline';
 import parkDay from '../../assets/backgrounds/park-day.webp?inline';
 import parkDusk from '../../assets/backgrounds/park-dusk.webp?inline';
 import parkNight from '../../assets/backgrounds/park-night.webp?inline';
@@ -45,7 +58,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
-  source: 'legacy' | 'majo-art' | 'user-art' | 'paris-model';
+  source: 'legacy' | 'majo-art' | 'user-art' | 'model-render' | 'paris-model';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -66,6 +79,12 @@ const parisBackgrounds: Readonly<Record<string, string>> = {
   'cdg-airport': parisCdgAirportBg,
   'paris-roissypole': parisParisRoissypoleBg,
 };
+
+const highlandBackgrounds = {
+  district: { day: highlandDistrictDay, dusk: highlandDistrictDusk, night: highlandDistrictNight },
+  house: { day: highlandHouseDay, dusk: highlandHouseDusk, night: highlandHouseNight },
+};
+const asukayamaBackgrounds = { day: asukayamaDay, dusk: asukayamaDusk, night: asukayamaNight };
 
 const hanedaAirportBackgrounds: Readonly<Record<NovelBackgroundPhase, string>> = {
   day: hanedaAirportDay, dusk: hanedaAirportDusk, night: hanedaAirportNight,
@@ -88,10 +107,7 @@ export const novelBackgroundLocations: Readonly<Record<string, BackgroundFamily>
   clinic: 'commercial', 'clinic-room': 'commercial', aquarium: 'commercial',
 });
 
-export function novelBackgroundPhase(hour: number): NovelBackgroundPhase {
-  const safeHour = Number.isFinite(hour) && hour >= 0 && hour < 24 ? hour : 12;
-  return safeHour < 6 || safeHour >= 19 ? 'night' : safeHour >= 17 ? 'dusk' : 'day';
-}
+export { novelBackgroundPhase };
 
 /**
  * Recovered PR #16 art. Interior pictures are fixed-time derivatives, so they
@@ -127,10 +143,31 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
   'grand-commercial': { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
 });
 
+const interiorByHousingType = {
+  'old-family-house': 'koko-old-house', 'modern-open-plan': 'emma-yuki-home',
+  'riverfront-highrise': 'majo-highrise-home', 'traditional-courtyard': 'nikaido-house',
+  'shared-apartment': 'anan-noa-milia-home', 'studio-apartment': 'majo-studio',
+} satisfies Record<MajoHousingType, string>;
+
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
   if (Object.hasOwn(parisBackgrounds, locationId)) {
     return { id: locationId + '-day', src: parisBackgrounds[locationId], phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'paris-model' };
+  }
+  if (locationId === 'toyokawa-executive-tower') {
+    const phase = novelBackgroundPhase(hour);
+    const night = phase === 'night';
+    return { id: 'toyokawa-executive-' + (night ? 'night' : 'day'), src: night ? towerNight : towerDay,
+      phase, imagePhase: night ? 'night' : 'day', source: 'model-render' };
+  }
+  if (locationId === 'highland' || locationId === 'residential-mutsumi') {
+    const phase = novelBackgroundPhase(hour);
+    const view = locationId === 'highland' ? 'district' : 'house';
+    return { id: `highland-${view}-${phase}`, src: highlandBackgrounds[view][phase], phase, imagePhase: phase, source: 'model-render' };
+  }
+  if (locationId === 'asukayama' || locationId === 'asukayama-park') {
+    const phase = novelBackgroundPhase(hour);
+    return { id: `asukayama-${phase}`, src: asukayamaBackgrounds[phase], phase, imagePhase: phase, source: 'user-art' };
   }
   if (locationId === 'haneda-airport') {
     const phase = novelBackgroundPhase(hour);
@@ -178,7 +215,9 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
     phase: novelBackgroundPhase(hour), imagePhase: 'night', source: 'legacy' };
   if (locationId === 'aquarium') return { id: 'aquarium-day', src: aquariumDay,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
-  const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
+  const housing = housingForInterior(locationId);
+  const artKey = housing?.visit ? interiorByHousingType[housing.type] : locationId;
+  const authored = Object.hasOwn(majoBackgrounds, artKey) ? majoBackgrounds[artKey] : undefined;
   if (authored) {
     const phase = novelBackgroundPhase(hour);
     const nightSrc = phase !== 'day' ? authored.nightSrc : undefined;

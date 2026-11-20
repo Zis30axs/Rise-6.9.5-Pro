@@ -1,3 +1,4 @@
+import { savedOutingLocation } from './legacy-outing-places';
 import type { PlayerState, WorldState } from '../frontend/types';
 import { recordWeeklyEvidence } from './weekly-memory';
 import { adjustEnergy } from './energy';
@@ -112,18 +113,20 @@ export function parseBackgroundLife(value: unknown, base: WorldState, parseLegac
       if (start > cursor || due <= cursor || due - start > 1440 || due <= start) return fail();
       let arrival: Arrival | null = null;
       let routeContext: BackgroundActivity['routeContext'] = null;
+      const rawTarget = text(q.target, 100, true);
+      const target = kind === 'travel' ? savedOutingLocation(rawTarget) : rawTarget;
       if (kind === 'travel') {
         const a = object(q.arrival, ['locationId', 'scene', 'interior', 'transit', 'fareCents', 'energyCost']);
         const restored = parseLegacy({ ...base, schema_version: '1.11.0', clock: clockAt(due), locationId: a.locationId, scene: a.scene, interior: a.interior, transit: a.transit });
         const energyCost = typeof a.energyCost === 'number' && a.energyCost >= 0 && a.energyCost <= 100 && Math.abs(Math.round(a.energyCost * 100) / 100 - a.energyCost) < 1e-7 ? a.energyCost : fail();
         arrival = { locationId: restored.locationId, scene: restored.scene, interior: restored.interior, transit: restored.transit, fareCents: integer(a.fareCents, 2000000000), energyCost };
-        if (q.target !== arrival.locationId) return fail();
+        if (target !== arrival.locationId) return fail();
         const context = object(q.routeContext, ['player', 'journalLength']);
         routeContext = { player: parseLegacy({ ...base, schema_version: '1.11.0', player: context.player }).player, journalLength: integer(context.journalLength, 100) };
       } else if (q.arrival !== null || q.routeContext !== null) return fail();
       const calendarKey = text(q.calendarKey, 240, kind !== 'travel' && kind !== 'study');
       if (q.id !== `bg:${owner}:${start}:${kind}`) return fail();
-      pending = { id: text(q.id, 80), kind, start, due, target: text(q.target, 100, true), label: text(q.label, 160), origin: text(q.origin, 1000), calendarKey, arrival, routeContext };
+      pending = { id: text(q.id, 80), kind, start, due, target, label: text(q.label, 160), origin: text(q.origin, 1000), calendarKey, arrival, routeContext };
     }
     return { nextDecisionAt, pending, calendarSeen, lastMessageDay: integer(p.lastMessageDay, clockAt(cursor).day), events };
   };
