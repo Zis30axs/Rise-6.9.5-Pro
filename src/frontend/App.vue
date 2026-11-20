@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ReceiptClose from './ReceiptClose.vue';
+import { useReceipt } from './use-receipt';
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue';
 import NovelLive2DPortrait from './NovelLive2DPortrait.vue';
 import { live2dContext } from './live2d-context';
@@ -391,6 +393,10 @@ const persistedBookReceipt = computed(() => {
   const signed = (value: number | null) => value === null ? '未记录' : `${value > 0 ? '+' : ''}${value}`;
   return `${gain.at} · 书店阅读 ${gain.minutes} 分钟 · ${studyOutcome(gain.outcome)} · ${subject.name} +${gain.points} 学习点（累计 ${gain.totalPoints}） · 精力消耗 ${gain.energyConsumed} · 精神 ${signed(gain.moraleChange)} · 压力 ${signed(gain.stressChange)}`;
 });
+const { visible: activityReceiptVisible, dismiss: dismissActivityReceipt } = useReceipt(
+  () => localActivityReceipt.value || persistedRoomReceipt.value || persistedBookReceipt.value,
+);
+const { visible: noticeVisible, dismiss: dismissNotice } = useReceipt(() => props.model.notice, 0);
 const studyInteraction = computed(() => currentRoom.value?.interactions.find(item => item.id === studyInteractionId.value));
 const studyPickerOpen = computed(() => !!studyInteraction.value || bookReadingPicker.value);
 const studySubjectGroups = computed(() => currentRoom.value?.id === 'classroom' && !bookReadingPicker.value
@@ -401,7 +407,6 @@ const studyQuotes = computed(() => studyDurationOptions.map(option => ({ option,
 function studyOutcome(outcome: string | null) {
   return outcome === 'inspiration' ? '灵感涌现' : outcome === 'confusion' ? '理解受挫' : outcome === 'normal' ? '平稳学习' : '历史学习记录';
 }
-const lastWasTimedActivity = computed(() => (lastRoomActivity.value?.minutes ?? 0) > 0);
 const time = computed(() => `${String(props.model.state.clock.hour).padStart(2, '0')}:${String(props.model.state.clock.minute).padStart(2, '0')}`);
 const weatherNow = computed(() => resolveWeather(props.model.state));
 const weatherLabel = computed(() => WEATHER_EFFECTS[weatherNow.value.id].label);
@@ -1144,7 +1149,7 @@ onBeforeUnmount(() => {
     <ProtagonistPhonePose v-if="novelMode && activeWindow === 'phone'" :protagonist="currentProtagonist" :location-id="model.state.locationId" />
     <div class="world-vignette" :class="{ 'reading-shade': readingMode === 'expanded' && activeWindow !== 'phone' }" aria-hidden="true"></div>
     <header class="world-chrome"><div class="world-heading"><button class="wordmark" aria-label="场景" @click="sceneHome">未读之城<span>一段正在发生的日常</span></button><div class="topbar-world"><span>{{ currentLocation.name }}</span><span class="chrome-dot">·</span><span>{{ civilDateLabel }}</span><span class="chrome-dot">·</span><span class="chrome-weather" :aria-label="weatherLabel">{{ weatherIcon }}{{ weatherLabel }}</span><time>{{ time }}</time></div></div><div class="host-actions"><button v-if="novelMode" class="graphics-refresh-button" aria-label="刷新画面" title="刷新画面" @click="graphicsRevision++">↻</button><button class="layout-mode-button" :aria-label="layoutEditing ? '完成界面布局编辑' : '编辑界面布局'" :aria-pressed="layoutEditing" @click="toggleLayoutEditing">{{ layoutEditing ? '完成' : '布局' }}</button><button v-if="layoutEditing" class="layout-reset-button" aria-label="重置界面布局" @click="resetLayout">重置</button><button type="button" class="debug-mode-button" data-debug-toggle aria-label="调试面板" @click="debugOpen = true">调试</button><button aria-label="切换聊天并恢复原生界面" @click="actions.switchChat()">切换聊天</button></div></header>
-    <p v-if="model.notice" class="notice" role="status">{{ model.notice }}</p>
+    <p v-if="noticeVisible" class="notice" role="status"><ReceiptClose @dismiss="dismissNotice" />{{ model.notice }}</p>
     <nav v-if="!activeWindow" class="presentation-switch" aria-label="游玩模式"><button :aria-pressed="!novelMode" :disabled="model.busy || isInternationalLocation(model.state.locationId)" @click="switchPresentationMode('scene')">3D 漫游</button><button :aria-pressed="novelMode" :disabled="model.busy" @click="switchPresentationMode('novel')">纯小说</button><select aria-label="切换主角" data-protagonist-select :value="currentProtagonist" :disabled="!!model.interaction || !!switchingLease" @change="selectProtagonist"><option v-for="(name, id) in protagonistNames" :key="id" :value="id">{{ name }}</option></select></nav>
     <aside v-if="encounterPerson && !activeWindow && readingMode === 'compact'" class="encounter-caption" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></aside>
     <button v-if="model.state.locationId==='court-hearing' && !!model.state.courtroom?.active && !activeWindow" type="button"
@@ -1155,7 +1160,7 @@ onBeforeUnmount(() => {
     <button v-if="!novelMode && storeAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-store-entry aria-label="逛便利店" :disabled="model.busy" @click="openStore"><span aria-hidden="true">▤</span><span>逛便利店<small>选购食物、饮品与日用品</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-stationery-entry aria-label="逛文具店" :disabled="model.busy" @click="openStationery"><span aria-hidden="true">✒</span><span>逛文具店<small>R-27ET1 · 500 日元一支</small></span><span aria-hidden="true">↗</span></button>
     <button v-if="!novelMode && bookReadingAvailable && !activeWindow && readingMode === 'hidden'" class="campus-entrance" data-book-reading-entry :disabled="model.busy" @click="openBookReading"><span aria-hidden="true">▤</span><span>选书阅读<small>本专业巩固 · 跨专业探索</small></span><span aria-hidden="true">↗</span></button>
-    <p v-if="localActivityReceipt && readingMode === 'hidden' && !activeWindow && !bedRestPicker && !studyPickerOpen" class="bed-rest-receipt" data-bed-rest-receipt data-local-activity-receipt role="status">{{ localActivityReceipt }}<small>已保存，无需发送对话。</small></p>
+    <p v-if="activityReceiptVisible && localActivityReceipt && readingMode === 'hidden' && !activeWindow && !bedRestPicker && !studyPickerOpen" class="bed-rest-receipt" data-bed-rest-receipt data-local-activity-receipt role="status"><ReceiptClose @dismiss="dismissActivityReceipt" />{{ localActivityReceipt }}</p>
     <LivehousePanel v-if="livehouseMode" :key="currentProtagonist" :model="model" :actions="actions" :mode="livehouseMode" @close="livehouseMode = null" />
     <CookingMinigame v-if="cookOpen" :model="model" :actions="actions" @close="cookOpen = false" />
     <div v-if="bedRestPicker" class="bed-rest-overlay" @click.self="closeBedRestPicker">
@@ -1185,8 +1190,8 @@ onBeforeUnmount(() => {
     <section v-show="readingMode !== 'hidden'" class="reading-layer" data-reading-layer aria-label="小说正文" :class="{ 'reading-expanded': readingMode === 'expanded' }">
       <button type="button" class="reading-resize-grip" data-layout-handle="reading-height" aria-label="上下拖动调整正文高度" title="拖动改变正文高度"><span aria-hidden="true"></span></button>
       <header class="reading-heading"><div v-if="encounterPerson && readingMode === 'expanded'" class="encounter-caption encounter-caption-inline" data-current-encounter :data-person-id="encounterPerson.id"><div><strong>{{ personLabel(encounterPerson) }}</strong><small>{{ encounterPerson.protagonistId ? '主角 · 正在当面交流' : encounterPerson.contactId ? '主要人物 · 已存入当前聊天' : '正在当面交流 · 尚未确认姓名' }}</small></div><button v-if="!encounterPerson.protagonistId" :disabled="model.busy" data-encounter-contact @click="saveEncounterContact(encounterPerson.id)">{{ encounterPerson.contactId ? '手机档案' : '手机建档' }} ↗</button></div><div v-else><span class="reading-caption">{{ model.busy ? '故事正在继续…' : '此刻的故事' }}</span><small v-if="model.mode === 'demo'">本地演示</small></div><div class="reading-actions"><button v-if="novelMode && novelHistory" @click="novelHistory = false; setReadingMode('compact')">逐句阅读</button><button v-if="!novelMode" @click="readEarlier">往前读</button><button v-if="!novelMode" :aria-label="readingMode === 'expanded' ? '缩小正文' : '展开正文'" @click="setReadingMode(readingMode === 'expanded' ? 'compact' : 'expanded')">{{ readingMode === 'expanded' ? (novelMode ? '显示背景' : '回到场景') : '专注阅读' }}</button><button v-if="!novelMode" aria-label="收起正文" @click="setReadingMode('hidden')">收起</button></div></header>
-      <p v-if="lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status">{{ localActivityReceipt || persistedRoomReceipt }} <span>{{ lastWasTimedActivity ? '已完成活动，无需发送对话。' : '已记入状态，可继续故事。' }}</span></p>
-      <p v-else-if="localActivityReceipt || persistedBookReceipt" class="room-activity-receipt" data-local-activity-receipt role="status">{{ localActivityReceipt || persistedBookReceipt }} <span>已保存，无需发送对话。</span></p>
+      <p v-if="activityReceiptVisible && lastRoomActivity" class="room-activity-receipt" data-room-activity-receipt role="status"><ReceiptClose @dismiss="dismissActivityReceipt" />{{ localActivityReceipt || persistedRoomReceipt }}</p>
+      <p v-else-if="activityReceiptVisible && (localActivityReceipt || persistedBookReceipt)" class="room-activity-receipt" data-local-activity-receipt role="status"><ReceiptClose @dismiss="dismissActivityReceipt" />{{ localActivityReceipt || persistedBookReceipt }}</p>
 
       <section v-if="novelMode && !novelHistory && meetingPrompt" class="novel-appointment-prompt" :data-meeting-invite="meetingPrompt.id" aria-label="今日约定">
         <p>和{{ meetingPrompt.owner === currentProtagonist ? meetingPrompt.targetName : protagonistNames[meetingPrompt.owner] }}约在{{ meetingPrompt.day === model.state.clock.day ? '今天' : '第'+meetingPrompt.day+'天' }} {{ meetingPrompt.time }}，地点是{{ getCampusInterior(meetingPrompt.locationId)?.label ?? locations.find(place => place.id === meetingPrompt?.locationId)?.name ?? '约定地点' }}。</p>
@@ -1234,7 +1239,7 @@ onBeforeUnmount(() => {
             </div>
           </template>
         </section>
-        <p v-if="localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt>{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
+        <p v-if="activityReceiptVisible && localActivityReceipt" class="location-service-receipt" role="status" data-quick-service-receipt><ReceiptClose @dismiss="dismissActivityReceipt" />{{ localActivityReceipt }}</p><LocationServices :model="model" :actions="actions" :novel-mode="novelMode" @enter="enterInterior" @law="openWindow('law')" @map="openWindow('map')" @store="openStore" @stationery="openStationery" @books="openBookReading" @activities="openLocationActivities" /></div>
       <div v-else class="window-content"><WorldPanels :panel="activeWindow" :model="model" :actions="actions" :novel-mode="novelMode" :refresh-token="graphicsRevision" @travelled="mapTravelled" @compose="name => prepareAction(`给${name}发消息：`)" @invitations="openWindow('invitations')" @transit="openWindow('transit')" @store="openStore" @inventory="openWindow('inventory')" @phone="openWindow('phone')" @stock="openStockWorkbench" /></div>
     </section>
     </div>

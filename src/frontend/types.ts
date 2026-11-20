@@ -286,6 +286,7 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'receive_scene_gift'; npcId: string; itemId: string }
   | { type: 'npc_trait_gift'; npcId: string; itemId: string; quantity: number; traitId: string; reason: string }
   | { type: 'mutsumi_balance'; delta: number; reason: string }
   | { type: 'equip' | 'unequip'; itemId: string; slot?: import('../runtime/equipment').EquipmentSlot | null }

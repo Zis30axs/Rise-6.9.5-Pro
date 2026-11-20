@@ -217,7 +217,7 @@ export const NPC_TRAIT_GIFT_PROTOCOL_RULE =
 
 export function npcGiftPromptInstruction(opportunity: NpcGiftOpportunity): string {
   if (!opportunity.allowed || !opportunity.offers.length) {
-    return '【人物特质每日赠礼未触发】本轮禁止输出 npc_trait_gift 行动，也不得仅靠正文凭空写出获得若叶睦送的小黄瓜并增加背包库存。';
+    return '【人物特质每日赠礼未触发】本轮禁止输出 npc_trait_gift 行动，若正在照料黄瓜，可以描写她挑选或擦拭黄瓜，不能叙述主角已经收下。';
   }
   const offer = opportunity.offers[0]!;
   return `${NPC_TRAIT_GIFT_PROTOCOL_RULE}\n【人物特质每日赠礼已触发】${offer.npcName}（${offer.npcId}）与当前主角好感度较高（${offer.affinity}），且处于今日第一次面对面相遇，特质「${offer.traitTitle}」（${offer.traitId}）的今日概率判定已通过（${Math.round(offer.probability * 100)}% 触发）。请在 <story> 中贴合她寡言而体贴的性格自然描写她顺手递来 1 根自家栽种的「${offer.itemName}」（itemId: ${offer.itemId}），并在 <world_actions> 输出 {"type":"npc_trait_gift","npcId":"${offer.npcId}","itemId":"${offer.itemId}","quantity":${offer.quantity},"traitId":"${offer.traitId}","reason":"今日首次当面相遇时收下她递来的小黄瓜"}；只有当主角明确当场拒收时才省略该行动。禁止修改数量或重复领取。`;

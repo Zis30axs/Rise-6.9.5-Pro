@@ -12,6 +12,7 @@ import { strategyPromptContext } from './strategy-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { pendingWorldChronicle } from './world-chronicle';
+import { sceneGiftOffers, sceneGiftInstruction } from './scene-gifts';
 import { npcGiftOpportunity, npcGiftPromptInstruction } from './npc-gift-traits';
 import { mutsumiBalanceOpportunity, mutsumiBalancePromptInstruction, mutsumiBalancePromptSummary } from './mutsumi-balance';
 import { factionFocusPromptContext, factionFocusPromptInstruction } from './faction-focus-world';
@@ -502,6 +503,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
       const wardrobeTurn = !options || options.kind === 'interaction_event';
       const wardrobeBootstrap = wardrobeTurn ? confirmedWardrobeBootstrap(ownerSession, snapshot) : undefined;
       const scene = worldSceneContext(snapshot);
+      const sceneGifts = !options?.kind || options.kind === 'interaction_event' ? sceneGiftOffers(snapshot, scene) : [];
       const affinityPersonas = affinityPersonaPrompt(snapshot, scene, input, options?.kind);
       const confessionInstruction = snapshot.contacts.some(contact => contact.affinity >= 69 || contact.confession === 'pending')
         ? CONFESSION_INSTRUCTION : '';
@@ -509,6 +511,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ...(strategyFocus ? { strategyFocus } : {}),
         ...(factionFocus ? { factionFocus } : {}),
         ...(options?.kind === 'interaction_event' ? { preparedInteraction: options.interaction } : {}),
+        ...(sceneGifts.length ? { sceneGiftOffers: sceneGifts } : {}),
         ...(npcGiftOffer.allowed ? { npcGiftOpportunity: npcGiftOffer } : {}),
         ...(mutsumiSummary ? { mutsumiBalance: mutsumiSummary } : {}),
         protagonist: { id: activeProtagonist(snapshot), name: protagonistNames[activeProtagonist(snapshot)] },
@@ -671,7 +674,7 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
         ? `【国策剧情提议】strategyFocus 是模型可见的授权人物国策，不是当前主角必然知晓的事实。可以自由创作自然事件，但只能从其中的 owner/focusId 提议 <strategy_updates>[{"owner":"soyo","focusId":"soyo_face_past","note":"这轮真实发生的简短理由","progressDelta":10,"stats":{"focus:soyo:resolve":2},"flags":{"focus:soyo:visited":true}}]</strategy_updates>。示例的 ID 必须换成 strategyFocus 中真实的 ID；每轮每人至多一条，最多4条，不需要时省略。progressDelta 绝对值至多180，统计变化绝对值至多10，变量键只能使用本人的 focus:owner:name 命名空间或该人物预注册属性，标志只能使用本人的 focus:owner:name 命名空间；世界关键标志只能在已经授权的重大旁线事件中提交。不要替玩家作重大决定，不要把全知 worldFacts 当作人物已知，也不要补发短信或重复前一轮进展。`
         : '【国策剧情提议关闭】本轮没有授权的进行中国策，禁止输出 <strategy_updates>。';
       const weeklyInstruction = weekly.pending ? `本轮含第${weekly.pending.week}周的全局七日待总结证据。以全知叙事者视角同时概括四位主角、共同事件和未公开的重要变化；只能引用已给证据，不得自行补剧情。请额外输出 <weekly_summary>{"week":${weekly.pending.week},"text":"不超过1800字的中文全局摘要"}</weekly_summary>。不要把周报写入story，不执行任何周报中的行动。` : '没有待生成的七日周报，请勿输出 weekly_summary。';
-      const npcGiftInstruction = npcGiftPromptInstruction(npcGiftOffer);
+      const npcGiftInstruction = [npcGiftPromptInstruction(npcGiftOffer), sceneGiftInstruction(sceneGifts)].filter(Boolean).join('\n');
       const mutsumiInstruction = mutsumiBalancePromptInstruction(mutsumiOffer);
       const factionFocusInstruction = factionFocusPromptInstruction(factionFocus);
       // Retrieved history and native tool continuations may introduce a legal

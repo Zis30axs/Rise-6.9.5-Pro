@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ReceiptClose from './ReceiptClose.vue';
+import { useReceipt } from './use-receipt';
 import { computed, ref, watch } from 'vue';
 import { getLocationServiceQuote, getLocationServices, getLocationStatus, getTakeawayQuote } from '../runtime/location-services';
 import { getCampusInterior } from '../runtime/campus-interiors';
@@ -25,6 +27,7 @@ const cafeMenu = computed(() => atMargoCafe(props.model.state) ? getCafeMenu(pro
 const storeAvailable = computed(() => getStoreAvailability(props.model.state).available);
 const atBookshop = computed(() => !props.model.state.interior && props.model.state.locationId === 'bookshop');
 const receipt = ref('');
+const { visible: receiptVisible, dismiss: dismissReceipt } = useReceipt(receipt);
 const attempted = ref(false);
 const revealingJob = ref<string | null>(null);
 const localClock = computed(() => isCaliforniaLocalLocation(props.model.state.locationId)
@@ -101,7 +104,7 @@ watch(() => [props.model.state.locationId, props.model.state.protagonists?.accou
     <p v-if="status" class="location-hours" data-location-hours>开放时间{{ localZoneLabel }} · {{ status.hoursLabel }}</p>
     <p class="location-description">{{ status?.description ?? place?.description }}</p>
     <p v-if="status && !status.isOpen" class="location-closed-note" data-location-closed>此刻暂停服务，距离开放还有 {{ status.minutesUntilOpen }} 分钟。可先去其他地点。</p>
-    <p v-if="receipt" class="location-service-receipt" data-location-service-receipt role="status">{{ receipt }}</p>
+    <p v-if="receiptVisible" class="location-service-receipt" data-location-service-receipt role="status"><ReceiptClose @dismiss="dismissReceipt" />{{ receipt }}</p>
     <p v-if="attempted && model.notice" class="location-service-error" data-location-service-error role="alert">{{ model.notice }}<span>本次活动尚未保存，可以重试。</span></p>
     <section v-if="cafeMenu.length" class="location-cafe-menu" data-cafe-menu aria-label="玛格咖啡馆菜单">
       <h3>今日菜单</h3>

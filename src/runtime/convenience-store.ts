@@ -97,7 +97,7 @@ export const npcTraitGiftItems: readonly StoreItem[] = Object.freeze([
   Object.freeze({
     id: MUTSUMI_CUCUMBER_ITEM_ID,
     name: '若叶睦种的小黄瓜',
-    brand: '若叶宅邸温室',
+    brand: '若叶家阳台',
     tier: 'standard' as const,
     category: 'snack' as const,
     price: 0,
@@ -110,8 +110,24 @@ export const npcTraitGiftItems: readonly StoreItem[] = Object.freeze([
   }),
 ]);
 
+/** Outing gifts have inventory identities even when the shop does not sell them. */
+function sceneGift(id: string, name: string, brand: string, category: 'collectible' | 'drink' | 'snack',
+  unit: string, kcal = 0, useMinutes = 0, satiety = 0, stress = 0): StoreItem {
+  return { id, name, brand, category, tier: 'standard', price: 0, packSize: 1, purchaseUnit: unit, useUnit: unit,
+    kcal, useMinutes, effects: { energy: 0, satiety, stress, health: 0 } };
+}
+export const sceneGiftItems = [
+  sceneGift('tomori-pebble', '灯挑的扁石子', '高松灯', 'collectible', '枚'),
+  sceneGift('tomori-leaf', '和灯一起捡的落叶', '高松灯', 'collectible', '片'),
+  sceneGift('ring-saved-dessert', '立希留的甜点', 'RiNG', 'snack', '份', 180, 5, 10),
+  sceneGift('ring-usual-drink', '立希递来的饮品', 'RiNG', 'drink', '杯', 50, 3, 3),
+  sceneGift('rana-matcha-scoop', '乐奈分的抹茶冰淇淋', '要乐奈', 'snack', '口', 20, 1, 1),
+  sceneGift('fengjin-herbal-tea', '风堇泡的安神花茶', '风堇', 'drink', '杯', 0, 3, 0, -3),
+  sceneGift('hiro-poured-tea', '希罗斟的茶', '二阶堂希罗', 'drink', '杯', 0, 3),
+] as const;
+
 export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems, ...npcTraitGiftItems];
+  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems, ...npcTraitGiftItems, ...sceneGiftItems];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {
@@ -156,7 +172,7 @@ export function getUseItemQuote(state: WorldState, itemId: string) {
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。'
     : item.category === 'ingredient' ? '这份食材留到下厨时使用。'
-    : item.category === 'stationery' ? '这支文具需要装备在常驻道具栏才能生效。' : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '神秘访客的特殊奖励已收藏，当前无法直接使用。' : null;
+    : item.category === 'stationery' ? '这支文具需要装备在常驻道具栏才能生效。' : item.category === 'collectible' ? item.id === 'pro200-game-voucher' ? '收藏凭证不能直接使用，请前往湾区二手交易市场出售。' : '这件珍藏可以留作纪念。' : null;
   if (!blockedReason && item && state.player.health < -item.effects.health) blockedReason = '健康不足，请先恢复健康再使用这件商品。';
   const endDay = state.clock.day + Math.floor((state.clock.hour * 60 + state.clock.minute + minutes) / 1440);
   if (!blockedReason && endDay > 365000) blockedReason = '已到达最大天数，无法继续推进。';

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ReceiptClose from './ReceiptClose.vue';
+import { useReceipt } from './use-receipt';
 import { computed, ref, watch } from 'vue';
 import { equipmentCatalog, equipmentQuote, EQUIPMENT_SLOTS, equippedItem, type EquipmentSlot } from '../runtime/equipment';
 import StoreProductImage from './StoreProductImage.vue';
@@ -18,6 +20,7 @@ const equipmentEntries = computed(() => equipmentCatalog.flatMap(item => {
   return props.model.state.inventory.some(row => row.itemId === item.id) ? [{ item, quote }] : [];
 }));
 const receipt = ref('');
+const { visible: receiptVisible, dismiss: dismissReceipt } = useReceipt(receipt);
 const slotLabels: Record<EquipmentSlot, string> = { 'permanent-1': '常驻道具一', 'permanent-2': '常驻道具二', special: '特殊道具' };
 const equipmentSlots = computed(() => EQUIPMENT_SLOTS.map(id => {
   const itemId = equippedItem(props.model.state, id);
@@ -61,14 +64,14 @@ async function useItem(itemId: string) {
   if (props.model.busy || quote.blockedReason || !quote.item) return;
   receipt.value = '';
   if (!await runInteraction(props.model, props.actions, { type: 'use_item', itemId })) return;
-  receipt.value = `已使用 1 ${quote.item.useUnit}${quote.item.name}，已保存；实际变化与后续事件见正文和状态。`;
+  receipt.value = `已使用 1 ${quote.item.useUnit}${quote.item.name}。`;
 }
 </script>
 
 <template>
   <section class="inventory-panel" data-inventory-panel aria-label="随身背包">
     <header class="inventory-heading"><div><h2>随身背包</h2><p>随身物品与珍藏都放在这里。珍藏可以装备或收起，也可以在故事中提出。</p></div><span class="inventory-count">{{ entries.length + equipmentEntries.length }} 种物品</span></header>
-    <p v-if="receipt" class="inventory-receipt" role="status" data-use-receipt>{{ receipt }}</p>
+    <p v-if="receiptVisible" class="inventory-receipt" role="status" data-use-receipt><ReceiptClose @dismiss="dismissReceipt" />{{ receipt }}</p>
     <div class="equipment-slots" role="group" aria-label="装备栏">
       <div v-for="slot in equipmentSlots" :key="slot.id" class="equipment-slot" :data-equipment-slot="slot.id">
         <small>{{ slot.label }}</small><strong>{{ slot.name }}</strong>
@@ -88,7 +91,7 @@ async function useItem(itemId: string) {
         <p v-else-if="item.category === 'ingredient'" class="inventory-serving">下厨用食材</p>
         <p v-else-if="item.category !== 'collectible'" class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
         <p v-else-if="item.id === 'pro200-game-voucher'" class="inventory-serving">收藏券 · 可前往湾区二手交易市场出售</p>
-        <p v-else class="inventory-serving">神秘访客赠送的珍藏道具</p>
+        <p v-else class="inventory-serving">随身珍藏</p>
         <p v-if="!quote.blockedReason" class="inventory-actual-effects" data-use-preview>此次实际变化：<template v-for="(effect, index) in actualChanges(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < actualChanges(quote).length - 1"> · </template></template></p>
         <div v-if="item.equipmentKind" class="inventory-use-row equipment-actions">
           <button v-for="slotId in EQUIPMENT_SLOTS.filter(slot => item.equipmentKind === (slot === 'special' ? 'special' : 'permanent'))"

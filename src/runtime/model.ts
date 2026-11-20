@@ -60,6 +60,7 @@ import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
+import { sceneGiftOffers } from './scene-gifts';
 import { acknowledgeNpcGiftDaily, parseNpcGiftDailyState } from './npc-gift-traits';
 import { applyMutsumiBalanceTurn, hasMutsumiBalanceReceipt, mutsumiBalanceOpportunity } from './mutsumi-balance';
 import { STORY_RECORD_LIMIT, retainStoryHistory } from './story-history';
@@ -1014,18 +1015,23 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
+      case 'receive_scene_gift':
       case 'npc_trait_gift': {
+        if (action.type === 'receive_scene_gift' && !sceneGiftOffers(courtView(next)).some(
+          offer => offer.npcId === action.npcId && offer.itemId === action.itemId)) throw new Error('此时无法当面收下这份礼物。');
+        const quantity = action.type === 'receive_scene_gift' ? 1 : action.quantity;
         const item = getStoreItem(action.itemId)!;
         const entry = next.inventory.find(row => row.itemId === action.itemId);
         if (entry) {
-          if (entry.quantity + action.quantity > INVENTORY_ITEM_LIMIT)
+          if (entry.quantity + quantity > INVENTORY_ITEM_LIMIT)
             throw new Error(`${item.name} 最多保存 ${INVENTORY_ITEM_LIMIT} 个使用单位。`);
-          entry.quantity += action.quantity;
+          entry.quantity += quantity;
         } else {
-          next.inventory.push({ itemId: action.itemId, quantity: action.quantity });
+          next.inventory.push({ itemId: action.itemId, quantity: quantity });
         }
-        const giver = next.contacts.find(c => c.id === action.npcId || c.sourcePersonId === action.npcId)?.name ?? '若叶睦';
-        note(next, `${giver}在今日初次见面时递来 ${action.quantity} ${item.useUnit}${item.name}：${action.reason}`);
+        const giver = next.contacts.find(c => c.id === action.npcId || c.sourcePersonId === action.npcId)?.name ?? action.npcId;
+        note(next, action.type === 'receive_scene_gift' ? `收下了${giver}递来的${item.name}。`
+          : `${giver}在今日初次见面时递来 ${quantity} ${item.useUnit}${item.name}：${action.reason}`);
         break;
       }
       case 'mutsumi_balance':

@@ -113,7 +113,7 @@ export function affinityPersonaPrompt(
   );
   if (locationNotes.size) sections.push(
     '\n【当前地点的互动】',
-    '以下只供本轮在场人物参考。按实际进行的活动、当下意愿和已发生的细节选择反应。日历中的活动仍须本轮实际参加。按这个人物当前的学籍、班次和到访缘由写校园、工作与私宅。提到、回忆、拒绝出游或仅到场时不结算好感。真实互动发生后，按文字所示方向和幅度使用既有 relationship 行动，同一件事只结算一次，赠礼走已有 gift。天色、物品、班次、家人或恋人身份仍以当前场景和存档为准。',
+    '以下只供本轮在场人物参考。按实际进行的活动、当下意愿和已发生的细节选择反应。日历中的活动仍须本轮实际参加。按这个人物当前的学籍、班次和到访缘由写校园、工作与私宅。提到、回忆、拒绝出游或仅到场时不结算好感。真实互动发生后，按文字所示方向和幅度使用既有 relationship 行动，同一件事只结算一次，主角送出已有物品用 gift。收到地点礼物按本轮 sceneGiftOffers 使用 receive_scene_gift，睦的小黄瓜单独按 npcGiftOpportunity 处理。天色、物品、班次、家人或恋人身份仍以当前场景和存档为准。',
     ...locationNotes.values(),
   );
   if (offers.length) sections.push(

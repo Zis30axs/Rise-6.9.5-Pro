@@ -1,6 +1,8 @@
+import { affinityLocationRules } from '../src/runtime/affinity-locations';
+import { sceneGiftOffers } from '../src/runtime/scene-gifts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTavernBridge } from '../src/runtime/bridge';
-import { getStoreItem, MUTSUMI_CUCUMBER_ITEM_ID, storeCatalog } from '../src/runtime/convenience-store';
+import { getStoreItem, INVENTORY_ITEM_LIMIT, MUTSUMI_CUCUMBER_ITEM_ID, sceneGiftItems, storeCatalog } from '../src/runtime/convenience-store';
 import { identityStrategyDossier } from '../src/frontend/identity-strategy';
 import { getSceneArea, sceneLocationId } from '../src/runtime/scene-context';
 import {
@@ -322,5 +324,75 @@ describe('若叶睦高好感每日首次见面小黄瓜特质', () => {
     delete legacyWithoutField.npcGiftDaily;
     expect(parseState(legacyWithoutField).npcGiftDaily).toBeUndefined();
     expect(parseState(sakikoClaimed).npcGiftDaily?.records[`sakiko:${MUTSUMI_NPC_ID}:${MUTSUMI_CUCUMBER_TRAIT_ID}`]?.lastClaimedDay).toBe(sakikoPassDay);
+  });
+});
+
+describe('地点礼物与背包', () => {
+  function atRing(affinity = 75) {
+    const start = createInitialState();
+    start.clock = { day: 4, hour: 16, minute: 0 };
+    start.contacts.find(contact => contact.id === 'bang-taki')!.affinity = affinity;
+    return parseState(reduceState(enableProtagonists(start), { type: 'novel_travel', locationId: 'ring-desk' }));
+  }
+  const dessert = { type: 'receive_scene_gift', npcId: 'bang-taki', itemId: 'ring-saved-dessert' } as const;
+  const reply = (state: WorldState, actions: unknown[]) => parseGeneratedStory(
+    '<story>|椎名立希|平静|这份给你留的。|</story><phone_messages>[]</phone_messages><world_actions>' +
+    JSON.stringify(actions) + '</world_actions>', state);
+  const ids = { userId: 'gift-user', assistantId: 'gift-story' };
+
+  it('每份地点礼物都有注册和对应的反应，并且不作为便利店商品出售', () => {
+    const ruleIds = new Set(affinityLocationRules.flatMap(rule => rule.reactions.flatMap(row => row.giftItems ?? [])));
+    expect(ruleIds).toEqual(new Set(sceneGiftItems.map(item => item.id)));
+    for (const id of ruleIds) {
+      expect(getStoreItem(id)?.name).toBeTruthy();
+      expect(storeCatalog.some(item => item.id === id)).toBe(false);
+    }
+  });
+
+  it('RiNG 值班时模型能看到具体赠礼、收礼指令，并能将实际收下的一份存入当前主角背包', async () => {
+    const state = atRing();
+    const h = makeMockBridge();
+    try {
+      await h.bridge.generate('走到前台，收下立希留的甜点。', state);
+      const request = h.generate.mock.calls[0]![0];
+      expect(request.user_input).toContain('"sceneGiftOffers"');
+      expect(request.user_input).toContain('"ring-usual-drink"');
+      expect(request.injects.map(row => row.content).join('\n')).toContain(JSON.stringify(dessert));
+    } finally { h.bridge.dispose(); }
+
+    const received = reply(state, [dessert]);
+    const saved = parseState(commitStoryTurn(state, '收下甜点', received, ids));
+    expect(saved.inventory.find(row => row.itemId === dessert.itemId)?.quantity).toBe(1);
+    expect(commitStoryTurn(saved, '收下甜点', received, ids).inventory).toEqual(saved.inventory);
+    const other = reduceState(saved, { type: 'switch_protagonist', target: 'sakiko' });
+    expect(other.inventory.some(row => row.itemId === dessert.itemId)).toBe(false);
+    const eaten = commitStoryTurn(state, '收下当场吃掉', reply(state, [dessert, { type: 'use', itemId: dessert.itemId }]), ids);
+    expect(eaten.inventory.some(row => row.itemId === dessert.itemId)).toBe(false);
+    expect(eaten.player.foodEnergy).toBeGreaterThan(state.player.foodEnergy);
+  });
+
+  it('拒绝未注册、赠主不匹配、同轮重复、超量以及当下不可领取的物品', async () => {
+    const state = atRing();
+    for (const actions of [[{ ...dessert, itemId: 'made-up' }], [{ ...dessert, npcId: 'bang-tomori' }],
+      [dessert, dessert], [{ ...dessert, quantity: 99 }]]) {
+      expect(() => reply(state, actions)).toThrow();
+    }
+    const full = structuredClone(state);
+    full.inventory.push({ itemId: dessert.itemId, quantity: INVENTORY_ITEM_LIMIT });
+    const offShift = structuredClone(state);
+    offShift.clock.hour = 23;
+    const away = reduceState(state, { type: 'novel_travel', locationId: 'aquarium' });
+    for (const blocked of [atRing(0), away, full, offShift]) {
+      expect(sceneGiftOffers(blocked).some(offer => offer.itemId === dessert.itemId)).toBe(false);
+      expect(() => reply(blocked, [dessert])).toThrow();
+    }
+    const poorRelationship = atRing(0);
+    const h = makeMockBridge();
+    try {
+      await h.bridge.generate('到柜台点单。', poorRelationship);
+      const request = h.generate.mock.calls[0]![0];
+      expect(request.user_input).not.toContain('"sceneGiftOffers"');
+      expect(request.injects.map(row => row.content).join('\n')).not.toContain(JSON.stringify(dessert));
+    } finally { h.bridge.dispose(); }
   });
 });

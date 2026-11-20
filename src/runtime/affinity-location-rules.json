@@ -69,7 +69,7 @@
     "places": ["chitose-bridge","minami-ikebukuro-park"],
     "occasion": "陪灯走过千登世桥或南池袋公园",
     "reactions": [
-      {"from":"distant","through":"familiar","text":"陌生～熟人会低头默默捡起路边平整的小石子或枯叶，若你蹲下来一起找会迅速拉近距离"},
+      {"from":"distant","through":"familiar","giftItems":["tomori-pebble","tomori-leaf"],"text":"陌生～熟人会低头默默捡起路边平整的小石子或枯叶，若你蹲下来一起找会迅速拉近距离"},
       {"from":"confidant","text":"知心以上会轻声说起自己以前总是一个人走过这里，而现在终于不再孤单"}
     ]
   },
@@ -110,7 +110,7 @@
     "reactions": [
       {"through":"guarded","text":"低好感会被直接冷脸轰走"},
       {"from":"distant","through":"familiar","text":"陌生～熟人只公事公办点单"},
-      {"from":"casual_friend","text":"普通朋友以上嘴上嫌弃“闲得慌别来添乱”，手里却早把你常点的饮品和留好的甜点推过来"},
+      {"from":"casual_friend","giftItems":["ring-saved-dessert","ring-usual-drink"],"text":"普通朋友以上嘴上嫌弃“闲得慌别来添乱”，手里却早把你常点的饮品和留好的甜点推过来"},
       {"from":"confidant","condition":"end-of-ring-shift","text":"知心以上，临近收班时会默许你等她下班一起走夜路"}
     ],
     "sceneCondition": "working-shift"
@@ -152,7 +152,7 @@
       {"onlyPlace":"ring-entrance","text":"听到感兴趣的吉他声，她就会循声靠近"},
       {"onlyPlace":"matcha-shop","text":"看见抹茶芭菲端上来，她立刻凑到桌边"},
       {"from":"distant","through":"distant","text":"陌生阶段也能迅速促进好感"},
-      {"from":"friend","text":"朋友以上会自然霸占你旁边的座位，把最顶上的抹茶冰淇淋分你一口","onlyPlace":"matcha-shop"}
+      {"from":"friend","giftItems":["rana-matcha-scoop"],"text":"朋友以上会自然霸占你旁边的座位，把最顶上的抹茶冰淇淋分你一口","onlyPlace":"matcha-shop"}
     ],
     "placeOccasions": {"ring-entrance":"和乐奈经过池袋 RiNG 门口，门内传出吉他声时","matcha-shop":"陪乐奈在抹茶甜品店点芭菲"}
   },
@@ -201,7 +201,7 @@
     "occasion": "风堇休息时，在口袋公园陪她晒太阳、喝花茶",
     "reactions": [
       {"from":"dislike","text":"全非敌视档位稳步治愈加好感","condition":"sunlight"},
-      {"from":"confidant","condition":"sunny-afternoon","text":"高好感时会让你枕着午后微风歇息，笑着递上刚泡好的安神花茶唤你“～宝”"}
+      {"from":"confidant","condition":"sunny-afternoon","giftItems":["fengjin-herbal-tea"],"text":"高好感时会让你枕着午后微风歇息，笑着递上刚泡好的安神花茶唤你“～宝”"}
     ]
   },
   {
@@ -221,7 +221,7 @@
       {"from":"dislike","text":"全非敌视档位稳定加好感"},
       {"from":"in_sync","text":"合拍以上效率极高"},
       {"from":"confidant","text":"知心以上会在合上书本后轻声问你要不要出去喝茶，流露难得的柔和","onlyPlace":"study-room"},
-      {"from":"confidant","onlyPlace":"matcha-shop","text":"知心以上，合上书后若桌上有茶壶，她会顺手为你续茶"}
+      {"from":"confidant","onlyPlace":"matcha-shop","giftItems":["hiro-poured-tea"],"text":"知心以上，合上书后若桌上有茶壶，她会顺手为你续茶"}
     ],
     "placeOccasions": {"study-room":"和希罗在图书馆自习室安静地整理资料","matcha-shop":"和希罗在茶寮找到安静的座位，一边喝茶一边理资料"}
   },

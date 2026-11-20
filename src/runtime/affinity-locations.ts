@@ -12,6 +12,7 @@ interface Reaction {
   onlyPlace?: string;
   afterClosing?: boolean;
   condition?: string;
+  giftItems?: readonly string[];
   text: string;
 }
 
@@ -48,10 +49,10 @@ function matchesCondition(condition: string | undefined, hour: number, weather: 
 }
 
 /** Called only for a contact in talking range in the authoritative scene. */
-export function affinityLocationNotes(characterId: string, tier: string, place: string, hour: number, weather: WeatherId, currentEvents: readonly string[] = [], timing?: Pick<WorldState['clock'], 'day' | 'minute'>, activity?: 'sakiko-office-work' | 'wakaba-gardening'): string[] {
+export function matchingLocationReactions(characterId: string, tier: string, place: string, hour: number, weather: WeatherId, currentEvents: readonly string[] = [], timing?: Pick<WorldState['clock'], 'day' | 'minute'>, activity?: 'sakiko-office-work' | 'wakaba-gardening') {
   const current = rank.get(tier);
   if (current === undefined) return [];
-  const notes: string[] = [];
+  const matches: { occasion: string; reactions: Reaction[] }[] = [];
   for (const rule of affinityLocationRules) {
     if (rule.characterId !== characterId || !rule.places.includes(place)
       || !matchesCondition(rule.placeConditions?.[place], hour, weather)) continue;
@@ -83,7 +84,12 @@ export function affinityLocationNotes(characterId: string, tier: string, place: 
       && (!row.through || current <= rank.get(row.through)!)
       && matchesCondition(row.condition, hour, weather),
     );
-    if (lines.length) notes.push((rule.placeOccasions?.[place] ?? rule.occasion) + '：' + lines.map(row => row.text).join('；') + '。');
+    if (lines.length) matches.push({ occasion: rule.placeOccasions?.[place] ?? rule.occasion, reactions: lines });
   }
-  return notes;
+  return matches;
+}
+
+export function affinityLocationNotes(...args: Parameters<typeof matchingLocationReactions>): string[] {
+  return matchingLocationReactions(...args).map(({ occasion, reactions }) =>
+    occasion + '：' + reactions.map(row => row.text).join('；') + '。');
 }

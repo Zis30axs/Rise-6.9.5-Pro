@@ -11,11 +11,12 @@ import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition, worldSceneRoster } from './world-presence';
 import { personState } from './protagonist-world';
-import { getServiceTakeawayItem, getStoreItem, storeCatalog, stationeryCatalog } from './convenience-store';
+import { getServiceTakeawayItem, getStoreItem, sceneGiftItems, storeCatalog, stationeryCatalog } from './convenience-store';
 import { isEquipmentSlot, canEquipItem } from './equipment';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
 import { agendaTargetProtagonist, parseAgendaDraft, socialMinute } from './social-agenda';
+import { sceneGiftOffers } from './scene-gifts';
 import { npcGiftOpportunity } from './npc-gift-traits';
 import { validateMutsumiBalanceDelta } from './mutsumi-balance';
 import { validateCourtDocketOffers, validateCourtSpecial, validateCourtOpen, validateCourtFeeQuote, validateCourtStep, validateCourtAssist, validateCourtSettlement, validateCourtFulfillment, validateCourtFinish } from './courtroom';
@@ -58,6 +59,7 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
     return invalid('每轮最多一次若叶睦心境天平变动');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
+  const receivedSceneItems = new Set<string>();
   const seenNpcTraitGifts = new Set<string>();
   const courtObservations = value.filter(item => !!item && typeof item === 'object' &&
     (item as Record<string, unknown>).type === 'service' &&
@@ -215,6 +217,17 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
           quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`),
           affinityDelta: number(item.affinityDelta, 0, STORY_ACTION_LIMITS.relationshipDelta, `${path} 送礼增益`),
           reason: text(item.reason, 240, `${path} 送礼依据`) };
+      }
+      case 'receive_scene_gift': {
+        const row = record(raw, ['type', 'npcId', 'itemId'], path);
+        const npcId = text(row.npcId, 100, path), itemId = text(row.itemId, 100, path);
+        if (!sceneGiftItems.some(item => item.id === itemId) || receivedSceneItems.has(itemId))
+          return invalid(path + ' 地点礼物无效或重复');
+        // Saved turns compare the complete action fingerprint before accepting a replay.
+        if (!replayTurnId && !sceneGiftOffers(state).some(offer => offer.npcId === npcId && offer.itemId === itemId))
+          return invalid(path + ' 当前没有这份地点礼物');
+        receivedSceneItems.add(itemId);
+        return { type: 'receive_scene_gift', npcId, itemId };
       }
       case 'npc_trait_gift': {
         const item = record(raw, ['type', 'npcId', 'itemId', 'quantity', 'traitId', 'reason'], path);
