@@ -34,14 +34,14 @@
   },
   {
     "characterId": "protagonist-sakiko",
-    "places": [],
-    "occasion": "在池袋打工大楼外或客服中心附近偶遇祥子",
+    "places": ["mlm-office","grand-commercial"],
+    "sceneCondition": "sakiko-office-work",
+    "occasion": "在新宿启航商贸探班，或在楼门口碰到刚做完兼职的祥子",
     "reactions": [
       {"through":"familiar","text":"低好感～熟人若流露半点怜悯目光会立刻触发强烈自尊反击"},
       {"from":"friend","text":"朋友以上会嘴硬说“只是兼职罢了”"},
       {"from":"bond","condition":"night","text":"羁绊以上若你不问不怜悯、只自然递杯热饮陪走一段夜路，她会默默收下并显著加好感"}
-    ],
-    "inactiveReason": "当前时间线尚未确认祥子仍在这处客服中心值班。"
+    ]
   },
   {
     "characterId": "protagonist-sakiko",
@@ -125,14 +125,14 @@
   },
   {
     "characterId": "bang-mutsumi",
-    "places": [],
-    "occasion": "陪睦去家庭菜园或花坛照料黄瓜架",
+    "places": ["residential-mutsumi"],
+    "sceneCondition": "wakaba-gardening",
+    "occasion": "受邀到高原住宅区的若叶家，陪睦照料阳台花箱里的黄瓜",
     "reactions": [
       {"from":"dislike","text":"全非敌视档位都会让她神情明显柔和下来"},
       {"from":"distant","through":"distant","text":"陌生阶段也会停下来听你说话"},
       {"from":"friend","text":"朋友以上会仔细挑一根长得最好的黄瓜擦干净递给你"}
-    ],
-    "inactiveReason": "当前人物特质和国策都写明她在自家窗边或阳台种黄瓜；存档还没有若叶家受邀到访的场景。"
+    ]
   },
   {
     "characterId": "bang-mutsumi",

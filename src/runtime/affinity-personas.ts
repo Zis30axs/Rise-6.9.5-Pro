@@ -3,8 +3,9 @@ import type { StoryGenerationOptions, WorldState } from '../frontend/types';
 import { affinityTier, availablePromotion, contactRelationNote } from './affinity-tiers';
 import { affinityLocationNotes } from './affinity-locations';
 import { PROTAGONISTS } from './dual-protagonists';
+import { getCampusInterior, INTERIOR_ENTRANCE_RANGE } from './campus-interiors';
 import { residentById } from './npc-cast';
-import { activeProtagonist, gameMinute, protagonistNames } from './protagonist-world';
+import { activeProtagonist, gameMinute, personState, protagonistNames } from './protagonist-world';
 import { protagonistSceneId, type worldSceneContext } from './world-presence';
 
 interface PersonaEntry {
@@ -30,6 +31,29 @@ function explicitlyNamed(input: string, name: string): boolean {
   if (/[^\x00-\x7f]/.test(normalized)) return input.includes(normalized);
   const literal = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(?:^|[^a-z0-9_-])${literal}(?:$|[^a-z0-9_-])`).test(input);
+}
+
+function outingActivity(state: WorldState, characterId: string) {
+  if (characterId === 'bang-mutsumi' && state.interior?.roomId === 'residential-mutsumi'
+    && state.interior.activityId === 'wakaba-tend-vines') return 'wakaba-gardening';
+  if (characterId !== 'protagonist-sakiko' || !state.protagonists) return;
+  const sakiko = personState(state, 'sakiko');
+  const office = getCampusInterior('mlm-office')!;
+  const inOffice = sakiko.interior?.roomId === office.id;
+  const outside = !sakiko.interior && sakiko.locationId === office.parentLocationId && sakiko.scene
+    && Math.hypot(sakiko.scene.x - office.entrance.x, sakiko.scene.z - office.entrance.z) <= INTERIOR_ENTRANCE_RANGE;
+  if (!inOffice && !outside) return;
+  // Only successful paid work writes these receipts into Sakiko's personal journal.
+  const paid = office.interactions.filter(item => (item.balanceDelta ?? 0) > 0);
+  const now = gameMinute(state);
+  const recentWork = sakiko.journal.some(entry => {
+    if (!paid.some(item => entry.text.startsWith(item.result))) return false;
+    const stamp = /^entry-(\d+)-(\d+)-(\d+)-/.exec(entry.id);
+    if (!stamp) return false;
+    const elapsed = now - ((Number(stamp[1]) - 1) * 1440 + Number(stamp[2]) * 60 + Number(stamp[3]));
+    return elapsed >= 0 && elapsed <= 60;
+  });
+  if (recentWork) return 'sakiko-office-work';
 }
 
 export function affinityPersonaPrompt(
@@ -70,7 +94,7 @@ export function affinityPersonaPrompt(
 
     const tier = affinityTier(contact.affinity).id;
     if (inScene && scene) {
-      const notes = affinityLocationNotes(characterId, tier, scene.areaId, state.clock.hour, scene.weather.id, currentEvents, state.clock);
+      const notes = affinityLocationNotes(characterId, tier, scene.areaId, state.clock.hour, scene.weather.id, currentEvents, state.clock, outingActivity(state, characterId));
       if (notes.length) locationNotes.set(characterId, [contact.name + '（' + contact.id + '）', ...notes].join('\n'));
     }
     const matching = entries.filter(entry => entry.extensions.affinityPersona.tier === tier);

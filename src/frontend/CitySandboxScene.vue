@@ -7,6 +7,7 @@ import { readLocalAssetBytes } from './local-asset-buffer';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
 import { disposeThreeTree } from './dispose-three-tree';
+import { createHighlandModel } from './highland-geometry';
 import { attachAirportGeometry } from './airport-sandbox-geometry';
 import { createCircleSandboxGeometry } from './circle-sandbox-geometry';
 
@@ -163,6 +164,7 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   optimizeGlbScene(parsed);
   // The hash-pinned Tokyo GLB's base slab ends at y = -0.05.
   parsed.add(createCircleSandboxGeometry(circleSandboxOverlay, -.05));
+  parsed.add(createHighlandModel());
   attachAirportGeometry(parsed);
   return parsed;
 }
@@ -903,6 +905,7 @@ function createGeometricPreview(): THREE.Group {
   plumeR.position.set(0.95, -0.1, -10.3);
   jet.add(fuselage, wings, plumeL, plumeR);
   root.add(jet);
+  root.add(createHighlandModel());
   attachAirportGeometry(root);
   return root;
 }

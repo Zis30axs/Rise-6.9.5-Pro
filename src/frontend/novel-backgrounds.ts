@@ -2,6 +2,12 @@ import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
+import highlandDistrictDay from '../../assets/backgrounds/highland-district-day.webp?inline';
+import highlandDistrictDusk from '../../assets/backgrounds/highland-district-dusk.webp?inline';
+import highlandDistrictNight from '../../assets/backgrounds/highland-district-night.webp?inline';
+import highlandHouseDay from '../../assets/backgrounds/highland-house-day.webp?inline';
+import highlandHouseDusk from '../../assets/backgrounds/highland-house-dusk.webp?inline';
+import highlandHouseNight from '../../assets/backgrounds/highland-house-night.webp?inline';
 import asukayamaDay from '../../assets/backgrounds/asukayama-day.webp?inline';
 import asukayamaDusk from '../../assets/backgrounds/asukayama-dusk.webp?inline';
 import asukayamaNight from '../../assets/backgrounds/asukayama-night.webp?inline';
@@ -41,7 +47,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
-  source: 'legacy' | 'majo-art' | 'user-art';
+  source: 'legacy' | 'majo-art' | 'user-art' | 'model-render';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -52,6 +58,10 @@ const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase,
   bedroom: { day: bedroomDay },
 };
 
+const highlandBackgrounds = {
+  district: { day: highlandDistrictDay, dusk: highlandDistrictDusk, night: highlandDistrictNight },
+  house: { day: highlandHouseDay, dusk: highlandHouseDusk, night: highlandHouseNight },
+};
 const asukayamaBackgrounds = { day: asukayamaDay, dusk: asukayamaDusk, night: asukayamaNight };
 
 const hanedaAirportBackgrounds: Readonly<Record<NovelBackgroundPhase, string>> = {
@@ -113,6 +123,11 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (locationId === 'highland' || locationId === 'residential-mutsumi') {
+    const phase = novelBackgroundPhase(hour);
+    const view = locationId === 'highland' ? 'district' : 'house';
+    return { id: `highland-${view}-${phase}`, src: highlandBackgrounds[view][phase], phase, imagePhase: phase, source: 'model-render' };
+  }
   if (locationId === 'asukayama' || locationId === 'asukayama-park') {
     const phase = novelBackgroundPhase(hour);
     return { id: `asukayama-${phase}`, src: asukayamaBackgrounds[phase], phase, imagePhase: phase, source: 'user-art' };

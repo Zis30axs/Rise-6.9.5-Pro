@@ -17,6 +17,7 @@ export type MajoHousingType =
   | 'studio-apartment';
 
 export type MajoDistrictType =
+  | 'highland'
   | 'riverfront-highrise-district'
   | 'old-town-lowrise'
   | 'older-apartment-courtyard'
@@ -142,9 +143,14 @@ export const watanareHousings: readonly MajoHousing[] = Object.freeze([
   },
 ]);
 
-export const allHousings: readonly MajoHousing[] = Object.freeze([...majoHousings, ...watanareHousings]);
+export const allHousings: readonly MajoHousing[] = Object.freeze([...majoHousings, ...watanareHousings, {
+  id: 'residential-mutsumi', type: 'traditional-courtyard' as const, label: '高原住宅区·若叶家',
+  description: '坡上庭院住宅，南向阳台连着起居室，睦在窗边用花箱和竹架种黄瓜。',
+  interiorId: 'residential-mutsumi', district: 'highland' as const, parentLocationId: 'highland', districtArt: true,
+}]);
 
 const housingByPerson: Readonly<Record<string, string>> = Object.freeze({
+  'bang-mutsumi': 'residential-mutsumi',
   'majo-emma': 'emma-yuki-home',
   'majo-yuki': 'emma-yuki-home',
   'majo-nanoka': 'nanoka-honoka-home',
@@ -203,6 +209,7 @@ export function residentOutfit(personId: string): string | null {
 
 /** Game-prototype district assignment for existing map locations. */
 export const residentDistrictByLocation: Readonly<Record<string, MajoDistrictType>> = Object.freeze({
+  highland: 'highland',
   home: 'old-town-lowrise',
   commercial: 'riverfront-highrise-district',
   downtown: 'traditional-downtown',

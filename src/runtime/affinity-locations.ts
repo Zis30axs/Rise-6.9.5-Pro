@@ -48,7 +48,7 @@ function matchesCondition(condition: string | undefined, hour: number, weather: 
 }
 
 /** Called only for a contact in talking range in the authoritative scene. */
-export function affinityLocationNotes(characterId: string, tier: string, place: string, hour: number, weather: WeatherId, currentEvents: readonly string[] = [], timing?: Pick<WorldState['clock'], 'day' | 'minute'>): string[] {
+export function affinityLocationNotes(characterId: string, tier: string, place: string, hour: number, weather: WeatherId, currentEvents: readonly string[] = [], timing?: Pick<WorldState['clock'], 'day' | 'minute'>, activity?: 'sakiko-office-work' | 'wakaba-gardening'): string[] {
   const current = rank.get(tier);
   if (current === undefined) return [];
   const notes: string[] = [];
@@ -58,7 +58,9 @@ export function affinityLocationNotes(characterId: string, tier: string, place: 
     if (rule.sceneCondition) {
       if (!timing) continue;
       const clock = { ...timing, hour };
-      if (rule.sceneCondition === 'working-shift') {
+      if (rule.sceneCondition === 'sakiko-office-work' || rule.sceneCondition === 'wakaba-gardening') {
+        if (activity !== rule.sceneCondition) continue;
+      } else if (rule.sceneCondition === 'working-shift') {
         if (!takiOnDuty(clock)) continue;
       } else if (rule.sceneCondition === 'before-set') {
         if (!awaitingLivehouseSet(characterId, clock)) continue;

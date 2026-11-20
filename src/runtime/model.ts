@@ -40,7 +40,7 @@ import { adjustEnergy, energyDifference, energyUnits } from './energy';
 import { applyOutdoorHealth, applyWeatherForElapsedDays, dailyEnergyAfter, exposureSeed, outdoorEnergyDrain, outdoorHealthExposure, resolveWeather, weatherForDay, type WeatherState, isWeatherId } from './weather';
 import { applySocialSkillTurn, socialSkillQuote } from './social-skills';
 import { narrativeMessageId, narrativeOperationId, protagonistHomeRooms, recordSocialInvitations } from './natural-interactions';
-import { applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
+import { agendaTargetResident, applySocialAgendaActions, acknowledgeAgendaNarration } from './social-agenda';
 import { getActivityEffects, type ActivityKind } from './activity-effects';
 import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcademicStudyQuote, MAX_ACADEMIC_POINTS } from './academics';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
@@ -137,7 +137,7 @@ function travelVehicle(locationId: string, destinationId: string, requested?: st
 }
 
 /** Both preview and commit execute the same deterministic plan on a private clone. */
-function planNovelTravel(state: WorldState, locationId: string, vehicleId: string) {
+function planNovelTravel(state: WorldState, locationId: string, vehicleId: string, authority?: WorldState) {
   let next = parseStateCore(state, true);
   const departure = { ...next.player };
   // Capture conditions before any leg consumes nutrition. The rational form
@@ -235,7 +235,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     // A far-city residence is still an indoor destination after its transit leg.
     if (room) {
       next.scene = { ...sceneCoordinates(room.entrance.x, room.entrance.z, room.entrance.yaw), seed, encounterId: null };
-      next = reduceLegacyState(next, { type: 'enter_interior', roomId: room.id });
+      next = reduceLegacyState(next, { type: 'enter_interior', roomId: room.id }, authority);
     }
     const absoluteMinutes = (value: WorldState) => value.clock.day * 1440 + value.clock.hour * 60 + value.clock.minute;
     quote.minutes = absoluteMinutes(next) - absoluteMinutes(state);
@@ -267,7 +267,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
 
 /** Viewing a route never writes a save, moves the player or samples rest/study time. */
 export function getNovelTravelQuote(state: WorldState, locationId: string, vehicleId?: string): NovelTravelQuote {
-  return planNovelTravel(legacyView(state), locationId, travelVehicle(state.locationId, locationId, vehicleId)).quote;
+  return planNovelTravel(legacyView(state), locationId, travelVehicle(state.locationId, locationId, vehicleId), state).quote;
 }
 
 export interface RouteOutlook {
@@ -981,7 +981,7 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
         note(next, action.type === 'court_docket' ? '事务所公布今日三份委托。' : action.type === 'court_special' ? '特殊委托卷宗已送达。' : action.type === 'court_open' ? '随机委托已受理，庭审开始。' : action.type === 'court_quote' ? '诉前咨询与费用报价已确认。' : action.type === 'court_step' ? '庭审有了新的进展：' + action.summary : action.type === 'court_assist' ? '橘雪莉正式接手庭审。' : action.type === 'court_settlement' ? '双方提出了新的和解条件，等待原告决定。' : action.type === 'court_fulfill' ? '已记录法律义务履行：'+action.description : '庭审已结束：' + action.summary);
         break;
       }
-      case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }); break;
+      case 'travel': next = reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId }, worldAuthority); break;
       case 'service': {
         if (action.serviceId !== COURT_OBSERVE_ID) {
           next = reduceLegacyState(next, { type: 'location_service', serviceId: action.serviceId });
@@ -1635,7 +1635,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'novel_travel': {
-      const planned = planNovelTravel(next, action.locationId, travelVehicle(next.locationId, action.locationId, action.vehicleId));
+      const planned = planNovelTravel(next, action.locationId, travelVehicle(next.locationId, action.locationId, action.vehicleId), worldAuthority);
       if (planned.quote.blockedReason) throw new Error(planned.quote.blockedReason);
       return parseStateCore(planned.next, true);
     }
@@ -1716,6 +1716,19 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.interior) throw new Error('请先离开当前房间。');
       const room = getCampusInterior(action.roomId);
       if (!room) throw new Error('不存在的室内地点。');
+      if (room.id === 'residential-mutsumi') {
+        const guest = worldAuthority ?? next;
+        const arrival = gameMinute(next);
+        const invited = guest.protagonists?.socialInvitations?.some(visit => {
+          if (visit.owner !== activeProtagonist(guest) || visit.locationId !== room.id
+            || visit.status !== 'accepted' || visit.agenda?.status !== 'scheduled'
+            || agendaTargetResident(guest, visit) !== 'bang-mutsumi') return false;
+          const from = visit.agenda.steps.find(step => step.kind === 'arrive');
+          const until = visit.agenda.steps.find(step => step.kind === 'leave');
+          return !!from && !!until && arrival >= from.at && arrival < until.at;
+        });
+        if (!invited) throw new Error('请先和睦约好到她家做客的时间。可以在高原住宅区等她。');
+      }
       if (room.id === 'court-hearing') {
         if (next.courtroom?.active) throw new Error('正式庭审进行中，旁听入口暂不可用。');
         if (!getLocationStatus(room.id, next.clock)?.isOpen) throw new Error('法院旁听席开放时间为 09:00–17:00。');

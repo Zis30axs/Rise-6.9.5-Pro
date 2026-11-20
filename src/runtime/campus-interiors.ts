@@ -1,3 +1,4 @@
+import { wakabaEntrance } from './highland';
 import venues from './affinity-venues.json' with { type: 'json' };
 import { sceneLandmarks } from '../frontend/scene-layout';
 import type { SceneMovementWorld } from '../frontend/scene-movement';
@@ -76,6 +77,17 @@ export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, '
 
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
 const campusInteriorRooms: readonly CampusInterior[] = [
+  {
+    id: 'residential-mutsumi', label: '若叶家·起居室与阳台', parentLocationId: 'highland',
+    description: '沿玄关进入起居室，推拉窗外是朝南的阳台。木栏杆下的花箱搭着黄瓜架，几朵小黄花藏在叶子里。',
+    entrance: wakabaEntrance, bounds, spawn,
+    obstacles: [{ id: 'wakaba-planters', kind: 'shelf', minX: -2.8, maxX: 2.8, minZ: -4.6, maxZ: -3.7 }],
+    interactions: [{
+      id: 'wakaba-tend-vines', label: '照料阳台的黄瓜架', description: '沿着竹架扶好藤蔓，给花箱浇水。',
+      x: 0, z: -2.6, minutes: 10, energyDelta: -1, result: '给若叶家阳台的黄瓜浇了水，扶正垂下的藤蔓。',
+      prompt: '照料花箱已经花去十分钟。睦是否正在身旁、是否愿意递来黄瓜，以本轮在场与赠礼记录为准。',
+    }],
+  },
   {
     id: MARGO_CAFE_ROOM_ID, label: '玛格咖啡馆', parentLocationId: MARGO_CAFE_LOCATION_ID,
     description: '宝生玛格经营的街边咖啡馆。柜台旁摆着咖啡器具与当日甜点，窗边有可坐下喝茶、阅读或画画的小桌；南侧店门通向露台。',
