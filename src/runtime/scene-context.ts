@@ -1,7 +1,7 @@
 import type { CharacterContact, CharacterPortraitId, InteriorPresence, ScenePresence } from '../frontend/types';
 import { contactRelationNote, affinityRelation } from './affinity-tiers';
 import { allResidentCast, residentPresence } from './npc-cast';
-import { housingForPerson, residentOutfit } from './majo-housing';
+import { housingForInterior, housingForPerson, residentOutfit } from './majo-housing';
 import { PROTAGONIST_PERSON_IDS } from './dual-protagonists';
 import { characterForPerson } from '../frontend/character-appearance';
 export type { ScenePresence } from '../frontend/types';
@@ -203,7 +203,6 @@ export const hiddenProtagonistPersons = (state: { protagonists?: { accounts?: { 
   return person ? [person] : [];
 };
 /** Static identity/position authority for stored encounters; never a live population. */
-const RESIDENTIAL_INTERIOR_HOMES = new Set(['residential-mutsumi', 'amaori-family-home', 'ouzuka-residence', 'sena-family-home', 'koto-apartment', 'koyanagi-home', 'nanoka-honoka-home', 'soyo-house']);
 export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
   if (roomId === 'court-hearing') return [
     {id:'court-judge',name:'审判长',candidateName:'审判长',identity:'法官',tags:['法庭'],
@@ -247,10 +246,14 @@ export function getInteriorPeopleForValidation(roomId: string): ScenePerson[] {
       portraitId: characterForPerson(marina.id), contactId: null, isMain: false,
     }] : [];
   }
-  if (RESIDENTIAL_INTERIOR_HOMES.has(roomId)) {
-    return allResidentCast.filter(r => r.home === roomId).map((resident, idx) => ({
+  const housing = housingForInterior(roomId);
+  if (housing || roomId === 'clinic') {
+    const occupants = allResidentCast.filter(resident => roomId === 'clinic'
+      ? resident.id === 'fengjin' : housingForPerson(resident.id)?.interiorId === roomId);
+    const identity = roomId === 'clinic' ? '医师' : roomId === 'toyokawa-executive-tower' ? '董事长' : '住户';
+    return occupants.map((resident, idx) => ({
       id: resident.id, name: resident.name, candidateName: resident.name,
-      identity: '住户', tags: ['常驻人物', '住户'],
+      identity, tags: ['常驻人物', identity],
       description: resident.publicProfile, x: -1.5 + idx * 1.2, z: 0.8, locationId: roomId,
       color: 0x859c6d, portraitId: characterForPerson(resident.id), contactId: null, isMain: false,
     }));

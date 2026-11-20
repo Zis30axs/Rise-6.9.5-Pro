@@ -1,4 +1,7 @@
+import { housingForInterior, type MajoHousingType } from '../runtime/majo-housing';
 import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
+import towerDay from '../../assets/backgrounds/toyokawa-executive-day.webp?inline';
+import towerNight from '../../assets/backgrounds/toyokawa-executive-night.webp?inline';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
@@ -121,8 +124,20 @@ const majoBackgrounds: Readonly<Record<string, MajoBackgroundEntry>> = Object.fr
   'grand-commercial': { src: majoDistrictArt['riverfront-highrise'], imagePhase: 'dusk' },
 });
 
+const interiorByHousingType = {
+  'old-family-house': 'koko-old-house', 'modern-open-plan': 'emma-yuki-home',
+  'riverfront-highrise': 'majo-highrise-home', 'traditional-courtyard': 'nikaido-house',
+  'shared-apartment': 'anan-noa-milia-home', 'studio-apartment': 'majo-studio',
+} satisfies Record<MajoHousingType, string>;
+
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
+  if (locationId === 'toyokawa-executive-tower') {
+    const phase = novelBackgroundPhase(hour);
+    const night = phase === 'night';
+    return { id: 'toyokawa-executive-' + (night ? 'night' : 'day'), src: night ? towerNight : towerDay,
+      phase, imagePhase: night ? 'night' : 'day', source: 'model-render' };
+  }
   if (locationId === 'highland' || locationId === 'residential-mutsumi') {
     const phase = novelBackgroundPhase(hour);
     const view = locationId === 'highland' ? 'district' : 'house';
@@ -178,7 +193,9 @@ export function getNovelBackground(locationId: string, hour: number): NovelBackg
     phase: novelBackgroundPhase(hour), imagePhase: 'night', source: 'legacy' };
   if (locationId === 'aquarium') return { id: 'aquarium-day', src: aquariumDay,
     phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'user-art' };
-  const authored = Object.hasOwn(majoBackgrounds, locationId) ? majoBackgrounds[locationId] : undefined;
+  const housing = housingForInterior(locationId);
+  const artKey = housing?.visit ? interiorByHousingType[housing.type] : locationId;
+  const authored = Object.hasOwn(majoBackgrounds, artKey) ? majoBackgrounds[artKey] : undefined;
   if (authored) {
     const phase = novelBackgroundPhase(hour);
     const nightSrc = phase !== 'day' ? authored.nightSrc : undefined;

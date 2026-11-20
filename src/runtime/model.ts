@@ -1716,18 +1716,20 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       if (next.interior) throw new Error('请先离开当前房间。');
       const room = getCampusInterior(action.roomId);
       if (!room) throw new Error('不存在的室内地点。');
-      if (room.id === 'residential-mutsumi') {
+      if (room.id === 'clinic' && !getLocationStatus('clinic', next.clock)?.isOpen) throw new Error('门诊开放时间为 08:00–22:00。');
+      if (room.id === 'residential-mutsumi' || room.id === 'mizuho-apartment') {
+        const hostId = room.id === 'residential-mutsumi' ? 'bang-mutsumi' : 'toyokawa-mizuho';
         const guest = worldAuthority ?? next;
         const arrival = gameMinute(next);
         const invited = guest.protagonists?.socialInvitations?.some(visit => {
           if (visit.owner !== activeProtagonist(guest) || visit.locationId !== room.id
             || visit.status !== 'accepted' || visit.agenda?.status !== 'scheduled'
-            || agendaTargetResident(guest, visit) !== 'bang-mutsumi') return false;
+            || agendaTargetResident(guest, visit) !== hostId) return false;
           const from = visit.agenda.steps.find(step => step.kind === 'arrive');
           const until = visit.agenda.steps.find(step => step.kind === 'leave');
           return !!from && !!until && arrival >= from.at && arrival < until.at;
         });
-        if (!invited) throw new Error('请先和睦约好到她家做客的时间。可以在高原住宅区等她。');
+        if (!invited) throw new Error(hostId === 'bang-mutsumi' ? '请先和睦约好到她家做客的时间。可以在高原住宅区等她。' : '请先和瑞穗约好到她家做客的时间。');
       }
       if (room.id === 'court-hearing') {
         if (next.courtroom?.active) throw new Error('正式庭审进行中，旁听入口暂不可用。');

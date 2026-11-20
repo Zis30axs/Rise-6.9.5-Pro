@@ -40,6 +40,11 @@ export function getAdjacentLocations(state: Pick<WorldState, 'locationId' | 'int
   };
   if (room) {
     add(room.parentLocationId, 'exit');
+    // These doors connect two rooms in a single building.
+    for (const [front, back] of [['clinic', 'clinic-room'], ['onigawara-laundry', 'onigawara-laundry-home']]) {
+      if (room.id === front) add(back, 'enter');
+      if (room.id === back) add(front, 'exit');
+    }
     return result;
   }
   novelScenePlaces.filter(item => item.parentLocationId === origin).forEach(item => add(item.id, 'enter'));

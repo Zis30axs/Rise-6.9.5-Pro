@@ -1,3 +1,4 @@
+import { allHousings } from './majo-housing';
 import { wakabaEntrance } from './highland';
 import venues from './affinity-venues.json' with { type: 'json' };
 import { sceneLandmarks } from '../frontend/scene-layout';
@@ -75,8 +76,28 @@ export function getMlmWorkBlockedReason(interaction: Pick<InteriorInteraction, '
   return stress >= MLM_WORK_STRESS_LIMIT ? `压力过高（${stress}/100），先休息到 ${MLM_WORK_STRESS_LIMIT} 以下再工作。` : null;
 }
 
+const residentialRooms: CampusInterior[] = allHousings.flatMap(home => {
+  if (!home.visit) return [];
+  const { x, z, feature, detail = home.description } = home.visit;
+  return [{
+    id: home.interiorId, label: home.label, description: home.description,
+    parentLocationId: home.parentLocationId, entrance: { x, z, yaw: 0 }, bounds, spawn,
+    obstacles: [{ id: home.id + '-table', kind: 'desk', minX: -3.5, maxX: -1.8, minZ: -2, maxZ: -.9 }],
+    interactions: [{
+      id: home.id + '-observe', label: '看看' + feature, description: detail,
+      x: -2.5, z: .4, minutes: 0, energyDelta: 0, result: detail, prompt: detail,
+    }],
+  }];
+});
+
 /** Prototype campus rooms, shared by movement, deterministic state and rendering. */
 const campusInteriorRooms: readonly CampusInterior[] = [
+  ...residentialRooms,
+  {
+    id: 'clinic', label: '街区全科诊所', parentLocationId: 'commercial',
+    description: '风堇的门诊里设有候诊区、问诊桌和茶歇角。侧廊尽头的一扇门通往她的起居室。',
+    entrance: { x: 173, z: 135, yaw: 0 }, bounds, spawn, obstacles: [], interactions: [],
+  },
   {
     id: 'residential-mutsumi', label: '若叶家·起居室与阳台', parentLocationId: 'highland',
     description: '沿玄关进入起居室，推拉窗外是朝南的阳台。木栏杆下的花箱搭着黄瓜架，几朵小黄花藏在叶子里。',
