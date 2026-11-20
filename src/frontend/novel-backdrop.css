@@ -28,6 +28,13 @@
   background: linear-gradient(155deg, #27334b, #465264 55%, #212c40);
 }
 
+.novel-backdrop[data-background-source='paris-model'][data-background-phase='dusk'] .novel-backdrop__image {
+  filter: sepia(.22) saturate(1.14) brightness(.82);
+}
+.novel-backdrop[data-background-source='paris-model'][data-background-phase='night'] .novel-backdrop__image {
+  filter: saturate(.55) brightness(.54);
+}
+
 @media (orientation: portrait) {
   /* Keep the stone fountain in frame when the landscape artwork fills a phone. */
   .novel-backdrop:is([data-novel-background='asukayama'], [data-novel-background='asukayama-park']) .novel-backdrop__image {

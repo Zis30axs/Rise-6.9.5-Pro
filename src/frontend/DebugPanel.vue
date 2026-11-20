@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { locations } from '../runtime/model';
+import { parisPlaces } from '../runtime/paris';
 import { beijingPlaces, isBeijingLocation } from '../runtime/beijing';
 import { californiaPlaces, isInternationalLocation } from '../runtime/california';
 import { campusInteriors } from '../runtime/campus-interiors';
@@ -415,6 +416,7 @@ function saveCalendar() {
             <article class="debug-country-card">
               <h3>加州沙盘</h3>
               <div class="debug-presets">
+                <button type="button" data-debug-sandbox="cdg-airport" :disabled="model.busy" @click="teleportTo('cdg-airport', true, true)">巴黎戴高乐机场 · 打开沙盘</button>
                 <button type="button" data-debug-sandbox="sfo-airport" :disabled="model.busy" @click="teleportTo('sfo-airport', true, true)">旧金山机场 · 打开沙盘</button>
                 <button type="button" data-debug-sandbox="california-openai" :disabled="model.busy" @click="teleportTo('california-openai', true, true)">OpenAI 旧金山 · 打开沙盘</button>
                 <button type="button" data-debug-sandbox="california-los-angeles" :disabled="model.busy" @click="teleportTo('california-los-angeles', true, true)">洛杉矶 · 打开沙盘</button>
@@ -444,6 +446,9 @@ function saveCalendar() {
                 </optgroup>
                 <optgroup label="中国北京">
                   <option v-for="loc in beijingPlaces" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
+                </optgroup>
+                <optgroup label="巴黎市区与机场">
+                  <option v-for="loc in parisPlaces" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                 </optgroup>
                 <optgroup label="美国加州">
                   <option v-for="loc in californiaPlaces" :key="loc.id" :value="loc.id">{{ loc.name }}</option>

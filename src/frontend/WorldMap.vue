@@ -42,6 +42,8 @@ import CitySandboxScene from './CitySandboxScene.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
 import CaliforniaSandbox from './CaliforniaSandbox.vue';
 import BeijingSandbox from './BeijingSandbox.vue';
+import { isParisLocation, parisLocalClock } from '../runtime/paris';
+import ParisSandbox from './ParisSandbox.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
@@ -51,6 +53,26 @@ import openAiMark from '../../assets/openai-mark.svg?inline';
 
 const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
 const emit = defineEmits<{ travelled: [] }>();
+const parisOpened = ref(isParisLocation(props.model.state.locationId));
+const showParis = ref(parisOpened.value);
+watch(() => props.model.state.locationId, (id, previous) => {
+  if (isParisLocation(id)) openParis();
+  else if (isParisLocation(previous)) showParis.value = false;
+});
+const parisTime = computed(() => {
+  const {hour,minute} = parisLocalClock(props.model.state.clock);
+  return String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0');
+});
+async function departParis(id: string) {
+  if (destinationDisabled(id)) return;
+  showParis.value = false;
+  await nextTick(); // Release the native dialog before the host interaction overlay opens.
+  await travelTo(id);
+}
+function openParis() {
+  parisOpened.value = true;
+  showParis.value = true;
+}
 const showBeijing = ref(isBeijingLocation(props.model.state.locationId));
 watch(() => props.model.state.locationId, id => { showBeijing.value = isBeijingLocation(id); });
 function beijingQuote(id: string) { return getNovelTravelQuote(props.model.state, id); }
@@ -200,7 +222,9 @@ const cityPlaces = mapDistricts;
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
 const novelQuotes = computed(() => new Map(novelDestinations.map(place => [place.id, getNovelTravelQuote(props.model.state, place.id)])));
-const overseasRoutes = computed(() => internationalConnections(props.model.state.locationId));
+const internationalRoutes = computed(() => internationalConnections(props.model.state.locationId));
+const parisRoutes = computed(() => internationalRoutes.value.filter(leg => isParisLocation(leg.from) || isParisLocation(leg.to)));
+const overseasRoutes = computed(() => internationalRoutes.value.filter(leg => !isParisLocation(leg.from) && !isParisLocation(leg.to)));
 const beijingRoutes = computed(() => beijingConnections(props.model.state.locationId));
 function venueStatusText(locationId: string) {
   const status = getLocationStatus(locationId, props.model.state.clock);
@@ -692,6 +716,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
   <BeijingSandbox v-if="showBeijing" :location-id="model.state.locationId" :routes="beijingRoutes" :clock="model.state.clock" :quote="beijingQuote" :busy="model.busy" @travel="travelTo" @back="showBeijing = false" />
   <CaliforniaSandbox v-else-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
   <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
+    <ParisSandbox v-if="parisOpened" :open="showParis" :location-id="model.state.locationId" :busy="model.busy" :routes="parisRoutes" :local-time="parisTime" :quote="id => novelQuotes.get(id)" @travel="departParis" @back="showParis = false" />
     <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
     <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
@@ -785,6 +810,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <div class="wm-region-list" :aria-label="layer === 'world' ? '国家与地区列表' : '地区列表'"><button v-for="feature in filteredFeatures" :key="feature.properties.id" type="button" :data-atlas-feature-id="feature.properties.id" :class="{ active: selectedId === feature.properties.id }" :aria-pressed="selectedId === feature.properties.id" @click="selectFeature(feature)">{{ featureName(feature) }}<small v-if="isUnion(feature)">苏联 · 架空世界</small></button><p v-if="!filteredFeatures.length" class="wm-detail-note">{{ search ? '未找到对应名称。' : '此地区在当前底图中没有一级区划，保留国家整体浏览。' }}</p></div>
           <div v-if="activeLandmark" class="wm-selected-region"><small class="wm-kicker">地标 · 微缩模型</small><h3>{{ activeLandmark.name }}</h3><p class="wm-detail-note">{{ activeLandmark.detail }}</p></div>
           <div v-else-if="selectedFeature" class="wm-selected-region"><small class="wm-kicker">{{ isUnion(selectedFeature) ? '架空世界设定' : '地图浏览' }}</small><h3>{{ featureName(selectedFeature) }}</h3><p v-if="isUnion(selectedFeature)" class="wm-detail-note">本架空世界保留苏维埃社会主义共和国联盟。</p><p v-if="selectedFeature.properties.id === '330000'" class="wm-detail-note">主角所在省份；标记为省域示意，城市尚未命名。</p></div>
+          <button v-if="selectedFeature?.properties.id === 'FRA' || activeLandmark?.countryId === 'FRA' || (layer !== 'world' && countryId === 'FRA')" type="button" class="wm-outline-button" data-paris-preview @click="openParis">打开巴黎展示沙盘</button>
           <div v-if="selectedFeature || activeLandmark" class="wm-journey-actions"><button type="button" @click="draftJourney('visit')">计划访问</button><button type="button" @click="draftJourney('study')">留学意向</button></div>
           <p v-if="itineraryDraft" class="wm-draft" role="status">{{ itineraryDraft }}</p>
           <div v-if="nearbyLandmarks.length && layer !== 'world'" class="wm-landmark-list"><h3>区域地标</h3><button v-for="item in nearbyLandmarks" :key="item.id" type="button" @click="activateTarget('landmark:' + item.id)">{{ item.name }}<span aria-hidden="true">↗</span></button></div>
@@ -796,6 +822,12 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
           <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
           <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
+        </section>
+        <section v-if="novelMode || parisRoutes.length" class="wm-overseas-routes" aria-label="巴黎旅行">
+          <h3>东京 · 巴黎</h3>
+          <p class="wm-detail-note">从羽田飞抵戴高乐机场，在 Roissypôle 换乘 RER B 前往塞纳河市区。</p>
+          <button type="button" class="wm-outline-button" @click="openParis">查看巴黎市区与机场</button>
+          <button v-for="leg in parisRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-paris-route="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ novelDestinations.find(p => p.id === leg.to)?.name }} · {{ leg.method }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
         <section v-if="novelMode || beijingRoutes.length || isBeijingLocation(model.state.locationId)" class="wm-overseas-routes" aria-label="北京旅行">
           <small class="wm-kicker">中国 · 北京</small><h3>北京城市沙盘</h3>

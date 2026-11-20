@@ -71,6 +71,7 @@ import { getStoreAvailability } from '../runtime/convenience-store';
 import { r27et1Equipped, studyPointsWithEquipment } from '../runtime/equipment';
 import { getActivityEffects } from '../runtime/activity-effects';
 import { getNovelTravelQuote, locations } from '../runtime/model';
+import { isParisLocation, parisLocalClock } from '../runtime/paris';
 import { isInternationalLocation } from '../runtime/california';
 import { MYSTERY_VISITOR_ID, MYSTERY_VISITOR_NAME, SECOND_MYSTERY_VISITOR_ID, SECOND_MYSTERY_VISITOR_NAME, mysteryVisitorPresent, secondMysteryVisitorPresent } from '../runtime/mystery-visitor';
 import mysteryVisitorPortrait from '../../assets/npc-portraits/mystery-visitor.webp?inline';
@@ -1118,7 +1119,7 @@ onBeforeUnmount(() => {
       </section>
     </div>
     <div :inert="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || debugOpen" :aria-hidden="!model.state.academics || !!model.interaction || !!switchingLease || !!pendingCourtSwitch || debugOpen || undefined" style="display: contents">
-    <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="model.state.clock.hour" :scene="model.state.scene" />
+    <NovelBackdrop v-if="novelMode" :location-id="model.state.locationId" :hour="isParisLocation(model.state.locationId) ? parisLocalClock(model.state.clock).hour : model.state.clock.hour" :scene="model.state.scene" />
     <NovelInvitationPortraits v-if="live2dReady && visibleInvitationStage"
       :refresh-token="graphicsRevision"
       :pair="visibleInvitationStage.pair" :focus="visibleInvitationStage.focus"

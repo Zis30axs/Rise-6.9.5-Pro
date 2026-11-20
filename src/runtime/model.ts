@@ -46,6 +46,7 @@ import { getAcademicMajor, getAcademicSubject, getAcademicSubjectById, getAcadem
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, courtObservationServiceForMinutes, getLocationServiceQuote, getLocationStatus, getTakeawayQuote, locationServiceCatalog } from './location-services';
 import { isCircleVenueRoom } from './circle-venue';
 import { californiaPlaces, internationalLeg, isInternationalLocation, parseCaliforniaState, PRO200_CLAIM_SERVICE_ID, PRO200_RESELL_SERVICE_ID, PRO200_GAME_ITEM_ID } from './california';
+import { isParisLocation, parisPlaces } from './paris';
 import { beijingPlaces, beijingTravelLeg, isBeijingLocation } from './beijing';
 import { FULL_RESET_ITEM_ID, PRO500_ITEM_ID, MYSTERY_GIFT_RESET_COUNT, mysteryVisitorPresent, parseMysteryVisitorState,
   secondMysteryVisitorPresent, MAX20X_ITEM_ID, KYC_ITEM_ID, LAST_DECISION_ITEM_ID } from './mystery-visitor';
@@ -95,6 +96,7 @@ export const locations: Location[] = [
   ...novelScenePlaces.map(room => ({ id: room.id, name: room.label, subtitle: room.outdoors ? '户外地点' : '室内地点', description: room.description, x: room.entrance.x, y: room.entrance.z })),
   ...californiaPlaces.map(place => ({ ...place, x: 0, y: 0 })),
   ...beijingPlaces.map(place => ({ ...place, x: 0, y: 0 })),
+  ...parisPlaces.map(place => ({ ...place, x: 0, y: 0 })),
 ];
 
 /** Navigation remains limited to existing, reachable landmarks and authored rooms. */
@@ -113,6 +115,7 @@ export const novelDestinations: readonly NovelDestination[] = [
   ...novelScenePlaces.filter(room => room.id !== 'court-hearing').map(room => ({ id: room.id, name: room.label, description: room.description, kind: room.outdoors ? 'outdoor' as const : 'interior' as const, parentLocationId: room.parentLocationId })),
   ...californiaPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
   ...beijingPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
+  ...parisPlaces.map(place => ({ id: place.id, name: place.name, description: place.description, kind: 'outdoor' as const })),
 ];
 
 export interface NovelTravelQuote {
@@ -158,7 +161,7 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
     if (next.locationId === locationId) { quote.alreadyThere = true; return { next, quote }; }
     if (isInternationalLocation(next.locationId) || isInternationalLocation(locationId) || isBeijingLocation(next.locationId) || isBeijingLocation(locationId)) {
       const leg = beijingTravelLeg(next.locationId, locationId) ?? internationalLeg(next.locationId, locationId);
-      if (!leg) throw new Error('跨城市旅行只能沿北京、东京、加州的已开放线路逐站前往，不能直接传送。');
+      if (!leg) throw new Error('跨城市旅行只能沿东京、北京、加州和巴黎的已开放线路逐站前往，不能直接传送。');
       if (next.interior) throw new Error('请先离开建筑，再前往机场交通站。');
       quote.minutes = leg.minutes;
       quote.fare = leg.fare;
@@ -174,7 +177,8 @@ function planNovelTravel(state: WorldState, locationId: string, vehicleId: strin
       next.interior = null;
       next.scene = null;
       next.locationId = leg.to;
-      note(next, `搭乘${leg.method}抵达${locations.find(place => place.id === leg.to)!.name}，耗时 ${leg.minutes} 分钟，车票 ¥${leg.fare}。`);
+      const movement = leg.method.endsWith('步行') ? leg.method : '搭乘' + leg.method;
+      note(next, `${movement}抵达${locations.find(place => place.id === leg.to)!.name}，耗时 ${leg.minutes} 分钟，车票 ¥${leg.fare}。`);
       return { next, quote };
     }
     // Quote the complete trip even when the real player cannot afford it. This
@@ -1673,6 +1677,9 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'travel': {
+      if (isParisLocation(next.locationId) || isParisLocation(action.locationId)) {
+        return reduceLegacyState(next, { type: 'novel_travel', locationId: action.locationId });
+      }
       if (next.interior) throw new Error('请先离开房间，再选择前往其他地点。');
       if (requiresTransitReturn(next.locationId, next.scene)) throw new Error('当前在远郊，请到交通站乘车返回校园后再步行前往。');
       if (action.locationId !== 'bus-stop' && !mapLocations.some(location => location.id === action.locationId)) throw new Error('不存在的地点。');

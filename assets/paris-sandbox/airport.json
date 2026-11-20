@@ -1,0 +1,4 @@
+[
+  {"id":"cdg-airport","name":"巴黎戴高乐机场一号航站楼","fr":"Aérogare 1","area":"巴黎戴高乐机场","description":"环形航站楼围着露天庭院。到达大厅可以换乘 CDGVAL 前往铁路车站，出发层办理返回东京的航班。","target":[-13,2.4,-1],"span":34},
+  {"id":"paris-roissypole","name":"Roissypôle 机场换乘站","fr":"Roissypôle · Aéroport CDG 1","area":"机场铁路换乘","description":"穿过站厅，乘 RER B 前往圣米歇尔－巴黎圣母院站。返程在这里换乘 CDGVAL 前往一号航站楼。","target":[24,1.55,6.2],"span":27}
+]

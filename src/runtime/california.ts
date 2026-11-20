@@ -1,11 +1,12 @@
 import type { WorldState } from '../frontend/types';
 import type { StoreItem } from './convenience-store';
 import type { ProtagonistId } from './dual-protagonists';
+import { parisPlaces, parisTravelLegs } from './paris';
 import { gameCalendar } from './game-calendar';
 
 /** Small fictional overseas extension. No foreign coordinate is placed on the Tokyo 3D map. */
 export const californiaPlaces = [
-  { id: 'haneda-airport', name: '东京羽田国际机场', subtitle: '国际航站楼', description: '通往旧金山的国际航班从这里出发，须先到东京的南门交通站转乘机场接驳车。' },
+  { id: 'haneda-airport', name: '东京羽田国际机场', subtitle: '国际航站楼', description: '前往旧金山、北京和巴黎的国际航班从这里出发，须先到东京的南门交通站转乘机场接驳车。' },
   { id: 'sfo-airport', name: '旧金山国际机场', subtitle: '加州 · 入境大厅', description: '旧金山湾区的国际航空门户，可以搭乘机场接驳车前往市区，也可以购票返回东京。' },
   { id: 'california-openai', name: 'OpenAI 办公地点', subtitle: '加州 · 旧金山', description: 'OpenAI 访客大厅设有专门的登记柜台，开放时可申请领取 Pro200 收藏券。' },
   { id: 'california-anthropic', name: 'Anthropic 访客中心', subtitle: '加州 · 旧金山', description: '湾区另一家 AI 公司，设有安静的访客大厅与研究展示区。神秘研究者偶尔会在附近出现。' },
@@ -21,7 +22,7 @@ export const californiaPlaces = [
   { id: 'california-san-diego', name: '圣迭戈', subtitle: '加州 · 南部海岸', description: '南加州海滨城市，靠近美墨边境。' },
 ] as const;
 
-const foreignLocationIds: ReadonlySet<string> = new Set(californiaPlaces.map(place => place.id));
+const foreignLocationIds: ReadonlySet<string> = new Set([...californiaPlaces, ...parisPlaces].map(place => place.id));
 export function isInternationalLocation(locationId: string): boolean {
   return foreignLocationIds.has(locationId);
 }
@@ -39,6 +40,7 @@ export interface InternationalLeg {
   method: string;
 }
 const travelLegs: readonly InternationalLeg[] = [
+  ...parisTravelLegs,
   { from: 'bus-stop', to: 'haneda-airport', minutes: 50, fare: 1200, method: '机场接驳车' },
   { from: 'haneda-airport', to: 'sfo-airport', minutes: 600, fare: 48000, method: '东京至旧金山国际航班' },
   { from: 'sfo-airport', to: 'california-openai', minutes: 65, fare: 2600, method: '湾区机场接驳车' },

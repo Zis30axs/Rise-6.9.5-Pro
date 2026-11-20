@@ -1,0 +1,80 @@
+[
+  {
+    "id": "eiffel",
+    "name": "埃菲尔铁塔",
+    "fr": "Tour Eiffel",
+    "area": "战神广场",
+    "description": "四组桁架从广场向内收拢，两层观景台横跨塔腿，细长的塔尖从中央升起。",
+    "target": [
+      -30,
+      11.45,
+      7
+    ],
+    "span": 37
+  },
+  {
+    "id": "arc",
+    "name": "凯旋门",
+    "fr": "Arc de Triomphe",
+    "area": "戴高乐广场",
+    "description": "从环岛望去，可以穿过中央拱洞看到对面的街道。转到侧面，还能看见横向的小拱门。",
+    "target": [
+      -31,
+      2.5,
+      -19
+    ],
+    "span": 19
+  },
+  {
+    "id": "louvre",
+    "name": "卢浮宫",
+    "fr": "Musée du Louvre",
+    "area": "拿破仑庭院",
+    "description": "沿杜乐丽花园的中轴线望去，玻璃金字塔坐落在宫殿两翼之间。",
+    "target": [
+      12.35,
+      1.8,
+      -12.3
+    ],
+    "span": 27
+  },
+  {
+    "id": "notre-dame",
+    "name": "巴黎圣母院",
+    "fr": "Notre-Dame de Paris",
+    "area": "西岱岛",
+    "description": "西立面的双塔、玫瑰窗与交叉部尖塔共同构成教堂的轮廓，飞扶壁沿中殿两侧排开。",
+    "target": [
+      32,
+      2.2,
+      1.355
+    ],
+    "span": 20
+  },
+  {
+    "id": "invalides",
+    "name": "荣军院",
+    "fr": "Hôtel des Invalides",
+    "area": "左岸",
+    "description": "金色穹顶立在柱鼓之上。转过庭院，能看见环绕圆顶的肋线与顶端的小灯亭。",
+    "target": [
+      -4,
+      3,
+      16.95
+    ],
+    "span": 24
+  },
+  {
+    "id": "alexandre",
+    "name": "亚历山大三世桥",
+    "fr": "Pont Alexandre III",
+    "area": "塞纳河",
+    "description": "桥面两端各立着一对饰金桥柱。沿河面望去，可以看清低矮的钢拱与桥上的灯列。",
+    "target": [
+      -10.5,
+      1.3,
+      -2.718
+    ],
+    "span": 19
+  }
+]
