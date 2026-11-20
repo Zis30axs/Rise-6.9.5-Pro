@@ -10,10 +10,12 @@ import { getUseItemQuote, getInventoryCatalog } from '../runtime/convenience-sto
 import type { ShellActions, ShellModel } from './types';
 
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
-const entries = computed(() => getInventoryCatalog().flatMap(item => {
-  const quote = getUseItemQuote(props.model.state, item.id);
-  return quote.owned > 0 ? [{ item, quote }] : [];
-}));
+const entries = computed(() => {
+  const state = props.model.state;
+  const held = new Set(state.inventory.map(row => row.itemId));
+  return getInventoryCatalog(state).filter(item => held.has(item.id))
+    .map(item => ({ item, quote: getUseItemQuote(state, item.id) }));
+});
 const owner = computed(() => props.model.state.protagonists?.accounts.active ?? 'soyo');
 const equipmentEntries = computed(() => equipmentCatalog.flatMap(item => {
   const quote = equipmentQuote(props.model.state, owner.value, item.id);
@@ -87,12 +89,15 @@ async function useItem(itemId: string) {
       </article>
       <article v-for="{ item, quote } in entries" :key="item.id" class="inventory-item" :data-inventory-product="item.id">
         <div class="inventory-item-heading"><StoreProductImage :item-id="item.id" :name="item.name" class="inventory-product-image" /><div class="inventory-item-title"><small>{{ item.brand }}</small><h3>{{ item.name }}</h3></div><span class="inventory-owned" data-inventory-quantity>{{ quote.owned }} {{ item.useUnit }}</span></div>
-        <p v-if="item.equipmentKind" class="inventory-serving">常驻道具 · 装备后学习效率 +25% · 多支不叠加 · 不消耗</p>
+        <p v-if="item.description" class="inventory-serving">{{ item.description }}</p>
+        <p v-if="item.category === 'tool'" class="inventory-serving">可重复使用 · 每次 {{ item.useMinutes }} 分钟</p>
+        <p v-else-if="item.category === 'supply'" class="inventory-serving">每次消耗 1 {{ item.useUnit }} · 用时 {{ item.useMinutes }} 分钟</p>
+        <p v-else-if="item.equipmentKind" class="inventory-serving">常驻道具 · 装备后学习效率 +25% · 多支不叠加 · 不消耗</p>
         <p v-else-if="item.category === 'ingredient'" class="inventory-serving">下厨用食材</p>
         <p v-else-if="item.category !== 'collectible'" class="inventory-serving">每{{ item.useUnit }} {{ item.kcal }} kcal · 用时 {{ item.useMinutes }} 分钟</p>
         <p v-else-if="item.id === 'pro200-game-voucher'" class="inventory-serving">收藏券 · 可前往湾区二手交易市场出售</p>
         <p v-else class="inventory-serving">随身珍藏</p>
-        <p v-if="!quote.blockedReason" class="inventory-actual-effects" data-use-preview>此次实际变化：<template v-for="(effect, index) in actualChanges(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < actualChanges(quote).length - 1"> · </template></template></p>
+        <p v-if="!quote.blockedReason && actualChanges(quote).length" class="inventory-actual-effects" data-use-preview>此次实际变化：<template v-for="(effect, index) in actualChanges(quote)" :key="effect.key"><span :class="{ harmful: effect.harmful }">{{ effect.label }} {{ signed(effect.value) }}{{ effect.unit }}</span><template v-if="index < actualChanges(quote).length - 1"> · </template></template></p>
         <div v-if="item.equipmentKind" class="inventory-use-row equipment-actions">
           <button v-for="slotId in EQUIPMENT_SLOTS.filter(slot => item.equipmentKind === (slot === 'special' ? 'special' : 'permanent'))"
             :key="slotId" type="button" class="inventory-use" :data-equip-slot="slotId"

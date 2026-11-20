@@ -191,6 +191,7 @@ export interface WorldState {
   wardrobe?: import('../runtime/wardrobe-state').WardrobeState;
   player: PlayerState;
   /** Quantities count individual uses, not purchased packages. */
+  storyItems?: import('../runtime/story-items').RegisteredStoryItem[];
   inventory: { itemId: string; quantity: number; equipped?: boolean | import('../runtime/equipment').EquipmentSlot }[];
   academics: AcademicState | null;
   phone: { id: string; npcId: string; text: string; read: boolean; at: string }[];
@@ -286,6 +287,7 @@ export type StoryAction =
   | { type: 'pack'; itemId: string; quantity: number }
   | { type: 'takeaway'; serviceId: string; quantity: number }
   | { type: 'gift'; itemId: string; quantity: number; npcId: string; affinityDelta: number; reason: string }
+  | { type: 'create_item'; itemId: string; quantity: number; reason: string; definition?: import('../runtime/story-items').StoryItemDetails }
   | { type: 'receive_scene_gift'; npcId: string; itemId: string }
   | { type: 'npc_trait_gift'; npcId: string; itemId: string; quantity: number; traitId: string; reason: string }
   | { type: 'mutsumi_balance'; delta: number; reason: string }

@@ -60,6 +60,7 @@ import { applyLivehouseVisit, parseLivehouseVisit } from './livehouse-visit';
 import { initialNpcProfessions, parseNpcProfessions } from './npc-professions';
 import { initialCourtroom, parseCourtroom, courtAction, courtStoryAction, abandonTrialOnSwitch, deliverCourtRecap, isCourtInSession, acknowledgeCourtTransfers } from './courtroom';
 import { acknowledgeWorldChronicle, parseWorldChronicleState } from './world-chronicle';
+import { parseStoryItemCatalog } from './story-items';
 import { sceneGiftOffers } from './scene-gifts';
 import { acknowledgeNpcGiftDaily, parseNpcGiftDailyState } from './npc-gift-traits';
 import { applyMutsumiBalanceTurn, hasMutsumiBalanceReceipt, mutsumiBalanceOpportunity } from './mutsumi-balance';
@@ -314,6 +315,7 @@ export function createInitialState(): WorldState {
     npcProfessions: initialNpcProfessions(),
     livehouse: createInitialLivehouse(),
     player: { energy: 80, balance: 6560, ...initialPlayerNeeds },
+    storyItems: [],
     inventory: [{ itemId: 'crychic-photo', quantity: 1 }],
     academics: null,
     phone: [],
@@ -737,25 +739,27 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
   const hasCalifornia = version === '1.11.0' && Object.hasOwn(value, 'california');
   const hasMysteryVisitor = version === '1.11.0' && Object.hasOwn(value, 'mysteryVisitor');
   const hasAnthropicVisitor = version === '1.11.0' && Object.hasOwn(value, 'anthropicVisitor');
+  const hasStoryItems = version === '1.11.0' && Object.hasOwn(value, 'storyItems');
   const hasMorale = version === '1.8.0' || (version === '1.9.0' || version === '1.10.0' || version === '1.11.0');
   const hasInventory = version === '1.7.0' || hasMorale;
   const hasTransit = version === '1.6.0' || hasInventory;
   const hasInterior = version === '1.3.0' || version === '1.4.0' || version === '1.5.0' || hasTransit;
   const hasAirTraffic = hasInterior || version === '1.2.0';
   const hasYen = Object.hasOwn(value, 'currency');
-  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasNpcGiftDaily ? ['npcGiftDaily'] : []), ...(hasWardrobe ? ['wardrobe'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
+  const state = object(value, ['schema_version', ...(hasYen ? ['currency'] : []), 'clock', 'locationId', 'player', 'phone', 'contacts', 'schedule', 'journal', 'story', ...(version !== '1.0.0' ? ['scene'] : []), ...(hasAirTraffic ? ['airTraffic'] : []), ...(hasInterior ? ['interior'] : []), ...(hasTransit ? ['transit'] : []), ...(hasInventory ? ['inventory'] : []), ...(hasStoryItems ? ['storyItems'] : []), ...((version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? ['academics'] : []), ...(hasInteractionEventRate ? ['interactionEventRate'] : []), ...(hasAutonomousSms ? ['autonomousSms'] : []), ...(hasMargoCafeDaily ? ['margoCafeDaily'] : []), ...(hasLivehouse ? ['livehouse'] : []), ...(hasLawCareer ? ['lawCareer'] : []), ...(hasCourtroom ? ['courtroom'] : []), ...(hasNpcProfessions ? ['npcProfessions'] : []), ...(hasFengjinClinic ? ['fengjinClinic'] : []), ...(hasWeather ? ['weather'] : []), ...(hasCooking ? ['cooking'] : []), ...(hasLivehouseVisit ? ['livehouseVisit'] : []), ...(hasWorldChronicle ? ['worldChronicle'] : []), ...(hasNpcGiftDaily ? ['npcGiftDaily'] : []), ...(hasWardrobe ? ['wardrobe'] : []), ...(hasCalifornia ? ['california'] : []), ...(hasMysteryVisitor ? ['mysteryVisitor'] : []), ...(hasAnthropicVisitor ? ['anthropicVisitor'] : [])], 'state');
   if (hasYen && state.currency !== 'JPY') return invalid('currency');
   const clock = object(state.clock, ['day', 'hour', 'minute'], 'clock');
   const player = object(state.player, ['energy', 'balance', ...(hasInventory ? ['health', 'stress', 'satiety', 'foodEnergy'] : []), ...(hasMorale ? ['morale'] : [])], 'player');
+  const storyItems = hasStoryItems ? parseStoryItemCatalog(state.storyItems) : [];
   const inventory: WorldState['inventory'] = [];
   if (hasInventory) {
-    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length + equipmentCatalog.length) return invalid('inventory');
+    if (!Array.isArray(state.inventory) || state.inventory.length > getInventoryCatalog().length + storyItems.length + equipmentCatalog.length) return invalid('inventory');
     for (const [index, value] of state.inventory.entries()) {
       const path = `inventory[${index}]`;
       const hasEquipped = !!value && typeof value === 'object' && Object.hasOwn(value, 'equipped');
       const item = object(value, ['itemId', 'quantity', ...(hasEquipped ? ['equipped'] : [])], path);
       const itemId = id(item.itemId, `${path}.itemId`);
-      if ((!getStoreItem(itemId) && !getEquipmentItem(itemId)) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
+      if ((!getStoreItem(itemId, { storyItems }) && !getEquipmentItem(itemId)) || inventory.some(entry => entry.itemId === itemId)) return invalid(`${path}.itemId`);
       if (hasEquipped && getEquipmentItem(itemId) && typeof item.equipped !== 'boolean') return invalid(`${path}.equipped`);
       if (hasEquipped && !getEquipmentItem(itemId) &&
         (!isEquipmentSlot(item.equipped) || !canEquipItem(itemId, item.equipped) ||
@@ -807,7 +811,7 @@ function parseStateCore(value: unknown, deferProtagonists = false): WorldState {
     player: { energy: hasMorale ? energyNumber(player.energy, 'player.energy') : number(player.energy, 'player.energy', 0, 100), balance: number(player.balance, 'player.balance', 0, 20_000_000, false),
       ...(hasInventory ? { health: number(player.health, 'player.health', 0, 100), stress: number(player.stress, 'player.stress', 0, 100), satiety: number(player.satiety, 'player.satiety', 0, 100), foodEnergy: number(player.foodEnergy, 'player.foodEnergy', 0, 3000) } : initialPlayerNeeds),
       morale: hasMorale ? number(player.morale, 'player.morale', 0, 100) : 70 },
-    inventory,
+    inventory, storyItems,
     academics: (version === '1.9.0' || version === '1.10.0' || version === '1.11.0') ? parseAcademics(state.academics, parsedClock, version === '1.9.0') : null,
     phone: list(state.phone, 'phone', STATE_LIMITS.phone, (value, path) => {
       const item = object(value, ['id', 'npcId', 'text', 'read', 'at'], path);
@@ -1015,6 +1019,19 @@ function applyLegacyStoryActions(state: WorldState, actions: readonly StoryActio
       case 'pack': next = reduceLegacyState(next, { type: 'pack_item', itemId: action.itemId, quantity: action.quantity }); break;
       case 'takeaway': next = reduceLegacyState(next, { type: 'pack_service', serviceId: action.serviceId, quantity: action.quantity }); break;
       case 'gift': next = reduceLegacyState(next, { ...action, type: 'gift_item' }); break;
+      case 'create_item': {
+        const catalog = next.storyItems ??= [];
+        if (action.definition && !catalog.some(row => row.itemId === action.itemId))
+          catalog.push({ itemId: action.itemId, definition: action.definition });
+        const item = getStoreItem(action.itemId, next)!;
+        const owned = next.inventory.find(row => row.itemId === action.itemId);
+        if ((owned?.quantity ?? 0) + action.quantity > INVENTORY_ITEM_LIMIT)
+          throw new Error(`${item.name}最多可保存 ${INVENTORY_ITEM_LIMIT} ${item.useUnit}。`);
+        if (owned) owned.quantity += action.quantity;
+        else next.inventory.push({ itemId: action.itemId, quantity: action.quantity });
+        note(next, `获得${item.name} ${action.quantity} ${item.useUnit}。${action.reason}`);
+        break;
+      }
       case 'receive_scene_gift':
       case 'npc_trait_gift': {
         if (action.type === 'receive_scene_gift' && !sceneGiftOffers(courtView(next)).some(
@@ -1499,7 +1516,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       break;
     }
     case 'gift_item': {
-      const item = getStoreItem(action.itemId);
+      const item = getStoreItem(action.itemId, next);
       const contact = next.contacts.find(contact => contact.id === action.npcId);
       if (!item || !contact) throw new Error('不存在的礼物或收礼人。');
       if (!Number.isInteger(action.quantity) || action.quantity < 1 || action.quantity > 20) throw new Error('赠送数量必须是 1–20 的整数。');
@@ -1520,7 +1537,7 @@ function reduceLegacyState(state: WorldState, action: WorldAction, worldAuthorit
       const startDay = next.clock.day;
       advance(next, quote.minutes);
       next.player = applyWeatherForElapsedDays(quote.playerAfter, startDay, next.clock.day);
-      next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
+      if (quote.item.category !== 'tool') next.inventory = next.inventory.flatMap(entry => entry.itemId !== action.itemId ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
       const labels = { energy: '精力', health: '健康', morale: '精神', stress: '压力', satiety: '饱腹', foodEnergy: '食物能量' } as const;
       const changes = (Object.keys(labels) as (keyof typeof labels)[]).filter(key => (quote.changes[key] ?? 0) !== 0).map(key => `${labels[key]}${(quote.changes[key] ?? 0) > 0 ? '+' : ''}${quote.changes[key]}${key === 'foodEnergy' ? ' kcal' : ''}`).join('，');
       const transition = detectIllnessTransition(before, next.player);

@@ -6,12 +6,15 @@ import { cafeInventoryItems } from './margo-cafe-menu';
 import { pro200GameItem } from './california';
 import { mysteryVisitorItems, secondMysteryVisitorItems } from './mystery-visitor';
 
+import { storyInventoryItem } from './story-items';
+
 export interface StoreItem {
+  readonly description?: string;
   readonly id: string;
   readonly name: string;
   readonly brand: string;
   readonly tier: 'basic' | 'standard' | 'premium';
-  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine' | 'ingredient' | 'stationery' | 'collectible';
+  readonly category: 'meal' | 'snack' | 'drink' | 'cigarette' | 'medicine' | 'ingredient' | 'stationery' | 'collectible' | 'tool' | 'supply';
   readonly equipmentKind?: 'permanent' | 'special';
   readonly price: number;
   readonly packSize: number;
@@ -66,7 +69,11 @@ export const INVENTORY_ITEM_LIMIT = 999;
 export const PACKAGING_FEE = 40;
 export const initialPlayerNeeds = Object.freeze({ health: 90, stress: 25, satiety: 70, foodEnergy: 1200, morale: 70 });
 
-export function getStoreItem(itemId: string): StoreItem | null {
+export function getStoreItem(itemId: string, owner?: Pick<WorldState, 'storyItems'>): StoreItem | null {
+  if (itemId.startsWith('story-')) {
+    const registered = owner?.storyItems?.find(row => row.itemId === itemId);
+    return registered ? storyInventoryItem(registered) : null;
+  }
   return getInventoryCatalog().find(item => item.id === itemId) ?? null;
 }
 
@@ -126,8 +133,8 @@ export const sceneGiftItems = [
   sceneGift('hiro-poured-tea', '希罗斟的茶', '二阶堂希罗', 'drink', '杯', 0, 3),
 ] as const;
 
-export function getInventoryCatalog(): readonly StoreItem[] {
-  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems, ...npcTraitGiftItems, ...sceneGiftItems];
+export function getInventoryCatalog(owner?: Pick<WorldState, 'storyItems'>): readonly StoreItem[] {
+  return [...storeCatalog, ...stationeryCatalog, ...takeawayProducts.map(product => getServiceTakeawayItem(product.serviceId)!), ...cafeInventoryItems(), ...cookingDishItems(), pro200GameItem, ...mysteryVisitorItems, ...secondMysteryVisitorItems, ...npcTraitGiftItems, ...sceneGiftItems, ...(owner?.storyItems ?? []).map(storyInventoryItem)];
 }
 
 export function getStoreAvailability(state: Pick<WorldState, 'locationId' | 'interior'>) {
@@ -167,7 +174,7 @@ export function advancePlayerNutrition(player: PlayerState, clock: WorldState['c
 }
 
 export function getUseItemQuote(state: WorldState, itemId: string) {
-  const item = getStoreItem(itemId);
+  const item = getStoreItem(itemId, state);
   const owned = state.inventory.find(entry => entry.itemId === itemId)?.quantity ?? 0;
   const minutes = item?.useMinutes ?? 0;
   let blockedReason = !item ? '不存在的商品。' : owned < 1 ? '背包里没有这件商品。'

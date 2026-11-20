@@ -298,7 +298,7 @@ export function mountShell(
       }
     } catch (error) { model.notice = message(error); return false; }
     model.busy = true; model.notice = '';
-    const label = interactionLabel(action);
+    const label = interactionLabel(action, original);
     model.interaction = { phase: 'progress', label, progress: 0 };
     return new Promise<boolean>(resolve => {
       const pending: PendingInteraction = { request: ++epoch, action: { ...action }, label, original, prepared, cafeOffer, working: true, resolve };

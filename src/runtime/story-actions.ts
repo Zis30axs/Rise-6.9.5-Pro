@@ -1,5 +1,6 @@
 import { isConfessionStatus } from './affinity-tiers';
-import { getEquipmentItem } from './equipment';
+import { MAX_STORY_ITEM_TYPES, parseStoryItemDetails, storyItemId } from './story-items';
+import { equipmentCatalog, getEquipmentItem } from './equipment';
 import type { StoryAction, WorldState } from '../frontend/types';
 import { sceneLandmarks } from '../frontend/scene-layout';
 import { parisPlaces } from './paris';
@@ -11,7 +12,7 @@ import { getAcademicSubjectById } from './academics';
 import { isSocialSkillId, type SocialDeviation } from './social-skills';
 import { worldScenePeople, worldScenePosition, worldSceneRoster } from './world-presence';
 import { personState } from './protagonist-world';
-import { getServiceTakeawayItem, getStoreItem, sceneGiftItems, storeCatalog, stationeryCatalog } from './convenience-store';
+import { getInventoryCatalog, getServiceTakeawayItem, getStoreItem, sceneGiftItems, storeCatalog, stationeryCatalog } from './convenience-store';
 import { isEquipmentSlot, canEquipItem } from './equipment';
 import { isCafeStoryItem } from './margo-cafe-menu';
 import { COURT_OBSERVE_ID, COURT_OBSERVE_MAX_MINUTES, courtObservationKnowledgeCap, locationServiceCatalog } from './location-services';
@@ -59,6 +60,8 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
     return invalid('每轮最多一次若叶睦心境天平变动');
   if (value.filter(item => !!item && typeof item === 'object' && (item as Record<string, unknown>).type === 'social_invite').length > 3)
     return invalid('每轮最多三项邀约');
+  const storyItems = new Map(state.storyItems?.map(row => [row.itemId, row.definition]));
+  const knownItem = (itemId: string) => storyItems.has(itemId) || !!getStoreItem(itemId);
   const receivedSceneItems = new Set<string>();
   const seenNpcTraitGifts = new Set<string>();
   const courtObservations = value.filter(item => !!item && typeof item === 'object' &&
@@ -211,12 +214,28 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
       }
       case 'gift': {
         const item = record(raw, ['type', 'itemId', 'quantity', 'npcId', 'affinityDelta', 'reason'], path);
-        if (typeof item.itemId !== 'string' || !getStoreItem(item.itemId)) return invalid(`${path} 礼物`);
+        if (typeof item.itemId !== 'string' || !knownItem(item.itemId)) return invalid(`${path} 礼物`);
         if (typeof item.npcId !== 'string' || !state.contacts.some(contact => contact.id === item.npcId)) return invalid(`${path} 收礼人`);
         return { type: 'gift', itemId: item.itemId, npcId: item.npcId,
           quantity: number(item.quantity, 1, STORY_ACTION_LIMITS.quantity, `${path} 数量`),
           affinityDelta: number(item.affinityDelta, 0, STORY_ACTION_LIMITS.relationshipDelta, `${path} 送礼增益`),
           reason: text(item.reason, 240, `${path} 送礼依据`) };
+      }
+      case 'create_item': {
+        const hasDefinition = Object.hasOwn(raw, 'definition');
+        const row = record(raw, ['type', 'itemId', 'quantity', 'reason', ...(hasDefinition ? ['definition'] : [])], path);
+        const itemId = storyItemId(row.itemId);
+        const existing = storyItems.get(itemId);
+        const definition = hasDefinition ? parseStoryItemDetails(row.definition) : undefined;
+        if (definition) {
+          if (existing && JSON.stringify(existing) !== JSON.stringify(definition)) return invalid(path + ' 不能改写已登记的物品');
+          if (!existing && (storyItems.size >= MAX_STORY_ITEM_TYPES ||
+              [...getInventoryCatalog(), ...equipmentCatalog].some(item => item.name === definition.name)))
+            return invalid(path + ' 目录已满或与现有商品、专属物品同名');
+          storyItems.set(itemId, definition);
+        } else if (!existing) return invalid(path + ' 新物品需要定义');
+        return { type: 'create_item', itemId, quantity: number(row.quantity, 1, STORY_ACTION_LIMITS.quantity, path),
+          reason: text(row.reason, 240, path), ...(definition ? { definition } : {}) };
       }
       case 'receive_scene_gift': {
         const row = record(raw, ['type', 'npcId', 'itemId'], path);
@@ -266,7 +285,7 @@ export function validateStoryActions(value: unknown, state: WorldState, replayTu
       }
       case 'use': {
         const item = record(raw, ['type', 'itemId'], path);
-        if (typeof item.itemId !== 'string' || !getStoreItem(item.itemId)) return invalid(`${path} 商品`);
+        if (typeof item.itemId !== 'string' || !knownItem(item.itemId)) return invalid(`${path} 商品`);
         return { type: 'use', itemId: item.itemId };
       }
       case 'interact': {

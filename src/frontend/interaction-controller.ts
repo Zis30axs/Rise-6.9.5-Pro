@@ -14,20 +14,20 @@ export function isGameplayInteraction(action: WorldAction): boolean {
   return !['equip_item', 'unequip_item', 'receive_cafe_gift', 'choose_academics', 'walk', 'interior_walk', 'novel_approach', 'encounter', 'air_traffic_tick', 'read_phone', 'strategy', 'society', 'faction_focus'].includes(action.type);
 }
 
-export function interactionLabel(action: WorldAction): string {
+export function interactionLabel(action: WorldAction, owner?: Pick<WorldState, 'storyItems'>): string {
   switch (action.type) {
     case 'law_case': return action.phase === 'accept'
       ? '承接' + (lawCases.find(item => item.id === action.caseId)?.title ?? '法律委托')
       : action.phase === 'investigate' ? '调查案件' : action.phase === 'present' ? '提交证据' : '请雪莉协助推理';
     case 'location_service': return locationServiceCatalog.find(item => item.id === action.serviceId)?.label ?? '地点服务';
     case 'pack_service': return `打包${locationServiceCatalog.find(item => item.id === action.serviceId)?.label ?? '餐点'}`;
-    case 'buy_item': return `购买${getStoreItem(action.itemId)?.name ?? (action.itemId === CAFE_DAILY_SPECIAL_ID ? '每日特调' : '商品')}`;
-    case 'pack_item': return `打包${getStoreItem(action.itemId)?.name ?? '商品'}`;
-    case 'use_item': return `使用${getStoreItem(action.itemId)?.name ?? '物品'}`;
+    case 'buy_item': return `购买${getStoreItem(action.itemId, owner)?.name ?? (action.itemId === CAFE_DAILY_SPECIAL_ID ? '每日特调' : '商品')}`;
+    case 'pack_item': return `打包${getStoreItem(action.itemId, owner)?.name ?? '商品'}`;
+    case 'use_item': return `使用${getStoreItem(action.itemId, owner)?.name ?? '物品'}`;
     case 'cook_begin': return '下厨';
     case 'cook_cancel': return '离开厨房';
     case 'cook_settle': return '停下指针';
-    case 'gift_item': return `赠送${getStoreItem(action.itemId)?.name ?? '物品'}`;
+    case 'gift_item': return `赠送${getStoreItem(action.itemId, owner)?.name ?? '物品'}`;
     case 'novel_travel':
     case 'travel': return `前往${locations.find(item => item.id === action.locationId)?.name ?? '目的地'}`;
     case 'enter_interior': return `进入${campusInteriors.find(room => room.id === action.roomId)?.label ?? '室内'}`;

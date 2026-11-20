@@ -32,7 +32,7 @@ import { fitsMarketSession } from './stock-market/market.mjs';
 export const protagonistNames = { soyo: '长崎素世', sakiko: '丰川祥子', emma: '樱羽艾玛', renako: '甘织玲奈子' } as const;
 /** Game configuration, not a claim about the original work. Awarded only once. */
 export const SAKIKO_START_CENTS = 2_400_000;
-export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'player', 'inventory', 'academics', 'phone', 'contacts', 'schedule', 'journal', 'story'] as const;
+export const personalKeys = ['locationId', 'scene', 'interior', 'transit', 'player', 'inventory', 'storyItems', 'academics', 'phone', 'contacts', 'schedule', 'journal', 'story'] as const;
 export type PersonalState = Pick<WorldState, typeof personalKeys[number]>;
 export interface CalendarEvent { id: string; title: string; locationId: string; start: number; duration: number; reminded: boolean; stockCode?: string; reviewed?: boolean }
 export interface PhoneNotification { id: string; text: string; at: number; read: boolean }
@@ -119,7 +119,10 @@ export const otherProtagonists = (id: ProtagonistId): ProtagonistId[] => PROTAGO
 export const otherProtagonist = (id: ProtagonistId): ProtagonistId => otherProtagonists(id)[0]!;
 export const gameMinute = (s: Pick<WorldState, 'clock'>): number => (s.clock.day - 1) * 1440 + s.clock.hour * 60 + s.clock.minute;
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
-export function personalState(s: PersonalState): PersonalState { return Object.fromEntries(personalKeys.map(k => [k, clone(s[k])])) as unknown as PersonalState; }
+export function personalState(s: PersonalState): PersonalState {
+  const withCatalog = { ...s, storyItems: s.storyItems ?? [] };
+  return Object.fromEntries(personalKeys.map(key => [key, clone(withCatalog[key])])) as unknown as PersonalState;
+}
 export function legacyView(s: WorldState): WorldState { const { protagonists: _p, ...base } = s; return { ...base, schema_version: '1.11.0' }; }
 export function personState(s: WorldState, owner: ProtagonistId): PersonalState {
   const p = s.protagonists;
@@ -163,7 +166,7 @@ function emmaPersonalState(s: Pick<WorldState, 'scene' | 'clock'>): PersonalStat
   return {
     locationId: 'home', scene: { x: -190, z: 130, yaw: 0, areaId: 'home', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
-    player: { energy: 80, balance: EMMA_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
+    player: { energy: 80, balance: EMMA_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], storyItems: [], academics: null,
     contacts: emmaInitialFriendContacts(), phone: [], schedule: [], journal: [protagonistOpeningJournal('emma', s.clock)],
     story: [{ id: 'emma-opening', role: 'assistant', text: protagonistOpening('emma', s.clock) }],
   };
@@ -172,7 +175,7 @@ function renakoPersonalState(s: Pick<WorldState, 'scene' | 'clock'>): PersonalSt
   return {
     locationId: 'home', scene: { x: -176, z: 130, yaw: 0, areaId: 'home', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
-    player: { energy: 80, balance: RENAKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
+    player: { energy: 80, balance: RENAKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], storyItems: [], academics: null,
     contacts: renakoInitialFriendContacts(), phone: [], schedule: [], journal: [protagonistOpeningJournal('renako', s.clock)],
     story: [{ id: 'renako-opening', role: 'assistant', text: protagonistOpening('renako', s.clock) }],
   };
@@ -208,7 +211,7 @@ export function enableProtagonists(s: WorldState): WorldState {
   const inactive: PersonalState = {
     locationId: 'downtown', scene: { x: point?.x ?? x, z: point?.z ?? z, yaw: 0, areaId: 'downtown', seed: s.scene?.seed ?? 'dual-world-v1', encounterId: null },
     interior: null, transit: { sequence: 0, lastRide: null },
-    player: { energy: 80, balance: SAKIKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], academics: null,
+    player: { energy: 80, balance: SAKIKO_START_CENTS / 100, ...initialPlayerNeeds }, inventory: [], storyItems: [], academics: null,
     contacts: [knownProtagonistContact('soyo', protagonistNames.soyo), ...sakikoInitialBandContacts(), ...sakikoInitialFamilyContacts()], phone: [], schedule: [], journal: [protagonistOpeningJournal('sakiko', s.clock)],
     story: [{ id: 'sakiko-opening', role: 'assistant', text: protagonistOpening('sakiko', s.clock) }],
   };
@@ -253,12 +256,15 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
     if (!['inspect','send_message','change_calendar','order_delivery','buy'].includes(String(e.operation))) return fail('手机审计操作无效');
     return {id:identifier(e.id),actor:actor(e.actor),owner:actor(e.owner),operation:e.operation as 'inspect'|'send_message'|'change_calendar'|'order_delivery'|'buy',authorized:boolean(e.authorized),detail:string(e.detail),at:string(e.at,80)};
   }));
-  const rawInactive = exact(p.inactive, [...personalKeys]);
-  const inactive = personalState(parseLegacy({ ...base, ...rawInactive, schema_version: '1.11.0' }));
+  function readPersonal(value: unknown): PersonalState {
+    const hasCatalog = !!value && typeof value === 'object' && Object.hasOwn(value, 'storyItems');
+    const row = exact(value, personalKeys.filter(key => key !== 'storyItems' || hasCatalog));
+    return personalState(parseLegacy({ ...base, storyItems: [], ...row, schema_version: '1.11.0' }));
+  }
+  const inactive = readPersonal(p.inactive);
   let third: PersonalState;
   if (hasThird) {
-    const rawThird = exact(p.third, [...personalKeys]);
-    third = personalState(parseLegacy({ ...base, ...rawThird, schema_version: '1.11.0' }));
+    third = readPersonal(p.third);
   } else {
     // 1.12 dual saves keep their exact `inactive` state and receive one
     // deterministic third protagonist at the current world seed/clock.
@@ -271,8 +277,7 @@ export function parseProtagonists(value: unknown, base: WorldState, parseLegacy:
   }
   let fourth: PersonalState;
   if (hasFourth) {
-    const rawFourth = exact(p.fourth, [...personalKeys]);
-    fourth = personalState(parseLegacy({ ...base, ...rawFourth, schema_version: '1.11.0' }));
+    fourth = readPersonal(p.fourth);
   } else {
     fourth = personalState(renakoPersonalState(base));
     if (legacyMoney) fourth.player.balance /= TOKYO_MONEY_FACTOR;

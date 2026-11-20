@@ -285,7 +285,7 @@ function complete(state: WorldState, owner: ProtagonistId, activity: BackgroundA
       personal.player.energy = adjustEnergy(personal.player.energy, -arrival.energyCost);
       Object.assign(personal, copy({ locationId: arrival.locationId, scene: arrival.scene, interior: arrival.interior, transit: arrival.transit }));
     } else if (activity.kind === 'meal') {
-      const item = getStoreItem(activity.target), owned = personal.inventory.find(row => row.itemId === activity.target);
+      const item = getStoreItem(activity.target, personal), owned = personal.inventory.find(row => row.itemId === activity.target);
       if (!item || item.category === 'cigarette' || !owned?.quantity || personal.player.health < -item.effects.health || minutes !== item.useMinutes) throw new Error('原食物已不可用');
       personal.inventory = personal.inventory.flatMap(row => row !== owned ? [row] : row.quantity > 1 ? [{ ...row, quantity: row.quantity - 1 }] : []);
       personal.player.energy = adjustEnergy(personal.player.energy, item.effects.energy);
@@ -344,7 +344,9 @@ function choose(state: WorldState, owner: ProtagonistId, at: number, reserved = 
     // Phone operations may replace this personal projection; read the owner afresh.
     const current = personState(state, owner);
     if (current.player.satiety > 40) return false;
-    const foods = getInventoryCatalog().filter(item => item.category !== 'cigarette' && item.effects.satiety > 0 && current.inventory.some(row => row.itemId === item.id && row.quantity > 0));
+    const held = new Set(current.inventory.filter(row => row.quantity > 0).map(row => row.itemId));
+    const foods = getInventoryCatalog(current).filter(item => held.has(item.id) && item.useMinutes > 0 && item.effects.satiety > 0
+      && item.category !== 'cigarette' && item.category !== 'tool' && item.category !== 'supply');
     const food = foods.find(item => item.category === 'meal') ?? foods[0];
     if (food) { plan('meal', food.useMinutes, `吃了自己背包中的${food.name}`, food.id); return true; }
     const outstanding = p.orders.some(order => order.owner === owner && (order.status === 'paid' || order.status === 'delivered') && storeCatalog.some(item => item.id === order.itemId && item.category !== 'cigarette' && item.category !== 'ingredient'));

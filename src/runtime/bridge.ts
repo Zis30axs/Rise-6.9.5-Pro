@@ -12,6 +12,7 @@ import { strategyPromptContext } from './strategy-narrative';
 import { gameCalendar, registrationNotice, hasStartedAcademicWeek } from './game-calendar';
 import { gameCalendarOccasions, upcomingGameCalendarOccasions } from './japan-calendar-events';
 import { pendingWorldChronicle } from './world-chronicle';
+import { knownStoryItems, STORY_ITEM_INSTRUCTION } from './story-items';
 import { sceneGiftOffers, sceneGiftInstruction } from './scene-gifts';
 import { npcGiftOpportunity, npcGiftPromptInstruction } from './npc-gift-traits';
 import { mutsumiBalanceOpportunity, mutsumiBalancePromptInstruction, mutsumiBalancePromptSummary } from './mutsumi-balance';
@@ -148,10 +149,10 @@ const STORY_PROTOCOL_PARTS = [
   '本轮必须输出关键标签块：<story>当前主角小说正文与角色对白（允许真实换行）</story><phone_messages>[]</phone_messages>，两个标签块缺一不可，必须正确闭合，禁止改为其它外层格式。有实际行动时，添加 <world_actions>有效 JSON 数组</world_actions>，例如 <world_actions>[{"type":"rest","kind":"rest","minutes":10}]</world_actions>；有合法空中事件时，添加 <world_events>[{"type":"airliner_pass"}]</world_events>。符合旁线抽样机会才可额外使用 <otherside>合法 JSON 数组</otherside>，有真实旁线且希望回到当前主角的叙事时，随后可追加 <story_continue>当前主角继续的中文正文</story_continue>。衣着变化可额外附加 <wardrobe_updates>受限 JSON 数组</wardrobe_updates>。每类标签最多一次，手机消息只含 npcId 和 text。禁止输出额外思考、解释或任意状态补丁；旧版 JSON 仅供程序读取历史记录，本轮禁止使用。',
   '你可以根据玩家本轮明确的行动直接管理游戏，通过 world_actions 执行出行、睡眠、等待、消费、使用物品、学习、日程、关系与日常活动。程序按顺序结算后将状态、正文和手机消息一起保存；按钮仍可使用，但不再要求玩家先点按钮。不要替玩家决定没有表达的新台词或内心。',
   '“睡了10个小时”“回宿舍睡10小时”“买瓶水喝掉”属于可直接执行的本轮行动：分别用 rest 的600分钟、travel后rest、buy后use，正文接续完成后的状态。玩家说“回家”时必须直接用 {"type":"go_home"} 进入当前主角自己的家，切勿只把人物放在住宅区门外。当前主角的 home.roomId 为真实住所，不能与其他主角混淆；如果已在家不需要重复移动。尊重明确的时长，不受按钮的时长档位限制。只是询问、假设、否定或回顾已有记录时不执行；普通交谈和观察默认不耗时。遇到确实缺少的关键选择可以在正文询问，不要机械地让玩家去点按钮。',
-  `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；ID逐字取自 actionCatalog、store.items、contacts、inventory 或 schedule。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
+  `world_actions 为数组，每轮最多 ${STORY_ACTION_LIMITS.actions} 项，无行动可省略或返回[]。只使用下列严格字段，不允许额外字段或任意状态补丁；已有 ID 逐字取自 actionCatalog、store.items、contacts、inventory 或 schedule；create_item 允许首次定义原创物品 ID。后续行动依据前序行动后的地点、时间、库存和余额检查；任何一项无效则整轮不保存。`,
   '行动格式：{"type":"travel","locationId":"目的地ID"}，支持室外、进入或离开房间及城市交通联程，路线费用与时间由程序结算；{"type":"rest","kind":"sleep或rest或wait","minutes":600}，整数1–10080分钟，可在当前地点直接执行，不强制回床铺；sleep满7小时恢复精力，其余休息按时长恢复，等待恢复较少。不得只在正文跳时间而遗漏行动。',
   COURT_PROMPT_RULES.observation,
-  '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用；{"type":"buy","itemId":"商品ID","quantity":1}在便利店买日用品，或在街角书店旁的文具店按价购买文具，均直接进背包，需先实际到场且营业。buy 的 quantity 是包装数量，每包包含 packSize 个使用单位，未列出时为 1。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 取自 cafeMenu，quantity 为 1–20。{"type":"use","itemId":"商品ID"}仅使用可直接食用的成品或消耗品，消耗一单位。烹饪食材和可装备文具不可 use。购买不自动使用；不得重复收费、增加学习点。',
+  '消费格式：{"type":"service","serviceId":"服务ID"}在所在地点点单并当场享用；{"type":"buy","itemId":"商品ID","quantity":1}在便利店买日用品，或在街角书店旁的文具店按价购买文具，均直接进背包，需先实际到场且营业。buy 的 quantity 是包装数量，每包包含 packSize 个使用单位，未列出时为 1。玛格咖啡馆营业时，cafeMenu 里的杯装饮品也用 buy，id 取自 cafeMenu，quantity 为 1–20。{"type":"use","itemId":"背包物品ID"}使用食饮或一次性用品时消耗一个单位；原创 tool 类工具使用后仍留在背包。烹饪食材和可装备文具不可 use。购买不自动使用；不得重复收费、增加学习点。',
   '装备格式：{"type":"equip","itemId":"stationery-r27et1","slot":"permanent-1"}将背包中的文具放入常驻道具栏；另一个常驻道具栏为 permanent-2，特殊道具栏为 special；slot=null 表示卸下。同栏新道具替换旧道具，旧道具留背包；只可装备自身持有、分类匹配的道具。R-27ET1 是导弹造型的学习用笔，500 日元一支；装备后本专业及跨专业学习点 +25%（按半点取整），多支不叠加。学习的精确结果由程序结算。',
   '带走食物使用{"type":"takeaway","serviceId":"食饮服务ID","quantity":1}在对应店铺打包，生成takeaway-加服务ID的背包物品；或{"type":"pack","itemId":"便利店食品ID","quantity":1}包装货架食品。每份另加40日元，quantity为整数1–20，只收款入包，不立即享用、不计算堂食时间，仍检查营业。普通buy仍可购买便利店原包装商品。',
   '【自由文本社交入口】玩家直接说“交换联系方式”“加好友”“发短信”或“邀请谁一起去哪里”，与点击社交或手机按钮完全等效，无需先建档、打开联系人编辑器或指定固定菜单。已有联系人可使用 {"type":"send_sms","targetId":"contacts精确ID","text":"玩家真想发送的话"}，这条短信将真实进入相应角色的手机，不要同时重复写入 phone_messages。尚未交换联系方式而恰好在近距离面对面的人物，若对方本轮明确表示愿意交换号码，使用 {"type":"exchange_contact","npcId":"附近人物的稳定ID","consentQuote":"对方本轮逐字同意的话"}，会自动建立真实联系人，不要求预先经过建档或联系人申请流程；拒绝、含糊不清、人物不在场都不能添加。NPC原有主动好友申请和群聊确认流程继续可用。只交换联系方式不等于默认同意约会、加入乐队或进入群聊。',
@@ -160,6 +161,7 @@ const STORY_PROTOCOL_PARTS = [
   '【计划变更】如果社会邀约被正式接受但旧存档没有 agenda，可以输出 {"type":"social_agenda","invitationId":"已保存邀约ID","decision":"plan","triggerId":"该邀约ID","reason":"规划依据","agenda":{"rationale":"计划理由","steps":[...]}}。已经规划的邀约，只在本轮真正发生的新事件或同一人物先前明确保留的决策节点触发时才能修改未执行步骤：{"type":"social_agenda","invitationId":"已保存邀约ID","decision":"revise","triggerId":"current","reason":"本轮实际新事件及人物心理延续","agenda":{"rationale":"计划理由","steps":[...]}}。取消或故意不去把 decision 改为 cancel/no_show，省略 agenda。triggerId="current" 指向本轮已保存的真实剧情，不得以重复读日程、刷新页面、制造灾祸、虚构短信等作为变更依据。同一个触发只可消费一次；已发生的出发、到场、消费和短信不可重写。改期须另一方真实确认，不能通过单方更改私人计划冒充双方重新达成约定。',
   '【静默日程与小说】socialAgendas 是同一世界的私人邀约专线，包含完整计划、实际已执行步骤、未叙述事件。当前主 LLM 始终可读取这些权威信息；角色只能知道本人亲历、公开承诺、已读取的真实短信与实际观察。若本轮 socialAgendas 中有与当前主角相关、unreported 包含 due 的约定到期事件，必须在本次 story 中以自然、简短、符合当前人物亲历和知情的方式承接：在场时可以描写迟到、等待、怀疑爽约；不在场时可以写想起已错过约定或看到真实收到的通知，不能凭空让角色知道对方秘密。若当下确实没有合理知觉则只保持全知的事件事实，绝不制造读取手机或到场的动作。只有真正收到短信才写 phone_messages，不要凭未发送的计划伪造消息。所有静默步骤由游戏时钟执行，模型不可在正文重复结算。到点不自动请求模型，玩家选择下次正常生成才接续未叙述事实；若本轮动作跨越未来日程节点，可以自然预感或想起约定，但不能提前写成已完成的行程。',
   '【通用消费】玩家明确花钱办理未单独建模的生活事务（例如给虚构手游充值、捐款、打赏、支付临时杂费），直接使用现有 activity 的 effects.balance 负数，label 交代实际付款和结果、minutes 写真实所需时间（最少1分钟），其他effects按实际情况填写或为0。程序通过统一余额和 Appie Pay 流水扣款、记录活动，不为每一种花钱方式创建独立 action 或专属消费系统。只有真实成交才扣款，问价、打算买、尚未确认金额时不结算；不得虚构玩家未同意的价格、绕过余额检查。已有 buy/service/pack/transfer、法院费用等专属结算仍必须使用原规则，不能借 activity 重复收费或规避商品库存、营业时间、双方转账。消费所得游戏虚拟内容可以按剧情叙述和现有日志保存，但不得冒充已被独立数值系统验证的库存、外部账户或第三方服务权益。',
+  STORY_ITEM_INSTRUCTION,
   '玩家赠送背包物品时使用{"type":"gift","itemId":"持有物品ID","quantity":1,"npcId":"联系人ID","affinityDelta":3,"reason":"本轮赠送依据"}；quantity为整数1–20，按实际使用单位扣库存，affinityDelta为整数0–20。结合物品和对方反应决定收益，不必每次固定加分；不得重复另用relationship为同一礼物加分。赠送不增加玩家饱腹或精力，不向不存在的联系人转移物品。',
   '室内与学习格式：{"type":"interact","interactionId":"物件ID"}在对应房间自动靠近并执行既有互动；学习用{"type":"study","subjectId":"学科ID","minutes":45}，支持整数15–240分钟。先travel到教室、自习室或书店再学习；教室限本专业，书店遵守营业时间。未选择专业时须先由玩家确认专业；除祥子与素世外，其他主角必须选修音乐专业才能预约开办 Livehouse 和创建乐队。',
   '管理格式：{"type":"schedule","title":"事项","locationId":"地点ID","time":"18:30"}新增日程；{"type":"complete_schedule","id":"已有日程ID"}标为完成，只有实际完成才使用，标记本身不推进时间或增加学习点；{"type":"relationship","npcId":"联系人ID","delta":3,"reason":"本轮互动依据"}调整亲密度，整数-20到20，以本轮实际交流为依据，不凭空批量加分。',
@@ -576,11 +578,15 @@ export function createTavernBridge(scriptWindow: Window): Bridge | null {
             timetable: topics.study ? getAcademicTimetable(snapshot.academics) : [] } : null;
         })(),
         equipment: equipmentContext(snapshot),
+        ...((!options?.kind || options.kind === 'interaction_event') && snapshot.storyItems?.length ? {
+          knownStoryItems: knownStoryItems(snapshot, input),
+        } : {}),
         inventory: snapshot.inventory.map(entry => {
           const gear = getEquipmentItem(entry.itemId);
           if (gear) return { itemId: gear.id, name: gear.name, quantity: entry.quantity, unit: gear.unit, equipped: entry.equipped === true };
-          const item = getStoreItem(entry.itemId)!;
-          return { itemId: item.id, name: item.name, brand: item.brand, tier: item.tier, quantity: entry.quantity, unit: item.useUnit, equipped: entry.equipped ?? null };
+          const item = getStoreItem(entry.itemId, snapshot)!;
+          return { itemId: item.id, name: item.name, brand: item.brand, tier: item.tier,
+            ...(item.description ? { description: item.description, category: item.category, useMinutes: item.useMinutes, kcal: item.kcal, effects: item.effects } : {}), quantity: entry.quantity, unit: item.useUnit, equipped: entry.equipped ?? null };
         }),
         equipmentSlots: EQUIPMENT_SLOTS.map(slot => ({ slot, itemId: equippedItem(snapshot, slot) })),
         actionCatalog: {
