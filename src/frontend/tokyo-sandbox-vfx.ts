@@ -1,3 +1,4 @@
+import { sections as riverSections, mid as riverPoint, sites as citySites } from './tokyo-diorama/plan';
 import * as THREE from 'three';
 import { disposeThreeTree } from './dispose-three-tree';
 
@@ -386,7 +387,8 @@ export function createTokyoSandboxVfx(
   const catalog = getModelCatalog(model);
   // Runtime-only decorations must not accumulate in the cached model catalogue.
   const emissiveEntries = [...catalog.emissiveEntries];
-  const { waterMaterials, streetlampPositions } = catalog;
+  const { waterMaterials } = catalog;
+  const streetlampPositions:THREE.Vector3[]=model.userData.streetlampPositions || catalog.streetlampPositions;
 
   // Create instanced glowing bulbs & light pools for all 56 streetlamps
   const glowTex = createRadialGlowTexture();
@@ -678,7 +680,11 @@ export function createTokyoSandboxVfx(
   shinkansenGroup.add(trainBeam);
   shinkansenGroup.position.set(-190, 0.32, 43.2);
   root.add(shinkansenGroup);
-  let trainX = -190;
+  let trainX = 150;
+  const rail=riverSections.map(s=>riverPoint(s.left,s.right,.82));
+  const railDistance=[0];
+  for(let i=1;i<rail.length;i++)railDistance.push(railDistance[i-1]+Math.hypot(rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]));
+  function onRail(at:number){const total=railDistance[railDistance.length-1],distance=((at%total)+total)%total;let i=1;while(i<rail.length-1&&railDistance[i]<distance)i++;const a=rail[i-1],b=rail[i];const p=riverPoint(a,b,(distance-railDistance[i-1])/(railDistance[i]-railDistance[i-1]));return {p,yaw:-Math.atan2(b[1]-a[1],b[0]-a[0])}}
 
   // 6. Patrolling Helicopter with Sweeping Volumetric Searchlight
   const heliGroup = new THREE.Group();
@@ -826,7 +832,7 @@ export function createTokyoSandboxVfx(
       bBulb.position.set(side * 7.8, 4.65, zPos);
       const bPool = new THREE.Mesh(poolGeom, lampPoolMat);
       bPool.position.set(side * 7.8, 0.14, zPos);
-      lampGroup.add(bBulb, bPool);
+      mejirodaiGroup.add(bBulb, bPool);
     }
   }
 
@@ -948,6 +954,7 @@ export function createTokyoSandboxVfx(
 
     mejirodaiGroup.add(tower);
   }
+  mejirodaiGroup.visible = model.name !== 'Tokyo-continuous-city';
   root.add(mejirodaiGroup);
 
   // 7. Skyscraper Rooftop Sky-Searchlights (城市天际线体积探照光束)
@@ -962,7 +969,8 @@ export function createTokyoSandboxVfx(
   ];
   const skyBeamGeom = new THREE.CylinderGeometry(7.5, 0.45, 92, 16, 1, true);
   skyBeamGeom.translate(0, 46, 0);
-  for (const b of beamAnchors) {
+  for (const [i,b] of beamAnchors.entries()) {
+    if(model.name==='Tokyo-continuous-city'){const anchor=citySites.filter(s=>s.form==='tower'||s.form==='sunshine')[i];if(!anchor)continue;b.x=anchor.x;b.y=anchor.h;b.z=anchor.z;}
     const pivot = new THREE.Group();
     pivot.position.set(b.x, b.y, b.z);
     const mat = new THREE.MeshBasicMaterial({
@@ -1105,6 +1113,7 @@ export function createTokyoSandboxVfx(
     sunLight.color.copy(profile.sunColor);
     sunLight.intensity = profile.sunIntensity;
     sunLight.position.copy(profile.sunDirection).multiplyScalar(480);
+    renderer.shadowMap.needsUpdate=true;
 
     rimLight.color.copy(profile.rimColor);
     rimLight.intensity = profile.rimIntensity;
@@ -1291,9 +1300,9 @@ export function createTokyoSandboxVfx(
     }
 
     // 3. Animate High-Speed Shinkansen Express Train
-    trainX += dt * 42;
-    if (trainX > 220) trainX = -195;
-    shinkansenGroup.position.x = trainX;
+    trainX += dt * 15;shinkansenGroup.position.set(0,2.94,0);
+    for(let i=0;i<carCount;i++){const car=shinkansenGroup.children[i],{p,yaw}=onRail(trainX-i*(carLen+.55));car.position.set(p[0],0,p[1]);car.rotation.y=yaw}
+    const head=shinkansenGroup.children[0];trainBeam.position.copy(head.position);trainBeam.rotation.y=head.rotation.y;trainBeam.translateX(carLen/2+9.5);
 
     // 4. Animate Patrolling Helicopter & Sweeping Searchlight
     const heliAngle = timeSec * 0.32;

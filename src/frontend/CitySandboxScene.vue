@@ -7,6 +7,11 @@ import { readLocalAssetBytes } from './local-asset-buffer';
 import toyokawaTower from '../../assets/models/toyokawa-executive-tower.glb?inline';
 import tokyoModelAsset from '../../assets/models/unread-city-tokyo-sandbox.glb?inline';
 
+import { hitSite } from './tokyo-diorama/picking';
+import { softwareView } from './tokyo-diorama/software';
+import { resolveTokyoAtmosphere } from './tokyo-sandbox-vfx';
+import { cityModel } from './tokyo-diorama/geometry';
+import { sites as citySites, byId as siteById, districtAt, groundHeight, nodes as streetNodes, streets as cityStreets, roadRoute, type Site } from './tokyo-diorama/plan';
 import { disposeThreeTree } from './dispose-three-tree';
 import { createHighlandModel } from './highland-geometry';
 import { attachAirportGeometry } from './airport-sandbox-geometry';
@@ -143,7 +148,7 @@ function writeIdbCachedGlbBytes(bytes: Uint8Array<ArrayBuffer>) {
 }
 
 /** Cold-load a private decoded tree; the Shell cache retains its complete runtime between openings. */
-async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
+async function loadTokyoGlb(assetUrl: string, templates=new Map<string,THREE.Object3D>()): Promise<THREE.Group> {
   let bytes = assetUrl === tokyoModelAsset && assetUrl.startsWith('data:')
     ? await readIdbCachedGlbBytes() : undefined;
   const cached = !!bytes;
@@ -163,11 +168,18 @@ async function loadTokyoGlb(assetUrl: string): Promise<THREE.Group> {
   });
   const parsed = (await new GLTFLoader(manager).parseAsync(bytes.buffer, '')).scene;
   optimizeGlbScene(parsed);
-  // The hash-pinned Tokyo GLB's base slab ends at y = -0.05.
-  parsed.add(createCircleSandboxGeometry(circleSandboxOverlay, -.05));
-  parsed.add(createHighlandModel());
-  attachAirportGeometry(parsed);
-  return parsed;
+  const roomBuildings:Record<string,string>={'building:supreme-courthouse':'courthouse','building:0:-14':'library','building:teaching-building':'teaching'};
+  parsed.traverse(n=>{const key=roomBuildings[n.userData.building?.id];if(key&&n.parent)templates.set(key,n.parent)});
+  // Transfer only the identifiable architectures; district swatches and stock skyline are not city geography.
+  const city=cityModel(templates);
+  for(const child of [...(parsed.children.length===1?parsed.children[0]:parsed).children]){
+    if(child.position.y>35&&child.children.length>=40){child.userData.isSu30=true;city.add(child);break}
+  }
+  // The retained architecture clones share resources with their source. Dispose only orphaned GPU resources.
+  const kept=new Set<THREE.BufferGeometry|THREE.Material|THREE.Texture>();
+  city.traverse(o=>{if(o instanceof THREE.Mesh){kept.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material]){kept.add(m);for(const value of Object.values(m))if(value instanceof THREE.Texture)kept.add(value)}}});
+  parsed.traverse(o=>{if(o instanceof THREE.Mesh){if(!kept.has(o.geometry))o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])if(!kept.has(m)){for(const v of Object.values(m))if(v instanceof THREE.Texture&&!kept.has(v))v.dispose();m.dispose()}}});
+  return city;
 }
 
 import {
@@ -226,21 +238,10 @@ interface BakedVehicleState {
 // Six main Tokyo grid arteries derived from sandbox road layout.
 // Note: buildVehicle constructs vehicles with front (+headlights) along local +Z,
 // so Eastbound (+X) has yaw = +Math.PI / 2 and Southbound (+Z) has yaw = 0.
-const trafficRoutes: TrafficRoute[] = [
-  // E-W Center Boulevard
-  { startX: -186, endX: 192, startZ: 48, endZ: 48, length: 378, dirX: 1, dirZ: 0, perpX: 0, perpZ: 1, yaw: Math.PI / 2 },
-  // E-W South Avenue
-  { startX: -186, endX: 158, startZ: 118, endZ: 118, length: 344, dirX: 1, dirZ: 0, perpX: 0, perpZ: 1, yaw: Math.PI / 2 },
-  // E-W North Avenue
-  { startX: -180, endX: 82, startZ: -82, endZ: -82, length: 262, dirX: 1, dirZ: 0, perpX: 0, perpZ: 1, yaw: Math.PI / 2 },
-  // N-S West Avenue
-  { startX: -82, endX: -82, startZ: -124, endZ: 168, length: 292, dirX: 0, dirZ: 1, perpX: -1, perpZ: 0, yaw: 0 },
-  // N-S East Avenue
-  { startX: 82, endX: 82, startZ: -165, endZ: 145, length: 310, dirX: 0, dirZ: 1, perpX: -1, perpZ: 0, yaw: 0 },
-  // N-S Waterfront Boulevard
-  { startX: 186, endX: 186, startZ: -24, endZ: 132, length: 156, dirX: 0, dirZ: 1, perpX: -1, perpZ: 0, yaw: 0 },
-];
-
+const trafficRoutes:TrafficRoute[]=cityStreets.filter(e=>e.width>4&&!e.bridge).filter((_,i)=>i%9===2).map(e=>{
+ const [startX,startZ]=streetNodes[e.a],[endX,endZ]=streetNodes[e.b],dx=endX-startX,dz=endZ-startZ,length=Math.hypot(dx,dz),dirX=dx/length,dirZ=dz/length;
+ return {startX,startZ,endX,endZ,length,dirX,dirZ,perpX:-dirZ,perpZ:dirX,yaw:Math.atan2(dirX,dirZ)};
+});
 function buildVehicle(color: THREE.ColorRepresentation, isTaxi = false, isBus = false): THREE.Group {
   const g = new THREE.Group();
   const len = isBus ? 6.6 : isTaxi ? 4.0 : 3.6;
@@ -654,6 +655,7 @@ const props = withDefaults(defineProps<{
   playerName?: string; playerId?: ProtagonistId;
   people?: MapPerson[]; roadEvents?: MapEvent[];
   showPlaces?: boolean;
+  focusedPlace?:string; routeFrom?:string; routeTo?:string;
   pan?: { x: number; y: number };
   cameraView?: MapCameraView; decorative?: boolean; previewOnly?: boolean;
   atmosphereMode?: TokyoAtmosphereMode; clockMinutes?: number; refreshToken?: number;
@@ -670,6 +672,7 @@ const props = withDefaults(defineProps<{
 });
 const emit = defineEmits<{
   select: [districtId: MapDistrictId];
+  inspect: [locationId:string]; focusPlace: [locationId:string];
   travel: [locationId: string]; event: [eventId: string];
   scale: [value: { metersPerPixel: number }];
   overflow: [count: number];
@@ -692,6 +695,7 @@ const eventPins = ref<EventPin[]>([]);
 const leaderLines = ref<LeaderLine[]>([]);
 const outlineZones = ref<OutlineZone[]>([]);
 const anchorDots = ref<AnchorDot[]>([]);
+const routeLine = ref('');
 const playerPin = ref<AnchoredPin | null>(null);
 const selectedPerson = ref('');
 const selectedPersonPin = computed(() => personPins.value.find(person => person.contactId === selectedPerson.value));
@@ -708,6 +712,7 @@ type CameraFlight = {
 let cameraFlight: CameraFlight | undefined;
 let epoch = 0;
 let renderer: THREE.WebGLRenderer | undefined;
+let software:ReturnType<typeof softwareView>|undefined;
 let appliedCanvasResolution: TokyoCanvasResolution | undefined;
 let canvasOwner: Window | undefined;
 let scene: THREE.Scene | undefined;
@@ -790,7 +795,7 @@ function stopCameraFlight() {
 function beginCameraFlight() {
   stopCameraFlight();
   const owner = canvas.value?.ownerDocument.defaultView;
-  if (!camera || !renderer || !props.active || props.decorative || !owner ||
+  if (!camera || (!renderer&&!software) || !props.active || props.decorative || !owner ||
       owner.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   const flight: CameraFlight = {
     from: readTokyoCameraPose(camera),
@@ -811,6 +816,7 @@ function beginCameraFlight() {
 }
 
 function release(retain = false) {
+  software=undefined;
   stopCameraFlight();
   epoch++;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = 0; }
@@ -820,7 +826,7 @@ function release(retain = false) {
   eventPins.value = []; leaderLines.value = []; outlineZones.value = [];
   anchorDots.value = []; playerPin.value = null; hoveredTargetId.value = '';
 
-  const parked = retain && status.value === 'ready' && (props.previewOnly || variant.value === 'glb') &&
+  const parked = retain && status.value === 'ready' &&
     canvas.value && renderer && scene && camera && model && hemiLight && sunLight && trafficGroup && vfxController
     ? { canvas: canvas.value, renderer, scene, camera, model, hemiLight, sunLight, trafficGroup, vfxController,
         variant: variant.value, previewOnly: !!props.previewOnly, trafficVehicles, su30State, gondolaStates,
@@ -856,63 +862,27 @@ function release(retain = false) {
 }
 
 /** Use the same new layout when WebGL works but an optional development GLB is absent. */
-function createGeometricPreview(): THREE.Group {
-  const root = new THREE.Group();
-  const addBox = (w: number, h: number, d: number, x: number, y: number, z: number, color: THREE.ColorRepresentation) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
-      new THREE.MeshStandardMaterial({ color, roughness: .9 }));
-    mesh.position.set(x, y, z); root.add(mesh); return mesh;
-  };
-  addBox(490, .3, 490, 25, -2.2, -20, '#a6bcae');
-  for (const district of tokyoDistricts) {
-    const baseColor = new THREE.Color(district.color).lerp(new THREE.Color('#c2cbb7'), .55);
-    addBox(district.maxX - district.minX, .14, district.maxZ - district.minZ,
-      (district.maxX + district.minX) / 2, -1.6, (district.maxZ + district.minZ) / 2, baseColor);
+function architecturalTemplates() {
+  const templates=new Map<string,THREE.Object3D>();
+  templates.set('circle',createCircleSandboxGeometry(circleSandboxOverlay,0));
+  const highland=createHighlandModel(),villa=new THREE.Group();
+  for(const name of ['Wakaba-house-and-balcony','Cucumber-planters-and-trellises']){
+    const part=highland.getObjectByName(name);if(part)villa.add(part);
   }
-  for (const road of sandboxData.roads) {
-    const item = addBox(road.width, .1, road.depth, road.x, -.95, road.z,
-      road.kind === 'road' ? '#52676d' : '#e4dac1');
-    item.rotation.y = road.rotationY ?? 0;
-  }
-  for (const building of sandboxData.buildings) {
-    addBox(building.width, building.height, building.depth,
-      building.x, building.height / 2, building.z, building.color);
-  }
-  root.add(createCircleSandboxGeometry(circleSandboxOverlay, -1.53));
-  const { mountains } = sandboxData;
-  for (const [x, z, height] of [
-    [mountains.x, mountains.z, mountains.height],
-    [mountains.x - 40, mountains.z + 15, mountains.height * .75],
-    [mountains.x + 38, mountains.z + 15, mountains.height * .62],
-  ]) {
-    const mountain = new THREE.Mesh(new THREE.ConeGeometry(39, height, 7),
-      new THREE.MeshStandardMaterial({ color: '#54765b', flatShading: true }));
-    mountain.position.set(x, height / 2 - 1, z); root.add(mountain);
-  }
-  // Procedural Su-30SM2 preview jet so procedural fallback also has the patrolling aircraft
-  const jet = new THREE.Group();
-  jet.userData.isSu30 = true;
-  jet.position.set(58.73, 51.95, 82.8);
-  jet.scale.setScalar(1.38);
-  const airframeMat = new THREE.MeshStandardMaterial({ color: '#5c768d', roughness: 0.45, metalness: 0.35 });
-  const fuselage = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.1, 14), airframeMat);
-  const wings = new THREE.Mesh(new THREE.BoxGeometry(10.6, 0.22, 4.4), airframeMat);
-  wings.position.set(0, 0, -1.2);
-  const plumeMat = new THREE.MeshStandardMaterial({ color: '#ff8a2b', emissive: '#ff5500', emissiveIntensity: 0.9 });
-  const plumeL = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.8, 8), plumeMat);
-  plumeL.rotation.x = -Math.PI / 2;
-  plumeL.position.set(-0.95, -0.1, -10.3);
-  const plumeR = plumeL.clone();
-  plumeR.position.set(0.95, -0.1, -10.3);
-  jet.add(fuselage, wings, plumeL, plumeR);
-  root.add(jet);
-  root.add(createHighlandModel());
-  attachAirportGeometry(root);
-  return root;
+  templates.set('residential-mutsumi',villa);
+  disposeModel(highland);
+  return templates;
 }
-
+function createGeometricPreview(templates=architecturalTemplates()): THREE.Group { return cityModel(templates); }
+const siteKey=(key:string)=>siteById.get(key)??citySites.find(s=>s.key===key);
+function displayPoint(id:string,raw?:{x:number;z:number}|null){
+ const d=locationDistrict(id),site=siteById.get(id),pin=tokyoLocationPosition(id,d),position=raw?projectOldTokyoPosition(raw,d):undefined;
+ if(!site)return position??pin;
+ return {x:site.door[0]+(position&&pin?position.x-pin.x:0),z:site.door[1]+(position&&pin?position.z-pin.z:0)};
+}
+let lastRouteKey='',pathPoints:ReturnType<typeof roadRoute>=[];
 function render() {
-  if (!props.active || !renderer || !scene || !camera) return;
+  if (!props.active || (!renderer&&!software) || !scene || !camera) return;
   const width = Math.max(1, props.width), height = Math.max(1, props.height);
   const bounds = tokyoDistrictBounds(props.scope);
   const chosenDistrict = props.scope === 'city'
@@ -926,17 +896,27 @@ function render() {
   });
   latestDistrictCenter = highlightDistrict ? districtCenter(highlightDistrict) : undefined;
 
-  const cameraCenter = props.cameraView?.center
+  const origin=siteById.get(props.routeFrom||props.locationId),target=siteById.get(props.routeTo||'');
+  if(origin&&target){
+    const key=origin.key+'/'+target.key;if(lastRouteKey!==key){lastRouteKey=key;pathPoints=roadRoute(origin,target)}
+  }
+  const routeBounds=origin&&target&&origin!==target&&pathPoints.length>1?{
+    minX:Math.min(...pathPoints.map(p=>p[0]))-11,maxX:Math.max(...pathPoints.map(p=>p[0]))+11,
+    minZ:Math.min(...pathPoints.map(p=>p[1]))-11,maxZ:Math.max(...pathPoints.map(p=>p[1]))+11,
+  }:undefined;
+  const focus=props.focusedPlace?siteById.get(props.focusedPlace):undefined;
+  const cameraCenter = routeBounds?{x:(routeBounds.minX+routeBounds.maxX)/2,z:(routeBounds.minZ+routeBounds.maxZ)/2}:focus?{x:focus.x,z:focus.z}:props.cameraView?.center
     ? projectOldTokyoPosition(props.cameraView.center)
-    : chosenDistrict ? districtCenter(chosenDistrict) : undefined;
+    : chosenDistrict ? districtCenter(chosenDistrict) : {x:86,z:43};
   // WorldMap owns input, but the drag/zoom must move this 3D camera rather than
   // CSS-transforming the whole canvas and leaving its projected pins behind.
   const mapZoom = Math.max(.65, Math.min(12,
-    (props.cameraView?.zoom ?? props.viewScale) * (props.decorative ? 1 : props.scope === 'city' ? 1.18 : 1.08)));
+    (props.cameraView?.zoom ?? props.viewScale) * (props.decorative||routeBounds ? 1 : props.scope === 'city' ? 2.65 : 1.08)));
   frameTokyoMapCamera(camera, {
-    bounds, width, height, bearing: props.bearing, zoom: mapZoom,
+    bounds:routeBounds??(focus?{minX:focus.x-33,maxX:focus.x+33,minZ:focus.z-33,maxZ:focus.z+33}:bounds), width, height, bearing: props.bearing, zoom: mapZoom,
     pan: props.pan, center: cameraCenter, overhead: props.cameraView?.overhead,
-    summit: { x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
+    targetElevation:focus&&!routeBounds?groundHeight(focus.x,focus.z)+Math.min(13,focus.h*.33):0,
+    summit: focus?{x:focus.x,y:focus.h+groundHeight(focus.x,focus.z),z:focus.z}:{ x: sandboxData.mountains.x, y: sandboxData.mountains.height, z: sandboxData.mountains.z },
   });
   const flight = cameraFlight;
   if (flight) {
@@ -956,15 +936,14 @@ function render() {
   const resolution = nativeTokyoCanvasResolution(
     width, height, canvas.value?.ownerDocument.defaultView?.devicePixelRatio,
   );
-  appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
+  if(renderer)appliedCanvasResolution = applyTokyoCanvasResolution(renderer, resolution, appliedCanvasResolution);
 
   const positionHint = props.scope === 'city' ? undefined : props.scope;
-  const playerDistrict = locationDistrict(props.locationId);
-  const player = props.position ? projectOldTokyoPosition(props.position, playerDistrict)
-    : tokyoLocationPosition(props.locationId, playerDistrict);
+
+  const player = displayPoint(props.locationId,props.position);
   latestPlayerWorldPos = player ? { x: player.x, z: player.z } : undefined;
 
-  renderer.render(scene, camera);
+  if(renderer)renderer.render(scene,camera);else software?.(camera,width,height,activePreset.value);
   if (props.decorative) {
     districtPins.value = []; placePins.value = []; personPins.value = [];
     eventPins.value = []; leaderLines.value = []; outlineZones.value = [];
@@ -978,144 +957,34 @@ function render() {
     return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2,
       visible: p.z > -1 && p.z < 1 && p.x > -.94 && p.x < .94 && p.y > -.93 && p.y < .93 };
   }
-  function projectRectOutline(
-    id: string,
-    targetId: string,
-    kind: 'district' | 'place',
-    minX: number,
-    maxX: number,
-    minZ: number,
-    maxZ: number,
-    elevation: number,
-    inset = 0,
-    options: { selected?: boolean; current?: boolean; available?: boolean } = {},
-  ): OutlineZone | null {
-    const x0 = Math.min(minX, maxX) + inset;
-    const x1 = Math.max(minX, maxX) - inset;
-    const z0 = Math.min(minZ, maxZ) + inset;
-    const z1 = Math.max(minZ, maxZ) - inset;
-    if (x1 <= x0 || z1 <= z0) return null;
-    const viewCorners = [
-      new THREE.Vector3(x0, elevation, z0),
-      new THREE.Vector3(x1, elevation, z0),
-      new THREE.Vector3(x1, elevation, z1),
-      new THREE.Vector3(x0, elevation, z1),
-    ].map(pt => pt.applyMatrix4(camera!.matrixWorldInverse));
-    const clipped = clipViewPolygonToNearPlane(viewCorners, Math.max(2, camera!.near * 2));
-    if (clipped.length < 3) return null;
-    const screenPts = clipped.map(pt => {
-      const projected = new THREE.Vector3(pt.x, pt.y, pt.z).applyMatrix4(camera!.projectionMatrix);
-      return { x: (projected.x + 1) * width / 2, y: (1 - projected.y) * height / 2 };
-    });
-    if (screenPts.some(pt => !Number.isFinite(pt.x) || !Number.isFinite(pt.y) || Math.abs(pt.x) > 12000 || Math.abs(pt.y) > 12000)) {
-      return null;
-    }
-    const xs = screenPts.map(pt => pt.x);
-    const ys = screenPts.map(pt => pt.y);
-    if (Math.max(...xs) < -120 || Math.min(...xs) > width + 120 || Math.max(...ys) < -120 || Math.min(...ys) > height + 120) {
-      return null;
-    }
-    return {
-      id,
-      targetId,
-      kind,
-      points: screenPts.map(pt => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' '),
-      corners: buildOutlineCornerPaths(screenPts, kind === 'district' ? 0.18 : 0.28),
-      selected: !!options.selected,
-      current: !!options.current,
-      available: options.available ?? true,
-    };
+  const narrow=width<520,districtLabelHeight=narrow?22:24;
+  outlineZones.value=[];
+  const selected=props.selectedId?siteKey(props.selectedId):undefined;
+  if(selected){
+    const polygon=selected.polygon.map(([x,z])=>project(x,z,groundHeight(x,z)+.65));
+    if(polygon.some(v=>v.visible))outlineZones.value=[{id:'site:'+selected.key,targetId:selected.ids[0],kind:'place',selected:true,current:false,available:true,points:polygon.map(v=>v.x+','+v.y).join(' '),corners:[]}];
   }
-
-  const nextOutlines: OutlineZone[] = [];
-  const narrow = width < 520;
-  const districtLabelHeight = narrow ? 22 : 24;
-  if (props.scope === 'city') {
-    const districtFontPx = narrow ? 13.5 : 15.5;
-    const districtMaxW = narrow ? 112 : 136;
-    districtPins.value = tokyoDistricts.flatMap(district => {
-      const outline = projectRectOutline(
-        `district:${district.id}`,
-        `city:${district.id}`,
-        'district',
-        district.minX,
-        district.maxX,
-        district.minZ,
-        district.maxZ,
-        0.6,
-        Math.min(3, Math.abs(district.maxX - district.minX) * 0.06),
-        { selected: props.selectedId === district.id, current: playerDistrict === district.id, available: isMapDistrict(district.id) },
-      );
-      if (outline) nextOutlines.push(outline);
-      const centerX = (district.minX + district.maxX) / 2;
-      const centerZ = (district.minZ + district.maxZ) / 2;
-      const p = project(centerX, centerZ, 1.2);
-      if (!p.visible) return [];
-      const boxWidth = estimateFloatingLabelWidth(district.shortName, districtFontPx, 18, 52, districtMaxW);
-      return [{
-        id: district.id, name: district.shortName, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
-        available: isMapDistrict(district.id), selected: props.selectedId === district.id, boxWidth,
-      }];
-    });
-  } else {
-    districtPins.value = [];
-    if (chosenDistrict) {
-      const scopeOutline = projectRectOutline(
-        `scope:${chosenDistrict.id}`,
-        `city:${chosenDistrict.id}`,
-        'district',
-        chosenDistrict.minX,
-        chosenDistrict.maxX,
-        chosenDistrict.minZ,
-        chosenDistrict.maxZ,
-        0.5,
-        1.5,
-        { selected: true, current: playerDistrict === chosenDistrict.id, available: true },
-      );
-      if (scopeOutline) nextOutlines.push(scopeOutline);
-    }
-  }
-
-  const places = props.scope === 'city' || !props.showPlaces ? [] : districtMapPlaces(props.scope);
-  placePins.value = places.flatMap((place, index) => {
-    const point = tokyoLocationPosition(place.id, positionHint);
-    if (!point) return [];
-    const current = place.id === props.locationId;
-    const siteRadius = current ? 7.2 : 5.4;
-    const placeOutline = projectRectOutline(
-      `place:${place.id}`,
-      place.id,
-      'place',
-      point.x - siteRadius,
-      point.x + siteRadius,
-      point.z - siteRadius,
-      point.z + siteRadius,
-      0.7,
-      0,
-      { selected: false, current, available: true },
-    );
-    if (placeOutline) nextOutlines.push(placeOutline);
-    const p = project(point.x, point.z, TOKYO_PIN_ELEVATION);
-    if (!p.visible) return [];
-    const compact = index >= 6 || width < 520;
-    const boxWidth = compact ? 28 : estimateFloatingLabelWidth(place.name, narrow ? 12.5 : 14, 42, 76, narrow ? 116 : 144);
-    return [{
-      id: place.id, name: place.name, x: p.x, y: p.y, anchorX: p.x, anchorY: p.y,
-      compact, number: index + 1, boxWidth,
-      current,
-      disabled: props.busy || current || props.disabledIds.includes(place.id),
-    }];
-  });
-  outlineZones.value = nextOutlines;
-  const playerScreen = player ? project(player.x, player.z, TOKYO_PIN_ELEVATION) : null;
+  if(origin&&target){
+    routeLine.value=pathPoints.map(([x,z])=>project(x,z,groundHeight(x,z)+.82)).map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  }else routeLine.value='';
+  const showDistricts=props.scope==='city'&&metersPerPixel> .7;
+  districtPins.value=showDistricts?tokyoDistricts.flatMap(d=>{
+    const p=project(d.x,d.z,groundHeight(d.x,d.z)+2);if(!p.visible)return [];
+    return [{id:d.id,name:d.shortName,x:p.x,y:p.y,anchorX:p.x,anchorY:p.y,available:isMapDistrict(d.id),selected:props.selectedId===d.id,boxWidth:estimateFloatingLabelWidth(d.shortName,narrow?12:14,14,47,125)}]
+  }):[];
+  const visibleSites=props.showPlaces?citySites.filter(s=>s===selected||!showDistricts&&(s.district===props.scope||metersPerPixel<.72)):[];
+  const cap=metersPerPixel>1?4:metersPerPixel>.4?7:10;
+  placePins.value=visibleSites.map((site,index)=>{
+    const p=project(site.x,site.z,site.h+groundHeight(site.x,site.z)+.4),finite=p.visible;
+    return {id:site.ids[0],name:site.title,x:p.x,y:p.y,anchorX:p.x,anchorY:p.y,compact:false,number:index+1,boxWidth:estimateFloatingLabelWidth(site.title,narrow?12:14,14,48,145),current:site.ids.includes(props.locationId),disabled:false,finite,priority:(site===selected?-20:site.form==='sunshine'||site.form==='airport'?-8:site.form==='park'||site.form==='fountain'||site.form==='court'?-4:site.ids.length>1?-2:0)+Math.hypot((p.x-width/2)/width,(p.y-height/2)/height)};
+  }).filter(p=>p.finite).sort((a,b)=>a.priority-b.priority).slice(0,narrow?Math.ceil(cap*.65):cap);
+  const playerScreen = player ? project(player.x, player.z, groundHeight(player.x,player.z)+1.8) : null;
   playerPin.value = playerScreen?.visible
     ? { id: 'player', name: props.playerName || '当前位置', x: playerScreen.x, y: playerScreen.y, anchorX: playerScreen.x, anchorY: playerScreen.y } : null;
 
   personPins.value = props.scope === 'city' ? [] : props.people.flatMap(person => {
     if (person.districtId && person.districtId !== props.scope) return [];
-    const world = person.position
-      ? projectOldTokyoPosition(person.position, person.districtId ?? positionHint)
-      : (person.place ? tokyoLocationPosition(person.place.id, positionHint) : undefined);
+    const world = person.place ? displayPoint(person.place.id,person.position) : person.position ? projectOldTokyoPosition(person.position,person.districtId ?? positionHint) : undefined;
     if (!world) return [];
     const point = project(world.x, world.z, TOKYO_PIN_ELEVATION);
     if (!point.visible) return [];
@@ -1195,91 +1064,15 @@ function render() {
  * Direct 3D ground/landmark picking when the user clicks or taps on the 3D canvas
  * near a district landmark (city layer) or place building (district layer).
  */
-function pickAt(clientX: number, clientY: number): boolean {
-  if (!camera || !canvas.value || status.value !== 'ready' || props.decorative) return false;
-  const rect = canvas.value.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return false;
-  const localX = clientX - rect.left;
-  const localY = clientY - rect.top;
-  if (localX < 0 || localY < 0 || localX > rect.width || localY > rect.height) return false;
-
-  // 1. Check screen-space proximity to projected pins first (generous touch halo for mobile)
-  if (props.scope === 'city') {
-    let bestDistrict: DistrictPin | undefined;
-    let bestDist = 44;
-    for (const d of districtPins.value) {
-      if (!d.available) continue;
-      const dist = Math.hypot(d.x - localX, d.y - localY);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestDistrict = d;
-      }
-    }
-    if (bestDistrict) {
-      selectDistrict(bestDistrict.id);
-      return true;
-    }
-  } else {
-    let bestPlace: PlacePin | undefined;
-    let bestDist = 36;
-    for (const p of placePins.value) {
-      if (p.disabled) continue;
-      const dist = Math.hypot(p.x - localX, p.y - localY);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestPlace = p;
-      }
-    }
-    if (bestPlace) {
-      emit('travel', bestPlace.id);
-      return true;
-    }
-  }
-
-  // 2. Intersect ray with the 3D landmark plane (y = 8) to allow tapping directly on 3D buildings/blocks
-  const ndc = new THREE.Vector2((localX / rect.width) * 2 - 1, -(localY / rect.height) * 2 + 1);
-  const raycaster = new THREE.Raycaster();
-  raycaster.setFromCamera(ndc, camera);
-  const hit = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -8), new THREE.Vector3());
-  if (!hit) return false;
-
-  if (props.scope === 'city') {
-    let chosen: typeof tokyoDistricts[number] | undefined;
-    let bestScore = Infinity;
-    for (const d of tokyoDistricts) {
-      if (!isMapDistrict(d.id)) continue;
-      const insideBox = hit.x >= d.minX && hit.x <= d.maxX && hit.z >= d.minZ && hit.z <= d.maxZ;
-      const dist = Math.hypot(hit.x - d.x, hit.z - d.z);
-      if ((insideBox || dist <= 48) && dist < bestScore) {
-        bestScore = dist;
-        chosen = d;
-      }
-    }
-    if (chosen) {
-      selectDistrict(chosen.id);
-      return true;
-    }
-  } else {
-    const places = districtMapPlaces(props.scope);
-    let chosenId = '';
-    let bestDist = 26;
-    for (const place of places) {
-      const disabled = props.busy || place.id === props.locationId || props.disabledIds.includes(place.id);
-      if (disabled) continue;
-      const pt = tokyoLocationPosition(place.id, props.scope);
-      if (!pt) continue;
-      const dist = Math.hypot(hit.x - pt.x, hit.z - pt.z);
-      if (dist < bestDist) {
-        bestDist = dist;
-        chosenId = place.id;
-      }
-    }
-    if (chosenId) {
-      emit('travel', chosenId);
-      return true;
-    }
-  }
-  return false;
+function pickAt(clientX:number,clientY:number,focus=false):boolean {
+ if(!camera||!canvas.value||!model||props.decorative)return false;
+ const r=canvas.value.getBoundingClientRect();if(!r.width||!r.height)return false;
+ const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-r.left)*2/r.width-1,1-(clientY-r.top)*2/r.height),camera);
+ const hit=ray.intersectObject(model,true)[0];if(!hit)return false;
+ const site=hitSite(hit);
+ if(site){if(focus)emit('focusPlace',site.ids[0]);else emit('inspect',site.ids[0]);return true}
+ if(props.scope==='city'){const d=districtAt(hit.point.x,hit.point.z);if(isMapDistrict(d)){emit('select',d);return true}}
+ return false;
 }
 
 function triggerFlares() {
@@ -1298,7 +1091,7 @@ function visibilityChanged() {
 defineExpose({ pickAt, triggerFlares, refresh });
 
 async function load() {
-  if (!props.active || document.hidden || !sceneRoot.value || !canvasHost.value || renderer || status.value === 'loading') return;
+  if (!props.active || document.hidden || !sceneRoot.value || !canvasHost.value || renderer || software || status.value === 'loading') return;
   const request = ++epoch;
   status.value = 'loading';
   let pending: THREE.Group | undefined;
@@ -1323,37 +1116,29 @@ async function load() {
     canvas.value = element; canvasHost.value.replaceChildren(element);
     await nextTick();
     if (request !== epoch || !props.active || !canvas.value) return;
+    const templates=architecturalTemplates();
+    try {
+      const bytes=await readLocalAssetBytes(toyokawaTower,1_000_000,'Invalid Toyokawa tower');
+      templates.set('toyokawa-executive-tower',(await new GLTFLoader().parseAsync(bytes.buffer,'')).scene);
+    } catch { /* The registered tower's detailed parametric model is always available. */ }
     const bundled = tokyoModelAsset;
     if (props.previewOnly) {
-      pending = createGeometricPreview();
+      pending = createGeometricPreview(templates);
       variant.value = 'procedural';
     } else if (bundled) {
       try {
-        pending = await loadTokyoGlb(bundled);
+        pending = await loadTokyoGlb(bundled,templates);
         variant.value = 'glb';
       } catch (error) {
         console.warn('[UnreadCity] Tokyo GLB decode failed, showing geometric preview', error);
-        pending = createGeometricPreview();
+        pending = createGeometricPreview(templates);
         variant.value = 'procedural';
       }
     } else {
-      pending = createGeometricPreview();
+      pending = createGeometricPreview(templates);
       variant.value = 'procedural';
     }
     if (request !== epoch || !props.active) { disposeModel(pending); return; }
-    // The Lite map still opens before the player imports the optional art pack.
-    let tower: THREE.Object3D;
-    try {
-      const bytes = await readLocalAssetBytes(toyokawaTower, 1_000_000, 'Invalid Toyokawa tower');
-      tower = (await new GLTFLoader().parseAsync(bytes.buffer, '')).scene;
-    } catch {
-      const shell = new THREE.BoxGeometry(15, 29, 11);
-      shell.translate(0, 14.5, 0);
-      tower = new THREE.Mesh(shell, new THREE.MeshStandardMaterial({ color: 0x617d85 }));
-    }
-    const door = tokyoLocationPosition('toyokawa-executive-tower', 'grand-commercial')!;
-    tower.position.set(door.x, 0, door.z - 8);
-    pending.add(tower);
     if (request !== epoch || !props.active || !canvas.value) { disposeModel(pending); return; }
     model = pending; pending = undefined;
     scene = new THREE.Scene();
@@ -1371,6 +1156,12 @@ async function load() {
       antialias: true,
       powerPreference: 'high-performance',
     });
+    sun.castShadow=true;
+    sun.shadow.camera.left=-405;sun.shadow.camera.right=405;sun.shadow.camera.top=405;sun.shadow.camera.bottom=-405;
+    sun.shadow.camera.near=1;sun.shadow.camera.far=1000;sun.shadow.normalBias=.18;
+    sun.shadow.mapSize.setScalar(props.width<650?1024:2048);
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
+    renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -1393,7 +1184,13 @@ async function load() {
     if (pending) disposeModel(pending);
     if (request === epoch) {
       console.warn('[UnreadCity] Tokyo map WebGL unavailable', error);
-      release(); status.value = 'fallback';
+      const retained=model;const retainedVariant=variant.value;if(retained){retained.removeFromParent();model=undefined}
+      release();
+      if(!props.active||!canvasHost.value)return;
+      const element=canvasHost.value.ownerDocument.createElement('canvas');element.className='tokyo-sandbox-canvas';canvasHost.value.replaceChildren(element);canvas.value=element;
+      model=retained??createGeometricPreview();scene=new THREE.Scene();scene.add(model);camera=new THREE.PerspectiveCamera(50,1,.25,6500);
+      software=softwareView(element,model);variant.value=retained?retainedVariant:'procedural';activePreset.value=resolveTokyoAtmosphere(props.atmosphereMode,props.clockMinutes).preset;
+      status.value='ready';render();
     }
   }
 }
@@ -1402,6 +1199,7 @@ function selectDistrict(id: string) { if (isMapDistrict(id)) emit('select', id);
 watch(() => props.active, active => { if (active) void load(); else release(true); });
 watch(() => props.refreshToken, () => { void refresh(); });
 watch(() => [props.atmosphereMode, props.clockMinutes] as const, ([mode, mins]) => {
+  if(software){activePreset.value=resolveTokyoAtmosphere(mode,mins).preset;render()}
   if (vfxController) {
     const profile = vfxController.setAtmosphere(mode, mins);
     activePreset.value = profile.preset;
@@ -1412,12 +1210,12 @@ watch(() => ({
   scope: props.scope, width: props.width, height: props.height,
   bearing: props.bearing, zoom: props.viewScale,
   panX: props.pan?.x ?? 0, panY: props.pan?.y ?? 0,
-  selectedId: props.selectedId, locationId: props.locationId, position: props.position,
+  focusedPlace:props.focusedPlace, routeFrom:props.routeFrom, routeTo:props.routeTo, selectedId: props.selectedId, locationId: props.locationId, position: props.position,
   disabledIds: props.disabledIds, playerId: props.playerId, playerName: props.playerName,
   people: props.people, roadEvents: props.roadEvents, showPlaces: props.showPlaces,
   cameraView: props.cameraView, decorative: props.decorative,
 }), (next, previous) => {
-  if (next.scope !== previous.scope) {
+  if (next.scope !== previous.scope || next.focusedPlace!==previous.focusedPlace || next.routeTo!==previous.routeTo) {
     // Same GLB, same WebGL canvas; change the 3D camera to visit the landmark.
     beginCameraFlight();
   } else if (cameraFlight &&
@@ -1456,6 +1254,7 @@ onBeforeUnmount(() => {
     <p v-if="status === 'loading'" class="tokyo-sandbox-fallback" role="status">正在展开立体沙盘…</p>
     <p v-if="status === 'fallback'" class="tokyo-sandbox-fallback" role="status">沙盘暂不可用，可以刷新重试，或从地点列表选择目的地。</p>
     <template v-if="status === 'ready'">
+      <svg v-if="routeLine" class="tokyo-road-preview" :viewBox="'0 0 '+width+' '+height" aria-label="所选路线"><polyline :points="routeLine" fill="none" stroke="#263b37" stroke-width="5.5" stroke-linejoin="round"/><polyline :points="routeLine" fill="none" stroke="#ffe488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <svg v-if="outlineZones.length" class="tokyo-sandbox-outlines" aria-hidden="true">
         <g v-for="zone in outlineZones" :key="zone.id"
           class="tokyo-sandbox-outline-zone"
@@ -1489,13 +1288,13 @@ onBeforeUnmount(() => {
         class="tokyo-sandbox-pin tokyo-sandbox-place" :class="{ current: place.current, compact: place.compact }"
         :data-map-target="place.id" :data-map-location="place.id"
         :style="{ left: place.x + 'px', top: place.y + 'px', width: place.boxWidth + 'px' }"
-        :title="place.name" :aria-label="place.current ? place.name + '，当前位置' : '前往' + place.name"
+        :title="place.name" :aria-label="place.current ? place.name + '，当前位置' : '查看' + place.name"
         :disabled="place.disabled"
         @pointerenter="hoveredTargetId = place.id"
         @pointerleave="hoveredTargetId = hoveredTargetId === place.id ? '' : hoveredTargetId"
         @focus="hoveredTargetId = place.id"
         @blur="hoveredTargetId = hoveredTargetId === place.id ? '' : hoveredTargetId"
-        @click="emit('travel', place.id)">
+        @click="emit('inspect',place.id)" @dblclick.stop="emit('focusPlace',place.id)">
         <span class="tokyo-sandbox-place-index">{{ place.number }}</span>
         <span v-if="!place.compact" class="tokyo-sandbox-place-label">{{ place.name }}</span>
       </button>

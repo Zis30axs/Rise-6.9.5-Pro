@@ -1,0 +1,190 @@
+:root {
+  font-family:
+    'Hiragino Sans GB', 'PingFang SC', 'Microsoft Yahei', system-ui, sans-serif;
+  color: #273b35;
+  background: #efeee6;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.tokyo-atlas {
+  max-width: 1800px;
+  margin: auto;
+  padding: 0 clamp(12px, 2.5vw, 48px) 22px;
+}
+.atlas-mast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 0 15px;
+  border-bottom: 1px solid #b8c2b5;
+}
+.atlas-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.atlas-brand i {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: #254a41;
+  color: #f3e8c8;
+  border-radius: 50%;
+  font:
+    23px Georgia,
+    serif;
+}
+.atlas-brand strong {
+  letter-spacing: 0.16em;
+  font: 700 16px system-ui;
+}
+.atlas-brand small {
+  display: block;
+  font: 9px/1.7 system-ui;
+  letter-spacing: 0.18em;
+  color: #587064;
+}
+.atlas-clock {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tokyo-atlas .world-map {
+  color: #31463c;
+}
+.tokyo-atlas .wm-layers,
+.tokyo-atlas .wm-zoom-value,
+.tokyo-atlas .wm-flare-pill {
+  display: none;
+}
+.tokyo-atlas .wm-title {
+  margin: 13px 0 11px;
+}
+.tokyo-atlas .wm-title h2 {
+  font:
+    600 clamp(21px, 2vw, 30px) / 1.2 Georgia,
+    'Songti SC',
+    'Noto Serif CJK SC',
+    serif;
+  letter-spacing: 0.06em;
+}
+.tokyo-atlas .wm-title p,
+.tokyo-atlas .wm-help,
+.tokyo-atlas .wm-detail-note,
+.tokyo-atlas .wm-details small,
+.tokyo-atlas .wm-details .wm-kicker,
+.tokyo-atlas .wm-zoom-value {
+  color: #536558;
+}
+.tokyo-atlas .wm-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(245px, 23vw, 345px);
+  gap: 18px;
+}
+.tokyo-atlas .wm-details {
+  padding: 15px 13px;
+  background: #e7e9de;
+  border: 1px solid #c1caba;
+  border-radius: 8px;
+  max-height: 73dvh;
+}
+.tokyo-atlas .wm-viewport {
+  height: clamp(450px, 69dvh, 900px);
+  border: 1px solid #8c9e92;
+  border-radius: 7px;
+}
+.tokyo-atlas .wm-district-list button,
+.tokyo-atlas .wm-outline-button,
+.tokyo-atlas .wm-destination,
+.tokyo-atlas .wm-mode-pill,
+.tokyo-atlas .wm-zoom-controls button,
+.tokyo-atlas .wm-rotate-controls button,
+.tokyo-atlas .wm-detail-back-row button {
+  border: 1px solid #aab9a8;
+  color: #2e4a3d;
+  background: #e7eddf;
+}
+.tokyo-atlas .wm-district-list button[aria-pressed='true'],
+.tokyo-atlas .wm-mode-pill.active {
+  color: #fffbed;
+  background: #527266;
+}
+.tokyo-atlas .wm-detail-back-row {
+  float: right;
+  margin: 8px 0 0;
+}
+.tokyo-atlas .wm-label-filters {
+  color: #536558;
+}
+.tokyo-atlas .wm-label-filters legend {
+  color: #425e4e;
+}
+.tokyo-atlas .wm-map-actions button {
+  min-height: 37px;
+}
+.tokyo-atlas .wm-details .wm-detail-note {
+  line-height: 1.5;
+}
+.tokyo-atlas .wm-location-now,
+.tokyo-atlas .wm-location-now h3 {
+  color: #395346;
+}
+@media (max-width: 760px) {
+  .tokyo-atlas {
+    padding: 0 9px 14px;
+  }
+  .atlas-mast {
+    padding: 8px 2px;
+  }
+  .atlas-brand i {
+    width: 29px;
+    height: 29px;
+    font-size: 18px;
+  }
+  .tokyo-atlas .wm-title {
+    margin: 7px 0;
+  }
+  .tokyo-atlas .wm-title p {
+    font-size: 10px;
+  }
+  .tokyo-atlas .wm-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .tokyo-atlas .wm-details,
+  .tokyo-atlas .wm-map-column {
+    width: 100%;
+  }
+  .tokyo-atlas .wm-details {
+    max-height: none;
+    padding: 10px;
+  }
+  .tokyo-atlas .wm-viewport {
+    height: clamp(315px, 51dvh, 580px);
+  }
+  .tokyo-atlas .wm-map-actions {
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .tokyo-atlas .wm-help {
+    font-size: 9px;
+  }
+  .tokyo-atlas .wm-detail-back-row button {
+    min-height: 31px;
+  }
+  .tokyo-atlas .wm-label-filters {
+    margin: 0 0 4px;
+  }
+  .tokyo-atlas .wm-map-actions button {
+    min-height: 39px;
+  }
+  .tokyo-atlas .wm-district-list {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}

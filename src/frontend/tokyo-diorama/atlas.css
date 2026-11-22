@@ -1,0 +1,146 @@
+.world-map .tc-inspector {
+  margin: 0 0 16px;
+  font:
+    14px/1.55 system-ui,
+    'PingFang SC',
+    sans-serif;
+}
+.world-map .tc-find {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #819990;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: #eff3ec;
+  color: #283d36;
+}
+.tc-find span {
+  font-size: 22px;
+  line-height: 1;
+}
+.world-map .tc-find input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #253e36;
+  font: inherit;
+}
+.tc-selection {
+  position: relative;
+  margin-top: 10px;
+  padding: 12px;
+  background: #f3f2e8;
+  color: #283c35;
+  border-radius: 6px;
+  border-top: 3px solid #709385;
+}
+.world-map .tc-selection h3 {
+  margin: 0 22px 6px 0;
+  color: #1d3b32;
+  font-size: 20px;
+}
+.world-map .tc-selection p {
+  margin: 7px 0;
+  color: #46554b;
+}
+.world-map .tc-selection select {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  padding: 5px;
+  color: #284639;
+  background: #fffdf3;
+  border: 1px solid #a5b6a6;
+}
+.world-map .tc-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+.world-map .tc-selection button,
+.world-map .tc-here,
+.world-map .tc-results button {
+  cursor: pointer;
+  font: inherit;
+  color: #304e40;
+}
+.world-map .tc-actions button,
+.world-map .tc-here,
+.world-map .tc-results button {
+  border: 1px solid #9dad9e;
+  border-radius: 4px;
+  padding: 5px 8px;
+  background: #edf1e7;
+}
+.world-map .tc-actions .tc-go {
+  color: white;
+  background: #315f51;
+}
+.world-map .tc-actions button:disabled {
+  opacity: 0.5;
+}
+.world-map .tc-close {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 20px;
+  border: 0;
+  background: none;
+}
+.tc-origin,
+.tc-here {
+  margin-top: 8px;
+}
+.world-map .tc-origin button {
+  border: 0;
+  text-decoration: underline;
+  background: none;
+}
+.tc-results {
+  display: grid;
+  gap: 3px;
+  max-height: 230px;
+  overflow: auto;
+}
+.world-map .tc-results button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+.tc-results small {
+  opacity: 0.7;
+}
+.tokyo-road-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+.world-map .wm-viewport {
+  background: #e5eadf;
+}
+.world-map .tokyo-sandbox-place-index {
+  display: none;
+}
+.world-map .tokyo-sandbox-place {
+  padding: 2px 6px;
+  min-width: 0;
+}
+.world-map .wm-viewport .tokyo-sandbox-overlay {
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .world-map .wm-viewport {
+    height: clamp(285px, 46dvh, 460px);
+  }
+  .world-map .tc-actions button,
+  .world-map .tc-here,
+  .world-map .tc-results button {
+    min-height: 40px;
+  }
+}
