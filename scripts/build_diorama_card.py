@@ -7,12 +7,14 @@ import hashlib
 import io
 import json
 import re
+import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from PIL import Image
 from build_card import ROOT, attach_frontend, assemble_card, read_frontend_bundle
 from card_codec import encode_card
+from build_lite_release import externalize
 
 MEDIA = re.compile(
     r"""(?P<q>["'`])data:(?P<mime>[\w.+-]+/[\w.+-]+);base64,(?P<data>[A-Za-z0-9+/]{16000,}={0,2})(?P=q)"""
@@ -108,13 +110,68 @@ def portable_runtime(source):
     return wrapper.replace('__BUNDLE__', encoded)
 
 
+def tokyo_runtime(source, optional_pack):
+    """Start the full Lite shell with Tokyo's local assets before importing the optional art archive."""
+    template = (ROOT / 'scripts/lite_asset_loader.js').read_text()
+    changes = {
+        'if (closed || !installed) release();': 'if (closed) release();',
+        'return installed;': 'return true;',
+        'z-index:2147483646;background:#173b50': 'z-index:2147482900;background:#173b50',
+        "label: '📦 安装 Lite 素材 ZIP'": "label: '安装扩展美术包'",
+        '__UC_LITE_URLS__.get(sha) ||': '__UC_LITE_URLS__.get(sha) || __UC_TOKYO_EMBEDDED__[sha] ||',
+    }
+    for original, replacement in changes.items():
+        if template.count(original) != 1:
+            raise ValueError('Lite loader changed: ' + original)
+        template = template.replace(original, replacement)
+    lite, archive, _ = externalize(source, template)
+    optional_pack.parent.mkdir(parents=True, exist_ok=True)
+    optional_pack.write_bytes(archive)
+    full_models = {hashlib.sha256(p.read_bytes()).hexdigest() for p in
+                   (ROOT / 'assets/models').glob('*.glb')}
+    live2d = {hashlib.sha256(p.read_bytes()).hexdigest() for p in
+              (ROOT / 'assets/live2d-soyo').rglob('*') if p.is_file()}
+    avatars = map_headshots()
+    builtins = {}
+    with zipfile.ZipFile(io.BytesIO(archive)) as z:
+        for item in json.loads(z.read('manifest.json'))['assets']:
+            sha, mime = item['sha256'], item['mime']
+            blob = z.read(item['path'])
+            if bytes.fromhex(sha) in avatars:
+                blob, mime = avatars[bytes.fromhex(sha)], 'image/webp'
+            elif sha in full_models or sha in live2d or mime == 'application/zip':
+                pass
+            elif mime.startswith('image/') and mime != 'image/svg+xml':
+                with Image.open(io.BytesIO(blob)) as picture:
+                    if not getattr(picture, 'is_animated', False):
+                        thumb = webp(picture, 384)
+                        if len(thumb) < len(blob):
+                            blob, mime = thumb, 'image/webp'
+            else:
+                continue
+            builtins[sha] = 'data:' + mime + ';base64,' + base64.b64encode(blob).decode('ascii')
+    for name in ('unread-city-tokyo-sandbox.glb', 'toyokawa-executive-tower.glb'):
+        if hashlib.sha256((ROOT / 'assets/models' / name).read_bytes()).hexdigest() not in builtins:
+            raise ValueError('Missing embedded Tokyo landmark: ' + name)
+    if 'Wakaba-house-and-balcony' not in lite:
+        raise ValueError('Missing original Wakaba highland geometry')
+    if lite.count('const __UC_LITE_URLS__') != 1:
+        raise ValueError('Missing local asset resolver')
+    lite = lite.replace('const __UC_LITE_URLS__', 'const __UC_TOKYO_EMBEDDED__=' +
+                        json.dumps(builtins, separators=(',', ':')) + ';\nconst __UC_LITE_URLS__')
+    return lite
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--frontend', type=Path, default=ROOT / 'dist/immersive-shell.js')
+    p.add_argument('--all-media', action='store_true', help='Embed optional world models and larger artwork; increases Tavern import memory')
+    p.add_argument('--pack', type=Path, default=ROOT / 'dist/unread-city-lite-assets.zip')
     p.add_argument('--image', type=Path, default=ROOT / 'assets/cover.png')
     p.add_argument('--output', type=Path, default=ROOT / 'dist/Tokyo-City-3D.png')
     args = p.parse_args()
-    runtime = portable_runtime(read_frontend_bundle(args.frontend))
+    source = read_frontend_bundle(args.frontend)
+    runtime = portable_runtime(source if args.all_media else tokyo_runtime(source, args.pack))
     card = assemble_card()
     attach_frontend(card['data'], runtime)
     payload = encode_card(args.image.read_bytes(), card)
