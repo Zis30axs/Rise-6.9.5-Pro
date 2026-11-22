@@ -49,9 +49,11 @@ import { runInteraction } from './interaction-action';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
 import type { TokyoAtmosphereMode } from './tokyo-sandbox-vfx';
 import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
+import { byId as tokyoSite, destinations as tokyoDestinations } from './tokyo-diorama/plan';
+import tokyoAtlasCss from './tokyo-diorama/atlas.css?inline';
 import openAiMark from '../../assets/openai-mark.svg?inline';
 
-const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; refreshToken?: number }>(), { novelMode: false });
+const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; tokyoOnly?:boolean; refreshToken?: number }>(), { novelMode: false });
 const emit = defineEmits<{ travelled: [] }>();
 const parisOpened = ref(isParisLocation(props.model.state.locationId));
 const showParis = ref(parisOpened.value);
@@ -87,13 +89,13 @@ const focusZoom = ref(1);
 const bearing = ref(0);
 const sandboxOverhead = ref(0);
 const interactionMode = ref<'pan' | 'orbit'>('pan');
-const atmosphereMode = ref<TokyoAtmosphereMode>('auto');
+const atmosphereMode = ref<TokyoAtmosphereMode>(props.tokyoOnly?'day':'auto');
 const layerIndex = computed(() => Math.min(5, Math.max(0, Math.round(depth.value))));
 const layer = computed<Layer>(() => (['district', 'district', 'city', 'province', 'country', 'world'] as const)[layerIndex.value]);
 const viewport = ref<HTMLElement>();
 type AtlasView = { countryId: string; regionId: string };
 const sandboxScene = ref<{
-  pickAt: (clientX: number, clientY: number) => boolean;
+  pickAt: (clientX: number, clientY: number, focus?:boolean) => boolean;
   triggerFlares: () => void;
   refresh: () => Promise<void>;
 }>();
@@ -182,7 +184,7 @@ const regionCities = computed(() => mapData.chinaCities?.features.filter(item =>
 const featureName = (item: Region) => item.properties.name;
 const isUnion = (item: Region) => item.properties.id === 'SUN';
 const layerTitle = computed(() => localLayer.value ? `${cityDetail.value.name} · 详细沙盘` : layer.value === 'city' ? '城市沙盘' : layer.value === 'world' ? '世界 · 架空地理' : layer.value === 'country' ? (currentCountry.value?.properties.name ?? '国家与区域') : (currentRegion.value?.properties.name ?? currentCountry.value?.properties.name ?? '区域地图'));
-const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '点击城区，进入对应的详细沙盘' : '立体地球仪 · 拖拽旋转球面 · 右键/Shift拖拽倾斜视角 · 红线与红点为主角区域');
+const layerNote = computed(() => localLayer.value ? cityDetail.value.description : layer.value === 'city' ? '选择街区或建筑，查看地点与路线' : '立体地球仪 · 拖拽旋转球面 · 右键/Shift拖拽倾斜视角 · 红线与红点为主角区域');
 const homePath = computed(() => countryId.value === TOKYO_COUNTRY_ID && regionId.value === TOKYO_REGION_ID && Boolean(TOKYO_REGION_ID));
 const minimumDepth = computed(() => geographicLayer.value && !homePath.value ? 3 : -2);
 const normalizedBearing = computed(() => Math.round(((bearing.value % 360) + 360) % 360));
@@ -218,6 +220,20 @@ const roadEvents = computed(() => locations.flatMap(place => {
   }];
 }));
 const activeEvent = computed(() => roadEvents.value.find(event => event.id === activeEventId.value));
+const lookup=ref(''),inspected=ref(''),focused=ref(''),routeFrom=ref(''),routeTo=ref('');
+const siteDetails=computed(()=>tokyoSite.get(inspected.value));
+const chosenPlace=computed(()=>tokyoDestinations.get(inspected.value));
+const searchText=(s:string)=>s.toLowerCase().replace(/[\s·／・-]/g,'');
+const aliases:Record<string,string>={'soyo-house':'长崎素世','residential-mutsumi':'若叶睦','residential-anon':'千早爱音','residential-tomori':'高松灯','residential-taki':'椎名立希','clinic':'风堇','clinic-room':'风堇'};
+const searchHits=computed(()=>{const q=searchText(lookup.value);return q?[...tokyoDestinations.values()].filter(p=>searchText([p.name,p.id,aliases[p.id]||'',tokyoSite.get(p.id)?.title||'',mapDistricts.find(d=>d.id===tokyoSite.get(p.id)?.district)?.name||''].join(' ')).includes(q)):[]});
+function inspectPlace(id:string,focus=false){
+ const site=tokyoSite.get(id);if(!site)return;
+ lookup.value='';if(inspected.value!==id)routeTo.value='';
+ inspected.value=id;
+ if(focus){routeTo.value='';if(detailDistrict.value!==site.district)enterDistrict(site.district);else clearCameraOffset();focused.value=id;inspected.value=id}
+}
+function showRoute(){const id=inspected.value;if(!id||!tokyoSite.has(routeFrom.value||props.model.state.locationId))return;focusZoom.value=1;pan.value={x:0,y:0};routeTo.value=id;}
+function clearSelection(){inspected.value='';focused.value='';routeTo.value='';}
 const cityPlaces = mapDistricts;
 const cityDetail = computed(() => cityPlaces.find(place => place.id === selectedCity.value) ?? cityPlaces[0]);
 const cityRoute = computed(() => getTransitRoutes('campus', selectedCity.value === 'downtown' ? 'zbd04a' : 'btr82a').find(route => route.stop.id === selectedCity.value));
@@ -292,7 +308,7 @@ let gesture: {
 
 function pitchSinForOverhead(ov: number) {
   const clamped = Math.max(-0.85, Math.min(1, ov));
-  return Math.max(0.28, Math.sin(((58 + 25 * clamped) * Math.PI) / 180));
+  return Math.max(0.28, Math.sin(((49 + 37 * clamped) * Math.PI) / 180));
 }
 
 function clampPan(x: number, y: number) {
@@ -307,7 +323,7 @@ watch([depth, focusZoom], () => { pan.value = clampPan(pan.value.x, pan.value.y)
 function stopAnimation() { if (frame && owner) owner.cancelAnimationFrame(frame); frame = 0; targetDepth = depth.value; }
 function moveDepth(next: number, duration = 0) {
   stopAnimation(); targetDepth = Math.min(5, Math.max(-2, next));
-  if (!owner || !duration || owner.matchMedia('(prefers-reduced-motion: reduce)').matches) { depth.value = targetDepth; return; }
+  if (!owner || !duration || owner.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) { depth.value = targetDepth; return; }
   const from = depth.value, started = now(), destination = targetDepth;
   const tick = () => {
     const t = Math.min(1, (now() - started) / duration);
@@ -324,6 +340,7 @@ function clearCameraOffset() {
   sandboxOverhead.value = 0;
 }
 function goToLayer(id: Layer) {
+  clearSelection();
   if (id === 'city' && detailDistrict.value) { returnCity(); return; }
   detailDistrict.value = null;
   clearCameraOffset(); search.value = '';
@@ -332,7 +349,7 @@ function goToLayer(id: Layer) {
   moveDepth(id === 'country' ? 4 : id === 'district' ? 0 : layers.find(item => item.id === id)!.depth, 360);
 }
 function enterDistrict(id: string) {
-  if (!isMapDistrict(id)) return;
+  if (!isMapDistrict(id)) return;clearSelection();lookup.value='';
   if (!detailDistrict.value) {
     cityView = {
       zoom: focusZoom.value,
@@ -347,6 +364,7 @@ function enterDistrict(id: string) {
   void nextTick(() => viewport.value?.focus({ preventScroll: true }));
 }
 function returnCity() {
+  clearSelection();lookup.value='';
   cancelGestures(); stopAnimation();
   detailDistrict.value = null;
   focusZoom.value = cityView?.zoom ?? 1;
@@ -358,6 +376,7 @@ function returnCity() {
 }
 function goHome() { selectedId.value = TOKYO_REGION_ID || TOKYO_COUNTRY_ID; selectedKind.value = TOKYO_REGION_ID ? 'division' : 'country'; goToLayer('province'); }
 function resetView() {
+  focused.value='';
   focusZoom.value = 1;
   pan.value = { x: 0, y: 0 };
   bearing.value = 0;
@@ -437,7 +456,7 @@ function applyZoomDepth(next: number, duration = 0, anchorOffset?: { x: number; 
   if (!geographicLayer.value) {
     const base = localLayer.value ? 0 : 2;
     const prevZoom = focusZoom.value;
-    const nextZoom = Math.min(12, Math.max(.65, 2 ** (base - next)));
+    const nextZoom = Math.min(12, Math.max(localLayer.value?.65:.3, 2 ** (base - next)));
     const ratio = nextZoom / Math.max(0.01, prevZoom);
     focusZoom.value = nextZoom;
     if (Math.abs(ratio - 1) > 1e-4) {
@@ -482,8 +501,11 @@ function wheel(event: WheelEvent) {
   zoomBy(Math.exp(-Math.min(240, Math.max(-240, pixels)) * .0025), true, { x: event.clientX, y: event.clientY });
 }
 function doubleClick(event: MouseEvent) {
-  if ((event.target as Element).closest('[data-map-controls], [data-map-target], [data-map-person-id], [data-map-player], button, input, label')) return;
+  const target=event.target as Element, place=target.closest('[data-map-location]')?.getAttribute('data-map-location');
+  if(place){inspectPlace(place,true);return}
+  if (target.closest('[data-map-controls], [data-map-target], [data-map-person-id], [data-map-player], button, input, label')) return;
   event.preventDefault();
+  if(!geographicLayer.value&&sandboxScene.value?.pickAt(event.clientX,event.clientY,true))return;
   zoomBy(1.45, true, { x: event.clientX, y: event.clientY });
 }
 function pointerPoint(event: PointerEvent) {
@@ -625,7 +647,7 @@ function activateTarget(target: string) {
   }
   else if (target.startsWith('event:')) { const id = target.slice(6); if (roadEvents.value.some(item => item.id === id)) openRouteEvent(id, true); }
   else if (target.startsWith('city:')) enterDistrict(target.slice(5));
-  else if (localLayer.value && localDestinations.value.some(item => item.id === target)) travelTo(target);
+  else if (tokyoSite.has(target)) inspectPlace(target);
 }
 function pointerUp(event: PointerEvent) {
   if (!pointers.has(event.pointerId)) return;
@@ -717,9 +739,10 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
   <CaliforniaSandbox v-else-if="isCaliforniaLocalLocation(model.state.locationId)" :location-id="model.state.locationId" :places="californiaPlaces" :routes="overseasRoutes" :busy="model.busy" @travel="travelTo" />
   <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
     <ParisSandbox v-if="parisOpened" :open="showParis" :location-id="model.state.locationId" :busy="model.busy" :routes="parisRoutes" :local-time="parisTime" :quote="id => novelQuotes.get(id)" @travel="departParis" @back="showParis = false" />
-    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in layers" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
+    <component :is="'style'">{{ tokyoAtlasCss }}</component>
+    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in (tokyoOnly ? layers.slice(0,1) : layers)" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
-    <div class="wm-title"><div><h2>{{ layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
+    <div class="wm-title"><div><h2>{{ layer === 'city' ? '东京城市沙盘' : layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
     <div class="wm-layout">
       <div class="wm-map-column">
         <fieldset v-if="localLayer" class="wm-label-filters" aria-label="沙盘标签分类">
@@ -742,28 +765,28 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
                 :width="size.width" :height="size.height"
                 :location-id="model.state.locationId" :position="currentMapPosition"
                 :busy="model.busy || (!novelMode && (!!model.state.interior || needsTransitReturn))"
-                :selected-id="selectedCity"
+                :selected-id="inspected || selectedCity" :focused-place="focused" :route-from="routeFrom" :route-to="routeTo"
                 :disabled-ids="localLayer ? localDestinations.filter(place => destinationDisabled(place.id)).map(place => place.id) : []"
                 :player-name="protagonistNames[activeProtagonist(model.state)]"
                 :player-id="activeProtagonist(model.state)"
                 :people="localLayer ? mapPeople : []" :road-events="localLayer && mapLayers.events ? roadEvents : []"
                 :show-places="mapLayers.places"
-                @select="enterDistrict($event)" @travel="travelTo($event)"
+                @select="enterDistrict($event)" @inspect="inspectPlace($event)" @focus-place="inspectPlace($event,true)"
                 @event="openRouteEvent($event, false)"
                 @overflow="hiddenLabelCount = $event"
                 @scale="setTokyoMapScale" />
             </div>
             <div v-show="depth > 2" class="wm-plane wm-atlas-plane" data-map-plane="atlas" :style="atlasStyle" :aria-hidden="!geographicLayer" :inert="!geographicLayer">
-              <AtlasMapScene ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" @tilt-change="globeTilt = $event" />
+              <AtlasMapScene v-if="!tokyoOnly" ref="atlasScene" :countries="mapData.countries" :subdivisions="mapData.subdivisions" :china-maritime-lines="mapData.chinaMaritimeLines" :width="size.width" :height="size.height" :depth="depth" :zoom="focusZoom" :country-id="countryId" :region-id="regionId" :selected-id="selectedId" :bearing="bearing" :active="depth > 2" @view-change="onAtlasView" @select="activateTarget" @tilt-change="globeTilt = $event" />
             </div>
           </div>
           <span class="wm-north" aria-hidden="true" :style="{ transform: `rotate(${bearing}deg)` }">N ↑</span>
-          <div class="wm-watermark" aria-label="Open AI Map"><img :src="openAiMark" alt=""/><span>Open AI Map</span></div>
+          <div v-if="geographicLayer" class="wm-watermark" aria-label="Open AI Map"><img :src="openAiMark" alt=""/><span>Open AI Map</span></div>
           <div v-if="!geographicLayer" class="wm-local-scale" aria-label="虚构场景示意比例尺"><span>{{ localScale.label }} · 示意</span><i :style="{width:localScale.width+'px'}" /></div>
         </div>
         <div class="wm-map-actions">
           <p id="uc-map-help" class="wm-help">单指或左键{{ interactionMode === 'orbit' ? '环视俯仰' : geographicLayer ? '旋转地球' : '拖拽平移' }} · 双指捏合旋转 / 滚轮缩放 · 右键或 Shift+拖拽{{ geographicLayer ? '倾斜俯仰' : '环视' }}<br>红点为当前位置 · 朝向 {{ normalizedBearing }}° · 复位可恢复朝北</p>
-          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 120 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= .65" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
+          <div class="wm-zoom-controls" data-map-controls aria-label="地图缩放"><button type="button" aria-label="放大地图" :disabled="geographicLayer ? (focusZoom >= 120 && minimumDepth >= 3) : focusZoom >= 12" @click="zoomBy(1.3)">+</button><button type="button" aria-label="缩小地图" :disabled="geographicLayer ? depth >= 5 && focusZoom <= 1 : focusZoom <= (localLayer ? .65 : .3)" @click="zoomBy(1 / 1.3)">−</button><button type="button" aria-label="复位地图视图" @click="resetView">⌂</button></div>
           <div class="wm-rotate-controls" data-map-controls aria-label="地图旋转">
             <button v-if="!geographicLayer" type="button" class="wm-mode-pill" @click="sandboxScene?.refresh()">刷新沙盘</button>
             <button type="button" class="wm-mode-pill" :class="{ active: interactionMode === 'orbit' }" :aria-pressed="interactionMode === 'orbit'" aria-label="切换单指操作模式" @click="toggleInteractionMode">{{ interactionMode === 'orbit' ? '环视' : geographicLayer ? '转球' : '平移' }}</button>
@@ -779,11 +802,25 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
         <div v-if="activeEvent && localLayer" class="wm-event-detail" role="status"><h3>{{ activeEvent.title }}</h3><p>{{ activeEvent.detail }}</p><button type="button" @click="activeEventId = ''">收起事件详情</button></div>
       </div>
       <aside class="wm-details">
+        <section v-if="!geographicLayer" class="tc-inspector">
+          <label class="tc-find"><span>⌕</span><input v-model="lookup" type="search" aria-label="搜索东京地点或角色" placeholder="搜索东京地点或角色"></label>
+          <div v-if="lookup" class="tc-results"><button v-for="p in searchHits" :key="p.id" type="button" @click="inspectPlace(p.id,true)">{{ p.name }}<small>{{ tokyoSite.get(p.id)?.title }}</small></button><p v-if="!searchHits.length">没有匹配地点</p></div>
+          <div v-else-if="siteDetails && chosenPlace" class="tc-selection">
+            <button class="tc-close" type="button" aria-label="关闭地点详情" @click="clearSelection">×</button>
+            <small>{{ mapDistricts.find(d=>d.id===siteDetails?.district)?.shortName }}</small><h3>{{ siteDetails.title }}</h3>
+            <label v-if="siteDetails.ids.length>1">选择目的地<select v-model="inspected" @change="routeTo=''"><option v-for="id in siteDetails.ids" :key="id" :value="id">{{ tokyoDestinations.get(id)?.name }}</option></select></label>
+            <p>{{ chosenPlace.description.replace(/^【示例场景】/,'') }}</p><small>从当前位置出发 · {{ destinationNote(inspected) }}</small>
+            <div class="tc-actions"><button type="button" @click="inspectPlace(inspected,true)">聚焦地点</button><button type="button" @click="routeFrom=inspected;routeTo=''">设为起点</button></div>
+            <div class="tc-origin">起点 · {{ tokyoDestinations.get(routeFrom || model.state.locationId)?.name || currentLocation?.name }} <button v-if="routeFrom" type="button" aria-label="使用当前位置作为起点" @click="routeFrom='';routeTo=''">复位</button></div>
+            <div class="tc-actions"><button type="button" :disabled="!tokyoSite.has(routeFrom || model.state.locationId) || routeFrom===inspected" @click="routeTo ? routeTo='' : showRoute()">{{ routeTo ? '收起路线' : '显示路线' }}</button><button type="button" class="tc-go" :disabled="destinationDisabled(inspected)" @click="travelTo(inspected)">前往此处</button></div>
+          </div>
+          <button v-if="tokyoSite.has(model.state.locationId)" type="button" class="tc-here" @click="inspectPlace(model.state.locationId,true)">◎ 定位当前主角</button>
+        </section>
         <template v-if="localLayer">
           <div class="wm-location-now"><small>当前地点</small><h3>{{ currentLocation?.name }}</h3></div>
           <div v-if="model.state.interior && !novelMode" class="wm-detail-note"><p>你在室内，离开房间后可以继续出行。</p><button type="button" class="wm-outline-button" :disabled="model.busy" @click="runInteraction(model, actions, { type: 'leave_interior' })">离开房间，回到入口</button></div>
           <p v-if="novelMode" class="wm-detail-note" data-novel-energy-rule>健康、饱腹和压力各 50% 为中性线。高健康、高饱腹减耗，高压力增耗；以出发时状态计算。</p>
-          <button v-for="(place, index) in localDestinations" :key="place.id" type="button" class="wm-destination" :data-destination="place.id" :disabled="destinationDisabled(place.id)" @click="travelTo(place.id)"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="venueStatusText(place.id)" :data-destination-hours="place.id">{{ venueStatusText(place.id) }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">{{ destinationNote(place.id) }}</small><small v-if="novelMode && place.id !== model.state.locationId" data-novel-energy-quote>{{ energyCalculationNote(place.id) }}</small></span><span>{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
+          <button v-for="(place, index) in localDestinations" :key="place.id" type="button" class="wm-destination" :data-destination="place.id" @click="inspectPlace(place.id)"><span class="wm-list-number">{{ String(index + 1).padStart(2, '0') }}</span><span><b>{{ place.name }}</b><small>{{ place.subtitle }}</small><small v-if="venueStatusText(place.id)" :data-destination-hours="place.id">{{ venueStatusText(place.id) }}</small><small v-if="place.id !== model.state.locationId" class="wm-route-outlook">{{ destinationNote(place.id) }}</small><small v-if="novelMode && place.id !== model.state.locationId" data-novel-energy-quote>{{ energyCalculationNote(place.id) }}</small></span><span>{{ place.id === model.state.locationId ? '当前' : '↗' }}</span></button>
           <p v-if="!novelMode" class="wm-detail-note">基础 15 分钟 · 5 点精力；遇到路段事件时按预告耗时。</p><p v-else class="wm-detail-note">选择地点后按预告结算，再继续阅读；跨区使用现有公交路线。</p>
           <p v-if="!novelMode" class="wm-detail-note">到达学生公寓、教学楼或图书馆后，收起地图，靠近楼门可进入室内。</p><p v-if="needsTransitReturn && !novelMode" class="wm-detail-note">当前在校园外，请在附近公交站乘车返回校园。</p>
           <p v-if="!novelMode && !roadEvents.length" class="wm-detail-note">当前路线暂无特殊情况。</p>
@@ -800,7 +837,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             <button v-if="novelMode" type="button" class="wm-outline-button" :disabled="destinationDisabled(selectedCity)" @click="travelTo(selectedCity)">前往{{ cityDetail.name }}</button>
             <template v-else><p v-if="cityRoute" class="wm-detail-note">高田接驳站往返 · {{ cityRoute.minutes }} 分钟 · ¥{{ cityRoute.fare }} · {{ selectedCity === 'downtown' ? '东京Metro联程' : '都营巴士 / 东京Metro' }}</p><button v-if="!needsTransitReturn" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门公交站</button><p class="wm-detail-note">收起地图，到公交站牌选择车辆与目的地。远郊之间经校园换乘。</p></template>
           </template>
-          <p class="wm-detail-note">点击地图上的城区，或选择上方片区，进入详细沙盘。</p>
+          <p class="wm-detail-note">可在地图上点选建筑，双击聚焦。</p>
         </template>
         <template v-else>
           <nav class="wm-atlas-breadcrumb" aria-label="地理路径"><button @click="goToLayer('world')">世界</button><span>/</span><button @click="selectCountry(countryId)">{{ currentCountry?.properties.name ?? '国家' }}</button><template v-if="currentRegion"><span>/</span><button @click="selectDivision(regionId)">{{ currentRegion.properties.name }}</button></template></nav>
@@ -817,19 +854,19 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
           <p v-if="regionCities.length && layer === 'province'" class="wm-detail-note">省内地名：{{ regionCities.map(item => item.properties.name).join(' · ') }}。所在城市尚未指定。</p>
           <p class="wm-detail-note">地形为艺术化浅起伏，地标为微缩示意。浏览不会推进时间。</p>
         </template>
-        <section v-if="novelMode || overseasRoutes.length" class="wm-overseas-routes" aria-label="国际航线">
+        <section v-if="!tokyoOnly && (novelMode || overseasRoutes.length)" class="wm-overseas-routes" aria-label="国际航线">
           <small class="wm-kicker">海外旅行</small><h3>东京 · 旧金山</h3>
           <p class="wm-detail-note">前往南门交通站，再经羽田国际机场飞往旧金山。在旧金山的访客大厅领取 Pro200 收藏券，可在湾区市场转让。</p>
           <button v-if="!isInternationalLocation(model.state.locationId) && !overseasRoutes.length" type="button" class="wm-outline-button" :disabled="destinationDisabled('bus-stop')" @click="travelTo('bus-stop')">前往南门交通站</button>
           <button v-for="leg in overseasRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-overseas-to="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ leg.method }} · {{ novelDestinations.find(place => place.id === leg.to)?.name ?? leg.to }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
-        <section v-if="novelMode || parisRoutes.length" class="wm-overseas-routes" aria-label="巴黎旅行">
+        <section v-if="!tokyoOnly && (novelMode || parisRoutes.length)" class="wm-overseas-routes" aria-label="巴黎旅行">
           <h3>东京 · 巴黎</h3>
           <p class="wm-detail-note">从羽田飞抵戴高乐机场，在 Roissypôle 换乘 RER B 前往塞纳河市区。</p>
           <button type="button" class="wm-outline-button" @click="openParis">查看巴黎市区与机场</button>
           <button v-for="leg in parisRoutes" :key="leg.to" type="button" class="wm-outline-button" :data-paris-route="leg.to" :disabled="destinationDisabled(leg.to)" @click="travelTo(leg.to)">{{ novelDestinations.find(p => p.id === leg.to)?.name }} · {{ leg.method }} · {{ leg.minutes }} 分钟 · ¥{{ leg.fare }}</button>
         </section>
-        <section v-if="novelMode || beijingRoutes.length || isBeijingLocation(model.state.locationId)" class="wm-overseas-routes" aria-label="北京旅行">
+        <section v-if="!tokyoOnly && (novelMode || beijingRoutes.length || isBeijingLocation(model.state.locationId))" class="wm-overseas-routes" aria-label="北京旅行">
           <small class="wm-kicker">中国 · 北京</small><h3>北京城市沙盘</h3>
           <p class="wm-detail-note">可先预览故宫、水立方、央视总部、南锣鼓巷和方庄街区。出行必须沿开放的旅行连接逐站进行，预览不会结算。</p>
           <button type="button" class="wm-outline-button" data-bj-preview @click="showBeijing = true">打开北京沙盘{{ isBeijingLocation(model.state.locationId) ? '' : '（预览）' }}</button>

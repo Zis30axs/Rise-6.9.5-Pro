@@ -49,8 +49,8 @@ describe('sandbox pin projection', () => {
     expect(tokyoLocationPosition('library')).toEqual(projectOldTokyoPosition(library));
     expect(TOKYO_PIN_ELEVATION).toBe(8);
     const scene = readFileSync('src/frontend/CitySandboxScene.vue', 'utf8');
-    const projections = scene.match(/project\([^)]*TOKYO_PIN_ELEVATION\)/g) ?? [];
-    expect(projections.length).toBeGreaterThanOrEqual(4);
+    expect(scene).toContain('site.door[0]');
+    expect(scene).toContain('groundHeight(player.x,player.z)+1.8');
     expect(scene).toContain('tokyo-sandbox-leaders');
   });
 });

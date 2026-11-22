@@ -10,7 +10,7 @@ export interface TokyoMapCameraFrame {
   bearing: number; zoom: number;
   pan?: { x: number; y: number };
   center?: { x: number; z: number };
-  overhead?: number;
+  overhead?: number;targetElevation?:number;
   summit?: { x: number; y: number; z: number };
 }
 
@@ -35,13 +35,13 @@ export function frameTokyoMapCamera(camera: THREE.PerspectiveCamera, frame: Toky
   const sourceCentre = new THREE.Vector3((bounds.minX + bounds.maxX) / 2, 0, (bounds.minZ + bounds.maxZ) / 2);
   const bearing = (frame.bearing + 35) * Math.PI / 180;
   const overhead = Math.max(-0.85, Math.min(1, frame.overhead ?? 0));
-  const pitch = (58 + 25 * overhead) * Math.PI / 180;
+  const pitch = (49 + 37 * overhead) * Math.PI / 180;
   const sin = Math.sin(bearing), cos = Math.cos(bearing), sp = Math.sin(pitch), cp = Math.cos(pitch);
   const eye = new THREE.Vector3(sin * cp, sp, cos * cp);
   const right = new THREE.Vector3(cos, 0, -sin);
   const groundForward = new THREE.Vector3(-sin, 0, -cos);
 
-  camera.fov = 50;
+  camera.fov = 36;
   camera.aspect = width / height;
   camera.near = .25; camera.far = 6500;
   camera.updateProjectionMatrix();
@@ -52,8 +52,9 @@ export function frameTokyoMapCamera(camera: THREE.PerspectiveCamera, frame: Toky
   // keeps a steady orbital radius instead of oscillating with bounding-box corners.
   const target = frame.center
     ? new THREE.Vector3(frame.center.x, 0, frame.center.z) : sourceCentre.clone();
+  target.y=frame.targetElevation??0;
   const baseBearing = 35 * Math.PI / 180;
-  const basePitch = 58 * Math.PI / 180;
+  const basePitch = 49 * Math.PI / 180;
   const bSin = Math.sin(baseBearing), bCos = Math.cos(baseBearing);
   const bSp = Math.sin(basePitch), bCp = Math.cos(basePitch);
   const baseEye = new THREE.Vector3(bSin * bCp, bSp, bCos * bCp);

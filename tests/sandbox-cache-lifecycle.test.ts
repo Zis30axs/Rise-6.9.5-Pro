@@ -11,7 +11,7 @@ const fake = vi.hoisted(() => ({ renderers: [] as { dispose: ReturnType<typeof v
 vi.mock('three', async original => {
   const real = await original<typeof import('three')>();
   return { ...real, WebGLRenderer: class {
-    dispose = vi.fn(); forceContextLoss = vi.fn(); render = vi.fn(); setPixelRatio = vi.fn(); setSize = vi.fn();
+    shadowMap = {}; dispose = vi.fn(); forceContextLoss = vi.fn(); render = vi.fn(); setPixelRatio = vi.fn(); setSize = vi.fn();
     constructor() { fake.renderers.push(this); }
   } };
 });
@@ -29,7 +29,8 @@ beforeEach(() => {
   });
   fake.renderers = [];
   const bytes = new Uint8Array(readFileSync('assets/models/unread-city-tokyo-sandbox.glb'));
-  vi.mocked(readLocalAssetBytes).mockReset().mockResolvedValue(bytes);
+  const tower=new Uint8Array(readFileSync('assets/models/toyokawa-executive-tower.glb'));
+  vi.mocked(readLocalAssetBytes).mockReset().mockImplementation(async (_url,limit)=>limit===1_000_000?tower:bytes);
 });
 afterEach(() => { apps.splice(0).forEach(app => app.unmount()); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -48,7 +49,7 @@ function mount() {
 }
 const ready = (root: HTMLElement, count = 1) => vi.waitFor(() => expect(root.querySelectorAll('[data-tokyo-sandbox-status="ready"]')).toHaveLength(count), { timeout: 10_000 });
 
-it.each([[1440, 900], [390, 844], [320, 568]])('reopens the actual GLB five times at %ix%i with one decode and one renderer', async (width, height) => {
+it.each([[1440, 900], [390, 844], [320, 568]])('reopens the actual GLB five times at %ix%i with one decode per model and one renderer', async (width, height) => {
   const parse = vi.spyOn(GLTFLoader.prototype, 'parseAsync');
   const { root, shown, props } = mount(); props.width = width; props.height = height;
   const coldStart = performance.now(); await ready(root); const coldMs = performance.now() - coldStart;
@@ -62,8 +63,8 @@ it.each([[1440, 900], [390, 844], [320, 568]])('reopens the actual GLB five time
     warmMs.push(performance.now() - start);
     expect(root.querySelector('canvas')).toBe(canvas);
   }
-  expect(parse).toHaveBeenCalledTimes(1);
-  expect(readLocalAssetBytes).toHaveBeenCalledTimes(1);
+  expect(parse).toHaveBeenCalledTimes(2);
+  expect(readLocalAssetBytes).toHaveBeenCalledTimes(2);
   expect(fake.renderers).toHaveLength(1);
   expect(fake.renderers[0].dispose).not.toHaveBeenCalled();
   console.info(JSON.stringify({ viewport: [width, height], coldMs, warmMs, modelParses: parse.mock.calls.length, renderers: fake.renderers.length, gpu: 'stubbed', imageDecode: 'stubbed' }));
