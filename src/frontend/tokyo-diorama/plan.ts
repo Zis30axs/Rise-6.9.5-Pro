@@ -111,9 +111,26 @@ const special = (i: number, j: number) =>
         ? 'airport'
         : xs[i] >= -74 && xs[i + 1] <= 83 && zs[j + 1] <= -92
           ? 'mountain'
-          : xs[i] >= 275 && xs[i + 1] <= 311 && zs[j] >= -92 && zs[j + 1] <= -30
-            ? 'asukayama'
-            : ''
+          : xs[i] >= -74 &&
+              xs[i + 1] <= 55 &&
+              zs[j] >= -68 &&
+              zs[j + 1] <= 47
+            ? 'campus'
+            : xs[i] >= 275 && xs[i + 1] <= 311 && zs[j] >= -92 && zs[j + 1] <= -30
+              ? 'asukayama'
+              : xs[i] >= -74 && xs[i + 1] <= 83 && zs[j] >= 117 && zs[j + 1] <= 188
+                ? 'downtown'
+                : xs[i] >= -207 && xs[i + 1] <= -96 && zs[j] >= 78 && zs[j + 1] <= 188
+                  ? 'home'
+                  : xs[i] >= 119 && xs[i + 1] <= 179 && zs[j] >= -165 && zs[j + 1] <= -68
+                    ? 'riverside'
+                    : xs[i] >= 350 && xs[i + 1] <= 393 && zs[j] >= -127 && zs[j + 1] <= -68
+                      ? 'highland'
+                      : xs[i] >= 83 && xs[i + 1] <= 179 && zs[j] >= 47 && zs[j + 1] <= 188
+                        ? 'commercial'
+                        : xs[i] >= -207 && xs[i + 1] <= -96 && zs[j] >= -165 && zs[j + 1] <= 10
+                          ? 'grand-commercial'
+                          : ''
     : '';
 const adjacent = new Map<number, number[]>();
 function street(a: number, b: number, width: number, bridge = false) {
@@ -136,6 +153,10 @@ for (let j = 0; j < zs.length; j++)
         bottom = special(i, j);
       if (i === riverCol) {
         if ([2, 5, 8, 10, 12, 14].includes(j)) street(n, n + 1, 5.8, true);
+      } else if (i === 7 && j === 8) {
+        const gateCurb = nodes.push(mid(nodes[n], nodes[n + 1], 0.5)) - 1;
+        street(n, gateCurb, 5.4);
+        street(gateCurb, n + 1, 5.4);
       } else if (!(top && top === bottom))
         street(n, n + 1, [4, 8, 10, 12].includes(j) ? 5.4 : 3.1);
     }
@@ -146,6 +167,831 @@ for (let j = 0; j < zs.length; j++)
         street(n, n + cols, [5, 10, 14, 17].includes(i) ? 5.4 : 3.1);
     }
   }
+const campusNW = nodes[node(6, 5)],
+  campusNE = nodes[node(9, 5)],
+  campusSE = nodes[node(9, 8)],
+  campusSW = nodes[node(6, 8)];
+export function campusAt(u: number, v: number): Point {
+  return mid(mid(campusNW, campusNE, u), mid(campusSW, campusSE, u), v);
+}
+export const campusAngle = Math.atan2(
+  campusSE[1] - campusSW[1],
+  campusSE[0] - campusSW[0]
+);
+export const campusEnclosure: Point[] = [
+  campusAt(0.044, 0.052),
+  campusAt(0.956, 0.052),
+  campusAt(0.956, 0.942),
+  campusAt(0.044, 0.942),
+];
+const campusSouthCurb =
+  streets.find((e) => e.a === node(7, 8) && e.b !== node(8, 8) && !e.walk && e.width > 4)
+    ?.b ?? node(7, 8);
+function campusPath(a: number, b: number, width: number) {
+  street(a, b, width);
+  streets[streets.length - 1].walk = true;
+}
+function campusNode(u: number, v: number) {
+  return nodes.push(campusAt(u, v)) - 1;
+}
+const cGatePlaza = campusNode(0.48, 0.86),
+  cPromenade = campusNode(0.48, 0.74),
+  cLibraryPlaza = campusNode(0.48, 0.56),
+  cQuadCenter = campusNode(0.48, 0.34),
+  cTeachingPlaza = campusNode(0.48, 0.25),
+  cWestSouth = campusNode(0.28, 0.74),
+  cDormPlaza = campusNode(0.28, 0.45),
+  cWestNorth = campusNode(0.28, 0.25),
+  cEastSouth = campusNode(0.64, 0.74),
+  cSportsPlaza = campusNode(0.64, 0.45),
+  cEastNorth = campusNode(0.64, 0.25);
+campusPath(campusSouthCurb, cGatePlaza, 3.0);
+campusPath(cGatePlaza, cPromenade, 3.0);
+campusPath(cPromenade, cLibraryPlaza, 2.8);
+campusPath(cLibraryPlaza, cQuadCenter, 2.6);
+campusPath(cQuadCenter, cTeachingPlaza, 2.6);
+campusPath(cWestSouth, cPromenade, 2.2);
+campusPath(cPromenade, cEastSouth, 2.2);
+campusPath(cWestSouth, cDormPlaza, 2.2);
+campusPath(cDormPlaza, cWestNorth, 2.1);
+campusPath(cWestNorth, cTeachingPlaza, 2.1);
+campusPath(cEastSouth, cSportsPlaza, 2.2);
+campusPath(cSportsPlaza, cEastNorth, 2.1);
+campusPath(cEastNorth, cTeachingPlaza, 2.1);
+campusPath(node(6, 7), cWestSouth, 2.0);
+campusPath(node(9, 7), cEastSouth, 2.0);
+const campusLayout: Record<
+  string,
+  { u: number; v: number; w: number; d: number; angle: number; street: [number, number] }
+> = {
+  teaching: {
+    u: 0.48,
+    v: 0.145,
+    w: 40,
+    d: 15.5,
+    angle: campusAngle,
+    street: [cQuadCenter, cTeachingPlaza],
+  },
+  library: {
+    u: 0.48,
+    v: 0.45,
+    w: 30,
+    d: 14,
+    angle: campusAngle,
+    street: [cPromenade, cLibraryPlaza],
+  },
+  dorm: {
+    u: 0.155,
+    v: 0.45,
+    w: 34,
+    d: 17.5,
+    angle: campusAngle - Math.PI / 2,
+    street: [cWestSouth, cDormPlaza],
+  },
+  sports: {
+    u: 0.815,
+    v: 0.45,
+    w: 46,
+    d: 26,
+    angle: campusAngle + Math.PI / 2,
+    street: [cEastSouth, cSportsPlaza],
+  },
+  cafe: {
+    u: 0.59,
+    v: 0.65,
+    w: 11.5,
+    d: 8,
+    angle: campusAngle,
+    street: [cPromenade, cEastSouth],
+  },
+  gate: {
+    u: 0.48,
+    v: 0.9,
+    w: 22,
+    d: 6.8,
+    angle: campusAngle,
+    street: [campusSouthCurb, cGatePlaza],
+  },
+};
+export const campusSiteKeys = new Set(Object.keys(campusLayout));
+
+export interface ResidentialCommunity {
+  id: 'downtown' | 'home' | 'riverside' | 'highland' | 'commercial' | 'grand-commercial';
+  name: string;
+  at: (u: number, v: number) => Point;
+  angle: number;
+  enclosure: Point[];
+  siteKeys: Set<string>;
+}
+
+function makeEnclave(
+  id: ResidentialCommunity['id'],
+  name: string,
+  i0: number,
+  i1: number,
+  j0: number,
+  j1: number,
+  insetU = 0.045,
+  insetV = 0.055
+) {
+  const nw = nodes[node(i0, j0)],
+    ne = nodes[node(i1, j0)],
+    se = nodes[node(i1, j1)],
+    sw = nodes[node(i0, j1)];
+  const at = (u: number, v: number): Point =>
+    mid(mid(nw, ne, u), mid(sw, se, u), v);
+  const angle = Math.atan2(se[1] - sw[1], se[0] - sw[0]);
+  const enclosure: Point[] = [
+    at(insetU, insetV),
+    at(1 - insetU, insetV),
+    at(1 - insetU, 1 - insetV),
+    at(insetU, 1 - insetV),
+  ];
+  const ptNode = (u: number, v: number) => nodes.push(at(u, v)) - 1;
+  return { id, name, at, angle, enclosure, ptNode };
+}
+
+// 1. 目白台豪华住宅区 (downtown): 西区高密度豪宅塔楼群(长崎素世等) + 东区名门庭院宅邸区(丰川/王冢/二阶堂/莲见/清告)
+const dt = makeEnclave('downtown', '目白台豪华住宅区', 6, 10, 10, 12, 0.038, 0.068);
+const dtWestGate = dt.ptNode(0.24, 0.07),
+  dtTowerPlaza = dt.ptNode(0.24, 0.54),
+  dtTowerWest = dt.ptNode(0.12, 0.54),
+  dtTowerEast = dt.ptNode(0.39, 0.54),
+  dtTowerSouth = dt.ptNode(0.24, 0.88),
+  dtCenterNorth = dt.ptNode(0.49, 0.14),
+  dtCenterMid = dt.ptNode(0.49, 0.54),
+  dtCenterSouth = dt.ptNode(0.49, 0.88),
+  dtEastNorth = dt.ptNode(0.71, 0.24),
+  dtEastMid = dt.ptNode(0.71, 0.54),
+  dtEastSouth = dt.ptNode(0.71, 0.82),
+  dtEastGate = dt.ptNode(0.95, 0.54);
+campusPath(node(7, 10), dtWestGate, 2.6);
+campusPath(dtWestGate, dtTowerPlaza, 2.5);
+campusPath(dtTowerWest, dtTowerPlaza, 2.1);
+campusPath(dtTowerPlaza, dtTowerEast, 2.2);
+campusPath(dtTowerPlaza, dtTowerSouth, 2.2);
+campusPath(dtTowerSouth, node(7, 12), 2.2);
+campusPath(node(8, 10), dtCenterNorth, 2.8);
+campusPath(dtCenterNorth, dtCenterMid, 2.6);
+campusPath(dtCenterMid, dtCenterSouth, 2.4);
+campusPath(dtCenterSouth, node(8, 12), 2.4);
+campusPath(dtTowerEast, dtCenterMid, 2.2);
+campusPath(dtCenterNorth, dtEastNorth, 2.1);
+campusPath(dtCenterMid, dtEastMid, 2.3);
+campusPath(dtCenterSouth, dtEastSouth, 2.1);
+campusPath(dtEastNorth, dtEastMid, 2.2);
+campusPath(dtEastMid, dtEastSouth, 2.2);
+campusPath(dtEastMid, dtEastGate, 2.2);
+campusPath(dtEastGate, node(10, 11), 2.2);
+
+// 2. 杂司谷温情生活社区 (home): 北区低层公寓院(艾玛/黑部/梅露露) + 中轴生活街角与公园 + 西南MyGO小巷 + 东南家庭院落
+const hm = makeEnclave('home', '杂司谷生活社区', 2, 5, 9, 12, 0.048, 0.048);
+const hmNorthWest = hm.ptNode(0.20, 0.34),
+  hmNorthMid = hm.ptNode(0.48, 0.34),
+  hmNorthEast = hm.ptNode(0.76, 0.34),
+  hmNorthGate = hm.ptNode(0.48, 0.06),
+  hmMidWest = hm.ptNode(0.20, 0.58),
+  hmParkCenter = hm.ptNode(0.48, 0.58),
+  hmMidEast = hm.ptNode(0.76, 0.58),
+  hmEastGate = hm.ptNode(0.95, 0.58),
+  hmWestGate = hm.ptNode(0.06, 0.58),
+  hmSouthWest = hm.ptNode(0.25, 0.78),
+  hmSouthMid = hm.ptNode(0.48, 0.78),
+  hmSouthEast = hm.ptNode(0.72, 0.78),
+  hmSouthGate = hm.ptNode(0.48, 0.95);
+campusPath(node(4, 9), hmNorthGate, 2.2);
+campusPath(hmNorthGate, hmNorthMid, 2.2);
+campusPath(hmNorthWest, hmNorthMid, 2.1);
+campusPath(hmNorthMid, hmNorthEast, 2.1);
+campusPath(hmNorthWest, hmMidWest, 2.1);
+campusPath(hmNorthMid, hmParkCenter, 2.3);
+campusPath(hmNorthEast, hmMidEast, 2.1);
+campusPath(node(2, 11), hmWestGate, 2.2);
+campusPath(hmWestGate, hmMidWest, 2.2);
+campusPath(hmMidWest, hmParkCenter, 2.4);
+campusPath(hmParkCenter, hmMidEast, 2.4);
+campusPath(hmMidEast, hmEastGate, 2.6);
+campusPath(hmEastGate, node(5, 11), 2.6);
+campusPath(hmMidWest, hmSouthWest, 2.0);
+campusPath(hmParkCenter, hmSouthMid, 2.2);
+campusPath(hmMidEast, hmSouthEast, 2.0);
+campusPath(hmSouthWest, hmSouthMid, 2.0);
+campusPath(hmSouthMid, hmSouthEast, 2.0);
+campusPath(hmSouthMid, hmSouthGate, 2.2);
+campusPath(hmSouthGate, node(4, 12), 2.2);
+
+// 3. 神田川河岸公寓社区 (riverside): 椎名立希 / 紫藤爱丽莎 / 照泽 / 广崎教员 / 单身公寓
+const rv = makeEnclave('riverside', '神田川河岸社区', 11, 13, 2, 5, 0.125, 0.048);
+const rvNorth = rv.ptNode(0.50, 0.16),
+  rvMidNorth = rv.ptNode(0.50, 0.36),
+  rvCenter = rv.ptNode(0.50, 0.54),
+  rvSouth = rv.ptNode(0.50, 0.80),
+  rvWestGate = rv.ptNode(0.14, 0.54),
+  rvEastNorth = rv.ptNode(0.86, 0.36),
+  rvEastSouth = rv.ptNode(0.86, 0.70);
+campusPath(node(12, 2), rvNorth, 2.2);
+campusPath(rvNorth, rvMidNorth, 2.2);
+campusPath(rvMidNorth, rvCenter, 2.3);
+campusPath(rvCenter, rvSouth, 2.2);
+campusPath(rvSouth, node(12, 5), 2.2);
+campusPath(node(11, 4), rvWestGate, 2.1);
+campusPath(rvWestGate, rvCenter, 2.1);
+campusPath(rvMidNorth, rvEastNorth, 2.1);
+campusPath(rvEastNorth, node(13, 3), 2.1);
+campusPath(rvSouth, rvEastSouth, 2.1);
+campusPath(rvEastSouth, node(13, 4), 2.1);
+
+// 4. 高原坡地别墅社区 (highland): 若叶睦家与高原接驳站
+const hl = makeEnclave('highland', '高原坡地别墅社区', 18, 19, 3, 5, 0.075, 0.065);
+const hlCourt = hl.ptNode(0.50, 0.56),
+  hlSouthGate = hl.ptNode(0.50, 0.90),
+  hlWestGate = hl.ptNode(0.09, 0.56);
+campusPath(node(18, 4), hlWestGate, 2.2);
+campusPath(hlWestGate, hlCourt, 2.2);
+campusPath(hlCourt, hlSouthGate, 2.2);
+campusPath(hlSouthGate, node(18, 5), 2.2);
+
+// 5. 池袋／东池袋商业综合区 (commercial): 阳光城核心广场 + 乙女路/茶寮步行街 + RiNG/南池袋公园 + 东侧都会公寓带
+const cm = makeEnclave('commercial', '池袋商业综合区', 10, 13, 8, 12, 0.055, 0.045);
+const cmNorthGate = cm.ptNode(0.50, 0.05),
+  cmNorthWest = cm.ptNode(0.32, 0.21),
+  cmNorthMid = cm.ptNode(0.50, 0.21),
+  cmNorthEast = cm.ptNode(0.68, 0.21),
+  cmWestNorth = cm.ptNode(0.32, 0.39),
+  cmWestMid = cm.ptNode(0.32, 0.56),
+  cmCenterSouth = cm.ptNode(0.50, 0.56),
+  cmEastNorth = cm.ptNode(0.68, 0.39),
+  cmEastMid = cm.ptNode(0.68, 0.56),
+  cmWestGate = cm.ptNode(0.06, 0.56),
+  cmEastGate = cm.ptNode(0.94, 0.56),
+  cmSouthWest = cm.ptNode(0.32, 0.74),
+  cmSouthMid = cm.ptNode(0.58, 0.74),
+  cmSouthEast = cm.ptNode(0.68, 0.74),
+  cmSouthGate = cm.ptNode(0.58, 0.94);
+campusPath(node(11, 8), cmNorthGate, 2.8);
+campusPath(cmNorthGate, cmNorthMid, 2.8);
+campusPath(cmNorthWest, cmNorthMid, 2.4);
+campusPath(cmNorthMid, cmNorthEast, 2.4);
+campusPath(cmNorthWest, cmWestNorth, 2.4);
+campusPath(cmWestNorth, cmWestMid, 2.5);
+campusPath(cmNorthEast, cmEastNorth, 2.4);
+campusPath(cmEastNorth, cmEastMid, 2.5);
+campusPath(node(10, 10), cmWestGate, 2.8);
+campusPath(cmWestGate, cmWestMid, 2.8);
+campusPath(cmWestMid, cmCenterSouth, 3.0);
+campusPath(cmCenterSouth, cmEastMid, 3.0);
+campusPath(cmEastMid, cmEastGate, 2.6);
+campusPath(cmEastGate, node(13, 10), 2.6);
+campusPath(cmWestMid, cmSouthWest, 2.5);
+campusPath(cmCenterSouth, cmSouthMid, 2.6);
+campusPath(cmEastMid, cmSouthEast, 2.4);
+campusPath(cmSouthWest, cmSouthMid, 2.5);
+campusPath(cmSouthMid, cmSouthEast, 2.4);
+campusPath(cmSouthMid, cmSouthGate, 2.6);
+campusPath(cmSouthGate, node(12, 12), 2.6);
+
+// 6. 新宿／大型商业娱乐与CBD核心区 (grand-commercial): 北区丰川总裁楼CBD摩天群 + 中央站前广场 + 南区演艺潮流步行街
+const gc = makeEnclave('grand-commercial', '新宿大型商业娱乐区', 2, 5, 2, 7, 0.048, 0.042);
+const gcNorthGate = gc.ptNode(0.50, 0.05),
+  gcCbdWest = gc.ptNode(0.34, 0.25),
+  gcCbdCenter = gc.ptNode(0.50, 0.25),
+  gcCbdEast = gc.ptNode(0.66, 0.25),
+  gcPlazaWest = gc.ptNode(0.34, 0.46),
+  gcPlazaCenter = gc.ptNode(0.50, 0.46),
+  gcPlazaEast = gc.ptNode(0.66, 0.46),
+  gcWestGate = gc.ptNode(0.06, 0.46),
+  gcEastGate = gc.ptNode(0.94, 0.46),
+  gcEntWest = gc.ptNode(0.34, 0.64),
+  gcEntCenter = gc.ptNode(0.50, 0.64),
+  gcEntEast = gc.ptNode(0.66, 0.64),
+  gcSouthMid = gc.ptNode(0.50, 0.82),
+  gcSouthGate = gc.ptNode(0.50, 0.95);
+campusPath(node(4, 2), gcNorthGate, 2.8);
+campusPath(gcNorthGate, gcCbdCenter, 2.8);
+campusPath(gcCbdWest, gcCbdCenter, 2.5);
+campusPath(gcCbdCenter, gcCbdEast, 2.5);
+campusPath(gcCbdWest, gcPlazaWest, 2.5);
+campusPath(gcCbdCenter, gcPlazaCenter, 2.8);
+campusPath(gcCbdEast, gcPlazaEast, 2.5);
+campusPath(node(2, 4), gcWestGate, 2.8);
+campusPath(gcWestGate, gcPlazaWest, 2.8);
+campusPath(gcPlazaWest, gcPlazaCenter, 3.0);
+campusPath(gcPlazaCenter, gcPlazaEast, 3.0);
+campusPath(gcPlazaEast, gcEastGate, 2.8);
+campusPath(gcEastGate, node(5, 4), 2.8);
+campusPath(gcPlazaWest, gcEntWest, 2.5);
+campusPath(gcPlazaCenter, gcEntCenter, 2.8);
+campusPath(gcPlazaEast, gcEntEast, 2.5);
+campusPath(gcEntWest, gcEntCenter, 2.6);
+campusPath(gcEntCenter, gcEntEast, 2.6);
+campusPath(gcEntCenter, gcSouthMid, 2.6);
+campusPath(gcSouthMid, gcSouthGate, 2.6);
+campusPath(gcSouthGate, node(4, 7), 2.6);
+
+interface CommunitySiteSpec {
+  community: ResidentialCommunity['id'];
+  u: number;
+  v: number;
+  w: number;
+  d: number;
+  angle: number;
+  street: [number, number];
+}
+
+const communityLayout: Record<string, CommunitySiteSpec> = {
+  // 目白台豪华住宅区 — 西区高密度豪宅塔楼群
+  'soyo-house': {
+    community: 'downtown',
+    u: 0.24,
+    v: 0.30,
+    w: 19,
+    d: 13.5,
+    angle: dt.angle,
+    street: [dtWestGate, dtTowerPlaza],
+  },
+  'mizuho-apartment': {
+    community: 'downtown',
+    u: 0.24,
+    v: 0.77,
+    w: 16,
+    d: 11,
+    angle: dt.angle + Math.PI,
+    street: [dtTowerPlaza, dtTowerSouth],
+  },
+  'takada-residence': {
+    community: 'downtown',
+    u: 0.39,
+    v: 0.77,
+    w: 15,
+    d: 11,
+    angle: dt.angle + Math.PI,
+    street: [dtTowerEast, dtCenterMid],
+  },
+  // 目白台豪华住宅区 — 东区名门庭院宅邸区
+  downtown: {
+    community: 'downtown',
+    u: 0.58,
+    v: 0.14,
+    w: 14,
+    d: 6.2,
+    angle: dt.angle + Math.PI,
+    street: [node(8, 10), dtCenterNorth],
+  },
+  'ouzuka-residence': {
+    community: 'downtown',
+    u: 0.59,
+    v: 0.44,
+    w: 18,
+    d: 12.5,
+    angle: dt.angle - Math.PI / 2,
+    street: [dtCenterNorth, dtCenterMid],
+  },
+  'toyokawa-house': {
+    community: 'downtown',
+    u: 0.59,
+    v: 0.79,
+    w: 18,
+    d: 12.5,
+    angle: dt.angle - Math.PI / 2,
+    street: [dtCenterMid, dtCenterSouth],
+  },
+  'nikaido-house': {
+    community: 'downtown',
+    u: 0.83,
+    v: 0.24,
+    w: 16,
+    d: 11,
+    angle: dt.angle + Math.PI / 2,
+    street: [dtEastNorth, dtEastMid],
+  },
+  'residential-leia': {
+    community: 'downtown',
+    u: 0.83,
+    v: 0.54,
+    w: 15.5,
+    d: 11,
+    angle: dt.angle + Math.PI / 2,
+    street: [dtEastNorth, dtEastMid],
+  },
+  'kiyoaki-house': {
+    community: 'downtown',
+    u: 0.83,
+    v: 0.82,
+    w: 14.5,
+    d: 10,
+    angle: dt.angle + Math.PI / 2,
+    street: [dtEastMid, dtEastSouth],
+  },
+
+  // 杂司谷生活社区 — 北区现代低层公寓院落
+  'nanoka-honoka-home': {
+    community: 'home',
+    u: 0.20,
+    v: 0.19,
+    w: 16.5,
+    d: 10.5,
+    angle: hm.angle,
+    street: [hmNorthWest, hmNorthMid],
+  },
+  'emma-yuki-home': {
+    community: 'home',
+    u: 0.48,
+    v: 0.19,
+    w: 17.5,
+    d: 10.5,
+    angle: hm.angle,
+    street: [hmNorthWest, hmNorthMid],
+  },
+  'residential-meruru': {
+    community: 'home',
+    u: 0.76,
+    v: 0.19,
+    w: 14.5,
+    d: 10,
+    angle: hm.angle,
+    street: [hmNorthMid, hmNorthEast],
+  },
+  // 杂司谷生活社区 — 中轴生活街角
+  'onigawara-laundry': {
+    community: 'home',
+    u: 0.20,
+    v: 0.46,
+    w: 15,
+    d: 9.8,
+    angle: hm.angle,
+    street: [hmMidWest, hmParkCenter],
+  },
+  'residential-supermarket': {
+    community: 'home',
+    u: 0.69,
+    v: 0.46,
+    w: 15.5,
+    d: 9.8,
+    angle: hm.angle,
+    street: [hmParkCenter, hmMidEast],
+  },
+  home: {
+    community: 'home',
+    u: 0.87,
+    v: 0.47,
+    w: 11.5,
+    d: 6.2,
+    angle: hm.angle,
+    street: [hmMidEast, hmEastGate],
+  },
+  // 杂司谷生活社区 — 西南 MyGO 温情一户建小巷
+  'residential-tomori': {
+    community: 'home',
+    u: 0.16,
+    v: 0.69,
+    w: 13,
+    d: 9.2,
+    angle: hm.angle,
+    street: [hmMidWest, hmSouthWest],
+  },
+  'residential-anon': {
+    community: 'home',
+    u: 0.35,
+    v: 0.69,
+    w: 13,
+    d: 9.2,
+    angle: hm.angle,
+    street: [hmSouthWest, hmSouthMid],
+  },
+  'residential-rana': {
+    community: 'home',
+    u: 0.25,
+    v: 0.87,
+    w: 14,
+    d: 9.2,
+    angle: hm.angle + Math.PI,
+    street: [hmSouthWest, hmSouthMid],
+  },
+  // 杂司谷生活社区 — 东南烟火气家庭院落
+  'amaori-family-home': {
+    community: 'home',
+    u: 0.62,
+    v: 0.69,
+    w: 14,
+    d: 9.5,
+    angle: hm.angle,
+    street: [hmSouthMid, hmSouthEast],
+  },
+  'sena-family-home': {
+    community: 'home',
+    u: 0.82,
+    v: 0.69,
+    w: 15,
+    d: 9.8,
+    angle: hm.angle,
+    street: [hmMidEast, hmSouthEast],
+  },
+  'haga-residence': {
+    community: 'home',
+    u: 0.62,
+    v: 0.87,
+    w: 13.5,
+    d: 9.2,
+    angle: hm.angle + Math.PI,
+    street: [hmSouthMid, hmSouthEast],
+  },
+  'koko-old-house': {
+    community: 'home',
+    u: 0.82,
+    v: 0.87,
+    w: 15,
+    d: 9.5,
+    angle: hm.angle + Math.PI,
+    street: [hmSouthMid, hmSouthEast],
+  },
+
+  // 神田川河岸公寓社区
+  'majo-studio': {
+    community: 'riverside',
+    u: 0.27,
+    v: 0.20,
+    w: 13.5,
+    d: 10.5,
+    angle: rv.angle - Math.PI / 2,
+    street: [rvNorth, rvMidNorth],
+  },
+  'terazawa-flat': {
+    community: 'riverside',
+    u: 0.74,
+    v: 0.22,
+    w: 13.5,
+    d: 10.5,
+    angle: rv.angle + Math.PI / 2,
+    street: [rvNorth, rvMidNorth],
+  },
+  'hirosaki-staff-flat': {
+    community: 'riverside',
+    u: 0.27,
+    v: 0.45,
+    w: 14,
+    d: 10.5,
+    angle: rv.angle - Math.PI / 2,
+    street: [rvMidNorth, rvCenter],
+  },
+  'residential-taki': {
+    community: 'riverside',
+    u: 0.74,
+    v: 0.54,
+    w: 14.5,
+    d: 10.5,
+    angle: rv.angle + Math.PI / 2,
+    street: [rvMidNorth, rvCenter],
+  },
+  'residential-arisa': {
+    community: 'riverside',
+    u: 0.74,
+    v: 0.82,
+    w: 14.5,
+    d: 10.5,
+    angle: rv.angle + Math.PI / 2,
+    street: [rvCenter, rvSouth],
+  },
+
+  // 高原坡地别墅社区
+  'residential-mutsumi': {
+    community: 'highland',
+    u: 0.52,
+    v: 0.34,
+    w: 22,
+    d: 13,
+    angle: hl.angle,
+    street: [hlWestGate, hlCourt],
+  },
+  highland: {
+    community: 'highland',
+    u: 0.50,
+    v: 0.80,
+    w: 13,
+    d: 6,
+    angle: hl.angle + Math.PI,
+    street: [hlCourt, hlSouthGate],
+  },
+
+  // 池袋／东池袋商业综合区 (commercial)
+  'koto-apartment': {
+    community: 'commercial',
+    u: 0.19,
+    v: 0.12,
+    w: 15.5,
+    d: 9.8,
+    angle: cm.angle,
+    street: [cmNorthWest, cmNorthMid],
+  },
+  'otsuka-diner': {
+    community: 'commercial',
+    u: 0.50,
+    v: 0.12,
+    w: 16,
+    d: 9.5,
+    angle: cm.angle,
+    street: [cmNorthGate, cmNorthMid],
+  },
+  'kamezaki-residence': {
+    community: 'commercial',
+    u: 0.81,
+    v: 0.12,
+    w: 14.5,
+    d: 9.8,
+    angle: cm.angle,
+    street: [cmNorthMid, cmNorthEast],
+  },
+  clinic: {
+    community: 'commercial',
+    u: 0.18,
+    v: 0.29,
+    w: 14.5,
+    d: 10,
+    angle: cm.angle - Math.PI / 2,
+    street: [cmNorthWest, cmWestNorth],
+  },
+  'matcha-shop': {
+    community: 'commercial',
+    u: 0.18,
+    v: 0.47,
+    w: 14.5,
+    d: 10,
+    angle: cm.angle - Math.PI / 2,
+    street: [cmWestNorth, cmWestMid],
+  },
+  sunshine: {
+    community: 'commercial',
+    u: 0.50,
+    v: 0.37,
+    w: 30,
+    d: 26,
+    angle: cm.angle,
+    street: [cmWestMid, cmCenterSouth],
+  },
+  'otome-road': {
+    community: 'commercial',
+    u: 0.82,
+    v: 0.30,
+    w: 15,
+    d: 10,
+    angle: cm.angle + Math.PI / 2,
+    street: [cmNorthEast, cmEastNorth],
+  },
+  'majo-highrise-home': {
+    community: 'commercial',
+    u: 0.82,
+    v: 0.48,
+    w: 14.5,
+    d: 11,
+    angle: cm.angle + Math.PI / 2,
+    street: [cmEastNorth, cmEastMid],
+  },
+  ring: {
+    community: 'commercial',
+    u: 0.20,
+    v: 0.65,
+    w: 21,
+    d: 10.5,
+    angle: cm.angle + Math.PI,
+    street: [cmWestMid, cmSouthWest],
+  },
+  commercial: {
+    community: 'commercial',
+    u: 0.52,
+    v: 0.63,
+    w: 14,
+    d: 6.2,
+    angle: cm.angle + Math.PI,
+    street: [cmCenterSouth, cmEastMid],
+  },
+  'residential-uika': {
+    community: 'commercial',
+    u: 0.81,
+    v: 0.66,
+    w: 14,
+    d: 10,
+    angle: cm.angle + Math.PI / 2,
+    street: [cmEastMid, cmSouthEast],
+  },
+  'minami-ikebukuro-park': {
+    community: 'commercial',
+    u: 0.31,
+    v: 0.86,
+    w: 30,
+    d: 19,
+    angle: cm.angle + Math.PI,
+    street: [cmSouthWest, cmSouthMid],
+  },
+  'residential-nyamu': {
+    community: 'commercial',
+    u: 0.79,
+    v: 0.85,
+    w: 15,
+    d: 10.5,
+    angle: cm.angle + Math.PI / 2,
+    street: [cmSouthMid, cmSouthEast],
+  },
+
+  // 新宿／大型商业娱乐与CBD核心区 (grand-commercial)
+  'toyokawa-executive-tower': {
+    community: 'grand-commercial',
+    u: 0.51,
+    v: 0.14,
+    w: 34,
+    d: 13,
+    angle: gc.angle,
+    street: [gcCbdWest, gcCbdCenter],
+  },
+  'mlm-office': {
+    community: 'grand-commercial',
+    u: 0.21,
+    v: 0.34,
+    w: 16,
+    d: 11,
+    angle: gc.angle - Math.PI / 2,
+    street: [gcCbdWest, gcPlazaWest],
+  },
+  'legal-office': {
+    community: 'grand-commercial',
+    u: 0.80,
+    v: 0.34,
+    w: 17,
+    d: 11,
+    angle: gc.angle + Math.PI / 2,
+    street: [gcCbdEast, gcPlazaEast],
+  },
+  'grand-commercial': {
+    community: 'grand-commercial',
+    u: 0.49,
+    v: 0.53,
+    w: 17,
+    d: 6.5,
+    angle: gc.angle + Math.PI,
+    street: [gcPlazaWest, gcPlazaCenter],
+  },
+  'residential-marina': {
+    community: 'grand-commercial',
+    u: 0.81,
+    v: 0.54,
+    w: 15,
+    d: 10,
+    angle: gc.angle + Math.PI / 2,
+    street: [gcPlazaEast, gcEntEast],
+  },
+  'ktv-lounge': {
+    community: 'grand-commercial',
+    u: 0.23,
+    v: 0.73,
+    w: 25,
+    d: 12,
+    angle: gc.angle + Math.PI,
+    street: [gcEntWest, gcEntCenter],
+  },
+  livehouse: {
+    community: 'grand-commercial',
+    u: 0.75,
+    v: 0.73,
+    w: 28,
+    d: 12,
+    angle: gc.angle + Math.PI,
+    street: [gcEntCenter, gcEntEast],
+  },
+  'harajuku-pop-up': {
+    community: 'grand-commercial',
+    u: 0.49,
+    v: 0.89,
+    w: 34,
+    d: 11,
+    angle: gc.angle + Math.PI,
+    street: [gcEntCenter, gcSouthMid],
+  },
+};
+
+const allEnclaveDefs = [dt, hm, rv, hl, cm, gc].map(
+  (c) => ({
+    id: c.id,
+    name: c.name,
+    at: c.at,
+    angle: c.angle,
+    enclosure: c.enclosure,
+    siteKeys: new Set(
+      Object.entries(communityLayout)
+        .filter(([, spec]) => spec.community === c.id)
+        .map(([k]) => k)
+    ),
+  })
+);
+export const residentialCommunities: ResidentialCommunity[] = allEnclaveDefs.filter(
+  (c) => ['downtown', 'home', 'riverside', 'highland'].includes(c.id)
+);
+export const commercialDistricts: ResidentialCommunity[] = allEnclaveDefs.filter(
+  (c) => ['commercial', 'grand-commercial'].includes(c.id)
+);
+export const communityById = new Map(allEnclaveDefs.map((c) => [c.id, c]));
+export const communitySiteKeys = new Set(Object.keys(communityLayout));
+export const allEnclosures: Point[][] = [
+  campusEnclosure,
+  ...allEnclaveDefs.map((c) => c.enclosure),
+];
 export function districtAt(x: number, z: number) {
   let best = tokyoDistricts[0],
     score = Infinity;
@@ -236,6 +1082,7 @@ const types: Record<string, string> = {
   ring: 'music',
   library: 'library',
   teaching: 'school',
+  dorm: 'dorm',
   sports: 'stadium',
   courthouse: 'court',
   gate: 'gate',
@@ -250,8 +1097,29 @@ const types: Record<string, string> = {
   'asukayama-park': 'fountain',
   'haneda-airport': 'airport',
   'toyokawa-executive-tower': 'tower',
-  'soyo-house': 'tower',
-  'majo-highrise-home': 'tower',
+  'soyo-house': 'luxury-tower',
+  'mizuho-apartment': 'luxury-flat',
+  'takada-residence': 'villa',
+  'toyokawa-house': 'manor',
+  'ouzuka-residence': 'manor',
+  'nikaido-house': 'courtyard-jp',
+  'residential-leia': 'courtyard-jp',
+  'koko-old-house': 'courtyard-jp',
+  'residential-rana': 'courtyard-jp',
+  'emma-yuki-home': 'apt-low',
+  'nanoka-honoka-home': 'apt-low',
+  'sena-family-home': 'apt-low',
+  'residential-meruru': 'apt-low',
+  'terazawa-flat': 'apt-low',
+  'hirosaki-staff-flat': 'apt-low',
+  'majo-studio': 'apt-low',
+  'residential-taki': 'apt-low',
+  'residential-arisa': 'apt-low',
+  'kamezaki-residence': 'apt-low',
+  'residential-uika': 'apt-low',
+  'residential-nyamu': 'luxury-flat',
+  'residential-marina': 'apt-low',
+  'majo-highrise-home': 'luxury-tower',
   'koto-apartment': 'books',
   clinic: 'clinic',
   'bus-stop': 'stop',
@@ -276,8 +1144,14 @@ const types: Record<string, string> = {
 const heights: Record<string, number> = {
   sunshine: 47,
   tower: 34,
-  library: 10,
-  school: 13,
+  'luxury-tower': 38,
+  'luxury-flat': 19,
+  manor: 8.8,
+  'courtyard-jp': 5.8,
+  'apt-low': 10.2,
+  library: 11.2,
+  school: 13.5,
+  dorm: 13,
   stadium: 2,
   court: 13,
   gate: 5,
@@ -357,6 +1231,8 @@ function structure(
   h: number
 ): Site {
   if (
+    !campusSiteKeys.has(key) &&
+    !communitySiteKeys.has(key) &&
     ![
       'bridge',
       'greenway',
@@ -393,7 +1269,7 @@ const curated: Record<string, Point> = {
   'matcha-shop': [93, 118],
   'ochanomizu-music': [70, 8],
   'akihabara-games': [85, 6],
-  'jinbocho-books': [32, 29],
+  'jinbocho-books': [68, 28],
   'harajuku-pop-up': [-168, -41],
   sunshine: [150, 88],
   ring: [110, 126],
@@ -486,6 +1362,33 @@ for (const district of tokyoDistricts) {
         street: [e.a, e.b],
         district: district.id,
         seed: 891,
+      };
+    } else if (campusLayout[key]) {
+      const spec = campusLayout[key],
+        [x, z] = campusAt(spec.u, spec.v);
+      lot = {
+        x,
+        z,
+        w: spec.w,
+        d: spec.d,
+        angle: spec.angle,
+        street: spec.street,
+        district: district.id,
+        seed: sites.length + 101,
+      };
+    } else if (communityLayout[key]) {
+      const spec = communityLayout[key],
+        comm = communityById.get(spec.community)!,
+        [x, z] = comm.at(spec.u, spec.v);
+      lot = {
+        x,
+        z,
+        w: spec.w,
+        d: spec.d,
+        angle: spec.angle,
+        street: spec.street,
+        district: district.id,
+        seed: sites.length + 201,
       };
     } else if (
       district.id === 'takao-mountain' ||

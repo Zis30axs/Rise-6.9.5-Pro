@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
   byId,
+  campusEnclosure,
+  campusSiteKeys,
+  commercialDistricts,
+  residentialCommunities,
   closest,
+  contains,
   destinations,
   distance,
   local,
+  mid,
   nodes,
   roadRoute,
   scenery,
@@ -165,6 +171,101 @@ describe('the continuous Tokyo city', () => {
     }
     expect(misses).toEqual([]);
   }, 30000);
+  it('keeps the university campus unified without public car roads or stray city blocks inside', () => {
+    const insideCarRoads = streets.filter(
+      (e) => !e.walk && contains(mid(nodes[e.a], nodes[e.b]), campusEnclosure)
+    );
+    expect(insideCarRoads).toEqual([]);
+    const strayScenery = scenery.filter((s) =>
+      contains([s.x, s.z], campusEnclosure)
+    );
+    expect(strayScenery).toEqual([]);
+    const straySites = sites.filter(
+      (s) => !campusSiteKeys.has(s.key) && contains([s.x, s.z], campusEnclosure)
+    );
+    expect(straySites.map((s) => s.key)).toEqual([]);
+    for (const key of ['teaching', 'library', 'dorm', 'sports', 'cafe', 'gate']) {
+      const site = byId.get(key)!;
+      expect(site).toBeDefined();
+      expect(contains([site.x, site.z], campusEnclosure)).toBe(true);
+    }
+    const campusRoute = roadRoute(byId.get('gate')!, byId.get('teaching')!);
+    expect(campusRoute.length).toBeGreaterThanOrEqual(4);
+    for (const pt of campusRoute.slice(1, -1)) {
+      expect(contains(pt, campusEnclosure)).toBe(true);
+    }
+  });
+  it('keeps residential communities unified without cutting car roads or stray city blocks', () => {
+    expect(residentialCommunities.map((c) => c.id)).toEqual([
+      'downtown',
+      'home',
+      'riverside',
+      'highland',
+    ]);
+    for (const comm of residentialCommunities) {
+      const insideCarRoads = streets.filter(
+        (e) => !e.walk && contains(mid(nodes[e.a], nodes[e.b]), comm.enclosure)
+      );
+      expect(insideCarRoads, comm.id).toEqual([]);
+      const strayScenery = scenery.filter((s) =>
+        contains([s.x, s.z], comm.enclosure)
+      );
+      expect(strayScenery, comm.id).toEqual([]);
+      const straySites = sites.filter(
+        (s) => !comm.siteKeys.has(s.key) && contains([s.x, s.z], comm.enclosure)
+      );
+      expect(straySites.map((s) => s.key), comm.id).toEqual([]);
+      for (const key of comm.siteKeys) {
+        const site = byId.get(key)!;
+        expect(site, key).toBeDefined();
+        expect(contains([site.x, site.z], comm.enclosure), key).toBe(true);
+      }
+    }
+    expect(byId.get('soyo-house')?.form).toBe('luxury-tower');
+    const dtRoute = roadRoute(
+      byId.get('soyo-house')!,
+      byId.get('toyokawa-house')!
+    );
+    expect(dtRoute.length).toBeGreaterThanOrEqual(4);
+    const dtEnc = residentialCommunities.find((c) => c.id === 'downtown')!.enclosure;
+    for (const pt of dtRoute.slice(1, -1)) {
+      expect(contains(pt, dtEnc)).toBe(true);
+    }
+  });
+  it('keeps Ikebukuro and Shinjuku commercial hubs unified with full pedestrian connectivity', () => {
+    expect(commercialDistricts.map((c) => c.id)).toEqual([
+      'commercial',
+      'grand-commercial',
+    ]);
+    for (const hub of commercialDistricts) {
+      const insideCarRoads = streets.filter(
+        (e) => !e.walk && contains(mid(nodes[e.a], nodes[e.b]), hub.enclosure)
+      );
+      expect(insideCarRoads, hub.id).toEqual([]);
+      const strayScenery = scenery.filter((s) =>
+        contains([s.x, s.z], hub.enclosure)
+      );
+      expect(strayScenery, hub.id).toEqual([]);
+      const straySites = sites.filter(
+        (s) => !hub.siteKeys.has(s.key) && contains([s.x, s.z], hub.enclosure)
+      );
+      expect(straySites.map((s) => s.key), hub.id).toEqual([]);
+      for (const key of hub.siteKeys) {
+        const site = sites.find((item) => item.key === key)!;
+        expect(site, key).toBeDefined();
+        expect(contains([site.x, site.z], hub.enclosure), key).toBe(true);
+      }
+    }
+    const sunRoute = roadRoute(
+      byId.get('aquarium')!,
+      byId.get('minami-ikebukuro-park')!
+    );
+    expect(sunRoute.length).toBeGreaterThanOrEqual(4);
+    const cmEnc = commercialDistricts.find((c) => c.id === 'commercial')!.enclosure;
+    for (const pt of sunRoute.slice(1, -1)) {
+      expect(contains(pt, cmEnc)).toBe(true);
+    }
+  });
   it('browsing and routing leave the world unchanged; explicit travel uses the registered quote', () => {
     const state = createInitialState(),
       before = JSON.stringify(state),

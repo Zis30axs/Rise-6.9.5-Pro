@@ -1,5 +1,10 @@
 import * as T from 'three';
 import {
+  allEnclosures,
+  campusAngle,
+  campusAt,
+  campusEnclosure,
+  communityById,
   distance,
   closest,
   contains,
@@ -314,22 +319,471 @@ export function cityModel(native = new Map<string, T.Object3D>()) {
       tri(v(x, z), v(x + 4, z + 4), v(x + 4, z), col);
       tri(v(x, z), v(x, z + 4), v(x + 4, z + 4), col);
     }
+  // Unified university campus ground, central quadrangle, and low brick perimeter walls.
+  {
+    const cRect = (u0: number, v0: number, u1: number, v1: number): Point[] => [
+      campusAt(u0, v0),
+      campusAt(u1, v0),
+      campusAt(u1, v1),
+      campusAt(u0, v1),
+    ];
+    top(campusEnclosure, 0.23, '#9db88a');
+    top(cRect(0.32, 0.22, 0.63, 0.38), 0.265, '#dcd3bc');
+    top(cRect(0.34, 0.52, 0.62, 0.60), 0.265, '#dfd7c1');
+    top(cRect(0.41, 0.74, 0.55, 0.942), 0.268, '#ded5be');
+    top(cRect(0.24, 0.32, 0.31, 0.58), 0.26, '#d9d0b8');
+    // Central quad lawn medallion with stone curb
+    top(cRect(0.36, 0.27, 0.44, 0.34), 0.28, '#8fae7c');
+    top(cRect(0.52, 0.27, 0.60, 0.34), 0.28, '#8fae7c');
+    // Perimeter brick-and-stone campus walls with openings at South, West, and East gates
+    const wallSeg = (a: Point, b: Point) => {
+      const len = distance(a, b);
+      if (len < 1) return;
+      const dx = (b[0] - a[0]) / len,
+        dz = (b[1] - a[1]) / len,
+        nx = -dz * 0.35,
+        nz = dx * 0.35;
+      const wPoly: Point[] = [
+        [a[0] + nx, a[1] + nz],
+        [b[0] + nx, b[1] + nz],
+        [b[0] - nx, b[1] - nz],
+        [a[0] - nx, a[1] - nz],
+      ];
+      prism(wPoly, 0.22, 1.35, '#b8987e', '#e1dac6');
+      const steps = Math.max(2, Math.round(len / 12));
+      for (let k = 0; k <= steps; k++) {
+        const p = mid(a, b, k / steps);
+        prism(circle(p[0], p[1], 0.46, 0.46, 6), 0.22, 1.75, '#d9d1bc', '#ebe4d0');
+      }
+    };
+    const [nw, ne, se, sw] = campusEnclosure;
+    wallSeg(nw, ne);
+    wallSeg(ne, mid(ne, se, 0.67));
+    wallSeg(mid(ne, se, 0.79), se);
+    wallSeg(se, mid(se, sw, 0.42));
+    wallSeg(mid(se, sw, 0.62), sw);
+    wallSeg(sw, mid(sw, nw, 0.21));
+    wallSeg(mid(sw, nw, 0.33), nw);
+    // Flanking academic annexes (West Research Hall & East Humanities Hall)
+    const annex = (u: number, v: number, aw: number, ad: number, ah: number, tone: string) => {
+      const [cx, cz] = campusAt(u, v),
+        ca = Math.cos(campusAngle),
+        sa = Math.sin(campusAngle);
+      const pt = (x: number, z: number): Point => [cx + ca * x - sa * z, cz + sa * x + ca * z];
+      const r = (x: number, z: number, rw: number, rd: number): Point[] => [
+        pt(x - rw / 2, z - rd / 2),
+        pt(x + rw / 2, z - rd / 2),
+        pt(x + rw / 2, z + rd / 2),
+        pt(x - rw / 2, z + rd / 2),
+      ];
+      top(r(0, 0, aw + 1.2, ad + 1.2), 0.26, '#d4ccb8');
+      prism(r(0, 0, aw, ad), 0.26, ah, tone, '#dfd8c6', 'stone');
+      prism(r(0, 0, aw * 1.03, ad * 1.03), 0.26 + ah, 0.35, '#e6dfc9');
+      prism(r(0, 0, aw * 0.9, ad * 0.88), 0.61 + ah, 0.2, '#86958e');
+      prism(r(0, ad * 0.48, aw * 0.38, 1.2), 0.26, 2.4, '#e5ddc7');
+    };
+    annex(0.16, 0.145, 19, 11.5, 10.5, '#cbbda4');
+    annex(0.81, 0.145, 19, 11.5, 9.5, '#c1ccb8');
+    // Ginkgo avenue & campus grove trees
+    const campusTrees: [number, number, number, number][] = [
+      [0.425, 0.82, 1.45, 11],
+      [0.535, 0.82, 1.45, 12],
+      [0.425, 0.67, 1.5, 13],
+      [0.535, 0.67, 1.5, 14],
+      [0.37, 0.30, 1.35, 15],
+      [0.58, 0.30, 1.35, 16],
+      [0.14, 0.72, 1.6, 17],
+      [0.21, 0.83, 1.5, 18],
+      [0.10, 0.85, 1.4, 19],
+      [0.33, 0.83, 1.45, 20],
+      [0.74, 0.76, 1.55, 21],
+      [0.85, 0.82, 1.6, 22],
+      [0.68, 0.86, 1.4, 23],
+      [0.89, 0.74, 1.45, 24],
+      [0.27, 0.13, 1.35, 25],
+      [0.69, 0.13, 1.35, 26],
+    ];
+    for (const [u, v, size, seed] of campusTrees) {
+      const p = campusAt(u, v);
+      tree(p[0], p[1], size, seed, 0.24);
+    }
+  }
+  // Unified character-themed residential communities (目白台豪华住宅区 / 杂司谷生活社区 / 神田川河岸社区 / 高原坡地别墅社区).
+  {
+    const makeHelpers = (
+      at: (u: number, v: number) => Point,
+      angle: number
+    ) => {
+      const ca = Math.cos(angle),
+        sa = Math.sin(angle);
+      const uvRect = (u0: number, v0: number, u1: number, v1: number): Point[] => [
+        at(u0, v0),
+        at(u1, v0),
+        at(u1, v1),
+        at(u0, v1),
+      ];
+      const localRect = (
+        u: number,
+        v: number,
+        rw: number,
+        rd: number,
+        ox = 0,
+        oz = 0
+      ): Point[] => {
+        const [cx, cz] = at(u, v);
+        const pt = (x: number, z: number): Point => [
+          cx + ca * (x + ox) - sa * (z + oz),
+          cz + sa * (x + ox) + ca * (z + oz),
+        ];
+        return [
+          pt(-rw / 2, -rd / 2),
+          pt(rw / 2, -rd / 2),
+          pt(rw / 2, rd / 2),
+          pt(-rw / 2, rd / 2),
+        ];
+      };
+      const wallSeg = (
+        a: Point,
+        b: Point,
+        bodyColor: string,
+        capColor: string,
+        h = 1.15
+      ) => {
+        const len = distance(a, b);
+        if (len < 1) return;
+        const dx = (b[0] - a[0]) / len,
+          dz = (b[1] - a[1]) / len,
+          nx = -dz * 0.3,
+          nz = dx * 0.3;
+        prism(
+          [
+            [a[0] + nx, a[1] + nz],
+            [b[0] + nx, b[1] + nz],
+            [b[0] - nx, b[1] - nz],
+            [a[0] - nx, a[1] - nz],
+          ],
+          0.22,
+          h,
+          bodyColor,
+          capColor
+        );
+      };
+      return { uvRect, localRect, wallSeg };
+    };
+
+    // 1. 目白台豪华住宅区 (downtown): 西区高密度豪宅塔楼群(长崎素世等) + 东区名门庭院宅邸区
+    const dt = communityById.get('downtown')!;
+    {
+      const { uvRect, localRect, wallSeg } = makeHelpers(dt.at, dt.angle);
+      top(dt.enclosure, 0.23, '#a4bb90');
+      // West high-density luxury tower podium terrace
+      top(uvRect(0.05, 0.08, 0.45, 0.91), 0.255, '#dcd6c4');
+      top(uvRect(0.16, 0.44, 0.32, 0.64), 0.275, '#e7e1cf');
+      // Central sunken reflecting pool in Soyo's tower courtyard
+      const poolCenter = dt.at(0.24, 0.54);
+      prism(circle(poolCenter[0], poolCenter[1], 3.8, 2.5, 14), 0.26, 0.22, '#dfd9c6', '#7ab6bc');
+      // Central tree-lined prestige boulevard & east estate lanes
+      top(uvRect(0.465, 0.075, 0.515, 0.925), 0.265, '#e4ddc9');
+      top(uvRect(0.685, 0.14, 0.735, 0.88), 0.26, '#e2dac6');
+      // Formal manor courtyard circles for Ouzuka & Toyokawa
+      for (const v of [0.44, 0.79]) {
+        const mc = dt.at(0.51, v);
+        top(circle(mc[0], mc[1], 2.4, 2.4, 12), 0.275, '#ece6d4');
+      }
+      // Companion high-density luxury residential towers surrounding soyo-house
+      const companionTowers: [number, number, number, number, number, string][] = [
+        [0.10, 0.26, 13.5, 11.5, 31, '#cfd9d9'],
+        [0.38, 0.26, 13.5, 11.5, 34, '#d8dfd8'],
+        [0.10, 0.60, 13.0, 10.5, 27, '#d3dad6'],
+        [0.38, 0.52, 12.5, 10.0, 24, '#cad7d8'],
+        [0.10, 0.84, 13.0, 9.5, 22, '#dcd8ca'],
+      ];
+      for (const [u, v, tw, td, th, tone] of companionTowers) {
+        top(localRect(u, v, tw + 1.2, td + 1.2), 0.27, '#cfc9b7');
+        prism(localRect(u, v, tw, td), 0.27, 3.6, '#d9d2bf', '#cbd3ce', 'stone');
+        prism(localRect(u, v, tw * 0.9, td * 0.88), 3.87, th - 3.6, tone, '#bfc9c5', 'glass');
+        for (let y = 6.5; y < th - 1.5; y += 3.6) {
+          prism(localRect(u, v, tw * 0.94, td * 0.92), y, 0.25, '#ece6d4');
+        }
+        prism(localRect(u, v, tw * 0.78, td * 0.76), th + 0.27, 1.0, '#78898d', '#92a896');
+      }
+      // Stone-and-limestone perimeter walls with open gateways
+      const [nw, ne, se, sw] = dt.enclosure;
+      wallSeg(nw, mid(nw, ne, 0.19), '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(mid(nw, ne, 0.28), mid(nw, ne, 0.44), '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(mid(nw, ne, 0.53), ne, '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(ne, mid(ne, se, 0.45), '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(mid(ne, se, 0.62), se, '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(se, mid(se, sw, 0.45), '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(mid(se, sw, 0.56), mid(se, sw, 0.71), '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(mid(se, sw, 0.80), sw, '#c8bea8', '#ebe4d1', 1.3);
+      wallSeg(sw, nw, '#c8bea8', '#ebe4d1', 1.3);
+      // Ornamental boulevard & estate garden trees
+      const dtTrees: [number, number, number, number][] = [
+        [0.18, 0.45, 1.35, 31],
+        [0.30, 0.45, 1.35, 32],
+        [0.18, 0.63, 1.3, 33],
+        [0.30, 0.63, 1.3, 34],
+        [0.46, 0.22, 1.45, 35],
+        [0.46, 0.40, 1.45, 36],
+        [0.46, 0.66, 1.45, 37],
+        [0.69, 0.36, 1.35, 38],
+        [0.69, 0.68, 1.35, 39],
+        [0.92, 0.22, 1.4, 40],
+        [0.92, 0.44, 1.4, 41],
+        [0.92, 0.72, 1.4, 42],
+        [0.73, 0.14, 1.3, 43],
+      ];
+      for (const [u, v, size, seed] of dtTrees) {
+        const pt = dt.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.25);
+      }
+    }
+
+    // 2. 杂司谷温情生活社区 (home)
+    const hm = communityById.get('home')!;
+    {
+      const { uvRect, localRect, wallSeg } = makeHelpers(hm.at, hm.angle);
+      top(hm.enclosure, 0.23, '#adc298');
+      // North apartment courtyard paving
+      top(uvRect(0.11, 0.26, 0.84, 0.37), 0.255, '#e0d8c2');
+      // Central neighborhood pocket park & playground
+      top(uvRect(0.32, 0.40, 0.56, 0.56), 0.265, '#92b281');
+      const parkMid = hm.at(0.44, 0.48);
+      top(circle(parkMid[0], parkMid[1], 4.6, 3.6, 12), 0.28, '#e3dac2');
+      // Park wooden benches & small sandbox
+      prism(localRect(0.44, 0.48, 3.6, 2.4), 0.28, 0.25, '#c4a987', '#e8d7b4');
+      prism(localRect(0.37, 0.46, 2.4, 0.7), 0.28, 0.45, '#967054');
+      prism(localRect(0.51, 0.46, 2.4, 0.7), 0.28, 0.45, '#967054');
+      // Cozy companion townhouses & apartment annexes so the neighborhood feels lived-in
+      const companionHomes: [number, number, number, number, number, string, string][] = [
+        [0.09, 0.35, 9.5, 7.5, 5.4, '#e7dcc4', '#7a685c'],
+        [0.90, 0.24, 9.5, 8.0, 6.2, '#e2d8c0', '#63787a'],
+        [0.46, 0.86, 10.5, 7.8, 5.5, '#e8ddc6', '#896d5e'],
+      ];
+      for (const [u, v, hw, hd, hh, wall, rcol] of companionHomes) {
+        top(localRect(u, v, hw + 0.8, hd + 0.8), 0.255, '#d5cebb');
+        prism(localRect(u, v, hw, hd), 0.255, hh, wall, rcol, 'timber');
+        prism(localRect(u, v, hw * 1.04, hd * 1.04), 0.255 + hh, 0.55, rcol);
+      }
+      // Low neighborhood hedges & timber-stone boundary fences with open street entries
+      const [nw, ne, se, sw] = hm.enclosure;
+      wallSeg(nw, mid(nw, ne, 0.42), '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(mid(nw, ne, 0.54), ne, '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(ne, mid(ne, se, 0.50), '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(mid(ne, se, 0.64), se, '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(se, mid(se, sw, 0.45), '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(mid(se, sw, 0.57), sw, '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(sw, mid(sw, nw, 0.36), '#8ea57d', '#a2ba8f', 0.9);
+      wallSeg(mid(sw, nw, 0.48), nw, '#8ea57d', '#a2ba8f', 0.9);
+      // Cherry blossom & neighborhood garden trees
+      const hmTrees: [number, number, number, number][] = [
+        [0.34, 0.43, 1.45, 9],
+        [0.54, 0.43, 1.45, 18],
+        [0.34, 0.54, 1.35, 27],
+        [0.54, 0.54, 1.35, 10],
+        [0.33, 0.28, 1.3, 51],
+        [0.63, 0.28, 1.3, 52],
+        [0.10, 0.56, 1.35, 53],
+        [0.10, 0.84, 1.4, 54],
+        [0.45, 0.67, 1.3, 55],
+        [0.91, 0.84, 1.35, 56],
+      ];
+      for (const [u, v, size, seed] of hmTrees) {
+        const pt = hm.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.25);
+      }
+    }
+
+    // 3. 神田川河岸公寓社区 (riverside)
+    const rv = communityById.get('riverside')!;
+    {
+      const { uvRect, localRect, wallSeg } = makeHelpers(rv.at, rv.angle);
+      top(rv.enclosure, 0.23, '#9fb98f');
+      // Central riverside garden promenade
+      top(uvRect(0.41, 0.08, 0.59, 0.92), 0.255, '#dfd9c4');
+      // Companion riverside mid-rise apartment on southwest corner
+      top(localRect(0.27, 0.78, 14.5, 11.0), 0.26, '#d3ccb8');
+      prism(localRect(0.27, 0.78, 13.5, 10.0), 0.26, 11.2, '#d9d8cc', '#8b9994', 'stone');
+      prism(localRect(0.27, 0.78, 13.8, 10.3), 11.46, 0.28, '#e8e2ce');
+      // Low river-stone perimeter wall
+      const [nw, ne, se, sw] = rv.enclosure;
+      wallSeg(nw, mid(nw, ne, 0.36), '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(mid(nw, ne, 0.64), ne, '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(ne, mid(ne, se, 0.30), '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(mid(ne, se, 0.44), mid(ne, se, 0.62), '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(mid(ne, se, 0.78), se, '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(se, mid(se, sw, 0.36), '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(mid(se, sw, 0.64), sw, '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(sw, mid(sw, nw, 0.38), '#b2b29f', '#d7d5c3', 0.85);
+      wallSeg(mid(sw, nw, 0.54), nw, '#b2b29f', '#d7d5c3', 0.85);
+      const rvTrees: [number, number, number, number][] = [
+        [0.46, 0.14, 1.35, 9],
+        [0.54, 0.34, 1.4, 18],
+        [0.46, 0.62, 1.35, 61],
+        [0.54, 0.86, 1.4, 62],
+        [0.89, 0.40, 1.35, 27],
+        [0.89, 0.68, 1.35, 36],
+      ];
+      for (const [u, v, size, seed] of rvTrees) {
+        const pt = rv.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.25);
+      }
+    }
+
+    // 4. 高原坡地别墅社区 (highland)
+    const hl = communityById.get('highland')!;
+    {
+      const { uvRect, localRect, wallSeg } = makeHelpers(hl.at, hl.angle);
+      top(hl.enclosure, 0.23, '#97b487');
+      top(uvRect(0.24, 0.50, 0.76, 0.64), 0.26, '#dfd6be');
+      // Cucumber trellis garden plot beside Wakaba Mutsumi's villa
+      top(uvRect(0.14, 0.16, 0.30, 0.42), 0.27, '#7da16f');
+      for (let k = 0; k < 3; k++) {
+        prism(localRect(0.22, 0.20 + k * 0.08, 4.5, 0.55), 0.27, 0.75, '#8c7258', '#688c5c');
+      }
+      // Stone garden retaining walls
+      const [nw, ne, se, sw] = hl.enclosure;
+      wallSeg(nw, ne, '#b8b09c', '#dcd5c3', 1.1);
+      wallSeg(ne, se, '#b8b09c', '#dcd5c3', 1.1);
+      wallSeg(se, mid(se, sw, 0.36), '#b8b09c', '#dcd5c3', 1.1);
+      wallSeg(mid(se, sw, 0.64), sw, '#b8b09c', '#dcd5c3', 1.1);
+      wallSeg(sw, mid(sw, nw, 0.34), '#b8b09c', '#dcd5c3', 1.1);
+      wallSeg(mid(sw, nw, 0.56), nw, '#b8b09c', '#dcd5c3', 1.1);
+      const hlTrees: [number, number, number, number][] = [
+        [0.18, 0.76, 1.45, 71],
+        [0.82, 0.76, 1.45, 72],
+        [0.84, 0.22, 1.5, 73],
+        [0.16, 0.48, 1.3, 74],
+      ];
+      for (const [u, v, size, seed] of hlTrees) {
+        const pt = hl.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.25);
+      }
+    }
+
+    // 5. 池袋／东池袋商业综合区 (commercial): 阳光城广场、商业步行街、都会配楼与绿岛
+    const cm = communityById.get('commercial')!;
+    {
+      const { uvRect, localRect } = makeHelpers(cm.at, cm.angle);
+      // Warm urban stone paving base across the entire Ikebukuro commercial superblock
+      top(cm.enclosure, 0.23, '#d4cebc');
+      // Central Sunshine City plaza apron & main shopping promenade
+      top(uvRect(0.32, 0.20, 0.68, 0.56), 0.255, '#e5decb');
+      top(uvRect(0.08, 0.53, 0.92, 0.60), 0.26, '#e2dac6');
+      top(uvRect(0.30, 0.16, 0.35, 0.76), 0.258, '#e2dac6');
+      top(uvRect(0.65, 0.16, 0.70, 0.88), 0.258, '#e2dac6');
+      // Sunshine City south forecourt fountain & planter island
+      const sunPlaza = cm.at(0.50, 0.54);
+      prism(circle(sunPlaza[0], sunPlaza[1], 3.2, 2.2, 12), 0.26, 0.28, '#ddd5c2', '#7cb8be');
+      // Companion Ikebukuro commercial mid-rise retail blocks (east & south-east)
+      const cmCompanion: [number, number, number, number, number, string][] = [
+        [0.58, 0.85, 11.5, 9.5, 16, '#cdd9d7'],
+        [0.14, 0.85, 9.5, 10.0, 14, '#dcd4c2'],
+      ];
+      for (const [u, v, bw, bd, bh, tone] of cmCompanion) {
+        top(localRect(u, v, bw + 0.8, bd + 0.8), 0.26, '#c7c1b0');
+        prism(localRect(u, v, bw, bd), 0.26, 3.2, '#e2dac7', '#b8c3bc', 'stone');
+        prism(localRect(u, v, bw * 0.92, bd * 0.9), 3.46, bh - 3.2, tone, '#8a9994', 'glass');
+        prism(localRect(u, v, bw * 0.96, bd * 0.94), bh + 0.26, 0.3, '#ebe5d3');
+      }
+      // Urban plaza street trees & planters
+      const cmTrees: [number, number, number, number][] = [
+        [0.36, 0.20, 1.3, 81],
+        [0.64, 0.20, 1.3, 82],
+        [0.36, 0.54, 1.35, 83],
+        [0.64, 0.54, 1.35, 84],
+        [0.12, 0.54, 1.3, 85],
+        [0.88, 0.58, 1.3, 86],
+        [0.50, 0.72, 1.4, 87],
+        [0.66, 0.72, 1.3, 88],
+      ];
+      for (const [u, v, size, seed] of cmTrees) {
+        const pt = cm.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.26);
+      }
+    }
+
+    // 6. 新宿／大型商业娱乐与CBD核心区 (grand-commercial): 北区高密度摩天CBD + 中央广场 + 南区演艺潮流步行街
+    const gc = communityById.get('grand-commercial')!;
+    {
+      const { uvRect, localRect } = makeHelpers(gc.at, gc.angle);
+      // Sleek metropolitan granite-stone base
+      top(gc.enclosure, 0.23, '#ccc9bc');
+      // North CBD granite plaza around Toyokawa Executive Tower
+      top(uvRect(0.08, 0.06, 0.92, 0.42), 0.252, '#d8d5c9');
+      // Central Shinjuku station-front square & pedestrian cross-boulevard
+      top(uvRect(0.08, 0.43, 0.92, 0.58), 0.26, '#e5decb');
+      // South entertainment & Harajuku/Omotesando fashion promenade
+      top(uvRect(0.10, 0.62, 0.90, 0.93), 0.256, '#dfd7c4');
+      // Central plaza water feature & planter medallion
+      const gcPlaza = gc.at(0.50, 0.46);
+      prism(circle(gcPlaza[0], gcPlaza[1], 3.8, 2.8, 14), 0.26, 0.26, '#dad4c2', '#79b2b9');
+      // Companion high-density CBD skyscrapers flanking Toyokawa Executive Tower
+      const cbdTowers: [number, number, number, number, number, string][] = [
+        [0.18, 0.14, 15.5, 13.0, 34, '#c4d5d8'],
+        [0.84, 0.14, 15.5, 13.0, 38, '#cbd8d6'],
+        [0.50, 0.34, 16.0, 11.0, 29, '#ced9d5'],
+        [0.18, 0.54, 14.0, 10.5, 22, '#d4dad4'],
+      ];
+      for (const [u, v, tw, td, th, tone] of cbdTowers) {
+        top(localRect(u, v, tw + 1.0, td + 1.0), 0.26, '#bebbb0');
+        prism(localRect(u, v, tw, td), 0.26, 4.0, '#d8d3c3', '#bac5c1', 'stone');
+        prism(localRect(u, v, tw * 0.9, td * 0.88), 4.26, th - 4.0, tone, '#9eb0b2', 'glass');
+        for (let y = 8.0; y < th - 1.5; y += 4.2) {
+          prism(localRect(u, v, tw * 0.93, td * 0.91), y, 0.25, '#e8e4d4');
+        }
+        prism(localRect(u, v, tw * 0.62, td * 0.6), th + 0.26, 1.4, '#6e8085');
+      }
+      // Companion south commercial retail pavilions framing Harajuku/Omotesando promenade
+      for (const u of [0.16, 0.84]) {
+        top(localRect(u, 0.88, 12.5, 9.5), 0.26, '#cfc8b6');
+        prism(localRect(u, 0.88, 11.5, 8.5), 0.26, 7.2, '#e2d7c1', '#7d908d', 'brick');
+        prism(localRect(u, 0.88, 11.8, 1.4, 0, 4.0), 2.3, 0.25, '#c4866b');
+      }
+      // Omotesando-style zelkova & boulevard trees
+      const gcTrees: [number, number, number, number][] = [
+        [0.34, 0.25, 1.35, 91],
+        [0.66, 0.25, 1.35, 92],
+        [0.34, 0.46, 1.4, 93],
+        [0.66, 0.46, 1.4, 94],
+        [0.34, 0.64, 1.35, 95],
+        [0.66, 0.64, 1.35, 96],
+        [0.29, 0.82, 1.4, 97],
+        [0.71, 0.82, 1.4, 98],
+        [0.50, 0.72, 1.35, 99],
+      ];
+      for (const [u, v, size, seed] of gcTrees) {
+        const pt = gc.at(u, v);
+        tree(pt[0], pt[1], size, seed, 0.26);
+      }
+    }
+  }
   for (const e of streets) {
     const a = nodes[e.a],
       b = nodes[e.b],
       h = e.bridge ? 0.66 : 0.32;
     if (e.walk) {
-      for (let i = 0; i < 12; i++) {
-        const p = mid(a, b, i / 12),
-          q = mid(a, b, (i + 1) / 12);
-        ribbon(
-          p,
-          q,
-          e.width,
-          groundHeight(...p) + 0.2,
-          '#d6c5a0',
-          groundHeight(...q) + 0.2
-        );
+      const flatCampus =
+        groundHeight(...a) < 0.05 &&
+        groundHeight(...b) < 0.05 &&
+        allEnclosures.some((enc) => contains(mid(a, b), enc));
+      if (flatCampus) {
+        ribbon(a, b, e.width + 0.65, 0.295, '#b9b49d');
+        ribbon(a, b, e.width, 0.315, '#e2d7bd');
+      } else {
+        for (let i = 0; i < 12; i++) {
+          const p = mid(a, b, i / 12),
+            q = mid(a, b, (i + 1) / 12);
+          ribbon(
+            p,
+            q,
+            e.width,
+            groundHeight(...p) + 0.2,
+            '#d6c5a0',
+            groundHeight(...q) + 0.2
+          );
+        }
       }
       continue;
     }
@@ -485,6 +939,13 @@ export function cityModel(native = new Map<string, T.Object3D>()) {
         const [a, b] = [project(0, -d * 0.27), project(0, d * 0.27)];
         ribbon(a, b, 0.18, base + 0.4, '#e3e5bd');
         box(0, -d * 0.42, w * 0.65, d * 0.09, 0.42, 1.2, slate);
+        box(0, -d * 0.45, w * 0.65, d * 0.05, 1.62, 0.7, '#89989b');
+        for (const sx of [-0.42, 0.42])
+          for (const sz of [-0.42, 0.42]) {
+            const p = project(w * sx, d * sz);
+            prism(circle(p[0], p[1], 0.22, 0.22, 6), base + 0.35, 8.2, '#7d8c90');
+            box(w * sx, d * sz, 1.4, 0.55, 8.5, 0.55, '#eef0db');
+          }
         return;
       }
       if (form === 'fountain' || form === 'park') {
@@ -563,23 +1024,43 @@ export function cityModel(native = new Map<string, T.Object3D>()) {
     }
     top(rect(0.45, 0.42, w + 0.7, d + 0.6), base + 0.1, '#989e8c');
     top(rect(0, 0, w + 0.56, d + 0.5), base + 0.19, '#d2cbb8');
-    if (form === 'stop' || form === 'gate') {
+    if (form === 'gate') {
+      // Monumental Japanese university main gate: twin stone/brick gatehouses, pillars, and lintel arch.
+      for (const side of [-1, 1]) {
+        box(side * w * 0.36, 0, w * 0.22, d * 0.68, 0, h * 0.68, '#c59d82', '#7a8a86', 'brick');
+        roof(side * w * 0.36, 0, w * 0.25, d * 0.76, h * 0.68, 1.2, '#627375');
+        box(side * w * 0.18, d * 0.12, 1.15, 1.15, 0, h * 0.96, '#ddd4be', '#ece5d1');
+        box(side * w * 0.18, d * 0.12, 1.4, 1.4, h * 0.96, 0.32, '#8d6552');
+      }
+      box(0, d * 0.12, w * 0.42, 0.95, h * 0.78, 0.55, '#8e5f4d', '#b3806b');
+      box(0, d * 0.12, w * 0.26, 1.05, h * 0.88, 0.45, '#e7dec6');
+      return;
+    }
+    if (form === 'dorm') {
+      // Twin-wing campus residence hall with courtyard balconies and bicycle shed.
+      box(-w * 0.28, -d * 0.04, w * 0.40, d * 0.88, 0, h, '#c99b82', '#82918c', 'brick');
+      box(w * 0.28, -d * 0.04, w * 0.40, d * 0.88, 0, h * 0.86, '#c2ad92', '#82918c', 'stone');
+      box(0, -d * 0.26, w * 0.26, d * 0.36, 0, h * 0.78, '#d7cbb4', cream, 'stone');
+      for (const wing of [-0.28, 0.28]) {
+        const wh = wing < 0 ? h : h * 0.86;
+        box(w * wing, -d * 0.04, w * 0.42, d * 0.9, wh, 0.32, cream);
+        for (let y = 2.6; y < wh - 1; y += 3.1) {
+          box(w * wing, d * 0.42, w * 0.34, 0.7, y, 0.22, cream);
+          box(w * wing, d * 0.44, w * 0.32, 0.12, y + 0.22, 0.46, '#7f9897');
+        }
+      }
+      // Courtyard bicycle shed canopy
+      box(0, d * 0.26, w * 0.24, d * 0.22, 2.2, 0.18, '#8fa6a2');
+      for (const u of [-0.1, 0.1]) box(w * u, d * 0.26, 0.22, 0.22, 0, 2.2, '#647677');
+      return;
+    }
+    if (form === 'stop') {
       const span = w * 0.71;
       for (const u of [-0.43, 0.43])
         box(span * u, 0, 0.44, 0.64, 0, h, '#647879');
-      box(
-        0,
-        0,
-        span + 0.8,
-        form === 'gate' ? 1.15 : d * 0.48,
-        h - 0.3,
-        0.46,
-        form === 'gate' ? '#996855' : '#9eb8b7'
-      );
-      if (form === 'stop') {
-        box(0, 0, span * 0.73, 0.7, 0.4, 0.47, '#9d8064');
-        box(span * 0.41, d * 0.17, 0.8, 0.32, 0.2, 2.6, '#e8c878');
-      }
+      box(0, 0, span + 0.8, d * 0.48, h - 0.3, 0.46, '#9eb8b7');
+      box(0, 0, span * 0.73, 0.7, 0.4, 0.47, '#9d8064');
+      box(span * 0.41, d * 0.17, 0.8, 0.32, 0.2, 2.6, '#e8c878');
       return;
     }
     if (form === 'sunshine') {
@@ -746,6 +1227,69 @@ export function cityModel(native = new Map<string, T.Object3D>()) {
           form === 'court' ? '#688b80' : '#8d7b65'
         );
       }
+      return;
+    }
+    if (form === 'luxury-tower') {
+      // High-density prestige residential tower (e.g. Nagasaki Soyo's tower residence)
+      box(0, 0, w * 0.98, d * 0.96, 0, 4.2, '#dfd7c3', '#c6cec7', 'stone');
+      box(0, d * 0.49, w * 0.48, 1.4, 2.4, 0.35, '#8a9e9b');
+      box(0, -d * 0.02, w * 0.88, d * 0.84, 4.2, h - 4.2, '#d4e0de', '#c2ceca', 'glass');
+      for (let y = 7.4; y < h - 1.2; y += 3.4) {
+        box(0, -d * 0.02, w * 0.93, d * 0.89, y, 0.26, '#efe9d6');
+        box(0, d * 0.43, w * 0.82, 0.14, y + 0.26, 0.55, '#89a8ab');
+      }
+      box(0, -d * 0.02, w * 0.72, d * 0.68, h, 1.4, '#e7e0cc', '#88a48c');
+      const rt = project(w * 0.18, -d * 0.06);
+      tree(...rt, 0.95, s.seed, base + h + 1.4);
+      return;
+    }
+    if (form === 'luxury-flat') {
+      // Upscale mid-high limestone & glass apartment (e.g. Mizuho's apartment)
+      box(0, 0, w * 0.96, d * 0.92, 0, h, '#e4dcc7', '#9aa8a1', 'stone');
+      for (let y = 3.2; y < h - 1; y += 3.2) {
+        box(0, d * 0.45, w * 0.82, 0.85, y, 0.24, '#f0ead8');
+        box(0, d * 0.48, w * 0.80, 0.12, y + 0.24, 0.5, '#829da0');
+      }
+      box(0, 0, w * 0.99, d * 0.96, h, 0.35, '#efe8d5');
+      box(0, d * 0.48, w * 0.38, 1.2, 2.2, 0.28, '#957b63');
+      return;
+    }
+    if (form === 'manor') {
+      // Grand Western-style prestige estate manor (Toyokawa / Ouzuka)
+      box(0, -d * 0.04, w * 0.94, d * 0.82, 0, h, '#ebe3cf', '#6e7e84', 'stone');
+      roof(0, -d * 0.04, w * 0.98, d * 0.88, h, 2.4, '#5a6b73');
+      box(0, d * 0.39, w * 0.44, d * 0.22, 0.2, h * 0.62, '#f2ebda', '#7c8d8b');
+      roof(0, d * 0.38, w * 0.48, d * 0.28, h * 0.62, 1.15, '#64767d');
+      for (const sx of [-0.17, -0.06, 0.06, 0.17]) {
+        const p = project(w * sx, d * 0.47);
+        prism(circle(...p, 0.26, 0.26, 7), base + 0.25, h * 0.58, '#f4eedd');
+      }
+      return;
+    }
+    if (form === 'courtyard-jp') {
+      // Traditional Japanese courtyard residence (Nikaido / Leia / Koko / Rana)
+      top(rect(0, 0, w * 0.98, d * 0.96), base + 0.24, '#9eb58a');
+      box(-w * 0.08, -d * 0.08, w * 0.78, d * 0.68, 0.24, h, '#eadfc7', '#4e5c62', 'timber');
+      roof(-w * 0.08, -d * 0.08, w * 0.86, d * 0.78, h + 0.24, 2.2, '#4a565d');
+      // Wooden engawa veranda along the south front
+      box(-w * 0.08, d * 0.30, w * 0.68, 1.25, 0.24, 0.45, '#b6906a');
+      // Garden stone lantern (toro) & courtyard pine
+      const lp = project(w * 0.34, d * 0.28);
+      prism(circle(...lp, 0.35, 0.35, 6), base + 0.24, 1.35, '#bfb9a8', '#d5cfbd');
+      const tp = project(w * 0.35, -d * 0.24);
+      tree(...tp, 1.05, s.seed + 3, base + 0.24);
+      return;
+    }
+    if (form === 'apt-low') {
+      // Authentic Japanese 3-4 story neighborhood apartment (manshon)
+      const bodyCol = ['#dfd3bc', '#d3c5b2', '#cfd9d3', '#e2d7c5'][s.seed % 4];
+      box(0, -d * 0.02, w * 0.94, d * 0.88, 0, h, bodyCol, '#86958e', s.seed % 2 ? 'brick' : 'stone');
+      box(0, -d * 0.02, w * 0.97, d * 0.91, h, 0.28, cream);
+      for (let y = 2.6; y < h - 0.8; y += 3.0) {
+        box(0, d * 0.44, w * 0.80, 0.75, y, 0.22, cream);
+        box(0, d * 0.47, w * 0.78, 0.12, y + 0.22, 0.46, '#7f9999');
+      }
+      box(0, d * 0.46, w * 0.28, 1.0, 2.0, 0.22, '#7d938f');
       return;
     }
     const pitched = ['house', 'villa', 'onsen', 'teahouse', 'station'].includes(
@@ -1054,6 +1598,7 @@ export function cityModel(native = new Map<string, T.Object3D>()) {
     clinic: ['CLINIC +', '#528575'],
     bookshop: ['BOOKS', '#666e5c'],
     'street-cafe': ['CAFÉ MARGO', '#855d49'],
+    cafe: ['CAMPUS CAFÉ', '#9c6649'],
     'otsuka-diner': ['DINER', '#9a6d56'],
     'otome-road': ['OTOME ROAD', '#68628a'],
     'onigawara-laundry': ['LAUNDRY', '#587b8e'],
