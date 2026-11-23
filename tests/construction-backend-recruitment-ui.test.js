@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { createApp, reactive, nextTick } from 'vue';
 import LocationServices from '../src/frontend/LocationServices.vue';
 import PlaceActions from '../src/frontend/PlaceActions.vue';
@@ -9,15 +10,10 @@ import { CONSTRUCTION_BACKEND_JOB_ID } from '../src/runtime/location-services';
 function mount(Component, extra = {}) {
   let state = enableProtagonists(createInitialState());
   state = reduceState(state, { type: 'choose_academics', majorId: 'computer-science' });
-  state.clock = { day: 2, hour: 8, minute: 0 };
+  setTestClock(state, { day: 2, hour: 8, minute: 0 });
   state.locationId = 'construction-site';
   state.scene = null;
   state.player.energy = 95;
-  if (state.protagonists?.backgroundLife) {
-    const minute = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = minute;
-    for (const p of Object.values(state.protagonists.backgroundLife.people)) p.nextDecisionAt = Math.max(p.nextDecisionAt, minute);
-  }
   const model = reactive({ state, busy: false, notice: '' }), calls = [];
   const actions = {
     dispatch(action) { calls.push(action); model.state = reduceState(model.state, action); },

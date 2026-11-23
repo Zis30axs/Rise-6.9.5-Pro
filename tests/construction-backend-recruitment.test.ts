@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { CONSTRUCTION_BACKEND_JOB_ID, getLocationServiceQuote, getLocationServices } from '../src/runtime/location-services';
 import { appiePayBalance, PROTAGONISTS } from '../src/runtime/dual-protagonists';
@@ -9,15 +10,10 @@ import { outdoorEnergyDrain, resolveWeather } from '../src/runtime/weather';
 function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   let state = enableProtagonists(createInitialState());
   if (owner !== 'soyo') state = reduceState(state, { type: 'switch_protagonist', target: owner });
-  state.clock = { day: 2, hour: 8, minute: 0 };
+  setTestClock(state, { day: 2, hour: 8, minute: 0 });
   state.locationId = 'construction-site';
   state.scene = null;
   state.player.energy = 95;
-  if (state.protagonists?.backgroundLife) {
-    const minute = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = minute;
-    for (const p of Object.values(state.protagonists.backgroundLife.people)) p.nextDecisionAt = Math.max(p.nextDecisionAt, minute);
-  }
   return parseState(state);
 }
 const computerStudent = (owner: (typeof PROTAGONISTS)[number] = 'soyo') =>
@@ -83,9 +79,9 @@ describe('construction backend recruitment twist', () => {
     expect(q.changes.energy).toBe(-75 - outdoorEnergyDrain(resolveWeather(student).id));
     const away = structuredClone(student); away.locationId = 'bookshop';
     expect(getLocationServiceQuote(away, CONSTRUCTION_BACKEND_JOB_ID).blockedReason).toMatch(/当前地点/);
-    const early = structuredClone(student); early.clock.hour = 6;
+    const early = structuredClone(student); setTestClock(early, { ...early.clock, hour: 6 });
     expect(getLocationServiceQuote(early, CONSTRUCTION_BACKEND_JOB_ID).blockedReason).toMatch(/未开放|开放时间/);
-    const late = structuredClone(student); late.clock.hour = 15;
+    const late = structuredClone(student); setTestClock(late, { ...late.clock, hour: 15 });
     expect(getLocationServiceQuote(late, CONSTRUCTION_BACKEND_JOB_ID).blockedReason).toMatch(/打烊/);
     const tired = structuredClone(student); tired.player.energy = 74;
     expect(getLocationServiceQuote(tired, CONSTRUCTION_BACKEND_JOB_ID).blockedReason).toMatch(/精力不足/);

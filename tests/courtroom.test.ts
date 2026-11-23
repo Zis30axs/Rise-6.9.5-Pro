@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { applyStoryActions, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, personState } from '../src/runtime/protagonist-world';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
@@ -11,7 +12,7 @@ function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   let state = enableProtagonists(createInitialState());
   if (owner !== 'soyo') state = reduceState(state, { type: 'switch_protagonist', target: owner });
   const room = getCampusInterior('legal-office')!;
-  state.clock = { day: 2, hour: 9, minute: 0 };
+  setTestClock(state, { day: 2, hour: 9, minute: 0 });
   state.locationId = room.id;
   state.scene = {
     x: room.entrance.x, z: room.entrance.z, yaw: room.entrance.yaw,
@@ -20,12 +21,6 @@ function inOffice(owner: 'soyo' | 'emma' = 'emma') {
   state.interior = { roomId: room.id, x: 0, z: 2, yaw: 0,
     activityId: null, lastRest: null, lastStudy: null };
   state.player.energy = 95;
-  if (state.protagonists?.backgroundLife) {
-    const cursor = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = cursor;
-    for (const person of Object.values(state.protagonists.backgroundLife.people))
-      person.nextDecisionAt = Math.max(person.nextDecisionAt, cursor);
-  }
   return parseState(state);
 }
 
@@ -46,6 +41,16 @@ function openPreset() {
 }
 
 describe('freeform courtroom and legal services', () => {
+  it('rejects a hearing step when only the strategy cursor lags, without committing the step', () => {
+    const state = openPreset();
+    state.protagonists!.strategy!.cursor -= 1;
+    const before = structuredClone(state);
+    expect(() => applyStoryActions(state, [{
+      type: 'court_step', kind: 'insight', key: 'clock-check', summary: '核对证言与笔录中的时间差',
+    }], 'court-stale-clock')).toThrow(/国策时钟与权威时间不同步/);
+    expect(state).toEqual(before);
+  });
+
   it('defaults to three everyday categories and migrates missing optional saves without clearing old career data', () => {
     const original=inOffice();
     expect(courtState(original).categories).toEqual(DAILY_COURT_CATEGORIES);

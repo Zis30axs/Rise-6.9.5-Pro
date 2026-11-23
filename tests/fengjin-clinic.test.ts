@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { resolveFengjinSpeaker, resolveFengjinExpressionPortrait, fengjinExpressions } from '../src/frontend/fengjin-art';
@@ -7,18 +8,6 @@ import { locationServiceCatalog, getLocationServiceQuote } from '../src/runtime/
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { enableProtagonists } from '../src/runtime/protagonist-world';
 import { getGameWeek, hasUsedWeeklyCounseling } from '../src/runtime/fengjin-clinic';
-
-function setTestClock(state: any, day: number, hour: number, minute: number) {
-  state.clock = { day, hour, minute };
-  if (state.protagonists?.backgroundLife) {
-    const cursor = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = cursor;
-    if (state.protagonists.strategy) state.protagonists.strategy.cursor = cursor;
-    for (const person of Object.values(state.protagonists.backgroundLife.people as Record<string, any>)) {
-      person.nextDecisionAt = Math.max(person.nextDecisionAt, cursor);
-    }
-  }
-}
 
 describe('风堇与街区全科诊所', () => {
   it('正确识别风堇及其别名说话人', () => {
@@ -133,7 +122,7 @@ describe('风堇与街区全科诊所', () => {
   it('每周可找风堇谈心一次：清空压力并完全恢复精力，多主角与周跨度独立结算', () => {
     let state = enableProtagonists(createInitialState());
     state.locationId = 'pocket-park'; state.scene = null;
-    setTestClock(state, 2, 11, 0);
+    setTestClock(state, { day: 2, hour: 11, minute: 0 });
     state.player.stress = 80;
     state.player.energy = 25;
     state.player.morale = 40;
@@ -182,7 +171,7 @@ describe('风堇与街区全科诊所', () => {
     expect(hasUsedWeeklyCounseling(state)).toBe(true);
 
     // 推进时间到第二周（第 8 天）
-    setTestClock(state, 8, 10, 0);
+    setTestClock(state, { day: 8, hour: 10, minute: 0 });
     expect(getGameWeek(state.clock)).toBe(2);
     expect(hasUsedWeeklyCounseling(state)).toBe(false);
 

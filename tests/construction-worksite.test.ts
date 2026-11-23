@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { createInitialState, getNovelTravelQuote, parseState, reduceState } from '../src/runtime/model';
 import { getAdjacentLocations } from '../src/runtime/location-links';
 import { getLocationServiceQuote, getLocationServices, getLocationStatus } from '../src/runtime/location-services';
@@ -12,17 +13,10 @@ import { outdoorEnergyDrain, resolveWeather } from '../src/runtime/weather';
 function atSite(owner: (typeof PROTAGONISTS)[number] = 'soyo') {
   let state = enableProtagonists(createInitialState());
   if (owner !== 'soyo') state = reduceState(state, { type: 'switch_protagonist', target: owner });
-  state.clock = { day: 2, hour: 8, minute: 0 };
+  setTestClock(state, { day: 2, hour: 8, minute: 0 });
   state.locationId = 'construction-site';
   state.scene = null;
   state.player.energy = 95;
-  if (state.protagonists?.backgroundLife) {
-    const minute = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = minute;
-    for (const p of Object.values(state.protagonists.backgroundLife.people)) {
-      p.nextDecisionAt = Math.max(p.nextDecisionAt, minute);
-    }
-  }
   return parseState(state);
 }
 
@@ -44,9 +38,9 @@ describe('south gate construction site', () => {
     expect(getLocationServiceQuote(early, 'construction-carry').blockedReason).toBeNull();
     const exhausted = structuredClone(early); exhausted.player.energy = 39;
     expect(getLocationServiceQuote(exhausted, 'construction-clear').blockedReason).toMatch(/精力不足/);
-    const late = structuredClone(early); late.clock.hour = 17; late.clock.minute = 0;
+    const late = structuredClone(early); setTestClock(late, { ...late.clock, hour: 17, minute: 0 });
     expect(getLocationServiceQuote(late, 'construction-clear').blockedReason).toMatch(/打烊/);
-    const closed = structuredClone(early); closed.clock.hour = 19;
+    const closed = structuredClone(early); setTestClock(closed, { ...closed.clock, hour: 19 });
     expect(getLocationServiceQuote(closed, 'construction-clear').blockedReason).toBeTruthy();
     const elsewhere = structuredClone(early); elsewhere.locationId = 'bookshop';
     expect(getLocationServiceQuote(elsewhere, 'construction-clear').blockedReason).toMatch(/当前地点/);
@@ -77,7 +71,7 @@ describe('south gate construction site', () => {
     expect(next.clock).toEqual({ day: 2, hour: 12, minute: 0 });
     expect(next.player.energy).toBe(20 - outdoorEnergyDrain(resolveWeather(before).id));
     expect(next.player.balance - before.player.balance).toBe(6800);
-    const afterClosing = structuredClone(before); afterClosing.clock.hour = 17;
+    const afterClosing = structuredClone(before); setTestClock(afterClosing, { ...afterClosing.clock, hour: 17 });
     expect(() => reduceState(afterClosing, { type: 'location_service', serviceId: 'construction-carry' })).toThrow();
     expect(() => reduceState({ ...before, locationId: 'library' }, { type: 'location_service', serviceId: 'construction-carry' })).toThrow();
   });

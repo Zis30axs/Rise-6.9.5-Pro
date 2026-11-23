@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, personState } from '../src/runtime/protagonist-world';
 import { getCampusInterior } from '../src/runtime/campus-interiors';
@@ -15,7 +16,7 @@ function inOffice(protagonist: 'soyo' | 'emma' = 'emma', hour = 9, minute = 0) {
   let state = enableProtagonists(createInitialState());
   if (protagonist !== 'soyo') state = reduceState(state, { type: 'switch_protagonist', target: protagonist });
   const room = getCampusInterior('legal-office')!;
-  state.clock = { day: 2, hour, minute };
+  setTestClock(state, { day: 2, hour, minute });
   state.locationId = room.id;
   state.scene = {
     x: room.entrance.x, z: room.entrance.z, yaw: room.entrance.yaw,
@@ -23,12 +24,6 @@ function inOffice(protagonist: 'soyo' | 'emma' = 'emma', hour = 9, minute = 0) {
   };
   state.interior = { roomId: room.id, x: 0, z: 2, yaw: 0, activityId: null, lastRest: null, lastStudy: null };
   state.player.energy = 95;
-  if (state.protagonists?.backgroundLife) {
-    const cursor = (state.clock.day - 1) * 1440 + state.clock.hour * 60 + state.clock.minute;
-    state.protagonists.backgroundLife.cursor = cursor;
-    for (const person of Object.values(state.protagonists.backgroundLife.people))
-      person.nextDecisionAt = Math.max(person.nextDecisionAt, cursor);
-  }
   return parseState(state);
 }
 const act = (phase: 'accept' | 'investigate' | 'present' | 'sherry', caseId?: string, evidenceId?: string) =>

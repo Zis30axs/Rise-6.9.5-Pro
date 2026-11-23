@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setTestClock } from './helpers/set-test-clock';
 import { applyStoryActions, commitStoryTurn, createInitialState, parseState, reduceState } from '../src/runtime/model';
 import { activeProtagonist, enableProtagonists, legacyView, personalState, personState } from '../src/runtime/protagonist-world';
 import { CRYCHIC_PHOTO, equipmentContext, equipmentQuote } from '../src/runtime/equipment';
@@ -152,7 +153,7 @@ describe('CRYCHIC photo equipment', () => {
   });
   it.each(['soyo','sakiko'] as const)('settles the actual inactive classroom schedule for %s', owner => {
     let s=reduceState(worn(fresh(owner)),{type:'novel_travel',locationId:'classroom'});
-    s.clock={day:12,hour:8,minute:30};
+    setTestClock(s, { day: 12, hour: 8, minute: 30 });
     s.protagonists!.backgroundLife=initializeBackgroundLife(s);
     s=reduceState(s,{type:'switch_protagonist',target:owner==='soyo'?'sakiko':'soyo'});
     s=reduceState(s,{type:'wait',minutes:90});
