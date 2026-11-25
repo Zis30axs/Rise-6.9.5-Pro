@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as THREE from 'three';
-import type { InjectionKey } from 'vue';
+import { createSandboxCache, sandboxCacheKey } from './sandbox-cache';
+export { createSandboxCache, sandboxCacheKey } from './sandbox-cache';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TOKYO_SANDBOX_MODEL_SHA256 } from './tokyo-sandbox-map';
 import { readLocalAssetBytes } from './local-asset-buffer';
@@ -544,7 +545,8 @@ function stepSandboxEntities(
   vfx?.update(dt, nowMs, su30State?.node, playerWorldPos, districtCenter);
 }
 
-interface SandboxRuntime {
+export interface SandboxRuntime {
+  dispose: () => void;
   canvas: HTMLCanvasElement;
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -570,44 +572,6 @@ function disposeSandboxRuntime(runtime: SandboxRuntime) {
   runtime.canvas.remove(); runtime.canvas.width = runtime.canvas.height = 1;
 }
 
-/** One idle renderer per Shell, exclusively transferred between map views.
- * It owns its decoded tree and GPU resources; active views never share them.
- * No animation runs while parked. Leaving the Shell or hiding the page frees it. */
-export function createSandboxCache() {
-  let idle: SandboxRuntime | undefined, closed = false;
-  const take = () => {
-    const runtime = idle; idle = undefined;
-    if (runtime) {
-      runtime.canvas.removeEventListener('webglcontextlost', lost, true);
-      runtime.canvas.ownerDocument.removeEventListener('visibilitychange', visibility);
-      runtime.canvas.ownerDocument.defaultView?.removeEventListener('pagehide', clear);
-    }
-    return runtime;
-  };
-  function clear() { const runtime = take(); if (runtime) disposeSandboxRuntime(runtime); }
-  function visibility() { if (idle?.canvas.ownerDocument.hidden) clear(); }
-  function lost(event: Event) { event.preventDefault(); event.stopImmediatePropagation(); clear(); }
-  return {
-    take(previewOnly: boolean) {
-      const runtime = take();
-      if (runtime && (closed || runtime.previewOnly !== previewOnly || runtime.canvas.ownerDocument.hidden)) {
-        disposeSandboxRuntime(runtime); return undefined;
-      }
-      return runtime;
-    },
-    park(runtime: SandboxRuntime) {
-      clear();
-      if (closed || runtime.canvas.ownerDocument.hidden) { disposeSandboxRuntime(runtime); return; }
-      idle = runtime; runtime.canvas.remove();
-      runtime.canvas.addEventListener('webglcontextlost', lost, true);
-      runtime.canvas.ownerDocument.addEventListener('visibilitychange', visibility);
-      runtime.canvas.ownerDocument.defaultView?.addEventListener('pagehide', clear);
-    },
-    clear,
-    close() { closed = true; clear(); },
-  };
-}
-export const sandboxCacheKey: InjectionKey<ReturnType<typeof createSandboxCache>> = Symbol('sandbox-cache');
 </script>
 
 <script setup lang="ts">
@@ -826,9 +790,9 @@ function release(retain = false) {
   eventPins.value = []; leaderLines.value = []; outlineZones.value = [];
   anchorDots.value = []; playerPin.value = null; hoveredTargetId.value = '';
 
-  const parked = retain && status.value === 'ready' &&
+  const parked: SandboxRuntime | undefined = retain && status.value === 'ready' &&
     canvas.value && renderer && scene && camera && model && hemiLight && sunLight && trafficGroup && vfxController
-    ? { canvas: canvas.value, renderer, scene, camera, model, hemiLight, sunLight, trafficGroup, vfxController,
+    ? { dispose() { disposeSandboxRuntime(this); }, canvas: canvas.value, renderer, scene, camera, model, hemiLight, sunLight, trafficGroup, vfxController,
         variant: variant.value, previewOnly: !!props.previewOnly, trafficVehicles, su30State, gondolaStates,
         bakedVehicleStates, resolution: appliedCanvasResolution } satisfies SandboxRuntime : undefined;
   if (parked) {

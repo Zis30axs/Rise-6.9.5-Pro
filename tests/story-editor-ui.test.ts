@@ -23,8 +23,7 @@ describe('story correction and editor wiring', () => {
     expect(crychic).toContain('丰川清告');
     expect(crychic).toContain('丰川定治');
     expect(crychic).toContain('168亿日元');
-    expect(crychic).toContain('丰川家族或丰川集团破产');
-    expect(crychic).toContain('严禁写成财阀垮台');
+    expect(crychic).toContain('陷入经济困境的是清告父女，而不是丰川集团破产');
     expect(crychic).not.toContain('突遭家庭破产');
     expect(sakiko).toContain('初中三年级');
     expect(sakiko).toContain('升入高中后');
@@ -37,8 +36,8 @@ describe('story correction and editor wiring', () => {
     expect(soyo).not.toContain('家族剧变');
     expect(coreContent).toContain('严禁将父女两人的困顿错写为“丰川集团垮台”或“丰川家破产”');
     expect(mejiroContent).toContain('从未破产垮台');
-    expect(kiyoaki).toContain('严禁将父女落魄错写为“丰川集团垮台”或“丰川家破产”');
-    expect(sadaharu).toContain('从未破产垮台');
+    expect(kiyoaki).toContain('丰川集团与本家始终根基稳固，绝非集团破产');
+    expect(sadaharu).toMatch(/丰川集团与本家从未破产或垮台，陷入经济困境的只有清告父女/);
     expect(sakikoEntry?.keys).toEqual(expect.arrayContaining(['丰川集团', '丰川财阀', '丰川家', '丰川本家', '丰川清告', '丰川定治']));
     expect(crychicEntry?.keys).toEqual(expect.arrayContaining(['丰川集团', '丰川财阀', '丰川家', '丰川清告', '丰川定治']));
   });

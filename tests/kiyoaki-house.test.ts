@@ -6,6 +6,7 @@ import { protagonistHomeRooms } from '../src/runtime/natural-interactions';
 import { selectTravelVehicle } from '../src/runtime/transit';
 import { districtBounds, locationDistrict } from '../src/frontend/map-districts';
 import bangDreamWorldbook from '../src/worldbook/bang-dream-canon.json';
+import familyWorldbook from '../src/worldbook/background-characters.json';
 import coreWorldbook from '../src/worldbook/core.json';
 import sakikoDowntownWorldbook from '../src/worldbook/sakiko-downtown.json';
 
@@ -32,11 +33,17 @@ describe('清告家：祥子的第二住所', () => {
     expect(selectTravelVehicle('kiyoaki-house', 'campus')).toBe('zbd04a');
   });
 
-  it('is written into the worldbook as a provisional second home, not a replacement residence', () => {
+  it('keeps the current apartment, the former Akabane home and Sakiko’s default home distinct', () => {
     const sakiko = bangDreamWorldbook.entries.find(entry => entry.name === '丰川祥子')!;
+    const father = familyWorldbook.entries.find(entry => entry.name === '丰川清告')!;
+    const apartment = getCampusInterior('kiyoaki-house')!;
+    for (const entry of [sakiko, father]) {
+      expect(entry.content).toContain('赤羽');
+      expect(entry.content).toContain('独居在目白台附近的' + apartment.label);
+      expect(entry.content).not.toMatch(/(?:住址|住所|住处).{0,4}(?:暂定|未定)/);
+    }
     expect(sakiko.content).toContain('2025年8月之前已搬回位于目白台的丰川宅邸居住');
     expect(sakiko.content).toContain('父亲丰川清告并未随她搬回');
-    expect(sakiko.content).toContain('清告家，具体住址暂定');
     expect(sakiko.content).toContain('可自由往来丰川宅邸与清告家两地');
     expect(sakiko.content).toContain('清告目前是否还在酗酒、靠什么生活尚未设定');
     const antiOmniscience = coreWorldbook.entries.find(entry => entry.name.includes('视角边界'))!;
@@ -44,5 +51,6 @@ describe('清告家：祥子的第二住所', () => {
     const downtown = sakikoDowntownWorldbook.entries.find(entry => entry.name.includes('目白台'))!;
     expect(downtown.content).toContain('清告家');
     expect(downtown.keys).toContain('清告家');
+    expect(downtown.keys).toContain(getCampusInterior('mizuho-apartment')!.label);
   });
 });

@@ -3,6 +3,9 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { mountSwitchHost } from './phone-peek-host';
 import { selectDockAction } from './tool-dock-helpers';
 
+// This suite exercises the legacy 3D controls/graphics explicitly. New devices default to 2D.
+test.beforeEach(async ({page})=>{await page.addInitScript(()=>localStorage.setItem('unread-city.map.view.v1','3d'));});
+
 const output = 'outputs/scene-roster';
 const release = `${output}/release`;
 const bundle = readFileSync(`${release}/immersive-shell-lite.js`, 'utf8');

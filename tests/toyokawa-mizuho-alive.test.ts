@@ -13,6 +13,8 @@ describe('丰川瑞穗存活世界线', () => {
     expect(mother.extensions.personId).toBe('toyokawa-mizuho');
     expect(mother.extensions.networkAccount).toBe(false);
     expect(mother.extensions.publicProfile).toContain('始终在世');
+    expect(mother.content).toContain('住在目白台的瑞穗公寓');
+    expect(mother.content).not.toMatch(/(?:住址|住所|住处).{0,4}(?:暂定|未定)/);
     for (const name of ['丰川清告', '丰川定治', '丰川瑞穗']) {
       const text = background.entries.find(e => e.name === name)!.content;
       expect(text).toContain('瑞穗');

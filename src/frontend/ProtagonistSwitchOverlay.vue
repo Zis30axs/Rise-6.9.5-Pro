@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import CitySandboxScene from './CitySandboxScene.vue';
+import { defineAsyncComponent, computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import {mapMode} from './flat-map/preference';
+import SwitchFlatMap from './flat-map/SwitchFlatMap.vue';
+const CitySandboxScene=defineAsyncComponent(()=>import('./CitySandboxScene.vue').then(m=>m.default));
 import { protagonistNames } from '../runtime/protagonist-world';
 import { getCampusInterior } from '../runtime/campus-interiors';
 import { getNovelBackground, novelBackgroundPhase } from './novel-backgrounds';
@@ -22,6 +24,7 @@ let observer: ResizeObserver | undefined;
 let warmedImage: HTMLImageElement | undefined, imageReady = !props.novelMode;
 let media: MediaQueryList | undefined;
 const source = props.lease.source.mapAnchor, target = props.lease.target.mapAnchor;
+const flatEndpoint=computed(()=>committed.value?props.lease.target:props.lease.source);
 const targetName = protagonistNames[props.lease.target.protagonist];
 const blackoutOpacity = computed(() => phase.value === 'waiting' ? 1
   : phase.value === 'traverse' ? switchEase((progress.value - .88) / .12)
@@ -152,7 +155,8 @@ defineExpose({ skip });
 <template>
   <section ref="root" class="protagonist-switch-overlay" :class="{ 'is-night': hour < 6 || hour >= 20 }" data-protagonist-switch :data-switch-phase="phase" :data-switch-progress="progress.toFixed(3)" :data-switch-from="lease.source.protagonist" :data-switch-to="lease.target.protagonist" :data-switch-committed="committed" aria-label="角色切换">
     <div class="protagonist-switch-map world-map" :style="{ opacity: mapOpacity }">
-      <CitySandboxScene scope="city" :active="true" :width="size.width" :height="size.height"
+      <SwitchFlatMap v-if="mapMode==='2d'" :location-id="flatEndpoint.locationId" :room-id="flatEndpoint.interior?.roomId"/>
+      <CitySandboxScene v-else scope="city" :active="true" :width="size.width" :height="size.height"
         :bearing="switchBearing" :view-scale="1" :selected-id="''"
         :location-id="lease.source.locationId" :busy="true"
         :clock-minutes="hour * 60"

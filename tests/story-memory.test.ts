@@ -35,6 +35,15 @@ describe('dynamic story memory', () => {
     expect(soyo).not.toContain('邦邦前史 ·');
   });
 
+  it('keeps Mizuho alive in both the brief history and the detailed band memories', () => {
+    for (const owner of ['sakiko', 'emma'] as const) {
+      const prompt = storyMemoryPrompt(owner, [], '继续。');
+      expect(prompt).toMatch(/瑞穗始终(?:健在|在世)/);
+      expect(prompt).toMatch(/定治施压，?没有(?:跟随清告与祥子|随父女)离开/);
+      expect(prompt).not.toMatch(/(?:瑞穗|祥子的母亲)(?:病逝|已故|去世)/);
+    }
+  });
+
   it('contains the three Majo loops, Tokyo continuation and Watanare volume bridge', () => {
     const emma = storyMemoryPrompt('emma', [], '继续。');
     const renako = storyMemoryPrompt('renako', [], '继续。');

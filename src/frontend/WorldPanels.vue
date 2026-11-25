@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import WorldMap from './WorldMap.vue';
+import WorldMap from './MapView.vue';
 import StoryEngineSettings from './StoryEngineSettings.vue';
 import StrategyStatusHero from './StrategyStatusHero.vue';
 import SocietyPanel from './SocietyPanel.vue';

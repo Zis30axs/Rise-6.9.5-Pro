@@ -1,5 +1,5 @@
 import { createApp, defineComponent, h, reactive } from 'vue';
-import WorldMap from '../../src/frontend/WorldMap.vue';
+import WorldMap from '../../src/frontend/MapView.vue';
 import { createInitialState, reduceState } from '../../src/runtime/model';
 import type {
   ShellModel,

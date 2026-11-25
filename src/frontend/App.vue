@@ -9,7 +9,7 @@ import { live2dIdentity, live2dNames } from '../runtime/live2d-identity';
 import { live2dPack } from '../runtime/live2d-pack';
 import { visibleLive2dOutfit } from '../runtime/live2d-wardrobe';
 import { WARDROBE_DETAIL_LABELS, wardrobeCategoryLabel, wardrobeIdentity, type WardrobeDetailKey } from '../runtime/wardrobe-state';
-import { createSandboxCache, sandboxCacheKey } from './CitySandboxScene.vue';
+import { createSandboxCache, sandboxCacheKey } from './sandbox-cache';
 import InteractiveScene from './InteractiveScene.vue';
 import InteriorScene from './InteriorScene.vue';
 import NovelBackdrop from './NovelBackdrop.vue';

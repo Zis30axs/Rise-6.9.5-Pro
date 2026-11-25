@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { mountSwitchHost, noOverflow, counts } from './switch-map-fixture';
 
+// This suite exercises the legacy 3D controls/graphics explicitly. New devices default to 2D.
+test.beforeEach(async ({page})=>{await page.addInitScript(()=>localStorage.setItem('unread-city.map.view.v1','3d'));});
+
 test('320x568 packaged Lite ZIP supplies images for progressive switch and district map', async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 320, height: 568 });

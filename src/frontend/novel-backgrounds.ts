@@ -2,14 +2,35 @@ import { housingForInterior, type MajoHousingType } from '../runtime/majo-housin
 import { dayPhase as novelBackgroundPhase } from '../runtime/day-phase';
 import towerDay from '../../assets/backgrounds/toyokawa-executive-day.webp?inline';
 import towerNight from '../../assets/backgrounds/toyokawa-executive-night.webp?inline';
-import parisEiffelBg from '../../assets/paris-sandbox/backdrops/eiffel.webp?inline';
-import parisArcBg from '../../assets/paris-sandbox/backdrops/arc.webp?inline';
-import parisLouvreBg from '../../assets/paris-sandbox/backdrops/louvre.webp?inline';
-import parisNotreDameBg from '../../assets/paris-sandbox/backdrops/notre-dame.webp?inline';
-import parisInvalidesBg from '../../assets/paris-sandbox/backdrops/invalides.webp?inline';
-import parisAlexandreBg from '../../assets/paris-sandbox/backdrops/alexandre.webp?inline';
-import parisCdgAirportBg from '../../assets/paris-sandbox/backdrops/cdg-airport.webp?inline';
-import parisParisRoissypoleBg from '../../assets/paris-sandbox/backdrops/paris-roissypole.webp?inline';
+import parisEiffelBg from '../../assets/backgrounds/paris-eiffel-day.webp?inline';
+import parisArcBg from '../../assets/backgrounds/paris-arc-day.webp?inline';
+import parisLouvreBg from '../../assets/backgrounds/paris-louvre-day.webp?inline';
+import parisNotreDameBg from '../../assets/backgrounds/paris-notre-dame-day.webp?inline';
+import parisInvalidesBg from '../../assets/backgrounds/paris-invalides-day.webp?inline';
+import parisAlexandreBg from '../../assets/backgrounds/paris-alexandre-day.webp?inline';
+import parisCdgAirportBg from '../../assets/backgrounds/paris-cdg-day.webp?inline';
+import beijingForbiddenBg from '../../assets/backgrounds/beijing-forbidden-city-day.webp?inline';
+import beijingHutongBg from '../../assets/backgrounds/beijing-hutong-day.webp?inline';
+import beijingTempleBg from '../../assets/backgrounds/beijing-temple-of-heaven-day.webp?inline';
+import beijingRoyalGardenBg from '../../assets/backgrounds/beijing-royal-garden-day.webp?inline';
+import beijingCampusLakeBg from '../../assets/backgrounds/beijing-campus-lake-day.webp?inline';
+import beijingOlympicBg from '../../assets/backgrounds/beijing-olympic-park-day.webp?inline';
+import beijingCbdRiverBg from '../../assets/backgrounds/beijing-cbd-river-day.webp?inline';
+import beijingArtSanlitunBg from '../../assets/backgrounds/beijing-art-sanlitun-day.webp?inline';
+import beijingStationBg from '../../assets/backgrounds/beijing-station-day.webp?inline';
+import londonCulfordSchoolBg from '../../assets/backgrounds/london-culford-school-day.webp?inline';
+import londonWestminsterBg from '../../assets/backgrounds/london-westminster-day.webp?inline';
+import londonTowerBridgeBg from '../../assets/backgrounds/london-tower-bridge-day.webp?inline';
+import londonKingsCrossBg from '../../assets/backgrounds/london-kings-cross-day.webp?inline';
+import londonWestEndBg from '../../assets/backgrounds/london-west-end-day.webp?inline';
+import moscowPalaceSovietsBg from '../../assets/backgrounds/moscow-palace-soviets-day.webp?inline';
+import moscowEighthSisterBg from '../../assets/backgrounds/moscow-eighth-sister-day.webp?inline';
+import moscowGrandAlleyBg from '../../assets/backgrounds/moscow-grand-alley-day.webp?inline';
+import moscowRedSquareBg from '../../assets/backgrounds/moscow-red-square-day.webp?inline';
+import moscowKremlinRiverBg from '../../assets/backgrounds/moscow-kremlin-river-day.webp?inline';
+import moscowMsuSparrowBg from '../../assets/backgrounds/moscow-msu-sparrow-day.webp?inline';
+import moscowArbatDuskBg from '../../assets/backgrounds/moscow-arbat-dusk-day.webp?inline';
+import moscowCitySkylineBg from '../../assets/backgrounds/moscow-city-skyline-day.webp?inline';
 import streetDay from '../../assets/backgrounds/street-day.webp?inline';
 import streetDusk from '../../assets/backgrounds/street-dusk.webp?inline';
 import streetNight from '../../assets/backgrounds/street-night.webp?inline';
@@ -58,7 +79,7 @@ export interface NovelBackground {
   src: string;
   phase: NovelBackgroundPhase;
   imagePhase: NovelBackgroundPhase;
-  source: 'legacy' | 'majo-art' | 'user-art' | 'model-render' | 'paris-model';
+  source: 'legacy' | 'majo-art' | 'user-art' | 'model-render' | 'city-art';
 }
 
 const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase, string>> & { day: string }> = {
@@ -69,7 +90,7 @@ const backgrounds: Record<BackgroundFamily, Partial<Record<NovelBackgroundPhase,
   bedroom: { day: bedroomDay },
 };
 
-const parisBackgrounds: Readonly<Record<string, string>> = {
+const cityBackgrounds: Readonly<Record<string, string>> = {
   'paris-eiffel': parisEiffelBg,
   'paris-arc': parisArcBg,
   'paris-louvre': parisLouvreBg,
@@ -77,7 +98,96 @@ const parisBackgrounds: Readonly<Record<string, string>> = {
   'paris-invalides': parisInvalidesBg,
   'paris-alexandre': parisAlexandreBg,
   'cdg-airport': parisCdgAirportBg,
-  'paris-roissypole': parisParisRoissypoleBg,
+  'paris-roissypole': parisCdgAirportBg,
+
+  'beijing-forbidden-city': beijingForbiddenBg,
+  'beijing-tiananmen': beijingForbiddenBg,
+  'beijing-jingshan': beijingForbiddenBg,
+  'beijing-bell-drum': beijingHutongBg,
+  'beijing-nanluoguxiang': beijingHutongBg,
+  'beijing-qianmen': beijingHutongBg,
+  'beijing-wangfujing': beijingHutongBg,
+  'beijing-fangzhuang': beijingHutongBg,
+  'beijing-temple-of-heaven': beijingTempleBg,
+  'beijing-yongdingmen': beijingTempleBg,
+  'beijing-summer-palace': beijingRoyalGardenBg,
+  'beijing-yuanmingyuan': beijingRoyalGardenBg,
+  'beijing-beihai': beijingRoyalGardenBg,
+  'beijing-shichahai': beijingRoyalGardenBg,
+  'beijing-yuyuantan': beijingRoyalGardenBg,
+  'beijing-peking-university': beijingCampusLakeBg,
+  'beijing-tsinghua-university': beijingCampusLakeBg,
+  'beijing-olympic': beijingOlympicBg,
+  'beijing-bird-nest': beijingOlympicBg,
+  'beijing-water-cube': beijingOlympicBg,
+  'beijing-olympic-tower': beijingOlympicBg,
+  'beijing-ice-ribbon': beijingOlympicBg,
+  'beijing-cbd': beijingCbdRiverBg,
+  'beijing-china-zun': beijingCbdRiverBg,
+  'beijing-cctv-headquarters': beijingCbdRiverBg,
+  'beijing-liangma-river': beijingCbdRiverBg,
+  'beijing-ncp': beijingCbdRiverBg,
+  'beijing-central-tv-tower': beijingCbdRiverBg,
+  'beijing-798-art-zone': beijingArtSanlitunBg,
+  'beijing-sanlitun': beijingArtSanlitunBg,
+  'beijing-station': beijingStationBg,
+  'beijing-west': beijingStationBg,
+  'beijing-south': beijingStationBg,
+
+  'london-anon-school': londonCulfordSchoolBg,
+  'london-culford-park': londonCulfordSchoolBg,
+  'london-bury-st-edmunds': londonKingsCrossBg,
+  'london-cambridge-junction': londonCulfordSchoolBg,
+  'london-kings-cross': londonKingsCrossBg,
+  'london-british-museum': londonCulfordSchoolBg,
+  'london-denmark-street': londonWestEndBg,
+  'london-piccadilly': londonWestEndBg,
+  'london-covent-garden': londonWestEndBg,
+  'london-trafalgar': londonWestminsterBg,
+  'london-big-ben': londonWestminsterBg,
+  'london-westminster-abbey': londonWestminsterBg,
+  'london-eye': londonWestminsterBg,
+  'london-buckingham': londonCulfordSchoolBg,
+  'london-hyde-park': londonCulfordSchoolBg,
+  'london-paddington': londonKingsCrossBg,
+  'london-abbey-road': londonWestEndBg,
+  'london-st-pauls': londonTowerBridgeBg,
+  'london-shard-borough': londonTowerBridgeBg,
+  'london-tower-bridge': londonTowerBridgeBg,
+  'london-greenwich': londonTowerBridgeBg,
+  'london-heathrow': londonKingsCrossBg,
+
+  'moscow-palace-soviets': moscowPalaceSovietsBg,
+  'moscow-palace-alley': moscowGrandAlleyBg,
+  'moscow-eighth-sister': moscowEighthSisterBg,
+  'moscow-narkomtiazhprom': moscowEighthSisterBg,
+  'moscow-aeroflot-house': moscowGrandAlleyBg,
+  'moscow-pantheon': moscowMsuSparrowBg,
+  'moscow-kotelnicheskaya': moscowEighthSisterBg,
+  'moscow-ukraina-hotel': moscowCitySkylineBg,
+  'moscow-mid-tower': moscowArbatDuskBg,
+  'moscow-red-square': moscowRedSquareBg,
+  'moscow-st-basils': moscowEighthSisterBg,
+  'moscow-kremlin': moscowKremlinRiverBg,
+  'moscow-gum': moscowRedSquareBg,
+  'moscow-historical-museum': moscowRedSquareBg,
+  'moscow-zaryadye': moscowEighthSisterBg,
+  'moscow-bolshoi': moscowGrandAlleyBg,
+  'moscow-tverskaya': moscowArbatDuskBg,
+  'moscow-state-library': moscowGrandAlleyBg,
+  'moscow-christ-saviour': moscowPalaceSovietsBg,
+  'moscow-arbat': moscowArbatDuskBg,
+  'moscow-tretyakov': moscowKremlinRiverBg,
+  'moscow-gorky-park': moscowKremlinRiverBg,
+  'moscow-novodevichy': moscowKremlinRiverBg,
+  'moscow-luzhniki': moscowMsuSparrowBg,
+  'moscow-sparrow-hills': moscowMsuSparrowBg,
+  'moscow-msu': moscowMsuSparrowBg,
+  'moscow-city': moscowCitySkylineBg,
+  'moscow-belorussky': moscowGrandAlleyBg,
+  'moscow-komsomolskaya': moscowRedSquareBg,
+  'moscow-vdnkh': moscowMsuSparrowBg,
+  'moscow-svo': moscowCitySkylineBg,
 };
 
 const highlandBackgrounds = {
@@ -151,8 +261,8 @@ const interiorByHousingType = {
 
 /** Pure selection from bundled resources. No clock mutation, weather inference or network. */
 export function getNovelBackground(locationId: string, hour: number): NovelBackground {
-  if (Object.hasOwn(parisBackgrounds, locationId)) {
-    return { id: locationId + '-day', src: parisBackgrounds[locationId], phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'paris-model' };
+  if (Object.hasOwn(cityBackgrounds, locationId)) {
+    return { id: locationId + '-day', src: cityBackgrounds[locationId], phase: novelBackgroundPhase(hour), imagePhase: 'day', source: 'city-art' };
   }
   if (locationId === 'toyokawa-executive-tower') {
     const phase = novelBackgroundPhase(hour);

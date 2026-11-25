@@ -22,7 +22,7 @@ describe('Paris city and airport exhibits', () => {
       const node=anchors.find((n:{name:string})=>n.name==='poi_'+p.id);
       p.target.forEach((coordinate,i)=>expect(node.translation[i]).toBeCloseTo(coordinate,4));
       expect(readFileSync(resolve(root,'stills',p.id+'.webp')).toString('ascii',8,12)).toBe('WEBP');
-      expect(getNovelBackground(file==='airport'?p.id:'paris-'+p.id,2)).toMatchObject({phase:'night',source:'paris-model'});
+      expect(getNovelBackground(file==='airport'?p.id:'paris-'+p.id,2)).toMatchObject({phase:'night',source:'city-art'});
     }
     expect(model.buffers.every((b:{uri?:string})=>!b.uri)).toBe(true);
   });

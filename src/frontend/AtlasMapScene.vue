@@ -1217,7 +1217,7 @@ onBeforeUnmount(() => {
   for (const material of ownedMaterials) material.dispose();
   ownedGeometries.clear();
   ownedMaterials.clear();
-  renderer?.dispose();
+  renderer?.dispose(); renderer?.forceContextLoss();
   renderer = undefined;
   scene = undefined;
   camera = undefined;

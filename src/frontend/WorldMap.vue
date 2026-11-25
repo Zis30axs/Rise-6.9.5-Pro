@@ -46,6 +46,7 @@ import { isParisLocation, parisLocalClock } from '../runtime/paris';
 import ParisSandbox from './ParisSandbox.vue';
 import { formatGameNumber } from './format-game-number';
 import { runInteraction } from './interaction-action';
+import { submitMapTrip } from './map-travel';
 import { ATLAS_LANDMARKS } from './atlas-landmarks';
 import type { TokyoAtmosphereMode } from './tokyo-sandbox-vfx';
 import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map';
@@ -223,7 +224,7 @@ const activeEvent = computed(() => roadEvents.value.find(event => event.id === a
 const lookup=ref(''),inspected=ref(''),focused=ref(''),routeFrom=ref(''),routeTo=ref('');
 const siteDetails=computed(()=>tokyoSite.get(inspected.value));
 const chosenPlace=computed(()=>tokyoDestinations.get(inspected.value));
-const searchText=(s:string)=>s.toLowerCase().replace(/[\s·／・-]/g,'');
+const searchText=(s:string)=>s.toLowerCase().replace(/[\s·／\u30fb-]/g,'');
 const aliases:Record<string,string>={'soyo-house':'长崎素世','residential-mutsumi':'若叶睦','residential-anon':'千早爱音','residential-tomori':'高松灯','residential-taki':'椎名立希','clinic':'风堇','clinic-room':'风堇'};
 const searchHits=computed(()=>{const q=searchText(lookup.value);return q?[...tokyoDestinations.values()].filter(p=>searchText([p.name,p.id,aliases[p.id]||'',tokyoSite.get(p.id)?.title||'',mapDistricts.find(d=>d.id===tokyoSite.get(p.id)?.district)?.name||''].join(' ')).includes(q)):[]});
 function inspectPlace(id:string,focus=false){
@@ -271,9 +272,7 @@ function energyCalculationNote(id: string) {
 }
 async function travelTo(id: string) {
   if (destinationDisabled(id)) return;
-  const overseas = isInternationalLocation(id) || isInternationalLocation(props.model.state.locationId) || isBeijingLocation(id) || isBeijingLocation(props.model.state.locationId);
-  const saved = await runInteraction(props.model, props.actions, { type: props.novelMode || overseas ? 'novel_travel' : 'travel', locationId: id });
-  if (saved && (props.novelMode || overseas)) emit('travelled');
+  if (await submitMapTrip(props.model, props.actions, id, !!props.novelMode)) emit('travelled');
 }
 
 function setTokyoMapScale(value: { metersPerPixel: number }) {

@@ -7,6 +7,9 @@ import { getScenePeople } from '../../src/runtime/scene-context';
 import type { CharacterContact } from '../../src/frontend/types';
 import { mountSwitchHost as mountBaseHost, switchState, viewports, readState, noOverflow } from './switch-map-fixture';
 
+// This suite exercises the legacy 3D controls/graphics explicitly. New devices default to 2D.
+test.beforeEach(async ({page})=>{await page.addInitScript(()=>localStorage.setItem('unread-city.map.view.v1','3d'));});
+
 const out = 'outputs/protagonist-presence-qa';
 const tool = (page: Page, name: string) => ({ click: () => selectDockAction(page, name) });
 

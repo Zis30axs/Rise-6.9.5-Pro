@@ -45,8 +45,16 @@ def map_headshots():
     return result
 
 
+def city_backdrop_hashes():
+    backgrounds = ROOT / 'assets/backgrounds'
+    return {hashlib.sha256(path.read_bytes()).digest()
+            for city in ('beijing', 'london', 'moscow', 'paris')
+            for path in backgrounds.glob(f'{city}-*-day.webp')}
+
+
 def portable_runtime(source):
     avatars = map_headshots()
+    city_art = city_backdrop_hashes()
     lookup, table = {}, []
 
     def replace(m):
@@ -57,7 +65,7 @@ def portable_runtime(source):
         if key not in lookup:
             if digest in avatars:
                 mime, raw = 'image/webp', avatars[digest]
-            elif mime == 'image/webp':
+            elif mime == 'image/webp' and digest not in city_art:
                 with Image.open(io.BytesIO(raw)) as img:
                     if not getattr(img, 'is_animated', False) and len(raw) > 45000:
                         edge = 896 if img.width >= img.height else 640
@@ -132,6 +140,7 @@ def tokyo_runtime(source, optional_pack):
     live2d = {hashlib.sha256(p.read_bytes()).hexdigest() for p in
               (ROOT / 'assets/live2d-soyo').rglob('*') if p.is_file()}
     avatars = map_headshots()
+    city_art = {digest.hex() for digest in city_backdrop_hashes()}
     builtins = {}
     with zipfile.ZipFile(io.BytesIO(archive)) as z:
         for item in json.loads(z.read('manifest.json'))['assets']:
@@ -139,7 +148,7 @@ def tokyo_runtime(source, optional_pack):
             blob = z.read(item['path'])
             if bytes.fromhex(sha) in avatars:
                 blob, mime = avatars[bytes.fromhex(sha)], 'image/webp'
-            elif sha in full_models or sha in live2d or mime == 'application/zip':
+            elif sha in full_models or sha in live2d or sha in city_art or mime == 'application/zip':
                 pass
             elif mime.startswith('image/') and mime != 'image/svg+xml':
                 with Image.open(io.BytesIO(blob)) as picture:

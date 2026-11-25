@@ -4,6 +4,9 @@ import { getCampusInterior } from '../../src/runtime/campus-interiors';
 import { personState } from '../../src/runtime/protagonist-world';
 import { mountSwitchHost, switchState, viewports, counts, readState, failSave, resolveGeneration, changeChat, noOverflow } from './switch-map-fixture';
 
+// This suite exercises the legacy 3D controls/graphics explicitly. New devices default to 2D.
+test.beforeEach(async ({page})=>{await page.addInitScript(()=>localStorage.setItem('unread-city.map.view.v1','3d'));});
+
 const out = 'outputs/switch-map-qa';
 const overlay = (page: Page) => page.locator('[data-protagonist-switch]');
 const shell = (page: Page) => page.locator('.uc-shell');

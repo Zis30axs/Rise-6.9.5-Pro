@@ -1,6 +1,9 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'node:fs';
 
+// This suite exercises the legacy 3D controls/graphics explicitly. New devices default to 2D.
+test.beforeEach(async ({page})=>{await page.addInitScript(()=>localStorage.setItem('unread-city.map.view.v1','3d'));});
+
 const folder = 'outputs/graphics-recovery';
 const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 },
   { width: 390, height: 844 }, { width: 320, height: 568 }];
