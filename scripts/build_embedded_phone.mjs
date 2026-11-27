@@ -127,21 +127,24 @@ function plugin(stage) {
         code = replaceOnce(code, "  function clockBody(size) {\n    if (size === 's') return face();\n    const d = now();\n    return `<div class=\"tw-row\">${face()}<span class=\"tw-stack\"><b class=\"tw-time\">${d.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false})}</b><small class=\"tw-dim\">${d.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'})}</small></span></div>`;\n  }", "  function clockBody(size) {\n    const current = now();\n    if (size === 's') return face(current);\n    if (!current) return '<span class=\"tw-line\">游戏时间未连接</span>';\n    return `<div class=\"tw-row\">${face(current)}<span class=\"tw-stack\"><b class=\"tw-time\">${current.time}</b><small class=\"tw-dim\">${current.label}</small></span></div>`;\n  }", "Today digital clock and date game time");
       }
       if (relative === 'ui/settings.js') {
-        code = "import {worldDeviceSettingsMarkup,saveWorldDeviceSettings} from 'virtual:unread-city-phone-settings';\n" + code;
+        code = "import {worldDeviceSettingsMarkup,saveWorldDeviceSettings} from 'virtual:unread-city-phone-settings';\nimport {worldPhoneState,worldToolIds} from 'virtual:unread-city-world-apps';\n" + code;
+        code = replaceOnce(code, "import {APPS} from './apps.js';", "import {APPS, HOME} from './apps.js';", 'Settings reads the stock home to list tavern tools');
+        code = replaceOnce(code, "    v.draw(heading('设置', '', 'Settings')\n      + groupTitle('外观')", "    const worldTools = worldPhoneState(v.root) ? worldToolIds(v.root, HOME) : null;\n    v.draw(heading('设置', '', 'Settings')\n      + (worldTools ? groupTitle('本机') + `<div class=\"group\"><button class=\"list-row\" data-action=\"world-open-app\" data-app=\"worldstyle\"><span><strong>外观、通知与访问记录</strong><small>壁纸、日夜、应用排列</small></span>${icon('next')}</button></div>` + (worldTools.length ? groupTitle('酒馆工具') + `<div class=\"group pad world-tools\">${worldTools.map(id => `<button data-action=\"world-open-app\" data-app=\"${esc(id)}\">${esc(APPS[id]?.name || id)}</button>`).join('')}</div>` : '') : '')\n      + (worldTools ? '' : groupTitle('外观'))", 'world phone Settings links appearance and tavern tools moved off the home screen');
+        code = replaceOnce(code, "      + `<div class=\"group pad\">\n          <div class=\"field\"><span>主题风格</span>", "      + `<div class=\"group pad\"${worldTools ? ' hidden' : ''}>\n          <div class=\"field\"><span>主题风格</span>", 'stock skin controls do not apply to protagonist phones');
         code = replaceOnce(code, "          ${toggle('lockOnOpen', '打开时显示锁屏', phone.lockOnOpen, '锁屏可随时跳过，是插件内的外观，不是手机安全锁。想看一眼锁屏，点控制中心里的「锁屏」。')}\n", "", 'move original cosmetic lockscreen preference into privacy section');
         code = replaceOnce(code, "      + groupTitle('资料')", "      + groupTitle('锁屏与共享')\n      + `<div class=\"group pad\">${toggle('lockOnOpen', '打开时显示锁屏', phone.lockOnOpen, '锁屏可随时跳过，是插件内的外观，不是手机安全锁。想看一眼锁屏，点控制中心里的「锁屏」。')}${worldDeviceSettingsMarkup(ctx.win)}</div>`\n      + groupTitle('资料')", 'unify lockscreen and sharing inside native Settings');
-        code = replaceOnce(code, "      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", "      case 'world-device-save': await v.busy(el, async () => { try { const updated = await saveWorldDeviceSettings(ctx.win, v.root); await render(); ctx.notify(updated ? '锁屏与共享已保存' : '设置没有变化'); } catch (error) { await render(); throw error; } }); break;\n      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", 'save current character-card device permissions from Settings');
+        code = replaceOnce(code, "      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", "      case 'world-open-app': ctx.open(el.dataset.app); break;\n      case 'world-device-save': await v.busy(el, async () => { try { const updated = await saveWorldDeviceSettings(ctx.win, v.root); await render(); ctx.notify(updated ? '锁屏与共享已保存' : '设置没有变化'); } catch (error) { await render(); throw error; } }); break;\n      case 'theme': await api.savePhone({theme: el.dataset.value}); await render(); break;", 'save current character-card device permissions from Settings');
       }
       if (relative === 'ui/apps.js') {
         code = replaceOnce(code, 'export const APPS = {', `export const APPS = {
-          worldstyle: {name:'桌面与外观',eyebrow:'Appearance',colors:['#e8ecdc','#46665d','#c2a880']},
-          appie: {name:'Appie Pay',eyebrow:'Game Wallet',colors:['#a3c7b8','#47645e','#ffdea5']},
-          worldshop: {name:'购物',eyebrow:'Shopping',colors:['#f6d1a1','#b37644','#f9ea9b']},
-          worlddelivery: {name:'外卖',eyebrow:'Delivery',colors:['#ffdd83','#e59f3e','#fff4c6']},
-          worldstock: {name:'东都证券',eyebrow:'Markets',colors:['#b9a7fd','#332752','#dcceff']},
-          worldcalendar: {name:'日历',eyebrow:'Calendar',colors:['#a6c8e8','#577998','#f2d9bd']},
-          worldmessages: {name:'消息',eyebrow:'World Messages',colors:['#b8dfcc','#4a9174','#f5c8dc']},
-          twiitch: {name:'Twiitch',eyebrow:'Stream',colors:['#f2d8ff','#a05ce0','#ffd36a']},`, '游戏应用目录');
+          worldstyle: {name:'外观与记录',eyebrow:'外观',colors:['#e8ecdc','#46665d','#c2a880']},
+          appie: {name:'Appie Pay',eyebrow:'钱包',colors:['#a3c7b8','#47645e','#ffdea5']},
+          worldshop: {name:'购物',eyebrow:'购物',colors:['#f6d1a1','#b37644','#f9ea9b']},
+          worlddelivery: {name:'外卖',eyebrow:'外卖',colors:['#ffdd83','#e59f3e','#fff4c6']},
+          worldstock: {name:'东都证券',eyebrow:'证券',colors:['#b9a7fd','#332752','#dcceff']},
+          worldcalendar: {name:'日历',eyebrow:'日历',colors:['#a6c8e8','#577998','#f2d9bd']},
+          worldmessages: {name:'消息',eyebrow:'消息',colors:['#b8dfcc','#4a9174','#f5c8dc']},
+          twiitch: {name:'Twiitch',eyebrow:'直播',colors:['#f2d8ff','#a05ce0','#ffd36a']},`, '游戏应用目录');
         code = replaceOnce(code, '  pages: [', "  pages: [\n    ['appie','worldshop','worlddelivery','worldcalendar','worldmessages','peek','worldstock',SLOT],", '游戏应用首页');
       }
       if (relative === 'ui/chat.js') {

@@ -24,19 +24,27 @@ export function worldAppearance(s) {
   const p=profiles[s.owner] || profiles.soyo, a=s.appearance || {};
   return {wallpaper:a.wallpaper==='plain'?'plain':'signature', theme:['light','dark','system'].includes(a.theme)?a.theme:p.theme, layout:a.layout==='focus'?'focus':'daily'};
 }
+// In-world apps own the home screen; tavern tools (roles, engines, presets...) stay
+// reachable from Settings via worldToolIds so the protagonist's phone reads as theirs.
+const worldDock=dock=>dock.map(id=>id==='chat'?'worldmessages':id);
+const worldIds=new Set(['worldmessages','worldcalendar','worldshop','worlddelivery','worldstock','appie','twiitch','gallery','notes','music','peek','settings']);
 export function worldPhoneHome(screen, original) {
   const s=worldPhoneState(screen); if(!s)return original;
-  const p=profiles[s.active], a=worldAppearance(s), first=[...p[a.layout]];
+  const p=profiles[s.active], a=worldAppearance(s), dock=worldDock(p.dock);
+  const first=p[a.layout].filter(id=>id!=='worldstyle'&&!dock.includes(id));
   if (screen.dataset.worldPresentation==='novel') first.splice(first.indexOf('appie')+1,0,'worldstock');
-  const rest=[...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>id!=='worldpeek'&&id!=='worldstock'&&!first.includes(id)&&!p.dock.includes(id));
-  const pages=[first];for(let i=0;i<rest.length;i+=8)pages.push(rest.slice(i,i+8));
-  return {pages,dock:p.dock};
+  const known=new Set([...original.pages.flat(),...original.dock].filter(Boolean));
+  const more=[...worldIds].filter(id=>known.has(id)&&id!=='worldstyle'&&id!=='worldstock'&&!first.includes(id)&&!dock.includes(id));
+  return {pages:more.length?[first,more]:[first],dock};
+}
+export function worldToolIds(screen, original) {
+  if(!worldPhoneState(screen))return [];
+  const home=worldPhoneHome(screen,original), shown=new Set([...home.pages.flat(),...home.dock]);
+  return [...new Set([...original.pages.flat(),...original.dock].filter(Boolean))].filter(id=>!shown.has(id)&&!worldIds.has(id)&&!id.startsWith('world'));
 }
 export function worldPhoneIcon(screen,id,art=phoneArt) {
   const s=worldPhoneState(screen), key=id==='worldpeek'?'peek':id;
   if(!s)return null;
-  if(id==='worldstock')return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#392a62"/><path d="M13 45h38M16 39l10-10 8 5 14-15m-10 0h10v10" fill="none" stroke="#d4c5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  if(id==='forum')return networkArt.icon;
   if(id==='twiitch')return art[`${s.active}/icons/twiitch.svg`] || art[`twiitch/icon-${s.active}.svg`] || art['twiitch/icon-default.svg'] || null;
   return art[`${s.active}/icons/${key}.svg`] || null;
 }

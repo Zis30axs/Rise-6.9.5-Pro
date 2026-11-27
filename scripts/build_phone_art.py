@@ -31,7 +31,31 @@ GLYPHS = {
     'games': '<path d="M32 35h32c8 0 14 31 9 36-6 6-15-10-20-10H43c-5 0-14 16-20 10-5-5 1-36 9-36zM33 44v14M26 51h14M60 45h1M67 53h1"/>',
     'paint': '<path d="M48 23a26 26 0 1 0 0 52c13 0 2-14 12-16 20-4 18-36-12-36z"/><circle cx="34" cy="40" r="3"/><circle cx="47" cy="33" r="3"/><circle cx="60" cy="40" r="3"/><circle cx="30" cy="54" r="3"/>',
     'worldstyle': '<path d="M48 22 69 35v26L48 74 27 61V35zM27 35l21 13 21-13M48 48v26"/>',
+    'worldstock': '<path d="M24 72h48M24 72V26M31 61l12-13 9 7 17-19M58 36h11v11"/>',
+    'twiitch': '<path d="M24 25h48v34L56 73H43l-9 7V65H24zM38 37v15M56 37v15"/>',
 }
+CARDS = ('gpt', 'claude', 'gemini')
+
+def emblem(card, ink, under):
+    """Playful original marks for the three joke cards; deliberately not real logos."""
+    import math
+    if card == 'gpt':
+        mark = ''.join(f'<ellipse transform="rotate({a})" cy="-16" rx="7.5" ry="14"/>' for a in range(0, 360, 60))
+        mark = f'<g fill="none" stroke="{ink}" stroke-width="2.4">{mark}<path d="M0-8 7-4v8L0 8-7 4v-8z"/></g>'
+    elif card == 'claude':
+        rays = ''
+        for i in range(12):
+            a = math.radians(i * 30 - 90)
+            r1, r2 = 7, (31 if i % 2 == 0 else 20)
+            rays += f'M{r1 * math.cos(a):.1f} {r1 * math.sin(a):.1f}L{r2 * math.cos(a):.1f} {r2 * math.sin(a):.1f}'
+        mark = f'<path d="{rays}" fill="none" stroke="{ink}" stroke-width="5.5" stroke-linecap="round"/>'
+    else:
+        star = 'M0-32C3-7 7-3 32 0 7 3 3 7 0 32-3 7-7 3-32 0-7-3-3-7 0-32Z'
+        mark = f'<path d="{star}" fill="{ink}"/><path transform="translate(25 -24) scale(.36)" d="{star}" fill="{ink}" opacity=".75"/>'
+    return f'<circle cx="290" cy="96" r="40" fill="{under}" opacity=".6"/><g transform="translate(290 96)" opacity=".92">{mark}</g>'
+
+def chip(fill, line):
+    return f'<rect x="25" y="45" width="30" height="20" rx="5" fill="{fill}"/><path d="M35 45v20M45 45v20M25 55h30" stroke="{line}" fill="none"/>'
 
 def svg(body, w=96, h=96):
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">{body}</svg>\n'
@@ -43,8 +67,7 @@ def sakura(x, y, scale=1, opacity=1):
 def emma_art():
     """Black first; restrained sakura pink and paired blue ribbon stripes."""
     files = {}
-    glyphs = {**GLYPHS, 'twiitch': '<path d="M24 25h48v34L56 73H43l-9 7V65H24zM38 37v15M56 37v15"/>'}
-    for app, glyph in glyphs.items():
+    for app, glyph in GLYPHS.items():
         body = '<rect x="2" y="2" width="92" height="92" rx="24" fill="#15161c"/><rect x="6" y="6" width="84" height="84" rx="20" fill="none" stroke="#f3b7ce" stroke-opacity=".3"/><path d="m59 11 25 17m-30-9 29 20" fill="none" stroke="#79b8ef" stroke-width="3" opacity=".65"/>'
         body += f'<g fill="none" stroke="#f3b7ce" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">{glyph}</g>'
         files[f'emma/icons/{app}.svg'] = svg(body)
@@ -52,29 +75,28 @@ def emma_art():
     body += sakura(327, 568, 1.2, .8) + sakura(260, 611, .6, .6) + sakura(362, 650, .7, .45)
     body += '<g fill="#f3b7ce" opacity=".55"><path d="M42 173q17-9 17 8-14 10-17-8M318 311q14-10 15 5-10 12-15-5M93 648q17-11 17 6-13 11-17-6"/></g>'
     files['emma/wallpaper.svg'] = svg(body, 390, 844)
-    for i, card in enumerate(('gpt', 'claude', 'gemini')):
+    for i, card in enumerate(CARDS):
         base = ('#111218', '#1b151c', '#121a23')[i]
         body = f'<rect width="360" height="210" rx="23" fill="{base}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="#f3b7ce" opacity=".35"/>'
-        body += '<g stroke="#79b8ef" fill="none"><path d="m248 0 112 93m-132-93 132 110" stroke-width="5" opacity=".7"/><path d="m210 0 150 125" opacity=".4"/></g>' + sakura(301, 98, .9, .65)
-        body += '<rect x="25" y="50" width="30" height="18" rx="5" fill="#d7c1c9"/><path d="M35 50v18M45 50v18M25 59h30" stroke="#79616a" fill="none"/><circle cx="315" cy="176" r="14" fill="#f3b7ce" opacity=".65"/><circle cx="331" cy="176" r="14" fill="#79b8ef" opacity=".65"/>'
+        body += '<g stroke="#79b8ef" fill="none"><path d="m248 0 112 93m-132-93 132 110" stroke-width="5" opacity=".7"/><path d="m210 0 150 125" opacity=".4"/></g>' + sakura(236, 150, .45, .45)
+        body += emblem(card, ('#f3b7ce', '#f3b7ce', '#9fd0f7')[i], base) + chip('#d7c1c9', '#79616a') + '<circle cx="315" cy="176" r="14" fill="#f3b7ce" opacity=".65"/><circle cx="331" cy="176" r="14" fill="#79b8ef" opacity=".65"/>'
         files[f'emma/cards/{card}.svg'] = svg(body, 360, 210)
     return files
 
 def renako_art():
     """Soft peach-pink and lavender-purple with crossed hairpins & gamepad motifs."""
     files = {}
-    glyphs = {**GLYPHS, 'twiitch': '<path d="M24 25h48v34L56 73H43l-9 7V65H24zM38 37v15M56 37v15"/>'}
-    for app, glyph in glyphs.items():
+    for app, glyph in GLYPHS.items():
         body = '<rect x="2" y="2" width="92" height="92" rx="26" fill="#fff4f8"/><rect x="6" y="6" width="84" height="84" rx="22" fill="none" stroke="#d89bbb" stroke-opacity=".55"/><path d="m62 12 18 14m0-14-18 14" fill="none" stroke="#9b7dc7" stroke-width="2.8" stroke-linecap="round" opacity=".75"/>'
         body += f'<g fill="none" stroke="#6d466b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">{glyph}</g>'
         files[f'renako/icons/{app}.svg'] = svg(body)
     body = '<rect width="390" height="844" fill="#fff5f9"/><path d="M0 510Q195 430 390 535V844H0Z" fill="#fce4ee"/><path d="M0 645Q210 560 390 665V844H0Z" fill="#eddcf6"/><g fill="none" stroke="#9b7dc7" stroke-linecap="round"><path d="m282 96 62 46m0-46-62 46" stroke-width="7" opacity=".55"/><path d="m52 602 48 36m0-36-48 36" stroke-width="5" opacity=".45"/></g><circle cx="110" cy="190" r="64" fill="#f7cde0" opacity=".45"/><circle cx="312" cy="410" r="46" fill="#dec8f2" opacity=".45"/><g fill="none" stroke="#d47fa6" stroke-width="2.5" opacity=".55"><rect x="256" y="692" width="88" height="52" rx="22"/><path d="M280 718h18M289 709v18"/><circle cx="320" cy="712" r="3.5"/><circle cx="329" cy="723" r="3.5"/></g>'
     files['renako/wallpaper.svg'] = svg(body, 390, 844)
-    for i, card in enumerate(('gpt', 'claude', 'gemini')):
+    for i, card in enumerate(CARDS):
         base = ('#7a4f78', '#685082', '#87516d')[i]
         body = f'<rect width="360" height="210" rx="23" fill="{base}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="#ffd6e8" opacity=".55"/>'
-        body += '<g stroke="#e5ccf8" stroke-linecap="round" fill="none"><path d="m262 34 56 42m0-42-56 42" stroke-width="5" opacity=".7"/><path d="m230 140 110-45" stroke-width="2" opacity=".35"/></g>'
-        body += '<rect x="25" y="58" width="30" height="20" rx="5" fill="#f7d8e6"/><path d="M35 58v20M45 58v20M25 68h30" stroke="#8a5a75" fill="none"/><circle cx="315" cy="176" r="14" fill="#ffb8d6" opacity=".7"/><circle cx="331" cy="176" r="14" fill="#cdb4f6" opacity=".7"/>'
+        body += '<g stroke="#e5ccf8" stroke-linecap="round" fill="none"><path d="m222 42 34 26m0-26-34 26" stroke-width="4" opacity=".6"/><path d="m230 140 110-45" stroke-width="2" opacity=".35"/></g>'
+        body += emblem(card, '#ffe3ef', base) + chip('#f7d8e6', '#8a5a75') + '<circle cx="315" cy="176" r="14" fill="#ffb8d6" opacity=".7"/><circle cx="331" cy="176" r="14" fill="#cdb4f6" opacity=".7"/>'
         files[f'renako/cards/{card}.svg'] = svg(body, 360, 210)
     return files
 
@@ -92,10 +114,10 @@ def generate():
         else:
             body = '<defs><linearGradient id="n" x2=".7" y2="1"><stop stop-color="#0c172d"/><stop offset="1" stop-color="#30486e"/></linearGradient></defs><rect width="390" height="844" fill="url(#n)"/><circle cx="309" cy="207" r="91" fill="none" stroke="#afc3e2" stroke-width=".7" opacity=".5"/><circle cx="309" cy="207" r="80" fill="none" stroke="#afc3e2" stroke-width=".5" opacity=".25"/><g stroke="#abc0df" stroke-width="1" opacity=".28">' + ''.join(f'<path d="M-40 {y}Q190 {y-140} 440 {y-20}"/>' for y in range(515, 596, 20)) + '</g><g fill="#c1d1e7" opacity=".7"><ellipse cx="267" cy="453" rx="8" ry="5" transform="rotate(-25 267 453)"/><path d="M273 451v-44l22-7v9l-18 5v37z"/></g><path d="M-30 761 390 570v274H0" fill="#1c2b47"/><g fill="#92aacd" opacity=".28">' + ''.join(f'<path d="m{x} 844 0-80 13-6v86z"/>' for x in range(18, 380, 26)) + '</g><g fill="#d9e4f5"><circle cx="69" cy="162" r="1.5"/><circle cx="110" cy="255" r="1"/><circle cx="330" cy="326" r="1.2"/></g>'
         files[f'{owner}/wallpaper.svg'] = svg(body, 390, 844)
-        for i, card in enumerate(('gpt', 'claude', 'gemini')):
+        for i, card in enumerate(CARDS):
             palette = (('#526e60', '#795e50', '#596b7d') if soft else ('#243953', '#3c344b', '#263f58'))[i]
             pattern = '<path d="M240 180q-10-110 100-150M270 120q-60-5-35-50 50 6 35 50M300 76q-5-50 40-39-1 44-40 39" fill="none" stroke="#d6dfc8" stroke-width="2" opacity=".45"/>' if soft else '<g stroke="#acbeda" opacity=".3">' + ''.join(f'<path d="m220 {y} 140-55"/>' for y in range(85, 150, 13)) + '</g><path d="M299 110V44l32-8v54" fill="none" stroke="#aebedb" stroke-width="2"/>'
-            files[f'{owner}/cards/{card}.svg'] = svg(f'<rect width="360" height="210" rx="23" fill="{palette}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="{accent}" opacity=".65"/>{pattern}<rect x="25" y="71" width="30" height="23" rx="5" fill="#d7c59e"/><path d="M35 71v23M45 71v23M25 82h30" stroke="#8e7e5e" fill="none"/><circle cx="315" cy="176" r="14" fill="#d4c7aa" opacity=".6"/><circle cx="331" cy="176" r="14" fill="#eef0e6" opacity=".4"/>', 360, 210)
+            files[f'{owner}/cards/{card}.svg'] = svg(f'<rect width="360" height="210" rx="23" fill="{palette}"/><rect x="9" y="9" width="342" height="192" rx="17" fill="none" stroke="{accent}" opacity=".65"/>{pattern}{emblem(card, '#f1e9d2' if soft else '#d3dff2', palette)}{chip('#d7c59e', '#8e7e5e')}<circle cx="315" cy="176" r="14" fill="#d4c7aa" opacity=".6"/><circle cx="331" cy="176" r="14" fill="#eef0e6" opacity=".4"/>', 360, 210)
     manifest = {'schema': 'unread-city-phone-art-v1', 'source': 'Original SVG; scripts/build_phone_art.py', 'assets': {p: {'bytes': len(s.encode()), 'sha256': hashlib.sha256(s.encode()).hexdigest()} for p, s in sorted(files.items())}}
     files['manifest.json'] = json.dumps(manifest, indent=2) + '\n'
     return files

@@ -327,8 +327,9 @@ export function mountTradingTerminal(host,{ adapter, styles='' }) {
   }
 
   function drawChart() {
-    const bounds=chart.getBoundingClientRect();
-    const w=bounds.width,h=bounds.height;
+    // Layout size, not getBoundingClientRect: the phone's app-open animation scales the
+    // view, and a bitmap drawn at that transient size was stretched into a blurry close-up.
+    const w=chart.clientWidth,h=chart.clientHeight;
     if(!w||!h) return;
     const ratio=Math.min(2,win.devicePixelRatio||1);
     chart.width=Math.round(w*ratio);
