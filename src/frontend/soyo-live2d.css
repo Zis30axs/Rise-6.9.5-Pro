@@ -1,12 +1,31 @@
-/* Keep the bottom-aligned model above the collapsed dialogue panel. */
-.soyo-live2d { position: absolute; inset: 70px 110px 330px 0; z-index: 2; overflow: hidden; pointer-events: none; opacity: 1; transition: opacity .2s ease; }
+/* Unobstructed full-height left stage on desktop; framed above story drawer on mobile. */
+.soyo-live2d {
+  position: absolute;
+  inset: 48px calc(var(--col, 480px) + var(--rail, 80px)) 0 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .2s ease, right .26s ease;
+}
 .soyo-live2d.is-muted { opacity: 0; }
 .soyo-live2d.is-dimmed:not(.is-muted) { opacity: .48; filter: brightness(.53); }
 .soyo-live2d-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
 .soyo-live2d-error { position: absolute; left: 50%; top: 55%; transform: translateX(-50%); color: #f2e9d9; font-size: 13px; text-shadow: 0 1px 4px #26332d; }
-@media (max-width: 700px) {
-  .soyo-live2d { inset: 70px 0 365px 0; min-height: 155px; }
+
+@media (max-width: 760px) {
+  .soyo-live2d {
+    inset: 48px 0 calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 34dvh) 0;
+    min-height: 155px;
+  }
+  .uc-shell[data-mobile-snap='peek'] .soyo-live2d {
+    bottom: calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 24dvh);
+  }
 }
-@media (max-height: 670px) and (max-width: 700px) {
-  .soyo-live2d { top: 52px; left: 48%; right: 0; bottom: 310px; min-height: 0; }
+
+@media (max-height: 640px) and (max-width: 760px) {
+  .soyo-live2d {
+    inset: 44px 0 calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 30dvh) 0;
+    min-height: 120px;
+  }
 }

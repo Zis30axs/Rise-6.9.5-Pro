@@ -116,7 +116,6 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
 <template>
   <section class="world-panels" :class="'world-panel-' + panel" :aria-label="labels[panel]">
     <template v-if="panel === 'phone'">
-      <p class="wp-demo-note">本地演示消息 · 进入酒馆后使用 ST-iPhonie</p>
       <div class="wp-phone-layout">
         <aside class="wp-contacts">
           <div class="wp-heading"><h2>联系人</h2><span class="wp-badge">{{ unread }} 未读</span></div>
@@ -228,28 +227,7 @@ onBeforeUnmount(() => { if (airBoundaryTimer) clearTimeout(airBoundaryTimer); })
       <AcademicCorrection :model="model" :actions="actions" />
       <article v-if="interior" class="wp-air-traffic" aria-label="室内活动"><div class="wp-heading"><h2>室内活动</h2><span class="wp-badge">{{ interior.label }}</span></div><p>{{ lastActivity ? lastActivity.result : '已进入室内，可以走近物件进行观察、学习或休息。' }}</p><small>位置与活动按当前聊天保存，退出房间后回到原入口。</small></article>
       <article class="wp-air-traffic" aria-label="城市交通"><div class="wp-heading"><h2>城市交通</h2><span class="wp-badge">已乘坐 {{ model.state.transit.sequence }} 次</span></div><p v-if="model.state.transit.lastRide">{{ transitVehicles.find(vehicle => vehicle.id === model.state.transit.lastRide?.vehicleId)?.label }} · {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.fromStopId)?.label }} → {{ transitStops.find(stop => stop.id === model.state.transit.lastRide?.toStopId)?.label }}，{{ model.state.transit.lastRide.minutes }} 分钟，车费 ¥{{ model.state.transit.lastRide.fare }}。</p><p v-else>在高田接驳站搭乘都营巴士或东京Metro线路，前往池袋、杂司谷及目白等地。</p><button class="wp-text-button" @click="emit('transit')">查看城市交通 ↗</button></article>
-      <article class="wp-air-traffic" aria-label="空中动态"><div class="wp-heading"><h2>空中动态</h2><span class="wp-badge">累计经过 {{ model.state.airTraffic.sequence }} 次</span></div><p>{{ interior ? '当前在室内，无法直接观察天空；已记录的空中事件保留。' : activeAirliner ? '一架客机正从远处高空平稳经过。' : lastAirliner ? '最近的客机已飞离视野。' : '天空暂时平静，偶尔会有客机经过。' }}</p><small v-if="lastAirliner">最近一次：{{ airlinerSource }} · {{ activeAirliner ? '正在经过' : '已记录' }}</small><small v-else>环境中可能随机出现，也可能由对话剧情触发。</small></article>
       <article class="wp-journal"><div class="wp-heading"><h2>日常手记</h2><span class="wp-badge">{{ model.state.journal.length }} 条记录</span></div><div class="wp-journal-list"><article v-for="entry in [...model.state.journal].reverse()" :key="entry.id" class="wp-journal-entry"><time>{{ formatGameStamp(entry.at) }}</time><p>{{ entry.text }}</p></article><p v-if="!model.state.journal.length" class="wp-empty">新的足迹，会留在这里。</p></div></article>
-      <p class="wp-footnote">{{ model.connection }} · 世界状态按聊天保存。地点、人物与资源为演示内容。</p>
     </template>
   </section>
 </template>
-
-<style scoped>
-[data-testid="protagonist-recap"] > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
-[data-testid="protagonist-recap"] .wp-journal-entry p { overflow-wrap: anywhere; }
-.wp-illness-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.wp-illness-card { background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 8px; padding: 10px 12px; }
-.wp-illness-card.wp-severity-mild { background: rgba(234, 179, 8, 0.08); border-color: rgba(234, 179, 8, 0.25); }
-.wp-illness-card.wp-severity-severe { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); }
-.wp-illness-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.wp-illness-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
-.wp-illness-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: rgba(220, 38, 38, 0.18); color: #b91c1c; }
-.wp-illness-desc { font-size: 0.85rem; color: var(--text-color, #374151); margin: 4px 0; }
-.wp-illness-remedy { font-size: 0.8rem; color: var(--text-muted, #6b7280); margin-top: 4px; }
-.wp-illness-symptoms { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.wp-symptom-tag { font-size: 0.72rem; padding: 1px 6px; border-radius: 10px; background: rgba(0, 0, 0, 0.06); }
-.wp-health-healthy { color: #15803d; font-size: 0.88rem; padding: 8px 0; }
-</style>
-
-

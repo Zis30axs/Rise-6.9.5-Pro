@@ -1,9 +1,13 @@
 .novel-backdrop {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: calc(var(--col, 480px) + var(--rail, 80px));
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(155deg, #8b9ba4 0%, #c0b6a4 50%, #5d6967 100%);
+  background: linear-gradient(155deg, #273238 0%, #3d4847 50%, #1c2426 100%);
+  transition: right .26s ease;
 }
 
 .novel-backdrop__image {
@@ -17,15 +21,15 @@
 .novel-backdrop__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgb(15 24 30 / 13%), transparent 32%, rgb(15 24 30 / 18%));
+  background: linear-gradient(180deg, rgba(8, 12, 14, .46) 0%, transparent 24%, transparent 68%, rgba(8, 12, 14, .38) 100%);
 }
 
 .novel-backdrop[data-background-phase='night'] .novel-backdrop__shade {
-  background: linear-gradient(180deg, rgb(12 20 36 / 22%), rgb(12 20 36 / 12%) 35%, rgb(12 20 36 / 25%));
+  background: linear-gradient(180deg, rgba(8, 13, 22, .52), rgba(8, 13, 22, .14) 35%, rgba(8, 13, 22, .42));
 }
 
 .novel-backdrop[data-background-status='fallback'][data-background-phase='night'] {
-  background: linear-gradient(155deg, #27334b, #465264 55%, #212c40);
+  background: linear-gradient(155deg, #1b2434, #2f3948 55%, #161e2b);
 }
 
 .novel-backdrop[data-background-source='city-art'][data-background-phase='dusk'] .novel-backdrop__image {
@@ -33,6 +37,13 @@
 }
 .novel-backdrop[data-background-source='city-art'][data-background-phase='night'] .novel-backdrop__image {
   filter: saturate(.55) brightness(.54);
+}
+
+@media (max-width: 760px) {
+  .novel-backdrop {
+    right: 0;
+    bottom: calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (orientation: portrait) {

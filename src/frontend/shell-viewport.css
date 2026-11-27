@@ -4,81 +4,38 @@
   --uc-safe-right:env(safe-area-inset-right,0px);
   --uc-safe-bottom:env(safe-area-inset-bottom,0px);
   --uc-safe-left:env(safe-area-inset-left,0px);
-  --uc-dock-height:66px;
-  --uc-dock-bottom:max(12px,var(--uc-safe-bottom));
-  --uc-bottom-clearance:calc(var(--uc-dock-bottom) + var(--uc-dock-height) + 12px);
+  --uc-bottom-clearance:calc(var(--navh, 62px) + var(--uc-safe-bottom));
 }
 :host([data-uc-viewport]) #unread-city-app,
 :host([data-uc-viewport]) .uc-shell { height:100%; min-height:0; }
 :host([data-uc-viewport]) .composer { min-width:0; }
-:host([data-uc-viewport]) .composer > button { min-height:44px; white-space:nowrap; }
-:host([data-uc-viewport]) .uc-shell .world-chrome .host-actions > .graphics-refresh-button {
-  min-width:44px; min-height:44px; padding:5px; font-size:22px;
-}
-:host([data-uc-viewport]) .room-activity-receipt { max-height:80px; overflow:auto; overscroll-behavior:contain; }
+:host([data-uc-viewport]) .composer > button { min-height:38px; white-space:nowrap; }
+:host([data-uc-viewport]) .room-activity-receipt { max-height:76px; overflow:auto; overscroll-behavior:contain; }
 :host([data-uc-viewport]) .composer-error { flex-shrink:0; max-height:48px; overflow:auto; }
+
 @media(min-width:761px) {
-  :host([data-uc-viewport]) .floating-window:not(.phone-window) {
-    max-height:calc(var(--uc-viewport-height,100dvh) - 120px);
-  }
   :host([data-uc-viewport]) .floating-window:not(.phone-window) .window-content {
     min-height:0; overflow-y:auto; overscroll-behavior:contain;
   }
 }
+
 @media(max-width:760px) {
   :host([data-uc-viewport]) .world-chrome {
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    padding-top:max(10px,var(--uc-safe-top));
+    padding-top:max(4px,var(--uc-safe-top));
     padding-left:max(12px,var(--uc-safe-left));
-    padding-right:max(12px,var(--uc-safe-right));
-    justify-content:space-between;
-    align-items:center;
-    gap:4px 8px;
+    padding-right:max(10px,var(--uc-safe-right));
   }
-  :host([data-uc-viewport]) .world-heading {
-    display:contents;
-  }
-  :host([data-uc-viewport]) .world-heading > .wordmark { grid-column:1; grid-row:1; }
-  :host([data-uc-viewport]) .topbar-world { grid-column:1/-1; grid-row:2; padding-top:0; white-space:nowrap; flex-wrap:nowrap; }
-  /* Single reliable switch-chat action lives at top right. */
-  :host([data-uc-viewport]) .host-actions { grid-column:2; grid-row:1; gap:0; flex-shrink:0; margin-left:auto; }
-  :host([data-uc-viewport]) .uc-shell[data-layout-edit=true] .graphics-refresh-button { display:none; }
-  :host([data-uc-viewport]) .host-actions > button {
-    display:block; min-height:44px; padding:7px 10px;
-    border:1px solid #e6d7b277; border-radius:10px; background:#14281fa8;
-    color:#f1e5ce; font-size:11px; text-shadow:none;
-  }
-  :host([data-uc-viewport]) .presentation-switch {
-    top:calc(max(10px,var(--uc-safe-top)) + 75px);
-    left:max(12px,var(--uc-safe-left));
-  }
-  :host([data-uc-viewport]) .uc-shell[data-reading-mode=hidden] .presentation-switch {
-    top:auto; bottom:calc(var(--uc-bottom-clearance) + 54px);
-  }
-  :host([data-uc-viewport]) .tool-dock { bottom:var(--uc-dock-bottom); max-width:calc(100% - 16px); }
-  /* Compact by default; the grip can enlarge it only when the user requests that. */
-  :host([data-uc-viewport]) .reading-layer,
-  :host([data-uc-viewport]) .uc-shell[data-presentation-mode=novel] .reading-layer {
+  :host([data-uc-viewport]) .reading-layer {
     bottom:var(--uc-bottom-clearance);
-    height:clamp(185px,calc(var(--uc-viewport-height) * .27),255px);
-    max-height:calc(var(--uc-viewport-height) - max(10px,var(--uc-safe-top)) - 128px - var(--uc-bottom-clearance));
+    max-height:calc(var(--uc-viewport-height, 100dvh) - max(6px,var(--uc-safe-top)) - 48px - var(--uc-bottom-clearance));
     min-height:0;
   }
-  :host([data-uc-viewport]) .reading-layer.reading-expanded,
-  :host([data-uc-viewport]) .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded {
-    top:calc(max(10px,var(--uc-safe-top)) + 117px); height:auto; max-height:none;
+  :host([data-uc-viewport]) .uc-shell[data-mobile-snap=full] .reading-layer,
+  :host([data-uc-viewport]) .uc-shell .reading-layer.reading-expanded {
+    height:calc(var(--uc-viewport-height, 100dvh) - max(6px,var(--uc-safe-top)) - 50px - var(--uc-bottom-clearance));
   }
-  :host([data-uc-viewport]) .uc-shell .composer { align-items:flex-end; gap:8px; }
-  :host([data-uc-viewport]) .uc-shell .composer textarea {
-    height:56px; min-height:52px; max-height:110px; padding:8px 0;
-    font-size:16px; line-height:24px; resize:none; overflow:auto;
-  }
-  :host([data-uc-viewport]) .uc-shell .composer > button { min-width:64px; padding:10px; }
-  :host([data-uc-viewport]) .resume-reading { bottom:var(--uc-bottom-clearance); }
-  /* Absolute top AND bottom reserve the entire dock/gesture zone, also when lists grow. */
   :host([data-uc-viewport]) .floating-window:not(.phone-window) {
-    top:calc(max(10px,var(--uc-safe-top)) + 92px);
+    top:0;
     bottom:var(--uc-bottom-clearance);
     height:auto; min-height:0; max-height:none;
     overflow:hidden;
@@ -88,30 +45,13 @@
     padding-bottom:20px;
   }
   :host([data-uc-viewport]) .floating-window.phone-window {
-    max-height:calc(var(--uc-viewport-height) - max(10px,var(--uc-safe-top)) - 100px - var(--uc-bottom-clearance));
+    bottom:calc(var(--uc-bottom-clearance) + 6px);
+    max-height:calc(var(--uc-viewport-height, 100dvh) - max(6px,var(--uc-safe-top)) - 52px - var(--uc-bottom-clearance));
   }
-  :host([data-uc-viewport]) .uc-shell[data-active-window=phone]:not([data-phone-expanded=true]) .phone-window {
-    --phone-top:clamp(138px,calc(var(--uc-viewport-height) * .27),235px);
-    top:calc(var(--phone-top) + var(--uc-safe-top));
-    height:calc(var(--uc-viewport-height) - var(--uc-safe-top) - var(--phone-top) - var(--uc-bottom-clearance));
-  }
-  :host([data-uc-viewport]) .notice { top:calc(max(10px,var(--uc-safe-top)) + 65px); max-height:80px; overflow:auto; }
 }
-@media(max-width:360px) {
-  :host([data-uc-viewport]) .uc-shell .composer textarea { height:56px; min-height:52px; }
-  :host([data-uc-viewport]) .topbar-world { font-size:9px; gap:4px; }
-  :host([data-uc-viewport]) .uc-shell .wordmark { font-size:19px; }
+
+/* Software keyboard / ultra-short viewport: maximize reading room */
+:host([data-uc-short=true]) .reading-layer {
+  height:calc(var(--uc-viewport-height, 100dvh) - max(4px,var(--uc-safe-top)) - 48px - var(--uc-bottom-clearance)) !important;
 }
-:host([data-uc-short=true]) .reading-layer,
-:host([data-uc-short=true]) .uc-shell[data-presentation-mode=novel] .reading-layer,
-:host([data-uc-short=true]) .reading-layer.reading-expanded,
-:host([data-uc-short=true]) .uc-shell[data-presentation-mode=novel] .reading-layer.reading-expanded {
-  top:calc(max(8px,var(--uc-safe-top)) + 66px); bottom:var(--uc-bottom-clearance); height:auto; max-height:none;
-}
-:host([data-uc-short=true]) .floating-window:not(.phone-window) {
-  top:calc(max(8px,var(--uc-safe-top)) + 66px); bottom:var(--uc-bottom-clearance);
-}
-:host([data-uc-short=true]) .reading-heading,
-:host([data-uc-short=true]) .room-activity-receipt,
-:host([data-uc-short=true]) .novel-dialogue-controls { display:none; }
-:host([data-uc-short=true]) .uc-shell .composer textarea { height:44px; min-height:44px; }
+:host([data-uc-short=true]) .room-activity-receipt { display:none; }

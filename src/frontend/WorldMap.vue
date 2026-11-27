@@ -53,9 +53,10 @@ import { applyRouteEventGesture, applyRouteEventTap } from './tokyo-sandbox-map'
 import { byId as tokyoSite, destinations as tokyoDestinations } from './tokyo-diorama/plan';
 import tokyoAtlasCss from './tokyo-diorama/atlas.css?inline';
 import openAiMark from '../../assets/openai-mark.svg?inline';
+import { setMapMode } from './flat-map/preference';
 
-const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; tokyoOnly?:boolean; refreshToken?: number }>(), { novelMode: false });
-const emit = defineEmits<{ travelled: [] }>();
+const props = withDefaults(defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; tokyoOnly?: boolean; refreshToken?: number; closable?: boolean }>(), { novelMode: false });
+const emit = defineEmits<{ travelled: []; close: []; transit: [] }>();
 const parisOpened = ref(isParisLocation(props.model.state.locationId));
 const showParis = ref(parisOpened.value);
 watch(() => props.model.state.locationId, (id, previous) => {
@@ -739,7 +740,12 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
   <div v-else class="world-map" :data-map-layer="layer" :data-map-district="detailDistrict ?? ''">
     <ParisSandbox v-if="parisOpened" :open="showParis" :location-id="model.state.locationId" :busy="model.busy" :routes="parisRoutes" :local-time="parisTime" :quote="id => novelQuotes.get(id)" @travel="departParis" @back="showParis = false" />
     <component :is="'style'">{{ tokyoAtlasCss }}</component>
-    <nav class="wm-layers" aria-label="地图范围"><button v-for="item in (tokyoOnly ? layers.slice(0,1) : layers)" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button></nav>
+    <nav class="wm-layers" aria-label="地图范围">
+      <button v-for="item in (tokyoOnly ? layers.slice(0,1) : layers)" :key="item.id" type="button" :aria-pressed="layer === item.id || (localLayer && item.id === 'city')" :class="{ active: layer === item.id || (localLayer && item.id === 'city') }" @click="goToLayer(item.id)">{{ item.name }}</button>
+      <button v-if="!tokyoOnly" type="button" @click="emit('transit')">公交</button>
+      <button type="button" @click="setMapMode('2d')">2D 平面</button>
+      <button v-if="closable" type="button" class="wm-close-btn" aria-label="关闭地图" @click="emit('close')">×</button>
+    </nav>
     <div v-if="detailDistrict" class="wm-detail-back-row"><button type="button" data-map-back aria-label="返回城市总览" @click="returnCity">← 返回城市</button></div>
     <div class="wm-title"><div><h2>{{ layer === 'city' ? '东京城市沙盘' : layerTitle }}</h2><p>{{ layerNote }}</p></div><span class="wm-zoom-value" aria-live="polite">{{ localLayer || layer === 'city' ? '立体沙盘' : '范围浏览' }}</span></div>
     <div class="wm-layout">
@@ -780,7 +786,7 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
             </div>
           </div>
           <span class="wm-north" aria-hidden="true" :style="{ transform: `rotate(${bearing}deg)` }">N ↑</span>
-          <div v-if="geographicLayer" class="wm-watermark" aria-label="Open AI Map"><img :src="openAiMark" alt=""/><span>Open AI Map</span></div>
+          <div v-if="geographicLayer" class="wm-watermark" aria-label="世界图集"><img :src="openAiMark" alt=""/><span>世界图集</span></div>
           <div v-if="!geographicLayer" class="wm-local-scale" aria-label="虚构场景示意比例尺"><span>{{ localScale.label }} · 示意</span><i :style="{width:localScale.width+'px'}" /></div>
         </div>
         <div class="wm-map-actions">

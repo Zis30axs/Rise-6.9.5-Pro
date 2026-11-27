@@ -1,0 +1,227 @@
+{
+  "checkedAt": "2026-11-27T12:07:23.796Z",
+  "environment": "Headless Chromium via Playwright (controlled browser, NOT TauriTavern real device)",
+  "url": "http://127.0.0.1:5179/",
+  "viewports": {
+    "1440x900": {
+      "status": "passed",
+      "navLabels": [
+        "故事",
+        "地图",
+        "手机",
+        "路线",
+        "我"
+      ],
+      "pageErrors": 0,
+      "checks": {
+        "story": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "moreMenu": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "map": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeFocus": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeDecisions": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meBody": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meCarry": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meRel": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meNote": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "phone": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        }
+      }
+    },
+    "1280x800": {
+      "status": "passed",
+      "navLabels": [
+        "故事",
+        "地图",
+        "手机",
+        "路线",
+        "我"
+      ],
+      "pageErrors": 0,
+      "checks": {
+        "story": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "moreMenu": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "map": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeFocus": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeDecisions": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meBody": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meCarry": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meRel": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meNote": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "phone": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        }
+      }
+    },
+    "390x844": {
+      "status": "passed",
+      "navLabels": [
+        "故事",
+        "地图",
+        "手机",
+        "路线",
+        "我"
+      ],
+      "pageErrors": 0,
+      "checks": {
+        "story": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "storySnap": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "moreMenu": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "map": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeFocus": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeDecisions": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meBody": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meCarry": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meRel": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meNote": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "phone": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        }
+      }
+    },
+    "320x568": {
+      "status": "passed",
+      "navLabels": [
+        "故事",
+        "地图",
+        "手机",
+        "路线",
+        "我"
+      ],
+      "pageErrors": 0,
+      "checks": {
+        "story": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "storySnap": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "moreMenu": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "map": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeFocus": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "routeDecisions": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meBody": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meCarry": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meRel": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "meNote": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        },
+        "phone": {
+          "docOverflow": 0,
+          "shellOverflow": 0
+        }
+      }
+    }
+  }
+}

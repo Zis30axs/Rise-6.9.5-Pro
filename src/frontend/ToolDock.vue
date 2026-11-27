@@ -1,15 +1,17 @@
 <script setup lang="ts" generic="Panel extends string">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch, type CSSProperties } from 'vue';
 
+const PRIMARY_IDS = new Set(['story', 'map', 'phone', 'route', 'me', 'notebook', 'stock']);
+
 const props = defineProps<{
-  items: readonly { id: Panel; title: string; path: string }[];
+  items: readonly { id: Panel; title: string; path: string; badge?: number }[];
   active: Panel | null;
   unread: number;
   editing: boolean;
 }>();
 const emit = defineEmits<{ select: [panel: Panel] }>();
-const primary = computed(() => props.items.filter(item => item.id === 'phone' || item.id === 'map' || item.id === 'notebook' || item.id === 'stock'));
-const secondary = computed(() => props.items.filter(item => item.id !== 'phone' && item.id !== 'map' && item.id !== 'notebook' && item.id !== 'stock'));
+const primary = computed(() => props.items.filter(item => PRIMARY_IDS.has(item.id)));
+const secondary = computed(() => props.items.filter(item => !PRIMARY_IDS.has(item.id)));
 const expanded = ref(false);
 const dock = ref<HTMLElement>();
 const menu = ref<HTMLElement>();
@@ -63,7 +65,6 @@ function dismissOutside(event: Event) {
   if (dock.value && !event.composedPath().includes(dock.value)) close();
 }
 function dismissWithEscape(event: KeyboardEvent) {
-  // Close this overlay before the host's document listener can close the phone.
   if (expanded.value && event.key === 'Escape' && !event.isComposing) {
     close(true);
     event.preventDefault();
@@ -94,14 +95,20 @@ defineExpose({ close });
 </script>
 
 <template>
-  <nav ref="dock" class="tool-dock tool-dock-collapsible" aria-label="世界面板" :data-dock-expanded="expanded">
+  <nav ref="dock" class="tool-dock tool-dock-collapsible" aria-label="世界导航" :data-dock-expanded="expanded">
     <div class="tool-dock-shortcuts">
       <button v-for="item in primary" :key="item.id" type="button"
-        :class="{ 'phone-launcher': item.id === 'phone', 'notebook-launcher': item.id === 'notebook', 'stock-launcher': item.id === 'stock' }"
+        :class="{
+          'phone-launcher': item.id === 'phone',
+          'notebook-launcher': item.id === 'notebook',
+          'stock-launcher': item.id === 'stock',
+          'is-active': active === item.id,
+        }"
+        :data-nav-item="item.id"
         :data-notebook-entry="item.id === 'notebook' ? '' : undefined"
         :data-stock-entry="item.id === 'stock' ? '' : undefined"
         :aria-label="item.title" :aria-pressed="active === item.id"
-        :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息` : active === 'phone' ? '收起手机' : '打开手机') : item.id === 'notebook' ? (active === 'notebook' ? '收起手账本' : '打开手账本') : item.id === 'stock' ? (active === 'stock' ? '收起东都证券' : '打开东都证券看盘') : undefined"
+        :title="item.id === 'phone' ? (unread ? `${unread} 条未读消息` : active === 'phone' ? '收起手机' : '打开手机') : item.title"
         @click="select(item.id)">
         <span class="tool-icon">
           <svg v-if="item.id === 'notebook'" viewBox="0 0 24 24" aria-hidden="true" class="notebook-bespoke-svg">
@@ -123,16 +130,19 @@ defineExpose({ close });
           </svg>
           <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path :d="item.path" /></svg>
           <span v-if="item.id === 'phone' && unread" class="phone-unread-badge" :data-phone-unread="unread">{{ unread > 99 ? '99+' : unread }}</span>
+          <span v-else-if="item.badge" class="nav-count-badge" :data-nav-badge="item.id">{{ item.badge > 99 ? '99+' : item.badge }}</span>
         </span>
-        <span class="tool-label">{{ item.id === 'stock' ? '证券' : item.title }}<small v-if="item.id === 'phone'">{{ unread ? '有未读' : active === 'phone' ? '已打开' : '常驻' }}</small><small v-else-if="item.id === 'notebook'">{{ active === 'notebook' ? '翻阅中' : '手账' }}</small><small v-else-if="item.id === 'stock'">{{ active === 'stock' ? '看盘中' : '东证' }}</small></span>
+        <span class="tool-label">{{ item.id === 'stock' ? '证券' : item.title }}</span>
       </button>
-      <button ref="toggle" type="button" class="tool-dock-toggle" :aria-expanded="expanded" :aria-controls="expanded ? menuId : undefined"
+
+      <button v-if="secondary.length" ref="toggle" type="button" class="tool-dock-toggle" :aria-expanded="expanded" :aria-controls="expanded ? menuId : undefined"
         :aria-label="expanded ? '收起菜单' : '展开菜单'" @click="toggleMenu">
         <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path :d="expanded ? 'm6 6 12 12M18 6 6 18' : 'M4 5h6v6H4ZM14 5h6v6h-6ZM4 15h6v6H4ZM14 15h6v6h-6Z'" /></svg></span>
         <span class="tool-label">{{ expanded ? '收起' : '展开' }}</span>
       </button>
     </div>
-    <div v-if="expanded" :id="menuId" ref="menu" class="tool-dock-menu" :style="menuStyle" role="group" aria-label="更多功能">
+
+    <div v-if="expanded && secondary.length" :id="menuId" ref="menu" class="tool-dock-menu" :style="menuStyle" role="group" aria-label="更多功能">
       <button v-for="item in secondary" :key="item.id" type="button" :aria-label="item.title" :aria-pressed="active === item.id"
         :data-location-entry="item.id === 'location' ? '' : undefined" :data-invitation-entry="item.id === 'invitations' ? '' : undefined"
         :data-inventory-entry="item.id === 'inventory' ? '' : undefined" @click="select(item.id)">

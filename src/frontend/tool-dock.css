@@ -1,68 +1,119 @@
-/* The compact rail keeps its saved position; the menu stays inside the viewport. */
+/* 5-Entry Navigation Rail (Desktop > 760px) & Bottom Bar (Mobile <= 760px) */
+.uc-shell .tool-dock,
 .uc-shell .tool-dock.tool-dock-collapsible {
-  width:auto; max-height:none; overflow:visible; padding:5px;
+  position:absolute; right:0; top:0; bottom:0; width:var(--rail, 80px); z-index:85;
+  transform:none; max-height:none; overflow:visible;
+  display:flex; flex-direction:column; align-items:center;
+  padding:16px 0; background:#0b1011; border-left:1px solid rgba(236,229,214,.09);
+  border-radius:0; box-shadow:none;
 }
-.tool-dock-shortcuts { display:flex; flex-direction:column; align-items:center; gap:8px; }
-.uc-shell .tool-dock .tool-dock-shortcuts > button { flex:none; min-width:76px; min-height:48px; }
-.uc-shell .tool-dock .notebook-launcher {
-  min-height:56px; gap:6px;
-  border:1px solid #d9c38d8f;
-  color:#f5ebd0;
-  background:linear-gradient(155deg,#2e4a3b,#1b3127);
-  box-shadow:0 0 0 2px #d8be851f,0 4px 18px #081e1848;
+
+.tool-dock-shortcuts {
+  display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;
 }
-.uc-shell .tool-dock .notebook-launcher:hover,
-.uc-shell .tool-dock .notebook-launcher[aria-pressed=true] {
-  background:linear-gradient(145deg,#f6ecd2,#dfca9a);
-  border-color:#fff3d1;
-  color:#273b2b;
+
+.uc-shell .tool-dock .tool-dock-shortcuts > button {
+  position:relative; width:64px; min-width:64px; min-height:54px; flex:none;
+  padding:8px 4px 7px; border-radius:14px; border:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  color:#a69f91; background:transparent; box-shadow:none; font-size:12px; font-weight:500;
+  transition:background .15s, color .15s, box-shadow .15s;
 }
-.notebook-launcher .tool-label,
-.stock-launcher .tool-label { display:flex; flex-direction:column; align-items:center; line-height:1.35; }
-.notebook-launcher .tool-label small,
-.stock-launcher .tool-label small { font-size:9px; font-weight:400; letter-spacing:.03em; opacity:.82; }
+
+.uc-shell .tool-dock .tool-dock-shortcuts > button:hover {
+  color:#ece5d6; background:rgba(255,255,255,.045);
+}
+
+.uc-shell .tool-dock .tool-dock-shortcuts > button[aria-pressed=true] {
+  color:#f4ddb0; background:rgba(231,197,132,.12);
+}
+
+.uc-shell .tool-dock .tool-icon { position:relative; display:grid; place-items:center; }
+.uc-shell .tool-dock .tool-icon svg {
+  width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.75;
+  stroke-linejoin:round; stroke-linecap:round;
+}
+
+/* Prominent Gold Phone Button (Top of Desktop Rail, Raised Center Circle on Mobile) */
+.uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher {
+  order:-1; margin-bottom:10px; min-height:64px;
+  background:linear-gradient(180deg,#f2d9a4,#d9b06a); color:#1f1b12; font-weight:700;
+  border:1px solid rgba(255,244,210,.65);
+  box-shadow:0 8px 22px rgba(231,197,132,.25);
+}
+.uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher:hover,
+.uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher[aria-pressed=true] {
+  color:#1f1b12; background:linear-gradient(180deg,#f7e3b6,#e2bc78);
+  box-shadow:0 0 0 3px rgba(231,197,132,.48), 0 8px 22px rgba(231,197,132,.3);
+}
+.uc-shell .tool-dock .phone-launcher .tool-icon svg { width:22px; height:22px; stroke-width:1.9; }
+
+.phone-unread-badge,
+.nav-count-badge {
+  position:absolute; top:-6px; right:-10px;
+  min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+  background:#e0574a; color:#fff; box-shadow:0 0 0 2px #0b1011;
+  font:700 11px/18px system-ui,sans-serif; text-align:center;
+}
+.nav-count-badge {
+  background:rgba(231,197,132,.95); color:#1d1911;
+}
+
+/* Standalone / Legacy launcher styles preserved for unit tests */
 .notebook-launcher .notebook-bespoke-svg,
 .stock-launcher .stock-bespoke-svg { width:21px; height:21px; }
-.uc-shell .tool-dock .stock-launcher {
-  min-height:56px; gap:6px;
-  border:1px solid #9bd1b778;
-  color:#e4f2e9;
-  background:linear-gradient(155deg,#1d3d33,#132822);
-  box-shadow:0 0 0 2px #7bd0aa1c,0 4px 18px #081e1848;
-}
-.uc-shell .tool-dock .stock-launcher:hover,
-.uc-shell .tool-dock .stock-launcher[aria-pressed=true] {
-  background:linear-gradient(145deg,#dff4e9,#a7dec4);
-  border-color:#e9fff4;
-  color:#173226;
-}
-.uc-shell .tool-dock .tool-dock-toggle[aria-expanded=true] { background:#ebe5ce; color:#263c2b; }
+
 .tool-dock-menu {
-  position:absolute; z-index:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  position:absolute; z-index:95; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
   align-content:start; gap:6px; width:288px; max-height:360px; padding:10px;
   overflow:auto; overscroll-behavior:contain; scrollbar-width:thin;
-  border:1px solid #c1d1ae80; border-radius:16px; background:#10291ffa;
-  box-shadow:0 8px 28px #081c1b66;
+  border:1px solid rgba(236,229,214,.16); border-radius:16px; background:rgba(16,22,24,.98);
+  box-shadow:0 16px 40px rgba(0,0,0,.55);
 }
 .uc-shell .tool-dock .tool-dock-menu > button {
-  flex:none; width:100%; min-width:44px; min-height:64px; padding:8px 4px;
-  flex-direction:column; gap:5px; border:1px solid #d1ddc32b;
-  background:#ffffff08; box-shadow:none; font-size:12px; white-space:normal;
+  flex:none; width:100%; min-width:44px; min-height:60px; padding:8px 4px;
+  flex-direction:column; gap:5px; border:1px solid rgba(236,229,214,.1); border-radius:12px;
+  background:rgba(255,255,255,.03); color:#ece5d6; font-size:12px;
 }
-.uc-shell .tool-dock .tool-dock-menu > button:hover,
-.uc-shell .tool-dock .tool-dock-menu > button[aria-pressed=true] { background:#ebe5ce; color:#263c2b; }
-.tool-dock-menu .tool-icon svg { width:21px; height:21px; }
-@media(max-width:760px) {
-  .tool-dock-shortcuts { flex-direction:row; gap:5px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:48px; min-width:48px; min-height:50px; flex:none; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > .notebook-launcher,
-  .uc-shell .tool-dock .tool-dock-shortcuts > .stock-launcher { width:52px; min-width:52px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:62px; min-width:62px; }
-}
-@media(max-width:360px) {
-  .tool-dock-shortcuts { gap:4px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > button { width:42px; min-width:42px; min-height:46px; padding:4px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > .notebook-launcher,
-  .uc-shell .tool-dock .tool-dock-shortcuts > .stock-launcher { width:48px; min-width:48px; }
-  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher { width:54px; min-width:54px; }
+
+/* Mobile Fixed Bottom Bar (<= 760px) */
+@media (max-width:760px) {
+  .uc-shell .tool-dock,
+  .uc-shell .tool-dock.tool-dock-collapsible {
+    top:auto; left:0; right:0; bottom:0; width:100%;
+    height:calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px));
+    flex-direction:row; justify-content:space-around;
+    padding:0 6px env(safe-area-inset-bottom, 0px);
+    border-left:0; border-top:1px solid rgba(236,229,214,.12);
+    background:#0b1011;
+  }
+
+  .tool-dock-shortcuts {
+    flex-direction:row; align-items:center; justify-content:space-around;
+    gap:0; width:100%; height:100%;
+  }
+
+  .uc-shell .tool-dock .tool-dock-shortcuts > button {
+    flex:1; width:auto; min-width:0; min-height:48px; padding:6px 2px;
+    border-radius:12px; background:transparent; font-size:12px; gap:3px;
+  }
+
+  .uc-shell .tool-dock .tool-dock-shortcuts > button[aria-pressed=true] {
+    background:transparent; color:#f4ddb0;
+  }
+
+  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher {
+    order:0; flex:none; width:56px; min-width:56px; height:56px; min-height:56px;
+    margin:-20px 6px 0; padding:0; border-radius:50%; gap:1px; font-size:12px;
+    background:linear-gradient(180deg,#f2d9a4,#d9b06a);
+    box-shadow:0 6px 20px rgba(231,197,132,.35), 0 0 0 4px #0b1011;
+  }
+
+  .uc-shell .tool-dock .tool-dock-shortcuts > .phone-launcher[aria-pressed=true] {
+    background:linear-gradient(180deg,#f7e3b6,#e2bc78);
+    box-shadow:0 0 0 3px rgba(231,197,132,.7), 0 0 0 6px #0b1011, 0 6px 20px rgba(231,197,132,.35);
+  }
+
+  .uc-shell .tool-dock .phone-launcher .tool-icon svg { width:20px; height:20px; }
+  .uc-shell .tool-dock .phone-launcher .phone-unread-badge { top:-3px; right:-6px; }
 }

@@ -249,8 +249,7 @@ function mutsumiShiftText(delta?: number): string {
   <section class="society-card ff-section" data-testid="faction-focus-section" aria-label="阵营国策树">
     <div class="society-row tno-card-top">
       <div>
-        <span class="tno-card-kicker">SHARED FACTION FOCUS TREE</span>
-        <h3>阵营国策树</h3>
+        <h3>阵营共同路线</h3>
       </div>
       <div class="ff-faction-tabs" role="tablist" aria-label="选择阵营">
         <button

@@ -116,10 +116,13 @@ describe('新的邀请和赴约快捷入口', () => {
     expect(host.querySelector('[data-invitation-travel]')?.textContent).toBe('已在约定地点');
     expect((host.querySelector('[data-invitation-travel]') as HTMLButtonElement).disabled).toBe(true);
   });
-  it('独立入口接到现有旅行与正文流程，且保留用户已有草稿', () => {
+  it('「我 · 关系」入口接到现有旅行与正文流程，且保留用户已有草稿', () => {
     const shell = readFileSync('src/frontend/App.vue', 'utf8');
-    expect(shell).toContain("id: 'invitations', title: '邀约簿'");
-    expect(shell).toContain('@compose="prepareInvitationAction" @travel="travelFromInvitationBook"');
+    const mePanel = readFileSync('src/frontend/MePanel.vue', 'utf8');
+    expect(shell).toContain("id: 'me', title: '我'");
+    expect(mePanel).toContain('<InvitationBook');
+    expect(shell).toContain('@compose-invitation="prepareInvitationAction"');
+    expect(shell).toContain('@travel-invitation="travelFromInvitationBook"');
     expect(shell).toContain("[draft.value.trim(), text].filter(Boolean).join('\\n')");
     expect(shell).toContain('if (await travelToMeeting(invite)) closeWindow(false)');
   });

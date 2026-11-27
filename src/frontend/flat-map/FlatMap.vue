@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { clamp, glyph, labels, pinColor, positionOf, regions, sheets, solveRoutePath, type Pin, type Region } from './maps';
+import { setMapMode } from './preference';
 import { mapTrip, submitMapTrip } from '../map-travel';
 import type { ShellActions, ShellModel } from '../types';
 import MapLayers from './MapLayers.vue';
@@ -9,8 +10,14 @@ import { scenePersonLabel } from '../../runtime/scene-context';
 import { formatGameNumber } from '../format-game-number';
 import { getNovelBackground } from '../novel-backgrounds';
 
-const props = defineProps<{ model: ShellModel; actions: ShellActions; novelMode?: boolean; tokyoOnly?: boolean }>();
-const emit = defineEmits<{ travelled: [] }>();
+const props = defineProps<{
+  model: ShellModel;
+  actions: ShellActions;
+  novelMode?: boolean;
+  tokyoOnly?: boolean;
+  closable?: boolean;
+}>();
+const emit = defineEmits<{ travelled: []; close: []; transit: [] }>();
 
 const here = computed(() => props.model.state.interior?.roomId || props.model.state.locationId);
 const actual = computed(() => positionOf(here.value) || positionOf(props.model.state.locationId));
@@ -18,6 +25,7 @@ const choices = computed(() => props.tokyoOnly ? (['tokyo'] as Region[]) : regio
 const region = ref<Region>(props.tokyoOnly ? 'tokyo' : actual.value?.region || 'tokyo');
 const sheet = computed(() => sheets[region.value]);
 const selected = ref(''), query = ref(''), group = ref(''), cat = ref(''), directory = ref(false), sending = ref(false);
+const sheetExpanded = ref(false);
 const theme = ref<'dark' | 'day'>('dark');
 const regionOpen = ref(false), catOpen = ref(false);
 const openMacro = ref<Record<string, boolean>>({ asia: true, europe: true, america: false, global: false });
@@ -114,7 +122,7 @@ const nearby = computed(() => peopleOpen.value && chosen.value
       .filter(r => r.locationId === chosen.value!.id || (r.atCurrentPlace && chosen.value!.id === here.value))
       .map(r => ({ id: r.person.id, name: scenePersonLabel(r.person), near: r.canTalk }))
   : []);
-watch(selected, () => peopleOpen.value = false);
+watch(selected, () => { peopleOpen.value = false; });
 
 const siblings = computed(() => chosen.value ? sheet.value.pins.filter(p => p.x === chosen.value!.x && p.y === chosen.value!.y && p.id !== chosen.value!.id) : []);
 
@@ -234,17 +242,13 @@ const catChips = [
 </script>
 <template>
   <section class="fm" :data-flat-region="region" :data-fm-theme="theme" aria-label="平面地图">
-    <div class="fm-head">
-      <div class="fm-title-row">
-        <div>
-          <small>未读之城 · 2D 导航地图</small>
-          <h2>{{ sheet.name }}<em>2D 地图</em></h2>
-        </div>
-        <div class="fm-head-controls">
+    <div class="fm-body">
+      <div ref="stage" class="fm-stage" :class="{ ocean: region === 'world' || region === 'california', day: theme === 'day' }">
+        <!-- Single Unified Compact Map Bar -->
+        <div class="fm-head">
           <div v-if="!tokyoOnly" class="fm-region-fold">
             <button type="button" class="fm-fold-trigger" :aria-expanded="regionOpen" @click="regionOpen = !regionOpen">
-              <span>🌏 {{ sheet.name }}</span>
-              <small>{{ sheet.pins.length }}处</small>
+              <span>{{ sheet.name }}</span>
               <i>{{ regionOpen ? '▴' : '▾' }}</i>
             </button>
             <!-- Keep native select synchronized for accessibility & automated test suites -->
@@ -267,26 +271,36 @@ const catChips = [
               </div>
             </div>
           </div>
-          <button type="button" class="fm-cat-toggle" :aria-expanded="catOpen" @click="catOpen = !catOpen">
-            筛选{{ cat ? ' · 已选' : '' }} {{ catOpen ? '▴' : '▾' }}
-          </button>
-        </div>
-      </div>
-      <div v-if="catOpen" class="fm-cats" role="group" aria-label="分类筛选">
-        <button v-for="c in catChips" :key="c.id" type="button" :class="['fm-cat', { active: cat === c.id }]" @click="cat = cat === c.id ? '' : c.id">{{ c.label }}</button>
-      </div>
-    </div>
+          <span v-else class="fm-region-pill">{{ sheet.name }}</span>
 
-    <div class="fm-body">
-      <div ref="stage" class="fm-stage" :class="{ ocean: region === 'world' || region === 'california', day: theme === 'day' }">
+          <div class="fm-tools">
+            <label>
+              <span aria-hidden="true">⌕</span>
+              <input v-model="query" type="search" aria-label="搜索当前地图地点" placeholder="搜索地点" @input="directory = true">
+            </label>
+            <button type="button" class="fm-bar-btn" :class="{ active: directory }" :aria-expanded="directory" @click="directory = !directory">目录</button>
+          </div>
+
+          <button type="button" class="fm-cat-toggle" :class="{ active: catOpen || !!cat }" :aria-expanded="catOpen" @click="catOpen = !catOpen">
+            筛选{{ cat ? '·1' : '' }}
+          </button>
+          <button v-if="!tokyoOnly" type="button" class="fm-bar-btn fm-transit-desktop" @click="emit('transit')">公交</button>
+          <button type="button" class="fm-bar-btn" aria-label="切换立体沙盘" @click="setMapMode('3d')">立体</button>
+          <button v-if="closable" type="button" class="fm-bar-close" aria-label="关闭地图" @click="emit('close')">×</button>
+        </div>
+
+        <div v-if="catOpen" class="fm-cats" role="group" aria-label="分类筛选">
+          <button v-for="c in catChips" :key="c.id" type="button" :class="['fm-cat', { active: cat === c.id }]" @click="cat = cat === c.id ? '' : c.id">{{ c.label }}</button>
+        </div>
+
         <svg ref="svg" class="fm-svg" :viewBox="'0 0 ' + size.w + ' ' + size.h" role="img" :aria-label="sheet.name + '地点图'"
              @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up" @lostpointercapture="up" @wheel.prevent="wheel">
           <MapLayers :sheet="sheet" :theme="theme" :show-buildings="showBuildings" :transform="matrix"/>
 
           <!-- Active Route Polyline -->
           <g v-if="routeSvgPath" fill="none" stroke-linecap="round" stroke-linejoin="round" pointer-events="none">
-            <path :d="routeSvgPath" stroke="rgba(59,130,246,0.34)" stroke-width="9"/>
-            <path :d="routeSvgPath" stroke="#3b82f6" stroke-width="4" stroke-dasharray="6 5"/>
+            <path :d="routeSvgPath" stroke="rgba(231,197,132,0.34)" stroke-width="9"/>
+            <path :d="routeSvgPath" stroke="#e7c584" stroke-width="3.6" stroke-dasharray="6 5"/>
           </g>
 
           <!-- Angled Street Labels -->
@@ -306,8 +320,8 @@ const catChips = [
              :class="['fm-mark', { 'is-here': p.pin.id === here, 'is-chosen': p.pin.id === selected, 'is-sight': p.pin.kind === 'sight' }]">
             <circle r="13" fill="transparent"/>
             <template v-if="p.pin.id === here">
-              <circle r="12" fill="rgba(66,133,244,0.25)"/>
-              <circle r="6.8" fill="#4285f4" stroke="#ffffff" stroke-width="2.2"/>
+              <circle r="12" fill="rgba(124,192,174,0.28)"/>
+              <circle r="6.8" fill="#7cc0ae" stroke="#ffffff" stroke-width="2.2"/>
             </template>
             <template v-else-if="captionedIds.has(p.pin.id) || p.pin.id === selected">
               <circle class="fm-ring" :style="{ fill: p.color }" :r="p.pin.id === selected ? 10.5 : 8.5"/>
@@ -326,7 +340,9 @@ const catChips = [
           <span class="fm-north-ptr">▲</span><b>北</b>
         </button>
 
-        <!-- Floating Right Pill (Layers + Theme + Zoom + Locate) -->
+        <button v-if="!tokyoOnly" type="button" class="fm-transit-mobile" @click="emit('transit')">公交线路</button>
+
+        <!-- Floating Vertical Right Pill (Theme + Buildings + Zoom + Full) -->
         <div class="fm-zoom">
           <button type="button" aria-label="切换日夜主题" :title="theme === 'dark' ? '切换日间地图' : '切换深色导航地图'" @click="theme = theme === 'dark' ? 'day' : 'dark'">{{ theme === 'dark' ? '☀' : '☾' }}</button>
           <button type="button" aria-label="开关建筑轮廓" title="显示/隐藏建筑轮廓" @click="showBuildings = !showBuildings">▤</button>
@@ -337,13 +353,16 @@ const catChips = [
         <button type="button" class="fm-locate" :disabled="!actual" @click="locate">⊿ 我的位置</button>
       </div>
 
-      <aside class="fm-side">
-        <div class="fm-tools">
-          <label><span aria-hidden="true">⌕</span><input v-model="query" type="search" aria-label="搜索当前地图地点" placeholder="搜索地点或地址" @input="directory = true"></label>
-          <button type="button" :aria-expanded="directory" @click="directory = !directory">目录</button>
-        </div>
+      <aside class="fm-side" :class="{ 'is-expanded': sheetExpanded || directory || !!query }">
+        <button type="button" class="fm-sheet-grip" :aria-label="sheetExpanded ? '收起地点详情' : '展开地点详情'" @click="sheetExpanded = !sheetExpanded">
+          <span aria-hidden="true"></span>
+        </button>
 
         <div v-if="directory" class="fm-directory">
+          <div class="fm-dir-top">
+            <strong>地点目录（{{ available.length }}）</strong>
+            <button type="button" @click="directory = false; query = ''">返回地点卡</button>
+          </div>
           <div class="fm-results">
             <template v-if="query">
               <button v-for="p in available" :key="p.id" type="button" :data-place="p.id" @click="choose(p)">
@@ -372,30 +391,52 @@ const catChips = [
         </div>
 
         <div v-else-if="chosen" class="fm-detail">
-          <div v-if="chosenBg" class="fm-bg-preview" :data-phase="chosenBg.phase"><img :src="chosenBg.src" :alt="chosen.name + '场景背景'"></div>
-          <small>{{ [chosen.group, chosen.sub || (chosen.kind === 'sight' ? '观景点' : '地点')].filter(Boolean).join(' · ') }}</small>
-          <h3>{{ chosen.name }}</h3>
-          <p v-if="chosen.desc" class="fm-desc">{{ chosen.desc }}</p>
-          <div v-if="siblings.length" class="fm-siblings">
-            <span>同址</span>
-            <button type="button" v-for="p in siblings" :key="p.id" @click="choose(p)">{{ p.name }}</button>
-          </div>
-          <template v-if="quote">
-            <p class="fm-quote" role="status">{{ quote.blocked || ('约 ' + quote.minutes + ' 分钟　·　精力 −' + formatGameNumber(quote.energy) + (quote.fare ? '　·　¥' + quote.fare : '')) }}</p>
-            <button class="fm-go" type="button" :disabled="!!quote.blocked || model.busy || sending" @click="depart">前往此地 <span>→</span></button>
-            <button v-if="chosen.id === here" class="fm-people" type="button" :aria-expanded="peopleOpen" @click="peopleOpen = !peopleOpen">此处人物</button>
-            <div v-if="peopleOpen">
-              <p v-for="p in nearby" :key="p.id">{{ p.name }} · {{ p.near ? '近处' : '远处' }}</p>
-              <p v-if="!nearby.length">此刻没有看到其他人。</p>
+          <div class="fm-detail-head">
+            <div class="fm-detail-titles">
+              <small>{{ [chosen.group, chosen.sub || (chosen.kind === 'sight' ? '观景点' : '地点')].filter(Boolean).join(' · ') }}</small>
+              <h3>{{ chosen.name }}</h3>
+              <p v-if="quote" class="fm-quote" role="status">
+                {{ quote.blocked || ('约 ' + quote.minutes + ' 分钟 · 精力 −' + formatGameNumber(quote.energy) + (quote.fare ? ' · ¥' + quote.fare : '')) }}
+              </p>
+              <p v-else class="fm-quote">观景地标 · 仅供浏览</p>
             </div>
-          </template>
-          <p v-else>观景地标 · 仅供浏览</p>
+            <div class="fm-detail-cta">
+              <button v-if="quote" class="fm-go" type="button" :disabled="!!quote.blocked || model.busy || sending" @click="depart">
+                {{ chosen.id === here ? '当前在此' : '前往此地' }} <span>→</span>
+              </button>
+              <button type="button" class="fm-expand-btn" @click="sheetExpanded = !sheetExpanded">
+                {{ sheetExpanded ? '收起' : '详情' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="fm-extra">
+            <div v-if="chosenBg" class="fm-bg-preview" :data-phase="chosenBg.phase">
+              <img :src="chosenBg.src" :alt="chosen.name + '场景背景'">
+            </div>
+            <p v-if="chosen.desc" class="fm-desc">{{ chosen.desc }}</p>
+            <div v-if="siblings.length" class="fm-siblings">
+              <span>同址</span>
+              <button type="button" v-for="p in siblings" :key="p.id" @click="choose(p)">{{ p.name }}</button>
+            </div>
+            <template v-if="quote && chosen.id === here">
+              <button class="fm-people" type="button" :aria-expanded="peopleOpen" @click="peopleOpen = !peopleOpen">此处人物</button>
+              <div v-if="peopleOpen" class="fm-people-list">
+                <p v-for="p in nearby" :key="p.id">{{ p.name }} · {{ p.near ? '近处' : '远处' }}</p>
+                <p v-if="!nearby.length">此刻没有看到其他人。</p>
+              </div>
+            </template>
+          </div>
         </div>
 
         <div v-else class="fm-detail">
-          <small>{{ region === 'world' ? '世界图集' : '地点导航' }}</small>
-          <h3>{{ region === 'world' ? '选择一座沙盘城市' : '探索' + sheet.name }}</h3>
-          <p>点选地图上的彩色地标、建筑区块，或在上方搜索框查找地点与路线。</p>
+          <div class="fm-detail-head">
+            <div class="fm-detail-titles">
+              <small>{{ region === 'world' ? '世界图集' : '地点导航' }}</small>
+              <h3>{{ region === 'world' ? '选择一座沙盘城市' : '探索' + sheet.name }}</h3>
+              <p class="fm-desc">点选地图上的彩色地标，或在上方搜索框查找地点与路线。</p>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

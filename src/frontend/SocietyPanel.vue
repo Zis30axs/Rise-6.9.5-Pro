@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import type { ShellActions, ShellModel } from './types';
 import { activeProtagonist, protagonistNames } from '../runtime/protagonist-world';
 import { musicPersonId, bandLeaderName } from '../runtime/livehouse';
@@ -12,10 +13,10 @@ import FactionFocusSection from './FactionFocusSection.vue';
 const props = defineProps<{ model: ShellModel; actions: ShellActions }>();
 type SocietyTab = 'bands' | 'circles' | 'unions';
 const tab = ref<SocietyTab>('bands');
-const tabs: readonly { id: SocietyTab; code: string; name: string }[] = [
-  { id: 'bands', code: 'CABINET', name: '阵营与顾问' },
-  { id: 'circles', code: 'CIRCLES', name: '社交圈' },
-  { id: 'unions', code: 'SPHERE', name: '广域联合体' },
+const tabs: readonly { id: SocietyTab; name: string }[] = [
+  { id: 'bands', name: '乐队与顾问' },
+  { id: 'circles', name: '社交圈' },
+  { id: 'unions', name: '联合体' },
 ];
 const actor = computed(() => activeProtagonist(props.model.state));
 const myId = computed(() => musicPersonId(actor.value));
@@ -31,10 +32,11 @@ const knownContacts = computed(() => [...new Map<string, { id: string; name: str
   .map(c => [c.sourcePersonId ?? c.id, { id: c.sourcePersonId ?? c.id, name: c.name }] as const)).values()]);
 const invitationsForMe = computed(() => society.value.invitations.filter(i => i.status === 'pending' && i.personId === myId.value));
 const seats: readonly { id: AdvisorSeat; icon: string; name: string; roleNote: string }[] = [
-  { id: 'music', icon: '♪', name: '音乐顾问', roleNote: '曲风统筹与排练督导' },
-  { id: 'social', icon: '✦', name: '社交顾问', roleNote: '对外联络与成员协调' },
-  { id: 'operations', icon: '⚙', name: '组织顾问', roleNote: '日程规划与现场后勤' },
+  { id: 'music', icon: '♪', name: '音乐顾问', roleNote: '曲风统筹与排练' },
+  { id: 'social', icon: '✦', name: '社交顾问', roleNote: '联络与协调' },
+  { id: 'operations', icon: '⚙', name: '组织顾问', roleNote: '日程与后勤' },
 ];
+
 function advisorTraitsFor(band: (typeof myBands.value)[number], seatId: AdvisorSeat): readonly NpcTraitDefinition[] {
   const personId = advisorFor(band.id, seatId);
   if (!personId) return [];
@@ -50,6 +52,7 @@ function advisorTraitsFor(band: (typeof myBands.value)[number], seatId: AdvisorS
     status: contact?.status,
   });
 }
+
 function bandAdvisorSummary(band: (typeof myBands.value)[number]): readonly string[] {
   const seen = new Set<string>();
   const mods: StrategyModifier[] = [];
@@ -81,6 +84,7 @@ function bandAdvisorSummary(band: (typeof myBands.value)[number]): readonly stri
   }
   return lines;
 }
+
 const circleName = ref('');
 const circleInvites = ref<Record<string, string>>({});
 const unionName = ref('');
@@ -154,24 +158,8 @@ async function joinUnion(unionId: string) {
 </script>
 
 <template>
-  <section class="society-panel tno-society-screen" data-testid="society-panel" aria-label="阵营与社交圈管理">
-    <div class="tno-crt-lines" aria-hidden="true"></div>
-
-    <!-- Top TNO Command Header -->
-    <header class="society-head tno-society-header">
-      <div>
-        <small class="tno-kicker">FACTION CABINET &amp; SPHERE // 组织与阵营终端</small>
-        <h2>阵营与社交圈</h2>
-        <p>{{ protagonistNames[actor] }} · 所属组织与人际联系</p>
-      </div>
-      <div class="tno-head-badges">
-        <span v-if="invitationsForMe.length" class="tno-alert-pill">{{ invitationsForMe.length }} 份待处理邀请</span>
-        <span class="tno-total-pill">共 {{ society.circles.length + society.unions.length + bands.length }} 个组织</span>
-      </div>
-    </header>
-
-    <!-- TNO 3-Tab Tactical Navigation -->
-    <nav class="society-tabs tno-tabs" aria-label="组织管理分类">
+  <section class="society-panel" data-testid="society-panel" aria-label="乐队与社交圈">
+    <nav class="soc-seg" aria-label="组织分类">
       <button
         v-for="item in tabs"
         :key="item.id"
@@ -180,76 +168,61 @@ async function joinUnion(unionId: string) {
         :class="{ active: tab === item.id }"
         @click="tab = item.id"
       >
-        <small>{{ item.code }}</small>
         <span>{{ item.name }}</span>
+        <i v-if="item.id === 'circles' && invitationsForMe.length" class="soc-cnt">{{ invitationsForMe.length }}</i>
       </button>
     </nav>
 
     <p v-if="feedback" class="society-message" role="status">{{ feedback }}</p>
 
-    <!-- TAB 1: Faction Cabinet & Advisors -->
+    <!-- TAB 1: Bands & Advisors -->
     <template v-if="tab === 'bands'">
-      <p class="society-help">乐队 Leader 可以从在队成员中任命顾问；成员离队后，也会卸任顾问。</p>
-      <article v-for="band in myBands" :key="band.id" class="society-card tno-cabinet-card">
-        <div class="society-row tno-card-top">
-          <div>
-            <small class="tno-card-kicker">FACTION ROSTER // 正式乐队阵营</small>
-            <h3>{{ band.name }}</h3>
+      <article v-for="band in myBands" :key="band.id" class="society-card">
+        <div class="society-row">
+          <h3>{{ band.name }}</h3>
+          <span class="soc-tag" :class="{ founder: band.founder === actor }">{{ band.founder===actor?'负责人':'成员' }}</span>
+        </div>
+
+        <div class="soc-roster">
+          <div v-for="member in band.members" :key="member.personId" class="soc-mem" :class="{ lead: member.name === bandLeaderName(band) }">
+            <div class="soc-mem-av">
+              <MapCharacterAvatar :name="member.name" :person-id="member.personId" />
+            </div>
+            <div class="soc-mem-name">{{ member.name }}</div>
+            <div class="soc-mem-role">{{ member.name === bandLeaderName(band) ? `队长 · ${member.role || '成员'}` : (member.role || '成员') }}</div>
           </div>
-          <small class="tno-role-badge" :class="{ founder: band.founder === actor }">{{ band.founder===actor?'你是 Leader':'你是成员' }}</small>
         </div>
 
-        <div class="tno-member-strip">
-          <p>Leader：{{ bandLeaderName(band) }}</p>
-          <span class="tno-strip-label">在册成员：</span>
-          <p>成员：{{ band.members.map(m=>m.name).join('、') }}</p>
-        </div>
-
-        <!-- TNO 3-Slot Cabinet Minister Row -->
-        <div class="society-grid tno-minister-grid">
-          <label v-for="seat in seats" :key="seat.id" class="society-field tno-minister-slot" :class="{ filled: !!advisorFor(band.id, seat.id) }">
-            <div class="tno-minister-head">
-              <span class="tno-minister-icon" aria-hidden="true">{{ seat.icon }}</span>
-              <div>
-                <span>{{ seat.name }}</span>
-                <ins>{{ seat.roleNote }}</ins>
-              </div>
+        <div class="soc-advisor-grid">
+          <label v-for="seat in seats" :key="seat.id" class="society-field soc-advisor-slot" :class="{ filled: !!advisorFor(band.id, seat.id) }">
+            <div class="soc-advisor-head">
+              <span aria-hidden="true">{{ seat.icon }}</span>
+              <strong>{{ seat.name }}</strong>
+              <small>{{ seat.roleNote }}</small>
             </div>
             <select :value="advisorFor(band.id,seat.id)" :disabled="model.busy||band.founder!==actor" @change="changeAdvisor(band.id,seat.id,$event)">
               <option value="">未任命</option>
               <option v-for="member in band.members" :key="member.personId" :value="member.personId">{{ member.name }}</option>
             </select>
-            <div v-if="advisorTraitsFor(band, seat.id).length" class="tno-advisor-traits">
-              <div v-for="item in advisorTraitsFor(band, seat.id)" :key="item.id" class="tno-advisor-trait">
-                <div class="tno-advisor-trait-head">
-                  <span aria-hidden="true">{{ item.icon }}</span>
-                  <strong>{{ item.title }}</strong>
-                </div>
-                <p v-if="formatNpcTraitModifiers(item).length" class="tno-advisor-trait-mods">{{ formatNpcTraitModifiers(item).join(' · ') }}</p>
+            <div v-if="advisorTraitsFor(band, seat.id).length" class="soc-advisor-traits">
+              <div v-for="item in advisorTraitsFor(band, seat.id)" :key="item.id" class="soc-advisor-trait">
+                <strong>{{ item.icon }} {{ item.title }}</strong>
+                <span v-if="formatNpcTraitModifiers(item).length">{{ formatNpcTraitModifiers(item).join(' · ') }}</span>
               </div>
             </div>
-            <p v-else-if="advisorFor(band.id, seat.id)" class="tno-advisor-empty">该成员暂无额外顾问修正</p>
           </label>
         </div>
-        <div v-if="bandAdvisorSummary(band).length" class="tno-cabinet-buffs">
-          <span class="tno-cabinet-buffs-label">内阁协同修正</span>
-          <span v-for="line in bandAdvisorSummary(band)" :key="line" class="tno-cabinet-buff-pill">{{ line }}</span>
+
+        <div v-if="bandAdvisorSummary(band).length" class="soc-buffs">
+          <span v-for="line in bandAdvisorSummary(band)" :key="line" class="soc-buff-pill">{{ line }}</span>
         </div>
       </article>
-      <p v-if="!myBands.length" class="society-empty">目前没有你正式加入的乐队。乐队的创建与成员邀请仍在 Live House 完成。</p>
+      <p v-if="!myBands.length" class="society-empty">目前没有正式加入的乐队。乐队的创建与成员邀请可在 Live House 完成。</p>
     </template>
 
     <!-- TAB 2: Social Circles -->
     <template v-else-if="tab === 'circles'">
-      <form class="society-form tno-console-form" @submit.prevent="createCircle">
-        <label class="society-field">
-          <span>创建小小的社交圈</span>
-          <input v-model="circleName" maxlength="60" placeholder="为新的社交圈取名" required>
-        </label>
-        <button type="submit" :disabled="model.busy||!circleName.trim()">建立社交圈</button>
-      </form>
-
-      <section v-if="invitationsForMe.length" class="society-card tno-invite-alert" aria-label="等待你的社交圈邀请">
+      <section v-if="invitationsForMe.length" class="society-card soc-invite-card" aria-label="等待你的社交圈邀请">
         <h3>邀请你加入</h3>
         <div v-for="inv in invitationsForMe" :key="inv.id" class="society-row">
           <span>{{ society.circles.find(c=>c.id===inv.circleId)?.title }} · 来自{{ protagonistNames[inv.from] }}</span>
@@ -260,15 +233,17 @@ async function joinUnion(unionId: string) {
         </div>
       </section>
 
+      <form class="society-form" @submit.prevent="createCircle">
+        <input v-model="circleName" maxlength="60" placeholder="新的社交圈名称…" aria-label="社交圈名称" required>
+        <button type="submit" :disabled="model.busy||!circleName.trim()">建立社交圈</button>
+      </form>
+
       <article v-for="circle in society.circles" :key="circle.id" class="society-card">
-        <div class="society-row tno-card-top">
-          <div>
-            <small class="tno-card-kicker">SOCIAL CIRCLE // 日常共同活动圈</small>
-            <h3>{{ circle.title }}</h3>
-          </div>
-          <span class="society-meta tno-role-badge" :class="{ founder: circle.founder === actor }">{{ circle.founder===actor?'由你创建':`${protagonistNames[circle.founder]}创建` }}</span>
+        <div class="society-row">
+          <h3>{{ circle.title }}</h3>
+          <span class="soc-tag" :class="{ founder: circle.founder === actor }">{{ circle.founder===actor?'由你创建':`${protagonistNames[circle.founder]}创建` }}</span>
         </div>
-        <p>成员：{{ circle.memberIds.map(personName).join('、') }}</p>
+        <p class="soc-line">成员：{{ circle.memberIds.map(personName).join('、') }}</p>
         <p v-if="society.invitations.some(i=>i.circleId===circle.id&&i.status==='pending')" class="society-help">还有 {{ society.invitations.filter(i=>i.circleId===circle.id&&i.status==='pending').length }} 份邀请等待答复；发出邀请不代表人物已同意。</p>
         <div v-if="circle.memberIds.includes(myId)" class="society-actions">
           <select v-model="circleInvites[circle.id]" aria-label="选择邀请对象" :disabled="model.busy">
@@ -279,38 +254,27 @@ async function joinUnion(unionId: string) {
           <button v-if="circle.founder!==actor" class="muted" :disabled="model.busy" @click="send({type:'leave_circle',circleId:circle.id})">退出</button>
         </div>
       </article>
-      <p v-if="!society.circles.length" class="society-empty">尚无社交圈。它没有内阁或顾问，只保存真实参加者与共同活动关系。</p>
+      <p v-if="!society.circles.length" class="society-empty">尚无社交圈。发出邀请不代表人物已同意。</p>
     </template>
 
-    <!-- TAB 3: Super-Regional Coalitions / Unions -->
+    <!-- TAB 3: Unions -->
     <template v-else>
-      <p class="society-help">广域联合体可容纳多个独立乐队和社交圈。加入不改变原组织领导权，不代表人物已同意其他安排，也不会自动占用演出档期。</p>
-      <form class="society-form tno-console-form" @submit.prevent="createUnion">
-        <div class="society-grid">
-          <label class="society-field">
-            <span>联合体名称</span>
-            <input v-model="unionName" maxlength="60" placeholder="例如：东京音乐交流网络" required>
-          </label>
-          <label class="society-field">
-            <span>发起组织</span>
-            <select v-model="unionFounderGroup" required>
-              <option value="">选择你负责的组织</option>
-              <option v-for="g in ownedGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
-            </select>
-          </label>
-        </div>
+      <p class="society-help">联合体可容纳多个独立乐队和社交圈。加入不改变原组织领导权，不代表人物已同意其他安排，也不会自动占用演出档期。</p>
+      <form class="society-form soc-union-form" @submit.prevent="createUnion">
+        <input v-model="unionName" maxlength="60" placeholder="联合体名称（如：学园乐队联合会）" aria-label="联合体名称" required>
+        <select v-model="unionFounderGroup" aria-label="发起组织" required>
+          <option value="">选择你负责的组织</option>
+          <option v-for="g in ownedGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+        </select>
         <button type="submit" :disabled="model.busy||!unionName.trim()||!unionFounderGroup">发起联合体</button>
       </form>
 
       <article v-for="union in society.unions" :key="union.id" class="society-card">
-        <div class="society-row tno-card-top">
-          <div>
-            <small class="tno-card-kicker">COALITION SPHERE // 广域协作网络</small>
-            <h3>{{ union.title }}</h3>
-          </div>
-          <small class="tno-role-badge" :class="{ founder: union.coordinator === actor }">协调者：{{ protagonistNames[union.coordinator] }}</small>
+        <div class="society-row">
+          <h3>{{ union.title }}</h3>
+          <span class="soc-tag" :class="{ founder: union.coordinator === actor }">协调者：{{ protagonistNames[union.coordinator] }}</span>
         </div>
-        <p>组织：{{ union.groupIds.map(groupName).join('、') }}</p>
+        <p class="soc-line">成员组织：{{ union.groupIds.map(groupName).join('、') }}</p>
         <div class="society-actions" v-if="ownedGroups.some(g=>!union.groupIds.includes(g.id))">
           <select v-model="unionApplicants[union.id]" aria-label="申请加入联合体的组织">
             <option value="">选择你负责的组织</option>
@@ -318,7 +282,7 @@ async function joinUnion(unionId: string) {
           </select>
           <button :disabled="model.busy||!unionApplicants[union.id]" @click="joinUnion(union.id)">申请加入</button>
         </div>
-        <div v-for="app in society.applications.filter(a=>a.unionId===union.id)" :key="app.id" class="society-row tno-pending-row">
+        <div v-for="app in society.applications.filter(a=>a.unionId===union.id)" :key="app.id" class="society-row">
           <span>待审核：{{ groupName(app.groupId) }}</span>
           <div v-if="union.coordinator===actor" class="society-actions">
             <button :disabled="model.busy" @click="send({type:'approve_union',applicationId:app.id,accepted:true})">同意</button>
@@ -329,9 +293,12 @@ async function joinUnion(unionId: string) {
           <button v-for="group in ownedGroups.filter(g=>union.groupIds.includes(g.id))" :key="group.id" class="muted" :disabled="model.busy" @click="send({type:'leave_union',unionId:union.id,groupId:group.id})">{{ group.name }}退出联合体</button>
         </div>
       </article>
-      <p v-if="!society.unions.length" class="society-empty">尚无广域联合体。先创建自己的社交圈，或在 Live House 拥有正式乐队。</p>
+      <p v-if="!society.unions.length" class="society-empty">尚无联合体。先创建自己的社交圈，或在 Live House 拥有正式乐队。</p>
     </template>
 
-    <FactionFocusSection :model="model" :actions="actions" />
+    <details class="soc-faction-fold">
+      <summary>阵营共同路线</summary>
+      <FactionFocusSection :model="model" :actions="actions" />
+    </details>
   </section>
 </template>

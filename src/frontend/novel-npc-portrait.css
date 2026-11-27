@@ -1,11 +1,11 @@
 .novel-npc-portrait {
   position: absolute;
-  /* Generic atlas figures need the same full-height stage as authored sprites. */
-  inset: 90px 110px 24px 0;
+  /* Unobstructed full-height left stage on desktop */
+  inset: 52px calc(var(--col, 480px) + var(--rail, 80px)) 0 0;
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
-  transition: opacity .15s ease;
+  transition: opacity .15s ease, right .26s ease;
 }
 .novel-npc-portrait svg {
   display: block;
@@ -16,27 +16,32 @@
 }
 .novel-npc-portrait.is-muted { opacity: 0; }
 .novel-npc-portrait.is-dimmed:not(.is-muted) { opacity: .48; filter: brightness(.53); }
-/* The transparent full-body artwork continues behind the reading panel. */
-.novel-npc-portrait[data-sakiko-sprite], .novel-npc-portrait[data-mutsumi-sprite], .novel-npc-portrait[data-anon-sprite], .novel-npc-portrait[data-raana-sprite], .novel-npc-portrait[data-taki-sprite] { bottom: 24px; }
-/* Emma's and the semi-main transparent sprites use the same generous stage. */
-.novel-npc-portrait[data-majo-portrait] { bottom: 24px; }
-/* Phone pose replaces the muted standing portrait while the phone window is open. */
-.novel-npc-portrait.protagonist-phone-pose { bottom: 24px; }
+.novel-npc-portrait[data-sakiko-sprite], .novel-npc-portrait[data-mutsumi-sprite], .novel-npc-portrait[data-anon-sprite], .novel-npc-portrait[data-raana-sprite], .novel-npc-portrait[data-taki-sprite] { bottom: 0; }
+.novel-npc-portrait[data-majo-portrait] { bottom: 0; }
+.novel-npc-portrait.protagonist-phone-pose { bottom: 0; }
 
-/* On phones, reserve room for the mode switch without shrinking generic NPCs. */
+/* On mobile, stand cleanly below single-row topbar and above bottom nav / story drawer */
 @media (max-width: 760px) {
-  .novel-npc-portrait { inset: 146px 12px 84px; }
-  .novel-npc-portrait[data-sakiko-sprite], .novel-npc-portrait[data-mutsumi-sprite], .novel-npc-portrait[data-anon-sprite], .novel-npc-portrait[data-raana-sprite], .novel-npc-portrait[data-taki-sprite] { inset: 133px 12px 84px; }
-  /* Keep the head below the presentation switcher on narrow screens. */
-  .novel-npc-portrait[data-majo-portrait] { inset: 146px 12px 84px; }
-  .novel-npc-portrait.protagonist-phone-pose { inset: 133px 12px 84px; }
+  .novel-npc-portrait {
+    inset: 52px 8px calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 18dvh) 8px;
+  }
+  .uc-shell[data-mobile-snap='peek'] .novel-npc-portrait {
+    bottom: calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 10dvh);
+  }
+  .novel-npc-portrait.protagonist-phone-pose {
+    inset: 52px 8px calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 8px) 8px;
+  }
 }
-@media (max-height: 670px) and (max-width: 760px) {
-  .novel-npc-portrait { inset: 118px 12px 24px; }
-  .novel-npc-portrait[data-sakiko-sprite], .novel-npc-portrait[data-mutsumi-sprite], .novel-npc-portrait[data-anon-sprite], .novel-npc-portrait[data-raana-sprite], .novel-npc-portrait[data-taki-sprite] { inset: 72px 12px 24px; }
-  .novel-npc-portrait[data-majo-portrait] { inset: 118px 12px 24px; }
-  .novel-npc-portrait.protagonist-phone-pose { inset: 72px 12px 24px; }
+
+@media (max-height: 640px) and (max-width: 760px) {
+  .novel-npc-portrait {
+    inset: 46px 6px calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 12dvh) 6px;
+  }
+  .novel-npc-portrait.protagonist-phone-pose {
+    inset: 46px 6px calc(var(--navh, 62px) + env(safe-area-inset-bottom, 0px) + 4px) 6px;
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .novel-npc-portrait { transition: none; }
 }
@@ -48,4 +53,5 @@
   object-position: center bottom;
   user-select: none;
   pointer-events: none;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, .34));
 }

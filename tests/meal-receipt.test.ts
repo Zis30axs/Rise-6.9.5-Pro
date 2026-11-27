@@ -32,13 +32,9 @@ it('连续吃同一道菜以及街边用餐后，手动和定时收起提示都�
     expect(el, selector).toBeTruthy(); expect(el!.disabled).toBe(false);
     el!.click(); await nextTick(); await nextTick();
   };
-  async function openPanel(label: string) {
-    const selector = `.tool-dock button[aria-label="${label}"]`;
-    if (!root.querySelector(selector)) await button('.tool-dock button[aria-label="展开菜单"]');
-    await button(selector);
-  }
   const meal = `[data-inventory-product="${dish}"] button.inventory-use`;
-  await openPanel('背包');
+  await button('.tool-dock button[aria-label="我"]');
+  await button('[data-me-tab="carry"]');
   await button(meal);
   expect(root.querySelector('[data-use-receipt]')?.textContent).toContain('蛋炒饭');
   await button('[data-use-receipt] button[aria-label="关闭提示"]');
@@ -50,12 +46,10 @@ it('连续吃同一道菜以及街边用餐后，手动和定时收起提示都�
   await vi.advanceTimersByTimeAsync(1);
   expect(root.querySelector('[data-use-receipt]')).toBeNull();
   expect(model.state.inventory.some(row => row.itemId === dish)).toBe(false);
-  await button('[data-window="inventory"] .window-heading button:last-child');
+  await button('[data-me-panel] .pn-close');
   const chat = '[data-reading-layer] [data-local-activity-receipt]';
   for (const manual of [true, false]) {
-    await openPanel('地点');
-    await button('[data-quick-service="eat-meal"]');
-    await button('[data-window="location"] .window-heading button:last-child');
+    await button('[data-here-strip] [data-quick-service="eat-meal"]');
     expect(root.querySelector(chat)?.textContent).toContain('吃简餐');
     const saved = JSON.stringify(model.state);
     if (manual) await button(chat + ' button[aria-label="关闭提示"]');

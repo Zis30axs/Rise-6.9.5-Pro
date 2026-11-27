@@ -24,7 +24,7 @@ export interface ShellLayoutLease {
   dispose(): void;
 }
 
-const PREFIX = 'unread-city-shell-layout-v1';
+const PREFIX = 'unread-city-shell-layout-v2';
 const MIN_EDGE = 4;
 const RESIZE_MIN = 44;
 const PORTRAIT_SIZE_REPAIR = 'portrait-stage-scale-20261026';
