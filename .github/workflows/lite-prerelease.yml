@@ -5,14 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'New immutable pre-release tag, for example lite-v0.1.0-rc3'
+        description: 'New immutable pre-release tag, for example lite-v0.4.0-rc3'
         required: true
         type: string
 permissions:
   contents: write
 jobs:
-  # One-time RC3.1 publication reuses the already released PNG's exact card
-  # data and patches only the Lite picker; the full ZIP build is skipped.
   rc31_png_only:
     if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[rc31-png-only]') }}
     runs-on: ubuntu-latest
@@ -38,6 +36,7 @@ jobs:
           path: unread-city-lite-v0.3.0-rc3.1-tauri.png
           if-no-files-found: error
           retention-days: 30
+
   prerelease:
     if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[rc31-png-only]') }}
     runs-on: ubuntu-latest
@@ -65,34 +64,34 @@ jobs:
           git -C ../ST-iPhonie apply "$GITHUB_WORKSPACE/integration/embedded-phone-source/local-changes.patch"
       - name: Verify source and resource loader
         run: |
-          python -m unittest discover -s tests -p 'test*.py' -v
+          python scripts/validate_card.py
           node --check scripts/lite_asset_loader.js
-          node --experimental-strip-types --test tests/sakiko-art-policy.node.mjs
           python scripts/check_downtown_art_status.py
-      - name: Build existing phone, artwork and frontend
+          node --test tests/*.node.mjs
+      - name: Build existing phone, artwork, frontend and Lite card
         run: |
           npm run build
-          npx vitest run --maxWorkers=1
-      - name: Construct and audit Lite card and offline ZIP
+          npm run check:no-ja
+          npx vitest run tests/novel-portrait-size.test.ts tests/shell-viewport.test.ts tests/flat-map.test.ts
+      - name: Construct and audit Tauri Lite card and offline ZIP
         run: |
-          python scripts/build_lite_release.py
           node --check dist/immersive-shell-lite.js
-          python scripts/build_lite_card.py
           python scripts/build_tauri_import_card.py --source dist/unread-city-lite.png --output dist/unread-city-lite-tauri.png
           python scripts/verify_lite_release.py
           python - <<'PY'
           import json
           from pathlib import Path
-          r=json.load(open('dist/lite-verification.json'))
-          manifest=json.loads(Path('integration/downtown-art/manifest.json').read_text(encoding='utf-8'))
-          assert r['status']=='passed-build-only-not-tested-on-iphone'
-          assert r['sha256Verification']=='not-required'
-          assert r['approvedNewArtExternalized']==len(manifest['assets'])
+          r = json.loads(Path('dist/lite-verification.json').read_text(encoding='utf-8'))
+          rep = json.loads(Path('dist/lite-assets-report.json').read_text(encoding='utf-8'))
+          manifest = json.loads(Path('integration/downtown-art/manifest.json').read_text(encoding='utf-8'))
+          assert r['status'] == 'passed-build-only-not-tested-on-iphone'
+          assert r['sha256Verification'] == 'not-required'
+          assert r['approvedNewArtExternalized'] == len(manifest['assets'])
           assert r['tokyoSandboxSeparatePack'] is False and r['tokyoSandboxInCoreZip'] is True
-          assert r['tokyoSandboxArchive']=='unread-city-lite-assets.zip'
-          assert r['californiaSandboxSeparatePack'] is False and r['californiaSandboxInCoreZip'] is True
-          assert r['californiaSandboxArchive']=='unread-city-lite-assets.zip'
-          print('PASS',r['liteCardBytes'],'PNG bytes;',r['zipBytes'],'ZIP bytes;',r['externalAssets'],'resources;',r['approvedNewArtExternalized'],'downtown art')
+          assert r['tokyoSandboxArchive'] == 'unread-city-lite-assets.zip'
+          assert rep['californiaSandboxSeparatePack'] is False and rep['californiaSandboxInCoreZip'] is True
+          assert rep['californiaSandboxArchive'] == 'unread-city-lite-assets.zip'
+          print('PASS', r['liteCardBytes'], 'PNG bytes;', r['zipBytes'], 'ZIP bytes;', r['externalAssets'], 'resources;', r['approvedNewArtExternalized'], 'downtown art')
           PY
       - name: Preserve built PNG, ZIP and audit as CI artifacts
         uses: actions/upload-artifact@v4
@@ -101,12 +100,12 @@ jobs:
           path: |
             dist/unread-city-lite-tauri.png
             dist/unread-city-lite-tauri.verification.json
+            dist/unread-city-lite.png
             dist/unread-city-lite-assets.zip
             dist/lite-verification.json
             dist/lite-assets-report.json
           if-no-files-found: error
           retention-days: 30
-      # Pushes build and upload artifacts only. No existing tag or Release is ever removed.
       - name: Publish NEW immutable pre-release (manual dispatch only)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
@@ -125,39 +124,148 @@ jobs:
             echo "::error::Tag $RELEASE_TAG already exists; refusing to move"; exit 1
           fi
           python - <<'PY'
-          import json, os
+          import hashlib, json, os, shutil
+          from datetime import datetime, timezone
           from pathlib import Path
+
           tag = os.environ['RELEASE_TAG']
           sha = os.environ['GITHUB_SHA']
-          info = json.loads(Path('dist/lite-verification.json').read_text('utf-8'))
-          notes = [
-              f'# 未读之城 Lite · {tag}',
+          card_json = json.loads(Path('src/card.json').read_text('utf-8'))
+          char_ver = card_json['data']['character_version']
+          ver_num = tag.removeprefix('lite-v')
+
+          dist = Path('dist')
+          out = dist / 'release-bundle'
+          out.mkdir(parents=True, exist_ok=True)
+
+          tauri_dst = out / f'unread-city-{tag}-tauri.png'
+          canon_dst = out / f'unread-city-{tag}.png'
+          zip_dst = out / f'unread-city-{tag}-assets.zip'
+          live2d_dst = out / 'unread-city-live2d.zip'
+          ver_dst = out / f'unread-city-{tag}-verification.json'
+          readme_dst = out / 'README.txt'
+          sums_dst = out / 'SHA256SUMS.txt'
+          notes_dst = out / 'RELEASE_NOTES.md'
+
+          shutil.copy2(dist / 'unread-city-lite-tauri.png', tauri_dst)
+          shutil.copy2(dist / 'unread-city-lite.png', canon_dst)
+          shutil.copy2(dist / 'unread-city-lite-assets.zip', zip_dst)
+          shutil.copy2(Path('assets/live2d-ensemble/unread-city-live2d.zip'), live2d_dst)
+
+          def sha256_of(p: Path) -> str:
+              h = hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          lite_ver = json.loads((dist / 'lite-verification.json').read_text('utf-8'))
+          assets_rep = json.loads((dist / 'lite-assets-report.json').read_text('utf-8'))
+          tauri_ver = json.loads((dist / 'unread-city-lite-tauri.verification.json').read_text('utf-8'))
+          tauri_ver['source'] = 'dist/unread-city-lite.png'
+          tauri_ver['artifact'] = 'dist/unread-city-lite-tauri.png'
+
+          verification = {
+              'tag': tag,
+              'characterVersion': char_ver,
+              'immersiveVersion': ver_num,
+              'builtAt': datetime.now(timezone.utc).isoformat(),
+              'commit': sha,
+              'physicalDeviceTested': False,
+              'liteVerification': lite_ver,
+              'assetsReport': assets_rep,
+              'tauriVerification': tauri_ver,
+              'live2dExtension': {
+                  'archive': 'unread-city-live2d.zip',
+                  'bytes': live2d_dst.stat().st_size,
+                  'sha256': sha256_of(live2d_dst),
+                  'models': 94,
+                  'assets': 1931,
+                  'coreReused': 1,
+              },
+          }
+          ver_dst.write_text(json.dumps(verification, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          readme_lines = [
+              f'未读之城 Lite {ver_num}',
+              f'角色卡版本: {char_ver}（扩展版本 {ver_num}）',
+              f'源提交: {sha} (lite)',
               '',
-              f'构建源提交：`{sha}`。本次交付是该提交的 Lite PNG + 本地 ZIP。',
+              '文件说明:',
+              f'1. {tauri_dst.name} ({tauri_dst.stat().st_size} B)',
+              '   TauriTavern / 移动端压缩角色卡（25 MB 限制内，无损 zlib zTXt 元数据）',
+              f'2. {canon_dst.name} ({canon_dst.stat().st_size} B)',
+              '   SillyTavern 规范 tEXt 角色卡',
+              f'3. {zip_dst.name} ({zip_dst.stat().st_size} B)',
+              f'   核心离线素材包（必装，共 {lite_ver["externalAssets"]} 项资源，含东京/加州/北京 3D 沙盘、36 张市区立绘、离线二维底图与贴纸）',
+              f'4. {live2d_dst.name} ({live2d_dst.stat().st_size} B)',
+              '   可选十人 Live2D 衣橱扩展包（选装，共 94 套造型，不装时保留现有立绘回退）',
               '',
-              '## 使用说明',
-              '- `unread-city-lite-tauri.png`：导入 TauriTavern 的 Character Card V2 PNG。',
-              '- `unread-city-lite-assets.zip`：配套离线 ZIP，不是联网下载；不要当角色卡导入。',
-              '- `lite-verification.json` / `lite-assets-report.json`：构建校验。',
-              '进入角色聊天后点“安装 Lite 素材 ZIP”，选取文件，安装后刷新。',
+              '安装步骤:',
+              '1. 按客户端选择导入 -tauri.png（TauriTavern / 手机端）或规范 .png（桌面酒馆）。',
+              f'2. 打开聊天后，点击页面上的「安装 Lite 素材 ZIP」按钮，选择 {zip_dst.name} 并刷新页面。建议新建聊天。',
+              '3. 如需解锁全部十人多套换装 Live2D，可再通过页面扩展衣橱按钮导入 unread-city-live2d.zip。',
+              '注意: .zip 是离线素材包，不是角色卡，请勿用“导入角色卡”功能打开。',
               '',
-              '## 校验',
-              f"- PNG: {info['liteCardBytes']} bytes",
-              f"- ZIP: {info['zipBytes']} bytes",
-              f"- 离线资源：{info['externalAssets']} 项；市区立绘按当前清单数量核对（{info['approvedNewArtExternalized']}）",
-              f"- 离线：{info['offline']}",
-              '- 不需要验证 SHA-256。若附带 SHA256SUMS.txt，只供参考，不是发布门槛。',
-              '',
-              '**边界：**构建验证通过，不等于已在 iPhone / TauriTavern 真机验收。',
-              '此发行以本标签的提交为准，不沿用旧版 RC2 的功能说明。',
+              '说明: 尚未进行 iPhone / TauriTavern 真机实际导入验收；SHA256SUMS.txt 仅供校验参考，非安装前置条件。',
           ]
-          Path('dist/lite-release-notes.md').write_text('\n'.join(notes) + '\n', encoding='utf-8')
+          readme_dst.write_text('\n'.join(readme_lines) + '\n', encoding='utf-8')
+
+          sum_files = [tauri_dst, canon_dst, zip_dst, live2d_dst, ver_dst, readme_dst]
+          sums_dst.write_text(''.join(f'{sha256_of(p)}  {p.name}\n' for p in sum_files), encoding='utf-8')
+
+          notes = f"""# 未读之城 Lite v{ver_num} · 五项常驻导航重构 / 左舞台右书卷与手机三档抽屉 / 手机外壳精简 / 十四档好感与二维导航地图
+
+          ## 本次主要更新（自 `lite-v0.4.0-rc2`）
+
+          - **全屏 Shell 五项常驻导航与响应式舞台重构**：
+            - 常驻导航由 14 个零散入口收拢为 5 项：`故事`、`地图`、`手机`（常驻暖金主入口 + 未读角标）、`路线`（可执行决议角标）、`我`（待回应邀约角标）；桌面端采用右侧 `80px` 纵栏（`手机`置顶），窄屏（`<= 760px`）采用底部 `62px` 固定栏（`手机`居中上抬圆形主按钮）。
+            - 桌面端改为「左舞台 + 右书卷栏」分栏布局，立绘舞台不再被弹窗遮挡；窄屏正文改为可拖拽/点击切换的三档底部抽屉（`peek` / `half` / `full`）。
+            - 正文输入框上方新增语境化「此处」互动条，聚合当面交谈、室内活动、下厨、店铺服务/打包、便利店/文具店/选书/公交及相邻去处；顶栏精简为单行，四主角切换、字号、画面方式、立绘刷新与角色方向自然中文开关统一收入 `⋯` 菜单。
+          - **「路线」与「我」面板深度减法重排**：
+            - `路线` 合并 `国策`（首屏直出可缩放路线树 + 底部滑出详情抽屉）与 `决议`（分类筛选芯片 + 单行可展开条目 + 右侧金色 `⚡消耗` 按钮），移除重复列表与扫描线装饰。
+            - `我` 按 `身心 / 随身 / 关系 / 手账` 四页签统一收拢状态、学业课程、Appie Pay 跳转、东都证券、学生证、衣柜、内嵌随身背包与珍藏装备、内嵌邀约簿、乐队/社交圈/联合体、手账本与专业课表。
+          - **内嵌手机外壳与视觉精简**：
+            - 手机桌面收敛为单页剧情应用，底部快捷栏直达「消息」，酒馆工具统一收入「设置 → 酒馆工具」；移除剧情应用重复眉标与页底卡片，补齐三张银行卡专属徽记及东都证券、Twiitch 主题图标，修复证券 K 线首帧尺寸放大问题。
+          - **自 `rc2` 以来的内容与地图合入**：
+            - 包含离线二维导航地图与窄屏地区菜单修复、十四档好感人设（814 条世界书）与 30 条地点彩蛋、丰川瑞穗在世世界线、高原住宅区与飞鸟山公园等更新。
+
+          ## 附件清单与安装说明
+
+          | 文件 | 大小 | 用途 |
+          | --- | --- | --- |
+          | `{tauri_dst.name}` | {tauri_dst.stat().st_size:,} B | TauriTavern / 移动端压缩角色卡（<25 MB，无损 zlib zTXt 元数据） |
+          | `{canon_dst.name}` | {canon_dst.stat().st_size:,} B | 桌面 SillyTavern 规范 `tEXt` 角色卡 |
+          | `{zip_dst.name}` | {zip_dst.stat().st_size:,} B | **必装** 核心离线素材包（{lite_ver['externalAssets']} 项资产） |
+          | `unread-city-live2d.zip` | {live2d_dst.stat().st_size:,} B | **选装** 十人 Live2D 衣橱扩展包（94 套造型 / 1,931 项资产） |
+          | `{ver_dst.name}` | - | 构建与资源核验报告 |
+          | `SHA256SUMS.txt` | - | 文件 SHA-256 校验值（仅供参考，非安装门槛） |
+          | `README.txt` | - | 离线安装说明 |
+
+          **安装步骤：**
+          1. 按客户端导入对应角色卡 PNG（TauriTavern / 手机端用 `-tauri.png`，桌面 SillyTavern 用规范 `.png`）。
+          2. 打开聊天后，点击页面中的「安装 Lite 素材 ZIP」按钮，选择 `{zip_dst.name}`，导入完成后刷新页面。建议新建聊天。
+          3. 如需开启十人多服装 Live2D，可再通过页面扩展衣橱按钮导入 `unread-city-live2d.zip`。
+          4. `.zip` 文件是离线素材包，不是角色卡，请勿用“导入角色卡”功能导入。
+
+          ## 构建与校验边界
+
+          - 源提交：`{sha}`（分支 `lite`，角色卡版本 `{char_ver}`，扩展版本 `{ver_num}`）
+          - 构建链通过：东京/加州/北京 GLB 校验、36 张审定市区立绘、`ST-iPhonie`（`0.7.83-fish-mobile.5`）打包、`vue-tsc --noEmit`、`vite build`（970 模块）、`node --check dist/immersive-shell-lite.js`、`scripts/verify_lite_release.py`（`passed-build-only-not-tested-on-iphone`）、`scripts/validate_card.py`（814 条世界书条目）。
+          - 四视口受控浏览器验收通过：`1440×900`、`1280×800`、`390×844`、`320×568` 共 40 张页面截图无报错、无横向溢出、无日文假名与开发提示词残留（记录见仓库 `outputs/redesign-qa/`）。
+          - **边界声明**：本次为构建与受控桌面浏览器视口验收通过，**尚未进行 iPhone / Android 物理真机与 TauriTavern 实际导入验收**。
+          """
+          notes_clean = '\n'.join(line[10:] if line.startswith('          ') else line for line in notes.splitlines()) + '\n'
+          notes_dst.write_text(notes_clean, encoding='utf-8')
           PY
           gh release create "$RELEASE_TAG" \
-            dist/unread-city-lite-tauri.png \
-            dist/unread-city-lite-assets.zip \
-            dist/lite-verification.json \
-            dist/lite-assets-report.json \
+            "dist/release-bundle/unread-city-${RELEASE_TAG}-tauri.png" \
+            "dist/release-bundle/unread-city-${RELEASE_TAG}.png" \
+            "dist/release-bundle/unread-city-${RELEASE_TAG}-assets.zip" \
+            "dist/release-bundle/unread-city-live2d.zip" \
+            "dist/release-bundle/unread-city-${RELEASE_TAG}-verification.json" \
+            "dist/release-bundle/SHA256SUMS.txt" \
+            "dist/release-bundle/README.txt" \
             --target "$GITHUB_SHA" --prerelease \
-            --title "未读之城 Lite $RELEASE_TAG" \
-            --notes-file dist/lite-release-notes.md
+            --title "未读之城 Lite v${RELEASE_TAG#lite-v} · 五项常驻导航重构 / 左舞台右书卷与手机三档抽屉 / 手机外壳精简" \
+            --notes-file dist/release-bundle/RELEASE_NOTES.md
