@@ -61,7 +61,7 @@
 .fm-shield-bg{fill:#cfd8e3;stroke:#47586b;stroke-width:1}
 .fm-shield-txt{fill:#1b2430;font-size:10px;font-weight:700}
 
-.fm-north,.fm-locate,.fm-zoom,.fm-transit-mobile{position:absolute;z-index:4;backdrop-filter:blur(10px)}
+.fm-north,.fm-location-tools,.fm-zoom,.fm-transit-mobile{position:absolute;z-index:4;backdrop-filter:blur(10px)}
 .fm .fm-north{left:10px;bottom:10px;width:40px;height:40px;min-height:40px;border-radius:50%;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
 .fm-north-ptr{color:#e3907f;font-size:9px}.fm-north b{font-size:12px}
 /* Always vertical on right — never overlaps top search bar */
@@ -69,7 +69,8 @@
 .fm .fm-zoom button{border:0;border-radius:0;width:40px;height:38px;min-height:38px;padding:0;font-size:16px;background:rgba(14,19,21,.9)}
 .fm[data-fm-theme=day] .fm-zoom button{background:rgba(255,255,255,.92)}
 .fm .fm-zoom button+button{border-top:1px solid rgba(235,228,210,.14)}
-.fm .fm-locate{right:10px;bottom:10px;border-radius:999px;font-size:12px;font-weight:600;padding:0 12px;min-height:36px}
+.fm-location-tools{right:10px;bottom:10px;display:flex;align-items:center;gap:5px}
+.fm .fm-location-tools button{border-radius:999px;font-size:12px;font-weight:600;padding:0 12px;min-height:36px}
 .fm .fm-transit-mobile{display:none;left:56px;bottom:10px;border-radius:999px;font-size:12px;font-weight:600;padding:0 11px;min-height:36px}
 
 /* Place Inspector / Mobile Sheet */
@@ -123,6 +124,15 @@
 .fm-bg-preview[data-phase=dusk] img{filter:sepia(.22) saturate(1.15) brightness(.84)}
 .fm-bg-preview[data-phase=night] img{filter:saturate(.58) brightness(.55)}
 
+/* Person lookup in the flat map sheet and the Tokyo sandbox inspector. */
+.map-person-search{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+.map-person-input{display:flex;align-items:center;gap:6px}
+.map-person-input input{flex:1;min-width:0;height:38px;padding:0 10px;border:1px solid #78857d;border-radius:10px;background:transparent;color:inherit;font:inherit}
+.map-person-results{list-style:none;margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain;max-height:44dvh}
+.map-person-search .map-person-results button{display:block;width:100%;height:auto;min-height:42px;padding:6px 8px;text-align:left;color:inherit;border:0;border-radius:8px;background:transparent;cursor:pointer}
+.map-person-results button:hover,.map-person-results button:focus-visible{background:rgba(160,150,110,.16)}
+.map-person-results small{display:block;font-size:12px}
+
 /* Narrow desktop column */
 @media (max-width:1320px) and (min-width:761px){
   .fm-body{grid-template-columns:minmax(0,1fr) var(--col,400px)}
@@ -143,7 +153,8 @@
   .fm .fm-zoom button{width:38px;height:36px;min-height:36px}
   .fm .fm-north{left:8px;bottom:8px;width:36px;height:36px;min-height:36px}
   .fm .fm-transit-mobile{left:50px;bottom:8px}
-  .fm .fm-locate{right:8px;bottom:8px;font-size:12px}
+  .fm-location-tools{right:8px;bottom:8px}
+  .fm .fm-location-tools button{font-size:12px;padding:0 8px}
 
   .fm-side{flex:none;height:auto;max-height:36dvh;padding:4px 12px 12px;gap:6px;border-left:0;border-top:1px solid rgba(235,228,210,.16);border-radius:18px 18px 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.45)}
   .fm-side.is-expanded{max-height:66dvh}

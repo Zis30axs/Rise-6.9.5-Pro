@@ -5,6 +5,7 @@ import { setMapMode } from './preference';
 import { mapTrip, submitMapTrip } from '../map-travel';
 import type { ShellActions, ShellModel } from '../types';
 import MapLayers from './MapLayers.vue';
+import MapPersonSearch from '../MapPersonSearch.vue';
 import { worldMapRadarPeople } from '../../runtime/world-presence';
 import { scenePersonLabel } from '../../runtime/scene-context';
 import { formatGameNumber } from '../format-game-number';
@@ -24,7 +25,9 @@ const actual = computed(() => positionOf(here.value) || positionOf(props.model.s
 const choices = computed(() => props.tokyoOnly ? (['tokyo'] as Region[]) : regions);
 const region = ref<Region>(props.tokyoOnly ? 'tokyo' : actual.value?.region || 'tokyo');
 const sheet = computed(() => sheets[region.value]);
-const selected = ref(''), query = ref(''), group = ref(''), cat = ref(''), directory = ref(false), sending = ref(false);
+const selected = ref(''), query = ref(''), group = ref(''), cat = ref(''), sending = ref(false);
+const directory = ref<'places' | 'people' | null>(null);
+const personSearchButton = ref<HTMLButtonElement>();
 const sheetExpanded = ref(false);
 const theme = ref<'dark' | 'day'>('dark');
 const regionOpen = ref(false), catOpen = ref(false);
@@ -137,12 +140,36 @@ function reset() {
 }
 function setRegion(r: Region) {
   if (!choices.value.includes(r)) return;
-  region.value = r; regionOpen.value = false; group.value = ''; cat.value = ''; query.value = ''; selected.value = ''; directory.value = false; reset();
+  region.value = r; regionOpen.value = false; group.value = ''; cat.value = ''; query.value = ''; selected.value = ''; directory.value = null; reset();
 }
 function focus(pin: Pin) {
   selected.value = pin.id; bounded(pin.x, pin.y);
   zoom.value = Math.max(zoom.value, region.value === 'world' ? 1.1 : region.value === 'tokyo' ? 3.2 : 2.1);
-  directory.value = false; query.value = '';
+  directory.value = null; query.value = '';
+}
+function personLocationLabel(id: string) {
+  const position = positionOf(id);
+  if (position && choices.value.includes(position.region)) {
+    return `${sheets[position.region].name} · ${position.pin.name}`;
+  }
+}
+function closePersonSearch() {
+  directory.value = null;
+  personSearchButton.value?.focus({ preventScroll: true });
+}
+function locatePerson(locationId: string) {
+  const position = positionOf(locationId);
+  if (!position || !choices.value.includes(position.region)) return;
+  closePersonSearch();
+  setRegion(position.region);
+  focus(position.pin);
+}
+function togglePersonSearch() {
+  if (directory.value === 'people') return closePersonSearch();
+  query.value = '';
+  regionOpen.value = false;
+  catOpen.value = false;
+  directory.value = 'people';
 }
 function locate() {
   const p = actual.value;
@@ -276,9 +303,9 @@ const catChips = [
           <div class="fm-tools">
             <label>
               <span aria-hidden="true">⌕</span>
-              <input v-model="query" type="search" aria-label="搜索当前地图地点" placeholder="搜索地点" @input="directory = true">
+              <input v-model="query" type="search" aria-label="搜索当前地图地点" placeholder="搜索地点" @input="directory = 'places'">
             </label>
-            <button type="button" class="fm-bar-btn" :class="{ active: directory }" :aria-expanded="directory" @click="directory = !directory">目录</button>
+            <button type="button" class="fm-bar-btn" :class="{ active: directory === 'places' }" :aria-expanded="directory === 'places'" @click="directory = directory === 'places' ? null : 'places'">目录</button>
           </div>
 
           <button type="button" class="fm-cat-toggle" :class="{ active: catOpen || !!cat }" :aria-expanded="catOpen" @click="catOpen = !catOpen">
@@ -350,7 +377,11 @@ const catChips = [
           <button type="button" aria-label="缩小地图" @click="changeZoom(1 / 1.5)">−</button>
           <button type="button" aria-label="全图" title="全图" @click="filterGroup(''); reset()">⛶</button>
         </div>
-        <button type="button" class="fm-locate" :disabled="!actual" @click="locate">⊿ 我的位置</button>
+        <div class="fm-location-tools">
+          <button ref="personSearchButton" type="button" class="fm-bar-btn" :class="{ active: directory === 'people' }"
+                  :aria-expanded="directory === 'people'" @click="togglePersonSearch">找人物</button>
+          <button type="button" class="fm-locate" :disabled="!actual" @click="locate">⊿ 我的位置</button>
+        </div>
       </div>
 
       <aside class="fm-side" :class="{ 'is-expanded': sheetExpanded || directory || !!query }">
@@ -358,10 +389,12 @@ const catChips = [
           <span aria-hidden="true"></span>
         </button>
 
-        <div v-if="directory" class="fm-directory">
+        <MapPersonSearch v-if="directory === 'people'" :state="model.state" :resolve-location="personLocationLabel"
+                         @locate="locatePerson" @close="closePersonSearch" />
+        <div v-else-if="directory === 'places'" class="fm-directory">
           <div class="fm-dir-top">
             <strong>地点目录（{{ available.length }}）</strong>
-            <button type="button" @click="directory = false; query = ''">返回地点卡</button>
+            <button type="button" @click="directory = null; query = ''">返回地点卡</button>
           </div>
           <div class="fm-results">
             <template v-if="query">

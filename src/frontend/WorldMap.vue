@@ -39,6 +39,7 @@ import { mapLocationPoint } from './campus-map-layout';
 import { districtMapPlaces, isMapDistrict, locationDistrict, mapDistricts, type MapDistrictId } from './map-districts';
 import type { ShellActions, ShellModel } from './types';
 import CitySandboxScene from './CitySandboxScene.vue';
+import MapPersonSearch from './MapPersonSearch.vue';
 import AtlasMapScene from './AtlasMapScene.vue';
 import CaliforniaSandbox from './CaliforniaSandbox.vue';
 import BeijingSandbox from './BeijingSandbox.vue';
@@ -223,6 +224,19 @@ const roadEvents = computed(() => locations.flatMap(place => {
 }));
 const activeEvent = computed(() => roadEvents.value.find(event => event.id === activeEventId.value));
 const lookup=ref(''),inspected=ref(''),focused=ref(''),routeFrom=ref(''),routeTo=ref('');
+const personSearchOpen = ref(false);
+const personSearchButton = ref<HTMLButtonElement>();
+function tokyoLocationName(id: string) {
+  return tokyoSite.has(id) ? tokyoDestinations.get(id)?.name : undefined;
+}
+function closePersonSearch() {
+  personSearchOpen.value = false;
+  personSearchButton.value?.focus({ preventScroll: true });
+}
+function locatePerson(id: string) {
+  inspectPlace(id, true);
+  void nextTick(() => viewport.value?.focus({ preventScroll: true }));
+}
 const siteDetails=computed(()=>tokyoSite.get(inspected.value));
 const chosenPlace=computed(()=>tokyoDestinations.get(inspected.value));
 const searchText=(s:string)=>s.toLowerCase().replace(/[\s·／\u30fb-]/g,'');
@@ -230,6 +244,7 @@ const aliases:Record<string,string>={'soyo-house':'长崎素世','residential-mu
 const searchHits=computed(()=>{const q=searchText(lookup.value);return q?[...tokyoDestinations.values()].filter(p=>searchText([p.name,p.id,aliases[p.id]||'',tokyoSite.get(p.id)?.title||'',mapDistricts.find(d=>d.id===tokyoSite.get(p.id)?.district)?.name||''].join(' ')).includes(q)):[]});
 function inspectPlace(id:string,focus=false){
  const site=tokyoSite.get(id);if(!site)return;
+ personSearchOpen.value = false;
  lookup.value='';if(inspected.value!==id)routeTo.value='';
  inspected.value=id;
  if(focus){routeTo.value='';if(detailDistrict.value!==site.district)enterDistrict(site.district);else clearCameraOffset();focused.value=id;inspected.value=id}
@@ -712,7 +727,7 @@ function draftJourney(kind: 'visit' | 'study') {
   const name = selectedFeature.value?.properties.name ?? activeLandmark.value?.name;
   if (name) itineraryDraft.value = `${name} · 已暂存${kind === 'visit' ? '访问' : '留学'}意向，尚未启程。`;
 }
-watch(layer, () => { search.value = ''; activeEventId.value = ''; });
+watch(layer, () => { search.value = ''; personSearchOpen.value = false; activeEventId.value = ''; });
 onMounted(() => {
   if (!viewport.value) return;
   owner = viewport.value.ownerDocument.defaultView as (Window & typeof globalThis) | null;
@@ -808,8 +823,10 @@ onBeforeUnmount(() => { observer?.disconnect(); stopAnimation(); cancelGestures(
       </div>
       <aside class="wm-details">
         <section v-if="!geographicLayer" class="tc-inspector">
-          <label class="tc-find"><span>⌕</span><input v-model="lookup" type="search" aria-label="搜索东京地点或角色" placeholder="搜索东京地点或角色"></label>
-          <div v-if="lookup" class="tc-results"><button v-for="p in searchHits" :key="p.id" type="button" @click="inspectPlace(p.id,true)">{{ p.name }}<small>{{ tokyoSite.get(p.id)?.title }}</small></button><p v-if="!searchHits.length">没有匹配地点</p></div>
+          <label class="tc-find"><span>⌕</span><input v-model="lookup" type="search" aria-label="搜索东京地点" placeholder="搜索东京地点" @focus="personSearchOpen = false"></label>
+          <button ref="personSearchButton" class="tc-here" type="button" :aria-expanded="personSearchOpen" @click="personSearchOpen = !personSearchOpen">找人物</button>
+          <MapPersonSearch v-if="personSearchOpen" :state="model.state" :resolve-location="tokyoLocationName" @locate="locatePerson" @close="closePersonSearch" />
+          <div v-else-if="lookup" class="tc-results"><button v-for="p in searchHits" :key="p.id" type="button" @click="inspectPlace(p.id,true)">{{ p.name }}<small>{{ tokyoSite.get(p.id)?.title }}</small></button><p v-if="!searchHits.length">没有匹配地点</p></div>
           <div v-else-if="siteDetails && chosenPlace" class="tc-selection">
             <button class="tc-close" type="button" aria-label="关闭地点详情" @click="clearSelection">×</button>
             <small>{{ mapDistricts.find(d=>d.id===siteDetails?.district)?.shortName }}</small><h3>{{ siteDetails.title }}</h3>
