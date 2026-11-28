@@ -895,6 +895,10 @@ function openEmbeddedPhone() {
   requestedPhoneSlot = phoneSlot.value;
   props.actions.openPhone(phoneSlot.value);
 }
+function retryEmbeddedPhone() {
+  openEmbeddedPhone();
+  props.actions.retryPhoneSync();
+}
 function openStockWorkbench(code: string) {
   stockInitialCode.value = code;
   if (activeWindow.value !== 'stock') openWindow('stock');
@@ -1673,13 +1677,13 @@ onBeforeUnmount(() => {
             <button type="button" aria-label="关闭手机窗口" title="收起手机" @click="closeWindow()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
           </div>
           <template v-if="embeddedPhone">
-            <div v-if="model.phoneLinkStatus === 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="actions.retryPhoneSync()">重试同步</button></div>
+            <div v-if="model.phoneLinkStatus === 'error' && model.phoneStatus !== 'error'" class="phone-sync-error" role="status"><p>{{ model.phoneLinkError }}</p><button @click="retryEmbeddedPhone">重试同步</button></div>
             <div ref="phoneSlot" class="phone-slot" :data-phone-presentation="novelMode ? 'novel' : 'scene'" data-unread-city-phone-slot :data-phone-status="model.phoneStatus" aria-label="手机应用区域" :aria-busy="model.phoneStatus === 'loading'">
               <div v-if="!model.externalPhoneOpen" class="phone-waiting" :class="{ 'phone-load-error': model.phoneStatus === 'error' }" :role="model.phoneStatus === 'error' ? 'alert' : 'status'">
                 <span class="phone-loading-icon" aria-hidden="true">▯</span>
                 <strong>{{ model.phoneStatus === 'error' ? '手机暂未打开' : '正在打开你的手机…' }}</strong>
                 <p>{{ model.phoneStatus === 'error' ? (model.phoneError || '手机加载未完成，请重试。') : '手机会在这里显示，你也可以先收起窗口继续阅读。' }}</p>
-                <button v-if="model.phoneStatus === 'error'" @click="openEmbeddedPhone">重试加载手机</button>
+                <button v-if="model.phoneStatus === 'error'" @click="retryEmbeddedPhone">重试加载手机</button>
               </div>
             </div>
           </template>

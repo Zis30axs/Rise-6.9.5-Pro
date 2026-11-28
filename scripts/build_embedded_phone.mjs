@@ -87,6 +87,12 @@ function plugin(stage) {
       sourceFiles.set(relative, createHash('sha256').update(code).digest('hex'));
       code = adaptPhonePeek(relative, code, replaceOnce);
       if (relative === 'ui/phone.js') {
+        // createPhoneApp may replace .startup before a later initialization step throws.
+        code = replaceOnce(code, "const el = window.document.querySelector('.startup');",
+          `const root = window.document.getElementById('root');
+    const el = window.document.createElement('p');
+    el.className = 'startup';
+    root.replaceChildren(el);`, '保留手机桌面启动错误');
         code = "import {worldPhoneFactories,applyWorldPhoneTheme,worldPhoneHome,worldPhoneIcon,worldPhoneState,worldPhoneTheme,saveWorldPhoneTheme} from 'virtual:unread-city-world-apps';\nimport {readGamePhoneClock} from 'virtual:unread-city-phone-clock';\n" + code;
         code = replaceOnce(code, "    const now = new Date();\n    const time = now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false});\n    const date = now.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'});", "    const current = readGamePhoneClock(win);\n    const time = current?.time ?? '--:--';\n    const date = current?.label ?? '游戏时间未连接';", "status, home and lock screen use game clock");
         code = replaceOnce(code, "    if (time !== lastClock) { lastClock = time; today?.paint(['clock', 'calendar']); }", "    const stamp = date + '|' + time;\n    if (stamp !== lastClock) { lastClock = stamp; today?.paint(['clock', 'calendar']); }", "refresh Today widgets on day changes");
@@ -184,7 +190,21 @@ function plugin(stage) {
         code = replaceOnce(code, "json(new URL('manifest.json',base))", 'Promise.resolve(portableData.manifest)', '自检版本');
         code = replaceOnce(code, "fetch(new URL('manifest.json',base)).then(r=>r.ok?r.json():null).catch(()=>null)", 'Promise.resolve(portableData.manifest)', '备份版本');
         code = replaceOnce(code, "soundPack:new URL('sounds/',base).href", "soundPack:''", '可选声音资源');
-        code = replaceOnce(code, "notice('ST-iPhonie 需要 SillyTavern 1.13.2 或更新版本');return;", "throw Error('当前酒馆缺少手机所需的上下文、消息渲染或事件接口');", '按能力报告依赖');
+        // Native chat decoration and on-demand text generation are optional for the phone desktop.
+        // The phone's generation backend already checks generateRaw when a feature requests it.
+        code = replaceOnce(code, '||!ctx.generateRaw||!(ctx.messageFormatter?.addHook||ctx.messageFormatting)||!ctx.updateMessageBlock', '', '手机桌面独立于原生消息渲染和生成');
+        code = replaceOnce(code, 'legacy=!ctx.messageFormatter?.addHook;',
+          "legacy=typeof ctx.updateMessageBlock!=='function'||typeof ctx.messageFormatter?.addHook!=='function'||ctx.messageFormatter.stage?.BEFORE_REGEX==null;",
+          '按原生渲染能力注册消息钩子');
+        code = replaceOnce(code, 'function legacyFormat(){if(!legacy)return;const ctx=context(),live=liveId();',
+          "function legacyFormat(){const ctx=context();if(!legacy||typeof ctx?.messageFormatting!=='function'||typeof ctx.updateMessageBlock!=='function')return;const live=liveId();",
+          '缺少原生渲染能力时跳过旧版消息排版');
+        code = replaceOnce(code, 'keepFrontends(id,()=>context().updateMessageBlock(id,message));',
+          "const ctx=context();if(typeof ctx?.updateMessageBlock==='function')keepFrontends(id,()=>ctx.updateMessageBlock(id,message));",
+          '缺少原生消息重绘时保留酒馆显示');
+        code = replaceOnce(code, "notice('ST-iPhonie 需要 SillyTavern 1.13.2 或更新版本');return;", "throw Error('当前酒馆缺少手机所需的剧情、设置或事件接口');", '按能力报告依赖');
+        code = replaceOnce(code, "notice('当前浏览器缺少随机数功能，请更新浏览器');return;", "throw Error('当前浏览器缺少手机所需的安全随机数功能');", '报告随机数不可用');
+        code = replaceOnce(code, "notice('当前浏览器没有网页音频（Web Audio）功能，不能播放语音；iPhone 需要 iOS 14.5 或更新');return;", "throw Error('当前浏览器缺少手机所需的网页音频功能');", '报告网页音频不可用');
         code = code.replaceAll("if(backend.settings.sync.enabled)backend.syncNow().catch(()=>{});", '');
         code = code.replaceAll("if(settings?.sync?.enabled&&!panel?.open)backend?.syncNow().catch(()=>{});", '');
         code = code.replaceAll("document.addEventListener('visibilitychange',flushSync);", '');

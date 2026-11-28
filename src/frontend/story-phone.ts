@@ -5,6 +5,7 @@ import { getInteriorPeople, getScenePeople, hiddenProtagonistPersons, isSameScen
 import { characterForPerson } from './character-appearance';
 import { contactRelationNote, affinityContactLine } from '../runtime/affinity-tiers';
 import { novelNpcAtlases } from './novel-npc-atlases';
+import { errorMessage } from './error-message';
 
 export interface StoryPhoneContact { id: string; name: string; description: string; portraitId?: CharacterPortraitId; summary?: string; sourcePersonId?: string | null; isMain?: boolean }
 export interface StoryPhonePortrait { id: CharacterPortraitId; label: string; thumbnail?: string }
@@ -88,8 +89,11 @@ export function createStoryPhoneLink(options: {
   saveContact?(draft: ContactProfileDraft): Promise<StoryPhoneContact>;
   generateIntroduction?(draft: ContactProfileDraft): Promise<string>;
 }): StoryPhoneLink {
+  const phoneWindow = options.hostWindow as Window & { STiPhonieStoryHost?: StoryPhoneHost };
   let dead = false;
   let lease: StoryPhoneLease | undefined;
+  let boundHost: StoryPhoneHost | undefined;
+  let deliveryFailed = false;
   let unsubscribe: (() => void) | undefined;
   let sessionId = '';
   let queued = false;
@@ -104,10 +108,21 @@ export function createStoryPhoneLink(options: {
         !Array.isArray(snapshot.contacts)) throw new Error('手机返回的联动状态无效。');
     options.accept(snapshot);
   };
+  function disconnect() {
+    const previous = lease;
+    const stop = unsubscribe;
+    lease = undefined;
+    unsubscribe = undefined;
+    boundHost = undefined;
+    deliveryFailed = false;
+    try { stop?.(); } catch { /* A replaced phone host can already be gone. */ }
+    try { previous?.release(); } catch { /* Its callbacks no longer own this link. */ }
+  }
   async function connect() {
-    if (lease) return lease;
+    if (lease && !deliveryFailed && boundHost === phoneWindow.STiPhonieStoryHost) return lease;
+    disconnect();
     await options.ensurePhone(); assertCurrent();
-    const api = (options.hostWindow as Window & { STiPhonieStoryHost?: StoryPhoneHost }).STiPhonieStoryHost;
+    const api = phoneWindow.STiPhonieStoryHost;
     if (typeof api?.bind !== 'function') throw new Error('当前手机尚不支持剧情联动。请停用旧的独立手机插件，再刷新并进入本卡；已有手机数据会保留。');
     const tuple: unknown = JSON.parse(options.session);
     if (!Array.isArray(tuple) || tuple.length !== 2 || tuple.some(value => typeof value !== 'string' || !value)) throw new Error('无法识别当前剧情存档。');
@@ -129,11 +144,31 @@ export function createStoryPhoneLink(options: {
     });
     if (!current()) { acquired.release(); assertCurrent(); }
     lease = acquired;
-    unsubscribe = acquired.subscribe(snapshot => {
-      try { accept(snapshot); }
-      catch (error) { if (current()) options.status('error', error instanceof Error ? error.message : '已读状态暂未保存，请重试同步。'); }
-    });
+    boundHost = api;
+    try {
+      unsubscribe = acquired.subscribe(snapshot => {
+        if (lease !== acquired || api !== phoneWindow.STiPhonieStoryHost) return;
+        try { accept(snapshot); }
+        catch (error) { if (current()) options.status('error', errorMessage(error, '已读状态暂未保存，请重试同步。')); }
+      });
+    } catch (error) { disconnect(); throw error; }
     return acquired;
+  }
+  async function deliver() {
+    const active = await connect(); assertCurrent();
+    const state = options.state();
+    const data = { contacts: contactsOf(state), messages: state.phone, candidates: candidatesOf(state), portraits };
+    let result: StoryPhoneSnapshot;
+    try {
+      result = await active.sync(data);
+    } catch (error) {
+      // The phone may have released its end while the game kept the old lease.
+      if (lease === active) deliveryFailed = true;
+      throw error;
+    }
+    assertCurrent();
+    if (boundHost !== phoneWindow.STiPhonieStoryHost) throw new Error('手机连接已更换，请重试同步。');
+    accept(result);
   }
   function sync(): Promise<void> {
     if (!current()) return Promise.resolve();
@@ -144,14 +179,12 @@ export function createStoryPhoneLink(options: {
         try {
           while (queued && current()) {
             queued = false;
-            const active = await connect(); assertCurrent();
-            const state = options.state();
-            const result = await active.sync({ contacts: contactsOf(state), messages: state.phone, candidates: candidatesOf(state), portraits });
-            assertCurrent(); accept(result);
+            try { await deliver(); }
+            catch (error) { if (!queued || !current()) throw error; }
           }
           if (current()) options.status('ready');
         } catch (error) {
-          if (current()) options.status('error', error instanceof Error ? error.message : '剧情消息暂未同步，请重试。');
+          if (current()) options.status('error', errorMessage(error, '剧情消息暂未同步，请重试。'));
           throw error;
         } finally { running = undefined; }
       })();
@@ -174,7 +207,7 @@ export function createStoryPhoneLink(options: {
     },
     dispose() {
       dead = true; queued = false;
-      try { unsubscribe?.(); } finally { unsubscribe = undefined; lease?.release(); lease = undefined; }
+      disconnect();
     },
   };
 }

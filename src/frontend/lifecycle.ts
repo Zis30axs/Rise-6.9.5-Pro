@@ -15,6 +15,8 @@ import { editStoryEntry as editSavedStoryEntry } from '../runtime/story-editor';
 import type { Bridge, ShellActions, ShellModel, WorldAction, WorldState } from './types';
 import type { PhoneLease, PhonePanelHost, PhoneRuntime } from './phone-runtime';
 import { spatialPhoneLease } from './phone-spatial';
+import { waitForPhoneScreen } from './phone-screen';
+import { errorMessage as message } from './error-message';
 import { createStoryPhoneLink, type StoryPhoneLink } from './story-phone';
 import { validateContactProfileDraft } from '../runtime/characters';
 import { hasInteractionEffect, interactionLabel, INTERACTION_DURATION_MS, INTERACTION_EVENT_PROBABILITY, isGameplayInteraction, mergeInteractionReceipts } from './interaction-controller';
@@ -86,6 +88,9 @@ export function mountShell(
   let loadingPhoneAnchor: HTMLElement | undefined;
   let mountedPhoneApi: PhonePanelHost | undefined;
   let phoneSequence = 0;
+  let phoneCommandId = 0;
+  let phoneOpening: Promise<void> | undefined;
+  let screenWait: AbortController | undefined;
   let dismissOverlay: (() => boolean) | undefined;
   let storyPhone: StoryPhoneLink | undefined;
   let profileRequest: number | undefined;
@@ -351,6 +356,9 @@ export function mountShell(
       profileRequest = undefined; epoch++; model.busy = false;
       try { bridge.cancel(); } catch { /* Closing the form discards a late introduction. */ }
     }
+    screenWait?.abort();
+    screenWait = undefined;
+    phoneOpening = undefined;
     const lease = phoneLease;
     phoneLease = undefined; phoneAnchor = undefined; mountedPhoneApi = undefined;
     loadingPhoneAnchor = undefined;
@@ -362,7 +370,7 @@ export function mountShell(
     try { lease?.release(); }
     catch (error) { console.error('[UnreadCity] phone cleanup', error); }
   }
-  function acquirePhone(api: PhonePanelHost, anchor: HTMLElement, sequence: number) {
+  async function acquirePhone(api: PhonePanelHost, anchor: HTMLElement, sequence: number) {
     if (dead || sequence !== phoneSequence || !anchor.isConnected || bridge.session() !== session) return;
     let acquired: PhoneLease | undefined;
     phoneAnchor = anchor;
@@ -377,8 +385,16 @@ export function mountShell(
         throw new Error('手机连接未完成，请重试。');
       }
       acquired = spatialPhoneLease(acquired, hostWindow, anchor, activeProtagonist(model.state));
-      loadingPhoneAnchor = undefined;
       phoneLease = acquired; phoneAnchor = anchor; mountedPhoneApi = api;
+      if (phoneRuntime?.source() === 'embedded') {
+        const frame = doc.querySelector<HTMLIFrameElement>('#sttts-panel > iframe');
+        if (!frame) throw new Error('手机桌面未加载，请重试。');
+        screenWait = new AbortController();
+        await waitForPhoneScreen(frame, screenWait.signal);
+        if (dead || sequence !== phoneSequence) return;
+        screenWait = undefined;
+      }
+      loadingPhoneAnchor = undefined;
       model.externalPhoneAvailable = true; model.externalPhoneOpen = true;
       model.phoneStatus = 'ready'; model.phoneError = ''; model.notice = '';
       model.phoneSource = phoneRuntime?.source() ?? 'extension';
@@ -386,6 +402,7 @@ export function mountShell(
       acquired.focus();
       api.openStock?.();
     } catch (error) {
+      if (dead || sequence !== phoneSequence) return;
       if (acquired && acquired !== phoneLease) {
         try { acquired.release?.(); } catch { /* Keep recovery independent. */ }
       }
@@ -656,10 +673,11 @@ export function mountShell(
       if (loadingPhoneAnchor === anchor && model.phoneStatus === 'loading') return;
       closePhone();
       const sequence = ++phoneSequence;
-      if (api) { acquirePhone(api, anchor, sequence); return; }
       loadingPhoneAnchor = anchor;
       model.phoneStatus = 'loading'; model.phoneError = ''; model.notice = '';
-      void phoneRuntime!.ensure().then(loaded => acquirePhone(loaded, anchor, sequence)).catch(error => {
+      const opening = api ? acquirePhone(api, anchor, sequence)
+        : phoneRuntime!.ensure().then(loaded => acquirePhone(loaded, anchor, sequence));
+      phoneOpening = opening.catch(error => {
         if (dead || sequence !== phoneSequence) return;
         loadingPhoneAnchor = undefined;
         model.phoneStatus = 'error'; model.phoneError = message(error);
@@ -678,13 +696,19 @@ export function mountShell(
     async openPhoneContact(npcId) {
       if (!storyPhone || dead || model.switchingProtagonist) return;
       const sequence = phoneSequence;
-      try { await storyPhone.openContact(npcId, () => !dead && sequence === phoneSequence && model.externalPhoneOpen); }
+      try {
+        await phoneOpening;
+        if (dead || sequence !== phoneSequence || !model.externalPhoneOpen) return;
+        await storyPhone.openContact(npcId, () => !dead && sequence === phoneSequence && model.externalPhoneOpen);
+      }
       catch (error) { if (!dead && sequence === phoneSequence) model.notice = message(error); }
     },
     async openPhoneContactEditor(sourcePersonId) {
       if (!storyPhone || dead || model.busy || model.switchingProtagonist) return;
       const sequence = phoneSequence;
       try {
+        await phoneOpening;
+        if (dead || sequence !== phoneSequence || !model.externalPhoneOpen) return;
         const existing = sourcePersonId ? model.state.contacts.find(contact => contact.id === sourcePersonId || contact.sourcePersonId === sourcePersonId) : undefined;
         await storyPhone.openContactEditor(existing ? { npcId: existing.id } : sourcePersonId ? { sourcePersonId } : {},
           () => !dead && sequence === phoneSequence && model.externalPhoneOpen);
@@ -695,7 +719,7 @@ export function mountShell(
         return { ok: false, error: '当前有其他操作正在进行，请稍候再试。' };
       }
       try {
-        const requestId = `st-${Date.now().toString(36)}-${(++phoneSequence).toString(36)}`;
+        const requestId = `st-${Date.now().toString(36)}-${(++phoneCommandId).toString(36)}`;
         const next = reduceState(snapshot(), { type: 'phone_app', requestId, owner, command });
         saveWithSms(next);
         worldPhone.notify();
@@ -824,17 +848,3 @@ export function mountShell(
     throw error;
   }
 }
-
-function message(error: unknown): string {
-  // Helper functions run in the host page, so their errors cross an iframe realm.
-  // Read only a bounded message; never serialize a provider response or stack.
-  try {
-    const value = typeof error === 'string' ? error
-      : error && typeof error === 'object' && 'message' in error ? error.message : '';
-    if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 600);
-  } catch { /* A rejected value may expose a throwing message getter. */ }
-  return '操作未完成，请退出并重新进入。';
-}
-
-
-
