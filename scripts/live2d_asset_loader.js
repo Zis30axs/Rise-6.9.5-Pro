@@ -109,35 +109,4 @@ function __ucLive2dCreateApi() {
   };
   return api;
 }
-function __ucLive2dButton(api) {
-  let host = document;
-  try { if (window.parent?.document?.body) host = window.parent.document; } catch {}
-  const previous = host.getElementById('unread-city-live2d-import');
-  previous?.__ucDispose?.(); previous?.remove();
-  const box = host.createElement('div'); box.id = 'unread-city-live2d-import';
-  box.style.cssText = 'position:fixed;right:12px;top:62px;z-index:2147483647;max-width:calc(100vw - 24px);display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;width:260px;font:13px sans-serif';
-  const input = host.createElement('input'); input.type = 'file'; input.accept = '.zip,application/zip'; input.hidden = true;
-  const install = host.createElement('button'), toggle = host.createElement('button'), remove = host.createElement('button'), notice = host.createElement('span');
-  for (const button of [install,toggle,remove]) { button.type='button'; button.style.cssText='padding:8px;border:1px solid #888;border-radius:6px;background:#24252b;color:#fff;cursor:pointer'; }
-  notice.setAttribute('role','status'); notice.style.cssText='background:#24252b;color:white;border-radius:4px';
-  install.onclick = () => input.click();
-  const refresh = () => { const state = api.status(); install.textContent = state.installed ? '📦 更换 Live2D 素材 ZIP' : '📦 安装 Live2D 素材 ZIP';
-    install.title = 'MyGO + Ave Mujica'; toggle.hidden = remove.hidden = !state.installed;
-    toggle.textContent = state.enabled ? '停用' : '启用'; remove.textContent = '移除'; };
-  const perform = async fn => { for (const button of [install,toggle,remove]) button.disabled=true;
-    notice.textContent='正在处理…';
-    try { await fn(); notice.textContent='已完成'; } catch (error) { notice.textContent='未完成，请重试'; notice.title=error instanceof Error ? error.message : ''; console.warn('[UnreadCity Live2D]',error); }
-    finally { input.value=''; for (const button of [install,toggle,remove]) button.disabled=false; refresh(); }
-  };
-  input.onchange = () => { if (input.files?.[0]) void perform(() => api.install(input.files[0], text => {notice.textContent=text;})); };
-  toggle.onclick = () => void perform(() => api.setEnabled(!api.status().enabled));
-  remove.onclick = () => void perform(() => api.remove());
-  box.append(input,install,toggle,remove,notice); host.body.append(box);
-  const unsubscribe = api.subscribe(refresh); refresh();
-  // Parent-owned controls survive Shell/chat iframe disposal. A subsequent
-  // bootstrap replaces controls and releases this subscription.
-  box.__ucDispose = unsubscribe;
-}
-const __ucLive2dApi = __ucLive2dCreateApi();
-globalThis.__UC_LIVE2D__ = __ucLive2dApi;
-__ucLive2dButton(__ucLive2dApi);
+globalThis.__UC_LIVE2D__ = __ucLive2dCreateApi();

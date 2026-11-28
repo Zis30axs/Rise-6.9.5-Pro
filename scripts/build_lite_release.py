@@ -139,13 +139,14 @@ def externalize(source: str, bootstrap: str) -> tuple[str, bytes, dict]:
     loader = loader.replace('__UC_LITE_PACK_DIGEST__', json.dumps(manifest_sha))
     optional = (ROOT / 'scripts/live2d_asset_loader.js').read_text(encoding='utf-8')
     descriptor = json.loads((ROOT / 'assets/live2d-ensemble/pack.json').read_text(encoding='utf-8'))
-    # The native installer must outlive a Tavern script iframe on chat switch.
+    # Keep pending imports and pack data available across Tavern script iframe changes.
     # Execute only our own trusted bootstrap in the parent document's realm;
     # pack files never supply code. Reuse the exact shared data helper source.
     shared = loader[loader.index('function __ucLiteRequest'):loader.index('async function __ucPackImport')]
     optional = optional.replace('__UC_LIVE2D_DESCRIPTOR__', json.dumps(descriptor, separators=(',', ':')))
     host_script = '(function(){\n' + shared + optional + '\n})();'
     loader += '\n' + '(function(){let host=window;try{if(window.parent.document.body)host=window.parent;}catch{}\n' \
+        + 'const legacy=host.document.getElementById("unread-city-live2d-import");legacy?.__ucDispose?.();legacy?.remove();\n' \
         + 'if(host.__UC_LIVE2D__?.status().pack!==' + json.dumps(descriptor['sha']) + '||typeof host.__UC_LIVE2D__?.restore!=="function"){\n' \
         + 'const script=host.document.createElement("script");script.textContent=' + json.dumps(host_script) + ';\n' \
         + '(host.document.head||host.document.body).append(script);script.remove();}\n' \

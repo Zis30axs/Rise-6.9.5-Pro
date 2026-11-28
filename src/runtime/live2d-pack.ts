@@ -10,6 +10,9 @@ export interface Live2dPackApi {
   status(): Live2dPackStatus;
   restore?(): Promise<void>;
   subscribe(listener: () => void): () => void;
+  install(file: File, report: (progress: string) => void): Promise<void>;
+  setEnabled(enabled: boolean): Promise<void>;
+  remove(): Promise<void>;
   getAsset(sha: string): Promise<Blob>;
 }
 export function live2dPack(): Live2dPackApi | undefined {

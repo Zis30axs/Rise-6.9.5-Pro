@@ -101,6 +101,9 @@ function installFakePack(initialModels: Live2dOutfit[]): {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
+    install: vi.fn(),
+    setEnabled: vi.fn(),
+    remove: vi.fn(),
     getAsset: async () => new Blob([]),
   };
   (globalThis as typeof globalThis & { __UC_LIVE2D__?: Live2dPackApi }).__UC_LIVE2D__ = api;

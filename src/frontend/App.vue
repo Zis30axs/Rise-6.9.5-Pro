@@ -49,6 +49,7 @@ import { bindShellLayout, type ShellLayoutLease } from './shell-layout';
 import MapView from './MapView.vue';
 import RoutePanel from './RoutePanel.vue';
 import MePanel, { type MeTab } from './MePanel.vue';
+import Live2dPackSettings, { live2dPackBusy } from './Live2dPackSettings.vue';
 import StoryEngineSettings from './StoryEngineSettings.vue';
 import MapCharacterAvatar from './MapCharacterAvatar.vue';
 import { formatGameNumber } from './format-game-number';
@@ -277,7 +278,8 @@ const portraitSpeaker = computed(() => novelMode.value && heldPortrait.value ? h
   ? encounterPerson.value.protagonistId ? protagonistNames[encounterPerson.value.protagonistId] : encounterPerson.value.id
   : segmentSpeaker.value);
 // Keep standing portraits visible on the desktop left stage when browsing book-column panels; mute only for phone pose or full map.
-const portraitStageActive = computed(() => !activeWindow.value || (activeWindow.value !== 'phone' && activeWindow.value !== 'map'));
+const portraitStageActive = computed(() => activeWindow.value !== 'phone' && activeWindow.value !== 'map'
+  && !(activeWindow.value === 'settings' && live2dPackBusy.value));
 const portraitActive = computed(() => portraitStageActive.value
   || (activeWindow.value === 'phone' && !hasProtagonistPhonePose(currentProtagonist.value)));
 const novelNpcContext = computed(() => ({
@@ -1715,6 +1717,7 @@ onBeforeUnmount(() => {
             <button type="button" :aria-label="'关闭' + windowTitle + '窗口'" @click="closeWindow()"><span aria-hidden="true">×</span></button>
           </header>
           <div v-if="activeWindow === 'settings'" class="window-content">
+            <Live2dPackSettings />
             <StoryEngineSettings :memory-scope="model.memoryScope || ''" />
             <div class="me-card" style="margin-top:14px">
               <div class="me-kv">

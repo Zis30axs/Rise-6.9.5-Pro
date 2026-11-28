@@ -224,7 +224,5 @@ async function __uc_lite_init__() {
   if (closed || !installed) release();
   if (closed) return false;
   __ucPackButton(__UC_CORE_PACK__, installed);
-  // The native installer is still usable if the required Lite pack is missing.
-  if (!installed) void globalThis.__UC_LIVE2D__?.restore().catch(error => console.warn('[UnreadCity Live2D]', error));
   return installed;
 }

@@ -1,4 +1,5 @@
 import { createApp, defineComponent, h, provide, reactive, ref } from 'vue';
+import Live2dPackSettings, { live2dPackBusy } from '../../src/frontend/Live2dPackSettings.vue';
 import NovelLive2DPortrait from '../../src/frontend/NovelLive2DPortrait.vue';
 import { live2dContext } from '../../src/frontend/live2d-context';
 import { createInitialState } from '../../src/runtime/model';
@@ -6,17 +7,27 @@ import { live2dAppearancePrompt } from '../../src/runtime/live2d-wardrobe';
 import { createEnsembleSource } from '../../src/frontend/live2d-ensemble-assets';
 import { createSoyoPortrait } from '../../src/frontend/live2d-soyo-runtime';
 import { live2dPack } from '../../src/runtime/live2d-pack';
+import '../../src/frontend/story-engine-settings.css';
 import '../../src/frontend/soyo-live2d.css';
 import '../../src/frontend/novel-invitation-portraits.css';
 const state=reactive(createInitialState());
 const paired=ref(false),visible=ref(true),nonce=ref(0);
+const settingsOpen = ref(false);
 const component=defineComponent({setup(){
   provide(live2dContext,()=>({session:'browser-live2d',state,enabled:true}));
-  const portrait=()=>h(NovelLive2DPortrait,{speaker:'长崎素世',emotion:'开心',refreshToken:nonce.value},{default:()=>h('div',{'data-original-fallback':'','style':'color:white;padding:100px'},'原有立绘')});
-  return ()=>h('div',{style:'position:fixed;inset:0'},visible.value?[paired.value?h('div',{class:'novel-invitation-portraits'},[h('div',{class:'novel-invitation-portraits__side'},[portrait()]),h('div',{class:'novel-invitation-portraits__side'},[portrait()])]):portrait()]:[]);
+  const portrait=()=>h(NovelLive2DPortrait,{speaker:'长崎素世',emotion:'开心',active:!(settingsOpen.value && live2dPackBusy.value),refreshToken:nonce.value},{default:()=>h('div',{'data-original-fallback':'','style':'color:white;padding:100px'},'原有立绘')});
+  const stage = () => paired.value ? h('div', {class:'novel-invitation-portraits'}, [
+    h('div', {class:'novel-invitation-portraits__side'}, [portrait()]),
+    h('div', {class:'novel-invitation-portraits__side'}, [portrait()]),
+  ]) : portrait();
+  return () => h('div', {style:'position:fixed;inset:0'}, [
+    visible.value ? stage() : null,
+    settingsOpen.value ? h('div', {class:'uc-shell', style:'position:relative'}, [h(Live2dPackSettings)]) : null,
+  ]);
 }});
 createApp(component).mount('#app');
 Object.assign(window,{live2dFixture:{
+  settings:(open:boolean)=>{settingsOpen.value=open;},
   prompt:()=>live2dAppearancePrompt('browser-live2d',state),
   paired:(value:boolean)=>{paired.value=value;},visible:(value:boolean)=>{visible.value=value;},refresh:()=>{nonce.value++;},
   async render(id:string){

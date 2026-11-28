@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import type { Live2dPackApi } from '../src/runtime/live2d-pack';
 import { expect, it, vi } from 'vitest';
 
-const source = readFileSync('scripts/live2d_asset_loader.js', 'utf8').split('function __ucLive2dButton')[0];
+const source = readFileSync('scripts/live2d_asset_loader.js', 'utf8');
 const sha256 = (bytes: Uint8Array | ArrayBuffer) =>
   createHash('sha256').update(new Uint8Array(bytes)).digest('hex');
 const portrait = new TextEncoder().encode('portrait');
@@ -17,7 +17,7 @@ const manifest = new TextEncoder().encode(JSON.stringify({
 }));
 const descriptor = { sha: sha256(manifest), manifestBytes: manifest.byteLength, entries: 1 };
 function fixture(open: () => Promise<unknown>, read: (db: unknown, store: string, key: string) => Promise<unknown> = async () => undefined) {
-  return runInNewContext(source + '\n__ucLive2dCreateApi()', {
+  return runInNewContext(source + '\nglobalThis.__UC_LIVE2D__', {
     __UC_LIVE2D_DESCRIPTOR__: descriptor, __ucLiteDb: open, __ucLiteRead: read,
     __ucLiteSha256: sha256, Blob, TextDecoder, console: { warn: vi.fn(), error: vi.fn() },
   }) as Live2dPackApi & Required<Pick<Live2dPackApi, 'restore'>>;

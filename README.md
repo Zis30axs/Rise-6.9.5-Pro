@@ -70,7 +70,7 @@ JSON 与 PNG 使用同一份卡片数据、世界书和前端脚本，`spec = "c
 
 ## 当前关键决定
 
-- **可选 Live2D 素材扩展包（2026-11-10，issue #86）**：MyGO + Ave Mujica 十人共 94 套实有服装，以独立可选的 `assets/live2d-ensemble/unread-city-live2d.zip` 交付（54,248,815 字节）。新卡可在原生酒馆页面通过“安装 Live2D 素材 ZIP”安装、停用或移除；不安装时沿用原有立绘。模型只进入可选 ZIP，基础必需 ZIP 的 236 项素材保持不变。小说立绘根据权威游戏环境稳定选择服装；实际装载成功的在场人物才进入独立衣着上下文，不修改世界书或增加模型请求。来源、数量、安装机制、状态隔离、验证与限制详见 [扩展包说明](integration/live2d-ensemble/README.md)。本轮本地定向测试、构建与受控浏览器检查不代表真实酒馆对话或 TauriTavern 真机验收；未运行 CI/Agent Edition。
+- **可选 Live2D 素材扩展包（2026-11-10，issue #86）**：MyGO + Ave Mujica 十人共 94 套实有服装，以独立可选的 `assets/live2d-ensemble/unread-city-live2d.zip` 交付（54,248,815 字节）。进入《未读之城》后，可在“更多选项 → 叙事与界面设置 → Live2D 素材”中安装、更换、启用、停用或移除扩展包；不安装时沿用原有立绘。模型只进入可选 ZIP，基础必需 ZIP 的 236 项素材保持不变。小说立绘根据权威游戏环境稳定选择服装；实际装载成功的在场人物才进入独立衣着上下文，不修改世界书或增加模型请求。来源、数量、安装机制、状态隔离、验证与限制详见 [扩展包说明](integration/live2d-ensemble/README.md)。本轮本地定向测试、构建与受控浏览器检查不代表真实酒馆对话或 TauriTavern 真机验收；未运行 CI/Agent Edition。
 - **剧情标签与独立 API（2026-10-19）**：推荐模型返回 `<story>`、`<phone_messages>` 标签，按需加 `<world_actions>`、`<world_events>`；正文沿用 `|角色名|情绪|台词|` 标记；旧版纯 JSON 仍兼容。状态面板底部「独立叙事引擎」可切换模型或自定义 OpenAI 风格接口；API 密钥只写当前标签页 `sessionStorage`，同源脚本仍可能读取，请勿向不受信任的脚本或代理提供敏感密钥。
 - **TauriTavern 大卡导入（2026-10-19）**：另有 Tauri 导入压缩版 PNG（35.20 MB），仅把角色元数据由 `tEXt` 转为标准 `zTXt` 无损压缩，解压后原文逐字节相同；已在 iPhone 16 / TauriTavern `dev (223be954afa7)` 上验证可正常导入使用。
 - **远程加载优化（2026-10-19）**：角色按需加载，首页只下载摘要；缓存命中时只返回 330 字节。角色列表由约 65 MB 降至约 4.5 KB。
