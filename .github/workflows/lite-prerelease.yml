@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'New immutable pre-release tag, for example lite-v0.4.0-rc3'
+        description: 'New immutable pre-release tag, for example lite-v0.4.0-rc4'
         required: true
         type: string
 permissions:
@@ -204,7 +204,7 @@ jobs:
               '安装步骤:',
               '1. 按客户端选择导入 -tauri.png（TauriTavern / 手机端）或规范 .png（桌面酒馆）。',
               f'2. 打开聊天后，点击页面上的「安装 Lite 素材 ZIP」按钮，选择 {zip_dst.name} 并刷新页面。建议新建聊天。',
-              '3. 如需解锁全部十人多套换装 Live2D，可再通过页面扩展衣橱按钮导入 unread-city-live2d.zip。',
+              '3. 进入《未读之城》，打开「更多选项（⋯）→ 叙事与界面设置 → Live2D 素材」，选择 unread-city-live2d.zip。',
               '注意: .zip 是离线素材包，不是角色卡，请勿用“导入角色卡”功能打开。',
               '',
               '说明: 尚未进行 iPhone / TauriTavern 真机实际导入验收；SHA256SUMS.txt 仅供校验参考，非安装前置条件。',
@@ -214,21 +214,9 @@ jobs:
           sum_files = [tauri_dst, canon_dst, zip_dst, live2d_dst, ver_dst, readme_dst]
           sums_dst.write_text(''.join(f'{sha256_of(p)}  {p.name}\n' for p in sum_files), encoding='utf-8')
 
-          notes = f"""# 未读之城 Lite v{ver_num} · 五项常驻导航重构 / 左舞台右书卷与手机三档抽屉 / 手机外壳精简 / 十四档好感与二维导航地图
+          notes = f"""# 未读之城 Lite v{ver_num}
 
-          ## 本次主要更新（自 `lite-v0.4.0-rc2`）
-
-          - **全屏 Shell 五项常驻导航与响应式舞台重构**：
-            - 常驻导航由 14 个零散入口收拢为 5 项：`故事`、`地图`、`手机`（常驻暖金主入口 + 未读角标）、`路线`（可执行决议角标）、`我`（待回应邀约角标）；桌面端采用右侧 `80px` 纵栏（`手机`置顶），窄屏（`<= 760px`）采用底部 `62px` 固定栏（`手机`居中上抬圆形主按钮）。
-            - 桌面端改为「左舞台 + 右书卷栏」分栏布局，立绘舞台不再被弹窗遮挡；窄屏正文改为可拖拽/点击切换的三档底部抽屉（`peek` / `half` / `full`）。
-            - 正文输入框上方新增语境化「此处」互动条，聚合当面交谈、室内活动、下厨、店铺服务/打包、便利店/文具店/选书/公交及相邻去处；顶栏精简为单行，四主角切换、字号、画面方式、立绘刷新与角色方向自然中文开关统一收入 `⋯` 菜单。
-          - **「路线」与「我」面板深度减法重排**：
-            - `路线` 合并 `国策`（首屏直出可缩放路线树 + 底部滑出详情抽屉）与 `决议`（分类筛选芯片 + 单行可展开条目 + 右侧金色 `⚡消耗` 按钮），移除重复列表与扫描线装饰。
-            - `我` 按 `身心 / 随身 / 关系 / 手账` 四页签统一收拢状态、学业课程、Appie Pay 跳转、东都证券、学生证、衣柜、内嵌随身背包与珍藏装备、内嵌邀约簿、乐队/社交圈/联合体、手账本与专业课表。
-          - **内嵌手机外壳与视觉精简**：
-            - 手机桌面收敛为单页剧情应用，底部快捷栏直达「消息」，酒馆工具统一收入「设置 → 酒馆工具」；移除剧情应用重复眉标与页底卡片，补齐三张银行卡专属徽记及东都证券、Twiitch 主题图标，修复证券 K 线首帧尺寸放大问题。
-          - **自 `rc2` 以来的内容与地图合入**：
-            - 包含离线二维导航地图与窄屏地区菜单修复、十四档好感人设（814 条世界书）与 30 条地点彩蛋、丰川瑞穗在世世界线、高原住宅区与飞鸟山公园等更新。
+          角色卡仓库中的 Live2D 悬浮安装按钮已移到《未读之城》卡内。安装过程中可以收起设置，稍后再打开查看进度。
 
           ## 附件清单与安装说明
 
@@ -245,15 +233,14 @@ jobs:
           **安装步骤：**
           1. 按客户端导入对应角色卡 PNG（TauriTavern / 手机端用 `-tauri.png`，桌面 SillyTavern 用规范 `.png`）。
           2. 打开聊天后，点击页面中的「安装 Lite 素材 ZIP」按钮，选择 `{zip_dst.name}`，导入完成后刷新页面。建议新建聊天。
-          3. 如需开启十人多服装 Live2D，可再通过页面扩展衣橱按钮导入 `unread-city-live2d.zip`。
+          3. 如需 Live2D，进入《未读之城》，打开 **更多选项（⋯）→ 叙事与界面设置 → Live2D 素材**，选择 `unread-city-live2d.zip`。安装后可在同处更换、停用、启用或移除。
           4. `.zip` 文件是离线素材包，不是角色卡，请勿用“导入角色卡”功能导入。
 
           ## 构建与校验边界
 
           - 源提交：`{sha}`（分支 `lite`，角色卡版本 `{char_ver}`，扩展版本 `{ver_num}`）
-          - 构建链通过：东京/加州/北京 GLB 校验、36 张审定市区立绘、`ST-iPhonie`（`0.7.83-fish-mobile.5`）打包、`vue-tsc --noEmit`、`vite build`（970 模块）、`node --check dist/immersive-shell-lite.js`、`scripts/verify_lite_release.py`（`passed-build-only-not-tested-on-iphone`）、`scripts/validate_card.py`（814 条世界书条目）。
-          - 四视口受控浏览器验收通过：`1440×900`、`1280×800`、`390×844`、`320×568` 共 40 张页面截图无报错、无横向溢出、无日文假名与开发提示词残留（记录见仓库 `outputs/redesign-qa/`）。
-          - **边界声明**：本次为构建与受控桌面浏览器视口验收通过，**尚未进行 iPhone / Android 物理真机与 TauriTavern 实际导入验收**。
+          - 普通版和 Tauri 版 PNG 已校验，配套基础包包含 {lite_ver['externalAssets']} 项资源。
+          - 已在桌面和 320 像素窄屏浏览器中验证卡内安装入口、实际 ZIP 导入和退出流程。TauriTavern 手机真机尚未实测。
           """
           notes_clean = '\n'.join(line[10:] if line.startswith('          ') else line for line in notes.splitlines()) + '\n'
           notes_dst.write_text(notes_clean, encoding='utf-8')
@@ -267,5 +254,5 @@ jobs:
             "dist/release-bundle/SHA256SUMS.txt" \
             "dist/release-bundle/README.txt" \
             --target "$GITHUB_SHA" --prerelease \
-            --title "未读之城 Lite v${RELEASE_TAG#lite-v} · 五项常驻导航重构 / 左舞台右书卷与手机三档抽屉 / 手机外壳精简" \
+            --title "未读之城 Lite v${RELEASE_TAG#lite-v} · 进入角色卡后安装 Live2D 素材" \
             --notes-file dist/release-bundle/RELEASE_NOTES.md
